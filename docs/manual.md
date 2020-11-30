@@ -325,6 +325,8 @@ time.
 
 Type definitions types are borrowed from [JSON]:
 
+[JSON]: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/JSON 
+
 - Object
 - Array
 - String
@@ -361,7 +363,7 @@ Components are global. Once they are loaded into the render context, any
 template in the render tree can access them. (See [`renderContext`] in the API
 manual for more information.)
 
-[`renderContext`]: /api/#rendercontext
+[`renderContext`]: ../api/#rendercontext
 
 A couple of basic components:
 
@@ -455,5 +457,3 @@ An explicit children prop:
 
 Both of those examples are rendered identically. If you've used React, this
 should look familiar.
-
-[JSON]: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/JSON 

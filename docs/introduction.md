@@ -65,6 +65,6 @@ the language that enforces that. You can use something else (for example,
 `.html`) or you can configure your editor to treat `.acutis` files as HTML
 (or whatever format you want).
 
-[license]: /license/
-[API]: /api/
-[CLI]: /api/#acutis-command-line-interface-(cli)
+[license]: ../license/
+[API]: ../api/
+[CLI]: ../api/#acutis-command-line-interface-(cli)

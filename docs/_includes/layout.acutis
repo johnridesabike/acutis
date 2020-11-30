@@ -12,7 +12,9 @@
   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
   See the License for the specific language governing permissions and
   limitations under the License.
-*}<!DOCTYPE html>
+*}
+{%~ match site with {url: siteUrl} ~%}
+<!DOCTYPE html>
 <html lang="en-US">
   <head>
     <title>{{ title }}</title>
@@ -24,9 +26,7 @@
       name="viewport"
       content="width=device-width, initial-scale=1, shrink-to-fit=no"
     />
-    {% match site with {url} %}
-      <link rel="stylesheet" href="{{ url }}/style.css" />
-    {%~ /match ~%}
+    <link rel="stylesheet" href="{{ siteUrl }}/style.css" />
   </head>
   <body>
     <a class="skip-nav" href="#content">Skip to content.</a>
@@ -35,47 +35,49 @@
         <header>
           {%~ match showTitle with false ~%}
             <h1 class="site-header__title">
-              <a href="/">{{ title }}</a>
+              <a href="{{ siteUrl }}/">{{ title }}</a>
             </h1>
           {%~ with true ~%}
             <p class="site-header__title">
-              <a href="/">{{ title }}</a>
+              <a href="{{ siteUrl }}/">{{ title }}</a>
             </p>
           {%~ /match ~%}
           <p class="site-header__subtitle">{{ subtitle }}</p>
         </header>
         <nav class="site-header__nav">
           <ol class="site-header__nav-list">
-            {%~ match site with {url: siteUrl}
-                map menu with {path, name} ~%}
+            {%~ map menu with {path, name} ~%}
               <li>
                 {% Link siteUrl path page %}{{ name }}{% /Link %}
               </li>
-            {%~ /map
-                /match ~%}
+            {%~ /map ~%}
           </ol>
         </nav>
       </div>
     {%~ /match ~%}
     <main class="main" id="content">
       <article>
-        {% match showTitle with false %} {* No title *} {% with true %}
+        {%~ match showTitle
+            with false ~%} {* No title *}
+        {%~ with true %}
           <header class="header">
             <h1>{{ title }}</h1>
           </header>
-        {% /match %}
-        {% match content with null %} {{ Children }}
-        {% with content %} {% raw content %}
-        {% /match %}
-        {% match next with null %} {* nothing! *}
-        {% with {text, url} %}
+        {%~ /match ~%}
+        {%~ match content with null %} {{ Children }}
+        {%~ with content ~%} {% raw content %}
+        {%~ /match ~%}
+        {%~ match next
+           with null ~%} {* nothing! *}
+        {%~ with {text, url} ~%}
           <nav class="next">
             <h2 class="next__header">Next:</h2>
-            <a href="{{ url }}" class="next__url">{{ text }}</a>
+            <a href="{{ siteUrl }}{{ url }}" class="next__url">{{ text }}</a>
           </nav>
-        {% /match %}
+        {%~ /match %}
       </article>
     </main>
-    {%~ Footer name="John Jackson" link="https://johnridesa.bike" /~%}
+    {%~ Footer name="John Jackson" link="https://johnridesa.bike" siteUrl /~%}
   </body>
 </html>
+{%~ /match %}

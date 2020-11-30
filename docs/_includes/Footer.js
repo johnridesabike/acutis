@@ -26,16 +26,16 @@ const ast = makeAst(
     .
   </p>
   <p class="footer__license">
-    <a href="/license/">View the license</a>.
+    <a href="{{ siteUrl }}/license/">View the license</a>.
   </p>
 </footer>
 `,
   module.filename
 );
 
-module.exports = (render, { year, name, link }, children) =>
+module.exports = (render, { year, name, link, siteUrl }, children) =>
   render(
     ast,
-    { year: year ? year : new Date().getFullYear(), name, link },
+    { year: year ? year : new Date().getFullYear(), name, link, siteUrl },
     children
   );

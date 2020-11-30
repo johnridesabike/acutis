@@ -17,10 +17,7 @@
 const { makeAst } = require("../../");
 
 const ast = makeAst(
-  `<a
-  href="{{ href }}"
-  aria-current="{{ current }}"
->
+  `<a href="{{ href }}" aria-current="{{ current }}">
   {{ Children }}
 </a>`,
   module.filename

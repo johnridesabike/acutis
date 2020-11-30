@@ -1,7 +1,7 @@
 {
   "title": "Acutis",
   "subtitle": "a template language for the web & beyond",
-  "url": "https://johnridesa.bike/acutis/",
+  "url": "https://johnridesa.bike/acutis",
   "menu": [
     { "path": "/", "name": "Home" },
     { "path": "/introduction/", "name": "Getting started" },

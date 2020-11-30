@@ -280,6 +280,6 @@ Examples:
 [1]: #template-functions-overview
 [2]: https://rescript-lang.org/docs/manual/latest/exception 
 [3]: #using-the-children-argument
-[4]: /manual/#template-children-props
+[4]: ../manual/#template-children-props
 [uncurried]: https://rescript-lang.org/docs/manual/latest/function#uncurried-function
 [Promise]: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise 

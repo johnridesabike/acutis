@@ -11,4 +11,4 @@ free for you to use however you wish in accordance with the [license].
 
 [1]: https://johnridesa.bike/
 [2]: https://github.com/johnridesabike/acutis
-[license]: /license/
+[license]: ../license/
