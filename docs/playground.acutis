@@ -53,7 +53,9 @@
     class="playground__textarea"
     wrap="off"
   ></textarea>
-  <script src="/acutis.iife.min.js"></script>
-  <script src="/playground.js"></script>
+  {%~ match site with {url} ~%}
+    <script src="{{ url }}acutis.iife.min.js"></script>
+    <script src="{{ url }}playground.js"></script>
+  {%~ /match ~%}
 </div>
 {% /Layout %}
