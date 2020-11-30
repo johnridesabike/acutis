@@ -1,0 +1,26 @@
+{
+  "name": "acutis-lang",
+  "namespace": "acutis",
+  "version": "0.1.0",
+  "suffix": ".bs.js",
+  "bs-dependencies": [],
+  "bs-dev-dependencies": ["reason-test-framework"],
+  "package-specs": {
+    "in-source": true,
+    "module": "es6"
+  },
+  "sources": [
+    {
+      "dir": "src",
+      "subdirs": true
+    },
+    {
+      "dir": "__tests__",
+      "type": "dev"
+    }
+  ],
+  "warnings": {
+    "error": "+A-3-44-102",
+    "number": "+A-48-103-4"
+  }
+}

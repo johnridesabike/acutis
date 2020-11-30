@@ -1,0 +1,81 @@
+{*
+  Copyright 2020 John Jackson
+
+  Licensed under the Apache License, Version 2.0 (the "License");
+  you may not use this file except in compliance with the License.
+  You may obtain a copy of the License at
+
+      http://www.apache.org/licenses/LICENSE-2.0
+
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.
+*}<!DOCTYPE html>
+<html lang="en-US">
+  <head>
+    <title>{{ title }}</title>
+    {% match description with null %} <!-- no description -->
+    {% with description %}
+      <meta name="description" content="{{ description }}" />
+    {% /match %}
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, shrink-to-fit=no"
+    />
+    {% match site with {url} %}
+      <link rel="stylesheet" href="{{ url }}/style.css" />
+    {%~ /match ~%}
+  </head>
+  <body>
+    <a class="skip-nav" href="#content">Skip to content.</a>
+    {%~ match site with {title, subtitle, menu} ~%}
+      <div class="site-header__wrapper">
+        <header>
+          {%~ match showTitle with false ~%}
+            <h1 class="site-header__title">
+              <a href="/">{{ title }}</a>
+            </h1>
+          {%~ with true ~%}
+            <p class="site-header__title">
+              <a href="/">{{ title }}</a>
+            </p>
+          {%~ /match ~%}
+          <p class="site-header__subtitle">{{ subtitle }}</p>
+        </header>
+        <nav class="site-header__nav">
+          <ol class="site-header__nav-list">
+            {%~ match site with {url: siteUrl}
+                map menu with {path, name} ~%}
+              <li>
+                {% Link siteUrl path page %}{{ name }}{% /Link %}
+              </li>
+            {%~ /map
+                /match ~%}
+          </ol>
+        </nav>
+      </div>
+    {%~ /match ~%}
+    <main class="main" id="content">
+      <article>
+        {% match showTitle with false %} {* No title *} {% with true %}
+          <header class="header">
+            <h1>{{ title }}</h1>
+          </header>
+        {% /match %}
+        {% match content with null %} {{ Children }}
+        {% with content %} {% raw content %}
+        {% /match %}
+        {% match next with null %} {* nothing! *}
+        {% with {text, url} %}
+          <nav class="next">
+            <h2 class="next__header">Next:</h2>
+            <a href="{{ url }}" class="next__url">{{ text }}</a>
+          </nav>
+        {% /match %}
+      </article>
+    </main>
+    {%~ Footer name="John Jackson" link="https://johnridesa.bike" /~%}
+  </body>
+</html>

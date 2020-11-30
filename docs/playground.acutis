@@ -1,0 +1,59 @@
+{*
+  Copyright 2020 John Jackson
+
+  Licensed under the Apache License, Version 2.0 (the "License");
+  you may not use this file except in compliance with the License.
+  You may obtain a copy of the License at
+
+      http://www.apache.org/licenses/LICENSE-2.0
+
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.
+*}
+{%~ Layout
+   title="Acutis language playground"
+   description="A playground for experimenting with the Acutis template language."
+   showTitle=true
+   site
+   page
+  %}
+<div class="font-monospace">
+  <label for="props" class="playground__header">
+    JSON props<span id="props-is-dirty" class="playground__is-dirty"></span>
+  </label>
+  <textarea
+    id="props"
+    cols="80"
+    rows="8"
+    spellcheck="false"
+    class="playground__textarea"
+    wrap="off"
+  ></textarea>
+  <label for="source" class="playground__header">
+    Template<span id="source-is-dirty" class="playground__is-dirty"></span>
+  </label>
+  <textarea
+    id="source"
+    cols="80"
+    rows="16"
+    spellcheck="false"
+    class="playground__textarea"
+    wrap="off"
+  ></textarea>
+  <button id="render" class="playground__button">Render</button>
+  <label for="result" class="playground__header">Output</label>
+  <textarea
+    id="result"
+    cols="80"
+    rows="16"
+    readonly
+    class="playground__textarea"
+    wrap="off"
+  ></textarea>
+  <script src="/acutis.iife.min.js"></script>
+  <script src="/playground.js"></script>
+</div>
+{% /Layout %}

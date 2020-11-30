@@ -1,0 +1,273 @@
+@import "normalize.css";
+@import "prismjs/themes/prism.css";
+/* @import "prism-themes/themes/prism-ghcolors.css";*/
+
+:root {
+  --font-family-serif: Georgia, "Times New Roman", serif;
+  --font-family-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+    Oxygen, Ubuntu, Cantarell, "Open Sans", "Helvetica Neue", sans-serif;
+  --font-family-mono: Menlo, Consolas, Monaco, "Andale Mono", "Ubuntu Mono",
+    monospace;
+  --color-text: #111;
+  --color-grey: #777;
+  --color-link: #0645ad;
+  --font-size-body: 18px;
+  --font-size-mono: 14px;
+}
+
+body {
+  font-size: var(--font-size-body);
+  /* A serif font provides better contrast with inline monospace code */
+  font-family: var(--font-family-serif);
+  padding: 0 1em;
+  color: var(--color-text);
+}
+
+h1,
+h2,
+h3,
+h4 {
+  margin: 0.75em 0;
+  font-family: var(--font-family-sans);
+}
+
+h1 {
+  font-size: 1.5em;
+  font-weight: 400;
+}
+
+h2 {
+  border-top: 1px solid var(--color-grey);
+  padding-top: 0.25em;
+  font-size: 1.4em;
+  font-weight: 400;
+}
+
+h3,
+.playground__header,
+.toc-container-header {
+  font-size: 1.1em;
+  font-weight: 700;
+}
+
+.playground__header {
+  border-top: none;
+  padding-top: 0;
+}
+
+h4 {
+  font-size: 0.9em;
+  font-weight: 700;
+}
+
+pre {
+  padding: 0.5em;
+  overflow-x: auto;
+}
+
+pre[class*="language-"] {
+  font-family: var(--font-family-mono);
+  font-size: var(--font-size-mono);
+}
+
+code,
+code[class*="language-"] {
+  font-family: var(--font-family-mono);
+}
+
+p code {
+  white-space: nowrap;
+}
+
+blockquote {
+  font-family: var(--font-family-mono);
+  font-size: 0.9em;
+}
+
+table {
+  font-size: 1em;
+  border-collapse: collapse;
+}
+
+th {
+  font-family: var(--font-family-sans);
+}
+
+td {
+  border-top: 1px solid var(--color-grey);
+  padding: 0.5em 0;
+}
+
+nav {
+  font-family: var(--font-family-sans);
+}
+
+a {
+  text-decoration: none;
+  color: var(--color-link);
+  font-weight: 700;
+}
+
+a:hover,
+a:active,
+a:focus {
+  text-decoration: underline;
+  color: var(--color-link);
+}
+
+a[aria-current="true"] {
+  box-shadow: 0 4px 4px -4px var(--color-link);
+}
+
+li::marker {
+  font-family: var(--font-family-mono);
+  font-size: var(--font-size-mono);
+}
+
+.skip-nav {
+  border: 0;
+  clip: rect(0 0 0 0);
+  height: 1px;
+  width: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  position: absolute;
+}
+
+.skip-nav:focus {
+  padding: 1rem;
+  position: fixed;
+  top: 10px;
+  left: 10px;
+  background: #fff;
+  z-index: 1;
+  width: auto;
+  height: auto;
+  clip: auto;
+}
+
+.font-size-small {
+  font-size: 0.8em;
+}
+
+.font-monospace {
+  font-family: var(--font-family-mono);
+  font-size: var(--font-size-mono);
+}
+
+.site-header__wrapper {
+  margin-top: 1em;
+}
+
+.site-header__title {
+  margin-top: 0;
+  margin-bottom: 0;
+  font-size: 2em;
+  text-align: center;
+  font-family: var(--font-family-mono);
+}
+
+.site-header__title a {
+  color: var(--color-text);
+  font-weight: 400;
+}
+
+.site-header__subtitle {
+  margin: 1em auto;
+  text-align: center;
+  font-family: var(--font-family-mono);
+  font-size: 0.8em;
+  width: 20ch;
+}
+
+.site-header__nav-list {
+  columns: 2;
+  padding: 0;
+}
+
+.site-header__nav li {
+  margin-left: 1.5em;
+  margin-bottom: 0.5em;
+}
+
+.site-header__nav a {
+  font-weight: 400;
+}
+
+.table-of-contents {
+  font-family: var(--font-family-sans);
+}
+
+.table-of-contents li {
+  margin-bottom: 0.5em;
+  margin-top: 0.5em;
+}
+
+.table-of-contents a {
+  font-weight: 400;
+}
+
+.next__header {
+  border: none;
+  margin-top: 1em;
+  margin-bottom: 0.5em;
+}
+
+.next__url {
+  font-size: 1.25em;
+  font-weight: 400;
+}
+
+.playground__textarea {
+  max-width: 100%;
+}
+
+.playground__button {
+  font-size: 1.2em;
+  display: block;
+  margin: auto;
+}
+
+.playground__is-dirty {
+  font-size: 0.8em;
+  vertical-align: super;
+}
+
+.footer {
+  margin-top: 2em;
+  border-top: 1px solid var(--color-grey);
+  font-family: var(--font-family-sans);
+  font-size: 0.8em;
+}
+
+.footer__license a {
+  font-weight: 400;
+}
+
+@media screen and (min-width: 700px) {
+  td:first-child {
+    min-width: 36.6%;
+  }
+
+  .site-header__wrapper,
+  .footer,
+  .main {
+    width: 700px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  .site-header__wrapper ul {
+    justify-content: center;
+  }
+
+  .site-header__subtitle {
+    font-size: 0.8em;
+    width: 100%;
+  }
+
+  .site-header__nav-list {
+    columns: 3;
+  }
+}

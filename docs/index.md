@@ -1,0 +1,40 @@
+---
+title: Acutis
+description: Acutis is a template language for the web & beyond.
+showTitle: false
+layout: layout.acutis
+next:
+  text: Read how to get started 👉
+  url: /introduction/
+---
+
+Acutis is a template engine that uses pattern matching, strong typing,
+asynchronous templates, and template components. It's built in [ReScript]
+and designed for JavaScript. It's comparable to engines like Mustache,
+Handlebars, Liquid, and Nunjucks.
+
+[Browse the source here][1].
+
+[1]: https://github.com/johnridesabike/acutis 
+
+```html
+<h1> Blog posts for {{ siteTitle }} </h1>
+{% map blogPosts with {image, title, date, excerpt, author: {name}} %}
+  <article>
+    <header>
+      {% match image
+         with null %}
+        {* no image *}
+      {% with {src, alt} %}
+        <img src="{{ src }}" alt="{{ alt }}" />
+      {% /match}
+      <h2> {{ title }} </h2>
+      <span class="byline"> By {{ name }} </span>
+      {% DateTime date format="MMMM Do, YYYY" / %}
+    </header>
+    <p> {{ excerpt }} </p>
+  </article>
+{% /map %}
+```
+
+[ReScript]: https://rescript-lang.org/
