@@ -1,7 +1,21 @@
 {
   "name": "acutis-lang",
   "version": "0.1.0",
-  "private": true,
+  "private": false,
+  "keywords": [
+    "rescript",
+    "template",
+    "templating",
+    "template engine"
+  ],
+  "homepage": "https://johnridesa.bike/acutis/",
+  "bugs": {
+    "url": "https://github.com/johnridesabike/acutis/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/johnridesabike/acutis.git"
+  },
   "license": "Apache-2.0",
   "author": "John Jackson",
   "main": "dist/acutis.js",
