@@ -1,4 +1,4 @@
-## 0.2.0
+## 0.2.1
 
 - Fixed whitespace control to work on empty strings.
 - Added license to bundled source files.

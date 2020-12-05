@@ -18,10 +18,6 @@
   },
   "license": "Apache-2.0",
   "author": "John Jackson",
-  "exports": {
-    "import": "./dist/acutis.mjs",
-    "require": "./dist/acutis.js"
-  },
   "main": "dist/acutis.js",
   "module": "dist/acutis.mjs",
   "types": "acutis.d.ts",
