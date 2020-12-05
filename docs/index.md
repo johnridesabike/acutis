@@ -37,4 +37,4 @@ Handlebars, Liquid, and Nunjucks.
 
 [ReScript]: https://rescript-lang.org/
 [1]: https://github.com/johnridesabike/acutis 
-[2]: https://github.com/johnridesabike/acutis/CHANGELOG.md
+[2]: https://github.com/johnridesabike/acutis/blob/master/CHANGELOG.md
