@@ -13,11 +13,9 @@ asynchronous templates, and template components. It's built in [ReScript]
 and designed for JavaScript. It's comparable to engines like Mustache,
 Handlebars, Liquid, and Nunjucks.
 
-[Browse the source here][1].
+[Source code][1] | [Changelog][2]
 
-[1]: https://github.com/johnridesabike/acutis 
-
-```html
+```jinja2
 <h1> Blog posts for {{ siteTitle }} </h1>
 {% map blogPosts with {image, title, date, excerpt, author: {name}} %}
   <article>
@@ -38,3 +36,5 @@ Handlebars, Liquid, and Nunjucks.
 ```
 
 [ReScript]: https://rescript-lang.org/
+[1]: https://github.com/johnridesabike/acutis 
+[2]: https://github.com/johnridesabike/acutis/CHANGELOG.md

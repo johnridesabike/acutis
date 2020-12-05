@@ -1,6 +1,8 @@
 @import "normalize.css";
 @import "prismjs/themes/prism.css";
-/* @import "prism-themes/themes/prism-ghcolors.css";*/
+/*
+@import "prism-themes/themes/prism-ghcolors.css";
+*/
 
 :root {
   --font-family-serif: Georgia, "Times New Roman", serif;
@@ -11,8 +13,9 @@
   --color-text: #111;
   --color-grey: #777;
   --color-link: #0645ad;
+  --color-background: #fefefe;
   --font-size-body: 18px;
-  --font-size-mono: 14px;
+  --font-size-mono: 16px;
 }
 
 body {
@@ -21,6 +24,7 @@ body {
   font-family: var(--font-family-serif);
   padding: 0 1em;
   color: var(--color-text);
+  background-color: var(--color-background);
 }
 
 h1,
@@ -75,7 +79,8 @@ code[class*="language-"] {
   font-family: var(--font-family-mono);
 }
 
-p code {
+p code,
+li code {
   white-space: nowrap;
 }
 

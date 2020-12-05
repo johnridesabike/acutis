@@ -34,19 +34,19 @@ information about this.)
 
 If you apply the props from the last section to this template:
 
-```html
+```jinja2
 My favorite color is {{ color }}.
 ```
 
 It renders:
 
-```html
+```jinja2
 My favorite color is blue.
 ```
 
 Acutis escapes echoes. The following characters transform into HTML entities:
 
-```html
+```jinja2
 & " ' > < / ` =
 ```
 
@@ -54,7 +54,7 @@ Acutis escapes echoes. The following characters transform into HTML entities:
 
 The `raw` statement echoes a value without escaping it.
 
-```html
+```jinja2
 My favorite color is {% raw color %}.
 ```
 
@@ -62,14 +62,14 @@ Note that this is a statement, so it's inside `{% %}`.
 
 ## Comments
 
-```html
+```jinja2
 {* TODO: add more colors. *}
 ```
 
 Anything wrapped `{*` and `*}` is always ignored in the output. It is
 possible to nest comments, similar to in ML-style languages.
 
-```html
+```jinja2
 {* None of {* this is *} rendered. *}
 ```
 
@@ -78,7 +78,7 @@ possible to nest comments, similar to in ML-style languages.
 The `~` (tilde) symbol trims whitespace before or after an expression or an
 echo statement.
 
-```html
+```jinja2
 <p>
   {{~ color ~}}
 </p>
@@ -86,7 +86,7 @@ echo statement.
 
 Renders:
 
-```html
+```jinja2
 <p>Blue</p>
 ```
 
@@ -113,7 +113,7 @@ and `updated` to those names.
 
 Therefore, we can use these with the `match` statement and the `with` clause:
 
-```html
+```jinja2
 {% match article
    with {published: true, title, dates: {posted, updated}} %}
   {{ title }} was posted on {{ posted }} and updated on {{ updated }}.
@@ -122,7 +122,7 @@ Therefore, we can use these with the `match` statement and the `with` clause:
 {% /match %}
 ```
 
-The `match ... with` block is analogous to a `switch ... case` block in some
+The `match`...`with` block is analogous to a `switch`...`case` block in some
 languages. Here, the structure and values of the `article` binding is checked
 against the patterns after each `with` clause. If one of the patterns
 *matches* the contents of `article`, then the following template section is
@@ -132,7 +132,7 @@ rendered.
 
 Acutis allows multiple `with` patterns to render single block expression.
 
-```html
+```jinja2
 {% match greeting
    with "Hello"
    with "Hola"
@@ -143,7 +143,7 @@ Acutis allows multiple `with` patterns to render single block expression.
 {% /match %}
 ```
 
-## Shadow bindings
+## Shadowing bindings
 
 Bindings are immutable. Binding a value to an existing name does not override
 the original, but *shadows* it. Bindings are also scoped to their blocks.
@@ -156,7 +156,7 @@ Consider this object about my favorite colors:
 
 And this template:
 
-```html
+```jinja2
 My favorite is {{ color }}.
 
 {% match other with {color} ~%}
@@ -168,7 +168,7 @@ But my favorite is still {{ color }}.
 
 Which renders:
 
-```html
+```jinja2
 My favorite is blue.
 
 Another is green.
@@ -183,21 +183,41 @@ The top-level `color` is not affected by the nested `color` binding.
 The `map` statement is similar to `match` except that it is used on arrays to
 render each value of the array. 
 
+These props:
+
+```json
+{
+  "articles": [
+    {"title": "Acutis templates for beginners", "author": "John"}, 
+    {"title": "Level up your Acutis skills", "author": "Carlo"}
+  ]
+}
+```
+
+And this template:
+
+```jinja2
+{% map articles with {title, author} ~%}
+  The article "{{ title }}" was written by {{ author }}.
+{% /map %}}
+```
+
+Renders:
+
 ```html
-{% map articles with {title, author} %}
-  The article {{ title }} was written by {{ author }}.
-{% /map %}
+The article "Acutis templates for beginners" was written by John.
+The article "Level up your Acutis skills" was written by Carlo.
 ```
 
 Just like `match`, `map` can take multiple patterns to conditionally render
 different template sections based on an value's content.
 
-```html
+```jinja2
 {% map articles
    with {title, author: null} %}
-  The article {{ title }} was written anonymously.
+  The article "{{ title }}" was written anonymously.
 {% with {title, author} %}
-  The article {{ title }} was written by {{ author }}.
+  The article "{{ title }}" was written by {{ author }}.
 {% /map %}
 ```
 
@@ -206,7 +226,7 @@ different template sections based on an value's content.
 You can optionally include an item's index in the pattern.
 *Indices always begin at zero.*
 
-```html
+```jinja2
 {% map articles with {title, author}, index %}
   {{ index }}. {{ title }} was written by {{ author }}.
 {% /map %}
@@ -215,7 +235,7 @@ You can optionally include an item's index in the pattern.
 Because the `index` binding is just another pattern, you can also use it to
 conditionally render sections by matching the index with specific numbers.
 
-```html
+```jinja2
 {% map articles
    with {title}, 0 %}
   Our first article is {{ title }}.
@@ -266,7 +286,7 @@ object with fields `a` and `b`, but it will ignore their contents.
 
 Because bindings match *anything*, you can use `_` as a "default" case:
 
-```html
+```jinja2
 {% match greeting
    with "Hello" %}
   This is an English greeting.
@@ -282,7 +302,7 @@ Because bindings match *anything*, you can use `_` as a "default" case:
 You can match many values at once by separating them with a comma (`,`). This
 can be useful for reasoning about two-dimensional matrices of data.
 
-```html
+```jinja2
 {% match object, color
    with "sky", "blue"
    with "grass", "green" %}
@@ -294,7 +314,7 @@ can be useful for reasoning about two-dimensional matrices of data.
 
 The number of patterns must match the number of values. This is illegal:
 
-```html
+```jinja2
 {% match object, color with "sky" %}
   I forgot to match the color!
 {% /match %}
@@ -369,13 +389,13 @@ A couple of basic components:
 
 File: `Byline.acutis`
 
-```html
+```jinja2
 Written by {{ name }}.
 ```
 
 File: `Articles.acutis`
 
-```html
+```jinja2
 {% map articles with {title, author} %}
   {{ title }} {% Byline name=author / %}
 {% /map %}
@@ -386,7 +406,7 @@ File: `Articles.acutis`
 Patterns can be used in props. They compile into the values they would match
 in pattern matching.
 
-```html
+```jinja2
 {% Article
    published=true
    class="news"
@@ -409,7 +429,7 @@ Props can be template sections, which are considered the template's
 with `/#`. Children's names must begin with a capital letter, just like
 components.
 
-```html
+```jinja2
 {% Layout
    Header=#%}
     <h1> {{ title }} </h1>
@@ -439,7 +459,7 @@ prop named `Children`.
 
 An implicit children prop:
 
-```html
+```jinja2
 {% Layout %}
   content
 {% /Layout %}
@@ -447,7 +467,7 @@ An implicit children prop:
 
 An explicit children prop:
 
-```html
+```jinja2
 {% Layout 
    Children=#%}
     content

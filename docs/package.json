@@ -6,11 +6,12 @@
   "author": "John Jackson",
   "main": "index.js",
   "scripts": {
-    "build": "concurrently yarn:build:*",
+    "build": "NODE_ENV=production concurrently yarn:build:*",
     "build:11ty": "ELEVENTY_EXPERIMENTAL=true eleventy",
     "build:postcss": "postcss style.css -d _site/",
+    "clean": "rm -r _site",
     "deploy": "gh-pages -d _site",
-    "predeploy": "yarn build",
+    "predeploy": "yarn clean && yarn build",
     "start": "concurrently yarn:start:*",
     "start:11ty": "ELEVENTY_EXPERIMENTAL=true eleventy --serve",
     "start:postcss": "postcss style.css -d _site/ -w"
@@ -27,7 +28,7 @@
     "markdown-it-anchor": "^6.0.1",
     "markdown-it-table-of-contents": "^0.5.1",
     "normalize.css": "^8.0.1",
-    "postcss": "^8.1.10",
+    "postcss": "^8.1.14",
     "postcss-cli": "^8.3.0",
     "postcss-custom-properties": "^10.0.0",
     "postcss-import": "^13.0.0",
