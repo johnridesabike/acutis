@@ -50,7 +50,11 @@ describe("Lexer", ({test, _}) => {
 })
 
 describe("Patterns", ({test, _}) => {
-  let parseString = source => ("{% " ++ source ++ "%}")->Lexer.make->Compile.Pattern.make
+  let parseString = source => {
+    let tokens = Lexer.make("{% " ++ source ++ "%}")
+    Lexer.skipExn(tokens) // Skip the opening string
+    Compile.Pattern.make(tokens)
+  }
 
   test("Enums", ({expect, _}) => {
     expect.value(parseString("null")).toEqual(List(Null(Loc(3)), list{}))
@@ -83,34 +87,23 @@ describe("Patterns", ({test, _}) => {
   })
 
   test("Arrays", ({expect, _}) => {
-    expect.value(parseString("[]")).toEqual(List(EmptyArray(Loc(3)), list{}))
-    expect.value(parseString("[1]")).toEqual(
-      List(Array({loc: Loc(3), hd: Number(Loc(4), 1.0), tl: list{}}), list{}),
-    )
-    expect.value(parseString("[null]")).toEqual(
-      List(Array({loc: Loc(3), hd: Null(Loc(4)), tl: list{}}), list{}),
-    )
+    expect.value(parseString("[]")).toEqual(List(Array(Loc(3), list{}), list{}))
+    expect.value(parseString("[1]")).toEqual(List(Array(Loc(3), list{Number(Loc(4), 1.0)}), list{}))
+    expect.value(parseString("[null]")).toEqual(List(Array(Loc(3), list{Null(Loc(4))}), list{}))
     expect.value(parseString(`["a"]`)).toEqual(
-      List(Array({loc: Loc(3), hd: String(Loc(4), "a"), tl: list{}}), list{}),
+      List(Array(Loc(3), list{String(Loc(4), "a")}), list{}),
     )
     expect.value(parseString(`[1, "a", null]`)).toEqual(
-      List(
-        Array({loc: Loc(3), hd: Number(Loc(4), 1.0), tl: list{String(Loc(7), "a"), Null(Loc(12))}}),
-        list{},
-      ),
+      List(Array(Loc(3), list{Number(Loc(4), 1.0), String(Loc(7), "a"), Null(Loc(12))}), list{}),
     )
     expect.value(parseString(`["b", x]`)).toEqual(
-      List(
-        Array({loc: Loc(3), hd: String(Loc(4), "b"), tl: list{Binding(Loc(9), Id("x"))}}),
-        list{},
-      ),
+      List(Array(Loc(3), list{String(Loc(4), "b"), Binding(Loc(9), Id("x"))}), list{}),
     )
     expect.value(parseString(`["b", ...x]`)).toEqual(
       List(
         ArrayWithTailBinding({
           loc: Loc(3),
-          hd: String(Loc(4), "b"),
-          tl: list{},
+          array: list{String(Loc(4), "b")},
           bindLoc: Loc(12),
           binding: Id("x"),
         }),
@@ -119,71 +112,67 @@ describe("Patterns", ({test, _}) => {
     )
     expect.value(parseString(`[["b", 1], x]`)).toEqual(
       List(
-        Array({
-          loc: Loc(3),
-          hd: Array({loc: Loc(4), hd: String(Loc(5), "b"), tl: list{Number(Loc(10), 1.0)}}),
-          tl: list{Binding(Loc(14), Id("x"))},
-        }),
+        Array(
+          Loc(3),
+          list{
+            Array(Loc(4), list{String(Loc(5), "b"), Number(Loc(10), 1.0)}),
+            Binding(Loc(14), Id("x")),
+          },
+        ),
         list{},
       ),
     )
     expect.value(parseString("[[], x]")).toEqual(
-      List(
-        Array({loc: Loc(3), hd: EmptyArray(Loc(4)), tl: list{Binding(Loc(8), Id("x"))}}),
-        list{},
-      ),
+      List(Array(Loc(3), list{Array(Loc(4), list{}), Binding(Loc(8), Id("x"))}), list{}),
     )
   })
 
   test("Objects", ({expect, _}) => {
-    expect.value(parseString("{}")).toEqual(List(EmptyObject(Loc(3)), list{}))
+    expect.value(parseString("{}")).toEqual(List(Object(Loc(3), list{}), list{}))
     expect.value(parseString("{pun}")).toEqual(
-      List(Object({loc: Loc(3), hd: ("pun", Binding(Loc(4), Id("pun"))), tl: list{}}), list{}),
+      List(Object(Loc(3), list{("pun", Binding(Loc(4), Id("pun")))}), list{}),
     )
     expect.value(parseString("{pun1, pun2}")).toEqual(
       List(
-        Object({
-          loc: Loc(3),
-          hd: ("pun1", Binding(Loc(4), Id("pun1"))),
-          tl: list{("pun2", Binding(Loc(10), Id("pun2")))},
-        }),
+        Object(
+          Loc(3),
+          list{("pun1", Binding(Loc(4), Id("pun1"))), ("pun2", Binding(Loc(10), Id("pun2")))},
+        ),
         list{},
       ),
     )
     expect.value(parseString("{a: b}")).toEqual(
-      List(Object({loc: Loc(3), hd: ("a", Binding(Loc(7), Id("b"))), tl: list{}}), list{}),
+      List(Object(Loc(3), list{("a", Binding(Loc(7), Id("b")))}), list{}),
     )
     expect.value(parseString("{a: b, c: d}")).toEqual(
       List(
-        Object({
-          loc: Loc(3),
-          hd: ("a", Binding(Loc(7), Id("b"))),
-          tl: list{("c", Binding(Loc(13), Id("d")))},
-        }),
+        Object(Loc(3), list{("a", Binding(Loc(7), Id("b"))), ("c", Binding(Loc(13), Id("d")))}),
         list{},
       ),
     )
     expect.value(parseString(`{"#illegal": legal, "<%name%>": name}`)).toEqual(
       List(
-        Object({
-          loc: Loc(3),
-          hd: ("#illegal", Binding(Loc(16), Id("legal"))),
-          tl: list{("<%name%>", Binding(Loc(35), Id("name")))},
-        }),
+        Object(
+          Loc(3),
+          list{
+            ("#illegal", Binding(Loc(16), Id("legal"))),
+            ("<%name%>", Binding(Loc(35), Id("name"))),
+          },
+        ),
         list{},
       ),
     )
     expect.value(parseString(`{a: 1.5, b: "b", c: null, d}`)).toEqual(
       List(
-        Object({
-          loc: Loc(3),
-          hd: ("a", Number(Loc(7), 1.5)),
-          tl: list{
+        Object(
+          Loc(3),
+          list{
+            ("a", Number(Loc(7), 1.5)),
             ("b", String(Loc(15), "b")),
             ("c", Null(Loc(23))),
             ("d", Binding(Loc(29), Id("d"))),
           },
-        }),
+        ),
         list{},
       ),
     )
@@ -206,32 +195,30 @@ describe("Patterns", ({test, _}) => {
     )
     expect.value(result).toEqual(
       List(
-        Object({
-          loc: Loc(4),
-          hd: ("a", Binding(Loc(11), Id("bindingA"))),
-          tl: list{
+        Object(
+          Loc(4),
+          list{
+            ("a", Binding(Loc(11), Id("bindingA"))),
             ("b", Number(Loc(26), 1.5)),
             (
               "c",
               ArrayWithTailBinding({
                 loc: Loc(36),
-                hd: String(Loc(41), "item1"),
-                tl: list{Binding(Loc(54), Id("bindingC"))},
+                array: list{String(Loc(41), "item1"), Binding(Loc(54), Id("bindingC"))},
                 bindLoc: Loc(71),
                 binding: Id("rest"),
               }),
             ),
             (
               "d",
-              Object({
-                loc: Loc(86),
-                hd: ("<% illegal %>", Null(Loc(109))),
-                tl: list{("d", Binding(Loc(122), Id("bindingD")))},
-              }),
+              Object(
+                Loc(86),
+                list{("<% illegal %>", Null(Loc(109))), ("d", Binding(Loc(122), Id("bindingD")))},
+              ),
             ),
             ("e", Binding(Loc(141), Id("e"))),
           },
-        }),
+        ),
         list{},
       ),
     )

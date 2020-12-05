@@ -18,6 +18,10 @@
   },
   "license": "Apache-2.0",
   "author": "John Jackson",
+  "exports": {
+    "import": "./dist/acutis.mjs",
+    "require": "./dist/acutis.js"
+  },
   "main": "dist/acutis.js",
   "module": "dist/acutis.mjs",
   "types": "acutis.d.ts",
@@ -36,8 +40,9 @@
     "build": "bsb -make-world",
     "bundle": "rollup --config",
     "clean": "bsb -clean-world",
-    "prebundle": "bsb -make-world",
-    "prepublishOnly": "yarn bundle && jest",
+    "prebundle": "yarn build",
+    "prepublishOnly": "yarn bundle && yarn test",
+    "preversion": "yarn build && yarn test",
     "start": "bsb -w",
     "test": "jest",
     "test:watch": "jest --watchAll",
@@ -49,7 +54,7 @@
   "devDependencies": {
     "@babel/core": "^7.12.9",
     "@babel/plugin-transform-modules-commonjs": "^7.12.1",
-    "@rollup/plugin-node-resolve": "^10.0.0",
+    "@rollup/plugin-node-resolve": "^11.0.0",
     "bs-platform": "^8.3.3",
     "jest": "^26.6.3",
     "reason-test-framework": "^0.3.2",

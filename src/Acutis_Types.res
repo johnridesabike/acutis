@@ -28,8 +28,8 @@ type identifier = Id(string)
 
 module IdDict = {
   type t<'a> = Js.Dict.t<'a>
-  let get = (x, Id(y)) => Js.Dict.get(x, y)
-  let set = (x, Id(y), z) => Js.Dict.set(x, y, z)
+  let get = (x, ~key as Id(y)) => Js.Dict.get(x, y)
+  let set = (x, ~key as Id(y), ~data) => Js.Dict.set(x, y, data)
   @val @scope("Object")
   external merge: (@as(json`{}`) _, ~base: t<'a>, t<'a>) => t<'a> = "assign"
 }
@@ -85,7 +85,7 @@ module Tokens = {
 
   let toString = x =>
     switch x {
-    | String(_, x) => `%}${x}{%`
+    | String(_, x) => "%} " ++ x
     | JsonString(_, x) => `"${x}"`
     | Number(_, x) => Belt.Float.toString(x)
     | Identifier(_, Id(x)) => x
@@ -143,14 +143,12 @@ module Pattern_Ast = {
     | True(loc)
     | String(loc, string)
     | Number(loc, float)
-    | EmptyArray(loc)
-    | Array({loc: loc, hd: node, tl: list<node>})
-    | ArrayWithTailBinding({loc: loc, hd: node, tl: list<node>, bindLoc: loc, binding: identifier})
-    | EmptyObject(loc)
-    | Object({loc: loc, hd: (string, node), tl: list<(string, node)>})
+    | Array(loc, list<node>)
+    | ArrayWithTailBinding({loc: loc, array: list<node>, bindLoc: loc, binding: identifier})
+    | Object(loc, list<(string, node)>)
     | Binding(loc, identifier)
 
-  type sequence = NonEmpty.t<node>
+  type t = NonEmpty.t<node>
 
   let toString = x =>
     switch x {
@@ -158,8 +156,8 @@ module Pattern_Ast = {
     | Null(_) => "null"
     | String(_) => "string"
     | Number(_) => "number"
-    | EmptyArray(_) | Array(_) | ArrayWithTailBinding(_) => "array"
-    | EmptyObject(_) | Object(_) => "object"
+    | Array(_) | ArrayWithTailBinding(_) => "array"
+    | Object(_) => "object"
     | Binding(_, Id(x)) => `binding: \`${x}\``
     }
 
@@ -170,11 +168,9 @@ module Pattern_Ast = {
     | Null(x)
     | String(x, _)
     | Number(x, _)
-    | EmptyArray(x)
-    | Array({loc: x, _})
+    | Array(x, _)
     | ArrayWithTailBinding({loc: x, _})
-    | EmptyObject(x)
-    | Object({loc: x, _})
+    | Object(x, _)
     | Binding(x, _) => x
     }
 }
@@ -196,7 +192,7 @@ module Ast = {
         props: list<(identifier, Pattern_Ast.node)>,
         children: list<(identifier, childProp)>,
       })
-  and case = {patterns: NonEmpty.t<Pattern_Ast.sequence>, ast: ast}
+  and case = {patterns: NonEmpty.t<Pattern_Ast.t>, ast: ast}
   and ast = list<node>
   and childProp = ChildName(identifier) | ChildBlock(ast)
 

@@ -14,7 +14,7 @@
    limitations under the License.
 */
 
-module Q = Belt.MutableQueue
+module Queue = Belt.MutableQueue
 open Acutis_Types
 open Debug
 
@@ -84,7 +84,7 @@ let notWhiteSpace = (. c) =>
 
 open Tokens
 
-type t = {tokens: Q.t<Tokens.t>, name: option<identifier>}
+type t = {tokens: Queue.t<Tokens.t>, name: option<identifier>}
 
 let rec readStringAux = (source, position) => {
   switch peekCharAt(source, position) {
@@ -100,10 +100,8 @@ let rec readStringAux = (source, position) => {
 
 let readString = (source, tokens) => {
   let loc = loc(source)
-  switch readStringAux(source, 0) {
-  | "" => ()
-  | s => Q.add(tokens, String(loc, s))
-  }
+  let s = readStringAux(source, 0)
+  Queue.add(tokens, String(loc, s))
 }
 
 let readComment = (source, ~name) => {
@@ -176,49 +174,52 @@ let makeExpression = (source, tokens, ~name) => {
       }
     | " " | "\t" | "\n" | "\r" => skipChar(source)
     | "{" =>
-      Q.add(tokens, OpenBrace(loc))
+      Queue.add(tokens, OpenBrace(loc))
       skipChar(source)
     | "}" =>
-      Q.add(tokens, CloseBrace(loc))
+      Queue.add(tokens, CloseBrace(loc))
       skipChar(source)
     | "#" =>
-      Q.add(tokens, Block(loc))
+      Queue.add(tokens, Block(loc))
       skipChar(source)
     | "/" =>
-      Q.add(tokens, Slash(loc))
+      Queue.add(tokens, Slash(loc))
       skipChar(source)
     | ":" =>
-      Q.add(tokens, Colon(loc))
+      Queue.add(tokens, Colon(loc))
       skipChar(source)
     | "[" =>
-      Q.add(tokens, OpenBracket(loc))
+      Queue.add(tokens, OpenBracket(loc))
       skipChar(source)
     | "]" =>
-      Q.add(tokens, CloseBracket(loc))
+      Queue.add(tokens, CloseBracket(loc))
       skipChar(source)
     | "," =>
-      Q.add(tokens, Comma(loc))
+      Queue.add(tokens, Comma(loc))
       skipChar(source)
     | "." =>
       switch readSubstringBy(source, 3) {
-      | "..." => Q.add(tokens, Spread(loc))
+      | "..." => Queue.add(tokens, Spread(loc))
       | c => raise(UnexpectedCharacter({loc: loc, expected: ["..."], character: c, name: name}))
       }
     | "=" =>
-      Q.add(tokens, Equals(loc))
+      Queue.add(tokens, Equals(loc))
       skipChar(source)
     | "\"" =>
       skipChar(source)
-      Q.add(tokens, JsonString(loc, readJsonString(source, ~name)))
+      Queue.add(tokens, JsonString(loc, readJsonString(source, ~name)))
     | "-" | "0" | "1" | "2" | "3" | "4" | "5" | "6" | "7" | "8" | "9" =>
-      Q.add(tokens, Number(loc, readNumber(source, ~name)))
+      Queue.add(tokens, Number(loc, readNumber(source, ~name)))
     | "~" =>
       skipChar(source)
-      Q.add(tokens, Tilde(loc))
+      Queue.add(tokens, Tilde(loc))
     | c when RegEx.isValidIdentifierStart(c) =>
-      Q.add(tokens, Identifier(loc, Id(readSubstring(source, ~until=RegEx.isEndOfIdentifier))))
+      Queue.add(tokens, Identifier(loc, Id(readSubstring(source, ~until=RegEx.isEndOfIdentifier))))
     | c when RegEx.isValidComponentStart(c) =>
-      Q.add(tokens, ComponentName(loc, Id(readSubstring(source, ~until=RegEx.isEndOfIdentifier))))
+      Queue.add(
+        tokens,
+        ComponentName(loc, Id(readSubstring(source, ~until=RegEx.isEndOfIdentifier))),
+      )
     | c => raise(InvalidCharacter({loc: loc, character: c, name: name}))
     }
   }
@@ -226,7 +227,7 @@ let makeExpression = (source, tokens, ~name) => {
 
 let readTildeMaybe = (source, tokens) => {
   if peekChar(source) == "~" {
-    Q.add(tokens, Tilde(loc(source)))
+    Queue.add(tokens, Tilde(loc(source)))
     skipChar(source)
   }
 }
@@ -236,7 +237,7 @@ let make = (~name=?, str) => {
     str: str,
     position: 0,
   }
-  let tokens = Q.make()
+  let tokens = Queue.make()
   // All sources begin as strings
   readString(source, tokens)
   let char = ref(readChar(source))
@@ -249,7 +250,7 @@ let make = (~name=?, str) => {
         readString(source, tokens)
       | "*" =>
         let loc = loc(source)
-        Q.add(tokens, Comment(loc, readComment(source, ~name)))
+        Queue.add(tokens, Comment(loc, readComment(source, ~name)))
         readString(source, tokens)
       | "{" =>
         readTildeMaybe(source, tokens)
@@ -258,19 +259,19 @@ let make = (~name=?, str) => {
         | "\"" =>
           let loc = loc(source)
           skipChar(source)
-          Q.add(tokens, EchoString(loc, readJsonString(source, ~name)))
+          Queue.add(tokens, EchoString(loc, readJsonString(source, ~name)))
         | "-" | "0" | "1" | "2" | "3" | "4" | "5" | "6" | "7" | "8" | "9" =>
           let loc = loc(source)
-          Q.add(tokens, EchoNumber(loc, readNumber(source, ~name)))
+          Queue.add(tokens, EchoNumber(loc, readNumber(source, ~name)))
         | c when RegEx.isValidIdentifierStart(c) =>
           let loc = loc(source)
-          Q.add(
+          Queue.add(
             tokens,
             EchoIdentifier(loc, Id(readSubstring(source, ~until=RegEx.isEndOfIdentifier))),
           )
         | c when RegEx.isValidComponentStart(c) =>
           let loc = loc(source)
-          Q.add(
+          Queue.add(
             tokens,
             EchoChildComponent(loc, Id(readSubstring(source, ~until=RegEx.isEndOfIdentifier))),
           )
@@ -312,16 +313,16 @@ let make = (~name=?, str) => {
     }
     char := readChar(source)
   }
-  Q.add(tokens, EndOfFile(loc(source)))
+  Queue.add(tokens, EndOfFile(loc(source)))
   {tokens: tokens, name: name}
 }
 
-let peekExn = x => Q.peekExn(x.tokens)
+let peekExn = x => Queue.peekExn(x.tokens)
 
-let popExn = x => Q.popExn(x.tokens)
+let popExn = x => Queue.popExn(x.tokens)
 
-let skipExn = x => ignore(Q.popExn(x.tokens))
+let skipExn = x => ignore(Queue.popExn(x.tokens))
 
 let name = x => x.name
 
-let debugToArray = x => Q.toArray(x.tokens)
+let debugToArray = x => Queue.toArray(x.tokens)

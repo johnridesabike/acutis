@@ -265,32 +265,56 @@ Parse error at character 6.
 exports[`Parser Unexpected tokens 19`] = `
 "There's a problem with template [no name]
 
-Parse error at character 9.
-  Unexpected token: \\"[end of file]\\".
+Parse error at character 8.
+  Unexpected token: \\"#\\".
 "
 `;
 
 exports[`Parser Unexpected tokens 20`] = `
 "There's a problem with template [no name]
 
-Parse error at character 8.
-  Unexpected token: \\"#\\".
+Parse error at character 21.
+  Unexpected token: \\"%}  d\\".
 "
 `;
 
 exports[`Parser Unexpected tokens 21`] = `
 "There's a problem with template [no name]
 
-Parse error at character 22.
-  Unexpected token: \\"[end of file]\\".
+Parse error at character 8.
+  Unexpected token: \\"1\\".
 "
 `;
 
 exports[`Parser Unexpected tokens 22`] = `
 "There's a problem with template [no name]
 
+Parse error at character 4.
+  Unexpected token: \\"...\\".
+"
+`;
+
+exports[`Parser Unexpected tokens 23`] = `
+"There's a problem with template [no name]
+
+Parse error at character 4.
+  Unexpected token: \\"=\\".
+"
+`;
+
+exports[`Parser Unexpected tokens 24`] = `
+"There's a problem with template [no name]
+
+Parse error at character 10.
+  Unexpected token: \\"~\\".
+"
+`;
+
+exports[`Parser Unexpected tokens 25`] = `
+"There's a problem with template [no name]
+
 Parse error at character 8.
-  Unexpected token: \\"1\\".
+  Unexpected token: \\"match\\".
 "
 `;
 

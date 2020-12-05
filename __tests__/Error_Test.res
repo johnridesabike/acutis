@@ -85,10 +85,13 @@ describe("Parser", ({test, _}) => {
     expect.string(parse(`a {% match x with true %} b`)).toMatchSnapshot()
     expect.string(parse(`a {% map x with {y} %} {{ y }}`)).toMatchSnapshot()
     expect.string(parse(`a {% / %}`)).toMatchSnapshot()
-    expect.string(parse(`{% ~ %}`)).toMatchSnapshot()
     expect.string(parse(`{% A b=#%} c {%# / %}`)).toMatchSnapshot()
-    expect.string(parse(`{% A B=#%} c {% / %}`)).toMatchSnapshot()
+    expect.string(parse(`{% A B=#%} c {% / %} d`)).toMatchSnapshot()
     expect.string(parse("{% Z A=1 / %}")).toMatchSnapshot()
+    expect.string(parse("{% ... %}")).toMatchSnapshot()
+    expect.string(parse("{% = %}")).toMatchSnapshot()
+    expect.string(parse("{% match ~ %}")).toMatchSnapshot()
+    expect.string(parse("{% ~ ~ match %}")).toMatchSnapshot()
   })
 
   test("Invalid statements", ({expect, _}) => {

@@ -509,6 +509,11 @@ Array [
     "_1": "S",
   },
   Object {
+    "TAG": 0,
+    "_0": 392,
+    "_1": "",
+  },
+  Object {
     "TAG": 21,
     "_0": 393,
   },
@@ -548,40 +553,44 @@ Array [
                   "hd": Array [
                     "m",
                     Object {
-                      "TAG": 9,
-                      "hd": Array [
-                        "n",
-                        Object {
-                          "TAG": 10,
-                          "_0": 102,
-                          "_1": "o",
-                        },
-                      ],
-                      "loc": 98,
-                      "tl": Object {
+                      "TAG": 7,
+                      "_0": 98,
+                      "_1": Object {
                         "hd": Array [
-                          "p",
+                          "n",
                           Object {
-                            "TAG": 6,
-                            "hd": Object {
-                              "TAG": 10,
-                              "_0": 109,
-                              "_1": "q",
-                            },
-                            "loc": 108,
-                            "tl": 0,
+                            "TAG": 8,
+                            "_0": 102,
+                            "_1": "o",
                           },
                         ],
                         "tl": Object {
                           "hd": Array [
-                            "r",
+                            "p",
                             Object {
-                              "TAG": 10,
-                              "_0": 113,
-                              "_1": "r",
+                              "TAG": 5,
+                              "_0": 108,
+                              "_1": Object {
+                                "hd": Object {
+                                  "TAG": 8,
+                                  "_0": 109,
+                                  "_1": "q",
+                                },
+                                "tl": 0,
+                              },
                             },
                           ],
-                          "tl": 0,
+                          "tl": Object {
+                            "hd": Array [
+                              "r",
+                              Object {
+                                "TAG": 8,
+                                "_0": 113,
+                                "_1": "r",
+                              },
+                            ],
+                            "tl": 0,
+                          },
                         },
                       },
                     },
@@ -675,7 +684,7 @@ Array [
             "hd": Array [
               "b",
               Object {
-                "TAG": 10,
+                "TAG": 8,
                 "_0": 9,
                 "_1": "b",
               },
@@ -736,17 +745,19 @@ Array [
         "patterns": Object {
           "_0": Object {
             "_0": Object {
-              "TAG": 9,
-              "hd": Array [
-                "b",
-                Object {
-                  "TAG": 10,
-                  "_0": 16,
-                  "_1": "b",
-                },
-              ],
-              "loc": 15,
-              "tl": 0,
+              "TAG": 7,
+              "_0": 15,
+              "_1": Object {
+                "hd": Array [
+                  "b",
+                  Object {
+                    "TAG": 8,
+                    "_0": 16,
+                    "_1": "b",
+                  },
+                ],
+                "tl": 0,
+              },
             },
             "_1": 0,
           },
@@ -795,25 +806,27 @@ Array [
         "patterns": Object {
           "_0": Object {
             "_0": Object {
-              "TAG": 9,
-              "hd": Array [
-                "d",
-                Object {
-                  "TAG": 2,
-                  "_0": 64,
-                },
-              ],
-              "loc": 60,
-              "tl": Object {
+              "TAG": 7,
+              "_0": 60,
+              "_1": Object {
                 "hd": Array [
-                  "e",
+                  "d",
                   Object {
-                    "TAG": 10,
-                    "_0": 70,
-                    "_1": "e",
+                    "TAG": 2,
+                    "_0": 64,
                   },
                 ],
-                "tl": 0,
+                "tl": Object {
+                  "hd": Array [
+                    "e",
+                    Object {
+                      "TAG": 8,
+                      "_0": 70,
+                      "_1": "e",
+                    },
+                  ],
+                  "tl": 0,
+                },
               },
             },
             "_1": 0,
@@ -850,25 +863,27 @@ Array [
           "patterns": Object {
             "_0": Object {
               "_0": Object {
-                "TAG": 9,
-                "hd": Array [
-                  "d",
-                  Object {
-                    "TAG": 1,
-                    "_0": 98,
-                  },
-                ],
-                "loc": 94,
-                "tl": Object {
+                "TAG": 7,
+                "_0": 94,
+                "_1": Object {
                   "hd": Array [
-                    "f",
+                    "d",
                     Object {
-                      "TAG": 10,
-                      "_0": 105,
-                      "_1": "f",
+                      "TAG": 1,
+                      "_0": 98,
                     },
                   ],
-                  "tl": 0,
+                  "tl": Object {
+                    "hd": Array [
+                      "f",
+                      Object {
+                        "TAG": 8,
+                        "_0": 105,
+                        "_1": "f",
+                      },
+                    ],
+                    "tl": 0,
+                  },
                 },
               },
               "_1": 0,
@@ -933,21 +948,23 @@ Array [
         "patterns": Object {
           "_0": Object {
             "_0": Object {
-              "TAG": 9,
-              "hd": Array [
-                "h",
-                Object {
-                  "TAG": 10,
-                  "_0": 147,
-                  "_1": "h",
-                },
-              ],
-              "loc": 146,
-              "tl": 0,
+              "TAG": 7,
+              "_0": 146,
+              "_1": Object {
+                "hd": Array [
+                  "h",
+                  Object {
+                    "TAG": 8,
+                    "_0": 147,
+                    "_1": "h",
+                  },
+                ],
+                "tl": 0,
+              },
             },
             "_1": Object {
               "hd": Object {
-                "TAG": 10,
+                "TAG": 8,
                 "_0": 151,
                 "_1": "index",
               },
@@ -1130,17 +1147,19 @@ Array [
             },
             "_1": Object {
               "hd": Object {
-                "TAG": 9,
-                "hd": Array [
-                  "g",
-                  Object {
-                    "TAG": 10,
-                    "_0": 115,
-                    "_1": "g",
-                  },
-                ],
-                "loc": 114,
-                "tl": 0,
+                "TAG": 7,
+                "_0": 114,
+                "_1": Object {
+                  "hd": Array [
+                    "g",
+                    Object {
+                      "TAG": 8,
+                      "_0": 115,
+                      "_1": "g",
+                    },
+                  ],
+                  "tl": 0,
+                },
               },
               "tl": 0,
             },
@@ -1168,7 +1187,7 @@ Array [
               },
               "_1": Object {
                 "hd": Object {
-                  "TAG": 10,
+                  "TAG": 8,
                   "_0": 146,
                   "_1": "_",
                 },

@@ -1,12 +1,12 @@
 ## Acutis language
 
 Acutis is a template language for web pages and more. It features strong
-typing, pattern matching, template components, and asychronous templates. It
+typing, pattern matching, template components, and asynchronous templates. It
 can run in a browser or in Node.
 
 ⚠️ Acutis is young and not battle tested. ⚠️
 
-```html
+```jinja2
 <h1> Blog posts for {{ siteTitle }} </h1>
 {% map blogPosts with {image, title, date, excerpt, author: {name}} %}
   <article>
@@ -32,8 +32,7 @@ can run in a browser or in Node.
 
 ## Development
 
-[Clone the source here][2]. Acutis is built with [ReScript] and compiled to
-JavaScript.
+[Read the development docs][2].
 
 Compile the source in watch mode:
 
@@ -54,5 +53,4 @@ yarn bundle
 ```
 
 [1]: https://johnridesa.bike/acutis/
-[2]: https://github.com/johnridesabike/acutis/
-[ReScript]: https://rescript-lang.org/
+[2]: https://johnridesa.bike/acutis/development/

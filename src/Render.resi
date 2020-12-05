@@ -34,12 +34,12 @@ module Pattern: {
     | TooManyBindings({loc: Acutis_Types.loc, binding: Acutis_Types.identifier})
 
   let test: (
-    Acutis_Types.Pattern_Ast.sequence,
+    Acutis_Types.Pattern_Ast.t,
     Acutis_Types.NonEmpty.t<Js.Json.t>,
   ) => result<Js.Dict.t<Js.Json.t>, errors>
 
   type t<'a> = {
-    patterns: Acutis_Types.NonEmpty.t<Acutis_Types.Pattern_Ast.sequence>,
+    patterns: Acutis_Types.NonEmpty.t<Acutis_Types.Pattern_Ast.t>,
     f: (. Js.Dict.t<Js.Json.t>) => 'a,
   }
 

@@ -17,7 +17,7 @@
 module Pattern: {
   let parseNode: Lexer.t => Acutis_Types.Pattern_Ast.node
 
-  let make: Lexer.t => Acutis_Types.Pattern_Ast.sequence
+  let make: Lexer.t => Acutis_Types.Pattern_Ast.t
 }
 
 let makeAst: (~name: string=?, string) => Acutis_Types.Ast.t

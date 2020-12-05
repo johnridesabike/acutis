@@ -1,4 +1,4 @@
-/**
+const banner = `/**
  *    Copyright 2020 John Jackson
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
@@ -12,7 +12,7 @@
  *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  *   See the License for the specific language governing permissions and
  *   limitations under the License.
- */
+ */`;
 
 import resolve from "@rollup/plugin-node-resolve";
 import { terser } from "rollup-plugin-terser";
@@ -24,6 +24,7 @@ export default [
     output: {
       file: "./dist/acutis.js",
       format: "cjs",
+      banner,
     },
     plugins: [resolve()],
   },
@@ -33,6 +34,7 @@ export default [
     output: {
       file: "./dist/acutis.mjs",
       format: "esm",
+      banner,
     },
     plugins: [resolve()],
   },
@@ -52,6 +54,7 @@ export default [
       file: "./dist/acutis.iife.js",
       format: "iife",
       name: "Acutis",
+      banner,
     },
     plugins: [resolve()],
   },

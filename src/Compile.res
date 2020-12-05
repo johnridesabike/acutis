@@ -34,19 +34,19 @@ module Pattern = {
       switch Lexer.peekExn(tokens) {
       | CloseBracket(_) =>
         Lexer.skipExn(tokens)
-        EmptyArray(loc)
+        Array(loc, list{})
       | _ =>
         let firstItem = parseNode(tokens)
-        parseArray(loc, tokens, firstItem, list{})
+        parseArray(loc, tokens, list{firstItem})
       }
     | OpenBrace(loc) =>
       switch Lexer.peekExn(tokens) {
       | CloseBrace(_) =>
         Lexer.skipExn(tokens)
-        EmptyObject(loc)
+        Object(loc, list{})
       | _ =>
         let firstItem = parseObjectKeyValue(tokens)
-        parseObject(loc, tokens, firstItem, list{})
+        parseObject(loc, tokens, list{firstItem})
       }
     | x =>
       raise(
@@ -57,9 +57,9 @@ module Pattern = {
       )
     }
   }
-  and parseArray = (loc, tokens, firstItem, valueList) =>
+  and parseArray = (loc, tokens, valueList) =>
     switch Lexer.popExn(tokens) {
-    | CloseBracket(_) => Array({loc: loc, hd: firstItem, tl: List.reverse(valueList)})
+    | CloseBracket(_) => Array(loc, List.reverse(valueList))
     | Comma(_) =>
       switch Lexer.peekExn(tokens) {
       | Spread(_) =>
@@ -68,8 +68,7 @@ module Pattern = {
         | Identifier(bindingLoc, tailBinding) =>
           let result = ArrayWithTailBinding({
             loc: loc,
-            hd: firstItem,
-            tl: List.reverse(valueList),
+            array: List.reverse(valueList),
             bindLoc: bindingLoc,
             binding: tailBinding,
           })
@@ -93,7 +92,7 @@ module Pattern = {
         }
       | Identifier(_) | Number(_) | JsonString(_) | OpenBrace(_) | OpenBracket(_) =>
         let item = parseNode(tokens)
-        parseArray(loc, tokens, firstItem, list{item, ...valueList})
+        parseArray(loc, tokens, list{item, ...valueList})
       | x =>
         raise(
           UnexpectedToken({
@@ -110,12 +109,12 @@ module Pattern = {
         }),
       )
     }
-  and parseObject = (loc, tokens, firstItem, keyValueList) =>
+  and parseObject = (loc, tokens, keyValueList) =>
     switch Lexer.popExn(tokens) {
-    | CloseBrace(_) => Object({loc: loc, hd: firstItem, tl: List.reverse(keyValueList)})
+    | CloseBrace(_) => Object(loc, List.reverse(keyValueList))
     | Comma(_) =>
       let x = parseObjectKeyValue(tokens)
-      parseObject(loc, tokens, firstItem, list{x, ...keyValueList})
+      parseObject(loc, tokens, list{x, ...keyValueList})
     | x =>
       raise(
         UnexpectedToken({
