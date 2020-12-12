@@ -14,7 +14,6 @@
  *   limitations under the License.
  */
 
-const fastGlob = require("fast-glob");
 const syntaxHighlight = require("@11ty/eleventy-plugin-syntaxhighlight");
 const acutis = require("./eleventyAcutis");
 const MarkdownIt = require("markdown-it");

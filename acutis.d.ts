@@ -18,15 +18,34 @@ export type props = { [key: string]: any };
 
 export type ast = object;
 
+export type renderResult = object;
+
+export type error = {
+  message: string;
+  kind: "Type" | "Render" | "Compile" | "Pattern" | "Parse" | "Syntax";
+  location:
+    | undefined
+    | {
+        character: number;
+      };
+  template: undefined | string;
+  exn: any;
+};
+
+export type result = {
+  data: null | string;
+  errors: error[];
+};
+
 export type renderContext<T> = (
   ast: ast,
   props: props,
   children: { [key: string]: T }
 ) => T;
 
-export type renderContextSync = renderContext<string>;
+export type renderContextSync = renderContext<renderResult>;
 
-export type renderContextAsync = renderContext<Promise<string>>;
+export type renderContextAsync = renderContext<Promise<renderResult>>;
 
 export type templateFunction<T> = (
   renderContext: renderContext<T>,
@@ -34,9 +53,9 @@ export type templateFunction<T> = (
   children: { [key: string]: T }
 ) => T;
 
-export type templateFunctionSync = templateFunction<string>;
+export type templateFunctionSync = templateFunction<renderResult>;
 
-export type templateFunctionAsync = templateFunction<Promise<string>>;
+export type templateFunctionAsync = templateFunction<Promise<renderResult>>;
 
 export function makeAst(src: string, name?: string): ast;
 
@@ -50,4 +69,4 @@ export function renderContextAsync(components: {
   [key: string]: templateFunctionAsync;
 }): renderContextAsync;
 
-export function errorMessage(exn: object): string;
+export function result(renderResult: renderResult): result;

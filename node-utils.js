@@ -45,11 +45,7 @@ function loadTemplate(fileName) {
       return import(filePath).then((x) => functionOrThrow(x.default, filePath));
     default:
       return readFile(filePath, "utf8").then((contents) => {
-        try {
-          return acutis.compile(contents, fileName);
-        } catch (e) {
-          throw new Error(acutis.errorMessage(e));
-        }
+        return acutis.compile(contents, fileName);
       });
   }
 }

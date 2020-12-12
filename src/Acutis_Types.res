@@ -58,6 +58,22 @@ module RegEx = {
   let isLegalBinding = (Id(x)) => Js.Re.test_(bindingRegEx, x) && !isReservedKeyword(x)
 }
 
+module Errors = {
+  type kind = [#Type | #Render | #Compile | #Pattern | #Parse | #Syntax]
+
+  type location = {character: int}
+
+  let location = (Loc(x)) => Some({character: x + 1})
+
+  type t = {
+    message: string,
+    kind: kind,
+    location: option<location>,
+    template: option<identifier>,
+    exn: option<exn>,
+  }
+}
+
 module Tokens = {
   type t =
     | String(loc, string)
@@ -196,15 +212,18 @@ module Ast = {
   and ast = list<node>
   and childProp = ChildName(identifier) | ChildBlock(ast)
 
-  type t = {ast: ast, name: option<identifier>, isCompiledAst: [#VALID_AST]}
+  type t' = {ast: ast, name: option<identifier>}
+  type t = result<t', Errors.t>
 }
 
 type props = Js.Dict.t<Js.Json.t>
 
+type renderResult = result<string, array<Errors.t>>
+
 type renderContext<'a> = (. Ast.t, props, Js.Dict.t<'a>) => 'a
-type renderContextSync = renderContext<string>
-type renderContextAsync = renderContext<Js.Promise.t<string>>
+type renderContextSync = renderContext<renderResult>
+type renderContextAsync = renderContext<Js.Promise.t<renderResult>>
 
 type templateFunction<'a> = (. renderContext<'a>, props, Js.Dict.t<'a>) => 'a
-type templateFunctionSync = templateFunction<string>
-type templateFunctionAsync = templateFunction<Js.Promise.t<string>>
+type templateFunctionSync = templateFunction<renderResult>
+type templateFunctionAsync = templateFunction<Js.Promise.t<renderResult>>

@@ -22,13 +22,17 @@ with their props and a render context function, which produces the final output.
 ### JavaScript
 
 ```js
-const { compile, renderContext } = require("acutis-lang");
+const { compile, renderContext, result } = require("acutis-lang");
 const template = compile("Hello {{ name }}.", module.filename);
 const footer = compile("Copyright 2020.", "Footer")
 const render = renderContext({Footer: footer});
 const props = {name: "Carlo"}
-const result = template(render, props, {});
-console.log(result); // Logs: "Hello Carlo."
+const { data, errors } = result(template(render, props, {}));
+if (data) {
+  console.log(data); // Logs: "Hello Carlo."
+} else {
+  console.error(errors);
+}
 ```
 
 ### ReScript 
@@ -39,8 +43,10 @@ let template = Compile.make("Hello {{ name }}.", __FILE__)
 let footer = Compile.make("Copyright 2020.", "Footer")
 let render = Render.makeContext(Js.Dict.fromArray([("Footer", footer)]))
 let props = Js.Dict.fromArray([("name", "Carlo")])
-let result = mainTemplate(. render, props, Js.Dict.empty())
-Js.log(result) // Logs: "Hello Carlo."
+switch template(. render, props, Js.Dict.empty()) {
+| Ok(data) => Js.log(data) // Logs: "Hello Carlo."
+| Error(errors) => Js.Console.error(errors)
+}
 ```
 
 ## Function reference
@@ -101,36 +107,87 @@ works identically to `renderContext` except that it returns a [Promise] of
 the result. Use this if you have [template functions][1] that require
 asynchronous logic.
 
-### `errorMessage`
+## How to handle the output
 
-When Acutis encounters a problem, it will throw an error. These errors are
-[ReScript exception objects][2], and they aren't always friendly to JavaScript
-debugging tools. Acutis provides a helper function for debugging,
-`errorMessage`, which converts errors into human-readable messages.
-(`Debug.errorMessage` in ReScript.)
+The data returned by a template can either contain the rendered output or an
+array of error messages. How you use this data will be different depending on
+whether you're using JavaScript or ReScript.
 
-#### JavaScript example
+If you're using asynchronous templates, then the output will always be
+wrapped inside a resolved promise. Acutis makes sure that promises never
+reject since it captures any errors inside the output.
+
+### JavaScript: the `result` function
+
+Acutis provides a `result` function which converts its internal data
+structure into something nicer for JavaScript.
 
 ```js
-const { errorMessage } = require("acutis-lang");
-// Assume render and props are defined earlier.
-try {
-  const result = template(render, props, {});
-  console.log(result);
-} catch (e) {
-  console.error(errorMessage(e));
+const { result } = require("acutis-lang");
+// suppose template, render, and props are already defined.
+const x = result(template(render, props, {}));
+// or with an async renderer
+const xAsync = template(renderAsync, props, {}).then(result);
+```
+
+In this example, `x` becomes an object that looks like this:
+
+```json
+{
+  "data": "The content of your output.",
+  "errors": []
 }
 ```
 
-#### ReScript example
+If there are any errors present, then `data` will be `null`. 
+
+```js
+if (x.data !== null) {
+  console.log(x.data);
+} else {
+  console.error(x.errors);
+}
+```
+
+### ReScript: the result type
+
+In ReScript, the data uses the [result] data type which you can directly
+access. This is the actual type definition:
 
 ```reason
-// Assume render and props are defined earlier.
-switch template(. render, props, Js.Dict.empty()) {
-| result => Js.log(result)
-| exception e => Js.Console.error(Acutis.Debug.errorMessage(e))
+type renderResult = result<string, array<Errors.t>>
+```
+
+```reason
+switch x {
+| Ok(data) => Js.log(data)
+| Error(errors) => Js.Console.error(errors)
 }
 ```
+
+### Handling errors
+
+In either language, errors are represented the same. Here's an example error
+message:
+
+```json
+{
+  "kind": "Syntax",
+  "location": {
+    "character": 11,
+  },
+  "message": "Invalid character: \"*\".",
+  "template": "TemplateName"
+}
+```
+
+Any of these fields may not be present if there isn't any data for them. If
+an exception was thrown while rendering, then it will be caught and added to
+an `exn` field.
+
+When Acutis encounters an error, it will try to keep processing the template
+and report as many errors as it can find. But as long as there is at least
+one error, then it won't return any rendered data.
 
 ## Template functions overview
 
@@ -283,3 +340,4 @@ Examples:
 [4]: ../manual/#template-children-props
 [uncurried]: https://rescript-lang.org/docs/manual/latest/function#uncurried-function
 [Promise]: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise 
+[result]: https://rescript-lang.org/docs/manual/latest/api/belt/result

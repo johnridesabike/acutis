@@ -90,7 +90,7 @@ Examples:
     )
   )
     .then((files) => {
-      const data = (args.data ? readFile(args.data) : getStdin()).then(
+      const props = (args.data ? readFile(args.data) : getStdin()).then(
         (contents) => {
           if (contents === "") {
             return {};
@@ -110,13 +110,17 @@ Examples:
       const render = args.async
         ? acutis.renderContextAsync(templates)
         : acutis.renderContext(templates);
-      return data.then((data) => {
-        try {
-          return MainTemplate(render, data, {});
-        } catch (e) {
-          throw Error(acutis.errorMessage(e));
-        }
-      });
+      return props
+        .then((props) => MainTemplate(render, props, {}))
+        .then((x) => {
+          const { data, errors } = acutis.result(x);
+          if (data) {
+            return data;
+          } else {
+            console.error(errors);
+            throw new Error("I can't continue due to the previous errors.");
+          }
+        });
     })
     .then((result) => {
       if (args.output) {

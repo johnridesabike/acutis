@@ -122,7 +122,7 @@ let readComment = (source, ~name) => {
       | "}" => aux(~position=position + 2, ~nested=nested - 1)
       | _ => aux(~position=position + 2, ~nested)
       }
-    | "" => raise(UnterminatedComment({loc: loc, name: name}))
+    | "" => raise(CompileError(unterminatedComment(~loc, ~name)))
     | _ => aux(~position=position + 1, ~nested)
     }
   aux(~position=0, ~nested=0)
@@ -143,7 +143,7 @@ let readJsonString = (source, ~name) => {
       let result = source->readSubstringBy(position)->Js.String2.replaceByRe(unescapeQuotes, "\"")
       skipChar(source) // skip the "
       result
-    | "" => raise(UnterminatedString({loc: loc, name: name}))
+    | "" => raise(CompileError(unterminatedString(~loc, ~name)))
     | _ => aux(position + 1)
     }
   }
@@ -155,7 +155,7 @@ let readNumber = (source, ~name) => {
   let value = readSubstring(source, ~until=endOfNumber)
   switch Belt.Float.fromString(value) {
   | Some(num) => num
-  | None => raise(IllegalIdentifier({loc: loc, identifier: Id(value), name: name}))
+  | None => raise(CompileError(illegalIdentifier(~loc, ~identifier=Id(value), ~name)))
   }
 }
 
@@ -164,13 +164,13 @@ let makeExpression = (source, tokens, ~name) => {
   while expression.contents {
     let loc = loc(source)
     switch peekChar(source) {
-    | "" => raise(UnexpectedEoF({loc: loc, name: name}))
+    | "" => raise(CompileError(unexpectedEoF(~loc, ~name)))
     | "%" =>
       skipChar(source)
       let loc = Scanner.loc(source)
       switch readChar(source) {
       | "}" => expression := false
-      | c => raise(UnexpectedCharacter({loc: loc, expected: ["}"], character: c, name: name}))
+      | c => raise(CompileError(unexpectedCharacter(~loc, ~expected=["}"], ~character=c, ~name)))
       }
     | " " | "\t" | "\n" | "\r" => skipChar(source)
     | "{" =>
@@ -200,7 +200,7 @@ let makeExpression = (source, tokens, ~name) => {
     | "." =>
       switch readSubstringBy(source, 3) {
       | "..." => Queue.add(tokens, Spread(loc))
-      | c => raise(UnexpectedCharacter({loc: loc, expected: ["..."], character: c, name: name}))
+      | c => raise(CompileError(unexpectedCharacter(~loc, ~expected=["..."], ~character=c, ~name)))
       }
     | "=" =>
       Queue.add(tokens, Equals(loc))
@@ -220,7 +220,7 @@ let makeExpression = (source, tokens, ~name) => {
         tokens,
         ComponentName(loc, Id(readSubstring(source, ~until=RegEx.isEndOfIdentifier))),
       )
-    | c => raise(InvalidCharacter({loc: loc, character: c, name: name}))
+    | c => raise(CompileError(invalidCharacter(~loc, ~character=c, ~name)))
     }
   }
 }
@@ -275,7 +275,7 @@ let make = (~name=?, str) => {
             tokens,
             EchoChildComponent(loc, Id(readSubstring(source, ~until=RegEx.isEndOfIdentifier))),
           )
-        | c => raise(InvalidCharacter({loc: loc(source), character: c, name: name}))
+        | c => raise(CompileError(invalidCharacter(~loc=loc(source), ~character=c, ~name)))
         }
         skip(source, ~until=notWhiteSpace)
         readTildeMaybe(source, tokens)
@@ -283,32 +283,28 @@ let make = (~name=?, str) => {
         | "}}" => readString(source, tokens)
         | c =>
           raise(
-            UnexpectedCharacter({
-              loc: loc(source),
-              expected: ["}}"],
-              character: c,
-              name: name,
-            }),
+            CompileError(
+              unexpectedCharacter(~loc=loc(source), ~expected=["}}"], ~character=c, ~name),
+            ),
           )
         }
       | c =>
         raise(
-          UnexpectedCharacter({
-            loc: loc(source),
-            expected: ["{", "%", "*"],
-            character: c,
-            name: name,
-          }),
+          CompileError(
+            unexpectedCharacter(~loc=loc(source), ~expected=["{", "%", "*"], ~character=c, ~name),
+          ),
         )
       }
     | c =>
       raise(
-        UnexpectedCharacter({
-          loc: loc(source),
-          expected: ["{", "[end of file]"],
-          character: c,
-          name: name,
-        }),
+        CompileError(
+          unexpectedCharacter(
+            ~loc=loc(source),
+            ~expected=["{", "[end of file]"],
+            ~character=c,
+            ~name,
+          ),
+        ),
       )
     }
     char := readChar(source)

@@ -73,7 +73,7 @@ The AST is represented as an (immutable) [linked list][2] of nodes. Some
 nodes, such as `map` or `match` expressions, contain branching paths of the
 tree.
 
-[2]: https://rescript-lang.org/docs/manual/latest/array-and-list#list 
+[2]: https://rescript-lang.org/docs/manual/latest/array-and-list#list
 
 ### Rendering
 
@@ -117,10 +117,10 @@ contexts:
 
 1. `makeContext(components) →` \
    `render(ast, props, children) →` \
-   `string`
+   `result`
 2. `makeContextAsync(components) →` \
    `render(ast, props, children) →` \
-   `Promise<string>`
+   `promise<result>`
 
 In both versions, `components` is an object containing all of the template
 components.
@@ -129,7 +129,7 @@ Suppose you have a root template, `template`, which you render like this:
 `template(render, props, children)`. What happens is:
 
 1. The `template` function takes the `render` function and executes it with
-   `props`, `children`, and the AST (defined somewhere internally.)
+   `props`, `children`, and the AST.
 2. The `render` function recursively iterates through the AST and renders
    each node with the `props` and `children`. Each result is enqueued.
 3. If the `render` function encounters a template component, which is just
@@ -140,6 +140,23 @@ Suppose you have a root template, `template`, which you render like this:
    original queue.
 4. Steps 2 and 3 repeat until the renderer has traversed the entire AST.
 5. The queue of results is concatenated and returned as the final result.
+
+## Error handling
+
+Acutis shouldn't raise exceptions or reject promises. The AST and the
+rendered output is always returned inside of a ReScript [result] type. If
+there are any errors, then they're formatted according to the
+`Acuits_Types.Errors.t` type.
+
+[result]: https://rescript-lang.org/docs/manual/latest/api/belt/result
+
+The `Debug.res` file handles creating the specific messages.
+
+The lexer and compiler both stop as soon as they encounter an error. The
+renderer will always transverse as much of the AST as possible and report all
+of the errors it finds.
+
+Acutis will not return partially rendered content alongside errors.
 
 ## Building the source
 
@@ -220,9 +237,10 @@ template component's children. An API for safely mapping the children would
 be useful. (For example, a component which transforms its children using a
 Markdown renderer.)
 
-Error handling is another feature that is currently "good enough" for my
-needs, but the ceiling for improvement is high. This will certainly require
-some work if the language sees more use.
+For users working with the API in ReScript, type errors can be cryptic. This
+is a side effect of the fact that template component functions rely on
+several recursive function types. The compiler can't always infer a concrete
+type in time to provide a useful error.
 
 I have not done any performance measurements. In the "make it work, make it
 right, make it fast," order, performance comes last.

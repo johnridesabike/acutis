@@ -16,7 +16,7 @@
 
 open TestFramework
 
-let getAst = ({ast, _}: Acutis_Types.Ast.t) => ast
+let getAst = (x: Acutis_Types.Ast.t) => Belt.Result.getExn(x).ast
 
 describe("Lexer", ({test, _}) => {
   test("Tokens are generated correctly", ({expect, _}) => {

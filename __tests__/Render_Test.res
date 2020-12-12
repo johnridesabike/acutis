@@ -38,7 +38,7 @@ describe("All together", ({test, _}) => {
       emptyComponents,
     )
     expect.value(result).toEqual(
-      "Hello World! &amp;&quot;&apos;&gt;&lt;&#x2F;&#x60;&#x3D; &\"'></`= d 1.5 Z",
+      Ok("Hello World! &amp;&quot;&apos;&gt;&lt;&#x2F;&#x60;&#x3D; &\"'></`= d 1.5 Z"),
     )
   })
 
@@ -48,35 +48,35 @@ describe("All together", ({test, _}) => {
       Js.Dict.empty(),
       emptyComponents,
     )
-    expect.value(result).toEqual(" a doesn't exist. ")
+    expect.value(result).toEqual(Ok(" a doesn't exist. "))
   })
 
   test("Nested comments", ({expect, _}) => {
     let result = render("a {* b {* c *} d *} e", Js.Dict.empty(), emptyComponents)
-    expect.value(result).toEqual("a  e")
+    expect.value(result).toEqual(Ok("a  e"))
   })
 
   test("Match", ({expect, _}) => {
     let data = dict([("a", json(`{"a": "a"}`))])
     let result = render(`{% match a with {a} %} {{ a }} {% /match %}`, data, emptyComponents)
-    expect.value(result).toEqual(` a `)
+    expect.value(result).toEqual(Ok(` a `))
     let data = dict([("a", json(`{"a": "a", "b": true}`))])
     let result = render(
       `{% match a with {b: false, a} %} b is false. {{ a }} {% with {b: true, a} %} b is true. {{ a }} {% /match %}`,
       data,
       emptyComponents,
     )
-    expect.value(result).toEqual(` b is true. a `)
+    expect.value(result).toEqual(Ok(` b is true. a `))
     let data = dict([("a", json(`{"a": true, "b": {"c": "hi"}}`))])
     let result = render(
       `{% match a with {a: false} %} a is false. {% with {a: true, b} %} {% match b with {c} %} {{ c }} {% /match %} {% /match %}`,
       data,
       emptyComponents,
     )
-    expect.value(result).toEqual(`  hi  `)
+    expect.value(result).toEqual(Ok(`  hi  `))
     let data = dict([("a", json(`{"a": {"b": "hi"}}`))])
     let result = render(`{% match a with {a: {b}} %} {{ b }} {% /match %}`, data, emptyComponents)
-    expect.value(result).toEqual(` hi `)
+    expect.value(result).toEqual(Ok(` hi `))
   })
 
   test("Whitespace control", ({expect, _}) => {
@@ -88,14 +88,14 @@ describe("All together", ({test, _}) => {
       data,
       emptyComponents,
     )
-    expect.value(result).toEqual(`_ hi _`)
+    expect.value(result).toEqual(Ok(`_ hi _`))
     let data = dict([("a", json(`{"a": {"b": "hi"}}`))])
     let result = render(
       `{% match a with {a: {b}} %} _ {{~ b ~}} _ {% /match %}`,
       data,
       emptyComponents,
     )
-    expect.value(result).toEqual(` _hi_ `)
+    expect.value(result).toEqual(Ok(` _hi_ `))
     let ohHai = (. render, props, templates) =>
       render(. Compile.makeAst("{{ Children }} Oh hai {{ name }}."), props, templates)
     let components = dict([("OhHai", ohHai)])
@@ -104,32 +104,32 @@ describe("All together", ({test, _}) => {
       Js.Dict.empty(),
       components,
     )
-    expect.value(result).toEqual(`I did not. Oh hai Mark.`)
+    expect.value(result).toEqual(Ok(`I did not. Oh hai Mark.`))
     let result = render(
       `{% OhHai name="Mark" Children=#~%} I did not. {%~/# /%}`,
       Js.Dict.empty(),
       components,
     )
-    expect.value(result).toEqual(`I did not. Oh hai Mark.`)
+    expect.value(result).toEqual(Ok(`I did not. Oh hai Mark.`))
   })
 
   test("Map", ({expect, _}) => {
     let data = dict([("a", json(`[{"name": "John"}, {"name": "Megan"}]`))])
     let result = render(`{% map a with {name} %} {{ name }} {% /map %}`, data, emptyComponents)
-    expect.value(result).toEqual(` John  Megan `)
+    expect.value(result).toEqual(Ok(` John  Megan `))
     let data = dict([("a", json(`[{"name": "John"}, {"name": "Megan"}]`)), ("b", json(`"hi"`))])
     let result = render(
       `{% map a with {name} %} {{ b }} {{ name }}. {% /map %}`,
       data,
       emptyComponents,
     )
-    expect.value(result).toEqual(` hi John.  hi Megan. `)
+    expect.value(result).toEqual(Ok(` hi John.  hi Megan. `))
     let result = render(
       `{% map a with {name}, index %} {{ index }} {{ name }}. {% /map %}`,
       data,
       emptyComponents,
     )
-    expect.value(result).toEqual(` 0 John.  1 Megan. `)
+    expect.value(result).toEqual(Ok(` 0 John.  1 Megan. `))
   })
   test("Component", ({expect, _}) => {
     let ohHai = (. render, props, templates) =>
@@ -140,7 +140,7 @@ describe("All together", ({test, _}) => {
       Js.Dict.empty(),
       components,
     )
-    expect.value(result).toEqual(` I did not.  Oh hai Mark.`)
+    expect.value(result).toEqual(Ok(` I did not.  Oh hai Mark.`))
     let addOne = (. render, props, children) => {
       let index =
         props->Js.Dict.get("index")->Belt.Option.flatMap(Js.Json.decodeNumber)->Belt.Option.getExn
@@ -153,13 +153,13 @@ describe("All together", ({test, _}) => {
       data,
       components,
     )
-    expect.value(result).toEqual(` 1 John.  2 Megan. `)
+    expect.value(result).toEqual(Ok(` 1 John.  2 Megan. `))
     let result = render(
       `{% map a with {name}, i %} {% AddOne index=i / %} {{ name }}. {% /map %}`,
       data,
       components,
     )
-    expect.value(result).toEqual(` 1 John.  2 Megan. `)
+    expect.value(result).toEqual(Ok(` 1 John.  2 Megan. `))
   })
 })
 
@@ -170,9 +170,9 @@ describe("Template sections", ({test, _}) => {
     }
     let components = dict([("A", a)])
     let result = render(`{% A %} b {%/ A %}`, Js.Dict.empty(), components)
-    expect.value(result).toEqual(" b ")
+    expect.value(result).toEqual(Ok(" b "))
     let result = render(`{% A Children=#%} b {%/# / %}`, Js.Dict.empty(), components)
-    expect.value(result).toEqual(" b ")
+    expect.value(result).toEqual(Ok(" b "))
   })
 
   test("Child props are passed correctly", ({expect, _}) => {
@@ -184,7 +184,7 @@ describe("Template sections", ({test, _}) => {
     }
     let components = dict([("X", x), ("Y", y)])
     let result = render(`{% Y A=#%} a {%/# / %}`, Js.Dict.empty(), components)
-    expect.value(result).toEqual(" a ")
+    expect.value(result).toEqual(Ok(" a "))
   })
 
   test("Child props are passed correctly with punning", ({expect, _}) => {
@@ -196,6 +196,6 @@ describe("Template sections", ({test, _}) => {
     }
     let components = dict([("X", x), ("Y", y)])
     let result = render(`{% Y PassthroughChild=#%} a {%/# / %}`, Js.Dict.empty(), components)
-    expect.value(result).toEqual(" a ")
+    expect.value(result).toEqual(Ok(" a "))
   })
 })

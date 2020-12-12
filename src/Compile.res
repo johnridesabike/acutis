@@ -48,13 +48,7 @@ module Pattern = {
         let firstItem = parseObjectKeyValue(tokens)
         parseObject(loc, tokens, list{firstItem})
       }
-    | x =>
-      raise(
-        UnexpectedToken({
-          token: x,
-          name: Lexer.name(tokens),
-        }),
-      )
+    | x => raise(CompileError(unexpectedToken(~token=x, ~name=Lexer.name(tokens))))
     }
   }
   and parseArray = (loc, tokens, valueList) =>
@@ -74,40 +68,16 @@ module Pattern = {
           })
           switch Lexer.popExn(tokens) {
           | CloseBracket(_) => result
-          | x =>
-            raise(
-              UnexpectedToken({
-                token: x,
-                name: Lexer.name(tokens),
-              }),
-            )
+          | x => raise(CompileError(unexpectedToken(~token=x, ~name=Lexer.name(tokens))))
           }
-        | x =>
-          raise(
-            UnexpectedToken({
-              token: x,
-              name: Lexer.name(tokens),
-            }),
-          )
+        | x => raise(CompileError(unexpectedToken(~token=x, ~name=Lexer.name(tokens))))
         }
       | Identifier(_) | Number(_) | JsonString(_) | OpenBrace(_) | OpenBracket(_) =>
         let item = parseNode(tokens)
         parseArray(loc, tokens, list{item, ...valueList})
-      | x =>
-        raise(
-          UnexpectedToken({
-            token: x,
-            name: Lexer.name(tokens),
-          }),
-        )
+      | x => raise(CompileError(unexpectedToken(~token=x, ~name=Lexer.name(tokens))))
       }
-    | x =>
-      raise(
-        UnexpectedToken({
-          token: x,
-          name: Lexer.name(tokens),
-        }),
-      )
+    | x => raise(CompileError(unexpectedToken(~token=x, ~name=Lexer.name(tokens))))
     }
   and parseObject = (loc, tokens, keyValueList) =>
     switch Lexer.popExn(tokens) {
@@ -115,13 +85,7 @@ module Pattern = {
     | Comma(_) =>
       let x = parseObjectKeyValue(tokens)
       parseObject(loc, tokens, list{x, ...keyValueList})
-    | x =>
-      raise(
-        UnexpectedToken({
-          token: x,
-          name: Lexer.name(tokens),
-        }),
-      )
+    | x => raise(CompileError(unexpectedToken(~token=x, ~name=Lexer.name(tokens))))
     }
   and parseObjectKeyValue = tokens => {
     switch Lexer.popExn(tokens) {
@@ -136,22 +100,10 @@ module Pattern = {
         if RegEx.isLegalBinding(value) {
           (key, Binding(loc, value))
         } else {
-          raise(
-            IllegalIdentifier({
-              loc: loc,
-              identifier: value,
-              name: Lexer.name(tokens),
-            }),
-          )
+          raise(CompileError(illegalIdentifier(~loc, ~identifier=value, ~name=Lexer.name(tokens))))
         }
       }
-    | x =>
-      raise(
-        UnexpectedToken({
-          token: x,
-          name: Lexer.name(tokens),
-        }),
-      )
+    | x => raise(CompileError(unexpectedToken(~token=x, ~name=Lexer.name(tokens))))
     }
   }
 
@@ -180,39 +132,21 @@ let parseCommaSequence = tokens =>
         switch Lexer.popExn(tokens) {
         | Identifier(loc, x) when RegEx.isLegalBinding(x) => aux(list{(loc, x), ...l})
         | Identifier(loc, x) =>
-          raise(IllegalBindingName({loc: loc, binding: x, name: Lexer.name(tokens)}))
-        | x =>
-          raise(
-            UnexpectedToken({
-              token: x,
-              name: Lexer.name(tokens),
-            }),
-          )
+          raise(CompileError(illegalBindingName(~loc, ~binding=x, ~name=Lexer.name(tokens))))
+        | x => raise(CompileError(unexpectedToken(~token=x, ~name=Lexer.name(tokens))))
         }
       | _ => NonEmpty.List((loc, head), List.reverse(l))
       }
     aux(list{})
   | Identifier(loc, x) =>
-    raise(IllegalBindingName({loc: loc, binding: x, name: Lexer.name(tokens)}))
-  | x =>
-    raise(
-      UnexpectedToken({
-        token: x,
-        name: Lexer.name(tokens),
-      }),
-    )
+    raise(CompileError(illegalBindingName(~loc, ~binding=x, ~name=Lexer.name(tokens))))
+  | x => raise(CompileError(unexpectedToken(~token=x, ~name=Lexer.name(tokens))))
   }
 
 let parseMatchCasePatterns = tokens => {
   switch Lexer.popExn(tokens) {
   | Identifier(_, Id("with")) => ()
-  | x =>
-    raise(
-      UnexpectedToken({
-        token: x,
-        name: Lexer.name(tokens),
-      }),
-    )
+  | x => raise(CompileError(unexpectedToken(~token=x, ~name=Lexer.name(tokens))))
   }
   let firstPattern = Pattern.make(tokens)
   let rec aux = l =>
@@ -266,7 +200,7 @@ let rec parse = (tokens, ~until) => {
             aux(list{Text(x, TrimBoth), ...l})
           | _ => aux(list{Text(x, TrimStart), ...l})
           }
-        | x => raise(UnexpectedToken({token: x, name: Lexer.name(tokens)}))
+        | x => raise(CompileError(unexpectedToken(~token=x, ~name=Lexer.name(tokens))))
         }
       | Comment(_) => aux(l)
       | Identifier(loc, Id("match")) =>
@@ -278,14 +212,8 @@ let rec parse = (tokens, ~until) => {
         let (loc, identifier) = switch Lexer.popExn(tokens) {
         | Identifier(loc, x) when RegEx.isLegalBinding(x) => (loc, x)
         | Identifier(loc, x) =>
-          raise(IllegalBindingName({loc: loc, binding: x, name: Lexer.name(tokens)}))
-        | x =>
-          raise(
-            UnexpectedToken({
-              token: x,
-              name: Lexer.name(tokens),
-            }),
-          )
+          raise(CompileError(illegalBindingName(~loc, ~binding=x, ~name=Lexer.name(tokens))))
+        | x => raise(CompileError(unexpectedToken(~token=x, ~name=Lexer.name(tokens))))
         }
         let firstCase = parseCaseBlock(tokens)
         let cases = parseCaseBlocks(tokens, ~block="map")
@@ -294,20 +222,8 @@ let rec parse = (tokens, ~until) => {
         switch Lexer.popExn(tokens) {
         | Identifier(loc, x) when RegEx.isLegalBinding(x) => aux(list{Unescaped(loc, x), ...l})
         | Identifier(loc, x) =>
-          raise(
-            IllegalBindingName({
-              loc: loc,
-              binding: x,
-              name: Lexer.name(tokens),
-            }),
-          )
-        | x =>
-          raise(
-            UnexpectedToken({
-              token: x,
-              name: Lexer.name(tokens),
-            }),
-          )
+          raise(CompileError(illegalBindingName(~loc, ~binding=x, ~name=Lexer.name(tokens))))
+        | x => raise(CompileError(unexpectedToken(~token=x, ~name=Lexer.name(tokens))))
         }
       | ComponentName(loc, name) =>
         let x = parseComponent(loc, name, tokens)
@@ -317,16 +233,10 @@ let rec parse = (tokens, ~until) => {
       | EchoString(_, x) => aux(list{EchoString(x), ...l})
       | EchoNumber(_, x) => aux(list{EchoNumber(x), ...l})
       | EchoIdentifier(loc, x) =>
-        raise(IllegalBindingName({loc: loc, binding: x, name: Lexer.name(tokens)}))
+        raise(CompileError(illegalBindingName(~loc, ~binding=x, ~name=Lexer.name(tokens))))
       | Identifier(loc, x) =>
-        raise(InvalidStatement({statement: x, loc: loc, name: Lexer.name(tokens)}))
-      | x =>
-        raise(
-          UnexpectedToken({
-            token: x,
-            name: Lexer.name(tokens),
-          }),
-        )
+        raise(CompileError(invalidStatement(~statement=x, ~loc, ~name=Lexer.name(tokens))))
+      | x => raise(CompileError(unexpectedToken(~token=x, ~name=Lexer.name(tokens))))
       }
     }
   aux(list{})
@@ -343,13 +253,7 @@ and parseCaseBlocks = (tokens, ~block) => {
       Lexer.skipExn(tokens)
       switch Lexer.popExn(tokens) {
       | Identifier(_, Id(x)) when x == block => List.reverse(l)
-      | x =>
-        raise(
-          UnexpectedToken({
-            token: x,
-            name: Lexer.name(tokens),
-          }),
-        )
+      | x => raise(CompileError(unexpectedToken(~token=x, ~name=Lexer.name(tokens))))
       }
     | _ =>
       let x = parseCaseBlock(tokens)
@@ -370,13 +274,7 @@ and parseComponent = (loc, name, tokens) => {
     switch Lexer.popExn(tokens) {
     | ComponentName(_, name') when name == name' =>
       Component({loc: loc, name: name, props: props, children: children})
-    | x =>
-      raise(
-        UnexpectedToken({
-          token: x,
-          name: Lexer.name(tokens),
-        }),
-      )
+    | x => raise(CompileError(unexpectedToken(~token=x, ~name=Lexer.name(tokens))))
     }
   }
 }
@@ -402,13 +300,7 @@ and parseProps = (tokens, ~props, ~children) => {
         parseProps(tokens, ~props, ~children=list{(name, ChildBlock(child)), ...children})
       | ComponentName(_, name') =>
         parseProps(tokens, ~props, ~children=list{(name, ChildName(name')), ...children})
-      | x =>
-        raise(
-          UnexpectedToken({
-            token: x,
-            name: Lexer.name(tokens),
-          }),
-        )
+      | x => raise(CompileError(unexpectedToken(~token=x, ~name=Lexer.name(tokens))))
       }
     | _ => parseProps(tokens, ~props, ~children=list{(name, ChildName(name)), ...children})
     }
@@ -420,13 +312,7 @@ and parseBlock = tokens => {
   Lexer.skipExn(tokens)
   switch Lexer.popExn(tokens) {
   | Block(_) => result
-  | x =>
-    raise(
-      UnexpectedToken({
-        token: x,
-        name: Lexer.name(tokens),
-      }),
-    )
+  | x => raise(CompileError(unexpectedToken(~token=x, ~name=Lexer.name(tokens))))
   }
 }
 
@@ -435,26 +321,22 @@ let makeAst = (~name=?, source) => {
   | Some(name) => Some(Id(name))
   | None => None
   }
-  {
-    ast: parse(Lexer.make(source, ~name?), ~until=endOfFile),
-    name: name,
-    isCompiledAst: #VALID_AST,
+  try {
+    Ok({
+      ast: parse(Lexer.make(source, ~name?), ~until=endOfFile),
+      name: name,
+    })
+  } catch {
+  | CompileError(e) => Error(e)
+  | e => Error(exn(e, ~name, ~kind=#Compile))
   }
 }
 
-let makeAstJs = (. source, name) =>
-  switch Js.typeof(source) {
-  | "string" => makeAst(source, ~name?)
-  | x => raise(BadInputTemplate(x))
-  }
+let makeAstJs = (. source, name) => makeAst(source, ~name?)
 
 let make = (~name=?, source) => {
   let ast = makeAst(source, ~name?)
   (. render, props, templates) => render(. ast, props, templates)
 }
 
-let makeJs = (. source, name) =>
-  switch Js.typeof(source) {
-  | "string" => make(source, ~name?)
-  | x => raise(BadInputTemplate(x))
-  }
+let makeJs = (. source, name) => make(source, ~name?)
