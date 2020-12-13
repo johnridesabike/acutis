@@ -16,12 +16,13 @@
 
 module Pattern: {
   type toJsonErrors =
-    | BindingTypeMismatchErr({
+    | BindingTypeMismatch({
         data: Js.Json.tagged_t,
         pattern: Acutis_Types.Pattern_Ast.node,
-        binding: Acutis_Types.identifier,
+        binding: string,
       })
-    | BindingDoesNotExistErr({loc: Acutis_Types.loc, binding: Acutis_Types.identifier})
+    | BindingDoesNotExist({loc: Acutis_Types.loc, binding: string})
+
   let toJson: (
     Acutis_Types.Pattern_Ast.node,
     ~props: Js.Dict.t<Js.Json.t>,
@@ -31,7 +32,7 @@ module Pattern: {
     | NoMatch
     | PatternNumberMismatch
     | PatternTypeMismatch({data: Js.Json.tagged_t, pattern: Acutis_Types.Pattern_Ast.node})
-    | TooManyBindings({loc: Acutis_Types.loc, binding: Acutis_Types.identifier})
+    | TooManyBindings({loc: Acutis_Types.loc, binding: string})
 
   let test: (
     Acutis_Types.Pattern_Ast.t,

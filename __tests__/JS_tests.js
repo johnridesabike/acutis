@@ -48,12 +48,8 @@ describe("The JS interface works as expected", () => {
       data: null,
       errors: [
         {
-          message: `An exception was thrown while rendering this template. This is probably due to malformed input.`,
           kind: "Render",
-          exn: {
-            RE_EXN_ID: "Caml_js_exceptions.Error/2",
-            _1: new TypeError("Cannot read property 'ast' of undefined"),
-          },
+          message: "An AST was not valid. Did you forget to compile it?",
         },
       ],
     });
@@ -89,12 +85,8 @@ describe("Async templates", () => {
       data: null,
       errors: [
         {
-          message: `An exception was thrown while rendering this template. This is probably due to malformed input.`,
           kind: "Render",
-          exn: {
-            RE_EXN_ID: "Caml_js_exceptions.Error/2",
-            _1: new TypeError("Cannot read property 'ast' of undefined"),
-          },
+          message: "An AST was not valid. Did you forget to compile it?",
         },
       ],
     });

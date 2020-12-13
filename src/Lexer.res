@@ -84,7 +84,7 @@ let notWhiteSpace = (. c) =>
 
 open Tokens
 
-type t = {tokens: Queue.t<Tokens.t>, name: option<identifier>}
+type t = {tokens: Queue.t<Tokens.t>, name: option<string>}
 
 let rec readStringAux = (source, position) => {
   switch peekCharAt(source, position) {
@@ -152,10 +152,10 @@ let readJsonString = (source, ~name) => {
 
 let readNumber = (source, ~name) => {
   let loc = loc(source)
-  let value = readSubstring(source, ~until=endOfNumber)
-  switch Belt.Float.fromString(value) {
+  let num = readSubstring(source, ~until=endOfNumber)
+  switch Belt.Float.fromString(num) {
   | Some(num) => num
-  | None => raise(CompileError(illegalIdentifier(~loc, ~identifier=Id(value), ~name)))
+  | None => raise(CompileError(illegalIdentifier(~loc, ~identifier=num, ~name)))
   }
 }
 
@@ -214,12 +214,9 @@ let makeExpression = (source, tokens, ~name) => {
       skipChar(source)
       Queue.add(tokens, Tilde(loc))
     | c when RegEx.isValidIdentifierStart(c) =>
-      Queue.add(tokens, Identifier(loc, Id(readSubstring(source, ~until=RegEx.isEndOfIdentifier))))
+      Queue.add(tokens, Identifier(loc, readSubstring(source, ~until=RegEx.isEndOfIdentifier)))
     | c when RegEx.isValidComponentStart(c) =>
-      Queue.add(
-        tokens,
-        ComponentName(loc, Id(readSubstring(source, ~until=RegEx.isEndOfIdentifier))),
-      )
+      Queue.add(tokens, ComponentName(loc, readSubstring(source, ~until=RegEx.isEndOfIdentifier)))
     | c => raise(CompileError(invalidCharacter(~loc, ~character=c, ~name)))
     }
   }
@@ -267,13 +264,13 @@ let make = (~name=?, str) => {
           let loc = loc(source)
           Queue.add(
             tokens,
-            EchoIdentifier(loc, Id(readSubstring(source, ~until=RegEx.isEndOfIdentifier))),
+            EchoIdentifier(loc, readSubstring(source, ~until=RegEx.isEndOfIdentifier)),
           )
         | c when RegEx.isValidComponentStart(c) =>
           let loc = loc(source)
           Queue.add(
             tokens,
-            EchoChildComponent(loc, Id(readSubstring(source, ~until=RegEx.isEndOfIdentifier))),
+            EchoChildComponent(loc, readSubstring(source, ~until=RegEx.isEndOfIdentifier)),
           )
         | c => raise(CompileError(invalidCharacter(~loc=loc(source), ~character=c, ~name)))
         }

@@ -26,7 +26,9 @@ function functionOrThrow(x, filePath) {
   if (xType === "function") {
     return x;
   } else {
-    throw new Error(`${filePath} exported a ${xType} instead of a function.`);
+    throw new Error(
+      `${filePath} exported type ${xType} instead of a function.`
+    );
   }
 }
 
@@ -44,9 +46,9 @@ function loadTemplate(fileName) {
     case ".mjs":
       return import(filePath).then((x) => functionOrThrow(x.default, filePath));
     default:
-      return readFile(filePath, "utf8").then((contents) => {
-        return acutis.compile(contents, fileName);
-      });
+      return readFile(filePath, "utf8").then((contents) =>
+        acutis.compile(contents, fileName)
+      );
   }
 }
 

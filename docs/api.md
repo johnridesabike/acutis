@@ -320,6 +320,7 @@ Options:
   -a, --async                   Enable asynchronous templates. Default: false.
   -d, --data                    The path to the JSON data file. Default: stdin.
   -o, --output                  The path to write the output. Default: stdout.
+  -t, --table                   Print errors in a table. Default: false.
   -h, --help                    Show this message and exit.
   -v, --version                 Show the version and exit.
 

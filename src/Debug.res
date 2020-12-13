@@ -45,7 +45,7 @@ let unterminatedString = (~loc, ~name) => {
   exn: None,
 }
 
-let illegalIdentifier = (~loc, ~name, ~identifier as Id(identifier)) => {
+let illegalIdentifier = (~loc, ~name, ~identifier) => {
   kind: #Parse,
   message: `"${identifier}" is an illegal identifier name.`,
   location: location(loc),
@@ -87,7 +87,7 @@ let unexpectedToken = (~token, ~name) => {
   }
 }
 
-let illegalBindingName = (~loc, ~name, ~binding as Id(binding)) => {
+let illegalBindingName = (~loc, ~name, ~binding) => {
   kind: #Parse,
   message: `"${binding}" is a reserved name`,
   template: name,
@@ -95,7 +95,7 @@ let illegalBindingName = (~loc, ~name, ~binding as Id(binding)) => {
   exn: None,
 }
 
-let invalidStatement = (~loc, ~name, ~statement as Id(statement)) => {
+let invalidStatement = (~loc, ~name, ~statement) => {
   kind: #Parse,
   message: `Invalid statement: "${statement}".`,
   template: name,
@@ -115,7 +115,7 @@ let jsonTaggedTToString = (x: Js.Json.tagged_t) =>
   | JSONObject(_) => "object"
   }
 
-let componentDoesNotExist = (~loc, ~component as Id(component), ~name) => {
+let componentDoesNotExist = (~loc, ~component, ~name) => {
   message: `Component "${component}" does not exist.`,
   kind: #Render,
   location: location(loc),
@@ -135,7 +135,7 @@ let patternTypeMismatch = (~data, ~pattern, ~name) => {
   }
 }
 
-let bindingTypeMismatch = (~data, ~pattern, ~binding as Id(binding), ~name) => {
+let bindingTypeMismatch = (~data, ~pattern, ~binding, ~name) => {
   let data = jsonTaggedTToString(data)
   let loc = Pattern_Ast.toLocation(pattern)
   let pattern = Pattern_Ast.toString(pattern)
@@ -148,7 +148,7 @@ let bindingTypeMismatch = (~data, ~pattern, ~binding as Id(binding), ~name) => {
   }
 }
 
-let nameBoundMultipleTimes = (~loc, ~binding as Id(binding), ~name) => {
+let nameBoundMultipleTimes = (~loc, ~binding, ~name) => {
   message: `"${binding}" is bound multiple times in this pattern.`,
   kind: #Pattern,
   location: location(loc),
@@ -172,7 +172,7 @@ let patternNumberMismatch = (~loc, ~name) => {
   exn: None,
 }
 
-let badEchoType = (~loc, ~binding as Id(binding), ~type_, ~name) => {
+let badEchoType = (~loc, ~binding, ~type_, ~name) => {
   let type_ = jsonTaggedTToString(type_)
   {
     location: location(loc),
@@ -183,7 +183,7 @@ let badEchoType = (~loc, ~binding as Id(binding), ~type_, ~name) => {
   }
 }
 
-let bindingDoesNotExist = (~loc, ~binding as Id(binding), ~name) => {
+let bindingDoesNotExist = (~loc, ~binding, ~name) => {
   location: location(loc),
   template: name,
   kind: #Render,
@@ -191,7 +191,7 @@ let bindingDoesNotExist = (~loc, ~binding as Id(binding), ~name) => {
   exn: None,
 }
 
-let childDoesNotExist = (~loc, ~child as Id(child), ~name) => {
+let childDoesNotExist = (~loc, ~child, ~name) => {
   location: location(loc),
   template: name,
   kind: #Render,
@@ -199,7 +199,7 @@ let childDoesNotExist = (~loc, ~child as Id(child), ~name) => {
   exn: None,
 }
 
-let badMapType = (~loc, ~binding as Id(binding), ~type_, ~name) => {
+let badMapType = (~loc, ~binding, ~type_, ~name) => {
   let type_ = jsonTaggedTToString(type_)
   {
     location: location(loc),
@@ -208,6 +208,14 @@ let badMapType = (~loc, ~binding as Id(binding), ~type_, ~name) => {
     message: `"${binding}" is a ${type_}. I can only map arrays.`,
     exn: None,
   }
+}
+
+let invalidInput = () => {
+  message: "An AST was not valid. Did you forget to compile it?",
+  location: None,
+  template: None,
+  kind: #Render,
+  exn: None,
 }
 
 let exn = (e, ~name, ~kind) => {

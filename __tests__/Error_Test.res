@@ -24,7 +24,7 @@ let getError = x =>
 let render = (src, json, components) =>
   getError(Compile.make(src)(. Render.makeContext(components), json, Js.Dict.empty()))
 
-let compile = x => getError(Compile.makeAst(x))
+let compile = x => x->Compile.makeAst->Acutis_Types.Valid.validate->Belt.Option.getExn->getError
 
 let components = Js.Dict.empty()
 let dict = Js.Dict.fromArray

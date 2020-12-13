@@ -56,8 +56,7 @@ describe("Equality", ({test, _}) => {
     ).toEqual(Ok(emptyBindings))
     expect.value(
       Pattern.test(
-        parseString(
-          `
+        parseString(`
           {
             a: true,
             b: false,
@@ -74,10 +73,8 @@ describe("Equality", ({test, _}) => {
             },
             "A complex string!": true
           } 
-         `,
-        ),
-        jsonList(
-          `
+         `),
+        jsonList(`
            {
              "a": true,
              "b": false,
@@ -94,8 +91,7 @@ describe("Equality", ({test, _}) => {
              },
              "A complex string!": true
            }
-         `,
-        ),
+         `),
       ),
     ).toEqual(Ok(emptyBindings))
   })
@@ -117,8 +113,7 @@ describe("Inequality", ({test, _}) => {
   test("Nested values", ({expect, _}) => {
     expect.value(
       Pattern.test(
-        parseString(
-          `
+        parseString(`
           {
             a: true,
             b: false,
@@ -135,10 +130,8 @@ describe("Inequality", ({test, _}) => {
             },
             "A complex string!": true
           } 
-         `,
-        ),
-        jsonList(
-          `
+         `),
+        jsonList(`
            {
              "a": false,
              "b": false,
@@ -155,8 +148,7 @@ describe("Inequality", ({test, _}) => {
              },
              "A complex string!": true
            }
-         `,
-        ),
+         `),
       ),
     ).toEqual(Error(NoMatch))
   })
@@ -215,8 +207,7 @@ describe("Binding", ({test, _}) => {
     ).toEqual(Ok(dict([("x", json(`"thing 1"`)), ("rest", json(`["thing 2", "thing 3"]`))])))
     expect.value(
       Pattern.test(
-        parseString(
-          `
+        parseString(`
             {
               a,
               b: _,
@@ -227,10 +218,8 @@ describe("Binding", ({test, _}) => {
               h: {i, k},
               "A complex string!": j
             } 
-          `,
-        ),
-        jsonList(
-          `
+          `),
+        jsonList(`
             {
               "a": true,
               "b": false,
@@ -247,8 +236,7 @@ describe("Binding", ({test, _}) => {
               },
               "A complex string!": true
             }
-      `,
-        ),
+      `),
       ),
     ).toEqual(
       Ok(
@@ -305,8 +293,7 @@ describe("Encoding to JSON", ({test, _}) => {
 
   test("Encoding", ({expect, _}) => {
     expect.value(
-      parseString(
-        `
+      parseString(`
           {
             a,
             b,
@@ -316,12 +303,10 @@ describe("Encoding to JSON", ({test, _}) => {
             f: {g: 1},
             h: [true, false, null, ...rest],
             i: ["j"]
-          }`,
-      )->Pattern.toJson(~props),
+          }`)->Pattern.toJson(~props),
     ).toEqual(
       Ok(
-        json(
-          `
+        json(`
           {
             "a": 1.0,
             "b": "b",
@@ -331,8 +316,7 @@ describe("Encoding to JSON", ({test, _}) => {
             "f": {"g": 1},
             "h": [true, false, null, true, false],
             "i": ["j"]
-            }`,
-        ),
+            }`),
       ),
     )
   })
@@ -341,19 +325,19 @@ describe("Encoding to JSON", ({test, _}) => {
     let pattern = parseString(`[a, ...b]`)
     expect.value(pattern->Pattern.toJson(~props)).toEqual(
       Error(
-        BindingTypeMismatchErr({
+        BindingTypeMismatch({
           data: JSONString("b"),
           pattern: pattern,
-          binding: Id("b"),
+          binding: "b",
         }),
       ),
     )
     let pattern = parseString(`c`)
     expect.value(pattern->Pattern.toJson(~props)).toEqual(
       Error(
-        BindingDoesNotExistErr({
+        BindingDoesNotExist({
           loc: Loc(3),
-          binding: Id("c"),
+          binding: "c",
         }),
       ),
     )

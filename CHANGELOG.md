@@ -7,6 +7,8 @@
     which either contains the compiled output or an array of errors.
   - A JavaScript `result` function can convert the output into a format
     friendly for JavaScript environments.
+- Improved detecting and reporting bad AST input.
+- CLI: Added option to print errors with `console.table`.
 
 ## 0.2.1
 

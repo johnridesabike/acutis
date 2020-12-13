@@ -23,25 +23,14 @@ module NonEmpty = {
 @unboxed
 type loc = Loc(int)
 
-@unboxed
-type identifier = Id(string)
-
-module IdDict = {
-  type t<'a> = Js.Dict.t<'a>
-  let get = (x, ~key as Id(y)) => Js.Dict.get(x, y)
-  let set = (x, ~key as Id(y), ~data) => Js.Dict.set(x, y, data)
-  @val @scope("Object")
-  external merge: (@as(json`{}`) _, ~base: t<'a>, t<'a>) => t<'a> = "assign"
-}
-
 module RegEx = {
-  let identifierChar = %re("/^[a-zA-Z0-9_]$/")
+  let stringChar = %re("/^[a-zA-Z0-9_]$/")
 
-  let isEndOfIdentifier = (. s) => !Js.Re.test_(identifierChar, s)
+  let isEndOfIdentifier = (. s) => !Js.Re.test_(stringChar, s)
 
-  let identifierStartChar = %re("/^[a-z_]$/")
+  let stringStartChar = %re("/^[a-z_]$/")
 
-  let isValidIdentifierStart = c => Js.Re.test_(identifierStartChar, c)
+  let isValidIdentifierStart = c => Js.Re.test_(stringStartChar, c)
 
   let componentStart = %re("/^[A-Z]$/")
 
@@ -55,7 +44,7 @@ module RegEx = {
 
   let bindingRegEx = %re("/^[a-z_][a-zA-Z0-9_]*$/")
 
-  let isLegalBinding = (Id(x)) => Js.Re.test_(bindingRegEx, x) && !isReservedKeyword(x)
+  let isLegalBinding = x => Js.Re.test_(bindingRegEx, x) && !isReservedKeyword(x)
 }
 
 module Errors = {
@@ -69,7 +58,7 @@ module Errors = {
     message: string,
     kind: kind,
     location: option<location>,
-    template: option<identifier>,
+    template: option<string>,
     exn: option<exn>,
   }
 }
@@ -80,10 +69,10 @@ module Tokens = {
     | JsonString(loc, string)
     | Comment(loc, string)
     | Number(loc, float)
-    | Identifier(loc, identifier)
-    | ComponentName(loc, identifier)
-    | EchoIdentifier(loc, identifier)
-    | EchoChildComponent(loc, identifier)
+    | Identifier(loc, string)
+    | ComponentName(loc, string)
+    | EchoIdentifier(loc, string)
+    | EchoChildComponent(loc, string)
     | EchoString(loc, string)
     | EchoNumber(loc, float)
     | Comma(loc)
@@ -104,11 +93,11 @@ module Tokens = {
     | String(_, x) => "%} " ++ x
     | JsonString(_, x) => `"${x}"`
     | Number(_, x) => Belt.Float.toString(x)
-    | Identifier(_, Id(x)) => x
-    | ComponentName(_, Id(x)) => x
+    | Identifier(_, x) => x
+    | ComponentName(_, x) => x
     | Comment(_, x) => `{*${x}*}`
-    | EchoIdentifier(_, Id(x)) => `{{ ${x} }}`
-    | EchoChildComponent(_, Id(x)) => `{{ ${x} }}`
+    | EchoIdentifier(_, x) => `{{ ${x} }}`
+    | EchoChildComponent(_, x) => `{{ ${x} }}`
     | EchoString(_, x) => `"${x}"`
     | EchoNumber(_, x) => Belt.Float.toString(x)
     | Comma(_) => ","
@@ -160,9 +149,9 @@ module Pattern_Ast = {
     | String(loc, string)
     | Number(loc, float)
     | Array(loc, list<node>)
-    | ArrayWithTailBinding({loc: loc, array: list<node>, bindLoc: loc, binding: identifier})
+    | ArrayWithTailBinding({loc: loc, array: list<node>, bindLoc: loc, binding: string})
     | Object(loc, list<(string, node)>)
-    | Binding(loc, identifier)
+    | Binding(loc, string)
 
   type t = NonEmpty.t<node>
 
@@ -174,7 +163,7 @@ module Pattern_Ast = {
     | Number(_) => "number"
     | Array(_) | ArrayWithTailBinding(_) => "array"
     | Object(_) => "object"
-    | Binding(_, Id(x)) => `binding: \`${x}\``
+    | Binding(_, x) => `binding: \`${x}\``
     }
 
   let toLocation = x =>
@@ -191,29 +180,50 @@ module Pattern_Ast = {
     }
 }
 
+module Valid = {
+  /* This provides a thin layer of runtime type checking without needing
+     to validate the entire data structure. It's useful for reporting when JS
+     code sends the wrong data type. */
+  type t<'a> = {
+    data: 'a,
+    acutis_is_valid: string,
+  }
+
+  let make = x => {
+    data: x,
+    acutis_is_valid: "ACUTIS_IS_VALID",
+  }
+
+  let validate = x =>
+    switch x {
+    | {data, acutis_is_valid: "ACUTIS_IS_VALID"} => Some(data)
+    | _ => None
+    }
+}
+
 module Ast = {
   type trim = TrimStart | TrimEnd | TrimBoth | NoTrim
   type rec node =
     | Text(string, trim)
-    | Unescaped(loc, identifier)
-    | EchoBinding(loc, identifier)
-    | EchoChild(loc, identifier)
+    | Unescaped(loc, string)
+    | EchoBinding(loc, string)
+    | EchoChild(loc, string)
     | EchoString(string)
     | EchoNumber(float)
-    | Match(loc, NonEmpty.t<(loc, identifier)>, NonEmpty.t<case>)
-    | Map(loc, identifier, NonEmpty.t<case>)
+    | Match(loc, NonEmpty.t<(loc, string)>, NonEmpty.t<case>)
+    | Map(loc, string, NonEmpty.t<case>)
     | Component({
         loc: loc,
-        name: identifier,
-        props: list<(identifier, Pattern_Ast.node)>,
-        children: list<(identifier, childProp)>,
+        name: string,
+        props: list<(string, Pattern_Ast.node)>,
+        children: list<(string, childProp)>,
       })
   and case = {patterns: NonEmpty.t<Pattern_Ast.t>, ast: ast}
   and ast = list<node>
-  and childProp = ChildName(identifier) | ChildBlock(ast)
+  and childProp = ChildName(string) | ChildBlock(ast)
 
-  type t' = {ast: ast, name: option<identifier>}
-  type t = result<t', Errors.t>
+  type t' = {ast: ast, name: option<string>}
+  type t = Valid.t<result<t', Errors.t>>
 }
 
 type props = Js.Dict.t<Js.Json.t>

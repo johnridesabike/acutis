@@ -16,7 +16,7 @@
 
 type t
 
-let make: (~name: Acutis_Types.identifier=?, string) => t
+let make: (~name: string=?, string) => t
 
 let peekExn: t => Acutis_Types.Tokens.t
 
@@ -24,6 +24,6 @@ let popExn: t => Acutis_Types.Tokens.t
 
 let skipExn: t => unit
 
-let name: t => option<Acutis_Types.identifier>
+let name: t => option<string>
 
 let debugToArray: t => array<Acutis_Types.Tokens.t>

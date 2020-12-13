@@ -47,12 +47,13 @@ function getStdin() {
 
 const args = minimist(process.argv.slice(2), {
   string: ["data", "output"],
-  boolean: ["async", "help", "version"],
+  boolean: ["async", "help", "table", "version"],
   alias: {
     a: "async",
     d: "data",
     h: "help",
     o: "output",
+    t: "table",
     v: "version",
   },
 });
@@ -67,6 +68,7 @@ Options:
   -a, --async                   Enable asynchronous templates. Default: false.
   -d, --data                    The path to the JSON data file. Default: stdin.
   -o, --output                  The path to write the output. Default: stdout.
+  -t, --table                   Print errors in a table. Default: false.
   -h, --help                    Show this message and exit.
   -v, --version                 Show the version and exit.
 
@@ -117,8 +119,12 @@ Examples:
           if (data) {
             return data;
           } else {
-            console.error(errors);
-            throw new Error("I can't continue due to the previous errors.");
+            if (args.table) {
+              console.table(errors);
+            } else {
+              console.error(errors);
+            }
+            throw new Error("I can't continue due to these errors.");
           }
         });
     })
@@ -132,7 +138,11 @@ Examples:
       }
     })
     .catch((e) => {
-      console.error(e);
+      if (e.message) {
+        console.error(e.message);
+      } else {
+        console.error(e);
+      }
       process.exitCode = 1;
     });
 }
