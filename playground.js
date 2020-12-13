@@ -56,8 +56,7 @@ window.onload = function playground(_event) {
     "{%~ /match %}\n" +
     "\n" +
     "{% map objects with {name, color} ~%}\n" +
-    "\n" +
-    "Have you noticed the {{ name }} is {{ color }} today?\n" +
+    "  Have you noticed the {{ name }} is {{ color }} today?\n" +
     "{% match name, color\n" +
     '   with "sky", "blue"\n' +
     '   with "grass", "green" ~%}\n' +
@@ -67,7 +66,6 @@ window.onload = function playground(_event) {
     "{% /match %}\n" +
     "{% with {name} ~%}\n" +
     "  The {{ name }}, I suppose, has no color.\n" +
-    "\n" +
     "{%~ /map %}\n";
 
   var renderContext = Acutis.renderContext({});
@@ -78,9 +76,14 @@ window.onload = function playground(_event) {
     try {
       var props = JSON.parse(propsText.value);
       var template = Acutis.compile(sourceText.value, "playground");
-      resultText.value = template(renderContext, props, {});
+      var result = Acutis.result(template(renderContext, props, {}));
+      if (result.data) {
+        resultText.value = result.data;
+      } else {
+        resultText.value = "Errors:\n" + JSON.stringify(result.errors, null, 2);
+      }
     } catch (e) {
-      resultText.value = Acutis.errorMessage(e);
+      resultText.value = e.message;
     }
     setClean(propsIsDirty);
     setClean(sourceIsDirty);

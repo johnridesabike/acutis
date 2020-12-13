@@ -63,7 +63,7 @@ standard library, so everything is hand-written.</p>
 submodules: 1. pattern matching and 2. everything else. We can think of the
 language of patterns almost as a sub-language within Acutis. (In fact, I
 developed the pattern matching logic before any of the other template logic.)</p>
-<p><div class="table-of-contents"><details open><summary class="toc-container-header">Contents</summary><ol><li><a href="#technical-overview">Technical overview</a><ol><li><a href="#types">Types</a></li><li><a href="#lexical-analysis-%2F-tokenization">Lexical analysis / tokenization</a></li><li><a href="#compiling-the-abstract-syntax-tree">Compiling the abstract syntax tree</a></li><li><a href="#rendering">Rendering</a></li></ol></li><li><a href="#rendering-concepts">Rendering concepts</a></li><li><a href="#building-the-source">Building the source</a></li><li><a href="#syntax-design">Syntax design</a></li><li><a href="#current-limitations-and-ideas-for-the-future">Current limitations and ideas for the future</a></li></ol></details></div></p>
+<p><div class="table-of-contents"><details open><summary class="toc-container-header">Contents</summary><ol><li><a href="#technical-overview">Technical overview</a><ol><li><a href="#types">Types</a></li><li><a href="#lexical-analysis-%2F-tokenization">Lexical analysis / tokenization</a></li><li><a href="#compiling-the-abstract-syntax-tree">Compiling the abstract syntax tree</a></li><li><a href="#rendering">Rendering</a></li></ol></li><li><a href="#rendering-concepts">Rendering concepts</a></li><li><a href="#error-handling">Error handling</a></li><li><a href="#building-the-source">Building the source</a></li><li><a href="#syntax-design">Syntax design</a></li><li><a href="#current-limitations-and-ideas-for-the-future">Current limitations and ideas for the future</a></li></ol></details></div></p>
 <h2 id="technical-overview">Technical overview</h2>
 <h3 id="types">Types</h3>
 <p>All of the types are defined in <code>Acutis_Types.res</code> along with some of their
@@ -127,10 +127,10 @@ contexts:</p>
 <ol>
 <li><code>makeContext(components) →</code> <br>
 <code>render(ast, props, children) →</code> <br>
-<code>string</code></li>
+<code>result</code></li>
 <li><code>makeContextAsync(components) →</code> <br>
 <code>render(ast, props, children) →</code> <br>
-<code>Promise&lt;string&gt;</code></li>
+<code>promise&lt;result&gt;</code></li>
 </ol>
 <p>In both versions, <code>components</code> is an object containing all of the template
 components.</p>
@@ -138,7 +138,7 @@ components.</p>
 <code>template(render, props, children)</code>. What happens is:</p>
 <ol>
 <li>The <code>template</code> function takes the <code>render</code> function and executes it with
-<code>props</code>, <code>children</code>, and the AST (defined somewhere internally.)</li>
+<code>props</code>, <code>children</code>, and the AST.</li>
 <li>The <code>render</code> function recursively iterates through the AST and renders
 each node with the <code>props</code> and <code>children</code>. Each result is enqueued.</li>
 <li>If the <code>render</code> function encounters a template component, which is just
@@ -150,6 +150,16 @@ original queue.</li>
 <li>Steps 2 and 3 repeat until the renderer has traversed the entire AST.</li>
 <li>The queue of results is concatenated and returned as the final result.</li>
 </ol>
+<h2 id="error-handling">Error handling</h2>
+<p>Acutis shouldn’t raise exceptions or reject promises. The AST and the
+rendered output is always returned inside of a ReScript <a href="https://rescript-lang.org/docs/manual/latest/api/belt/result">result</a> type. If
+there are any errors, then they’re formatted according to the
+<code>Acuits_Types.Errors.t</code> type.</p>
+<p>The <code>Debug.res</code> file handles creating the specific messages.</p>
+<p>The lexer and compiler both stop as soon as they encounter an error. The
+renderer will always transverse as much of the AST as possible and report all
+of the errors it finds.</p>
+<p>Acutis will not return partially rendered content alongside errors.</p>
 <h2 id="building-the-source">Building the source</h2>
 <p>The source files are in <code>.res</code>, ReScript, format. You can compile them with
 the command <code>yarn build</code>, or compile in watch mode with <code>yarn start</code>. This
@@ -208,9 +218,10 @@ if they could all coexist in one single <code>props</code> object for each templ
 template component’s children. An API for safely mapping the children would
 be useful. (For example, a component which transforms its children using a
 Markdown renderer.)</p>
-<p>Error handling is another feature that is currently “good enough” for my
-needs, but the ceiling for improvement is high. This will certainly require
-some work if the language sees more use.</p>
+<p>For users working with the API in ReScript, type errors can be cryptic. This
+is a side effect of the fact that template component functions rely on
+several recursive function types. The compiler can’t always infer a concrete
+type in time to provide a useful error.</p>
 <p>I have not done any performance measurements. In the “make it work, make it
 right, make it fast,” order, performance comes last.</p>
 <p>Editor tooling, build system plugins, etc. are all on the wishlist.</p>
