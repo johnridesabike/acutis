@@ -152,9 +152,9 @@ original queue.</li>
 </ol>
 <h2 id="error-handling">Error handling</h2>
 <p>Acutis shouldn’t raise exceptions or reject promises. The AST and the
-rendered output is always returned inside of a ReScript <a href="https://rescript-lang.org/docs/manual/latest/api/belt/result">result</a> type. If
-there are any errors, then they’re formatted according to the
-<code>Acuits_Types.Errors.t</code> type.</p>
+rendered output is always returned inside of a variant that can return either
+successfully rendered data or an array of errors. If there are any errors,
+then they’re formatted according to the <code>Acuits_Types.Errors.t</code> type.</p>
 <p>The <code>Debug.res</code> file handles creating the specific messages.</p>
 <p>The lexer and compiler both stop as soon as they encounter an error. The
 renderer will always transverse as much of the AST as possible and report all
