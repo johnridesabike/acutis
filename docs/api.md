@@ -22,16 +22,16 @@ with their props and a render context function, which produces the final output.
 ### JavaScript
 
 ```js
-const { compile, renderContext, result } = require("acutis-lang");
+const { compile, renderContext } = require("acutis-lang");
 const template = compile("Hello {{ name }}.", module.filename);
 const footer = compile("Copyright 2020.", "Footer")
 const render = renderContext({Footer: footer});
 const props = {name: "Carlo"}
-const { data, errors } = result(template(render, props, {}));
-if (data) {
-  console.log(data); // Logs: "Hello Carlo."
+const result = template(render, props, {});
+if (result.NAME === "errors") {
+  console.error(result.VAL);
 } else {
-  console.error(errors);
+  console.log(result.VAL); // Logs: "Hello Carlo."
 }
 ```
 
@@ -44,8 +44,8 @@ let footer = Compile.make("Copyright 2020.", "Footer")
 let render = Render.makeContext(Js.Dict.fromArray([("Footer", footer)]))
 let props = Js.Dict.fromArray([("name", "Carlo")])
 switch template(. render, props, Js.Dict.empty()) {
-| Ok(data) => Js.log(data) // Logs: "Hello Carlo."
-| Error(errors) => Js.Console.error(errors)
+| #data(data) => Js.log(data) // Logs: "Hello Carlo."
+| #errors(errors) => Js.Console.error(errors)
 }
 ```
 
@@ -117,51 +117,52 @@ If you're using asynchronous templates, then the output will always be
 wrapped inside a resolved promise. Acutis makes sure that promises never
 reject since it captures any errors inside the output.
 
-### JavaScript: the `result` function
+### JavaScript: `{ NAME, VAL }`
 
-Acutis provides a `result` function which converts its internal data
-structure into something nicer for JavaScript.
+Acutis returns data inside an object with `NAME` and `VAL` properties. If any
+errors occurred, then `NAME` will be `"errors"` and `VAL` will be an array of
+the errors. If no errors occurred, then `NAME` will be `"data"` and `VAL` will
+be the rendered output.
 
-```js
-const { result } = require("acutis-lang");
-// suppose template, render, and props are already defined.
-const x = result(template(render, props, {}));
-// or with an async renderer
-const xAsync = template(renderAsync, props, {}).then(result);
-```
-
-In this example, `x` becomes an object that looks like this:
+#### Example successful output
 
 ```json
 {
-  "data": "The content of your output.",
-  "errors": []
+  "NAME": "data",
+  "VAL": "The content of your output."
 }
 ```
 
-If there are any errors present, then `data` will be `null`. 
+#### Example unsuccessful output
+
+```json
+{
+  "NAME": "errors",
+  "VAL": [
+    { "message": "An object with error details goes here." }
+  ]
+}
+```
+
+#### Example usage
 
 ```js
-if (x.data !== null) {
-  console.log(x.data);
+if (result.NAME === "errors") {
+  console.error(result.VAL);
 } else {
-  console.error(x.errors);
+  console.log(result.VAL);
 }
 ```
 
-### ReScript: the result type
+### ReScript: `[#data('a) | #errors('e)]`
 
-In ReScript, the data uses the [result] data type which you can directly
-access. This is the actual type definition:
-
-```reason
-type renderResult = result<string, array<Errors.t>>
-```
+In ReScript, the output uses a polymorphic variant defined as `[#data('a) |
+#errors('e)]`. You can use `switch` with it like any variant.
 
 ```reason
-switch x {
-| Ok(data) => Js.log(data)
-| Error(errors) => Js.Console.error(errors)
+switch result {
+| #data(data) => Js.log(data)
+| #errors(errors) => Js.Console.error(errors)
 }
 ```
 
@@ -341,4 +342,3 @@ Examples:
 [4]: ../manual/#template-children-props
 [uncurried]: https://rescript-lang.org/docs/manual/latest/function#uncurried-function
 [Promise]: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise 
-[result]: https://rescript-lang.org/docs/manual/latest/api/belt/result

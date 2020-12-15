@@ -1,3 +1,11 @@
+## 0.4.0
+
+- Changed output from ReScript stdlib result type to a polymorphic variant.
+- Removed JavaScript `result` function in favor of directly accessing the
+  data structure.
+- Made the `exn` field in the error record more type-safe by hiding its
+  contents.
+
 ## 0.3.0
 
 - Rewrote error handling.

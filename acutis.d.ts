@@ -18,8 +18,6 @@ export type props = { [key: string]: any };
 
 export type ast = object;
 
-export type renderResult = object;
-
 export type error = {
   message: string;
   kind: "Type" | "Render" | "Compile" | "Pattern" | "Parse" | "Syntax";
@@ -32,10 +30,15 @@ export type error = {
   exn: any;
 };
 
-export type result = {
-  data: null | string;
-  errors: error[];
-};
+export type result =
+  | {
+      NAME: "data";
+      VAL: string;
+    }
+  | {
+      NAME: "errors";
+      VAL: error[];
+    };
 
 export type renderContext<T> = (
   ast: ast,
@@ -43,9 +46,9 @@ export type renderContext<T> = (
   children: { [key: string]: T }
 ) => T;
 
-export type renderContextSync = renderContext<renderResult>;
+export type renderContextSync = renderContext<result>;
 
-export type renderContextAsync = renderContext<Promise<renderResult>>;
+export type renderContextAsync = renderContext<Promise<result>>;
 
 export type templateFunction<T> = (
   renderContext: renderContext<T>,
@@ -53,13 +56,16 @@ export type templateFunction<T> = (
   children: { [key: string]: T }
 ) => T;
 
-export type templateFunctionSync = templateFunction<renderResult>;
+export type templateFunctionSync = templateFunction<result>;
 
-export type templateFunctionAsync = templateFunction<Promise<renderResult>>;
+export type templateFunctionAsync = templateFunction<Promise<result>>;
 
 export function makeAst(src: string, name?: string): ast;
 
-export function compile<T>(src: string, name?: string): templateFunction<T>;
+export function compile(
+  src: string,
+  name?: string
+): templateFunctionSync | templateFunctionAsync;
 
 export function renderContext(components: {
   [key: string]: templateFunctionSync;
@@ -68,5 +74,3 @@ export function renderContext(components: {
 export function renderContextAsync(components: {
   [key: string]: templateFunctionAsync;
 }): renderContextAsync;
-
-export function result(renderResult: renderResult): result;

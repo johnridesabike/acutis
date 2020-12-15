@@ -19,7 +19,6 @@ const {
   makeAst,
   renderContext,
   renderContextAsync,
-  result,
 } = require("../src/AcutisJs.bs");
 
 describe("The JS interface works as expected", () => {
@@ -27,9 +26,9 @@ describe("The JS interface works as expected", () => {
     function X(render, props, children) {
       return render(makeAst(1), props, children);
     }
-    expect(result(X(renderContext({}), { name: "Carlo" }))).toEqual({
-      data: null,
-      errors: [
+    expect(X(renderContext({}), { name: "Carlo" })).toEqual({
+      NAME: "errors",
+      VAL: [
         {
           kind: "Compile",
           message:
@@ -44,9 +43,9 @@ describe("The JS interface works as expected", () => {
     function Y(render, props, children) {
       return render("{{ name }}", props, children);
     }
-    expect(result(Y(renderContext({}), { name: "Carlo" }, {}))).toEqual({
-      data: null,
-      errors: [
+    expect(Y(renderContext({}), { name: "Carlo" }, {})).toEqual({
+      NAME: "errors",
+      VAL: [
         {
           kind: "Render",
           message: "An AST was not valid. Did you forget to compile it?",
@@ -61,7 +60,7 @@ describe("Async templates", () => {
     const X = compile("{{ name }}", "X");
     const renderContext = renderContextAsync({});
     const x = await X(renderContext, { name: "Carlo" }, {});
-    expect(result(x)).toEqual({ data: "Carlo", errors: [] });
+    expect(x).toEqual({ NAME: "data", VAL: "Carlo" });
   });
 
   test("Async template components", async () => {
@@ -72,7 +71,7 @@ describe("Async templates", () => {
     const X = compile("{% Y name /%}", "X");
     const renderContext = renderContextAsync({ Y: Y });
     const x = await X(renderContext, { name: "Carlo" }, {});
-    expect(result(x)).toEqual({ data: "Carlo", errors: [] });
+    expect(x).toEqual({ NAME: "data", VAL: "Carlo" });
   });
 
   test("Async template component errors", async () => {
@@ -81,9 +80,9 @@ describe("Async templates", () => {
     }
     const X = compile("{% Y name /%}", "X");
     const renderContext = renderContextAsync({ Y: Y });
-    expect(result(await X(renderContext, { name: "Carlo" }, {}))).toEqual({
-      data: null,
-      errors: [
+    expect(await X(renderContext, { name: "Carlo" }, {})).toEqual({
+      NAME: "errors",
+      VAL: [
         {
           kind: "Render",
           message: "An AST was not valid. Did you forget to compile it?",
@@ -95,9 +94,9 @@ describe("Async templates", () => {
     }
     const B = compile("{% A /%}", "B");
     const renderContext2 = renderContextAsync({ A: A });
-    expect(result(await B(renderContext2, {}, {}))).toEqual({
-      data: null,
-      errors: [
+    expect(await B(renderContext2, {}, {})).toEqual({
+      NAME: "errors",
+      VAL: [
         {
           message: '"name" is type null. I can only echo strings and numbers.',
           template: "A",
@@ -108,9 +107,9 @@ describe("Async templates", () => {
     });
     const C = compile("{{ a", "C");
     const renderContext3 = renderContextAsync({});
-    expect(result(await C(renderContext3, {}, {}))).toEqual({
-      data: null,
-      errors: [
+    expect(await C(renderContext3, {}, {})).toEqual({
+      NAME: "errors",
+      VAL: [
         {
           message: 'Unexpected character: "". Expected: "}}".',
           template: "C",
@@ -124,9 +123,9 @@ describe("Async templates", () => {
     }
     const E = compile("{% D /%}", "E");
     const renderContext4 = renderContextAsync({ D: D });
-    expect(result(await E(renderContext4, {}, {}))).toEqual({
-      data: null,
-      errors: [
+    expect(await E(renderContext4, {}, {})).toEqual({
+      NAME: "errors",
+      VAL: [
         {
           message: `An exception was thrown while rendering this template. This is probably due to malformed input.`,
           kind: "Render",

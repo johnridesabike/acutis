@@ -76,11 +76,11 @@ window.onload = function playground(_event) {
     try {
       var props = JSON.parse(propsText.value);
       var template = Acutis.compile(sourceText.value, "playground");
-      var result = Acutis.result(template(renderContext, props, {}));
-      if (result.data) {
-        resultText.value = result.data;
+      var result = template(renderContext, props, {});
+      if (result.NAME === "errors") {
+        resultText.value = "Errors:\n" + JSON.stringify(result.VAL, null, 2);
       } else {
-        resultText.value = "Errors:\n" + JSON.stringify(result.errors, null, 2);
+        resultText.value = result.VAL;
       }
     } catch (e) {
       resultText.value = e.message;

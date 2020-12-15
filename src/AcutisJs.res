@@ -21,9 +21,3 @@ let compile = Compile.makeJs
 let renderContext = Render.makeContext
 
 let renderContextAsync = Render.makeContextAsync
-
-let result = (. x) =>
-  switch x {
-  | Ok(x) => {"data": Js.Null.return(x), "errors": []}
-  | Error(e) => {"data": Js.null, "errors": e}
-  }

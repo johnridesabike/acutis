@@ -318,14 +318,14 @@ and parseBlock = tokens => {
 let makeAst = (~name=?, source) =>
   try {
     Valid.make(
-      Ok({
+      #data({
         ast: parse(Lexer.make(source, ~name?), ~until=endOfFile),
         name: name,
       }),
     )
   } catch {
-  | CompileError(e) => Valid.make(Error(e))
-  | e => Valid.make(Error(exn(e, ~name, ~kind=#Compile)))
+  | CompileError(e) => Valid.make(#errors(e))
+  | e => Valid.make(#errors(exn(e, ~name, ~kind=#Compile)))
   }
 
 let makeAstJs = (. source, name) => makeAst(source, ~name?)

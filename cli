@@ -114,17 +114,16 @@ Examples:
         : acutis.renderContext(templates);
       return props
         .then((props) => MainTemplate(render, props, {}))
-        .then((x) => {
-          const { data, errors } = acutis.result(x);
-          if (data) {
-            return data;
-          } else {
+        .then(({ NAME, VAL }) => {
+          if (NAME === "errors") {
             if (args.table) {
-              console.table(errors);
+              console.table(VAL);
             } else {
-              console.error(errors);
+              console.error(VAL);
             }
             throw new Error("I can't continue due to these errors.");
+          } else {
+            return VAL;
           }
         });
     })

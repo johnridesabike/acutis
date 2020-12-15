@@ -54,13 +54,21 @@ module Errors = {
 
   let location = (Loc(x)) => Some({character: x + 1})
 
+  @unboxed
+  type rec anyExn = Exn(_): anyExn
+
   type t = {
     message: string,
     kind: kind,
     location: option<location>,
     template: option<string>,
-    exn: option<exn>,
+    exn: option<anyExn>,
   }
+}
+
+module Result = {
+  /* We're using a polymorphic variant because it has nicer JS representation. */
+  type t<'a, 'e> = [#data('a) | #errors('e)]
 }
 
 module Tokens = {
@@ -223,12 +231,12 @@ module Ast = {
   and childProp = ChildName(string) | ChildBlock(ast)
 
   type t' = {ast: ast, name: option<string>}
-  type t = Valid.t<result<t', Errors.t>>
+  type t = Valid.t<Result.t<t', Errors.t>>
 }
 
 type props = Js.Dict.t<Js.Json.t>
 
-type renderResult = result<string, array<Errors.t>>
+type renderResult = Result.t<string, array<Errors.t>>
 
 type renderContext<'a> = (. Ast.t, props, Js.Dict.t<'a>) => 'a
 type renderContextSync = renderContext<renderResult>

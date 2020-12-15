@@ -144,11 +144,9 @@ Suppose you have a root template, `template`, which you render like this:
 ## Error handling
 
 Acutis shouldn't raise exceptions or reject promises. The AST and the
-rendered output is always returned inside of a ReScript [result] type. If
-there are any errors, then they're formatted according to the
-`Acuits_Types.Errors.t` type.
-
-[result]: https://rescript-lang.org/docs/manual/latest/api/belt/result
+rendered output is always returned inside of a variant that can return either
+successfully rendered data or an array of errors. If there are any errors,
+then they're formatted according to the `Acuits_Types.Errors.t` type.
 
 The `Debug.res` file handles creating the specific messages.
 

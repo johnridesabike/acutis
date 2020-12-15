@@ -391,7 +391,7 @@ let rec make = (
         List.forEachU(compChildrenRaw, (. (key, child)) => {
           switch child {
           | ChildBlock(ast) =>
-            let data = renderContext(. Valid.make(Ok({name: name, ast: ast})), props, children)
+            let data = renderContext(. Valid.make(#data({name: name, ast: ast})), props, children)
             Js.Dict.set(compChildren, key, data)
           | ChildName(child) =>
             switch Js.Dict.get(children, child) {
@@ -428,8 +428,8 @@ let rec make = (
 }
 
 let makeContext: Js.Dict.t<templateFunctionSync> => renderContextSync = {
-  let ok = (. x: string) => Ok(x)
-  let error = (. x) => Error(x)
+  let ok = (. x) => #data(x)
+  let error = (. x) => #errors(x)
   let tryCatch = (. f, f') =>
     try {
       f(.)
@@ -442,21 +442,21 @@ let makeContext: Js.Dict.t<templateFunctionSync> => renderContextSync = {
     let errors = Queue.make()
     Queue.forEachU(queue, (. x) => {
       switch x {
-      | Ok(s) => result := result.contents ++ s
-      | Error(e) => Array.forEachU(e, (. x) => Queue.add(errors, x))
+      | #data(s) => result := result.contents ++ s
+      | #errors(e) => Array.forEachU(e, (. x) => Queue.add(errors, x))
       }
     })
     if Queue.isEmpty(errors) {
-      Ok(result.contents)
+      #data(result.contents)
     } else {
-      Error(Queue.toArray(errors))
+      #errors(Queue.toArray(errors))
     }
   }
 
   components => {
     let rec renderContext = (. ast, props, children) => {
       switch Valid.validate(ast) {
-      | Some(Ok({ast, name})) =>
+      | Some(#data({ast, name})) =>
         let queue = Queue.make()
         make(
           ~queue,
@@ -471,8 +471,8 @@ let makeContext: Js.Dict.t<templateFunctionSync> => renderContextSync = {
           ~tryCatch,
         )
         toResult(queue)
-      | Some(Error(x)) => Error([x])
-      | None => Error([invalidInput()])
+      | Some(#errors(x)) => #errors([x])
+      | None => #errors([invalidInput()])
       }
     }
     renderContext
@@ -480,31 +480,30 @@ let makeContext: Js.Dict.t<templateFunctionSync> => renderContextSync = {
 }
 
 let makeContextAsync: Js.Dict.t<templateFunctionAsync> => renderContextAsync = {
-  let unsafePromiseError: Js.Promise.error => exn = Obj.magic
-  let ok = (. x) => Js.Promise.resolve(Ok(x))
-  let error = (. x) => Js.Promise.resolve(Error(x))
-  let tryCatch = (. f, f') => f(.) |> Js.Promise.catch(e => f'(. unsafePromiseError(e)))
+  let ok = (. x) => Js.Promise.resolve(#data(x))
+  let error = (. x) => Js.Promise.resolve(#errors(x))
+  let tryCatch = (. f, f') => f(.) |> Js.Promise.catch(e => f'(. e))
 
   let toResult = arr => {
     let result = ref("")
     let errors = Queue.make()
     Array.forEachU(arr, (. x) => {
       switch x {
-      | Ok(s) => result := result.contents ++ s
-      | Error(e) => Array.forEachU(e, (. x) => Queue.add(errors, x))
+      | #data(s) => result := result.contents ++ s
+      | #errors(e) => Array.forEachU(e, (. x) => Queue.add(errors, x))
       }
     })
     if Queue.isEmpty(errors) {
-      ok(. result.contents)
+      Js.Promise.resolve(#data(result.contents))
     } else {
-      error(. Queue.toArray(errors))
+      Js.Promise.resolve(#errors(Queue.toArray(errors)))
     }
   }
 
   components => {
     let rec renderContext = (. ast, props, children) =>
       switch Valid.validate(ast) {
-      | Some(Ok({ast, name})) =>
+      | Some(#data({ast, name})) =>
         let queue = Queue.make()
         make(
           ~queue,
@@ -519,8 +518,8 @@ let makeContextAsync: Js.Dict.t<templateFunctionAsync> => renderContextAsync = {
           ~tryCatch,
         )
         queue |> Queue.toArray |> Js.Promise.all |> Js.Promise.then_(toResult)
-      | Some(Error(e)) => Js.Promise.resolve(Error([e]))
-      | None => Js.Promise.resolve(Error([invalidInput()]))
+      | Some(#errors(e)) => error(.[e])
+      | None => error(.[invalidInput()])
       }
     renderContext
   }

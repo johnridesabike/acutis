@@ -17,8 +17,8 @@ open TestFramework
 
 let getError = x =>
   switch x {
-  | Ok(_) => failwith("must error!")
-  | Error(x) => x
+  | #data(_) => raise(Not_found)
+  | #errors(x) => x
   }
 
 let render = (src, json, components) =>

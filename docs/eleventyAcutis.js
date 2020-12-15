@@ -15,7 +15,7 @@
  */
 
 const fastGlob = require("fast-glob");
-const { compile, renderContext, result } = require("../");
+const { compile, renderContext } = require("../");
 const { loadTemplate, filenameToComponent } = require("../node-utils");
 
 module.exports = (eleventyConfig) => {
@@ -42,12 +42,12 @@ module.exports = (eleventyConfig) => {
     compile: (str, inputPath) => (props) => {
       const template = compile(str, inputPath);
       const render = renderContext(templates);
-      const { data, errors } = result(template(render, props, {}));
-      if (data) {
-        return data;
-      } else {
-        console.error(errors);
+      const result = template(render, props, {});
+      if (result.NAME === "errors") {
+        console.error(result.VAL);
         return "";
+      } else {
+        return result.VAL;
       }
     },
   });

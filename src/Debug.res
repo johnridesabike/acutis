@@ -223,5 +223,5 @@ let exn = (e, ~name, ~kind) => {
   location: None,
   template: name,
   kind: kind,
-  exn: Some(e),
+  exn: Some(Exn(e)),
 }

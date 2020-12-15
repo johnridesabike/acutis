@@ -17,7 +17,12 @@
 open TestFramework
 
 let getAst = (x: Acutis_Types.Ast.t) =>
-  (x->Acutis_Types.Valid.validate->Belt.Option.getExn->Belt.Result.getExn).ast
+  switch Acutis_Types.Valid.validate(x) {
+  | Some(#data(x)) => x.ast
+  | Some(#errors(_))
+  | None =>
+    raise(Not_found)
+  }
 
 describe("Lexer", ({test, _}) => {
   test("Tokens are generated correctly", ({expect, _}) => {

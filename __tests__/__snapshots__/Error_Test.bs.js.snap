@@ -4,7 +4,7 @@ exports[`Inputs Bad source input 1`] = `
 Array [
   Object {
     "exn": Object {
-      "RE_EXN_ID": "Caml_js_exceptions.Error/1",
+      "RE_EXN_ID": "Caml_js_exceptions.Error/2",
       "_1": [TypeError: source.str.charAt is not a function],
     },
     "kind": "Compile",
