@@ -246,7 +246,7 @@ let footer = (. render, props, children) => {
   let props = Js.Dict.fromArray([
     ("year", Js.Date.make()->Js.Date.getFullYear)
   ])
-  render(ast, props, children)
+  render(. ast, props, children)
 }
 ```
 
