@@ -1,3 +1,7 @@
+## 0.4.1
+
+- Added description to package.json.
+
 ## 0.4.0
 
 - Changed output from ReScript stdlib result type to a polymorphic variant.

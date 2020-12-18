@@ -1,6 +1,8 @@
+let acutisPkg = require("../../package.json");
+
 module.exports = {
   title: "Acutis",
-  subtitle: "a template language for the web & beyond",
+  subtitle: acutisPkg.description,
   url:
     process.env.NODE_ENV === "production"
       ? "https://johnridesa.bike/acutis"

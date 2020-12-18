@@ -2,6 +2,7 @@
   "name": "acutis-lang",
   "version": "0.4.0",
   "private": false,
+  "description": "A declarative template language for web documents & beyond.",
   "keywords": [
     "rescript",
     "template",
@@ -17,7 +18,10 @@
     "url": "https://github.com/johnridesabike/acutis.git"
   },
   "license": "Apache-2.0",
-  "author": "John Jackson",
+  "author": {
+    "name": "John Jackson",
+    "url": "https://johnridesa.bike/"
+  },
   "main": "dist/acutis.js",
   "module": "dist/acutis.mjs",
   "types": "acutis.d.ts",
