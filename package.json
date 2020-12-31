@@ -24,12 +24,11 @@
   },
   "main": "dist/acutis.js",
   "module": "dist/acutis.mjs",
-  "types": "acutis.d.ts",
   "bin": {
-    "acutis": "cli"
+    "acutis": "cli",
+    "acutis-lang": "cli"
   },
   "files": [
-    "acutis.d.ts",
     "bsconfig.json",
     "cli",
     "dist/",
