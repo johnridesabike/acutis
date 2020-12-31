@@ -33,7 +33,8 @@
     "cli",
     "dist/",
     "node-utils.js",
-    "src/"
+    "src/**/*.res",
+    "src/**/*.resi"
   ],
   "scripts": {
     "build": "bsb -make-world",
