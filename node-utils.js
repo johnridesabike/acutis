@@ -17,7 +17,7 @@
 const util = require("util");
 const fs = require("fs");
 const path = require("path");
-const acutis = require("./dist/acutis");
+const Acutis = require("./dist/acutis");
 
 const readFile = util.promisify(fs.readFile);
 
@@ -47,7 +47,7 @@ function loadTemplate(fileName) {
       return import(filePath).then((x) => functionOrThrow(x.default, filePath));
     default:
       return readFile(filePath, "utf8").then((contents) =>
-        acutis.compile(contents, fileName)
+        Acutis.Compile.make(contents, fileName)
       );
   }
 }

@@ -325,14 +325,15 @@ let makeAst = (~name=?, source) =>
     )
   } catch {
   | CompileError(e) => Valid.make(#errors(e))
-  | e => Valid.make(#errors(exn(e, ~name, ~kind=#Compile)))
+  | e => Valid.make(#errors(Debug.compileExn(e, ~name)))
   }
-
-let makeAstJs = (. source, name) => makeAst(source, ~name?)
 
 let make = (~name=?, source) => {
   let ast = makeAst(source, ~name?)
-  (. render, props, templates) => render(. ast, props, templates)
+  (. env, props, templates) => env.render(. ast, props, templates)
 }
 
-let makeJs = (. source, name) => make(source, ~name?)
+module Js = {
+  let makeAst = (. source, name) => makeAst(source, ~name?)
+  let make = (. source, name) => make(source, ~name?)
+}

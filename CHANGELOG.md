@@ -1,3 +1,24 @@
+## 0.5.0
+
+- Added `acutis-lang` binary as an alias for `acutis`.
+- Removed TypeScript definitions. (They may be added back in the future.)
+- Errors now have a `path` field for showing stack traces.
+- Replaced the render function with a record containing functions:
+  - `render` renders an AST.
+  - `return` returns a string wrapped in the result type.
+  - `error` returns an error.
+  - `mapChild` uses a callback to transform a template child.
+  - `flatMapChild` uses a callback to transform a template child without
+    automatically wrapping it in a result type.
+- Renamed `Render.makeContext` to `Environment.make`.
+- Renamed `Render.makeContextAsync` to `Environment.Async.make`.
+- Renamed several type names to better reflect their semantics.
+- Function names are now consistent between ReScript and JavaScript.
+  - JavaScript: renamed `compile` to `Compile.make`.
+  - JavaScript: renamed `makeAst` to `Compile.makeAst`.
+  - JavaScript: renamed `renderContext` to `Environment.make`.
+  - JavaScript: renamed `renderContextAsync` to `Environment.Async.make`.
+
 ## 0.4.1
 
 - Added description to package.json.

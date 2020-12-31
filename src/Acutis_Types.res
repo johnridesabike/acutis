@@ -55,14 +55,28 @@ module Errors = {
   let location = (Loc(x)) => Some({character: x + 1})
 
   @unboxed
-  type rec anyExn = Exn(_): anyExn
+  type rec anyExn = AnyExn(_): anyExn
 
   type t = {
     message: string,
     kind: kind,
     location: option<location>,
-    template: option<string>,
+    path: array<Js.Json.t>,
     exn: option<anyExn>,
+  }
+
+  module Stack = {
+    type name = Component(option<string>) | Match | Map | Index(int)
+    type t = list<name>
+
+    let nameToJson = (. x) =>
+      switch x {
+      | Component(Some(x)) => Js.Json.string(x)
+      | Component(None) => Js.Json.null
+      | Match => Js.Json.string("match")
+      | Map => Js.Json.string("map")
+      | Index(x) => Js.Json.number(Belt.Int.toFloat(x))
+      }
   }
 }
 
@@ -236,12 +250,16 @@ module Ast = {
 
 type props = Js.Dict.t<Js.Json.t>
 
-type renderResult = Result.t<string, array<Errors.t>>
+type environment<'a> = {
+  render: (. Ast.t, props, Js.Dict.t<'a>) => 'a,
+  return: (. string) => 'a,
+  error: (. string) => 'a,
+  mapChild: (. 'a, (. string) => string) => 'a,
+  flatMapChild: (. 'a, (. string) => 'a) => 'a,
+}
 
-type renderContext<'a> = (. Ast.t, props, Js.Dict.t<'a>) => 'a
-type renderContextSync = renderContext<renderResult>
-type renderContextAsync = renderContext<Js.Promise.t<renderResult>>
-
-type templateFunction<'a> = (. renderContext<'a>, props, Js.Dict.t<'a>) => 'a
-type templateFunctionSync = templateFunction<renderResult>
-type templateFunctionAsync = templateFunction<Js.Promise.t<renderResult>>
+type rec template<'a> = (. environment<'a>, props, Js.Dict.t<'a>) => 'a
+and environmentData<'a> = {
+  components: Js.Dict.t<template<'a>>,
+  stack: Errors.Stack.t,
+}

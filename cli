@@ -19,7 +19,7 @@
 const util = require("util");
 const fs = require("fs");
 const minimist = require("minimist");
-const acutis = require("./dist/acutis");
+const Acutis = require("./dist/acutis");
 const { loadTemplate, filenameToComponent } = require("./node-utils");
 const { version } = require("./package.json");
 const { stdin } = process;
@@ -110,8 +110,8 @@ Examples:
         templates[file.name] = file.content;
       }
       const render = args.async
-        ? acutis.renderContextAsync(templates)
-        : acutis.renderContext(templates);
+        ? Acutis.Environment.Async.make(templates)
+        : Acutis.Environment.make(templates);
       return props
         .then((props) => MainTemplate(render, props, {}))
         .then(({ NAME, VAL }) => {

@@ -20,7 +20,7 @@ let emptyComponents = Js.Dict.empty()
 let dict = Js.Dict.fromArray
 
 let render = (~name=?, ~children=Js.Dict.empty(), src, props, components) => {
-  Compile.make(src, ~name?)(. Render.makeContext(components), props, children)
+  Compile.make(src, ~name?)(. Environment.make(components), props, children)
 }
 
 describe("All together", ({test, _}) => {
@@ -96,8 +96,8 @@ describe("All together", ({test, _}) => {
       emptyComponents,
     )
     expect.value(result).toEqual(#data(` _hi_ `))
-    let ohHai = (. render, props, templates) =>
-      render(. Compile.makeAst("{{ Children }} Oh hai {{ name }}."), props, templates)
+    let ohHai: Acutis_Types.template<_> = (. env, props, templates) =>
+      env.render(. Compile.makeAst("{{ Children }} Oh hai {{ name }}."), props, templates)
     let components = dict([("OhHai", ohHai)])
     let result = render(
       `{% OhHai name="Mark" ~%} I did not. {%~ /OhHai %}`,
@@ -132,8 +132,8 @@ describe("All together", ({test, _}) => {
     expect.value(result).toEqual(#data(` 0 John.  1 Megan. `))
   })
   test("Component", ({expect, _}) => {
-    let ohHai = (. render, props, templates) =>
-      render(. Compile.makeAst("{{ Children }} Oh hai {{ name }}."), props, templates)
+    let ohHai: Acutis_Types.template<_> = (. env, props, templates) =>
+      env.render(. Compile.makeAst("{{ Children }} Oh hai {{ name }}."), props, templates)
     let components = dict([("OhHai", ohHai)])
     let result = render(
       `{% OhHai name="Mark" %} I did not. {% /OhHai %}`,
@@ -141,10 +141,10 @@ describe("All together", ({test, _}) => {
       components,
     )
     expect.value(result).toEqual(#data(` I did not.  Oh hai Mark.`))
-    let addOne = (. render, props, children) => {
+    let addOne: Acutis_Types.template<_> = (. env, props, children) => {
       let index =
         props->Js.Dict.get("index")->Belt.Option.flatMap(Js.Json.decodeNumber)->Belt.Option.getExn
-      render(. Compile.makeAst(Belt.Float.toString(index +. 1.0)), props, children)
+      env.render(. Compile.makeAst(Belt.Float.toString(index +. 1.0)), props, children)
     }
     let components = dict([("AddOne", addOne)])
     let data = dict([("a", json(`[{"name": "John"}, {"name": "Megan"}]`))])
@@ -165,8 +165,8 @@ describe("All together", ({test, _}) => {
 
 describe("Template sections", ({test, _}) => {
   test("Default `Children` child", ({expect, _}) => {
-    let a = (. render, props, children) => {
-      render(. Compile.makeAst("{{ Children }}"), props, children)
+    let a: Acutis_Types.template<_> = (. env, props, children) => {
+      env.render(. Compile.makeAst("{{ Children }}"), props, children)
     }
     let components = dict([("A", a)])
     let result = render(`{% A %} b {%/ A %}`, Js.Dict.empty(), components)
@@ -176,11 +176,11 @@ describe("Template sections", ({test, _}) => {
   })
 
   test("Child props are passed correctly", ({expect, _}) => {
-    let x = (. render, props, children) => {
-      render(. Compile.makeAst("{{ PassthroughChild }}"), props, children)
+    let x: Acutis_Types.template<_> = (. env, props, children) => {
+      env.render(. Compile.makeAst("{{ PassthroughChild }}"), props, children)
     }
-    let y = (. render, props, children) => {
-      render(. Compile.makeAst("{% X PassthroughChild=A /%}"), props, children)
+    let y: Acutis_Types.template<_> = (. env, props, children) => {
+      env.render(. Compile.makeAst("{% X PassthroughChild=A /%}"), props, children)
     }
     let components = dict([("X", x), ("Y", y)])
     let result = render(`{% Y A=#%} a {%/# / %}`, Js.Dict.empty(), components)
@@ -188,14 +188,90 @@ describe("Template sections", ({test, _}) => {
   })
 
   test("Child props are passed correctly with punning", ({expect, _}) => {
-    let x = (. render, props, children) => {
-      render(. Compile.makeAst("{{ PassthroughChild }}"), props, children)
+    let x: Acutis_Types.template<_> = (. env, props, children) => {
+      env.render(. Compile.makeAst("{{ PassthroughChild }}"), props, children)
     }
-    let y = (. render, props, children) => {
-      render(. Compile.makeAst("{% X PassthroughChild /%}"), props, children)
+    let y: Acutis_Types.template<_> = (. env, props, children) => {
+      env.render(. Compile.makeAst("{% X PassthroughChild /%}"), props, children)
     }
     let components = dict([("X", x), ("Y", y)])
     let result = render(`{% Y PassthroughChild=#%} a {%/# / %}`, Js.Dict.empty(), components)
     expect.value(result).toEqual(#data(" a "))
+  })
+})
+
+describe("API helper functions", ({test, _}) => {
+  test("env.return", ({expect, _}) => {
+    let x: Acutis_Types.template<_> = (. env, _props, _children) => {
+      env.return(. "a")
+    }
+    let components = dict([("X", x)])
+    let result = render(`{% X / %}`, Js.Dict.empty(), components)
+    expect.value(result).toEqual(#data("a"))
+  })
+
+  test("env.error", ({expect, _}) => {
+    let x: Acutis_Types.template<_> = (. env, _props, _children) => {
+      env.error(. "e")
+    }
+    let components = dict([("X", x)])
+    let result = render(`{% X / %}`, Js.Dict.empty(), components)
+    expect.value(result).toEqual(
+      #errors([
+        {
+          message: "e",
+          location: None,
+          kind: #Render,
+          path: [Js.Json.null],
+          exn: None,
+        },
+      ]),
+    )
+  })
+
+  test("env.mapChild", ({expect, _}) => {
+    let x: Acutis_Types.template<_> = (. env, _props, children) => {
+      env.mapChild(.Js.Dict.unsafeGet(children, "Children"), (. child) =>
+        Js.String.toUpperCase(child)
+      )
+    }
+    let components = dict([("X", x)])
+    let result = render(`{% X ~%} a {%~ /X %}`, Js.Dict.empty(), components)
+    expect.value(result).toEqual(#data("A"))
+    let errors = render(~name="A", `{% X %} {{ e }} {% /X %}`, Js.Dict.empty(), components)
+    expect.value(errors).toEqual(
+      #errors([
+        {
+          message: "\"e\" is type null. I can only echo strings and numbers.",
+          location: Some({character: 12}),
+          path: [Js.Json.string("section: X#Children"), Js.Json.string("A")],
+          kind: #Render,
+          exn: None,
+        },
+      ]),
+    )
+  })
+
+  test("env.flatMapChild", ({expect, _}) => {
+    let x: Acutis_Types.template<_> = (. env, _props, children) => {
+      env.flatMapChild(.Js.Dict.unsafeGet(children, "Children"), (. child) =>
+        env.return(. Js.String.toUpperCase(child))
+      )
+    }
+    let components = dict([("X", x)])
+    let result = render(`{% X %} a {% /X %}`, Js.Dict.empty(), components)
+    expect.value(result).toEqual(#data(" A "))
+    let errors = render(~name="A", `{% X %} {{ e }} {% /X %}`, Js.Dict.empty(), components)
+    expect.value(errors).toEqual(
+      #errors([
+        {
+          message: "\"e\" is type null. I can only echo strings and numbers.",
+          location: Some({character: 12}),
+          path: [Js.Json.string("section: X#Children"), Js.Json.string("A")],
+          kind: #Render,
+          exn: None,
+        },
+      ]),
+    )
   })
 })

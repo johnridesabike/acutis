@@ -14,9 +14,9 @@
  *   limitations under the License.
  */
 
-const { makeAst } = require("../../");
+const { Compile } = require("../../");
 
-const ast = makeAst(
+const ast = Compile.makeAst(
   `<footer class="footer">
   <p>
     Published in {{ year }} by
@@ -33,9 +33,9 @@ const ast = makeAst(
   module.filename
 );
 
-module.exports = (render, { year, name, link, siteUrl }, children) =>
-  render(
-    ast,
-    { year: year ? year : new Date().getFullYear(), name, link, siteUrl },
-    children
-  );
+module.exports = (env, props, children) => {
+  if (!props.year) {
+    props.year = new Date().getFullYear();
+  }
+  return env.render(ast, props, children);
+};

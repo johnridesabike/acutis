@@ -14,10 +14,17 @@
    limitations under the License.
 */
 
-module Compile = {
-  include Compile.Js
+type result = Acutis_Types.Result.t<string, array<Acutis_Types.Errors.t>>
+
+module Async: {
+  type result = Js.Promise.t<result>
+  type template = Acutis_Types.template<result>
+  type t = Acutis_Types.environment<result>
+
+  let make: Js.Dict.t<template> => t
 }
 
-module Environment = {
-  include Environment
-}
+type template = Acutis_Types.template<result>
+type t = Acutis_Types.environment<result>
+
+let make: Js.Dict.t<template> => t

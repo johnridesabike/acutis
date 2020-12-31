@@ -4,13 +4,15 @@ exports[`Inputs Bad source input 1`] = `
 Array [
   Object {
     "exn": Object {
-      "RE_EXN_ID": "Caml_js_exceptions.Error/2",
+      "RE_EXN_ID": "Caml_js_exceptions.Error/1",
       "_1": [TypeError: source.str.charAt is not a function],
     },
     "kind": "Compile",
     "location": undefined,
     "message": "An exception was thrown while rendering this template. This is probably due to malformed input.",
-    "template": undefined,
+    "path": Array [
+      null,
+    ],
   },
 ]
 `;
@@ -23,7 +25,9 @@ Object {
     "character": 6,
   },
   "message": "\\"null\\" is a reserved name",
-  "template": undefined,
+  "path": Array [
+    null,
+  ],
 }
 `;
 
@@ -35,7 +39,9 @@ Object {
     "character": 6,
   },
   "message": "\\"false\\" is a reserved name",
-  "template": undefined,
+  "path": Array [
+    null,
+  ],
 }
 `;
 
@@ -47,7 +53,9 @@ Object {
     "character": 11,
   },
   "message": "Invalid character: \\"*\\".",
-  "template": undefined,
+  "path": Array [
+    null,
+  ],
 }
 `;
 
@@ -59,7 +67,9 @@ Object {
     "character": 6,
   },
   "message": "Unexpected character: \\". %\\". Expected: \\"...\\".",
-  "template": undefined,
+  "path": Array [
+    null,
+  ],
 }
 `;
 
@@ -71,7 +81,9 @@ Object {
     "character": 13,
   },
   "message": "Unexpected character: \\"%\\". Expected: \\"}\\".",
-  "template": undefined,
+  "path": Array [
+    null,
+  ],
 }
 `;
 
@@ -83,7 +95,9 @@ Object {
     "character": 10,
   },
   "message": "Unexpected character: \\"%}\\". Expected: \\"}}\\".",
-  "template": undefined,
+  "path": Array [
+    null,
+  ],
 }
 `;
 
@@ -95,7 +109,9 @@ Object {
     "character": 10,
   },
   "message": "Unexpected character: \\"b \\". Expected: \\"}}\\".",
-  "template": undefined,
+  "path": Array [
+    null,
+  ],
 }
 `;
 
@@ -107,7 +123,9 @@ Object {
     "character": 6,
   },
   "message": "Invalid character: \\"?\\".",
-  "template": undefined,
+  "path": Array [
+    "BadCharacter",
+  ],
 }
 `;
 
@@ -119,7 +137,9 @@ Object {
     "character": 7,
   },
   "message": "Unterminated string.",
-  "template": undefined,
+  "path": Array [
+    null,
+  ],
 }
 `;
 
@@ -131,7 +151,9 @@ Object {
     "character": 5,
   },
   "message": "Unterminated comment.",
-  "template": undefined,
+  "path": Array [
+    null,
+  ],
 }
 `;
 
@@ -143,7 +165,9 @@ Object {
     "character": 5,
   },
   "message": "Unterminated comment.",
-  "template": undefined,
+  "path": Array [
+    "BadComment",
+  ],
 }
 `;
 
@@ -155,7 +179,9 @@ Object {
     "character": 7,
   },
   "message": "Unexpected end of file.",
-  "template": undefined,
+  "path": Array [
+    null,
+  ],
 }
 `;
 
@@ -167,7 +193,9 @@ Object {
     "character": 6,
   },
   "message": "\\"--1\\" is an illegal identifier name.",
-  "template": undefined,
+  "path": Array [
+    "BadIdentifier",
+  ],
 }
 `;
 
@@ -179,7 +207,9 @@ Object {
     "character": 10,
   },
   "message": "\\"null\\" is a reserved name",
-  "template": undefined,
+  "path": Array [
+    "BadBinding",
+  ],
 }
 `;
 
@@ -191,7 +221,9 @@ Object {
     "character": 13,
   },
   "message": "\\"null\\" is a reserved name",
-  "template": undefined,
+  "path": Array [
+    null,
+  ],
 }
 `;
 
@@ -203,7 +235,9 @@ Object {
     "character": 6,
   },
   "message": "Invalid statement: \\"c\\".",
-  "template": undefined,
+  "path": Array [
+    "BadStatement",
+  ],
 }
 `;
 
@@ -215,7 +249,9 @@ Object {
     "character": 6,
   },
   "message": "Unexpected token: \\"{\\".",
-  "template": undefined,
+  "path": Array [
+    "BadToken",
+  ],
 }
 `;
 
@@ -227,7 +263,9 @@ Object {
     "character": 6,
   },
   "message": "Unexpected token: \\"[\\".",
-  "template": undefined,
+  "path": Array [
+    null,
+  ],
 }
 `;
 
@@ -239,7 +277,9 @@ Object {
     "character": 6,
   },
   "message": "Unexpected token: \\"}\\".",
-  "template": undefined,
+  "path": Array [
+    null,
+  ],
 }
 `;
 
@@ -251,7 +291,9 @@ Object {
     "character": 6,
   },
   "message": "Unexpected token: \\"]\\".",
-  "template": undefined,
+  "path": Array [
+    null,
+  ],
 }
 `;
 
@@ -263,7 +305,9 @@ Object {
     "character": 6,
   },
   "message": "Unexpected token: \\",\\".",
-  "template": undefined,
+  "path": Array [
+    null,
+  ],
 }
 `;
 
@@ -275,7 +319,9 @@ Object {
     "character": 10,
   },
   "message": "Unexpected token: \\"/\\".",
-  "template": undefined,
+  "path": Array [
+    null,
+  ],
 }
 `;
 
@@ -287,7 +333,9 @@ Object {
     "character": 6,
   },
   "message": "Unexpected token: \\":\\".",
-  "template": undefined,
+  "path": Array [
+    null,
+  ],
 }
 `;
 
@@ -299,7 +347,9 @@ Object {
     "character": 6,
   },
   "message": "Unexpected token: \\"\\"a\\"\\".",
-  "template": undefined,
+  "path": Array [
+    null,
+  ],
 }
 `;
 
@@ -311,7 +361,9 @@ Object {
     "character": 6,
   },
   "message": "Unexpected token: \\"1\\".",
-  "template": undefined,
+  "path": Array [
+    null,
+  ],
 }
 `;
 
@@ -323,7 +375,9 @@ Object {
     "character": 10,
   },
   "message": "Unexpected token: \\"[\\".",
-  "template": undefined,
+  "path": Array [
+    null,
+  ],
 }
 `;
 
@@ -335,7 +389,9 @@ Object {
     "character": 10,
   },
   "message": "Unexpected token: \\"1\\".",
-  "template": undefined,
+  "path": Array [
+    null,
+  ],
 }
 `;
 
@@ -347,7 +403,9 @@ Object {
     "character": 13,
   },
   "message": "Unexpected token: \\"[\\".",
-  "template": undefined,
+  "path": Array [
+    null,
+  ],
 }
 `;
 
@@ -359,7 +417,9 @@ Object {
     "character": 13,
   },
   "message": "Unexpected token: \\"1\\".",
-  "template": undefined,
+  "path": Array [
+    null,
+  ],
 }
 `;
 
@@ -371,7 +431,9 @@ Object {
     "character": 29,
   },
   "message": "Unexpected token: \\"[end of file]\\".",
-  "template": undefined,
+  "path": Array [
+    null,
+  ],
 }
 `;
 
@@ -383,7 +445,9 @@ Object {
     "character": 32,
   },
   "message": "Unexpected token: \\"[end of file]\\".",
-  "template": undefined,
+  "path": Array [
+    null,
+  ],
 }
 `;
 
@@ -395,7 +459,9 @@ Object {
     "character": 6,
   },
   "message": "Unexpected token: \\"/\\".",
-  "template": undefined,
+  "path": Array [
+    null,
+  ],
 }
 `;
 
@@ -407,7 +473,9 @@ Object {
     "character": 8,
   },
   "message": "Unexpected token: \\"#\\".",
-  "template": undefined,
+  "path": Array [
+    null,
+  ],
 }
 `;
 
@@ -419,7 +487,9 @@ Object {
     "character": 21,
   },
   "message": "Unexpected token: \\"%}  d\\".",
-  "template": undefined,
+  "path": Array [
+    null,
+  ],
 }
 `;
 
@@ -431,7 +501,9 @@ Object {
     "character": 8,
   },
   "message": "Unexpected token: \\"1\\".",
-  "template": undefined,
+  "path": Array [
+    null,
+  ],
 }
 `;
 
@@ -443,7 +515,9 @@ Object {
     "character": 4,
   },
   "message": "Unexpected token: \\"...\\".",
-  "template": undefined,
+  "path": Array [
+    null,
+  ],
 }
 `;
 
@@ -455,7 +529,9 @@ Object {
     "character": 4,
   },
   "message": "Unexpected token: \\"=\\".",
-  "template": undefined,
+  "path": Array [
+    null,
+  ],
 }
 `;
 
@@ -467,7 +543,9 @@ Object {
     "character": 10,
   },
   "message": "Unexpected token: \\"~\\".",
-  "template": undefined,
+  "path": Array [
+    null,
+  ],
 }
 `;
 
@@ -479,7 +557,9 @@ Object {
     "character": 8,
   },
   "message": "Unexpected token: \\"match\\".",
-  "template": undefined,
+  "path": Array [
+    null,
+  ],
 }
 `;
 
@@ -492,7 +572,9 @@ Array [
       "character": 4,
     },
     "message": "The number of patterns does not match the number of data.",
-    "template": undefined,
+    "path": Array [
+      null,
+    ],
   },
 ]
 `;
@@ -506,7 +588,9 @@ Array [
       "character": 8,
     },
     "message": "The number of patterns does not match the number of data.",
-    "template": undefined,
+    "path": Array [
+      null,
+    ],
   },
   Object {
     "exn": undefined,
@@ -515,7 +599,9 @@ Array [
       "character": 8,
     },
     "message": "The number of patterns does not match the number of data.",
-    "template": undefined,
+    "path": Array [
+      null,
+    ],
   },
 ]
 `;
@@ -529,7 +615,9 @@ Array [
       "character": 25,
     },
     "message": "Unexpected token: \\"Abc\\".",
-    "template": undefined,
+    "path": Array [
+      null,
+    ],
   },
 ]
 `;
@@ -543,7 +631,9 @@ Array [
       "character": 24,
     },
     "message": "\\"null\\" is an illegal identifier name.",
-    "template": undefined,
+    "path": Array [
+      null,
+    ],
   },
 ]
 `;
@@ -557,7 +647,9 @@ Array [
       "character": 24,
     },
     "message": "\\"true\\" is an illegal identifier name.",
-    "template": undefined,
+    "path": Array [
+      null,
+    ],
   },
 ]
 `;
@@ -571,7 +663,9 @@ Array [
       "character": 25,
     },
     "message": "\\"false\\" is an illegal identifier name.",
-    "template": undefined,
+    "path": Array [
+      null,
+    ],
   },
 ]
 `;
@@ -585,7 +679,9 @@ Array [
       "character": 26,
     },
     "message": "\\"1\\" is an illegal identifier name.",
-    "template": undefined,
+    "path": Array [
+      null,
+    ],
   },
 ]
 `;
@@ -599,7 +695,9 @@ Array [
       "character": 8,
     },
     "message": "\\"null\\" is a reserved name",
-    "template": undefined,
+    "path": Array [
+      null,
+    ],
   },
 ]
 `;
@@ -613,7 +711,9 @@ Array [
       "character": 8,
     },
     "message": "\\"null\\" is a reserved name",
-    "template": undefined,
+    "path": Array [
+      null,
+    ],
   },
 ]
 `;
@@ -627,7 +727,9 @@ Array [
       "character": 8,
     },
     "message": "Unexpected token: \\"1\\".",
-    "template": undefined,
+    "path": Array [
+      null,
+    ],
   },
 ]
 `;
@@ -641,7 +743,9 @@ Array [
       "character": 5,
     },
     "message": "None of the patterns match the data. Consider a catch-all case to avoid this.",
-    "template": undefined,
+    "path": Array [
+      null,
+    ],
   },
 ]
 `;
@@ -655,7 +759,9 @@ Array [
       "character": 9,
     },
     "message": "None of the patterns match the data. Consider a catch-all case to avoid this.",
-    "template": undefined,
+    "path": Array [
+      null,
+    ],
   },
 ]
 `;
@@ -669,7 +775,9 @@ Array [
       "character": 9,
     },
     "message": "Binding \\"b\\" does not exist.",
-    "template": undefined,
+    "path": Array [
+      null,
+    ],
   },
 ]
 `;
@@ -683,7 +791,9 @@ Array [
       "character": 15,
     },
     "message": "Binding \\"b\\" does not exist.",
-    "template": undefined,
+    "path": Array [
+      null,
+    ],
   },
 ]
 `;
@@ -697,7 +807,9 @@ Array [
       "character": 8,
     },
     "message": "\\"c\\" is type array but the data is type null.",
-    "template": undefined,
+    "path": Array [
+      null,
+    ],
   },
 ]
 `;
@@ -711,7 +823,9 @@ Array [
       "character": 22,
     },
     "message": "This pattern is type boolean but the data is type string.",
-    "template": undefined,
+    "path": Array [
+      null,
+    ],
   },
 ]
 `;
@@ -725,7 +839,9 @@ Array [
       "character": 22,
     },
     "message": "This pattern is type boolean but the data is type string.",
-    "template": undefined,
+    "path": Array [
+      null,
+    ],
   },
 ]
 `;
@@ -739,7 +855,9 @@ Array [
       "character": 22,
     },
     "message": "This pattern is type boolean but the data is type number.",
-    "template": undefined,
+    "path": Array [
+      null,
+    ],
   },
 ]
 `;
@@ -753,7 +871,9 @@ Array [
       "character": 22,
     },
     "message": "This pattern is type boolean but the data is type number.",
-    "template": undefined,
+    "path": Array [
+      null,
+    ],
   },
 ]
 `;
@@ -767,7 +887,9 @@ Array [
       "character": 21,
     },
     "message": "This pattern is type boolean but the data is type array.",
-    "template": undefined,
+    "path": Array [
+      null,
+    ],
   },
 ]
 `;
@@ -781,7 +903,9 @@ Array [
       "character": 21,
     },
     "message": "This pattern is type boolean but the data is type array.",
-    "template": undefined,
+    "path": Array [
+      null,
+    ],
   },
 ]
 `;
@@ -795,7 +919,9 @@ Array [
       "character": 22,
     },
     "message": "This pattern is type boolean but the data is type object.",
-    "template": undefined,
+    "path": Array [
+      null,
+    ],
   },
 ]
 `;
@@ -809,7 +935,9 @@ Array [
       "character": 22,
     },
     "message": "This pattern is type object but the data is type string.",
-    "template": undefined,
+    "path": Array [
+      null,
+    ],
   },
 ]
 `;
@@ -823,7 +951,9 @@ Array [
       "character": 21,
     },
     "message": "This pattern is type object but the data is type boolean.",
-    "template": undefined,
+    "path": Array [
+      null,
+    ],
   },
 ]
 `;
@@ -837,7 +967,9 @@ Array [
       "character": 21,
     },
     "message": "This pattern is type object but the data is type boolean.",
-    "template": undefined,
+    "path": Array [
+      null,
+    ],
   },
 ]
 `;
@@ -851,7 +983,9 @@ Array [
       "character": 22,
     },
     "message": "This pattern is type object but the data is type boolean.",
-    "template": undefined,
+    "path": Array [
+      null,
+    ],
   },
 ]
 `;
@@ -865,7 +999,9 @@ Array [
       "character": 21,
     },
     "message": "This pattern is type object but the data is type array.",
-    "template": undefined,
+    "path": Array [
+      null,
+    ],
   },
 ]
 `;
@@ -879,7 +1015,9 @@ Array [
       "character": 22,
     },
     "message": "This pattern is type object but the data is type number.",
-    "template": undefined,
+    "path": Array [
+      null,
+    ],
   },
 ]
 `;
@@ -893,7 +1031,9 @@ Array [
       "character": 22,
     },
     "message": "This pattern is type object but the data is type number.",
-    "template": undefined,
+    "path": Array [
+      null,
+    ],
   },
 ]
 `;
@@ -907,7 +1047,9 @@ Array [
       "character": 22,
     },
     "message": "This pattern is type array but the data is type string.",
-    "template": undefined,
+    "path": Array [
+      null,
+    ],
   },
 ]
 `;
@@ -921,7 +1063,9 @@ Array [
       "character": 22,
     },
     "message": "This pattern is type array but the data is type string.",
-    "template": undefined,
+    "path": Array [
+      null,
+    ],
   },
 ]
 `;
@@ -935,7 +1079,9 @@ Array [
       "character": 21,
     },
     "message": "This pattern is type array but the data is type boolean.",
-    "template": undefined,
+    "path": Array [
+      null,
+    ],
   },
 ]
 `;
@@ -949,7 +1095,9 @@ Array [
       "character": 21,
     },
     "message": "This pattern is type array but the data is type boolean.",
-    "template": undefined,
+    "path": Array [
+      null,
+    ],
   },
 ]
 `;
@@ -963,7 +1111,9 @@ Array [
       "character": 21,
     },
     "message": "This pattern is type array but the data is type boolean.",
-    "template": undefined,
+    "path": Array [
+      null,
+    ],
   },
 ]
 `;
@@ -977,7 +1127,9 @@ Array [
       "character": 22,
     },
     "message": "This pattern is type array but the data is type boolean.",
-    "template": undefined,
+    "path": Array [
+      null,
+    ],
   },
 ]
 `;
@@ -991,7 +1143,9 @@ Array [
       "character": 22,
     },
     "message": "This pattern is type array but the data is type number.",
-    "template": undefined,
+    "path": Array [
+      null,
+    ],
   },
 ]
 `;
@@ -1005,7 +1159,9 @@ Array [
       "character": 22,
     },
     "message": "This pattern is type array but the data is type object.",
-    "template": undefined,
+    "path": Array [
+      null,
+    ],
   },
 ]
 `;
@@ -1019,7 +1175,9 @@ Array [
       "character": 22,
     },
     "message": "This pattern is type array but the data is type object.",
-    "template": undefined,
+    "path": Array [
+      null,
+    ],
   },
 ]
 `;
@@ -1033,7 +1191,9 @@ Array [
       "character": 22,
     },
     "message": "This pattern is type number but the data is type string.",
-    "template": undefined,
+    "path": Array [
+      null,
+    ],
   },
 ]
 `;
@@ -1047,7 +1207,9 @@ Array [
       "character": 21,
     },
     "message": "This pattern is type number but the data is type boolean.",
-    "template": undefined,
+    "path": Array [
+      null,
+    ],
   },
 ]
 `;
@@ -1061,7 +1223,9 @@ Array [
       "character": 22,
     },
     "message": "This pattern is type number but the data is type boolean.",
-    "template": undefined,
+    "path": Array [
+      null,
+    ],
   },
 ]
 `;
@@ -1075,7 +1239,9 @@ Array [
       "character": 21,
     },
     "message": "This pattern is type number but the data is type array.",
-    "template": undefined,
+    "path": Array [
+      null,
+    ],
   },
 ]
 `;
@@ -1089,7 +1255,9 @@ Array [
       "character": 22,
     },
     "message": "This pattern is type number but the data is type object.",
-    "template": undefined,
+    "path": Array [
+      null,
+    ],
   },
 ]
 `;
@@ -1103,7 +1271,9 @@ Array [
       "character": 22,
     },
     "message": "This pattern is type string but the data is type number.",
-    "template": undefined,
+    "path": Array [
+      null,
+    ],
   },
 ]
 `;
@@ -1117,7 +1287,9 @@ Array [
       "character": 21,
     },
     "message": "This pattern is type string but the data is type boolean.",
-    "template": undefined,
+    "path": Array [
+      null,
+    ],
   },
 ]
 `;
@@ -1131,7 +1303,9 @@ Array [
       "character": 22,
     },
     "message": "This pattern is type string but the data is type boolean.",
-    "template": undefined,
+    "path": Array [
+      null,
+    ],
   },
 ]
 `;
@@ -1145,7 +1319,9 @@ Array [
       "character": 21,
     },
     "message": "This pattern is type string but the data is type array.",
-    "template": undefined,
+    "path": Array [
+      null,
+    ],
   },
 ]
 `;
@@ -1159,7 +1335,9 @@ Array [
       "character": 22,
     },
     "message": "This pattern is type string but the data is type object.",
-    "template": undefined,
+    "path": Array [
+      null,
+    ],
   },
 ]
 `;
@@ -1172,7 +1350,9 @@ Object {
     "character": 17,
   },
   "message": "Unexpected token: \\"}\\".",
-  "template": undefined,
+  "path": Array [
+    null,
+  ],
 }
 `;
 
@@ -1184,7 +1364,9 @@ Object {
     "character": 18,
   },
   "message": "Unexpected token: \\",\\".",
-  "template": undefined,
+  "path": Array [
+    null,
+  ],
 }
 `;
 
@@ -1196,7 +1378,9 @@ Object {
     "character": 18,
   },
   "message": "Unexpected token: \\"1\\".",
-  "template": undefined,
+  "path": Array [
+    null,
+  ],
 }
 `;
 
@@ -1208,7 +1392,9 @@ Object {
     "character": 22,
   },
   "message": "Unexpected token: \\"[\\".",
-  "template": undefined,
+  "path": Array [
+    null,
+  ],
 }
 `;
 
@@ -1220,7 +1406,9 @@ Object {
     "character": 20,
   },
   "message": "Unexpected token: \\"\\"a\\"\\".",
-  "template": undefined,
+  "path": Array [
+    null,
+  ],
 }
 `;
 
@@ -1232,7 +1420,9 @@ Object {
     "character": 21,
   },
   "message": "Unexpected token: \\",\\".",
-  "template": undefined,
+  "path": Array [
+    null,
+  ],
 }
 `;
 
@@ -1244,7 +1434,9 @@ Object {
     "character": 24,
   },
   "message": "Unexpected token: \\"\\"a\\"\\".",
-  "template": undefined,
+  "path": Array [
+    null,
+  ],
 }
 `;
 
@@ -1256,7 +1448,9 @@ Object {
     "character": 24,
   },
   "message": "Unexpected token: \\"{\\".",
-  "template": undefined,
+  "path": Array [
+    null,
+  ],
 }
 `;
 
@@ -1268,7 +1462,9 @@ Object {
     "character": 26,
   },
   "message": "Unexpected token: \\"[\\".",
-  "template": undefined,
+  "path": Array [
+    null,
+  ],
 }
 `;
 
@@ -1280,7 +1476,9 @@ Object {
     "character": 26,
   },
   "message": "Unexpected token: \\"b\\".",
-  "template": undefined,
+  "path": Array [
+    null,
+  ],
 }
 `;
 
@@ -1292,7 +1490,9 @@ Object {
     "character": 20,
   },
   "message": "Unexpected token: \\"b\\".",
-  "template": undefined,
+  "path": Array [
+    null,
+  ],
 }
 `;
 
@@ -1304,7 +1504,9 @@ Object {
     "character": 20,
   },
   "message": "Unexpected token: \\"]\\".",
-  "template": undefined,
+  "path": Array [
+    null,
+  ],
 }
 `;
 
@@ -1316,7 +1518,9 @@ Object {
     "character": 12,
   },
   "message": "Unexpected token: \\"}\\".",
-  "template": undefined,
+  "path": Array [
+    null,
+  ],
 }
 `;
 
@@ -1328,7 +1532,9 @@ Object {
     "character": 12,
   },
   "message": "Unexpected token: \\"match\\".",
-  "template": undefined,
+  "path": Array [
+    null,
+  ],
 }
 `;
 
@@ -1340,7 +1546,9 @@ Object {
     "character": 19,
   },
   "message": "Invalid statement: \\"a\\".",
-  "template": undefined,
+  "path": Array [
+    null,
+  ],
 }
 `;
 
@@ -1352,7 +1560,9 @@ Object {
     "character": 27,
   },
   "message": "Unexpected token: \\"map\\".",
-  "template": undefined,
+  "path": Array [
+    null,
+  ],
 }
 `;
 
@@ -1364,7 +1574,9 @@ Object {
     "character": 27,
   },
   "message": "Unexpected token: \\"1\\".",
-  "template": undefined,
+  "path": Array [
+    null,
+  ],
 }
 `;
 
@@ -1376,7 +1588,9 @@ Object {
     "character": 14,
   },
   "message": "Unexpected token: \\"B\\".",
-  "template": undefined,
+  "path": Array [
+    null,
+  ],
 }
 `;
 
@@ -1388,7 +1602,9 @@ Object {
     "character": 14,
   },
   "message": "Unexpected token: \\"1\\".",
-  "template": undefined,
+  "path": Array [
+    null,
+  ],
 }
 `;
 
@@ -1400,7 +1616,9 @@ Object {
     "character": 6,
   },
   "message": "Unexpected token: \\"1\\".",
-  "template": undefined,
+  "path": Array [
+    null,
+  ],
 }
 `;
 
@@ -1413,7 +1631,9 @@ Array [
       "character": 21,
     },
     "message": "\\"x\\" is bound multiple times in this pattern.",
-    "template": undefined,
+    "path": Array [
+      null,
+    ],
   },
 ]
 `;
@@ -1427,7 +1647,10 @@ Array [
       "character": 4,
     },
     "message": "\\"a\\" is type null. I can only echo strings and numbers.",
-    "template": "A",
+    "path": Array [
+      "A",
+      null,
+    ],
   },
 ]
 `;
@@ -1442,8 +1665,10 @@ Array [
     },
     "kind": "Render",
     "location": undefined,
-    "message": "An exception was thrown while rendering this template. This is probably due to malformed input.",
-    "template": "A",
+    "message": "An exception was thrown while rendering a template component.",
+    "path": Array [
+      "ExceptionsTest",
+    ],
   },
 ]
 `;
@@ -1457,7 +1682,9 @@ Array [
       "character": 4,
     },
     "message": "\\"z\\" is type null. I can only echo strings and numbers.",
-    "template": undefined,
+    "path": Array [
+      null,
+    ],
   },
 ]
 `;
@@ -1471,7 +1698,9 @@ Array [
       "character": 4,
     },
     "message": "Template child \\"Z\\" does not exist.",
-    "template": undefined,
+    "path": Array [
+      null,
+    ],
   },
 ]
 `;
@@ -1485,7 +1714,9 @@ Array [
       "character": 4,
     },
     "message": "Component \\"Z\\" does not exist.",
-    "template": undefined,
+    "path": Array [
+      null,
+    ],
   },
 ]
 `;
@@ -1499,7 +1730,9 @@ Array [
       "character": 4,
     },
     "message": "Template child \\"C\\" does not exist.",
-    "template": undefined,
+    "path": Array [
+      null,
+    ],
   },
 ]
 `;
@@ -1513,7 +1746,9 @@ Array [
       "character": 4,
     },
     "message": "\\"a\\" is type null. I can only echo strings and numbers.",
-    "template": undefined,
+    "path": Array [
+      null,
+    ],
   },
   Object {
     "exn": undefined,
@@ -1522,7 +1757,9 @@ Array [
       "character": 12,
     },
     "message": "\\"b\\" is type array. I can only echo strings and numbers.",
-    "template": undefined,
+    "path": Array [
+      null,
+    ],
   },
   Object {
     "exn": undefined,
@@ -1531,7 +1768,9 @@ Array [
       "character": 20,
     },
     "message": "\\"c\\" is type null. I can only echo strings and numbers.",
-    "template": undefined,
+    "path": Array [
+      null,
+    ],
   },
 ]
 `;
@@ -1545,7 +1784,9 @@ Array [
       "character": 8,
     },
     "message": "\\"a\\" is a string. I can only map arrays.",
-    "template": undefined,
+    "path": Array [
+      null,
+    ],
   },
 ]
 `;
@@ -1559,7 +1800,9 @@ Array [
       "character": 8,
     },
     "message": "\\"b\\" is a boolean. I can only map arrays.",
-    "template": undefined,
+    "path": Array [
+      null,
+    ],
   },
 ]
 `;
@@ -1573,7 +1816,9 @@ Array [
       "character": 8,
     },
     "message": "\\"a\\" is a string. I can only map arrays.",
-    "template": undefined,
+    "path": Array [
+      null,
+    ],
   },
 ]
 `;
@@ -1587,7 +1832,9 @@ Array [
       "character": 4,
     },
     "message": "\\"b\\" is type boolean. I can only echo strings and numbers.",
-    "template": undefined,
+    "path": Array [
+      null,
+    ],
   },
 ]
 `;
@@ -1601,7 +1848,9 @@ Array [
       "character": 4,
     },
     "message": "\\"c\\" is type array. I can only echo strings and numbers.",
-    "template": undefined,
+    "path": Array [
+      null,
+    ],
   },
 ]
 `;
@@ -1615,7 +1864,94 @@ Array [
       "character": 8,
     },
     "message": "\\"b\\" is type boolean. I can only echo strings and numbers.",
-    "template": undefined,
+    "path": Array [
+      null,
+    ],
+  },
+]
+`;
+
+exports[`Stack trace is rendered correctly child templates 1`] = `
+Array [
+  Object {
+    "exn": undefined,
+    "kind": "Render",
+    "location": Object {
+      "character": 12,
+    },
+    "message": "\\"y\\" is type null. I can only echo strings and numbers.",
+    "path": Array [
+      "section: B#Children",
+      "A",
+    ],
+  },
+]
+`;
+
+exports[`Stack trace is rendered correctly components 1`] = `
+Array [
+  Object {
+    "exn": undefined,
+    "kind": "Render",
+    "location": Object {
+      "character": 4,
+    },
+    "message": "\\"c\\" is type null. I can only echo strings and numbers.",
+    "path": Array [
+      "C",
+      "match",
+      "B",
+      "A",
+    ],
+  },
+]
+`;
+
+exports[`Stack trace is rendered correctly map 1`] = `
+Array [
+  Object {
+    "exn": undefined,
+    "kind": "Render",
+    "location": Object {
+      "character": 23,
+    },
+    "message": "\\"c\\" is type null. I can only echo strings and numbers.",
+    "path": Array [
+      0,
+      "map",
+      "MapTest",
+    ],
+  },
+  Object {
+    "exn": undefined,
+    "kind": "Render",
+    "location": Object {
+      "character": 23,
+    },
+    "message": "\\"c\\" is type null. I can only echo strings and numbers.",
+    "path": Array [
+      1,
+      "map",
+      "MapTest",
+    ],
+  },
+]
+`;
+
+exports[`Stack trace is rendered correctly match 1`] = `
+Array [
+  Object {
+    "exn": undefined,
+    "kind": "Render",
+    "location": Object {
+      "character": 50,
+    },
+    "message": "\\"b\\" is type null. I can only echo strings and numbers.",
+    "path": Array [
+      "match",
+      "match",
+      "MatchTest",
+    ],
   },
 ]
 `;

@@ -1,8 +1,7 @@
-const { makeAst } = require("../");
+const { Compile } = require("../");
 
-const ast = makeAst("B: {{ title }}", module.filename);
+const ast = Compile.makeAst("B: {{ title }}", module.filename);
 
-module.exports = (render, props, children) => {
-  const title = props.title.toUpperCase();
-  return render(ast, { title }, children);
+module.exports = (env, { title }, children) => {
+  return env.render(ast, { title: title.toUpperCase() }, children);
 };

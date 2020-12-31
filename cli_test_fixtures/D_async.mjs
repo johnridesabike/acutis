@@ -1,7 +1,7 @@
-import { makeAst } from "../dist/acutis.mjs";
+import { Compile } from "../dist/acutis.mjs";
 
-const ast = makeAst("D: {{ title }}", import.meta.url);
+const ast = Compile.makeAst("D: {{ title }}", import.meta.url);
 
-export default async function make(render, { title }, children) {
-  return render(ast, { title: title.toUpperCase() }, children);
-}
+export default async (env, { title }, children) => {
+  return env.render(ast, { title: title.toUpperCase() }, children);
+};

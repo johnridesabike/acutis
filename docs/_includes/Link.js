@@ -14,17 +14,17 @@
  *   limitations under the License.
  */
 
-const { makeAst } = require("../../");
+const { Compile } = require("../../");
 
-const ast = makeAst(
+const ast = Compile.makeAst(
   `<a href="{{ href }}" aria-current="{{ current }}">
   {{ Children }}
 </a>`,
   module.filename
 );
 
-module.exports = (render, { siteUrl, path, page }, children) => {
+module.exports = (env, { siteUrl, path, page }, children) => {
   const current = path === page.url ? "true" : "false";
   const href = siteUrl + path;
-  return render(ast, { href, current }, children);
+  return env.render(ast, { href, current }, children);
 };

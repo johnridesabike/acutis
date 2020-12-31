@@ -25,7 +25,7 @@ module Pattern: {
 
   let toJson: (
     Acutis_Types.Pattern_Ast.node,
-    ~props: Js.Dict.t<Js.Json.t>,
+    ~props: Acutis_Types.props,
   ) => result<Js.Json.t, toJsonErrors>
 
   type errors =
@@ -37,21 +37,16 @@ module Pattern: {
   let test: (
     Acutis_Types.Pattern_Ast.t,
     Acutis_Types.NonEmpty.t<Js.Json.t>,
-  ) => result<Js.Dict.t<Js.Json.t>, errors>
-
-  type t<'a> = {
-    patterns: Acutis_Types.NonEmpty.t<Acutis_Types.Pattern_Ast.t>,
-    f: (. Js.Dict.t<Js.Json.t>) => 'a,
-  }
-
-  let match: (
-    Acutis_Types.NonEmpty.t<t<'a>>,
-    Acutis_Types.NonEmpty.t<Js.Json.t>,
-  ) => result<'a, errors>
+  ) => result<Acutis_Types.props, errors>
 }
 
-let makeContext: Js.Dict.t<Acutis_Types.templateFunctionSync> => Acutis_Types.renderContextSync
-
-let makeContextAsync: Js.Dict.t<
-  Acutis_Types.templateFunctionAsync,
-> => Acutis_Types.renderContextAsync
+let make: (
+  ~ast: Acutis_Types.Ast.ast,
+  ~queue: Belt.MutableQueue.t<'a>,
+  ~props: Acutis_Types.props,
+  ~children: Js.Dict.t<'a>,
+  ~envData: Acutis_Types.environmentData<'a>,
+  ~makeEnv: (. Acutis_Types.environmentData<'a>) => Acutis_Types.environment<'a>,
+  ~error: (. array<Acutis_Types.Errors.t>) => 'a,
+  ~try_: (. (. unit) => 'a, ~catch: (. _) => 'a) => 'a,
+) => unit

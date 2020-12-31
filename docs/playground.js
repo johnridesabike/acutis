@@ -14,6 +14,40 @@
  *   limitations under the License.
  */
 
+/*
+ https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Object/assign
+*/
+if (typeof Object.assign !== "function") {
+  // Must be writable: true, enumerable: false, configurable: true
+  Object.defineProperty(Object, "assign", {
+    value: function assign(target, varArgs) {
+      // .length of function is 2
+      "use strict";
+      if (target === null || target === undefined) {
+        throw new TypeError("Cannot convert undefined or null to object");
+      }
+
+      var to = Object(target);
+
+      for (var index = 1; index < arguments.length; index++) {
+        var nextSource = arguments[index];
+
+        if (nextSource !== null && nextSource !== undefined) {
+          for (var nextKey in nextSource) {
+            // Avoid bugs when hasOwnProperty is shadowed
+            if (Object.prototype.hasOwnProperty.call(nextSource, nextKey)) {
+              to[nextKey] = nextSource[nextKey];
+            }
+          }
+        }
+      }
+      return to;
+    },
+    writable: true,
+    configurable: true,
+  });
+}
+
 window.onload = function playground(_event) {
   var propsText = document.getElementById("props");
   var sourceText = document.getElementById("source");
@@ -68,15 +102,15 @@ window.onload = function playground(_event) {
     "  The {{ name }}, I suppose, has no color.\n" +
     "{%~ /map %}\n";
 
-  var renderContext = Acutis.renderContext({});
+  var env = Acutis.Environment.make({});
 
   var resultText = document.getElementById("result");
 
   function render(_event) {
     try {
       var props = JSON.parse(propsText.value);
-      var template = Acutis.compile(sourceText.value, "playground");
-      var result = template(renderContext, props, {});
+      var template = Acutis.Compile.make(sourceText.value, "playground");
+      var result = template(env, props, {});
       if (result.NAME === "errors") {
         resultText.value = "Errors:\n" + JSON.stringify(result.VAL, null, 2);
       } else {

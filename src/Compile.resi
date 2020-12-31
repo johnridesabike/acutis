@@ -22,8 +22,10 @@ module Pattern: {
 
 let makeAst: (~name: string=?, string) => Acutis_Types.Ast.t
 
-let makeAstJs: (. string, option<string>) => Acutis_Types.Ast.t
+let make: (~name: string=?, string) => Acutis_Types.template<'a>
 
-let make: (~name: string=?, string) => Acutis_Types.templateFunction<'a>
+module Js: {
+  let makeAst: (. string, option<string>) => Acutis_Types.Ast.t
 
-let makeJs: (. string, option<string>) => Acutis_Types.templateFunction<'a>
+  let make: (. string, option<string>) => Acutis_Types.template<'a>
+}

@@ -21,10 +21,11 @@ let getError = x =>
   | #errors(x) => x
   }
 
-let render = (src, json, components) =>
-  getError(Compile.make(src)(. Render.makeContext(components), json, Js.Dict.empty()))
+let render = (~name=?, src, json, components) =>
+  getError(Compile.make(src, ~name?)(. Environment.make(components), json, Js.Dict.empty()))
 
-let compile = x => x->Compile.makeAst->Acutis_Types.Valid.validate->Belt.Option.getExn->getError
+let compile = (~name=?, x) =>
+  x->Compile.makeAst(~name?)->Acutis_Types.Valid.validate->Belt.Option.getExn->getError
 
 let components = Js.Dict.empty()
 let dict = Js.Dict.fromArray
@@ -46,7 +47,7 @@ describe("Lexer", ({test, _}) => {
     expect.value(compile(`a {% raw b %%}`)).toMatchSnapshot()
     expect.value(compile(`a {{ b %}`)).toMatchSnapshot()
     expect.value(compile(`a {{ a b }}`)).toMatchSnapshot()
-    expect.value(compile(j`a {{ ? }}`)).toMatchSnapshot()
+    expect.value(compile(~name="BadCharacter", `a {{ ? }}`)).toMatchSnapshot()
   })
 
   test("Illegal binding names", ({expect, _}) => {
@@ -57,15 +58,15 @@ describe("Lexer", ({test, _}) => {
   test("Other stuff", ({expect, _}) => {
     expect.value(compile(`a {{ "a`)).toMatchSnapshot()
     expect.value(compile(`a {* b`)).toMatchSnapshot()
-    expect.value(compile(`a {* b {* c *}`)).toMatchSnapshot()
+    expect.value(compile(~name="BadComment", `a {* b {* c *}`)).toMatchSnapshot()
     expect.value(compile(`a {% b`)).toMatchSnapshot()
-    expect.value(compile(`a {{ --1 }}`)).toMatchSnapshot()
+    expect.value(compile(~name="BadIdentifier", `a {{ --1 }}`)).toMatchSnapshot()
   })
 })
 
 describe("Parser", ({test, _}) => {
   test("Unexpected tokens", ({expect, _}) => {
-    expect.value(compile(`a {% { %}`)).toMatchSnapshot()
+    expect.value(compile(~name="BadToken", `a {% { %}`)).toMatchSnapshot()
     expect.value(compile(`a {% [ %}`)).toMatchSnapshot()
     expect.value(compile(`a {% } %}`)).toMatchSnapshot()
     expect.value(compile(`a {% ] %}`)).toMatchSnapshot()
@@ -91,12 +92,12 @@ describe("Parser", ({test, _}) => {
   })
 
   test("Illegal binding name", ({expect, _}) => {
-    expect.value(compile(`{% match null %}`)).toMatchSnapshot()
+    expect.value(compile(~name="BadBinding", `{% match null %}`)).toMatchSnapshot()
     expect.value(compile(`{% match a, null %}`)).toMatchSnapshot()
   })
 
   test("Invalid statements", ({expect, _}) => {
-    expect.value(compile(`a {% c %}`)).toMatchSnapshot()
+    expect.value(compile(~name="BadStatement", `a {% c %}`)).toMatchSnapshot()
   })
 })
 
@@ -211,7 +212,11 @@ describe("Patterns", ({test, _}) => {
   test("Missing bindings", ({expect, _}) => {
     let props = dict([("a", Js.Json.number(1.0)), ("c", Js.Json.null)])
     let components = dict([
-      ("A", (. render, props, children) => render(. Compile.makeAst(""), props, children)),
+      (
+        "A",
+        (. env: Acutis_Types.environment<'a>, props, children) =>
+          env.render(. Compile.makeAst(""), props, children),
+      ),
     ])
     expect.value(render(`{% A b={b} / %}`, props, components)).toMatchSnapshot()
     expect.value(render(`{% A b=[a, ...b] / %}`, props, components)).toMatchSnapshot()
@@ -360,16 +365,16 @@ describe("Rendering", ({test, _}) => {
     expect.value(render("{{ z }}", Js.Dict.empty(), components)).toMatchSnapshot()
     expect.value(render("{{ Z }}", Js.Dict.empty(), components)).toMatchSnapshot()
     expect.value(render("{% Z / %}", Js.Dict.empty(), components)).toMatchSnapshot()
-    let a = (. render, props, templates) => {
-      render(. Compile.makeAst("{{ B }}"), props, templates)
+    let a: Acutis_Types.template<_> = (. env, props, templates) => {
+      env.render(. Compile.makeAst("{{ B }}"), props, templates)
     }
     let result = render(`{% A B=C / %}`, Js.Dict.empty(), dict([("A", a)]))
     expect.value(result).toMatchSnapshot()
   })
 
   test("Error messages display component name correctly", ({expect, _}) => {
-    let a = (. render, props, templates) => {
-      render(. Compile.makeAst("{{ a }}", ~name="A"), props, templates)
+    let a: Acutis_Types.template<_> = (. env, props, templates) => {
+      env.render(. Compile.makeAst("{{ a }}", ~name="A"), props, templates)
     }
     let components = dict([("A", a)])
     let data = Js.Dict.empty()
@@ -388,12 +393,12 @@ describe("Rendering", ({test, _}) => {
   })
 
   test("Exceptions thrown in components are caught correctly", ({expect, _}) => {
-    let a = (. _render, _props, _templates) => {
+    let a = (. _env, _props, _children) => {
       raise(Failure("fail."))
     }
     let components = dict([("A", a)])
     let data = Js.Dict.empty()
-    let result = render(`{% A / %}`, data, components)
+    let result = render(~name="ExceptionsTest", `{% A / %}`, data, components)
     expect.value(result).toMatchSnapshot()
   })
 })
@@ -402,12 +407,61 @@ describe("Inputs", ({test, _}) => {
   test("Bad source input", ({expect, _}) => {
     expect.value(
       getError(
-        Compile.makeJs(. Obj.magic(1), None)(.
-          Render.makeContext(Js.Dict.empty()),
+        Compile.make(Obj.magic(1))(.
+          Environment.make(Js.Dict.empty()),
           Js.Dict.empty(),
           Js.Dict.empty(),
         ),
       ),
     ).toMatchSnapshot()
+  })
+})
+
+describe("Stack trace is rendered correctly", ({test, _}) => {
+  test("match", ({expect, _}) => {
+    expect.value(
+      render(
+        ~name="MatchTest",
+        `{% match a with 1.0 %} {% match a with 1.0 %} {{ b }} {% /match %} {% /match %}`,
+        dict([("a", Js.Json.number(1.0))]),
+        Js.Dict.empty(),
+      ),
+    ).toMatchSnapshot()
+  })
+
+  test("map", ({expect, _}) => {
+    expect.value(
+      render(
+        ~name="MapTest",
+        `{% map a with b %} {{ c }} {% /map %}`,
+        dict([("a", Js.Json.numberArray([1.0, 2.0]))]),
+        Js.Dict.empty(),
+      ),
+    ).toMatchSnapshot()
+  })
+
+  test("components", ({expect, _}) => {
+    let c: Acutis_Types.template<_> = (. env, props, templates) => {
+      env.render(. Compile.makeAst("{{ c }}", ~name="C"), props, templates)
+    }
+    let b: Acutis_Types.template<_> = (. env, props, templates) => {
+      env.render(.
+        Compile.makeAst(`{% match x with "x" %} {% C /%} {% /match %}`, ~name="B"),
+        props,
+        templates,
+      )
+    }
+    let components = dict([("C", c), ("B", b)])
+    let data = dict([("x", Js.Json.string("x"))])
+    expect.value(render(~name="A", `{% B x / %}`, data, components)).toMatchSnapshot()
+  })
+
+  test("child templates", ({expect, _}) => {
+    let b: Acutis_Types.template<_> = (. env, props, templates) => {
+      env.render(. Compile.makeAst(`{{ Children }}`, ~name="B"), props, templates)
+    }
+    let components = dict([("B", b)])
+    let data = Js.Dict.empty()
+    expect.value(render(~name="A", `{% B %} {{ y }} {% /B %}`, data, components)).toMatchSnapshot()
   })
 })

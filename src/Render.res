@@ -21,14 +21,13 @@ module Json = Js.Json
 module List = Belt.List
 module Queue = Belt.MutableQueue
 open Acutis_Types
-open Debug
 
 module Pattern = {
   module Result = Belt.Result
   open Pattern_Ast
 
   type toJsonErrors =
-    | BindingTypeMismatch({data: Js.Json.tagged_t, pattern: node, binding: string})
+    | BindingTypeMismatch({data: Json.tagged_t, pattern: node, binding: string})
     | BindingDoesNotExist({loc: loc, binding: string})
 
   let listToArrayResult = l => {
@@ -230,7 +229,7 @@ let escape = str => {
 let getBindingOrNull = (props, binding) =>
   switch Js.Dict.get(props, binding) {
   | Some(x) => x
-  | None => Js.Json.null
+  | None => Json.null
   }
 
 let echoBinding = (props, binding) =>
@@ -246,14 +245,15 @@ let addImplicitIndexBinding = (~loc, . x: Pattern_Ast.t): Pattern_Ast.t =>
   | x => x
   }
 
-let match = (patterns, json, ~loc, ~name) =>
+let match = (patterns, json, ~loc, ~stack) =>
   switch Pattern.match(patterns, json) {
   | Ok() as x => x
-  | Error(NoMatch) => Error(noMatchFound(~loc, ~name))
-  | Error(PatternNumberMismatch) => Error(patternNumberMismatch(~loc, ~name))
+  | Error(NoMatch) => Error(Debug.noMatchFound(~loc, ~stack))
+  | Error(PatternNumberMismatch) => Error(Debug.patternNumberMismatch(~loc, ~stack))
   | Error(PatternTypeMismatch({pattern, data})) =>
-    Error(patternTypeMismatch(~data, ~pattern, ~name))
-  | Error(TooManyBindings({loc, binding})) => Error(nameBoundMultipleTimes(~binding, ~loc, ~name))
+    Error(Debug.patternTypeMismatch(~data, ~pattern, ~stack))
+  | Error(TooManyBindings({loc, binding})) =>
+    Error(Debug.nameBoundMultipleTimes(~binding, ~loc, ~stack))
   }
 
 let trimStart = string => {
@@ -278,25 +278,16 @@ let trimEnd = string => {
 external dictMerge: (@as(json`{}`) _, ~base: Js.Dict.t<'a>, Js.Dict.t<'a>) => Js.Dict.t<'a> =
   "assign"
 
-let rec make = (
-  ~queue,
-  ~ok,
-  ~error,
-  ~tryCatch,
-  ~ast,
-  ~props,
-  ~children,
-  ~components,
-  ~name,
-  ~renderContext,
-) => {
+let rec make = (~ast, ~queue, ~props, ~children, ~envData, ~makeEnv, ~error, ~try_) => {
+  let {components, stack} = envData
+  let env = makeEnv(. envData)
   let rec aux = ast =>
     switch ast {
-    | list{} => ()
+    | list{} => () // Done
     | list{EchoChild(loc, child), ...ast} =>
       let x = switch Js.Dict.get(children, child) {
       | Some(x) => x
-      | None => error(.[childDoesNotExist(~loc, ~child, ~name)])
+      | None => error(.[Debug.childDoesNotExist(~loc, ~child, ~stack)])
       }
       Queue.add(queue, x)
       aux(ast)
@@ -307,27 +298,27 @@ let rec make = (
       | TrimEnd => trimEnd(str)
       | TrimBoth => trimStart(trimEnd(str))
       }
-      Queue.add(queue, ok(. str))
+      Queue.add(queue, env.return(. str))
       aux(ast)
     | list{EchoBinding(loc, binding), ...ast} =>
       let x = switch echoBinding(props, binding) {
-      | Ok(x) => ok(. escape(x))
-      | Error(type_) => error(.[badEchoType(~binding, ~type_, ~loc, ~name)])
+      | Ok(x) => env.return(. escape(x))
+      | Error(type_) => error(.[Debug.badEchoType(~binding, ~type_, ~loc, ~stack)])
       }
       Queue.add(queue, x)
       aux(ast)
     | list{Unescaped(loc, binding), ...ast} =>
       let x = switch echoBinding(props, binding) {
-      | Ok(x) => ok(. x)
-      | Error(type_) => error(.[badEchoType(~binding, ~type_, ~loc, ~name)])
+      | Ok(x) => env.return(. x)
+      | Error(type_) => error(.[Debug.badEchoType(~binding, ~type_, ~loc, ~stack)])
       }
       Queue.add(queue, x)
       aux(ast)
     | list{EchoString(str), ...ast} =>
-      Queue.add(queue, ok(. escape(str)))
+      Queue.add(queue, env.return(. escape(str)))
       aux(ast)
     | list{EchoNumber(num), ...ast} =>
-      Queue.add(queue, ok(. escape(Float.toString(num))))
+      Queue.add(queue, env.return(. escape(Float.toString(num))))
       aux(ast)
     | list{Match(loc, identifiers, cases), ...ast} =>
       let patterns = NonEmpty.map(cases, ~f=(. {patterns, ast}) => {
@@ -338,16 +329,14 @@ let rec make = (
             ~ast,
             ~props=dictMerge(~base=props, props'),
             ~children,
-            ~components,
-            ~name,
-            ~renderContext,
-            ~ok,
+            ~envData={...envData, stack: list{Match, ...stack}},
+            ~makeEnv,
             ~error,
-            ~tryCatch,
+            ~try_,
           ),
       })
       let data = NonEmpty.map(identifiers, ~f=(. (_loc, x)) => getBindingOrNull(props, x))
-      switch match(patterns, data, ~loc, ~name) {
+      switch match(patterns, data, ~loc, ~stack) {
       | Ok() => ()
       | Error(e) => Queue.add(queue, error(.[e]))
       }
@@ -365,25 +354,26 @@ let rec make = (
                   ~ast,
                   ~props=dictMerge(~base=props, props'),
                   ~children,
-                  ~components,
-                  ~name,
-                  ~renderContext,
-                  ~ok,
+                  ~envData={
+                    ...envData,
+                    stack: list{Index(index), Map, ...stack},
+                  },
+                  ~makeEnv,
                   ~error,
-                  ~tryCatch,
+                  ~try_,
                 ),
             }
           })
-          switch match(patterns, List(json, list{index->Int.toFloat->Json.number}), ~loc, ~name) {
+          switch match(patterns, List(json, list{index->Int.toFloat->Json.number}), ~loc, ~stack) {
           | Ok() => ()
           | Error(e) => Queue.add(queue, error(.[e]))
           }
         })
-      | type_ => Queue.add(queue, error(.[badMapType(~binding, ~type_, ~loc, ~name)]))
+      | type_ => Queue.add(queue, error(.[Debug.badMapType(~binding, ~type_, ~loc, ~stack)]))
       }
       aux(ast)
-    | list{Component({loc, name: comp, props: compPropsRaw, children: compChildrenRaw}), ...ast} =>
-      switch Js.Dict.get(components, comp) {
+    | list{Component({loc, name, props: compPropsRaw, children: compChildrenRaw}), ...ast} =>
+      switch Js.Dict.get(components, name) {
       | Some(component) =>
         let compProps = Js.Dict.empty()
         let compChildren = Js.Dict.empty()
@@ -391,12 +381,16 @@ let rec make = (
         List.forEachU(compChildrenRaw, (. (key, child)) => {
           switch child {
           | ChildBlock(ast) =>
-            let data = renderContext(. Valid.make(#data({name: name, ast: ast})), props, children)
+            let data = env.render(.
+              Valid.make(#data({name: Some(`section: ${name}#${key}`), ast: ast})),
+              props,
+              children,
+            )
             Js.Dict.set(compChildren, key, data)
           | ChildName(child) =>
             switch Js.Dict.get(children, child) {
             | Some(data) => Js.Dict.set(compChildren, key, data)
-            | None => Queue.add(errors, childDoesNotExist(~loc, ~child, ~name))
+            | None => Queue.add(errors, Debug.childDoesNotExist(~loc, ~child, ~stack))
             }
           }
         })
@@ -404,123 +398,26 @@ let rec make = (
           switch Pattern.toJson(data, ~props) {
           | Ok(data) => Js.Dict.set(compProps, key, data)
           | Error(BindingTypeMismatch({data, pattern, binding})) =>
-            Queue.add(errors, bindingTypeMismatch(~data, ~pattern, ~binding, ~name))
+            Queue.add(errors, Debug.bindingTypeMismatch(~data, ~pattern, ~binding, ~stack))
           | Error(BindingDoesNotExist({loc, binding})) =>
-            Queue.add(errors, bindingDoesNotExist(~loc, ~binding, ~name))
+            Queue.add(errors, Debug.bindingDoesNotExist(~loc, ~binding, ~stack))
           }
         )
         if Queue.isEmpty(errors) {
           Queue.add(
             queue,
-            tryCatch(.
-              (. ()) => component(. renderContext, compProps, compChildren),
-              (. e) => error(.[exn(e, ~name=Some(comp), ~kind=#Render)]),
+            try_(.
+              (. ()) => component(. env, compProps, compChildren),
+              ~catch=(. e) => error(.[Debug.componentExn(e, ~stack)]),
             ),
           )
         } else {
           Queue.add(queue, error(. Queue.toArray(errors)))
         }
-      | None => Queue.add(queue, error(.[componentDoesNotExist(~component=comp, ~loc, ~name)]))
+      | None =>
+        Queue.add(queue, error(.[Debug.componentDoesNotExist(~component=name, ~loc, ~stack)]))
       }
       aux(ast)
     }
   aux(ast)
-}
-
-let makeContext: Js.Dict.t<templateFunctionSync> => renderContextSync = {
-  let ok = (. x) => #data(x)
-  let error = (. x) => #errors(x)
-  let tryCatch = (. f, f') =>
-    try {
-      f(.)
-    } catch {
-    | e => f'(. e)
-    }
-
-  let toResult = queue => {
-    let result = ref("")
-    let errors = Queue.make()
-    Queue.forEachU(queue, (. x) => {
-      switch x {
-      | #data(s) => result := result.contents ++ s
-      | #errors(e) => Array.forEachU(e, (. x) => Queue.add(errors, x))
-      }
-    })
-    if Queue.isEmpty(errors) {
-      #data(result.contents)
-    } else {
-      #errors(Queue.toArray(errors))
-    }
-  }
-
-  components => {
-    let rec renderContext = (. ast, props, children) => {
-      switch Valid.validate(ast) {
-      | Some(#data({ast, name})) =>
-        let queue = Queue.make()
-        make(
-          ~queue,
-          ~ast,
-          ~props,
-          ~children,
-          ~components,
-          ~name,
-          ~renderContext,
-          ~ok,
-          ~error,
-          ~tryCatch,
-        )
-        toResult(queue)
-      | Some(#errors(x)) => #errors([x])
-      | None => #errors([invalidInput()])
-      }
-    }
-    renderContext
-  }
-}
-
-let makeContextAsync: Js.Dict.t<templateFunctionAsync> => renderContextAsync = {
-  let ok = (. x) => Js.Promise.resolve(#data(x))
-  let error = (. x) => Js.Promise.resolve(#errors(x))
-  let tryCatch = (. f, f') => f(.) |> Js.Promise.catch(e => f'(. e))
-
-  let toResult = arr => {
-    let result = ref("")
-    let errors = Queue.make()
-    Array.forEachU(arr, (. x) => {
-      switch x {
-      | #data(s) => result := result.contents ++ s
-      | #errors(e) => Array.forEachU(e, (. x) => Queue.add(errors, x))
-      }
-    })
-    if Queue.isEmpty(errors) {
-      Js.Promise.resolve(#data(result.contents))
-    } else {
-      Js.Promise.resolve(#errors(Queue.toArray(errors)))
-    }
-  }
-
-  components => {
-    let rec renderContext = (. ast, props, children) =>
-      switch Valid.validate(ast) {
-      | Some(#data({ast, name})) =>
-        let queue = Queue.make()
-        make(
-          ~queue,
-          ~ast,
-          ~props,
-          ~children,
-          ~components,
-          ~name,
-          ~renderContext,
-          ~ok,
-          ~error,
-          ~tryCatch,
-        )
-        queue |> Queue.toArray |> Js.Promise.all |> Js.Promise.then_(toResult)
-      | Some(#errors(e)) => error(.[e])
-      | None => error(.[invalidInput()])
-      }
-    renderContext
-  }
 }
