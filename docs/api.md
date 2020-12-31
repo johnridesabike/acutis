@@ -8,12 +8,15 @@ layout: layout.acutis
 next: null
 ---
 
-An Acutis template tree is rendered using a *source string*, a *props
-object*, a *render context function*, and an *object with template
-components*.
+An Acutis template tree is rendered using a *template source*, a *props
+object*, an *environment object*, and an *object with template components*.
 
-Template sources are compiled into functions. These functions are then executed
-with their props and a render context function, which produces the final output.
+Template sources are compiled into functions. These functions are then
+executed with their props and their environment's renderer, which produces
+the final output.
+
+(Note: This document refers to "objects" due to their representation in
+JavaScript. In ReScript, these are records or dictionaries.)
 
 [[toc]]
 
@@ -22,12 +25,11 @@ with their props and a render context function, which produces the final output.
 ### JavaScript
 
 ```js
-const { compile, renderContext } = require("acutis-lang");
-const template = compile("Hello {{ name }}.", module.filename);
-const footer = compile("Copyright 2020.", "Footer")
-const render = renderContext({Footer: footer});
-const props = {name: "Carlo"}
-const result = template(render, props, {});
+const { Compile, Environment } = require("acutis-lang");
+const template = Compile.make("Hello {{ name }}.", module.filename);
+const footer = Compile.make("Copyright 2020.", "Footer")
+const env = Environment.make({Footer: footer});
+const result = template(env, {name: "Carlo"}, {});
 if (result.NAME === "errors") {
   console.error(result.VAL);
 } else {
@@ -41,9 +43,9 @@ if (result.NAME === "errors") {
 open Acutis
 let template = Compile.make("Hello {{ name }}.", __FILE__)
 let footer = Compile.make("Copyright 2020.", "Footer")
-let render = Render.makeContext(Js.Dict.fromArray([("Footer", footer)]))
+let env = Environment.make(Js.Dict.fromArray([("Footer", footer)]))
 let props = Js.Dict.fromArray([("name", "Carlo")])
-switch template(. render, props, Js.Dict.empty()) {
+switch template(. env, props, Js.Dict.empty()) {
 | #data(data) => Js.log(data) // Logs: "Hello Carlo."
 | #errors(errors) => Js.Console.error(errors)
 }
@@ -51,17 +53,17 @@ switch template(. render, props, Js.Dict.empty()) {
 
 ## Function reference
 
-### `compile`
+### `Compile.make`
 
-The `compile` function (`Compile.make` in ReScript) compiles a string into a
-template function. It can optionally accept a string name for debugging. See
-[template functions][1] to read about how these work.
+The `Compile.make` function compiles a string into a template function. It
+can optionally accept a string name for debugging. See [template
+functions] to read about how these work.
 
 #### JavaScript example
 
 ```js
-const { compile } = require("acutis-lang");
-const template = compile("Hello {{ name }}.", module.filename);
+const { Compile } = require("acutis-lang");
+const template = Compile.make("Hello {{ name }}.", module.filename);
 ```
 
 #### ReScript example
@@ -73,21 +75,21 @@ let template = Compile.make("Hello {{ name }}.", ~name=__FILE__)
 
 ⚠️ In ReScript, the function returned by `Compile.make` is [uncurried].
 
-### `renderContext`
+### `Environment.make`
 
-The `renderContext` function (`Render.makeContext` in ReScript) accepts an
-object with all of the template components. This makes our template
-components global across all templates in the render tree. It returns the
-function used to actually render the compiled templates.
+The `Environment.make` function accepts an object with all of the template
+components. This makes our template components global across all templates in
+the render tree. It returns an object with functions used to render compiled
+templates.
 
 #### JavaScript example
 
 ```js
-const { compile, renderContext } = require("acutis-lang");
+const { Compile, Environment } = require("acutis-lang");
 const components = {
-  "Footer": compile("Copyright 2020.", "Footer")
+  Footer: Compile.make("Copyright 2020.", "Footer")
 };
-const render = renderContext(components);
+const env = Environment.make(components);
 ```
 
 #### ReScript example
@@ -97,15 +99,14 @@ open Acutis
 let components = Js.Dict.fromArray([
   ("Footer", Compile.make("Copyright 2020.", ~name="Footer"))
 ])
-let render = Render.makeContext(components)
+let env = Environment.make(components)
 ```
 
-### `renderContextAsync`
+### `Environment.Async.make`
 
-The `renderContextAsync` function (`Render.makeContextAsync` in ReScript)
-works identically to `renderContext` except that it returns a [Promise] of
-the result. Use this if you have [template functions][1] that require
-asynchronous logic.
+The functions returned by `Environment.Async.make` work identically to
+`Environment.make` except that they each return a [Promise]. Use this if you
+have [template functions] that require asynchronous logic.
 
 ## How to handle the output
 
@@ -139,7 +140,9 @@ be the rendered output.
 {
   "NAME": "errors",
   "VAL": [
-    { "message": "An object with error details goes here." }
+    {
+      "message": "An object with error details goes here."
+    }
   ]
 }
 ```
@@ -173,12 +176,16 @@ message:
 
 ```json
 {
-  "kind": "Syntax",
+  "kind": "Render",
   "location": {
     "character": 11,
   },
-  "message": "Invalid character: \"*\".",
-  "template": "TemplateName"
+  "message": "\"a\" is type null. I can only echo strings and numbers.",
+  "path": [
+    "ChildTemplate.acutis",
+    "match",
+    "MainTemplate.acutis"
+  ]
 }
 ```
 
@@ -192,49 +199,51 @@ one error, then it won't return any rendered data.
 
 ## Template functions overview
 
-Templates returned by `compile` are functions that accept three arguments:
+Templates returned by `Compile.make` are functions that accept three
+arguments:
 
-1. The render context function, created by `renderContext`.
+1. An environment object created by `Environment.make`.
 2. A props object.
-3. A children object.
+3. A children object. 
+
+In ReScript, the environment is a [record], and props and children are both
+[JS dictionary objects][dict].
 
 The children argument is similar to the props, except it contains rendered
 template sections. You'll typically pass an empty object (`{}`) to this from
-your top-level template. See [using the `children` argument][3] for more
+your top-level template. See [using the `children` argument][1] for more
 information about this.
 
 ```js
-const result = template(renderContext, props, children);
+const result = template(env, props, children);
 ```
 
 ## Template component functions
 
 Because templates are just functions, we can write them manually with custom
 JavaScript. Any functions we write will need to adhere to the same signature
-as the functions created by `compile`.
+as the functions created by `Compile.make`.
 
-The render context function (taken from the first argument) accepts three
-arguments: a low-level abstract syntax tree (AST), a props object , and the
-optional children object.
+⚠️ In ReScript, template functions and their environment functions are
+[uncurried].
 
-⚠️ In ReScript, these functions must be [uncurried].
+### `Compile.makeAst`
 
-### `makeAst`
+The `Compile.makeAst` function is part of the low-level API that produces the
+raw AST for a template. It accepts a string of the template contents, and its
+output should be passed to [`environment.render`][environment.render].
 
-The `makeAst` function (`Compile.makeAst` in ReScript) is part of the
-low-level API that produces the raw AST for a template.
-
-Suppose we want a `Footer` template that will always return the current year.
-We can write a template to similar to the following.
+Suppose we want a `Footer` template that will always display the current
+year. We can write a template to similar to the following.
 
 #### JavaScript example
 
 ```js
-const { makeAst } = require("acutis-lang");
-const ast = makeAst("Copyright {{ year }}", module.filename);
-function Footer(render, props, children) {
-  const props = {year: new Date().getFullYear()};
-  return render(ast, props, children)
+const { Compile } = require("acutis-lang");
+const ast = Compile.makeAst("Copyright {{ year }}", module.filename);
+function Footer(env, props, children) {
+  const year = new Date().getFullYear();
+  return env.render(ast, { year }, children)
 }
 ```
 
@@ -242,33 +251,179 @@ function Footer(render, props, children) {
 
 ```reason
 let ast = Acutis.Compile.makeAst("Copyright {{ year }}", __FILE__)
-let footer = (. render, props, children) => {
-  let props = Js.Dict.fromArray([
-    ("year", Js.Date.make()->Js.Date.getFullYear)
-  ])
-  render(. ast, props, children)
+let footer = (. env, props, children) => {
+  Js.Dict.set(props, "year", Js.Date.make()->Js.Date.getFullYear)
+  env.render(. ast, props, children)
 }
 ```
+
+⚠️ In ReScript, you may need to help the type inference by annotating your
+functions like this:
+
+```reason
+open Acutis
+let footer: Acutis_Types.template<'a> = (. env, props, children) =>
+  env.render(. ast, props, children)
+```
+
+## The environment functions
+
+The environment object (taken from the first argument) contains functions for
+returning rendered template contents.
+
+### `environment.render`
+
+The `render` function processes compiled template ASTs.
+
+#### JavaScript example
+
+```js
+// Assume the AST is already defined
+function template(env, props, children) {
+  return env.render(ast, props, children);
+}
+```
+
+#### ReScript example
+
+```reason
+// Assume the AST is already defined
+let template = (. env, props, children) =>
+  env.render(. ast, props, children)
+```
+
+### `environment.return`
+
+The `return` function returns a string as-is, wrapped inside the result type.
+This is useful if you don't need the Acutis language features for a
+component.
+
+#### JavaScript example
+
+```js
+function sayHi(env, props, children) {
+  return env.return("Hello");
+}
+```
+
+#### ReScript example
+
+```reason
+let sayHi = (. env, props, children) =>
+  env.return(. "Hello")
+```
+
+### `environment.error`
+
+The `error` function returns an error with the given message. This will cause
+the template to fail to render.
+
+#### JavaScript example
+
+```js
+function fail(env, props, children) {
+  return env.error("Fail.");
+}
+```
+
+#### ReScript example
+
+```reason
+let fail = (. env, props, children) =>
+  env.error(. "Fail.")
+```
+
+### `environment.mapChild`
+
+The `mapChild` function takes a child prop and a callback to transform the
+child's contents. It returns a new child and does not mutate the original. If
+the child has an error, then `mapChild` has no effect.
+
+Template children are valid return types (each one is a fully rendered
+template). So they can either be returned as your template or passed to the
+children argument of `environment.render`.
+
+#### JavaScript example
+
+```js
+function shout(env, props, { Children }) {
+  if (Children) {
+    return env.mapChild(Children, (x) => x.toUpperCase());
+  } else {
+    return env.return("");
+  }
+}
+```
+
+#### ReScript example
+
+```reason
+let shout = (. env, props, children) =>
+  switch Js.Dict.get(children, "Children") {
+  | Some(children) =>
+    env.mapChild(. children, (. x) => Js.String.toUpperCase(x))
+  | None => env.return(. "")
+  }
+```
+
+### `environment.flatMapChild`
+
+The `flatMapChild` function works similarly to `mapChild` except that it does
+not automatically wrap the returned data. When using `flatMapChild`, you're
+responsible for wrapping the output with `environment.return` in your
+callback. This means that you can choose to use `environment.error` instead
+to represent failures.
+
+#### JavaScript example
+
+```js
+// assume we already defined a function called somethingThatThrows
+function template(env, props, { Children }) {
+  return env.flatMapChild(Children, (contents) => {
+    try {
+      return env.return(somethingThatThrows(contents));
+    } catch (e) {
+      return env.error(e.message);
+    }
+  });
+}
+```
+
+#### ReScript example
+
+```reason
+// assume we already defined a function called somethingThatThrows
+let shout = (. env, props, children) =>
+  env.flatMapChild(.
+    Js.Dict.unsafeGet(children, "Children"),
+    (. contents) =>
+      switch somethingThatThrows(contents) {
+      | result => env.return(. result)
+      | exception Failure(message) => env.error(. message)
+      }
+  )
+```
+
+## Template function tips
 
 ### Synchronous and asynchronous templates
 
 If you have a template function that uses `async` functions or promises, then
-you need to render your whole template tree with an asynchronous render
-context.
+you need to render your whole template tree with an asynchronous environment.
 
-Templates components inherit their context from their parent templates, so
-synchronous templates can be used interchangeably between context types. This
-does not work the other way around, though. Asynchronous templates cannot be
-made synchronous.
+Templates components inherit their environment from their parent templates,
+so synchronous templates can be used interchangeably between environment
+types. This does not work the other way around, though. Asynchronous
+templates cannot be made synchronous.
 
 ### Using the children argument
 
-You will usually not need to directly manipulate the children argument, or
-often you can just pass an empty object (`{}`) as children.
-
-[Template components can accept template sections as children props][4], but
+[Template components can accept template sections as children props][2], but
 these are not interchangeable with pattern props. Therefore, Acutis keeps
 rendered template children in a separate object.
+
+You will usually not need to directly manipulate the children argument, or
+often you can just pass an empty object (`{}`) as children.
 
 If you are manually rendering a template section within a function, then make
 sure you pass it to the children argument.
@@ -336,9 +491,11 @@ Examples:
   curl https://example.com/api | acutis Index.acutis *.(js|acutis) -o index.html 
 ```
 
-[1]: #template-functions-overview
-[2]: https://rescript-lang.org/docs/manual/latest/exception 
-[3]: #using-the-children-argument
-[4]: ../manual/#template-children-props
+[1]: #using-the-children-argument
+[2]: ../manual/#template-children-props
+[template functions]: #template-functions-overview
+[environment.render]: #environment.render
+[record]: https://rescript-lang.org/docs/manual/latest/record
+[dict]: https://rescript-lang.org/docs/manual/latest/api/js/dict
 [uncurried]: https://rescript-lang.org/docs/manual/latest/function#uncurried-function
 [Promise]: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise 

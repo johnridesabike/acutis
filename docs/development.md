@@ -77,19 +77,19 @@ tree.
 
 ### Rendering
 
-The `Render.res` module takes the AST and the input "props" to produce the
-final output.
+The `Render.res` module takes the AST, the input "props", and the environment
+data to produce the final output.
 
 Like `Compile.res`, it exposes a submodule for rendering patterns.
 
 We may normally expect the renderer to produce a string data type. However,
-the output could theoretically be anything. I designed this flexibility
-specifically for [promises].
+the output could theoretically be anything defined in the environment. I
+designed this flexibility specifically for [promises].
 
 [promises]: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise
 
 When the renderer processes a node, it adds the result to a queue. Once it
-renders the entire AST, then it concatenates the queue into the final output.
+renders the entire AST, it concatenates the queue into the final output.
 
 If we're processing templates synchronously, then the queue is filled with
 strings and the output is a string.
@@ -102,42 +102,42 @@ concatenated.
 
 Acutis relies on recursive function types to render.
 
-1. The render context function with this signature:
-   `render(ast, props, children) → result`
-2. The template functions, with this signature:
-   `template(render, props, children) → result`
+1. The render environment with a render function:
+   `env.render(ast, props, children) → result`
+2. The template functions with this signature:
+   `template(env, props, children) → result`
 
-The `render` argument in 2 is the same `render` function as in 1. This
-function contains the logic and data that must be global across the entire
-template tree.
+The `env` argument in 2 is the same `env` record as in 1. This record
+contains the `render` function with the logic and data that must be global
+across the entire template tree.
 
 The specific "logic" here is how to use the output type, synchronously or
 asynchronously. This is why there are two functions to create render
-contexts:
+environments:
 
-1. `makeContext(components) →` \
-   `render(ast, props, children) →` \
+1. `Environment.make(components) →` \
+   `env.render(ast, props, children) →` \
    `result`
-2. `makeContextAsync(components) →` \
-   `render(ast, props, children) →` \
+2. `Environment.Async.make(components) →` \
+   `env.render(ast, props, children) →` \
    `promise<result>`
 
-In both versions, `components` is an object containing all of the template
-components.
+In both versions, `components` is a dictionary object containing all of the
+template components.
 
 Suppose you have a root template, `template`, which you render like this:
-`template(render, props, children)`. What happens is:
+`template(env, props, children)`. What happens is:
 
-1. The `template` function takes the `render` function and executes it with
-   `props`, `children`, and the AST.
+1. The `template` function takes the `render` function from `env` and
+   executes it with `props`, `children`, and the AST.
 2. The `render` function recursively iterates through the AST and renders
    each node with the `props` and `children`. Each result is enqueued.
 3. If the `render` function encounters a template component, which is just
-   another template function, it executes `x(render, props, children)`,
+   another template function, `x`, it executes `x(env, props, children)`,
    beginning a new loop at step 1. Here, `x` is the component, `render` is
-   the same (recursive) render context, and `props` and `children` are both
-   taken from the same AST node as `x`. The result of this is enqueued in the
-   original queue.
+   the same (recursive) render environment, and `props` and `children` are
+   both taken from the same AST node as `x`. The result of this is enqueued
+   in the original queue.
 4. Steps 2 and 3 repeat until the renderer has traversed the entire AST.
 5. The queue of results is concatenated and returned as the final result.
 
@@ -170,26 +170,21 @@ relatively heavy dependency, and we're only using a few modules from it, the
 final distributed source code is bundled. Run `yarn bundle` to create the
 bundles.
 
-I wrote TypeScript types in `acutis.d.ts`. These aren't generated, so they
-need to be manually kept in sync with the API. 
-
 ## Syntax design
 
 I designed Acutis' syntax to build on the work of existing conventions in
 similar languages as much as possible.
 
 I borrowed the `{{` "mustache" `}}` syntax from the titular Mustache
-language, as well as all of the other languages that also borrowed from it.
+language.
 
-I borrowed the `{%` expression `%}` syntax from Liquid, Jinja, and the
-languages that also borrowed from those.
+I borrowed the `{%` expression `%}` syntax from Liquid and Jinja.
 
 I borrowed the pattern syntax from ReScript, which is really borrowed from
 both JavaScript and OCaml.
 
 I borrowed the `{% Component %} children {% /Component %}` syntax from React
-JSX, which is really borrowed from XML. Like JSX, this is just a syntax for a
-function call.
+JSX. Like JSX, this is just a syntax for a function call.
 
 I designed the language so different parts will look as unambiguous as
 possible. An identifier like `x` will always be a binding. An expression that
@@ -229,11 +224,6 @@ Props, template children, and template components each live in separate
 "layers" of the language due to their internal type differences. This feels
 like a leaky implementation detail though, and theoretically it would be nice
 if they could all coexist in one single `props` object for each template.
-
-Because rendered output is polymorphic, there is no safe way to work with a
-template component's children. An API for safely mapping the children would
-be useful. (For example, a component which transforms its children using a
-Markdown renderer.)
 
 For users working with the API in ReScript, type errors can be cryptic. This
 is a side effect of the fact that template component functions rely on
