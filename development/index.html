@@ -97,14 +97,14 @@ for testing purposes.</p>
 nodes, such as <code>map</code> or <code>match</code> expressions, contain branching paths of the
 tree.</p>
 <h3 id="rendering">Rendering</h3>
-<p>The <code>Render.res</code> module takes the AST and the input “props” to produce the
-final output.</p>
+<p>The <code>Render.res</code> module takes the AST, the input “props”, and the environment
+data to produce the final output.</p>
 <p>Like <code>Compile.res</code>, it exposes a submodule for rendering patterns.</p>
 <p>We may normally expect the renderer to produce a string data type. However,
-the output could theoretically be anything. I designed this flexibility
-specifically for <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise">promises</a>.</p>
+the output could theoretically be anything defined in the environment. I
+designed this flexibility specifically for <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise">promises</a>.</p>
 <p>When the renderer processes a node, it adds the result to a queue. Once it
-renders the entire AST, then it concatenates the queue into the final output.</p>
+renders the entire AST, it concatenates the queue into the final output.</p>
 <p>If we’re processing templates synchronously, then the queue is filled with
 strings and the output is a string.</p>
 <p>If we’re processing templates asynchronously, then the queue is filled with
@@ -113,40 +113,40 @@ concatenated.</p>
 <h2 id="rendering-concepts">Rendering concepts</h2>
 <p>Acutis relies on recursive function types to render.</p>
 <ol>
-<li>The render context function with this signature:
-<code>render(ast, props, children) → result</code></li>
-<li>The template functions, with this signature:
-<code>template(render, props, children) → result</code></li>
+<li>The render environment with a render function:
+<code>env.render(ast, props, children) → result</code></li>
+<li>The template functions with this signature:
+<code>template(env, props, children) → result</code></li>
 </ol>
-<p>The <code>render</code> argument in 2 is the same <code>render</code> function as in 1. This
-function contains the logic and data that must be global across the entire
-template tree.</p>
+<p>The <code>env</code> argument in 2 is the same <code>env</code> record as in 1. This record
+contains the <code>render</code> function with the logic and data that must be global
+across the entire template tree.</p>
 <p>The specific “logic” here is how to use the output type, synchronously or
 asynchronously. This is why there are two functions to create render
-contexts:</p>
+environments:</p>
 <ol>
-<li><code>makeContext(components) →</code> <br>
-<code>render(ast, props, children) →</code> <br>
+<li><code>Environment.make(components) →</code> <br>
+<code>env.render(ast, props, children) →</code> <br>
 <code>result</code></li>
-<li><code>makeContextAsync(components) →</code> <br>
-<code>render(ast, props, children) →</code> <br>
+<li><code>Environment.Async.make(components) →</code> <br>
+<code>env.render(ast, props, children) →</code> <br>
 <code>promise&lt;result&gt;</code></li>
 </ol>
-<p>In both versions, <code>components</code> is an object containing all of the template
-components.</p>
+<p>In both versions, <code>components</code> is a dictionary object containing all of the
+template components.</p>
 <p>Suppose you have a root template, <code>template</code>, which you render like this:
-<code>template(render, props, children)</code>. What happens is:</p>
+<code>template(env, props, children)</code>. What happens is:</p>
 <ol>
-<li>The <code>template</code> function takes the <code>render</code> function and executes it with
-<code>props</code>, <code>children</code>, and the AST.</li>
+<li>The <code>template</code> function takes the <code>render</code> function from <code>env</code> and
+executes it with <code>props</code>, <code>children</code>, and the AST.</li>
 <li>The <code>render</code> function recursively iterates through the AST and renders
 each node with the <code>props</code> and <code>children</code>. Each result is enqueued.</li>
 <li>If the <code>render</code> function encounters a template component, which is just
-another template function, it executes <code>x(render, props, children)</code>,
+another template function, <code>x</code>, it executes <code>x(env, props, children)</code>,
 beginning a new loop at step 1. Here, <code>x</code> is the component, <code>render</code> is
-the same (recursive) render context, and <code>props</code> and <code>children</code> are both
-taken from the same AST node as <code>x</code>. The result of this is enqueued in the
-original queue.</li>
+the same (recursive) render environment, and <code>props</code> and <code>children</code> are
+both taken from the same AST node as <code>x</code>. The result of this is enqueued
+in the original queue.</li>
 <li>Steps 2 and 3 repeat until the renderer has traversed the entire AST.</li>
 <li>The queue of results is concatenated and returned as the final result.</li>
 </ol>
@@ -170,20 +170,16 @@ mode. This tests the generated JavaScript files.</p>
 relatively heavy dependency, and we’re only using a few modules from it, the
 final distributed source code is bundled. Run <code>yarn bundle</code> to create the
 bundles.</p>
-<p>I wrote TypeScript types in <code>acutis.d.ts</code>. These aren’t generated, so they
-need to be manually kept in sync with the API.</p>
 <h2 id="syntax-design">Syntax design</h2>
 <p>I designed Acutis’ syntax to build on the work of existing conventions in
 similar languages as much as possible.</p>
 <p>I borrowed the <code>{{</code> “mustache” <code>}}</code> syntax from the titular Mustache
-language, as well as all of the other languages that also borrowed from it.</p>
-<p>I borrowed the <code>{%</code> expression <code>%}</code> syntax from Liquid, Jinja, and the
-languages that also borrowed from those.</p>
+language.</p>
+<p>I borrowed the <code>{%</code> expression <code>%}</code> syntax from Liquid and Jinja.</p>
 <p>I borrowed the pattern syntax from ReScript, which is really borrowed from
 both JavaScript and OCaml.</p>
 <p>I borrowed the <code>{% Component %} children {% /Component %}</code> syntax from React
-JSX, which is really borrowed from XML. Like JSX, this is just a syntax for a
-function call.</p>
+JSX. Like JSX, this is just a syntax for a function call.</p>
 <p>I designed the language so different parts will look as unambiguous as
 possible. An identifier like <code>x</code> will always be a binding. An expression that
 begins like <code>{% Abc</code> will always be a component. <code>{{ Xyz }}</code> will always be a
@@ -214,10 +210,6 @@ need which justifies their maintenance.</p>
 “layers” of the language due to their internal type differences. This feels
 like a leaky implementation detail though, and theoretically it would be nice
 if they could all coexist in one single <code>props</code> object for each template.</p>
-<p>Because rendered output is polymorphic, there is no safe way to work with a
-template component’s children. An API for safely mapping the children would
-be useful. (For example, a component which transforms its children using a
-Markdown renderer.)</p>
 <p>For users working with the API in ReScript, type errors can be cryptic. This
 is a side effect of the fact that template component functions rely on
 several recursive function types. The compiler can’t always infer a concrete
