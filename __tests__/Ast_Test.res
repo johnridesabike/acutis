@@ -1,5 +1,5 @@
 /**
-   Copyright 2020 John Jackson
+   Copyright 2021 John Jackson
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -19,9 +19,7 @@ open TestFramework
 let getAst = (x: Acutis_Types.Ast.t) =>
   switch Acutis_Types.Valid.validate(x) {
   | Some(#data(x)) => x.ast
-  | Some(#errors(_))
-  | None =>
-    raise(Not_found)
+  | Some(#errors(_)) | None => raise(Not_found)
   }
 
 describe("Lexer", ({test, _}) => {

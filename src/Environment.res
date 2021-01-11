@@ -1,5 +1,5 @@
 /**
-   Copyright 2020 John Jackson
+   Copyright 2021 John Jackson
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -69,9 +69,7 @@ module Async = {
       | Some(#errors(e)) => Js.Promise.resolve(#errors([e]))
       | None => Js.Promise.resolve(#errors([Debug.invalidInput(~stack)]))
       | Some(#data({ast, name})) =>
-        let queue = Queue.make()
         Render.make(
-          ~queue,
           ~ast,
           ~props,
           ~children,
@@ -80,7 +78,9 @@ module Async = {
           ~error,
           ~try_,
         )
-        queue |> Queue.toArray |> Js.Promise.all |> Js.Promise.then_(toResult)
+        |> Queue.toArray
+        |> Js.Promise.all
+        |> Js.Promise.then_(toResult)
       },
     return: returnAsync,
     error: (. message) => Js.Promise.resolve(#errors([Debug.customError(message, ~stack)])),
@@ -123,9 +123,9 @@ let rec makeInternal = (. {components, stack}) => {
     | Some(#errors(x)) => #errors([x])
     | None => #errors([Debug.invalidInput(~stack)])
     | Some(#data({ast, name})) =>
-      let queue = Queue.make()
+      let result = ref("")
+      let errors = Queue.make()
       Render.make(
-        ~queue,
         ~ast,
         ~props,
         ~children,
@@ -133,10 +133,7 @@ let rec makeInternal = (. {components, stack}) => {
         ~makeEnv=makeInternal,
         ~error,
         ~try_,
-      )
-      let result = ref("")
-      let errors = Queue.make()
-      Queue.forEachU(queue, (. x) =>
+      )->Queue.forEachU((. x) =>
         switch x {
         | #data(s) => result := result.contents ++ s
         | #errors(e) => Array.forEachU(e, (. x) => Queue.add(errors, x))

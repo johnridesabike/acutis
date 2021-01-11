@@ -1,5 +1,5 @@
 /**
-   Copyright 2020 John Jackson
+   Copyright 2021 John Jackson
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -30,15 +30,18 @@ module Pattern = {
     | BindingTypeMismatch({data: Json.tagged_t, pattern: node, binding: string})
     | BindingDoesNotExist({loc: loc, binding: string})
 
-  let listToArrayResult = l => {
+  let listToQueueResult = (l, ~f) => {
     let q = Queue.make()
     let rec aux = l =>
       switch l {
-      | list{} => Ok(Queue.toArray(q))
-      | list{Error(_) as e, ..._} => e
-      | list{Ok(x), ...rest} =>
-        Queue.add(q, x)
-        aux(rest)
+      | list{} => Ok(q)
+      | list{x, ...rest} =>
+        switch f(. x) {
+        | Error(_) as e => e
+        | Ok(x) =>
+          Queue.add(q, x)
+          aux(rest)
+        }
       }
     aux(l)
   }
@@ -52,29 +55,33 @@ module Pattern = {
     | Number(_, x) => Ok(Json.number(x))
     | Array(_, x) =>
       x
-      ->List.mapU((. x) => toJson(x, ~props))
-      ->listToArrayResult
-      ->Result.mapU((. x) => Json.array(x))
+      ->listToQueueResult(~f=(. x) => toJson(x, ~props))
+      ->Result.mapU((. q) => q->Queue.toArray->Json.array)
     | ArrayWithTailBinding({array, bindLoc, binding, _}) =>
-      switch props->Js.Dict.get(binding)->Belt.Option.mapU((. x) => Json.classify(x)) {
-      | Some(JSONArray(tailBinding)) =>
-        array
-        ->List.mapU((. x) => toJson(x, ~props))
-        ->listToArrayResult
-        ->Result.mapU((. x) => x->Array.concat(tailBinding)->Json.array)
-      | Some(data) => Error(BindingTypeMismatch({data: data, pattern: pattern, binding: binding}))
+      switch Js.Dict.get(props, binding) {
+      | Some(data) =>
+        switch Json.classify(data) {
+        | JSONArray(binding) =>
+          array
+          ->listToQueueResult(~f=(. x) => toJson(x, ~props))
+          ->Result.mapU((. q) => q->Queue.toArray->Array.concat(binding)->Json.array)
+        | data => Error(BindingTypeMismatch({data: data, pattern: pattern, binding: binding}))
+        }
       | None => Error(BindingDoesNotExist({loc: bindLoc, binding: binding}))
       }
     | Object(_, x) =>
       x
-      ->List.mapU((. (k, v)) =>
+      ->listToQueueResult(~f=(. (k, v)) =>
         switch toJson(v, ~props) {
         | Ok(v) => Ok((k, v))
         | Error(_) as e => e
         }
       )
-      ->listToArrayResult
-      ->Result.mapU((. x) => x->Js.Dict.fromArray->Json.object_)
+      ->Result.mapU((. q) => {
+        let d = Js.Dict.empty()
+        Queue.forEachU(q, (. (k, v)) => Js.Dict.set(d, k, v))
+        Json.object_(d)
+      })
     | Binding(loc, x) =>
       switch Js.Dict.get(props, x) {
       | Some(x) => Ok(x)
@@ -247,7 +254,7 @@ let addImplicitIndexBinding = (~loc, . x: Pattern_Ast.t): Pattern_Ast.t =>
 
 let match = (patterns, json, ~loc, ~stack) =>
   switch Pattern.match(patterns, json) {
-  | Ok() as x => x
+  | Ok(_) as x => x
   | Error(NoMatch) => Error(Debug.noMatchFound(~loc, ~stack))
   | Error(PatternNumberMismatch) => Error(Debug.patternNumberMismatch(~loc, ~stack))
   | Error(PatternTypeMismatch({pattern, data})) =>
@@ -278,20 +285,19 @@ let trimEnd = string => {
 external dictMerge: (@as(json`{}`) _, ~base: Js.Dict.t<'a>, Js.Dict.t<'a>) => Js.Dict.t<'a> =
   "assign"
 
-let rec make = (~ast, ~queue, ~props, ~children, ~envData, ~makeEnv, ~error, ~try_) => {
+let rec make = (~ast, ~props, ~children, ~envData, ~makeEnv, ~error, ~try_) => {
   let {components, stack} = envData
   let env = makeEnv(. envData)
-  let rec aux = ast =>
-    switch ast {
-    | list{} => () // Done
-    | list{EchoChild(loc, child), ...ast} =>
+  let queue = Queue.make()
+  List.forEachU(ast, (. node) =>
+    switch node {
+    | EchoChild(loc, child) =>
       let x = switch Js.Dict.get(children, child) {
       | Some(x) => x
       | None => error(.[Debug.childDoesNotExist(~loc, ~child, ~stack)])
       }
       Queue.add(queue, x)
-      aux(ast)
-    | list{Text(str, trim), ...ast} =>
+    | Text(str, trim) =>
       let str = switch trim {
       | NoTrim => str
       | TrimStart => trimStart(str)
@@ -299,33 +305,25 @@ let rec make = (~ast, ~queue, ~props, ~children, ~envData, ~makeEnv, ~error, ~tr
       | TrimBoth => trimStart(trimEnd(str))
       }
       Queue.add(queue, env.return(. str))
-      aux(ast)
-    | list{EchoBinding(loc, binding), ...ast} =>
+    | EchoBinding(loc, binding) =>
       let x = switch echoBinding(props, binding) {
       | Ok(x) => env.return(. escape(x))
       | Error(type_) => error(.[Debug.badEchoType(~binding, ~type_, ~loc, ~stack)])
       }
       Queue.add(queue, x)
-      aux(ast)
-    | list{Unescaped(loc, binding), ...ast} =>
+    | Unescaped(loc, binding) =>
       let x = switch echoBinding(props, binding) {
       | Ok(x) => env.return(. x)
       | Error(type_) => error(.[Debug.badEchoType(~binding, ~type_, ~loc, ~stack)])
       }
       Queue.add(queue, x)
-      aux(ast)
-    | list{EchoString(str), ...ast} =>
-      Queue.add(queue, env.return(. escape(str)))
-      aux(ast)
-    | list{EchoNumber(num), ...ast} =>
-      Queue.add(queue, env.return(. escape(Float.toString(num))))
-      aux(ast)
-    | list{Match(loc, identifiers, cases), ...ast} =>
-      let patterns = NonEmpty.map(cases, ~f=(. {patterns, ast}) => {
-        Pattern.patterns: patterns,
+    | EchoString(str) => Queue.add(queue, env.return(. escape(str)))
+    | EchoNumber(num) => Queue.add(queue, env.return(. escape(Float.toString(num))))
+    | Match(loc, identifiers, cases) =>
+      let patterns = NonEmpty.map(cases, ~f=(. {patterns, ast}): Pattern.t<'a> => {
+        patterns: patterns,
         f: (. props') =>
           make(
-            ~queue,
             ~ast,
             ~props=dictMerge(~base=props, props'),
             ~children,
@@ -337,48 +335,43 @@ let rec make = (~ast, ~queue, ~props, ~children, ~envData, ~makeEnv, ~error, ~tr
       })
       let data = NonEmpty.map(identifiers, ~f=(. (_loc, x)) => getBindingOrNull(props, x))
       switch match(patterns, data, ~loc, ~stack) {
-      | Ok() => ()
+      | Ok(result) => Queue.transfer(result, queue)
       | Error(e) => Queue.add(queue, error(.[e]))
       }
-      aux(ast)
-    | list{Map(loc, binding, cases), ...ast} =>
+    | Map(loc, binding, cases) =>
       switch Json.classify(getBindingOrNull(props, binding)) {
       | JSONArray(arr) =>
         Array.forEachWithIndexU(arr, (. index, json) => {
-          let patterns = NonEmpty.map(cases, ~f=(. {patterns, ast}) => {
-            {
-              Pattern.patterns: NonEmpty.map(patterns, ~f=addImplicitIndexBinding(~loc)),
-              f: (. props') =>
-                make(
-                  ~queue,
-                  ~ast,
-                  ~props=dictMerge(~base=props, props'),
-                  ~children,
-                  ~envData={
-                    ...envData,
-                    stack: list{Index(index), Map, ...stack},
-                  },
-                  ~makeEnv,
-                  ~error,
-                  ~try_,
-                ),
-            }
+          let patterns = NonEmpty.map(cases, ~f=(. {patterns, ast}): Pattern.t<'a> => {
+            patterns: NonEmpty.map(patterns, ~f=addImplicitIndexBinding(~loc)),
+            f: (. props') =>
+              make(
+                ~ast,
+                ~props=dictMerge(~base=props, props'),
+                ~children,
+                ~envData={
+                  ...envData,
+                  stack: list{Index(index), Map, ...stack},
+                },
+                ~makeEnv,
+                ~error,
+                ~try_,
+              ),
           })
           switch match(patterns, List(json, list{index->Int.toFloat->Json.number}), ~loc, ~stack) {
-          | Ok() => ()
+          | Ok(result) => Queue.transfer(result, queue)
           | Error(e) => Queue.add(queue, error(.[e]))
           }
         })
       | type_ => Queue.add(queue, error(.[Debug.badMapType(~binding, ~type_, ~loc, ~stack)]))
       }
-      aux(ast)
-    | list{Component({loc, name, props: compPropsRaw, children: compChildrenRaw}), ...ast} =>
+    | Component({loc, name, props: compPropsRaw, children: compChildrenRaw}) =>
       switch Js.Dict.get(components, name) {
       | Some(component) =>
         let compProps = Js.Dict.empty()
         let compChildren = Js.Dict.empty()
         let errors = Queue.make()
-        List.forEachU(compChildrenRaw, (. (key, child)) => {
+        List.forEachU(compChildrenRaw, (. (key, child)) =>
           switch child {
           | ChildBlock(ast) =>
             let data = env.render(.
@@ -393,7 +386,7 @@ let rec make = (~ast, ~queue, ~props, ~children, ~envData, ~makeEnv, ~error, ~tr
             | None => Queue.add(errors, Debug.childDoesNotExist(~loc, ~child, ~stack))
             }
           }
-        })
+        )
         List.forEachU(compPropsRaw, (. (key, data)) =>
           switch Pattern.toJson(data, ~props) {
           | Ok(data) => Js.Dict.set(compProps, key, data)
@@ -417,7 +410,7 @@ let rec make = (~ast, ~queue, ~props, ~children, ~envData, ~makeEnv, ~error, ~tr
       | None =>
         Queue.add(queue, error(.[Debug.componentDoesNotExist(~component=name, ~loc, ~stack)]))
       }
-      aux(ast)
     }
-  aux(ast)
+  )
+  queue
 }

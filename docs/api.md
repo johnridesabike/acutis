@@ -27,7 +27,7 @@ JavaScript. In ReScript, these are records or dictionaries.)
 ```js
 const { Compile, Environment } = require("acutis-lang");
 const template = Compile.make("Hello {{ name }}.", module.filename);
-const footer = Compile.make("Copyright 2020.", "Footer")
+const footer = Compile.make("Copyright 2021.", "Footer")
 const env = Environment.make({Footer: footer});
 const result = template(env, {name: "Carlo"}, {});
 if (result.NAME === "errors") {
@@ -42,7 +42,7 @@ if (result.NAME === "errors") {
 ```reason
 open Acutis
 let template = Compile.make("Hello {{ name }}.", __FILE__)
-let footer = Compile.make("Copyright 2020.", "Footer")
+let footer = Compile.make("Copyright 2021.", "Footer")
 let env = Environment.make(Js.Dict.fromArray([("Footer", footer)]))
 let props = Js.Dict.fromArray([("name", "Carlo")])
 switch template(. env, props, Js.Dict.empty()) {
@@ -87,7 +87,7 @@ templates.
 ```js
 const { Compile, Environment } = require("acutis-lang");
 const components = {
-  Footer: Compile.make("Copyright 2020.", "Footer")
+  Footer: Compile.make("Copyright 2021.", "Footer")
 };
 const env = Environment.make(components);
 ```
@@ -97,7 +97,7 @@ const env = Environment.make(components);
 ```reason
 open Acutis
 let components = Js.Dict.fromArray([
-  ("Footer", Compile.make("Copyright 2020.", ~name="Footer"))
+  ("Footer", Compile.make("Copyright 2021.", ~name="Footer"))
 ])
 let env = Environment.make(components)
 ```

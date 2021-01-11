@@ -1,5 +1,5 @@
 /**
-   Copyright 2020 John Jackson
+   Copyright 2021 John Jackson
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -37,14 +37,11 @@ module Scanner = {
   }
 
   let peek = (source, ~until) => {
-    let rec aux = position => {
-      if until(. Js.String2.charAt(source.str, position)) {
-        position
-      } else {
-        aux(position + 1)
-      }
+    let position = ref(source.position)
+    while !until(. Js.String2.charAt(source.str, position.contents)) {
+      position := position.contents + 1
     }
-    aux(source.position)
+    position.contents
   }
 
   let skip = (source, ~until) => {
@@ -86,7 +83,7 @@ open Tokens
 
 type t = {tokens: Queue.t<Tokens.t>, name: option<string>}
 
-let rec readStringAux = (source, position) => {
+let rec readStringAux = (source, position) =>
   switch peekCharAt(source, position) {
   | "" => readSubstringBy(source, position)
   | "{" =>
@@ -96,7 +93,6 @@ let rec readStringAux = (source, position) => {
     }
   | _ => readStringAux(source, position + 1)
   }
-}
 
 let readString = (source, tokens) => {
   let loc = loc(source)
@@ -132,7 +128,7 @@ let unescapeQuotes = %re(`/\\\"/g`)
 
 let readJsonString = (source, ~name) => {
   let loc = loc(source)
-  let rec aux = position => {
+  let rec aux = position =>
     switch peekCharAt(source, position) {
     | "\\" =>
       switch peekCharAt(source, position + 1) {
@@ -146,7 +142,6 @@ let readJsonString = (source, ~name) => {
     | "" => raise(CompileError(unterminatedString(~loc, ~name)))
     | _ => aux(position + 1)
     }
-  }
   aux(0)
 }
 
@@ -222,12 +217,11 @@ let makeExpression = (source, tokens, ~name) => {
   }
 }
 
-let readTildeMaybe = (source, tokens) => {
+let readTildeMaybe = (source, tokens) =>
   if peekChar(source) == "~" {
     Queue.add(tokens, Tilde(loc(source)))
     skipChar(source)
   }
-}
 
 let make = (~name=?, str) => {
   let source = {

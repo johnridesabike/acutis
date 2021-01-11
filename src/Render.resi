@@ -1,5 +1,5 @@
 /**
-   Copyright 2020 John Jackson
+   Copyright 2021 John Jackson
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -42,11 +42,10 @@ module Pattern: {
 
 let make: (
   ~ast: Acutis_Types.Ast.ast,
-  ~queue: Belt.MutableQueue.t<'a>,
   ~props: Acutis_Types.props,
   ~children: Js.Dict.t<'a>,
   ~envData: Acutis_Types.environmentData<'a>,
   ~makeEnv: (. Acutis_Types.environmentData<'a>) => Acutis_Types.environment<'a>,
   ~error: (. array<Acutis_Types.Errors.t>) => 'a,
   ~try_: (. (. unit) => 'a, ~catch: (. _) => 'a) => 'a,
-) => unit
+) => Belt.MutableQueue.t<'a>

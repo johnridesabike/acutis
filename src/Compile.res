@@ -1,5 +1,5 @@
 /**
-   Copyright 2020 John Jackson
+   Copyright 2021 John Jackson
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -22,7 +22,7 @@ open Debug
 module Pattern = {
   open Acutis_Types.Pattern_Ast
 
-  let rec parseNode = tokens => {
+  let rec parseNode = tokens =>
     switch Lexer.popExn(tokens) {
     | Identifier(loc, "null") => Null(loc)
     | Identifier(loc, "false") => False(loc)
@@ -50,7 +50,6 @@ module Pattern = {
       }
     | x => raise(CompileError(unexpectedToken(~token=x, ~name=Lexer.name(tokens))))
     }
-  }
   and parseArray = (loc, tokens, valueList) =>
     switch Lexer.popExn(tokens) {
     | CloseBracket(_) => Array(loc, List.reverse(valueList))
@@ -60,14 +59,14 @@ module Pattern = {
         Lexer.skipExn(tokens)
         switch Lexer.popExn(tokens) {
         | Identifier(bindingLoc, tailBinding) =>
-          let result = ArrayWithTailBinding({
-            loc: loc,
-            array: List.reverse(valueList),
-            bindLoc: bindingLoc,
-            binding: tailBinding,
-          })
           switch Lexer.popExn(tokens) {
-          | CloseBracket(_) => result
+          | CloseBracket(_) =>
+            ArrayWithTailBinding({
+              loc: loc,
+              array: List.reverse(valueList),
+              bindLoc: bindingLoc,
+              binding: tailBinding,
+            })
           | x => raise(CompileError(unexpectedToken(~token=x, ~name=Lexer.name(tokens))))
           }
         | x => raise(CompileError(unexpectedToken(~token=x, ~name=Lexer.name(tokens))))
@@ -87,7 +86,7 @@ module Pattern = {
       parseObject(loc, tokens, list{x, ...keyValueList})
     | x => raise(CompileError(unexpectedToken(~token=x, ~name=Lexer.name(tokens))))
     }
-  and parseObjectKeyValue = tokens => {
+  and parseObjectKeyValue = tokens =>
     switch Lexer.popExn(tokens) {
     | JsonString(loc, key) | Identifier(loc, key) =>
       switch Lexer.peekExn(tokens) {
@@ -104,7 +103,6 @@ module Pattern = {
       }
     | x => raise(CompileError(unexpectedToken(~token=x, ~name=Lexer.name(tokens))))
     }
-  }
 
   let make = tokens => {
     let head = parseNode(tokens)
@@ -277,7 +275,7 @@ and parseComponent = (loc, name, tokens) => {
     }
   }
 }
-and parseProps = (tokens, ~props, ~children) => {
+and parseProps = (tokens, ~props, ~children) =>
   switch Lexer.peekExn(tokens) {
   | Identifier(loc, key) =>
     Lexer.skipExn(tokens)
@@ -305,7 +303,6 @@ and parseProps = (tokens, ~props, ~children) => {
     }
   | _ => (props, children)
   }
-}
 and parseBlock = tokens => {
   let result = parse(tokens, ~until=slash)
   Lexer.skipExn(tokens)

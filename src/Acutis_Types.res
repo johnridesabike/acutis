@@ -1,5 +1,5 @@
 /**
-   Copyright 2020 John Jackson
+   Copyright 2021 John Jackson
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -24,13 +24,13 @@ module NonEmpty = {
 type loc = Loc(int)
 
 module RegEx = {
-  let stringChar = %re("/^[a-zA-Z0-9_]$/")
+  let identifierChar = %re("/^[a-zA-Z0-9_]$/")
 
-  let isEndOfIdentifier = (. s) => !Js.Re.test_(stringChar, s)
+  let isEndOfIdentifier = (. s) => !Js.Re.test_(identifierChar, s)
 
-  let stringStartChar = %re("/^[a-z_]$/")
+  let identifierStartChar = %re("/^[a-z_]$/")
 
-  let isValidIdentifierStart = c => Js.Re.test_(stringStartChar, c)
+  let isValidIdentifierStart = c => Js.Re.test_(identifierStartChar, c)
 
   let componentStart = %re("/^[A-Z]$/")
 

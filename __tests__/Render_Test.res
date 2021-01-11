@@ -1,5 +1,5 @@
 /**
-   Copyright 2020 John Jackson
+   Copyright 2021 John Jackson
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -19,9 +19,8 @@ let json = Js.Json.parseExn
 let emptyComponents = Js.Dict.empty()
 let dict = Js.Dict.fromArray
 
-let render = (~name=?, ~children=Js.Dict.empty(), src, props, components) => {
+let render = (~name=?, ~children=Js.Dict.empty(), src, props, components) =>
   Compile.make(src, ~name?)(. Environment.make(components), props, children)
-}
 
 describe("All together", ({test, _}) => {
   test("Basic", ({expect, _}) => {
