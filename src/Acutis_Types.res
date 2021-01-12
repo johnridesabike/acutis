@@ -66,13 +66,19 @@ module Errors = {
   }
 
   module Stack = {
-    type name = Component(option<string>) | Match | Map | Index(int)
+    type name =
+      | Component(option<string>)
+      | Section({component: string, section: string})
+      | Match
+      | Map
+      | Index(int)
     type t = list<name>
 
     let nameToJson = (. x) =>
       switch x {
       | Component(Some(x)) => Js.Json.string(x)
       | Component(None) => Js.Json.null
+      | Section({component, section}) => Js.Json.string(`section: ${component}#${section}`)
       | Match => Js.Json.string("match")
       | Map => Js.Json.string("map")
       | Index(x) => Js.Json.number(Belt.Int.toFloat(x))

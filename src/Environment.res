@@ -47,10 +47,10 @@ module Async = {
       }
     )
 
-  let toResult = arr => {
+  let reduceArray = a => {
     let result = ref("")
     let errors = Queue.make()
-    Array.forEachU(arr, (. x) => {
+    Array.forEachU(a, (. x) => {
       switch x {
       | #data(s) => result := result.contents ++ s
       | #errors(e) => Array.forEachU(e, (. x) => Queue.add(errors, x))
@@ -63,24 +63,27 @@ module Async = {
     }
   }
 
-  let rec makeInternal = (. {components, stack}) => {
+  // We could possibly replace Queue.toArray with a custom JS iterable.
+  let reduceQueue = (. q) => q |> Queue.toArray |> Js.Promise.all |> Js.Promise.then_(reduceArray)
+
+  let rec makeAux = (. {components, stack}) => {
     render: (. ast, props, children) =>
       switch Valid.validate(ast) {
       | Some(#errors(e)) => Js.Promise.resolve(#errors([e]))
       | None => Js.Promise.resolve(#errors([Debug.invalidInput(~stack)]))
       | Some(#data({ast, name})) =>
-        Render.make(
-          ~ast,
-          ~props,
-          ~children,
-          ~envData={components: components, stack: list{Component(name), ...stack}},
-          ~makeEnv=makeInternal,
-          ~error,
-          ~try_,
+        reduceQueue(.
+          Render.make(
+            ~ast,
+            ~props,
+            ~children,
+            ~envData={components: components, stack: list{Component(name), ...stack}},
+            ~makeEnv=makeAux,
+            ~error,
+            ~try_,
+            ~reduceQueue,
+          ),
         )
-        |> Queue.toArray
-        |> Js.Promise.all
-        |> Js.Promise.then_(toResult)
       },
     return: returnAsync,
     error: (. message) => Js.Promise.resolve(#errors([Debug.customError(message, ~stack)])),
@@ -88,7 +91,7 @@ module Async = {
     flatMapChild: flatMapChildAsync,
   }
 
-  let make = components => makeInternal(.{components: components, stack: list{}})
+  let make = components => makeAux(.{components: components, stack: list{}})
 }
 
 type template = Acutis_Types.template<result>
@@ -117,33 +120,40 @@ let flatMapChild = (. child, f) =>
   | #errors(_) as e => e
   }
 
-let rec makeInternal = (. {components, stack}) => {
+let reduceQueue = (. q) => {
+  let result = ref("")
+  let errors = Queue.make()
+  Queue.forEachU(q, (. x) =>
+    switch x {
+    | #data(s) => result := result.contents ++ s
+    | #errors(e) => Array.forEachU(e, (. x) => Queue.add(errors, x))
+    }
+  )
+  if Queue.isEmpty(errors) {
+    #data(result.contents)
+  } else {
+    #errors(Queue.toArray(errors))
+  }
+}
+
+let rec makeAux = (. {components, stack}) => {
   render: (. ast, props, children) =>
     switch Valid.validate(ast) {
     | Some(#errors(x)) => #errors([x])
     | None => #errors([Debug.invalidInput(~stack)])
     | Some(#data({ast, name})) =>
-      let result = ref("")
-      let errors = Queue.make()
-      Render.make(
-        ~ast,
-        ~props,
-        ~children,
-        ~envData={components: components, stack: list{Component(name), ...stack}},
-        ~makeEnv=makeInternal,
-        ~error,
-        ~try_,
-      )->Queue.forEachU((. x) =>
-        switch x {
-        | #data(s) => result := result.contents ++ s
-        | #errors(e) => Array.forEachU(e, (. x) => Queue.add(errors, x))
-        }
+      reduceQueue(.
+        Render.make(
+          ~ast,
+          ~props,
+          ~children,
+          ~envData={components: components, stack: list{Component(name), ...stack}},
+          ~makeEnv=makeAux,
+          ~error,
+          ~try_,
+          ~reduceQueue,
+        ),
       )
-      if Queue.isEmpty(errors) {
-        #data(result.contents)
-      } else {
-        #errors(Queue.toArray(errors))
-      }
     },
   return: return,
   error: (. message) => #errors([Debug.customError(message, ~stack)]),
@@ -151,4 +161,4 @@ let rec makeInternal = (. {components, stack}) => {
   flatMapChild: flatMapChild,
 }
 
-let make = components => makeInternal(.{components: components, stack: list{}})
+let make = components => makeAux(.{components: components, stack: list{}})

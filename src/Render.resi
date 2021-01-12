@@ -48,4 +48,5 @@ let make: (
   ~makeEnv: (. Acutis_Types.environmentData<'a>) => Acutis_Types.environment<'a>,
   ~error: (. array<Acutis_Types.Errors.t>) => 'a,
   ~try_: (. (. unit) => 'a, ~catch: (. _) => 'a) => 'a,
+  ~reduceQueue: (. Belt.MutableQueue.t<'a>) => 'a,
 ) => Belt.MutableQueue.t<'a>

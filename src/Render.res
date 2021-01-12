@@ -285,7 +285,7 @@ let trimEnd = string => {
 external dictMerge: (@as(json`{}`) _, ~base: Js.Dict.t<'a>, Js.Dict.t<'a>) => Js.Dict.t<'a> =
   "assign"
 
-let rec make = (~ast, ~props, ~children, ~envData, ~makeEnv, ~error, ~try_) => {
+let rec make = (~ast, ~props, ~children, ~envData, ~makeEnv, ~error, ~try_, ~reduceQueue) => {
   let {components, stack} = envData
   let env = makeEnv(. envData)
   let queue = Queue.make()
@@ -331,6 +331,7 @@ let rec make = (~ast, ~props, ~children, ~envData, ~makeEnv, ~error, ~try_) => {
             ~makeEnv,
             ~error,
             ~try_,
+            ~reduceQueue,
           ),
       })
       let data = NonEmpty.map(identifiers, ~f=(. (_loc, x)) => getBindingOrNull(props, x))
@@ -356,6 +357,7 @@ let rec make = (~ast, ~props, ~children, ~envData, ~makeEnv, ~error, ~try_) => {
                 ~makeEnv,
                 ~error,
                 ~try_,
+                ~reduceQueue,
               ),
           })
           switch match(patterns, List(json, list{index->Int.toFloat->Json.number}), ~loc, ~stack) {
@@ -374,12 +376,25 @@ let rec make = (~ast, ~props, ~children, ~envData, ~makeEnv, ~error, ~try_) => {
         List.forEachU(compChildrenRaw, (. (key, child)) =>
           switch child {
           | ChildBlock(ast) =>
-            let data = env.render(.
-              Valid.make(#data({name: Some(`section: ${name}#${key}`), ast: ast})),
-              props,
-              children,
+            Js.Dict.set(
+              compChildren,
+              key,
+              reduceQueue(.
+                make(
+                  ~ast,
+                  ~props,
+                  ~children,
+                  ~envData={
+                    ...envData,
+                    stack: list{Section({component: name, section: key}), ...stack},
+                  },
+                  ~makeEnv,
+                  ~error,
+                  ~try_,
+                  ~reduceQueue,
+                ),
+              ),
             )
-            Js.Dict.set(compChildren, key, data)
           | ChildName(child) =>
             switch Js.Dict.get(children, child) {
             | Some(data) => Js.Dict.set(compChildren, key, data)
