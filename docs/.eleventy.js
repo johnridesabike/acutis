@@ -25,10 +25,10 @@ module.exports = (eleventyConfig) => {
   eleventyConfig.addPlugin(acutis);
   eleventyConfig.addPassthroughCopy("playground.js");
   eleventyConfig.addPassthroughCopy({
-    "../dist/acutis.iife.min.js": "acutis.iife.min.js",
+    "../dist/acutis.mjs": "acutis.js",
   });
   eleventyConfig.addPassthroughCopy({
-    "../dist/acutis.iife.min.js.map": "acutis.iife.min.js.map",
+    "../dist/acutis.mjs.map": "acutis.mjs.map",
   });
   eleventyConfig.setLibrary(
     "md",

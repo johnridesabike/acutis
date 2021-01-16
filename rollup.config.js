@@ -18,52 +18,22 @@ import resolve from "@rollup/plugin-node-resolve";
 import { terser } from "rollup-plugin-terser";
 
 export default [
-  /* Node */
   {
     input: "./src/AcutisJs.bs.js",
     output: {
       file: "./dist/acutis.js",
       format: "cjs",
-      banner,
+      banner: banner,
+      sourcemap: true,
     },
-    plugins: [resolve()],
+    plugins: [resolve(), terser()],
   },
-  /* Modules */
   {
     input: "./src/AcutisJs.bs.js",
     output: {
       file: "./dist/acutis.mjs",
       format: "esm",
-      banner,
-    },
-    plugins: [resolve()],
-  },
-  {
-    input: "./src/AcutisJs.bs.js",
-    output: {
-      file: "./dist/acutis.min.mjs",
-      format: "esm",
-      sourcemap: true,
-    },
-    plugins: [resolve(), terser()],
-  },
-  /* IIFE */
-  {
-    input: "./src/AcutisJs.bs.js",
-    output: {
-      file: "./dist/acutis.iife.js",
-      format: "iife",
-      name: "Acutis",
-      banner,
-    },
-    plugins: [resolve()],
-  },
-  {
-    input: "./src/AcutisJs.bs.js",
-    output: {
-      file: "./dist/acutis.iife.min.js",
-      format: "iife",
-      name: "Acutis",
+      banner: banner,
       sourcemap: true,
     },
     plugins: [resolve(), terser()],

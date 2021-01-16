@@ -22,6 +22,16 @@
     "name": "John Jackson",
     "url": "https://johnridesa.bike/"
   },
+  "exports": {
+    ".": {
+      "import": "./dist/acutis.mjs",
+      "require": "./dist/acutis.js"
+    },
+    "./lib/*": "./lib/*",
+    "./node-utils": "./node-utils.js",
+    "./package.json": "./package.json",
+    "./src/*": "./src/*"
+  },
   "main": "dist/acutis.js",
   "module": "dist/acutis.mjs",
   "bin": {

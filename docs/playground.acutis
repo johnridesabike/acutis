@@ -54,8 +54,7 @@
     wrap="off"
   ></textarea>
   {%~ match site with {url} ~%}
-    <script src="{{ url }}/acutis.iife.min.js"></script>
-    <script src="{{ url }}/playground.js"></script>
+    <script src="{{ url }}/playground.js" type="module"></script>
   {%~ /match ~%}
 </div>
 {% /Layout %}

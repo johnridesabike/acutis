@@ -1,7 +1,6 @@
 {
   "name": "acutis-lang",
-  "namespace": "acutis",
-  "version": "0.5.0",
+  "namespace": true,
   "suffix": ".bs.js",
   "bs-dependencies": [],
   "bs-dev-dependencies": ["reason-test-framework"],

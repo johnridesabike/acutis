@@ -1,3 +1,10 @@
+## 0.6.0
+
+- Rescript: Changed namespace to `AcutisLang`.
+- Added `exports` field to package.json
+- Removed prebundled IIFE files.
+- Minified all bundled files.
+
 ## 0.5.0
 
 - Added `acutis-lang` binary as an alias for `acutis`.

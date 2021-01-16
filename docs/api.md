@@ -40,7 +40,7 @@ if (result.NAME === "errors") {
 ### ReScript 
 
 ```reason
-open Acutis
+open AcutisLang
 let template = Compile.make("Hello {{ name }}.", __FILE__)
 let footer = Compile.make("Copyright 2021.", "Footer")
 let env = Environment.make(Js.Dict.fromArray([("Footer", footer)]))
@@ -69,7 +69,7 @@ const template = Compile.make("Hello {{ name }}.", module.filename);
 #### ReScript example
 
 ```reason
-open Acutis
+open AcutisLang
 let template = Compile.make("Hello {{ name }}.", ~name=__FILE__)
 ```
 
@@ -95,7 +95,7 @@ const env = Environment.make(components);
 #### ReScript example
 
 ```reason
-open Acutis
+open AcutisLang
 let components = Js.Dict.fromArray([
   ("Footer", Compile.make("Copyright 2021.", ~name="Footer"))
 ])
@@ -250,7 +250,7 @@ function Footer(env, props, children) {
 #### ReScript example
 
 ```reason
-let ast = Acutis.Compile.makeAst("Copyright {{ year }}", __FILE__)
+let ast = AcutisLang.Compile.makeAst("Copyright {{ year }}", __FILE__)
 let footer = (. env, props, children) => {
   Js.Dict.set(props, "year", Js.Date.make()->Js.Date.getFullYear)
   env.render(. ast, props, children)
@@ -261,7 +261,7 @@ let footer = (. env, props, children) => {
 functions like this:
 
 ```reason
-open Acutis
+open AcutisLang
 let footer: Acutis_Types.template<'a> = (. env, props, children) =>
   env.render(. ast, props, children)
 ```
