@@ -162,6 +162,25 @@ describe("All together", ({test, _}) => {
   })
 })
 
+describe("Nullish coalescing", ({test, _}) => {
+  test("Nullish coalescing", ({expect, _}) => {
+    let children = Js.Dict.fromArray([("Z", render("z", Js.Dict.empty(), Js.Dict.empty()))])
+    let props = Js.Dict.fromArray([("b", Js.Json.string("b")), ("c", Js.Json.string("c"))])
+    let result = render(`{{ a ? b ? c }}`, props, Js.Dict.empty())
+    expect.value(result).toEqual(#data("b"))
+    let result = render(`{{ a ? d ? c }}`, props, Js.Dict.empty())
+    expect.value(result).toEqual(#data("c"))
+    let result = render(`{{ a ? B ? Z }}`, Js.Dict.empty(), Js.Dict.empty(), ~children)
+    expect.value(result).toEqual(#data("z"))
+    let result = render(`{{ a ? B ? X ? "y" }}`, Js.Dict.empty(), Js.Dict.empty(), ~children)
+    expect.value(result).toEqual(#data("y"))
+    let result = render(` {%~ raw a ? B ? X ? 1 ~%} `, Js.Dict.empty(), Js.Dict.empty(), ~children)
+    expect.value(result).toEqual(#data("1"))
+    let result = render(`{% raw x ? Y ? Z ? X %}`, Js.Dict.empty(), Js.Dict.empty(), ~children)
+    expect.value(result).toEqual(#data("z"))
+  })
+})
+
 describe("Template sections", ({test, _}) => {
   test("Default `Children` child", ({expect, _}) => {
     let a: Acutis_Types.template<_> = (. env, props, children) => {

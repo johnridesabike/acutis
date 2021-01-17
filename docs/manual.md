@@ -50,9 +50,21 @@ Acutis escapes echoes. The following characters transform into HTML entities:
 & " ' > < / ` =
 ```
 
+### Nullish coalescing
+
+The `?` (question mark) echoes the value on its right-hand side if the value
+on its left-hand side is `null`.
+
+```jinja2
+My favorite color is {{ color ? fallbackColor }}.
+
+You can chain ?s: {{ a ? b ? "If this prints, a and b are both null." }}
+```
+
 ## Unescaped echoes
 
-The `raw` statement echoes a value without escaping it.
+The `raw` statement echoes a value without escaping it. Nullish coalescing
+also works with `raw`.
 
 ```jinja2
 My favorite color is {% raw color %}.

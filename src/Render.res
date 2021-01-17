@@ -248,7 +248,7 @@ let echoBinding = (props, binding) =>
 
 let addImplicitIndexBinding = (~loc, . x: Pattern_Ast.t): Pattern_Ast.t =>
   switch x {
-  | List(x, list{}) => List(x, list{Binding(loc, "_")})
+  | NonEmpty(x, list{}) => NonEmpty(x, list{Binding(loc, "_")})
   | x => x
   }
 
@@ -285,40 +285,54 @@ let trimEnd = string => {
 external dictMerge: (@as(json`{}`) _, ~base: Js.Dict.t<'a>, Js.Dict.t<'a>) => Js.Dict.t<'a> =
   "assign"
 
+let rec getEcho = (head: Ast.Echo.t, tail, ~props, ~stack, ~children, ~return, ~error) =>
+  switch head {
+  | Binding(loc, binding) =>
+    switch echoBinding(props, binding) {
+    | Ok(x) => return(. x)
+    | Error(type_) =>
+      switch (type_, tail) {
+      | (JSONNull, list{head, ...tail}) =>
+        getEcho(head, tail, ~props, ~stack, ~children, ~return, ~error)
+      | (type_, _) => error(.[Debug.badEchoType(~binding, ~type_, ~loc, ~stack)])
+      }
+    }
+  | Child(loc, child) =>
+    switch Js.Dict.get(children, child) {
+    | Some(x) => x
+    | None =>
+      switch tail {
+      | list{} => error(.[Debug.childDoesNotExist(~loc, ~child, ~stack)])
+      | list{head, ...tail} => getEcho(head, tail, ~props, ~stack, ~children, ~return, ~error)
+      }
+    }
+  | String(x) => return(. x)
+  | Number(x) => return(. Float.toString(x))
+  }
+
 let rec make = (~ast, ~props, ~children, ~envData, ~makeEnv, ~error, ~try_, ~reduceQueue) => {
   let {components, stack} = envData
   let env = makeEnv(. envData)
   let queue = Queue.make()
+  let escape = (. x) => env.return(. escape(x))
   List.forEachU(ast, (. node) =>
     switch node {
-    | EchoChild(loc, child) =>
-      let x = switch Js.Dict.get(children, child) {
-      | Some(x) => x
-      | None => error(.[Debug.childDoesNotExist(~loc, ~child, ~stack)])
-      }
-      Queue.add(queue, x)
+    | Echo(_, NonEmpty(head, tail)) =>
+      Queue.add(queue, getEcho(head, tail, ~props, ~stack, ~children, ~return=escape, ~error))
+    | Unescaped(_, NonEmpty(head, tail)) =>
+      Queue.add(queue, getEcho(head, tail, ~props, ~stack, ~children, ~return=env.return, ~error))
     | Text(str, trim) =>
-      let str = switch trim {
-      | NoTrim => str
-      | TrimStart => trimStart(str)
-      | TrimEnd => trimEnd(str)
-      | TrimBoth => trimStart(trimEnd(str))
-      }
-      Queue.add(queue, env.return(. str))
-    | EchoBinding(loc, binding) =>
-      let x = switch echoBinding(props, binding) {
-      | Ok(x) => env.return(. escape(x))
-      | Error(type_) => error(.[Debug.badEchoType(~binding, ~type_, ~loc, ~stack)])
-      }
-      Queue.add(queue, x)
-    | Unescaped(loc, binding) =>
-      let x = switch echoBinding(props, binding) {
-      | Ok(x) => env.return(. x)
-      | Error(type_) => error(.[Debug.badEchoType(~binding, ~type_, ~loc, ~stack)])
-      }
-      Queue.add(queue, x)
-    | EchoString(str) => Queue.add(queue, env.return(. escape(str)))
-    | EchoNumber(num) => Queue.add(queue, env.return(. escape(Float.toString(num))))
+      Queue.add(
+        queue,
+        env.return(.
+          switch trim {
+          | NoTrim => str
+          | TrimStart => trimStart(str)
+          | TrimEnd => trimEnd(str)
+          | TrimBoth => trimStart(trimEnd(str))
+          },
+        ),
+      )
     | Match(loc, identifiers, cases) =>
       let patterns = NonEmpty.map(cases, ~f=(. {patterns, ast}): Pattern.t<'a> => {
         patterns: patterns,
@@ -360,7 +374,12 @@ let rec make = (~ast, ~props, ~children, ~envData, ~makeEnv, ~error, ~try_, ~red
                 ~reduceQueue,
               ),
           })
-          switch match(patterns, List(json, list{index->Int.toFloat->Json.number}), ~loc, ~stack) {
+          switch match(
+            patterns,
+            NonEmpty(json, list{index->Int.toFloat->Json.number}),
+            ~loc,
+            ~stack,
+          ) {
           | Ok(result) => Queue.transfer(result, queue)
           | Error(e) => Queue.add(queue, error(.[e]))
           }

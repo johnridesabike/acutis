@@ -42,12 +42,13 @@ let props = dict([
 
 describe("Lexer", ({test, _}) => {
   test("Illegal characters", ({expect, _}) => {
-    expect.value(compile(`a {% match*`)).toMatchSnapshot()
-    expect.value(compile(`a {% . %}`)).toMatchSnapshot()
+    expect.value(compile(~name="BadCharacter", `a {% match*`)).toMatchSnapshot()
+    expect.value(compile(~name="BadCharacter", `a {% . %}`)).toMatchSnapshot()
     expect.value(compile(`a {% raw b %%}`)).toMatchSnapshot()
     expect.value(compile(`a {{ b %}`)).toMatchSnapshot()
     expect.value(compile(`a {{ a b }}`)).toMatchSnapshot()
     expect.value(compile(~name="BadCharacter", `a {{ ? }}`)).toMatchSnapshot()
+    expect.value(compile(`a {{ a }%}`)).toMatchSnapshot()
   })
 
   test("Illegal binding names", ({expect, _}) => {
@@ -56,7 +57,8 @@ describe("Lexer", ({test, _}) => {
   })
 
   test("Other stuff", ({expect, _}) => {
-    expect.value(compile(`a {{ "a`)).toMatchSnapshot()
+    expect.value(compile(~name="BadString", `a {{ "a`)).toMatchSnapshot()
+    expect.value(compile(`a {% raw "a`)).toMatchSnapshot()
     expect.value(compile(`a {* b`)).toMatchSnapshot()
     expect.value(compile(~name="BadComment", `a {* b {* c *}`)).toMatchSnapshot()
     expect.value(compile(`a {% b`)).toMatchSnapshot()
@@ -89,6 +91,7 @@ describe("Parser", ({test, _}) => {
     expect.value(compile("{% = %}")).toMatchSnapshot()
     expect.value(compile("{% match ~ %}")).toMatchSnapshot()
     expect.value(compile("{% ~ ~ match %}")).toMatchSnapshot()
+    expect.value(compile("{{ a raw b }}")).toMatchSnapshot()
   })
 
   test("Illegal binding name", ({expect, _}) => {
@@ -206,7 +209,6 @@ describe("Patterns", ({test, _}) => {
       render(`{% map null with {"1"} %} {% /match %}`, props, components),
     ).toMatchSnapshot()
     expect.value(render(`{% raw null %}`, props, components)).toMatchSnapshot()
-    expect.value(render(`{% raw 1 %}`, props, components)).toMatchSnapshot()
   })
 
   test("Missing bindings", ({expect, _}) => {

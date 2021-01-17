@@ -72,11 +72,9 @@ let invalidCharacter = (~loc, ~name, ~character) => {
 }
 
 let unexpectedCharacter = (~loc, ~name, ~character, ~expected) => {
-  let message = Belt.Array.size(expected) == 1 ? "Expected" : "Expected one of"
-  let expected = Js.Array2.joinWith(expected, ", ")
   {
     kind: #Syntax,
-    message: `Unexpected character: "${character}". ${message}: "${expected}".`,
+    message: `Unexpected character: "${character}". Expected: "${expected}".`,
     location: location(loc),
     path: [nameToJson(name)],
     exn: None,
@@ -100,14 +98,6 @@ let unexpectedToken = (~token, ~name) => {
 let illegalBindingName = (~loc, ~name, ~binding) => {
   kind: #Parse,
   message: `"${binding}" is a reserved name`,
-  path: [nameToJson(name)],
-  location: location(loc),
-  exn: None,
-}
-
-let invalidStatement = (~loc, ~name, ~statement) => {
-  kind: #Parse,
-  message: `Invalid statement: "${statement}".`,
   path: [nameToJson(name)],
   location: location(loc),
   exn: None,

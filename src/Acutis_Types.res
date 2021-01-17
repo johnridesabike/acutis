@@ -15,36 +15,39 @@
 */
 
 module NonEmpty = {
-  type t<'a> = List('a, list<'a>)
-  let map = (List(x, rest), ~f) => List(f(. x), Belt.List.mapU(rest, f))
-  let toList = (List(x, rest)) => list{x, ...rest}
+  type t<'a> = NonEmpty('a, list<'a>)
+  let map = (NonEmpty(head, tail), ~f) => NonEmpty(f(. head), Belt.List.mapU(tail, f))
+  let toList = (NonEmpty(head, tail)) => list{head, ...tail}
 }
 
 @unboxed
 type loc = Loc(int)
 
 module RegEx = {
-  let identifierChar = %re("/^[a-zA-Z0-9_]$/")
+  let isEndOfIdentifier = {
+    let identifierChar = %re("/^[a-zA-Z0-9_]$/")
+    (. s) => !Js.Re.test_(identifierChar, s)
+  }
 
-  let isEndOfIdentifier = (. s) => !Js.Re.test_(identifierChar, s)
+  let isValidIdentifierStart = {
+    let identifierStartChar = %re("/^[a-z_]$/")
+    c => Js.Re.test_(identifierStartChar, c)
+  }
 
-  let identifierStartChar = %re("/^[a-z_]$/")
+  let isValidComponentStart = {
+    let componentStart = %re("/^[A-Z]$/")
+    c => Js.Re.test_(componentStart, c)
+  }
 
-  let isValidIdentifierStart = c => Js.Re.test_(identifierStartChar, c)
-
-  let componentStart = %re("/^[A-Z]$/")
-
-  let isValidComponentStart = c => Js.Re.test_(componentStart, c)
-
-  let isReservedKeyword = s =>
-    switch s {
-    | "null" | "true" | "false" => true
-    | _ => false
-    }
-
-  let bindingRegEx = %re("/^[a-z_][a-zA-Z0-9_]*$/")
-
-  let isLegalBinding = x => Js.Re.test_(bindingRegEx, x) && !isReservedKeyword(x)
+  let isLegalBinding = {
+    let isReservedKeyword = s =>
+      switch s {
+      | "null" | "true" | "false" => true
+      | _ => false
+      }
+    let bindingRegEx = %re("/^[a-z_][a-zA-Z0-9_]*$/")
+    x => Js.Re.test_(bindingRegEx, x) && !isReservedKeyword(x)
+  }
 }
 
 module Errors = {
@@ -81,7 +84,7 @@ module Errors = {
       | Section({component, section}) => Js.Json.string(`section: ${component}#${section}`)
       | Match => Js.Json.string("match")
       | Map => Js.Json.string("map")
-      | Index(x) => Js.Json.number(Belt.Int.toFloat(x))
+      | Index(x) => x->Belt.Int.toFloat->Js.Json.number
       }
   }
 }
@@ -93,41 +96,41 @@ module Result = {
 
 module Tokens = {
   type t =
-    | String(loc, string)
-    | JsonString(loc, string)
+    // Static elements
+    | Text(loc, string)
     | Comment(loc, string)
+    // JSON values
+    | String(loc, string)
     | Number(loc, float)
-    | Identifier(loc, string)
-    | ComponentName(loc, string)
-    | EchoIdentifier(loc, string)
-    | EchoChildComponent(loc, string)
-    | EchoString(loc, string)
-    | EchoNumber(loc, float)
+    // JSON syntax
     | Comma(loc)
     | Colon(loc)
-    | Slash(loc)
     | OpenBracket(loc)
     | CloseBracket(loc)
     | OpenBrace(loc)
     | CloseBrace(loc)
     | Spread(loc)
+    // Component syntax
+    | ComponentName(loc, string)
+    | Slash(loc)
     | Block(loc)
     | Equals(loc)
+    // Dynamic content
+    | Identifier(loc, string)
     | Tilde(loc)
+    | Question(loc)
+    | Echo(loc)
+    | EndOfExpression(loc, string)
     | EndOfFile(loc)
 
   let toString = x =>
     switch x {
-    | String(_, x) => "%} " ++ x
-    | JsonString(_, x) => `"${x}"`
+    | Text(_, x) => "[text]: " ++ x
+    | String(_, x) => `"${x}"`
     | Number(_, x) => Belt.Float.toString(x)
     | Identifier(_, x) => x
     | ComponentName(_, x) => x
     | Comment(_, x) => `{*${x}*}`
-    | EchoIdentifier(_, x) => `{{ ${x} }}`
-    | EchoChildComponent(_, x) => `{{ ${x} }}`
-    | EchoString(_, x) => `"${x}"`
-    | EchoNumber(_, x) => Belt.Float.toString(x)
     | Comma(_) => ","
     | Colon(_) => ":"
     | Slash(_) => "/"
@@ -139,21 +142,20 @@ module Tokens = {
     | Block(_) => "#"
     | Equals(_) => "="
     | Tilde(_) => "~"
+    | Question(_) => "?"
+    | Echo(_) => "{{"
+    | EndOfExpression(_, x) => x ++ "}"
     | EndOfFile(_) => "[end of file]"
     }
 
   let toLocation = x =>
     switch x {
+    | Text(x, _)
     | String(x, _)
-    | JsonString(x, _)
     | Number(x, _)
     | Identifier(x, _)
     | ComponentName(x, _)
     | Comment(x, _)
-    | EchoIdentifier(x, _)
-    | EchoChildComponent(x, _)
-    | EchoString(x, _)
-    | EchoNumber(x, _)
     | Comma(x)
     | Colon(x)
     | Slash(x)
@@ -165,6 +167,9 @@ module Tokens = {
     | Block(x)
     | Equals(x)
     | Tilde(x)
+    | Question(x)
+    | Echo(x)
+    | EndOfExpression(x, _)
     | EndOfFile(x) => x
     }
 }
@@ -230,14 +235,19 @@ module Valid = {
 }
 
 module Ast = {
+  module Echo = {
+    type t =
+      | Binding(loc, string)
+      | Child(loc, string)
+      | String(string)
+      | Number(float)
+  }
   type trim = TrimStart | TrimEnd | TrimBoth | NoTrim
   type rec node =
     | Text(string, trim)
-    | Unescaped(loc, string)
-    | EchoBinding(loc, string)
-    | EchoChild(loc, string)
-    | EchoString(string)
-    | EchoNumber(float)
+    // The first echo item that isn't null will be returned.
+    | Echo(loc, NonEmpty.t<Echo.t>)
+    | Unescaped(loc, NonEmpty.t<Echo.t>)
     | Match(loc, NonEmpty.t<(loc, string)>, NonEmpty.t<case>)
     | Map(loc, string, NonEmpty.t<case>)
     | Component({

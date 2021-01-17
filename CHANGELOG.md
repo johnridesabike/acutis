@@ -1,5 +1,6 @@
 ## 0.6.0
 
+- Added nullish coalescing to `{{ echo }}` and `raw` statements.
 - Rescript: Changed namespace to `AcutisLang`.
 - Added `exports` field to package.json
 - Removed prebundled IIFE files.

@@ -54,7 +54,7 @@ Object {
   },
   "message": "Invalid character: \\"*\\".",
   "path": Array [
-    null,
+    "BadCharacter",
   ],
 }
 `;
@@ -68,7 +68,7 @@ Object {
   },
   "message": "Unexpected character: \\". %\\". Expected: \\"...\\".",
   "path": Array [
-    null,
+    "BadCharacter",
   ],
 }
 `;
@@ -78,7 +78,7 @@ Object {
   "exn": undefined,
   "kind": "Syntax",
   "location": Object {
-    "character": 13,
+    "character": 14,
   },
   "message": "Unexpected character: \\"%\\". Expected: \\"}\\".",
   "path": Array [
@@ -92,9 +92,9 @@ Object {
   "exn": undefined,
   "kind": "Syntax",
   "location": Object {
-    "character": 10,
+    "character": 8,
   },
-  "message": "Unexpected character: \\"%}\\". Expected: \\"}}\\".",
+  "message": "Invalid character: \\"%\\".",
   "path": Array [
     null,
   ],
@@ -104,11 +104,11 @@ Object {
 exports[`Lexer Illegal characters 5`] = `
 Object {
   "exn": undefined,
-  "kind": "Syntax",
+  "kind": "Parse",
   "location": Object {
-    "character": 10,
+    "character": 8,
   },
-  "message": "Unexpected character: \\"b \\". Expected: \\"}}\\".",
+  "message": "Unexpected token: \\"b\\".",
   "path": Array [
     null,
   ],
@@ -118,13 +118,27 @@ Object {
 exports[`Lexer Illegal characters 6`] = `
 Object {
   "exn": undefined,
-  "kind": "Syntax",
+  "kind": "Parse",
   "location": Object {
     "character": 6,
   },
-  "message": "Invalid character: \\"?\\".",
+  "message": "Unexpected token: \\"?\\".",
   "path": Array [
     "BadCharacter",
+  ],
+}
+`;
+
+exports[`Lexer Illegal characters 7`] = `
+Object {
+  "exn": undefined,
+  "kind": "Syntax",
+  "location": Object {
+    "character": 10,
+  },
+  "message": "Unexpected character: \\"%\\". Expected: \\"}\\".",
+  "path": Array [
+    null,
   ],
 }
 `;
@@ -138,7 +152,7 @@ Object {
   },
   "message": "Unterminated string.",
   "path": Array [
-    null,
+    "BadString",
   ],
 }
 `;
@@ -148,9 +162,9 @@ Object {
   "exn": undefined,
   "kind": "Syntax",
   "location": Object {
-    "character": 5,
+    "character": 11,
   },
-  "message": "Unterminated comment.",
+  "message": "Unterminated string.",
   "path": Array [
     null,
   ],
@@ -166,12 +180,26 @@ Object {
   },
   "message": "Unterminated comment.",
   "path": Array [
-    "BadComment",
+    null,
   ],
 }
 `;
 
 exports[`Lexer Other stuff 4`] = `
+Object {
+  "exn": undefined,
+  "kind": "Syntax",
+  "location": Object {
+    "character": 5,
+  },
+  "message": "Unterminated comment.",
+  "path": Array [
+    "BadComment",
+  ],
+}
+`;
+
+exports[`Lexer Other stuff 5`] = `
 Object {
   "exn": undefined,
   "kind": "Syntax",
@@ -185,7 +213,7 @@ Object {
 }
 `;
 
-exports[`Lexer Other stuff 5`] = `
+exports[`Lexer Other stuff 6`] = `
 Object {
   "exn": undefined,
   "kind": "Parse",
@@ -234,7 +262,7 @@ Object {
   "location": Object {
     "character": 6,
   },
-  "message": "Invalid statement: \\"c\\".",
+  "message": "Unexpected token: \\"c\\".",
   "path": Array [
     "BadStatement",
   ],
@@ -428,7 +456,7 @@ Object {
   "exn": undefined,
   "kind": "Parse",
   "location": Object {
-    "character": 29,
+    "character": 28,
   },
   "message": "Unexpected token: \\"[end of file]\\".",
   "path": Array [
@@ -442,7 +470,7 @@ Object {
   "exn": undefined,
   "kind": "Parse",
   "location": Object {
-    "character": 32,
+    "character": 31,
   },
   "message": "Unexpected token: \\"[end of file]\\".",
   "path": Array [
@@ -484,9 +512,9 @@ Object {
   "exn": undefined,
   "kind": "Parse",
   "location": Object {
-    "character": 21,
+    "character": 19,
   },
-  "message": "Unexpected token: \\"%}  d\\".",
+  "message": "Unexpected token: \\"%}\\".",
   "path": Array [
     null,
   ],
@@ -557,6 +585,20 @@ Object {
     "character": 8,
   },
   "message": "Unexpected token: \\"match\\".",
+  "path": Array [
+    null,
+  ],
+}
+`;
+
+exports[`Parser Unexpected tokens 24`] = `
+Object {
+  "exn": undefined,
+  "kind": "Parse",
+  "location": Object {
+    "character": 6,
+  },
+  "message": "Unexpected token: \\"raw\\".",
   "path": Array [
     null,
   ],
@@ -711,22 +753,6 @@ Array [
       "character": 8,
     },
     "message": "\\"null\\" is a reserved name",
-    "path": Array [
-      null,
-    ],
-  },
-]
-`;
-
-exports[`Patterns Illegal bindings 8`] = `
-Array [
-  Object {
-    "exn": undefined,
-    "kind": "Parse",
-    "location": Object {
-      "character": 8,
-    },
-    "message": "Unexpected token: \\"1\\".",
     "path": Array [
       null,
     ],
@@ -1545,7 +1571,7 @@ Object {
   "location": Object {
     "character": 19,
   },
-  "message": "Invalid statement: \\"a\\".",
+  "message": "Unexpected token: \\"a\\".",
   "path": Array [
     null,
   ],

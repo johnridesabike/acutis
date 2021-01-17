@@ -44,10 +44,6 @@ module Scanner = {
     position.contents
   }
 
-  let skip = (source, ~until) => {
-    source.position = peek(source, ~until)
-  }
-
   let skipBy = (source, x) => source.position = source.position + x
 
   let readSubstring = (source, ~until) => {
@@ -73,31 +69,38 @@ let endOfNumber = (. c) =>
   | _ => true
   }
 
-let notWhiteSpace = (. c) =>
-  switch c {
-  | " " | "\t" | "\n" | "\r" => false
-  | _ => true
-  }
-
 open Tokens
 
 type t = {tokens: Queue.t<Tokens.t>, name: option<string>}
 
-let rec readStringAux = (source, position) =>
-  switch peekCharAt(source, position) {
-  | "" => readSubstringBy(source, position)
-  | "{" =>
-    switch peekCharAt(source, position + 1) {
-    | "%" | "*" | "{" => readSubstringBy(source, position)
-    | _ => readStringAux(source, position + 2)
-    }
-  | _ => readStringAux(source, position + 1)
-  }
+type mode = EchoMode | ExpressionMode | CommentMode | EndMode
 
-let readString = (source, tokens) => {
+let readText = (source, tokens) => {
   let loc = loc(source)
-  let s = readStringAux(source, 0)
-  Queue.add(tokens, String(loc, s))
+  let rec aux = position =>
+    switch peekCharAt(source, position) {
+    | "" =>
+      Queue.add(tokens, Text(loc, readSubstringBy(source, position)))
+      EndMode
+    | "{" =>
+      switch peekCharAt(source, position + 1) {
+      | "%" =>
+        Queue.add(tokens, Text(loc, readSubstringBy(source, position)))
+        skipBy(source, 2)
+        ExpressionMode
+      | "*" =>
+        Queue.add(tokens, Text(loc, readSubstringBy(source, position)))
+        skipBy(source, 2)
+        CommentMode
+      | "{" =>
+        Queue.add(tokens, Text(loc, readSubstringBy(source, position)))
+        skipBy(source, 2)
+        EchoMode
+      | _ => aux(position + 2)
+      }
+    | _ => aux(position + 1)
+    }
+  aux(0)
 }
 
 let readComment = (source, ~name) => {
@@ -112,9 +115,9 @@ let readComment = (source, ~name) => {
     | "*" =>
       switch peekCharAt(source, position + 1) {
       | "}" when nested == 0 =>
-        let x = readSubstringBy(source, position)
+        let result = readSubstringBy(source, position)
         skipBy(source, 2)
-        x
+        result
       | "}" => aux(~position=position + 2, ~nested=nested - 1)
       | _ => aux(~position=position + 2, ~nested)
       }
@@ -154,19 +157,16 @@ let readNumber = (source, ~name) => {
   }
 }
 
-let makeExpression = (source, tokens, ~name) => {
-  let expression = ref(true)
-  while expression.contents {
+let makeExpression = (source, tokens, ~name, ~until) => {
+  let loop = ref(true)
+  while loop.contents {
     let loc = loc(source)
     switch peekChar(source) {
-    | "" => raise(CompileError(unexpectedEoF(~loc, ~name)))
-    | "%" =>
+    | c when c == until =>
       skipChar(source)
-      let loc = Scanner.loc(source)
-      switch readChar(source) {
-      | "}" => expression := false
-      | c => raise(CompileError(unexpectedCharacter(~loc, ~expected=["}"], ~character=c, ~name)))
-      }
+      Queue.add(tokens, EndOfExpression(loc, until))
+      loop := false
+    | "" => raise(CompileError(unexpectedEoF(~loc, ~name)))
     | " " | "\t" | "\n" | "\r" => skipChar(source)
     | "{" =>
       Queue.add(tokens, OpenBrace(loc))
@@ -195,19 +195,31 @@ let makeExpression = (source, tokens, ~name) => {
     | "." =>
       switch readSubstringBy(source, 3) {
       | "..." => Queue.add(tokens, Spread(loc))
-      | c => raise(CompileError(unexpectedCharacter(~loc, ~expected=["..."], ~character=c, ~name)))
+      | c => raise(CompileError(unexpectedCharacter(~loc, ~expected="...", ~character=c, ~name)))
       }
     | "=" =>
       Queue.add(tokens, Equals(loc))
       skipChar(source)
     | "\"" =>
       skipChar(source)
-      Queue.add(tokens, JsonString(loc, readJsonString(source, ~name)))
-    | "-" | "0" | "1" | "2" | "3" | "4" | "5" | "6" | "7" | "8" | "9" =>
-      Queue.add(tokens, Number(loc, readNumber(source, ~name)))
+      Queue.add(tokens, String(loc, readJsonString(source, ~name)))
     | "~" =>
       skipChar(source)
-      Queue.add(tokens, Tilde(loc))
+      // Tildes are special-cased for end of expressions.
+      // The tilde must come *after* the end-of-expression token.
+      switch peekChar(source) {
+      | c when c == until =>
+        skipChar(source)
+        Queue.add(tokens, EndOfExpression(loc, until))
+        Queue.add(tokens, Tilde(loc))
+        loop := false
+      | _ => Queue.add(tokens, Tilde(loc))
+      }
+    | "?" =>
+      skipChar(source)
+      Queue.add(tokens, Question(loc))
+    | "-" | "0" | "1" | "2" | "3" | "4" | "5" | "6" | "7" | "8" | "9" =>
+      Queue.add(tokens, Number(loc, readNumber(source, ~name)))
     | c when RegEx.isValidIdentifierStart(c) =>
       Queue.add(tokens, Identifier(loc, readSubstring(source, ~until=RegEx.isEndOfIdentifier)))
     | c when RegEx.isValidComponentStart(c) =>
@@ -217,91 +229,49 @@ let makeExpression = (source, tokens, ~name) => {
   }
 }
 
-let readTildeMaybe = (source, tokens) =>
-  if peekChar(source) == "~" {
-    Queue.add(tokens, Tilde(loc(source)))
-    skipChar(source)
-  }
-
 let make = (~name=?, str) => {
   let source = {
     str: str,
     position: 0,
   }
   let tokens = Queue.make()
-  // All sources begin as strings
-  readString(source, tokens)
-  let char = ref(readChar(source))
-  while char.contents != "" {
-    switch char.contents {
-    | "{" =>
+  let rec aux = mode =>
+    switch mode {
+    | EndMode =>
+      Queue.add(tokens, EndOfFile(loc(source)))
+      {tokens: tokens, name: name}
+    | CommentMode =>
+      let loc = loc(source)
+      Queue.add(tokens, Comment(loc, readComment(source, ~name)))
+      aux(readText(source, tokens))
+    | ExpressionMode =>
+      makeExpression(source, tokens, ~name, ~until="%")
       switch readChar(source) {
-      | "%" =>
-        makeExpression(source, tokens, ~name)
-        readString(source, tokens)
-      | "*" =>
-        let loc = loc(source)
-        Queue.add(tokens, Comment(loc, readComment(source, ~name)))
-        readString(source, tokens)
-      | "{" =>
-        readTildeMaybe(source, tokens)
-        skip(source, ~until=notWhiteSpace)
-        switch peekChar(source) {
-        | "\"" =>
-          let loc = loc(source)
-          skipChar(source)
-          Queue.add(tokens, EchoString(loc, readJsonString(source, ~name)))
-        | "-" | "0" | "1" | "2" | "3" | "4" | "5" | "6" | "7" | "8" | "9" =>
-          let loc = loc(source)
-          Queue.add(tokens, EchoNumber(loc, readNumber(source, ~name)))
-        | c when RegEx.isValidIdentifierStart(c) =>
-          let loc = loc(source)
-          Queue.add(
-            tokens,
-            EchoIdentifier(loc, readSubstring(source, ~until=RegEx.isEndOfIdentifier)),
-          )
-        | c when RegEx.isValidComponentStart(c) =>
-          let loc = loc(source)
-          Queue.add(
-            tokens,
-            EchoChildComponent(loc, readSubstring(source, ~until=RegEx.isEndOfIdentifier)),
-          )
-        | c => raise(CompileError(invalidCharacter(~loc=loc(source), ~character=c, ~name)))
-        }
-        skip(source, ~until=notWhiteSpace)
-        readTildeMaybe(source, tokens)
-        switch readSubstringBy(source, 2) {
-        | "}}" => readString(source, tokens)
-        | c =>
-          raise(
-            CompileError(
-              unexpectedCharacter(~loc=loc(source), ~expected=["}}"], ~character=c, ~name),
-            ),
-          )
-        }
+      | "}" => aux(readText(source, tokens))
       | c =>
         raise(
-          CompileError(
-            unexpectedCharacter(~loc=loc(source), ~expected=["{", "%", "*"], ~character=c, ~name),
-          ),
+          CompileError(unexpectedCharacter(~loc=loc(source), ~expected="}", ~character=c, ~name)),
         )
       }
-    | c =>
-      raise(
-        CompileError(
-          unexpectedCharacter(
-            ~loc=loc(source),
-            ~expected=["{", "[end of file]"],
-            ~character=c,
-            ~name,
-          ),
-        ),
-      )
+    | EchoMode =>
+      // The tilde must come *before* the echo token.
+      let echoLoc = loc(source)
+      if peekChar(source) == "~" {
+        Queue.add(tokens, Tilde(loc(source)))
+        skipChar(source)
+      }
+      Queue.add(tokens, Echo(echoLoc))
+      makeExpression(source, tokens, ~name, ~until="}")
+      switch readChar(source) {
+      | "}" => aux(readText(source, tokens))
+      | c =>
+        raise(
+          CompileError(unexpectedCharacter(~loc=loc(source), ~expected="}", ~character=c, ~name)),
+        )
+      }
     }
-    char := readChar(source)
-  }
-  Queue.add(tokens, EndOfFile(loc(source)))
-  {tokens: tokens, name: name}
+  // All sources begin as text
+  aux(readText(source, tokens))
 }
 
 let peekExn = x => Queue.peekExn(x.tokens)

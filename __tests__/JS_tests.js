@@ -111,8 +111,8 @@ describe("Async templates", () => {
       NAME: "errors",
       VAL: [
         {
-          message: 'Unexpected character: "". Expected: "}}".',
-          location: { character: 7 },
+          message: "Unexpected end of file.",
+          location: { character: 5 },
           kind: "Syntax",
           path: ["C"],
         },

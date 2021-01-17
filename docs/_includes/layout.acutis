@@ -64,9 +64,7 @@
             <h1>{{ title }}</h1>
           </header>
         {%~ /match ~%}
-        {%~ match content with null %} {{ Children }}
-        {%~ with content ~%} {% raw content %}
-        {%~ /match ~%}
+        {% raw content ? Children %}
         {%~ match next
            with null ~%} {* nothing! *}
         {%~ with {text, url} ~%}

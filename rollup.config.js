@@ -1,4 +1,4 @@
-const banner = `/**
+const banner = `/**!
  *    Copyright 2021 John Jackson
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");

@@ -14,7 +14,7 @@
  *   limitations under the License.
  */
 
-import * as Acutis from "./acutis.min.js";
+import * as Acutis from "./acutis.js";
 
 window.onload = function playground(_event) {
   var propsText = document.getElementById("props");
@@ -51,11 +51,7 @@ window.onload = function playground(_event) {
     2
   );
   sourceText.value =
-    "Hello\n" +
-    "{%~ match name \n" +
-    "    with null %} dear user,\n" +
-    "{%~ with name %} {{ name }},\n" +
-    "{%~ /match %}\n" +
+    'Hello {{ name ? "dear user" }},\n' +
     "\n" +
     "{% map objects with {name, color} ~%}\n" +
     "  Have you noticed the {{ name }} is {{ color }} today?\n" +
