@@ -1,5 +1,5 @@
 /**
- *    Copyright 2020 John Jackson
+ *    Copyright 2021 John Jackson
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -14,39 +14,7 @@
  *   limitations under the License.
  */
 
-/*
- https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Object/assign
-*/
-if (typeof Object.assign !== "function") {
-  // Must be writable: true, enumerable: false, configurable: true
-  Object.defineProperty(Object, "assign", {
-    value: function assign(target, varArgs) {
-      // .length of function is 2
-      "use strict";
-      if (target === null || target === undefined) {
-        throw new TypeError("Cannot convert undefined or null to object");
-      }
-
-      var to = Object(target);
-
-      for (var index = 1; index < arguments.length; index++) {
-        var nextSource = arguments[index];
-
-        if (nextSource !== null && nextSource !== undefined) {
-          for (var nextKey in nextSource) {
-            // Avoid bugs when hasOwnProperty is shadowed
-            if (Object.prototype.hasOwnProperty.call(nextSource, nextKey)) {
-              to[nextKey] = nextSource[nextKey];
-            }
-          }
-        }
-      }
-      return to;
-    },
-    writable: true,
-    configurable: true,
-  });
-}
+import * as Acutis from "./acutis.js";
 
 window.onload = function playground(_event) {
   var propsText = document.getElementById("props");
@@ -83,11 +51,7 @@ window.onload = function playground(_event) {
     2
   );
   sourceText.value =
-    "Hello\n" +
-    "{%~ match name \n" +
-    "    with null %} dear user,\n" +
-    "{%~ with name %} {{ name }},\n" +
-    "{%~ /match %}\n" +
+    'Hello {{ name ? "dear user" }},\n' +
     "\n" +
     "{% map objects with {name, color} ~%}\n" +
     "  Have you noticed the {{ name }} is {{ color }} today?\n" +
