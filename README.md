@@ -18,7 +18,7 @@ can run in a browser or in Node.
         <img src="{{ src }}" alt="{{ alt }}" />
       {% /match}
       <h2> {{ title }} </h2>
-      <span class="byline"> By {{ name }} </span>
+      <span class="byline"> By {{ name ? "Anonymous" }} </span>
       {% DateTime date format="MMMM Do, YYYY" / %}
     </header>
     <p> {{ excerpt }} </p>

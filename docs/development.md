@@ -214,11 +214,11 @@ compile time so that circular dependencies aren't allowed.
 
 I designed the language to be as simple as possible, with the philosophy of
 "there should be one obvious way to do something." For this reason, I've
-excluded some utility features such as `if`...`else` statements, nullish
-coalescing, and direct access of object and array items. These can be
-achieved through pattern matching instead, although that may be slightly more
-verbose. I'm not opposed to adding these features in the future if there is a
-need which justifies their maintenance.
+excluded some utility features such as `if`...`else` statements and direct
+access of object and array items. These can be achieved through pattern
+matching instead, although that may be slightly more verbose. I'm not opposed
+to adding these features in the future if there is a need which justifies
+their maintenance.
 
 Props, template children, and template components each live in separate
 "layers" of the language due to their internal type differences. This feels
