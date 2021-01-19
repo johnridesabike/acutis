@@ -94,7 +94,7 @@ module Result = {
   type t<'a, 'e> = [#data('a) | #errors('e)]
 }
 
-module Tokens = {
+module Token = {
   type t =
     // Static elements
     | Text(loc, string)
@@ -175,18 +175,16 @@ module Tokens = {
 }
 
 module Pattern_Ast = {
-  type rec node =
+  type rec t =
     | Null(loc)
     | False(loc)
     | True(loc)
     | String(loc, string)
     | Number(loc, float)
-    | Array(loc, list<node>)
-    | ArrayWithTailBinding({loc: loc, array: list<node>, bindLoc: loc, binding: string})
-    | Object(loc, list<(string, node)>)
+    | Array(loc, list<t>)
+    | ArrayWithTailBinding({loc: loc, array: list<t>, bindLoc: loc, binding: string})
+    | Object(loc, list<(string, t)>)
     | Binding(loc, string)
-
-  type t = NonEmpty.t<node>
 
   let toString = x =>
     switch x {
@@ -253,10 +251,10 @@ module Ast = {
     | Component({
         loc: loc,
         name: string,
-        props: list<(string, Pattern_Ast.node)>,
+        props: list<(string, Pattern_Ast.t)>,
         children: list<(string, childProp)>,
       })
-  and case = {patterns: NonEmpty.t<Pattern_Ast.t>, ast: ast}
+  and case = {patterns: NonEmpty.t<NonEmpty.t<Pattern_Ast.t>>, ast: ast}
   and ast = list<node>
   and childProp = ChildName(string) | ChildBlock(ast)
 

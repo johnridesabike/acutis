@@ -14,16 +14,25 @@
    limitations under the License.
 */
 
+/*
+  Many of these functions accept both a token and a queue of tokens. The
+  token comes from the "head" of the queue. This minimizes the number of
+  "peek" operations needed to switch code paths.
+*/
+
 module List = Belt.List
 open Acutis_Types
 open Ast
 open Debug
 
+let unexpectedToken = (token, tokens) =>
+  raise(CompileError(unexpectedToken(~token, ~name=Lexer.name(tokens))))
+
 module Pattern = {
   open Acutis_Types.Pattern_Ast
 
-  let rec parseNode = tokens =>
-    switch Lexer.popExn(tokens) {
+  let rec parseNode = (t: Token.t, tokens) =>
+    switch t {
     | Identifier(loc, "null") => Null(loc)
     | Identifier(loc, "false") => False(loc)
     | Identifier(loc, "true") => True(loc)
@@ -31,68 +40,59 @@ module Pattern = {
     | Number(loc, x) => Number(loc, x)
     | String(loc, x) => String(loc, x)
     | OpenBracket(loc) =>
-      switch Lexer.peekExn(tokens) {
-      | CloseBracket(_) =>
-        Lexer.skipExn(tokens)
-        Array(loc, list{})
-      | _ =>
-        let firstItem = parseNode(tokens)
-        parseArray(loc, tokens, list{firstItem})
+      switch Lexer.popExn(tokens) {
+      | CloseBracket(_) => Array(loc, list{})
+      | t =>
+        let head = parseNode(t, tokens)
+        parseArray(loc, tokens, list{head})
       }
     | OpenBrace(loc) =>
-      switch Lexer.peekExn(tokens) {
-      | CloseBrace(_) =>
-        Lexer.skipExn(tokens)
-        Object(loc, list{})
-      | _ =>
-        let firstItem = parseObjectKeyValue(tokens)
-        parseObject(loc, tokens, list{firstItem})
+      switch Lexer.popExn(tokens) {
+      | CloseBrace(_) => Object(loc, list{})
+      | t =>
+        let head = parseObjectKeyValue(t, tokens)
+        parseObject(loc, tokens, list{head})
       }
-    | x => raise(CompileError(unexpectedToken(~token=x, ~name=Lexer.name(tokens))))
+    | t => unexpectedToken(t, tokens)
     }
   and parseArray = (loc, tokens, valueList) =>
     switch Lexer.popExn(tokens) {
     | CloseBracket(_) => Array(loc, List.reverse(valueList))
     | Comma(_) =>
-      switch Lexer.peekExn(tokens) {
-      | Spread(_) =>
-        Lexer.skipExn(tokens)
-        switch Lexer.popExn(tokens) {
-        | Identifier(bindingLoc, tailBinding) =>
-          switch Lexer.popExn(tokens) {
-          | CloseBracket(_) =>
-            ArrayWithTailBinding({
-              loc: loc,
-              array: List.reverse(valueList),
-              bindLoc: bindingLoc,
-              binding: tailBinding,
-            })
-          | x => raise(CompileError(unexpectedToken(~token=x, ~name=Lexer.name(tokens))))
-          }
-        | x => raise(CompileError(unexpectedToken(~token=x, ~name=Lexer.name(tokens))))
-        }
-      | Identifier(_) | Number(_) | String(_) | OpenBrace(_) | OpenBracket(_) =>
-        let item = parseNode(tokens)
+      switch Lexer.popExn(tokens) {
+      | (Identifier(_) | Number(_) | String(_) | OpenBrace(_) | OpenBracket(_)) as t =>
+        let item = parseNode(t, tokens)
         parseArray(loc, tokens, list{item, ...valueList})
-      | x => raise(CompileError(unexpectedToken(~token=x, ~name=Lexer.name(tokens))))
+      | Spread(_) =>
+        switch (Lexer.popExn(tokens), Lexer.popExn(tokens)) {
+        | (Identifier(bindingLoc, tailBinding), CloseBracket(_)) =>
+          ArrayWithTailBinding({
+            loc: loc,
+            array: List.reverse(valueList),
+            bindLoc: bindingLoc,
+            binding: tailBinding,
+          })
+        | (Identifier(_, _), t) | (t, _) => unexpectedToken(t, tokens)
+        }
+      | t => unexpectedToken(t, tokens)
       }
-    | x => raise(CompileError(unexpectedToken(~token=x, ~name=Lexer.name(tokens))))
+    | t => unexpectedToken(t, tokens)
     }
-  and parseObject = (loc, tokens, keyValueList) =>
+  and parseObject = (loc, tokens, l) =>
     switch Lexer.popExn(tokens) {
-    | CloseBrace(_) => Object(loc, List.reverse(keyValueList))
+    | CloseBrace(_) => Object(loc, List.reverse(l))
     | Comma(_) =>
-      let x = parseObjectKeyValue(tokens)
-      parseObject(loc, tokens, list{x, ...keyValueList})
-    | x => raise(CompileError(unexpectedToken(~token=x, ~name=Lexer.name(tokens))))
+      let x = parseObjectKeyValue(Lexer.popExn(tokens), tokens)
+      parseObject(loc, tokens, list{x, ...l})
+    | t => unexpectedToken(t, tokens)
     }
-  and parseObjectKeyValue = tokens =>
-    switch Lexer.popExn(tokens) {
+  and parseObjectKeyValue = (t, tokens) =>
+    switch t {
     | String(loc, key) | Identifier(loc, key) =>
       switch Lexer.peekExn(tokens) {
       | Colon(_) =>
-        Lexer.skipExn(tokens)
-        let value = parseNode(tokens)
+        Lexer.popExn(tokens)->ignore
+        let value = parseNode(Lexer.popExn(tokens), tokens)
         (key, value)
       | _ =>
         if RegEx.isLegalBinding(key) {
@@ -101,17 +101,16 @@ module Pattern = {
           raise(CompileError(illegalIdentifier(~loc, ~identifier=key, ~name=Lexer.name(tokens))))
         }
       }
-    | x => raise(CompileError(unexpectedToken(~token=x, ~name=Lexer.name(tokens))))
+    | t => unexpectedToken(t, tokens)
     }
 
   let make = tokens => {
-    let head = parseNode(tokens)
+    let head = parseNode(Lexer.popExn(tokens), tokens)
     let rec aux = (l): NonEmpty.t<'a> => {
       switch Lexer.peekExn(tokens) {
       | Comma(_) =>
-        Lexer.skipExn(tokens)
-        let pattern = parseNode(tokens)
-        aux(list{pattern, ...l})
+        Lexer.popExn(tokens)->ignore
+        aux(list{parseNode(Lexer.popExn(tokens), tokens), ...l})
       | _ => NonEmpty(head, List.reverse(l))
       }
     }
@@ -119,40 +118,22 @@ module Pattern = {
   }
 }
 
-let parseCommaSequence = tokens =>
+let parseBindingName = tokens =>
   switch Lexer.popExn(tokens) {
-  | Identifier(loc, head) when RegEx.isLegalBinding(head) =>
-    let rec aux = (l): NonEmpty.t<'a> =>
-      switch Lexer.peekExn(tokens) {
-      | Comma(_) =>
-        Lexer.skipExn(tokens)
-        switch Lexer.popExn(tokens) {
-        | Identifier(loc, x) when RegEx.isLegalBinding(x) => aux(list{(loc, x), ...l})
-        | Identifier(loc, x) =>
-          raise(CompileError(illegalBindingName(~loc, ~binding=x, ~name=Lexer.name(tokens))))
-        | x => raise(CompileError(unexpectedToken(~token=x, ~name=Lexer.name(tokens))))
-        }
-      | _ => NonEmpty((loc, head), List.reverse(l))
-      }
-    aux(list{})
+  | Identifier(loc, x) when RegEx.isLegalBinding(x) => (loc, x)
   | Identifier(loc, x) =>
     raise(CompileError(illegalBindingName(~loc, ~binding=x, ~name=Lexer.name(tokens))))
-  | x => raise(CompileError(unexpectedToken(~token=x, ~name=Lexer.name(tokens))))
+  | t => unexpectedToken(t, tokens)
   }
 
-let parseMatchCasePatterns = tokens => {
-  switch Lexer.popExn(tokens) {
-  | Identifier(_, "with") => ()
-  | x => raise(CompileError(unexpectedToken(~token=x, ~name=Lexer.name(tokens))))
-  }
-  let firstPattern = Pattern.make(tokens)
+let parseCommaSequence = tokens => {
+  let head = parseBindingName(tokens)
   let rec aux = (l): NonEmpty.t<'a> =>
     switch Lexer.peekExn(tokens) {
-    | Identifier(_, "with") =>
-      Lexer.skipExn(tokens)
-      let x = Pattern.make(tokens)
-      aux(list{x, ...l})
-    | _ => NonEmpty(firstPattern, List.reverse(l))
+    | Comma(_) =>
+      Lexer.popExn(tokens)->ignore
+      aux(list{parseBindingName(tokens), ...l})
+    | _ => NonEmpty(head, List.reverse(l))
     }
   aux(list{})
 }
@@ -165,7 +146,7 @@ let parseEcho = (tokens): Ast.Echo.t =>
   | Number(_, x) => Number(x)
   | Identifier(loc, x) =>
     raise(CompileError(illegalBindingName(~loc, ~binding=x, ~name=Lexer.name(tokens))))
-  | x => raise(CompileError(unexpectedToken(~token=x, ~name=Lexer.name(tokens))))
+  | t => unexpectedToken(t, tokens)
   }
 
 let parseEchoes = tokens => {
@@ -174,165 +155,169 @@ let parseEchoes = tokens => {
     switch Lexer.popExn(tokens) {
     | EndOfExpression(_) => NonEmpty(head, List.reverse(l))
     | Question(_) => aux(list{parseEcho(tokens), ...l})
-    | x => raise(CompileError(unexpectedToken(~token=x, ~name=Lexer.name(tokens))))
+    | t => unexpectedToken(t, tokens)
     }
   }
   aux(list{})
 }
 
-let endOfMatchMap = (. x: Tokens.t) =>
-  switch x {
+let endOfMatchMap = (. t: Token.t) =>
+  switch t {
   | Identifier(_, "with") | Slash(_) => true
   | _ => false
   }
 
-let endOfFile = (. x: Tokens.t) =>
-  switch x {
+let endOfFile = (. t: Token.t) =>
+  switch t {
   | EndOfFile(_) => true
   | _ => false
   }
 
-let slash = (. x: Tokens.t) =>
-  switch x {
+let slash = (. t: Token.t) =>
+  switch t {
   | Slash(_) => true
   | _ => false
   }
 
-let rec parse = (tokens, ~until) => {
-  let rec aux = l =>
-    if until(. Lexer.peekExn(tokens)) {
-      List.reverse(l)
-    } else {
+let rec parse = (t, tokens, ~until) => {
+  let rec aux = (t: Token.t, l) =>
+    switch t {
+    | t when until(. t) => (t, List.reverse(l))
+    | Text(_, x) =>
+      switch Lexer.popExn(tokens) {
+      | Tilde(_) => aux(Lexer.popExn(tokens), list{Text(x, TrimEnd), ...l})
+      | t => aux(t, list{Text(x, NoTrim), ...l})
+      }
+    | Tilde(_) =>
       switch Lexer.popExn(tokens) {
       | Text(_, x) =>
-        switch Lexer.peekExn(tokens) {
-        | Tilde(_) =>
-          Lexer.skipExn(tokens)
-          aux(list{Text(x, TrimEnd), ...l})
-        | _ => aux(list{Text(x, NoTrim), ...l})
-        }
-      | Tilde(_) =>
         switch Lexer.popExn(tokens) {
-        | Text(_, x) =>
-          switch Lexer.peekExn(tokens) {
-          | Tilde(_) =>
-            Lexer.skipExn(tokens)
-            aux(list{Text(x, TrimBoth), ...l})
-          | _ => aux(list{Text(x, TrimStart), ...l})
-          }
-        | x => raise(CompileError(unexpectedToken(~token=x, ~name=Lexer.name(tokens))))
+        | Tilde(_) => aux(Lexer.popExn(tokens), list{Text(x, TrimBoth), ...l})
+        | t => aux(t, list{Text(x, TrimStart), ...l})
         }
-      | Comment(_) => aux(l)
-      | Identifier(loc, "match") =>
-        let identifiers = parseCommaSequence(tokens)
-        let firstCase = parseCaseBlock(tokens)
-        let cases = parseCaseBlocks(tokens, ~block="match")
-        aux(list{Match(loc, identifiers, NonEmpty(firstCase, cases)), ...l})
-      | Identifier(_, "map") =>
-        let (loc, identifier) = switch Lexer.popExn(tokens) {
-        | Identifier(loc, x) when RegEx.isLegalBinding(x) => (loc, x)
-        | Identifier(loc, x) =>
-          raise(CompileError(illegalBindingName(~loc, ~binding=x, ~name=Lexer.name(tokens))))
-        | x => raise(CompileError(unexpectedToken(~token=x, ~name=Lexer.name(tokens))))
-        }
-        let firstCase = parseCaseBlock(tokens)
-        let cases = parseCaseBlocks(tokens, ~block="map")
-        aux(list{Map(loc, identifier, NonEmpty(firstCase, cases)), ...l})
-      | Identifier(loc, "raw") => aux(list{Unescaped(loc, parseEchoes(tokens)), ...l})
-      | Echo(loc) => aux(list{Echo(loc, parseEchoes(tokens)), ...l})
-      | ComponentName(loc, name) => aux(list{parseComponent(loc, name, tokens), ...l})
-      | EndOfExpression(_) => aux(l)
-      | x => raise(CompileError(unexpectedToken(~token=x, ~name=Lexer.name(tokens))))
+      | t => unexpectedToken(t, tokens)
       }
+    | Comment(_) => aux(Lexer.popExn(tokens), l)
+    | Identifier(loc, "match") =>
+      let identifiers = parseCommaSequence(tokens)
+      let withs = parseWithBlocks(tokens, ~block="match")
+      aux(Lexer.popExn(tokens), list{Match(loc, identifiers, withs), ...l})
+    | Identifier(_, "map") =>
+      let (loc, identifier) = parseBindingName(tokens)
+      let withs = parseWithBlocks(tokens, ~block="map")
+      aux(Lexer.popExn(tokens), list{Map(loc, identifier, withs), ...l})
+    | Identifier(loc, "raw") =>
+      aux(Lexer.popExn(tokens), list{Unescaped(loc, parseEchoes(tokens)), ...l})
+    | Echo(loc) => aux(Lexer.popExn(tokens), list{Echo(loc, parseEchoes(tokens)), ...l})
+    | ComponentName(loc, name) =>
+      aux(Lexer.popExn(tokens), list{parseComponent(loc, name, tokens), ...l})
+    | EndOfExpression(_) => aux(Lexer.popExn(tokens), l)
+    | t => unexpectedToken(t, tokens)
     }
-  aux(list{})
+  aux(t, list{})
 }
-and parseCaseBlock = tokens => {
-  let patterns = parseMatchCasePatterns(tokens)
-  let ast = parse(tokens, ~until=endOfMatchMap)
-  {patterns: patterns, ast: ast}
-}
-and parseCaseBlocks = (tokens, ~block) => {
+and parseWithBlock = tokens => {
+  let head = Pattern.make(tokens)
   let rec aux = l =>
-    switch Lexer.peekExn(tokens) {
-    | Slash(_) =>
-      Lexer.skipExn(tokens)
-      switch Lexer.popExn(tokens) {
-      | Identifier(_, x) when x == block => List.reverse(l)
-      | x => raise(CompileError(unexpectedToken(~token=x, ~name=Lexer.name(tokens))))
-      }
-    | _ =>
-      let x = parseCaseBlock(tokens)
-      aux(list{x, ...l})
+    switch Lexer.popExn(tokens) {
+    | Identifier(_, "with") => aux(list{Pattern.make(tokens), ...l})
+    | t =>
+      let (lastToken, ast) = parse(t, tokens, ~until=endOfMatchMap)
+      (lastToken, {patterns: NonEmpty(head, List.reverse(l)), ast: ast})
     }
   aux(list{})
 }
+and parseWithBlocks = (tokens, ~block) =>
+  switch Lexer.popExn(tokens) {
+  | Identifier(_, "with") =>
+    let (lastToken, head) = parseWithBlock(tokens)
+    let rec aux = (t: Token.t, l): NonEmpty.t<'a> =>
+      switch t {
+      | Slash(_) =>
+        switch Lexer.popExn(tokens) {
+        | Identifier(_, x) when x == block => NonEmpty(head, List.reverse(l))
+        | t => unexpectedToken(t, tokens)
+        }
+      /* This is guaranteed to be a "with" clause. */
+      | _with =>
+        let (lastToken, block) = parseWithBlock(tokens)
+        aux(lastToken, list{block, ...l})
+      }
+    aux(lastToken, list{})
+  | t => unexpectedToken(t, tokens)
+  }
 and parseComponent = (loc, name, tokens) => {
-  let (props, children) = parseProps(tokens, ~props=list{}, ~children=list{})
-  switch Lexer.peekExn(tokens) {
-  | Slash(_) =>
-    Lexer.skipExn(tokens)
-    Component({loc: loc, name: name, props: props, children: children})
-  | _ =>
-    let x = parse(tokens, ~until=slash)
-    Lexer.skipExn(tokens)
-    let children = list{("Children", ChildBlock(x)), ...children}
+  let (t: Token.t, props, children) = parseProps(
+    Lexer.popExn(tokens),
+    tokens,
+    ~props=list{},
+    ~children=list{},
+  )
+  switch t {
+  | Slash(_) => Component({loc: loc, name: name, props: props, children: children})
+  | t =>
+    let (_, child) = parse(t, tokens, ~until=slash)
     switch Lexer.popExn(tokens) {
     | ComponentName(_, name') when name == name' =>
-      Component({loc: loc, name: name, props: props, children: children})
-    | x => raise(CompileError(unexpectedToken(~token=x, ~name=Lexer.name(tokens))))
+      Component({
+        loc: loc,
+        name: name,
+        props: props,
+        children: list{("Children", ChildBlock(child)), ...children},
+      })
+    | t => unexpectedToken(t, tokens)
     }
   }
 }
-and parseProps = (tokens, ~props, ~children) =>
-  switch Lexer.peekExn(tokens) {
+and parseProps = (t: Token.t, tokens, ~props, ~children) =>
+  switch t {
   | Identifier(loc, key) =>
-    Lexer.skipExn(tokens)
-    switch Lexer.peekExn(tokens) {
+    switch Lexer.popExn(tokens) {
     | Equals(_) =>
-      Lexer.skipExn(tokens)
-      let prop = Pattern.parseNode(tokens)
-      parseProps(tokens, ~props=list{(key, prop), ...props}, ~children)
-    | _ => parseProps(tokens, ~props=list{(key, Binding(loc, key)), ...props}, ~children)
+      let prop = Pattern.parseNode(Lexer.popExn(tokens), tokens)
+      parseProps(Lexer.popExn(tokens), tokens, ~props=list{(key, prop), ...props}, ~children)
+    | t => parseProps(t, tokens, ~props=list{(key, Binding(loc, key)), ...props}, ~children)
     }
   | ComponentName(_, name) =>
-    Lexer.skipExn(tokens)
-    switch Lexer.peekExn(tokens) {
+    switch Lexer.popExn(tokens) {
     | Equals(_) =>
-      Lexer.skipExn(tokens)
       switch Lexer.popExn(tokens) {
       | Block(_) =>
-        let child = parseBlock(tokens)
-        parseProps(tokens, ~props, ~children=list{(name, ChildBlock(child)), ...children})
+        let (_, child) = parse(Lexer.popExn(tokens), tokens, ~until=slash)
+        switch Lexer.popExn(tokens) {
+        | Block(_) =>
+          parseProps(
+            Lexer.popExn(tokens),
+            tokens,
+            ~props,
+            ~children=list{(name, ChildBlock(child)), ...children},
+          )
+        | t => unexpectedToken(t, tokens)
+        }
       | ComponentName(_, name') =>
-        parseProps(tokens, ~props, ~children=list{(name, ChildName(name')), ...children})
-      | x => raise(CompileError(unexpectedToken(~token=x, ~name=Lexer.name(tokens))))
+        parseProps(
+          Lexer.popExn(tokens),
+          tokens,
+          ~props,
+          ~children=list{(name, ChildName(name')), ...children},
+        )
+      | t => unexpectedToken(t, tokens)
       }
-    | _ => parseProps(tokens, ~props, ~children=list{(name, ChildName(name)), ...children})
+    | t => parseProps(t, tokens, ~props, ~children=list{(name, ChildName(name)), ...children})
     }
-  | _ => (props, children)
+  | t => (t, props, children)
   }
-and parseBlock = tokens => {
-  let result = parse(tokens, ~until=slash)
-  Lexer.skipExn(tokens)
-  switch Lexer.popExn(tokens) {
-  | Block(_) => result
-  | x => raise(CompileError(unexpectedToken(~token=x, ~name=Lexer.name(tokens))))
-  }
-}
 
-let makeAst = (~name=?, source) =>
+let makeAst = (~name=?, source) => {
   try {
-    Valid.make(
-      #data({
-        ast: parse(Lexer.make(source, ~name?), ~until=endOfFile),
-        name: name,
-      }),
-    )
+    let tokens = Lexer.make(source, ~name?)
+    let (_, ast) = parse(Lexer.popExn(tokens), tokens, ~until=endOfFile)
+    Valid.make(#data({ast: ast, name: name}))
   } catch {
   | CompileError(e) => Valid.make(#errors(e))
   | e => Valid.make(#errors(Debug.compileExn(e, ~name)))
   }
+}
 
 let make = (~name=?, source) => {
   let ast = makeAst(source, ~name?)

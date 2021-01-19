@@ -21,7 +21,7 @@ module Pattern = Render.Pattern
 
 let parseString = source => {
   let tokens = Lexer.make("{% " ++ source ++ "%}")
-  Lexer.skipExn(tokens) // skip the opening string
+  Lexer.popExn(tokens)->ignore // skip the opening string
   Compile.Pattern.make(tokens)
 }
 
@@ -283,8 +283,9 @@ describe("Multiple patterns and data", ({test, _}) => {
 
 let parseString = source => {
   let tokens = Lexer.make("{% " ++ source ++ " %}")
-  Lexer.skipExn(tokens) // skip the opening string
-  Compile.Pattern.parseNode(tokens)
+  Lexer.popExn(tokens)->ignore // skip the opening string
+  let NonEmpty.NonEmpty(result, _) = Compile.Pattern.make(tokens)
+  result
 }
 
 describe("Encoding to JSON", ({test, _}) => {

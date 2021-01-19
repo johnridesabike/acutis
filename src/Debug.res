@@ -84,8 +84,8 @@ let unexpectedCharacter = (~loc, ~name, ~character, ~expected) => {
 /* Parse errors */
 
 let unexpectedToken = (~token, ~name) => {
-  let location = location(Tokens.toLocation(token))
-  let token = Tokens.toString(token)
+  let location = location(Token.toLocation(token))
+  let token = Token.toString(token)
   {
     message: `Unexpected token: "${token}".`,
     kind: #Parse,

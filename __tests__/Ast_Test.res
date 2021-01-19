@@ -56,7 +56,7 @@ describe("Lexer", ({test, _}) => {
 describe("Patterns", ({test, _}) => {
   let parseString = source => {
     let tokens = Lexer.make("{% " ++ source ++ "%}")
-    Lexer.skipExn(tokens) // Skip the opening string
+    Lexer.popExn(tokens)->ignore // Skip the opening string
     Compile.Pattern.make(tokens)
   }
 

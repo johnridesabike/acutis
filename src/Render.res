@@ -27,7 +27,7 @@ module Pattern = {
   open Pattern_Ast
 
   type toJsonErrors =
-    | BindingTypeMismatch({data: Json.tagged_t, pattern: node, binding: string})
+    | BindingTypeMismatch({data: Json.tagged_t, pattern: Pattern_Ast.t, binding: string})
     | BindingDoesNotExist({loc: loc, binding: string})
 
   let listToQueueResult = (l, ~f) => {
@@ -92,7 +92,7 @@ module Pattern = {
   type errors =
     | NoMatch
     | PatternNumberMismatch
-    | PatternTypeMismatch({data: Json.tagged_t, pattern: node})
+    | PatternTypeMismatch({data: Json.tagged_t, pattern: Pattern_Ast.t})
     | TooManyBindings({loc: loc, binding: string})
 
   let setBinding = (bindings, identifier, json, ~loc) =>
@@ -181,7 +181,7 @@ module Pattern = {
   }
 
   type t<'a> = {
-    patterns: NonEmpty.t<Pattern_Ast.t>,
+    patterns: NonEmpty.t<NonEmpty.t<Pattern_Ast.t>>,
     f: (. Js.Dict.t<Json.t>) => 'a,
   }
 
@@ -246,7 +246,7 @@ let echoBinding = (props, binding) =>
   | type_ => Error(type_)
   }
 
-let addImplicitIndexBinding = (~loc, . x: Pattern_Ast.t): Pattern_Ast.t =>
+let addImplicitIndexBinding = (~loc, . x: NonEmpty.t<Pattern_Ast.t>): NonEmpty.t<Pattern_Ast.t> =>
   switch x {
   | NonEmpty(x, list{}) => NonEmpty(x, list{Binding(loc, "_")})
   | x => x

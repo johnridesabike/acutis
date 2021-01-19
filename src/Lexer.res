@@ -69,9 +69,9 @@ let endOfNumber = (. c) =>
   | _ => true
   }
 
-open Tokens
+open Token
 
-type t = {tokens: Queue.t<Tokens.t>, name: option<string>}
+type t = {tokens: Queue.t<Token.t>, name: option<string>}
 
 type mode = EchoMode | ExpressionMode | CommentMode | EndMode
 
@@ -277,8 +277,6 @@ let make = (~name=?, str) => {
 let peekExn = x => Queue.peekExn(x.tokens)
 
 let popExn = x => Queue.popExn(x.tokens)
-
-let skipExn = x => ignore(Queue.popExn(x.tokens))
 
 let name = x => x.name
 
