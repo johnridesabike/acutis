@@ -23,33 +23,6 @@ module NonEmpty = {
 @unboxed
 type loc = Loc(int)
 
-module RegEx = {
-  let isEndOfIdentifier = {
-    let identifierChar = %re("/^[a-zA-Z0-9_]$/")
-    (. s) => !Js.Re.test_(identifierChar, s)
-  }
-
-  let isValidIdentifierStart = {
-    let identifierStartChar = %re("/^[a-z_]$/")
-    c => Js.Re.test_(identifierStartChar, c)
-  }
-
-  let isValidComponentStart = {
-    let componentStart = %re("/^[A-Z]$/")
-    c => Js.Re.test_(componentStart, c)
-  }
-
-  let isLegalBinding = {
-    let isReservedKeyword = s =>
-      switch s {
-      | "null" | "true" | "false" => true
-      | _ => false
-      }
-    let bindingRegEx = %re("/^[a-z_][a-zA-Z0-9_]*$/")
-    x => Js.Re.test_(bindingRegEx, x) && !isReservedKeyword(x)
-  }
-}
-
 module Errors = {
   type kind = [#Type | #Render | #Compile | #Pattern | #Parse | #Syntax]
 
@@ -102,6 +75,9 @@ module Token = {
     // JSON values
     | String(loc, string)
     | Number(loc, float)
+    | True(loc) // a reserved identifier
+    | False(loc) // a reserved identifier
+    | Null(loc) // a reserved identifier
     // JSON syntax
     | Comma(loc)
     | Colon(loc)
@@ -119,8 +95,8 @@ module Token = {
     | Identifier(loc, string)
     | Tilde(loc)
     | Question(loc)
+    | Ampersand(loc)
     | Echo(loc)
-    | EndOfExpression(loc, string)
     | EndOfFile(loc)
 
   let toString = x =>
@@ -128,6 +104,9 @@ module Token = {
     | Text(_, x) => "[text]: " ++ x
     | String(_, x) => `"${x}"`
     | Number(_, x) => Belt.Float.toString(x)
+    | True(_) => "true"
+    | False(_) => "false"
+    | Null(_) => "null"
     | Identifier(_, x) => x
     | ComponentName(_, x) => x
     | Comment(_, x) => `{*${x}*}`
@@ -143,8 +122,8 @@ module Token = {
     | Equals(_) => "="
     | Tilde(_) => "~"
     | Question(_) => "?"
+    | Ampersand(_) => "&"
     | Echo(_) => "{{"
-    | EndOfExpression(_, x) => x ++ "}"
     | EndOfFile(_) => "[end of file]"
     }
 
@@ -154,6 +133,9 @@ module Token = {
     | String(x, _)
     | Number(x, _)
     | Identifier(x, _)
+    | True(x)
+    | False(x)
+    | Null(x)
     | ComponentName(x, _)
     | Comment(x, _)
     | Comma(x)
@@ -168,8 +150,8 @@ module Token = {
     | Equals(x)
     | Tilde(x)
     | Question(x)
+    | Ampersand(x)
     | Echo(x)
-    | EndOfExpression(x, _)
     | EndOfFile(x) => x
     }
 }
@@ -220,10 +202,7 @@ module Valid = {
     acutis_is_valid: string,
   }
 
-  let make = x => {
-    data: x,
-    acutis_is_valid: "ACUTIS_IS_VALID",
-  }
+  let make = x => {data: x, acutis_is_valid: "ACUTIS_IS_VALID"}
 
   let validate = x =>
     switch x {
@@ -234,18 +213,18 @@ module Valid = {
 
 module Ast = {
   module Echo = {
+    type escape = NoEscape | Escape
     type t =
-      | Binding(loc, string)
+      | Binding(loc, string, escape)
       | Child(loc, string)
-      | String(string)
-      | Number(float)
+      | String(string, escape)
+      | Number(float, escape)
   }
   type trim = TrimStart | TrimEnd | TrimBoth | NoTrim
   type rec node =
     | Text(string, trim)
     // The first echo item that isn't null will be returned.
     | Echo(loc, NonEmpty.t<Echo.t>)
-    | Unescaped(loc, NonEmpty.t<Echo.t>)
     | Match(loc, NonEmpty.t<(loc, string)>, NonEmpty.t<case>)
     | Map(loc, string, NonEmpty.t<case>)
     | Component({

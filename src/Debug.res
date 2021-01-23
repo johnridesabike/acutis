@@ -95,14 +95,6 @@ let unexpectedToken = (~token, ~name) => {
   }
 }
 
-let illegalBindingName = (~loc, ~name, ~binding) => {
-  kind: #Parse,
-  message: `"${binding}" is a reserved name`,
-  path: [nameToJson(name)],
-  location: location(loc),
-  exn: None,
-}
-
 /* Render errors */
 
 let jsonTaggedTToString = (x: Js.Json.tagged_t) =>

@@ -44,7 +44,7 @@ describe("Lexer", ({test, _}) => {
   test("Illegal characters", ({expect, _}) => {
     expect.value(compile(~name="BadCharacter", `a {% match*`)).toMatchSnapshot()
     expect.value(compile(~name="BadCharacter", `a {% . %}`)).toMatchSnapshot()
-    expect.value(compile(`a {% raw b %%}`)).toMatchSnapshot()
+    expect.value(compile(`a {% match a %%}`)).toMatchSnapshot()
     expect.value(compile(`a {{ b %}`)).toMatchSnapshot()
     expect.value(compile(`a {{ a b }}`)).toMatchSnapshot()
     expect.value(compile(~name="BadCharacter", `a {{ ? }}`)).toMatchSnapshot()
@@ -58,7 +58,7 @@ describe("Lexer", ({test, _}) => {
 
   test("Other stuff", ({expect, _}) => {
     expect.value(compile(~name="BadString", `a {{ "a`)).toMatchSnapshot()
-    expect.value(compile(`a {% raw "a`)).toMatchSnapshot()
+    expect.value(compile(`a {{ &"a`)).toMatchSnapshot()
     expect.value(compile(`a {* b`)).toMatchSnapshot()
     expect.value(compile(~name="BadComment", `a {* b {* c *}`)).toMatchSnapshot()
     expect.value(compile(`a {% b`)).toMatchSnapshot()
@@ -91,16 +91,22 @@ describe("Parser", ({test, _}) => {
     expect.value(compile("{% = %}")).toMatchSnapshot()
     expect.value(compile("{% match ~ %}")).toMatchSnapshot()
     expect.value(compile("{% ~ ~ match %}")).toMatchSnapshot()
-    expect.value(compile("{{ a raw b }}")).toMatchSnapshot()
+    expect.value(compile("{{ a & b }}")).toMatchSnapshot()
   })
 
   test("Illegal binding name", ({expect, _}) => {
     expect.value(compile(~name="BadBinding", `{% match null %}`)).toMatchSnapshot()
     expect.value(compile(`{% match a, null %}`)).toMatchSnapshot()
+    expect.value(compile(`{% match a with [x, ...null] %}`)).toMatchSnapshot()
+    expect.value(compile(`{% A null=1 /%}`)).toMatchSnapshot()
   })
 
   test("Invalid statements", ({expect, _}) => {
     expect.value(compile(~name="BadStatement", `a {% c %}`)).toMatchSnapshot()
+  })
+
+  test("You can't unescape child templates", ({expect, _}) => {
+    expect.value(compile("{{ &A }}")).toMatchSnapshot()
   })
 })
 
@@ -202,13 +208,7 @@ describe("Patterns", ({test, _}) => {
     expect.value(
       render(`{% match falseKey with {false} %} {% /match %}`, props, components),
     ).toMatchSnapshot()
-    expect.value(
-      render(`{% match numberKey with {"1"} %} {% /match %}`, props, components),
-    ).toMatchSnapshot()
-    expect.value(
-      render(`{% map null with {"1"} %} {% /match %}`, props, components),
-    ).toMatchSnapshot()
-    expect.value(render(`{% raw null %}`, props, components)).toMatchSnapshot()
+    expect.value(render(`{{ &null }}`, props, components)).toMatchSnapshot()
   })
 
   test("Missing bindings", ({expect, _}) => {
@@ -360,7 +360,7 @@ describe("Rendering", ({test, _}) => {
     ).toMatchSnapshot()
     expect.value(render("{{ b }}", data, components)).toMatchSnapshot()
     expect.value(render("{{ c }}", data, components)).toMatchSnapshot()
-    expect.value(render("{% raw b %}", data, components)).toMatchSnapshot()
+    expect.value(render("{{ &b }}", data, components)).toMatchSnapshot()
   })
 
   test("Missing bindings", ({expect, _}) => {

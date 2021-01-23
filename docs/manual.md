@@ -44,12 +44,6 @@ It renders:
 My favorite color is blue.
 ```
 
-Acutis escapes echoes. The following characters transform into HTML entities:
-
-```jinja2
-& " ' > < / ` =
-```
-
 ### Nullish coalescing
 
 The `?` (question mark) echoes the value on its right-hand side if the value
@@ -61,16 +55,21 @@ My favorite color is {{ color ? fallbackColor }}.
 You can chain ?s: {{ a ? b ? "If this prints, a and b are both null." }}
 ```
 
-## Unescaped echoes
+### Escaping
 
-The `raw` statement echoes a value without escaping it. Nullish coalescing
-also works with `raw`.
+Acutis escapes echoes by default. It transforms the following characters into
+HTML entities:
 
 ```jinja2
-My favorite color is {% raw color %}.
+& " ' > < / ` =
 ```
 
-Note that this is a statement, so it's inside `{% %}`.
+If the `&` (ampersand) character appears before a value, then the value will
+not be escaped.
+
+```jinja2
+My favorite color is {{ &color }}.
+```
 
 ## Comments
 

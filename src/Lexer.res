@@ -157,6 +157,23 @@ let readNumber = (source, ~name) => {
   }
 }
 
+let identifierChar = %re("/^[a-zA-Z0-9_]$/")
+let endOfIdentifier = (. s) => !Js.Re.test_(identifierChar, s)
+
+let identifierStartChar = %re("/^[a-z_]$/")
+let isValidIdentifierStart = c => Js.Re.test_(identifierStartChar, c)
+
+let componentStart = %re("/^[A-Z]$/")
+let isValidComponentStart = c => Js.Re.test_(componentStart, c)
+
+let readIdentifier = (source, loc) =>
+  switch readSubstring(source, ~until=endOfIdentifier) {
+  | "true" => True(loc)
+  | "false" => False(loc)
+  | "null" => Null(loc)
+  | s => Identifier(loc, s)
+  }
+
 let makeExpression = (source, tokens, ~name, ~until) => {
   let loop = ref(true)
   while loop.contents {
@@ -164,76 +181,65 @@ let makeExpression = (source, tokens, ~name, ~until) => {
     switch peekChar(source) {
     | c when c == until =>
       skipChar(source)
-      Queue.add(tokens, EndOfExpression(loc, until))
       loop := false
     | "" => raise(CompileError(unexpectedEoF(~loc, ~name)))
     | " " | "\t" | "\n" | "\r" => skipChar(source)
     | "{" =>
+      skipChar(source)
       Queue.add(tokens, OpenBrace(loc))
-      skipChar(source)
     | "}" =>
+      skipChar(source)
       Queue.add(tokens, CloseBrace(loc))
-      skipChar(source)
     | "#" =>
+      skipChar(source)
       Queue.add(tokens, Block(loc))
-      skipChar(source)
     | "/" =>
+      skipChar(source)
       Queue.add(tokens, Slash(loc))
-      skipChar(source)
     | ":" =>
+      skipChar(source)
       Queue.add(tokens, Colon(loc))
-      skipChar(source)
     | "[" =>
+      skipChar(source)
       Queue.add(tokens, OpenBracket(loc))
-      skipChar(source)
     | "]" =>
+      skipChar(source)
       Queue.add(tokens, CloseBracket(loc))
-      skipChar(source)
     | "," =>
-      Queue.add(tokens, Comma(loc))
       skipChar(source)
+      Queue.add(tokens, Comma(loc))
     | "." =>
       switch readSubstringBy(source, 3) {
       | "..." => Queue.add(tokens, Spread(loc))
       | c => raise(CompileError(unexpectedCharacter(~loc, ~expected="...", ~character=c, ~name)))
       }
     | "=" =>
-      Queue.add(tokens, Equals(loc))
       skipChar(source)
+      Queue.add(tokens, Equals(loc))
     | "\"" =>
       skipChar(source)
       Queue.add(tokens, String(loc, readJsonString(source, ~name)))
     | "~" =>
       skipChar(source)
-      // Tildes are special-cased for end of expressions.
-      // The tilde must come *after* the end-of-expression token.
-      switch peekChar(source) {
-      | c when c == until =>
-        skipChar(source)
-        Queue.add(tokens, EndOfExpression(loc, until))
-        Queue.add(tokens, Tilde(loc))
-        loop := false
-      | _ => Queue.add(tokens, Tilde(loc))
-      }
+      Queue.add(tokens, Tilde(loc))
     | "?" =>
       skipChar(source)
       Queue.add(tokens, Question(loc))
+    | "&" =>
+      skipChar(source)
+      Queue.add(tokens, Ampersand(loc))
     | "-" | "0" | "1" | "2" | "3" | "4" | "5" | "6" | "7" | "8" | "9" =>
       Queue.add(tokens, Number(loc, readNumber(source, ~name)))
-    | c when RegEx.isValidIdentifierStart(c) =>
-      Queue.add(tokens, Identifier(loc, readSubstring(source, ~until=RegEx.isEndOfIdentifier)))
-    | c when RegEx.isValidComponentStart(c) =>
-      Queue.add(tokens, ComponentName(loc, readSubstring(source, ~until=RegEx.isEndOfIdentifier)))
+    | c when isValidIdentifierStart(c) => Queue.add(tokens, readIdentifier(source, loc))
+    | c when isValidComponentStart(c) =>
+      Queue.add(tokens, ComponentName(loc, readSubstring(source, ~until=endOfIdentifier)))
     | c => raise(CompileError(invalidCharacter(~loc, ~character=c, ~name)))
     }
   }
 }
 
 let make = (~name=?, str) => {
-  let source = {
-    str: str,
-    position: 0,
-  }
+  let source = {str: str, position: 0}
   let tokens = Queue.make()
   let rec aux = mode =>
     switch mode {

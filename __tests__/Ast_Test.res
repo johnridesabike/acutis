@@ -241,20 +241,20 @@ a
 {{ c }}
 {{ "d" }}
 {{ 1.5 }}
-{% raw e %}
+{{ &e }}
 f`)
       ->getAst
       ->Belt.List.toArray,
     ).toEqual([
       Text("\na\n", NoTrim),
       Text("\n", NoTrim),
-      Echo(Loc(13), NonEmpty(Binding(Loc(14), "c"), list{})),
+      Echo(Loc(13), NonEmpty(Binding(Loc(14), "c", Escape), list{})),
       Text("\n", NoTrim),
-      Echo(Loc(21), NonEmpty(String("d"), list{})),
+      Echo(Loc(21), NonEmpty(String("d", Escape), list{})),
       Text("\n", NoTrim),
-      Echo(Loc(31), NonEmpty(Number(1.5), list{})),
+      Echo(Loc(31), NonEmpty(Number(1.5, Escape), list{})),
       Text("\n", NoTrim),
-      Unescaped(Loc(42), NonEmpty(Binding(Loc(46), "e"), list{})),
+      Echo(Loc(41), NonEmpty(Binding(Loc(43), "e", NoEscape), list{})),
       Text("\nf", NoTrim),
     ])
   })

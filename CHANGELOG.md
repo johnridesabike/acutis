@@ -1,3 +1,9 @@
+## 0.7.0
+
+- Changed non-escape echo syntax: `{% raw x %}` is now `{{ &x }}`.
+- `&` can be selectively used in `?` chains: `{{ a ? &b }}`.
+- Fixed bugs allowing binding to reserved words; made parser stricter overall.
+
 ## 0.6.0
 
 - Added nullish coalescing to `{{ echo }}` and `raw` statements.

@@ -31,13 +31,13 @@ describe("All together", ({test, _}) => {
     ])
     let children = dict([("Z", render(`Z`, props, emptyComponents))])
     let result = render(
-      `{{ a }} {{ b }}! {{ c }} {% raw c %} {{ "d" }} {{ 1.5 }} {{ Z }}`,
+      `{{ a }} {{ b }}! {{ c }} {{ &c }} {{ &"<" }} {{ "d" }} {{ 1.5 }} {{ Z }}`,
       props,
       ~children,
       emptyComponents,
     )
     expect.value(result).toEqual(
-      #data("Hello World! &amp;&quot;&apos;&gt;&lt;&#x2F;&#x60;&#x3D; &\"'></`= d 1.5 Z"),
+      #data("Hello World! &amp;&quot;&apos;&gt;&lt;&#x2F;&#x60;&#x3D; &\"'></`= < d 1.5 Z"),
     )
   })
 
@@ -174,9 +174,9 @@ describe("Nullish coalescing", ({test, _}) => {
     expect.value(result).toEqual(#data("z"))
     let result = render(`{{ a ? B ? X ? "y" }}`, Js.Dict.empty(), Js.Dict.empty(), ~children)
     expect.value(result).toEqual(#data("y"))
-    let result = render(` {%~ raw a ? B ? X ? 1 ~%} `, Js.Dict.empty(), Js.Dict.empty(), ~children)
+    let result = render(` {{~ &a ? B ? X ? 1 ~}} `, Js.Dict.empty(), Js.Dict.empty(), ~children)
     expect.value(result).toEqual(#data("1"))
-    let result = render(`{% raw x ? Y ? Z ? X %}`, Js.Dict.empty(), Js.Dict.empty(), ~children)
+    let result = render(`{{ &x ? Y ? Z ? X }}`, Js.Dict.empty(), Js.Dict.empty(), ~children)
     expect.value(result).toEqual(#data("z"))
   })
 })

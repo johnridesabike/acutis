@@ -24,7 +24,7 @@ Object {
   "location": Object {
     "character": 6,
   },
-  "message": "\\"null\\" is a reserved name",
+  "message": "Unexpected token: \\"null\\".",
   "path": Array [
     null,
   ],
@@ -38,7 +38,7 @@ Object {
   "location": Object {
     "character": 6,
   },
-  "message": "\\"false\\" is a reserved name",
+  "message": "Unexpected token: \\"false\\".",
   "path": Array [
     null,
   ],
@@ -78,7 +78,7 @@ Object {
   "exn": undefined,
   "kind": "Syntax",
   "location": Object {
-    "character": 14,
+    "character": 16,
   },
   "message": "Unexpected character: \\"%\\". Expected: \\"}\\".",
   "path": Array [
@@ -162,7 +162,7 @@ Object {
   "exn": undefined,
   "kind": "Syntax",
   "location": Object {
-    "character": 11,
+    "character": 8,
   },
   "message": "Unterminated string.",
   "path": Array [
@@ -234,7 +234,7 @@ Object {
   "location": Object {
     "character": 10,
   },
-  "message": "\\"null\\" is a reserved name",
+  "message": "Unexpected token: \\"null\\".",
   "path": Array [
     "BadBinding",
   ],
@@ -248,7 +248,35 @@ Object {
   "location": Object {
     "character": 13,
   },
-  "message": "\\"null\\" is a reserved name",
+  "message": "Unexpected token: \\"null\\".",
+  "path": Array [
+    null,
+  ],
+}
+`;
+
+exports[`Parser Illegal binding name 3`] = `
+Object {
+  "exn": undefined,
+  "kind": "Parse",
+  "location": Object {
+    "character": 24,
+  },
+  "message": "Unexpected token: \\"null\\".",
+  "path": Array [
+    null,
+  ],
+}
+`;
+
+exports[`Parser Illegal binding name 4`] = `
+Object {
+  "exn": undefined,
+  "kind": "Parse",
+  "location": Object {
+    "character": 6,
+  },
+  "message": "Unexpected token: \\"null\\".",
   "path": Array [
     null,
   ],
@@ -512,9 +540,9 @@ Object {
   "exn": undefined,
   "kind": "Parse",
   "location": Object {
-    "character": 19,
+    "character": 21,
   },
-  "message": "Unexpected token: \\"%}\\".",
+  "message": "Unexpected token: \\"[text]:  d\\".",
   "path": Array [
     null,
   ],
@@ -598,7 +626,21 @@ Object {
   "location": Object {
     "character": 6,
   },
-  "message": "Unexpected token: \\"raw\\".",
+  "message": "Unexpected token: \\"&\\".",
+  "path": Array [
+    null,
+  ],
+}
+`;
+
+exports[`Parser You can't unescape child templates 1`] = `
+Object {
+  "exn": undefined,
+  "kind": "Parse",
+  "location": Object {
+    "character": 5,
+  },
+  "message": "Unexpected token: \\"A\\".",
   "path": Array [
     null,
   ],
@@ -672,7 +714,7 @@ Array [
     "location": Object {
       "character": 24,
     },
-    "message": "\\"null\\" is an illegal identifier name.",
+    "message": "Unexpected token: \\"null\\".",
     "path": Array [
       null,
     ],
@@ -688,7 +730,7 @@ Array [
     "location": Object {
       "character": 24,
     },
-    "message": "\\"true\\" is an illegal identifier name.",
+    "message": "Unexpected token: \\"true\\".",
     "path": Array [
       null,
     ],
@@ -704,7 +746,7 @@ Array [
     "location": Object {
       "character": 25,
     },
-    "message": "\\"false\\" is an illegal identifier name.",
+    "message": "Unexpected token: \\"false\\".",
     "path": Array [
       null,
     ],
@@ -718,41 +760,9 @@ Array [
     "exn": undefined,
     "kind": "Parse",
     "location": Object {
-      "character": 26,
+      "character": 5,
     },
-    "message": "\\"1\\" is an illegal identifier name.",
-    "path": Array [
-      null,
-    ],
-  },
-]
-`;
-
-exports[`Patterns Illegal bindings 6`] = `
-Array [
-  Object {
-    "exn": undefined,
-    "kind": "Parse",
-    "location": Object {
-      "character": 8,
-    },
-    "message": "\\"null\\" is a reserved name",
-    "path": Array [
-      null,
-    ],
-  },
-]
-`;
-
-exports[`Patterns Illegal bindings 7`] = `
-Array [
-  Object {
-    "exn": undefined,
-    "kind": "Parse",
-    "location": Object {
-      "character": 8,
-    },
-    "message": "\\"null\\" is a reserved name",
+    "message": "Unexpected token: \\"null\\".",
     "path": Array [
       null,
     ],
@@ -1887,7 +1897,7 @@ Array [
     "exn": undefined,
     "kind": "Render",
     "location": Object {
-      "character": 8,
+      "character": 5,
     },
     "message": "\\"b\\" is type boolean. I can only echo strings and numbers.",
     "path": Array [

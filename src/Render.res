@@ -216,22 +216,31 @@ module Pattern = {
 
 open Ast
 
-let escape = str => {
-  let rec aux = (index, result) =>
-    switch Js.String2.charAt(str, index) {
-    | "" => result
-    | "&" => aux(index + 1, result ++ "&amp;")
-    | "\"" => aux(index + 1, result ++ "&quot;")
-    | "'" => aux(index + 1, result ++ "&apos;")
-    | ">" => aux(index + 1, result ++ "&gt;")
-    | "<" => aux(index + 1, result ++ "&lt;")
-    | "/" => aux(index + 1, result ++ "&#x2F;")
-    | "`" => aux(index + 1, result ++ "&#x60;")
-    | "=" => aux(index + 1, result ++ "&#x3D;")
-    | c => aux(index + 1, result ++ c)
-    }
-  aux(0, "")
-}
+// This could possibly be defined in the environment.
+let escapemap = c =>
+  switch c {
+  | "&" => "&amp;"
+  | "\"" => "&quot;"
+  | "'" => "&apos;"
+  | ">" => "&gt;"
+  | "<" => "&lt;"
+  | "/" => "&#x2F;"
+  | "`" => "&#x60;"
+  | "=" => "&#x3D;"
+  | c => c
+  }
+
+let rec escapeAux = (str, index, result) =>
+  switch Js.String2.charAt(str, index) {
+  | "" => result
+  | c => escapeAux(str, index + 1, result ++ escapemap(c))
+  }
+
+let escape = (esc: Ast.Echo.escape, str) =>
+  switch esc {
+  | Escape => escapeAux(str, 0, "")
+  | NoEscape => str
+  }
 
 let getBindingOrNull = (props, binding) =>
   switch Js.Dict.get(props, binding) {
@@ -285,15 +294,14 @@ let trimEnd = string => {
 external dictMerge: (@as(json`{}`) _, ~base: Js.Dict.t<'a>, Js.Dict.t<'a>) => Js.Dict.t<'a> =
   "assign"
 
-let rec getEcho = (head: Ast.Echo.t, tail, ~props, ~stack, ~children, ~return, ~error) =>
+let rec echo = (head: Ast.Echo.t, tail, ~props, ~stack, ~children, ~env, ~error) =>
   switch head {
-  | Binding(loc, binding) =>
+  | Binding(loc, binding, esc) =>
     switch echoBinding(props, binding) {
-    | Ok(x) => return(. x)
+    | Ok(x) => env.return(. escape(esc, x))
     | Error(type_) =>
       switch (type_, tail) {
-      | (JSONNull, list{head, ...tail}) =>
-        getEcho(head, tail, ~props, ~stack, ~children, ~return, ~error)
+      | (JSONNull, list{head, ...tail}) => echo(head, tail, ~props, ~stack, ~children, ~env, ~error)
       | (type_, _) => error(.[Debug.badEchoType(~binding, ~type_, ~loc, ~stack)])
       }
     }
@@ -303,24 +311,21 @@ let rec getEcho = (head: Ast.Echo.t, tail, ~props, ~stack, ~children, ~return, ~
     | None =>
       switch tail {
       | list{} => error(.[Debug.childDoesNotExist(~loc, ~child, ~stack)])
-      | list{head, ...tail} => getEcho(head, tail, ~props, ~stack, ~children, ~return, ~error)
+      | list{head, ...tail} => echo(head, tail, ~props, ~stack, ~children, ~env, ~error)
       }
     }
-  | String(x) => return(. x)
-  | Number(x) => return(. Float.toString(x))
+  | String(x, esc) => env.return(. escape(esc, x))
+  | Number(x, esc) => env.return(. escape(esc, Float.toString(x)))
   }
 
 let rec make = (~ast, ~props, ~children, ~envData, ~makeEnv, ~error, ~try_, ~reduceQueue) => {
   let {components, stack} = envData
   let env = makeEnv(. envData)
   let queue = Queue.make()
-  let escape = (. x) => env.return(. escape(x))
   List.forEachU(ast, (. node) =>
     switch node {
     | Echo(_, NonEmpty(head, tail)) =>
-      Queue.add(queue, getEcho(head, tail, ~props, ~stack, ~children, ~return=escape, ~error))
-    | Unescaped(_, NonEmpty(head, tail)) =>
-      Queue.add(queue, getEcho(head, tail, ~props, ~stack, ~children, ~return=env.return, ~error))
+      Queue.add(queue, echo(head, tail, ~props, ~stack, ~children, ~env, ~error))
     | Text(str, trim) =>
       Queue.add(
         queue,
