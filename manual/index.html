@@ -59,7 +59,7 @@
 <li>Expressions, which are wrapped in <code>{%</code> and <code>%}</code>.</li>
 </ul>
 <p>Most of the language features occur within <code>{%</code> expressions <code>%}</code>.</p>
-<p><div class="table-of-contents"><details open><summary class="toc-container-header">Contents</summary><ol><li><a href="#bindings">Bindings</a></li><li><a href="#echoing-values">Echoing values</a><ol><li><a href="#nullish-coalescing">Nullish coalescing</a></li></ol></li><li><a href="#unescaped-echoes">Unescaped echoes</a></li><li><a href="#comments">Comments</a></li><li><a href="#whitespace-control">Whitespace control</a></li><li><a href="#patterns%2C-matching%2C-and-mapping">Patterns, matching, and mapping</a></li><li><a href="#multiple-patterns-for-a-block">Multiple patterns for a block</a></li><li><a href="#shadowing-bindings">Shadowing bindings</a></li><li><a href="#map">Map</a><ol><li><a href="#matching-the-item-index">Matching the item index</a></li></ol></li><li><a href="#pattern-matching-in-depth">Pattern matching in-depth</a><ol><li><a href="#reference-table">Reference table</a></li><li><a href="#ignoring-values-with-_-(underscore)">Ignoring values with <code>_</code> (underscore)</a></li><li><a href="#matching-multiple-values-at-once">Matching multiple values at once</a></li><li><a href="#the-rules-of-pattern-matching">The rules of pattern matching</a></li></ol></li><li><a href="#type">Type</a></li><li><a href="#template-components">Template components</a><ol><li><a href="#patterns-in-props">Patterns in props</a></li><li><a href="#prop-punning">Prop punning</a></li><li><a href="#template-children-props">Template children props</a></li><li><a href="#default-children-prop">Default children prop</a></li></ol></li></ol></details></div></p>
+<p><div class="table-of-contents"><details open><summary class="toc-container-header">Contents</summary><ol><li><a href="#bindings">Bindings</a></li><li><a href="#echoing-values">Echoing values</a><ol><li><a href="#nullish-coalescing">Nullish coalescing</a></li><li><a href="#escaping">Escaping</a></li></ol></li><li><a href="#comments">Comments</a></li><li><a href="#whitespace-control">Whitespace control</a></li><li><a href="#patterns%2C-matching%2C-and-mapping">Patterns, matching, and mapping</a></li><li><a href="#multiple-patterns-for-a-block">Multiple patterns for a block</a></li><li><a href="#shadowing-bindings">Shadowing bindings</a></li><li><a href="#map">Map</a><ol><li><a href="#matching-the-item-index">Matching the item index</a></li></ol></li><li><a href="#pattern-matching-in-depth">Pattern matching in-depth</a><ol><li><a href="#reference-table">Reference table</a></li><li><a href="#ignoring-values-with-_-(underscore)">Ignoring values with <code>_</code> (underscore)</a></li><li><a href="#matching-multiple-values-at-once">Matching multiple values at once</a></li><li><a href="#the-rules-of-pattern-matching">The rules of pattern matching</a></li></ol></li><li><a href="#type">Type</a></li><li><a href="#template-components">Template components</a><ol><li><a href="#patterns-in-props">Patterns in props</a></li><li><a href="#prop-punning">Prop punning</a></li><li><a href="#template-children-props">Template children props</a></li><li><a href="#default-children-prop">Default children prop</a></li></ol></li></ol></details></div></p>
 <h2 id="bindings">Bindings</h2>
 <p>Every template accepts a properties object (props) that binds values to
 names. The object <code>{&quot;color&quot;: &quot;blue&quot;}</code> binds <code>&quot;blue&quot;</code> to the name <code>color</code>.</p>
@@ -71,17 +71,17 @@ information about this.)</p>
 <pre class="language-jinja2"><code class="language-jinja2">My favorite color is <span class="token jinja2 language-jinja2"><span class="token delimiter punctuation">{{</span> <span class="token variable">color</span> <span class="token delimiter punctuation">}}</span></span>.</code></pre>
 <p>It renders:</p>
 <pre class="language-jinja2"><code class="language-jinja2">My favorite color is blue.</code></pre>
-<p>Acutis escapes echoes. The following characters transform into HTML entities:</p>
-<pre class="language-jinja2"><code class="language-jinja2">&amp; " ' > &lt; / ` =</code></pre>
 <h3 id="nullish-coalescing">Nullish coalescing</h3>
 <p>The <code>?</code> (question mark) echoes the value on its right-hand side if the value
 on its left-hand side is <code>null</code>.</p>
 <pre class="language-jinja2"><code class="language-jinja2">My favorite color is <span class="token jinja2 language-jinja2"><span class="token delimiter punctuation">{{</span> <span class="token variable">color</span> ? <span class="token variable">fallbackColor</span> <span class="token delimiter punctuation">}}</span></span>.<br><br>You can chain ?s: <span class="token jinja2 language-jinja2"><span class="token delimiter punctuation">{{</span> <span class="token variable">a</span> ? <span class="token variable">b</span> ? <span class="token string">"If this prints, a and b are both null."</span> <span class="token delimiter punctuation">}}</span></span></code></pre>
-<h2 id="unescaped-echoes">Unescaped echoes</h2>
-<p>The <code>raw</code> statement echoes a value without escaping it. Nullish coalescing
-also works with <code>raw</code>.</p>
-<pre class="language-jinja2"><code class="language-jinja2">My favorite color is <span class="token jinja2 language-jinja2"><span class="token delimiter punctuation">{%</span> <span class="token tag keyword">raw</span> <span class="token variable">color</span> <span class="token delimiter punctuation">%}</span></span>.</code></pre>
-<p>Note that this is a statement, so it’s inside <code>{% %}</code>.</p>
+<h3 id="escaping">Escaping</h3>
+<p>Acutis escapes echoes by default. It transforms the following characters into
+HTML entities:</p>
+<pre class="language-jinja2"><code class="language-jinja2">&amp; " ' > &lt; / ` =</code></pre>
+<p>If the <code>&amp;</code> (ampersand) character appears before a value, then the value will
+not be escaped.</p>
+<pre class="language-jinja2"><code class="language-jinja2">My favorite color is <span class="token jinja2 language-jinja2"><span class="token delimiter punctuation">{{</span> <span class="token operator">&amp;</span><span class="token variable">color</span> <span class="token delimiter punctuation">}}</span></span>.</code></pre>
 <h2 id="comments">Comments</h2>
 <pre class="language-jinja2"><code class="language-jinja2">{* TODO: add more colors. *}</code></pre>
 <p>Anything wrapped <code>{*</code> and <code>*}</code> is always ignored in the output. It is

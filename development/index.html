@@ -54,7 +54,7 @@
             <h1>Acutis development information</h1>
           </header><p>The Acutis compiler is built in <a href="https://rescript-lang.org/">ReScript</a> and compiled to JavaScript. The
 Acutis compiler doesn’t use any dependencies, aside from the ReScript
-standard library, so everything is hand-written.</p>
+standard library, so almost everything is hand-written.</p>
 <p><a href="https://github.com/johnridesabike/acutis">Get the source code</a>.</p>
 <p>The compiler follows these basic steps:</p>
 <pre><code>source → lexical analysis → abstract syntax tree → render
@@ -93,12 +93,13 @@ type.</p>
 module inspect each token in the queue and create nodes for the AST.</p>
 <p>This compiler has a submodule for compiling patterns. This is only exposed
 for testing purposes.</p>
-<p>The AST is represented as an (immutable) <a href="https://rescript-lang.org/docs/manual/latest/array-and-list#list">linked list</a> of nodes. Some
-nodes, such as <code>map</code> or <code>match</code> expressions, contain branching paths of the
+<p>The AST is represented as an array of nodes. Some nodes, such as <code>map</code> or
+<code>match</code> expressions, contain arrays that represent branching paths of the
 tree.</p>
 <h3 id="rendering">Rendering</h3>
-<p>The <code>Render.res</code> module takes the AST, the input “props”, and the environment
-data to produce the final output.</p>
+<p>The <code>Environment.res</code> module generates functions for producing specific
+output formats. These functions call the <code>Render.res</code> module, which takes the
+AST and the input “props” to produce the final output.</p>
 <p>Like <code>Compile.res</code>, it exposes a submodule for rendering patterns.</p>
 <p>We may normally expect the renderer to produce a string data type. However,
 the output could theoretically be anything defined in the environment. I
@@ -159,7 +160,7 @@ then they’re formatted according to the <code>Acuits_Types.Errors.t</code> typ
 <p>The lexer and compiler both stop as soon as they encounter an error. The
 renderer will always transverse as much of the AST as possible and report all
 of the errors it finds.</p>
-<p>Acutis will not return partially rendered content alongside errors.</p>
+<p>Acutis will not return partially-rendered content alongside errors.</p>
 <h2 id="building-the-source">Building the source</h2>
 <p>The source files are in <code>.res</code>, ReScript, format. You can compile them with
 the command <code>yarn build</code>, or compile in watch mode with <code>yarn start</code>. This
@@ -178,16 +179,18 @@ language.</p>
 <p>I borrowed the <code>{%</code> expression <code>%}</code> syntax from Liquid and Jinja.</p>
 <p>I borrowed the pattern syntax from ReScript, which is really borrowed from
 both JavaScript and OCaml.</p>
-<p>I borrowed the <code>{% Component %} children {% /Component %}</code> syntax from React
-JSX. Like JSX, this is just a syntax for a function call.</p>
+<p>I borrowed the <code>{% Component x=y %} z {% /Component %}</code> syntax from React
+JSX. Like JSX, this is just syntax for a function call.</p>
 <p>I designed the language so different parts will look as unambiguous as
 possible. An identifier like <code>x</code> will always be a binding. An expression that
 begins like <code>{% Abc</code> will always be a component. <code>{{ Xyz }}</code> will always be a
 template child. This makes parsing easier, for both humans and computers.</p>
-<p>I chose the <code>#</code> “template section” <code>/#</code> syntax, as in <code>{% Abc Xyz=#%} hi {%/# /%}</code>, because I thought of the section contents as “blocks,” and <code>#</code> kind of
-looks like a block. It is also semantically neutral compared to most
-alternatives. I ruled out <code>{</code> and <code>}</code> because <code>{% Abc Xyz={%} hi {%} /%}</code>
-just looks confusing. The curly braces are already doing too much work.</p>
+<p>I chose the <code>#</code> “template section” <code>/#</code> syntax, as in
+<code>{% Abc Xyz=#%} hi {%/# /%}</code>, because I thought of the section contents as
+“blocks,” and <code>#</code> kind of looks like a block. It is also semantically neutral
+compared to most alternatives. I ruled out <code>{</code> and <code>}</code> because
+<code>{% Abc Xyz={%} hi {%} /%}</code> just looks confusing. The curly braces are
+already doing too much work.</p>
 <h2 id="current-limitations-and-ideas-for-the-future">Current limitations and ideas for the future</h2>
 <p>I made Acutis strongly typed because this catches errors early and makes
 fixing bugs easier. Acutis is dynamically typed (where types are checked at
