@@ -15,7 +15,7 @@
 */
 
 module Pattern: {
-  let make: Lexer.t => Acutis_Types.NonEmpty.t<Acutis_Types.Pattern_Ast.t>
+  let make: Lexer.t => Acutis_Types.NonEmpty.t<Acutis_Types.Ast_Pattern.t>
 }
 
 let makeAst: (~name: string=?, string) => Acutis_Types.Ast.t

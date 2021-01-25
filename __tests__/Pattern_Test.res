@@ -26,7 +26,7 @@ let parseString = source => {
 }
 
 let json = Js.Json.parseExn
-let jsonList = (x): NonEmpty.t<Js.Json.t> => NonEmpty(json(x), list{})
+let jsonList = (x): NonEmpty.t<Js.Json.t> => NonEmpty(json(x), [])
 let dict = Js.Dict.fromArray
 let emptyBindings = Js.Dict.empty()
 
@@ -257,25 +257,28 @@ describe("Binding", ({test, _}) => {
 
 describe("Multiple patterns and data", ({test, _}) => {
   test("Two bindings", ({expect, _}) => {
-    expect.value(Pattern.test(parseString("a, 1"), NonEmpty(json("0"), list{json("1")}))).toEqual(
+    expect.value(Pattern.test(parseString("a, 1"), NonEmpty(json("0"), [json("1")]))).toEqual(
       Ok(dict([("a", json("0"))])),
     )
   })
 
   test("Three bindings", ({expect, _}) => {
     expect.value(
-      Pattern.test(
-        parseString("100, a, b"),
-        NonEmpty(json("100"), list{json("true"), json("false")}),
-      ),
+      Pattern.test(parseString("100, a, b"), NonEmpty(json("100"), [json("true"), json("false")])),
     ).toEqual(Ok(dict([("a", json("true")), ("b", json("false"))])))
+    expect.value(
+      Pattern.test(
+        parseString("100, true, true"),
+        NonEmpty(json("100"), [json("true"), json("false")]),
+      ),
+    ).toEqual(Error(NoMatch))
   })
 
   test("Complex", ({expect, _}) => {
     expect.value(
       Pattern.test(
         parseString("{a: true} , {b: false} , [c]"),
-        NonEmpty(json(`{"a": true}`), list{json(`{"b": false}`), json("[true]")}),
+        NonEmpty(json(`{"a": true}`), [json(`{"b": false}`), json("[true]")]),
       ),
     ).toEqual(Ok(dict([("c", json("true"))])))
   })
@@ -289,7 +292,7 @@ let parseString = source => {
 }
 
 describe("Encoding to JSON", ({test, _}) => {
-  let props = dict([
+  let props = Js.Dict.fromArray([
     ("a", Js.Json.number(1.0)),
     ("b", Js.Json.string("b")),
     ("rest", Js.Json.booleanArray([true, false])),

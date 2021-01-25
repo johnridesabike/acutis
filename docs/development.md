@@ -8,7 +8,7 @@ next: null
 
 The Acutis compiler is built in [ReScript] and compiled to JavaScript. The
 Acutis compiler doesn't use any dependencies, aside from the ReScript
-standard library, so everything is hand-written.
+standard library, so almost everything is hand-written.
 
 [ReScript]: https://rescript-lang.org/
 
@@ -69,16 +69,15 @@ module inspect each token in the queue and create nodes for the AST.
 This compiler has a submodule for compiling patterns. This is only exposed
 for testing purposes.
 
-The AST is represented as an (immutable) [linked list][2] of nodes. Some
-nodes, such as `map` or `match` expressions, contain branching paths of the
+The AST is represented as an array of nodes. Some nodes, such as `map` or
+`match` expressions, contain arrays that represent branching paths of the
 tree.
-
-[2]: https://rescript-lang.org/docs/manual/latest/array-and-list#list
 
 ### Rendering
 
-The `Render.res` module takes the AST, the input "props", and the environment
-data to produce the final output.
+The `Environment.res` module generates functions for producing specific
+output formats. These functions call the `Render.res` module, which takes the
+AST and the input "props" to produce the final output.
 
 Like `Compile.res`, it exposes a submodule for rendering patterns.
 
@@ -154,7 +153,7 @@ The lexer and compiler both stop as soon as they encounter an error. The
 renderer will always transverse as much of the AST as possible and report all
 of the errors it finds.
 
-Acutis will not return partially rendered content alongside errors.
+Acutis will not return partially-rendered content alongside errors.
 
 ## Building the source
 
@@ -183,19 +182,20 @@ I borrowed the `{%` expression `%}` syntax from Liquid and Jinja.
 I borrowed the pattern syntax from ReScript, which is really borrowed from
 both JavaScript and OCaml.
 
-I borrowed the `{% Component %} children {% /Component %}` syntax from React
-JSX. Like JSX, this is just a syntax for a function call.
+I borrowed the `{% Component x=y %} z {% /Component %}` syntax from React
+JSX. Like JSX, this is just syntax for a function call.
 
 I designed the language so different parts will look as unambiguous as
 possible. An identifier like `x` will always be a binding. An expression that
 begins like `{% Abc` will always be a component. `{{ Xyz }}` will always be a
 template child. This makes parsing easier, for both humans and computers.
 
-I chose the `#` "template section" `/#` syntax, as in `{% Abc Xyz=#%} hi {%/#
-/%}`, because I thought of the section contents as "blocks," and `#` kind of
-looks like a block. It is also semantically neutral compared to most
-alternatives. I ruled out `{` and `}` because `{% Abc Xyz={%} hi {%} /%}`
-just looks confusing. The curly braces are already doing too much work.
+I chose the `#` "template section" `/#` syntax, as in
+`{% Abc Xyz=#%} hi {%/# /%}`, because I thought of the section contents as
+"blocks," and `#` kind of looks like a block. It is also semantically neutral
+compared to most alternatives. I ruled out `{` and `}` because
+`{% Abc Xyz={%} hi {%} /%}` just looks confusing. The curly braces are
+already doing too much work.
 
 ## Current limitations and ideas for the future
 

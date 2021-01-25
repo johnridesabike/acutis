@@ -25,75 +25,90 @@ open Errors
     }
 )
 
-let stackToPath = x => x->Belt.List.mapU(Stack.nameToJson)->Belt.List.toArray
+let stackToPath = x => x->Belt.List.toArray->Belt.Array.mapU(Stack.nameToJson)
 
 exception CompileError(Errors.t)
 
-/* Lexer errors */
+/* Lexer errors. */
 
-let unexpectedEoF = (~loc, ~name) => {
-  kind: #Syntax,
-  message: "Unexpected end of file.",
-  location: location(loc),
-  path: [nameToJson(name)],
-  exn: None,
-}
+let unexpectedEofExn = (~loc, ~name) =>
+  raise(
+    CompileError({
+      kind: #Syntax,
+      message: "Unexpected end of file.",
+      location: Some(location(loc)),
+      path: [nameToJson(name)],
+      exn: None,
+    }),
+  )
 
-let unterminatedComment = (~loc, ~name) => {
-  kind: #Syntax,
-  message: "Unterminated comment.",
-  location: location(loc),
-  path: [nameToJson(name)],
-  exn: None,
-}
+let unterminatedCommentExn = (~loc, ~name) =>
+  raise(
+    CompileError({
+      kind: #Syntax,
+      message: "Unterminated comment.",
+      location: Some(location(loc)),
+      path: [nameToJson(name)],
+      exn: None,
+    }),
+  )
 
-let unterminatedString = (~loc, ~name) => {
-  kind: #Syntax,
-  message: "Unterminated string.",
-  location: location(loc),
-  path: [nameToJson(name)],
-  exn: None,
-}
+let unterminatedStringExn = (~loc, ~name) =>
+  raise(
+    CompileError({
+      kind: #Syntax,
+      message: "Unterminated string.",
+      location: Some(location(loc)),
+      path: [nameToJson(name)],
+      exn: None,
+    }),
+  )
 
-let illegalIdentifier = (~loc, ~name, ~identifier) => {
-  kind: #Parse,
-  message: `"${identifier}" is an illegal identifier name.`,
-  location: location(loc),
-  path: [nameToJson(name)],
-  exn: None,
-}
+let illegalIdentifierExn = (~loc, ~name, ~identifier) =>
+  raise(
+    CompileError({
+      kind: #Parse,
+      message: `"${identifier}" is an illegal identifier name.`,
+      location: Some(location(loc)),
+      path: [nameToJson(name)],
+      exn: None,
+    }),
+  )
 
-let invalidCharacter = (~loc, ~name, ~character) => {
-  kind: #Syntax,
-  message: `Invalid character: "${character}".`,
-  location: location(loc),
-  path: [nameToJson(name)],
-  exn: None,
-}
+let invalidCharacterExn = (~loc, ~name, ~character) =>
+  raise(
+    CompileError({
+      kind: #Syntax,
+      message: `Invalid character: "${character}".`,
+      location: Some(location(loc)),
+      path: [nameToJson(name)],
+      exn: None,
+    }),
+  )
 
-let unexpectedCharacter = (~loc, ~name, ~character, ~expected) => {
-  {
-    kind: #Syntax,
-    message: `Unexpected character: "${character}". Expected: "${expected}".`,
-    location: location(loc),
-    path: [nameToJson(name)],
-    exn: None,
-  }
-}
+let unexpectedCharacterExn = (~loc, ~name, ~character, ~expected) =>
+  raise(
+    CompileError({
+      kind: #Syntax,
+      message: `Unexpected character: "${character}". Expected: "${expected}".`,
+      location: Some(location(loc)),
+      path: [nameToJson(name)],
+      exn: None,
+    }),
+  )
 
-/* Parse errors */
+/* Parse errors. */
 
-let unexpectedToken = (~token, ~name) => {
-  let location = location(Token.toLocation(token))
-  let token = Token.toString(token)
-  {
-    message: `Unexpected token: "${token}".`,
-    kind: #Parse,
-    location: location,
-    path: [nameToJson(name)],
-    exn: None,
-  }
-}
+let unexpectedTokenExn = (t, ~name) =>
+  raise(
+    CompileError({
+      message: `Unexpected token: "${Token.toString(t)}".`,
+      kind: #Parse,
+      location: Some(location(Token.toLocation(t))),
+      path: [nameToJson(name)],
+      exn: None,
+    }),
+  )
 
 /* Render errors */
 
@@ -110,18 +125,18 @@ let jsonTaggedTToString = (x: Js.Json.tagged_t) =>
 let componentDoesNotExist = (~loc, ~component, ~stack) => {
   message: `Component "${component}" does not exist.`,
   kind: #Render,
-  location: location(loc),
+  location: Some(location(loc)),
   path: stackToPath(stack),
   exn: None,
 }
 
 let patternTypeMismatch = (~data, ~pattern, ~stack) => {
   let data = jsonTaggedTToString(data)
-  let type_ = Pattern_Ast.toString(pattern)
+  let type_ = Ast_Pattern.toString(pattern)
   {
     message: `This pattern is type ${type_} but the data is type ${data}.`,
     kind: #Type,
-    location: location(Pattern_Ast.toLocation(pattern)),
+    location: Some(location(Ast_Pattern.toLocation(pattern))),
     path: stackToPath(stack),
     exn: None,
   }
@@ -129,12 +144,11 @@ let patternTypeMismatch = (~data, ~pattern, ~stack) => {
 
 let bindingTypeMismatch = (~data, ~pattern, ~binding, ~stack) => {
   let data = jsonTaggedTToString(data)
-  let loc = Pattern_Ast.toLocation(pattern)
-  let pattern = Pattern_Ast.toString(pattern)
+  let p = Ast_Pattern.toString(pattern)
   {
-    message: `"${binding}" is type ${pattern} but the data is type ${data}.`,
+    message: `"${binding}" is type ${p} but the data is type ${data}.`,
     kind: #Type,
-    location: location(loc),
+    location: Some(location(Ast_Pattern.toLocation(pattern))),
     path: stackToPath(stack),
     exn: None,
   }
@@ -143,13 +157,13 @@ let bindingTypeMismatch = (~data, ~pattern, ~binding, ~stack) => {
 let nameBoundMultipleTimes = (~loc, ~binding, ~stack) => {
   message: `"${binding}" is bound multiple times in this pattern.`,
   kind: #Pattern,
-  location: location(loc),
+  location: Some(location(loc)),
   path: stackToPath(stack),
   exn: None,
 }
 
 let noMatchFound = (~loc, ~stack) => {
-  location: location(loc),
+  location: Some(location(loc)),
   path: stackToPath(stack),
   kind: #Pattern,
   message: "None of the patterns match the data. Consider a catch-all case to avoid this.",
@@ -157,7 +171,7 @@ let noMatchFound = (~loc, ~stack) => {
 }
 
 let patternNumberMismatch = (~loc, ~stack) => {
-  location: location(loc),
+  location: Some(location(loc)),
   path: stackToPath(stack),
   kind: #Pattern,
   message: "The number of patterns does not match the number of data.",
@@ -167,7 +181,7 @@ let patternNumberMismatch = (~loc, ~stack) => {
 let badEchoType = (~loc, ~binding, ~type_, ~stack) => {
   let type_ = jsonTaggedTToString(type_)
   {
-    location: location(loc),
+    location: Some(location(loc)),
     path: stackToPath(stack),
     kind: #Render,
     message: `"${binding}" is type ${type_}. I can only echo strings and numbers.`,
@@ -176,7 +190,7 @@ let badEchoType = (~loc, ~binding, ~type_, ~stack) => {
 }
 
 let bindingDoesNotExist = (~loc, ~binding, ~stack) => {
-  location: location(loc),
+  location: Some(location(loc)),
   path: stackToPath(stack),
   kind: #Render,
   message: `Binding "${binding}" does not exist.`,
@@ -184,7 +198,7 @@ let bindingDoesNotExist = (~loc, ~binding, ~stack) => {
 }
 
 let childDoesNotExist = (~loc, ~child, ~stack) => {
-  location: location(loc),
+  location: Some(location(loc)),
   path: stackToPath(stack),
   kind: #Render,
   message: `Template child "${child}" does not exist.`,
@@ -194,7 +208,7 @@ let childDoesNotExist = (~loc, ~child, ~stack) => {
 let badMapType = (~loc, ~binding, ~type_, ~stack) => {
   let type_ = jsonTaggedTToString(type_)
   {
-    location: location(loc),
+    location: Some(location(loc)),
     path: stackToPath(stack),
     kind: #Type,
     message: `"${binding}" is a ${type_}. I can only map arrays.`,

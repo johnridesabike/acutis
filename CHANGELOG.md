@@ -3,6 +3,7 @@
 - Changed non-escape echo syntax: `{% raw x %}` is now `{{ &x }}`.
 - `&` can be selectively used in `?` chains: `{{ a ? &b }}`.
 - Fixed bugs allowing binding to reserved words; made parser stricter overall.
+- Internal AST changes.
 
 ## 0.6.0
 

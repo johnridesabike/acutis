@@ -16,52 +16,48 @@
 
 module Queue = Belt.MutableQueue
 open Acutis_Types
-open Debug
 
-module Scanner = {
-  type t = {
-    str: string,
-    mutable position: int,
-  }
-
-  let peekCharAt = (source, x) => Js.String2.charAt(source.str, source.position + x)
-
-  let peekChar = source => Js.String2.charAt(source.str, source.position)
-
-  let skipChar = source => source.position = source.position + 1
-
-  let readChar = source => {
-    let c = peekChar(source)
-    skipChar(source)
-    c
-  }
-
-  let peek = (source, ~until) => {
-    let position = ref(source.position)
-    while !until(. Js.String2.charAt(source.str, position.contents)) {
-      position := position.contents + 1
-    }
-    position.contents
-  }
-
-  let skipBy = (source, x) => source.position = source.position + x
-
-  let readSubstring = (source, ~until) => {
-    let start = source.position
-    let end = peek(source, ~until)
-    source.position = end
-    Js.String2.slice(source.str, ~from=start, ~to_=end)
-  }
-
-  let readSubstringBy = (source, x) => {
-    let start = source.position
-    source.position = source.position + x
-    Js.String2.slice(source.str, ~from=start, ~to_=source.position)
-  }
-
-  let loc = x => Loc(x.position)
+type source = {
+  str: string,
+  mutable position: int,
 }
-open Scanner
+
+let peekCharAt = (source, x) => Js.String2.charAt(source.str, source.position + x)
+
+let peekChar = source => Js.String2.charAt(source.str, source.position)
+
+let skipChar = source => source.position = succ(source.position)
+
+let readChar = source => {
+  let c = peekChar(source)
+  skipChar(source)
+  c
+}
+
+let peek = (source, ~until) => {
+  let position = ref(source.position)
+  while !until(. Js.String2.charAt(source.str, position.contents)) {
+    position := succ(position.contents)
+  }
+  position.contents
+}
+
+let skipBy = (source, x) => source.position = source.position + x
+
+let readSubstring = (source, ~until) => {
+  let start = source.position
+  let end = peek(source, ~until)
+  source.position = end
+  Js.String2.slice(source.str, ~from=start, ~to_=end)
+}
+
+let readSubstringBy = (source, x) => {
+  let start = source.position
+  source.position = source.position + x
+  Js.String2.slice(source.str, ~from=start, ~to_=source.position)
+}
+
+let loc = x => Loc(x.position)
 
 let endOfNumber = (. c) =>
   switch c {
@@ -69,13 +65,11 @@ let endOfNumber = (. c) =>
   | _ => true
   }
 
-open Token
-
 type t = {tokens: Queue.t<Token.t>, name: option<string>}
 
 type mode = EchoMode | ExpressionMode | CommentMode | EndMode
 
-let readText = (source, tokens) => {
+let readText = (source, tokens: Queue.t<Token.t>) => {
   let loc = loc(source)
   let rec aux = position =>
     switch peekCharAt(source, position) {
@@ -98,7 +92,7 @@ let readText = (source, tokens) => {
         EchoMode
       | _ => aux(position + 2)
       }
-    | _ => aux(position + 1)
+    | _ => aux(succ(position))
     }
   aux(0)
 }
@@ -121,7 +115,7 @@ let readComment = (source, ~name) => {
       | "}" => aux(~position=position + 2, ~nested=nested - 1)
       | _ => aux(~position=position + 2, ~nested)
       }
-    | "" => raise(CompileError(unterminatedComment(~loc, ~name)))
+    | "" => Debug.unterminatedCommentExn(~loc, ~name)
     | _ => aux(~position=position + 1, ~nested)
     }
   aux(~position=0, ~nested=0)
@@ -142,7 +136,7 @@ let readJsonString = (source, ~name) => {
       let result = source->readSubstringBy(position)->Js.String2.replaceByRe(unescapeQuotes, "\"")
       skipChar(source) // skip the "
       result
-    | "" => raise(CompileError(unterminatedString(~loc, ~name)))
+    | "" => Debug.unterminatedStringExn(~loc, ~name)
     | _ => aux(position + 1)
     }
   aux(0)
@@ -153,7 +147,7 @@ let readNumber = (source, ~name) => {
   let num = readSubstring(source, ~until=endOfNumber)
   switch Belt.Float.fromString(num) {
   | Some(num) => num
-  | None => raise(CompileError(illegalIdentifier(~loc, ~identifier=num, ~name)))
+  | None => Debug.illegalIdentifierExn(~loc, ~identifier=num, ~name)
   }
 }
 
@@ -166,7 +160,7 @@ let isValidIdentifierStart = c => Js.Re.test_(identifierStartChar, c)
 let componentStart = %re("/^[A-Z]$/")
 let isValidComponentStart = c => Js.Re.test_(componentStart, c)
 
-let readIdentifier = (source, loc) =>
+let readIdentifier = (source, loc): Token.t =>
   switch readSubstring(source, ~until=endOfIdentifier) {
   | "true" => True(loc)
   | "false" => False(loc)
@@ -174,7 +168,7 @@ let readIdentifier = (source, loc) =>
   | s => Identifier(loc, s)
   }
 
-let makeExpression = (source, tokens, ~name, ~until) => {
+let makeExpression = (source, tokens: Queue.t<Token.t>, ~name, ~until) => {
   let loop = ref(true)
   while loop.contents {
     let loc = loc(source)
@@ -182,7 +176,7 @@ let makeExpression = (source, tokens, ~name, ~until) => {
     | c when c == until =>
       skipChar(source)
       loop := false
-    | "" => raise(CompileError(unexpectedEoF(~loc, ~name)))
+    | "" => Debug.unexpectedEofExn(~loc, ~name)
     | " " | "\t" | "\n" | "\r" => skipChar(source)
     | "{" =>
       skipChar(source)
@@ -211,7 +205,7 @@ let makeExpression = (source, tokens, ~name, ~until) => {
     | "." =>
       switch readSubstringBy(source, 3) {
       | "..." => Queue.add(tokens, Spread(loc))
-      | c => raise(CompileError(unexpectedCharacter(~loc, ~expected="...", ~character=c, ~name)))
+      | c => Debug.unexpectedCharacterExn(~loc, ~expected="...", ~character=c, ~name)
       }
     | "=" =>
       skipChar(source)
@@ -233,14 +227,14 @@ let makeExpression = (source, tokens, ~name, ~until) => {
     | c when isValidIdentifierStart(c) => Queue.add(tokens, readIdentifier(source, loc))
     | c when isValidComponentStart(c) =>
       Queue.add(tokens, ComponentName(loc, readSubstring(source, ~until=endOfIdentifier)))
-    | c => raise(CompileError(invalidCharacter(~loc, ~character=c, ~name)))
+    | c => Debug.invalidCharacterExn(~loc, ~character=c, ~name)
     }
   }
 }
 
 let make = (~name=?, str) => {
   let source = {str: str, position: 0}
-  let tokens = Queue.make()
+  let tokens: Queue.t<Token.t> = Queue.make()
   let rec aux = mode =>
     switch mode {
     | EndMode =>
@@ -254,10 +248,7 @@ let make = (~name=?, str) => {
       makeExpression(source, tokens, ~name, ~until="%")
       switch readChar(source) {
       | "}" => aux(readText(source, tokens))
-      | c =>
-        raise(
-          CompileError(unexpectedCharacter(~loc=loc(source), ~expected="}", ~character=c, ~name)),
-        )
+      | c => Debug.unexpectedCharacterExn(~loc=loc(source), ~expected="}", ~character=c, ~name)
       }
     | EchoMode =>
       // The tilde must come *before* the echo token.
@@ -270,10 +261,7 @@ let make = (~name=?, str) => {
       makeExpression(source, tokens, ~name, ~until="}")
       switch readChar(source) {
       | "}" => aux(readText(source, tokens))
-      | c =>
-        raise(
-          CompileError(unexpectedCharacter(~loc=loc(source), ~expected="}", ~character=c, ~name)),
-        )
+      | c => Debug.unexpectedCharacterExn(~loc=loc(source), ~expected="}", ~character=c, ~name)
       }
     }
   // All sources begin as text

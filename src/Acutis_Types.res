@@ -15,9 +15,8 @@
 */
 
 module NonEmpty = {
-  type t<'a> = NonEmpty('a, list<'a>)
-  let map = (NonEmpty(head, tail), ~f) => NonEmpty(f(. head), Belt.List.mapU(tail, f))
-  let toList = (NonEmpty(head, tail)) => list{head, ...tail}
+  type t<'a> = NonEmpty('a, array<'a>)
+  let map = (NonEmpty(head, tail), ~f) => NonEmpty(f(. head), Belt.Array.mapU(tail, f))
 }
 
 @unboxed
@@ -28,7 +27,7 @@ module Errors = {
 
   type location = {character: int}
 
-  let location = (Loc(x)) => Some({character: x + 1})
+  let location = (Loc(x)) => {character: x + 1}
 
   @unboxed
   type rec anyExn = AnyExn(_): anyExn
@@ -156,16 +155,34 @@ module Token = {
     }
 }
 
-module Pattern_Ast = {
+module Valid = {
+  /* This provides a thin layer of runtime type checking without needing
+     to validate the entire data structure. It's useful for reporting when JS
+     code sends the wrong data type. */
+  type t<'a> = {
+    data: 'a,
+    acutis_is_valid: string,
+  }
+
+  let make = x => {data: x, acutis_is_valid: "ACUTIS_IS_VALID"}
+
+  let validate = x =>
+    switch x {
+    | {data, acutis_is_valid: "ACUTIS_IS_VALID"} => Some(data)
+    | _ => None
+    }
+}
+
+module Ast_Pattern = {
   type rec t =
     | Null(loc)
     | False(loc)
     | True(loc)
     | String(loc, string)
     | Number(loc, float)
-    | Array(loc, list<t>)
-    | ArrayWithTailBinding({loc: loc, array: list<t>, bindLoc: loc, binding: string})
-    | Object(loc, list<(string, t)>)
+    | Array(loc, array<t>)
+    | ArrayWithTailBinding({loc: loc, array: array<t>, bindLoc: loc, binding: string})
+    | Object(loc, array<(string, t)>)
     | Binding(loc, string)
 
   let toString = x =>
@@ -193,24 +210,6 @@ module Pattern_Ast = {
     }
 }
 
-module Valid = {
-  /* This provides a thin layer of runtime type checking without needing
-     to validate the entire data structure. It's useful for reporting when JS
-     code sends the wrong data type. */
-  type t<'a> = {
-    data: 'a,
-    acutis_is_valid: string,
-  }
-
-  let make = x => {data: x, acutis_is_valid: "ACUTIS_IS_VALID"}
-
-  let validate = x =>
-    switch x {
-    | {data, acutis_is_valid: "ACUTIS_IS_VALID"} => Some(data)
-    | _ => None
-    }
-}
-
 module Ast = {
   module Echo = {
     type escape = NoEscape | Escape
@@ -230,12 +229,12 @@ module Ast = {
     | Component({
         loc: loc,
         name: string,
-        props: list<(string, Pattern_Ast.t)>,
-        children: list<(string, childProp)>,
+        props: array<(string, Ast_Pattern.t)>,
+        children: array<(string, child)>,
       })
-  and case = {patterns: NonEmpty.t<NonEmpty.t<Pattern_Ast.t>>, ast: ast}
-  and ast = list<node>
-  and childProp = ChildName(string) | ChildBlock(ast)
+  and case = {patterns: NonEmpty.t<NonEmpty.t<Ast_Pattern.t>>, ast: ast}
+  and ast = array<node>
+  and child = ChildName(string) | ChildBlock(ast)
 
   type t' = {ast: ast, name: option<string>}
   type t = Valid.t<Result.t<t', Errors.t>>

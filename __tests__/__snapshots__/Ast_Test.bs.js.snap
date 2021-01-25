@@ -576,178 +576,149 @@ Array [
   },
   Object {
     "TAG": 4,
-    "children": Object {
-      "hd": Array [
+    "children": Array [
+      Array [
+        "G",
+        Object {
+          "TAG": 1,
+          "_0": Array [
+            Object {
+              "TAG": 0,
+              "_0": "
+     h ",
+              "_1": 3,
+            },
+            Object {
+              "TAG": 1,
+              "_0": 55,
+              "_1": Object {
+                "_0": Object {
+                  "TAG": 0,
+                  "_0": 56,
+                  "_1": "i",
+                  "_2": 1,
+                },
+                "_1": Array [],
+              },
+            },
+            Object {
+              "TAG": 0,
+              "_0": " ",
+              "_1": 3,
+            },
+            Object {
+              "TAG": 0,
+              "_0": "
+   ",
+              "_1": 3,
+            },
+          ],
+        },
+      ],
+      Array [
         "Children",
         Object {
           "TAG": 1,
-          "_0": Object {
-            "hd": Object {
+          "_0": Array [
+            Object {
               "TAG": 0,
               "_0": "
    k
    ",
               "_1": 3,
             },
-            "tl": Object {
-              "hd": Object {
-                "TAG": 4,
-                "children": 0,
-                "loc": 94,
-                "name": "L",
-                "props": Object {
-                  "hd": Array [
-                    "m",
-                    Object {
-                      "TAG": 7,
-                      "_0": 98,
-                      "_1": Object {
-                        "hd": Array [
-                          "n",
-                          Object {
-                            "TAG": 8,
-                            "_0": 102,
-                            "_1": "o",
-                          },
-                        ],
-                        "tl": Object {
-                          "hd": Array [
-                            "p",
+            Object {
+              "TAG": 4,
+              "children": Array [],
+              "loc": 94,
+              "name": "L",
+              "props": Array [
+                Array [
+                  "m",
+                  Object {
+                    "TAG": 7,
+                    "_0": 98,
+                    "_1": Array [
+                      Array [
+                        "n",
+                        Object {
+                          "TAG": 8,
+                          "_0": 102,
+                          "_1": "o",
+                        },
+                      ],
+                      Array [
+                        "p",
+                        Object {
+                          "TAG": 5,
+                          "_0": 108,
+                          "_1": Array [
                             Object {
-                              "TAG": 5,
-                              "_0": 108,
-                              "_1": Object {
-                                "hd": Object {
-                                  "TAG": 8,
-                                  "_0": 109,
-                                  "_1": "q",
-                                },
-                                "tl": 0,
-                              },
+                              "TAG": 8,
+                              "_0": 109,
+                              "_1": "q",
                             },
                           ],
-                          "tl": Object {
-                            "hd": Array [
-                              "r",
-                              Object {
-                                "TAG": 8,
-                                "_0": 113,
-                                "_1": "r",
-                              },
-                            ],
-                            "tl": 0,
-                          },
                         },
-                      },
-                    },
-                  ],
-                  "tl": 0,
-                },
-              },
-              "tl": Object {
-                "hd": Object {
-                  "TAG": 0,
-                  "_0": "
-",
-                  "_1": 3,
-                },
-                "tl": 0,
-              },
+                      ],
+                      Array [
+                        "r",
+                        Object {
+                          "TAG": 8,
+                          "_0": 113,
+                          "_1": "r",
+                        },
+                      ],
+                    ],
+                  },
+                ],
+              ],
             },
-          },
+            Object {
+              "TAG": 0,
+              "_0": "
+",
+              "_1": 3,
+            },
+          ],
         },
       ],
-      "tl": Object {
-        "hd": Array [
-          "G",
-          Object {
-            "TAG": 1,
-            "_0": Object {
-              "hd": Object {
-                "TAG": 0,
-                "_0": "
-     h ",
-                "_1": 3,
-              },
-              "tl": Object {
-                "hd": Object {
-                  "TAG": 1,
-                  "_0": 55,
-                  "_1": Object {
-                    "_0": Object {
-                      "TAG": 0,
-                      "_0": 56,
-                      "_1": "i",
-                      "_2": 1,
-                    },
-                    "_1": 0,
-                  },
-                },
-                "tl": Object {
-                  "hd": Object {
-                    "TAG": 0,
-                    "_0": " ",
-                    "_1": 3,
-                  },
-                  "tl": Object {
-                    "hd": Object {
-                      "TAG": 0,
-                      "_0": "
-   ",
-                      "_1": 3,
-                    },
-                    "tl": 0,
-                  },
-                },
-              },
-            },
-          },
-        ],
-        "tl": 0,
-      },
-    },
+    ],
     "loc": 4,
     "name": "A",
-    "props": Object {
-      "hd": Array [
+    "props": Array [
+      Array [
+        "b",
+        Object {
+          "TAG": 8,
+          "_0": 9,
+          "_1": "b",
+        },
+      ],
+      Array [
+        "c",
+        Object {
+          "TAG": 4,
+          "_0": 16,
+          "_1": 1,
+        },
+      ],
+      Array [
+        "d",
+        Object {
+          "TAG": 3,
+          "_0": 23,
+          "_1": "e",
+        },
+      ],
+      Array [
         "f",
         Object {
           "TAG": 2,
           "_0": 32,
         },
       ],
-      "tl": Object {
-        "hd": Array [
-          "d",
-          Object {
-            "TAG": 3,
-            "_0": 23,
-            "_1": "e",
-          },
-        ],
-        "tl": Object {
-          "hd": Array [
-            "c",
-            Object {
-              "TAG": 4,
-              "_0": 16,
-              "_1": 1,
-            },
-          ],
-          "tl": Object {
-            "hd": Array [
-              "b",
-              Object {
-                "TAG": 8,
-                "_0": 9,
-                "_1": "b",
-              },
-            ],
-            "tl": 0,
-          },
-        },
-      },
-    },
+    ],
   },
   Object {
     "TAG": 0,
@@ -772,45 +743,40 @@ Array [
     "_1": "a",
     "_2": Object {
       "_0": Object {
-        "ast": Object {
-          "hd": Object {
+        "ast": Array [
+          Object {
             "TAG": 0,
             "_0": "
   ",
             "_1": 3,
           },
-          "tl": Object {
-            "hd": Object {
-              "TAG": 1,
-              "_0": 26,
-              "_1": Object {
-                "_0": Object {
-                  "TAG": 0,
-                  "_0": 27,
-                  "_1": "b",
-                  "_2": 1,
-                },
-                "_1": 0,
-              },
-            },
-            "tl": Object {
-              "hd": Object {
+          Object {
+            "TAG": 1,
+            "_0": 26,
+            "_1": Object {
+              "_0": Object {
                 "TAG": 0,
-                "_0": "
-",
-                "_1": 3,
+                "_0": 27,
+                "_1": "b",
+                "_2": 1,
               },
-              "tl": 0,
+              "_1": Array [],
             },
           },
-        },
+          Object {
+            "TAG": 0,
+            "_0": "
+",
+            "_1": 3,
+          },
+        ],
         "patterns": Object {
           "_0": Object {
             "_0": Object {
               "TAG": 7,
               "_0": 15,
-              "_1": Object {
-                "hd": Array [
+              "_1": Array [
+                Array [
                   "b",
                   Object {
                     "TAG": 8,
@@ -818,15 +784,14 @@ Array [
                     "_1": "b",
                   },
                 ],
-                "tl": 0,
-              },
+              ],
             },
-            "_1": 0,
+            "_1": Array [],
           },
-          "_1": 0,
+          "_1": Array [],
         },
       },
-      "_1": 0,
+      "_1": Array [],
     },
   },
   Object {
@@ -841,136 +806,119 @@ Array [
     "_1": "c",
     "_2": Object {
       "_0": Object {
-        "ast": Object {
-          "hd": Object {
+        "ast": Array [
+          Object {
             "TAG": 0,
             "_0": "
   ",
             "_1": 3,
           },
-          "tl": Object {
-            "hd": Object {
-              "TAG": 1,
-              "_0": 80,
-              "_1": Object {
-                "_0": Object {
-                  "TAG": 0,
-                  "_0": 81,
-                  "_1": "e",
-                  "_2": 1,
-                },
-                "_1": 0,
-              },
-            },
-            "tl": Object {
-              "hd": Object {
+          Object {
+            "TAG": 1,
+            "_0": 80,
+            "_1": Object {
+              "_0": Object {
                 "TAG": 0,
-                "_0": "
-",
-                "_1": 3,
+                "_0": 81,
+                "_1": "e",
+                "_2": 1,
               },
-              "tl": 0,
+              "_1": Array [],
             },
           },
-        },
+          Object {
+            "TAG": 0,
+            "_0": "
+",
+            "_1": 3,
+          },
+        ],
         "patterns": Object {
           "_0": Object {
             "_0": Object {
               "TAG": 7,
               "_0": 60,
-              "_1": Object {
-                "hd": Array [
+              "_1": Array [
+                Array [
                   "d",
                   Object {
                     "TAG": 2,
                     "_0": 64,
                   },
                 ],
-                "tl": Object {
-                  "hd": Array [
-                    "e",
-                    Object {
-                      "TAG": 8,
-                      "_0": 70,
-                      "_1": "e",
-                    },
-                  ],
-                  "tl": 0,
-                },
-              },
+                Array [
+                  "e",
+                  Object {
+                    "TAG": 8,
+                    "_0": 70,
+                    "_1": "e",
+                  },
+                ],
+              ],
             },
-            "_1": 0,
+            "_1": Array [],
           },
-          "_1": 0,
+          "_1": Array [],
         },
       },
-      "_1": Object {
-        "hd": Object {
-          "ast": Object {
-            "hd": Object {
+      "_1": Array [
+        Object {
+          "ast": Array [
+            Object {
               "TAG": 0,
               "_0": "
   ",
               "_1": 3,
             },
-            "tl": Object {
-              "hd": Object {
-                "TAG": 1,
-                "_0": 115,
-                "_1": Object {
-                  "_0": Object {
-                    "TAG": 0,
-                    "_0": 116,
-                    "_1": "f",
-                    "_2": 1,
-                  },
-                  "_1": 0,
-                },
-              },
-              "tl": Object {
-                "hd": Object {
+            Object {
+              "TAG": 1,
+              "_0": 115,
+              "_1": Object {
+                "_0": Object {
                   "TAG": 0,
-                  "_0": "
-",
-                  "_1": 3,
+                  "_0": 116,
+                  "_1": "f",
+                  "_2": 1,
                 },
-                "tl": 0,
+                "_1": Array [],
               },
             },
-          },
+            Object {
+              "TAG": 0,
+              "_0": "
+",
+              "_1": 3,
+            },
+          ],
           "patterns": Object {
             "_0": Object {
               "_0": Object {
                 "TAG": 7,
                 "_0": 94,
-                "_1": Object {
-                  "hd": Array [
+                "_1": Array [
+                  Array [
                     "d",
                     Object {
                       "TAG": 1,
                       "_0": 98,
                     },
                   ],
-                  "tl": Object {
-                    "hd": Array [
-                      "f",
-                      Object {
-                        "TAG": 8,
-                        "_0": 105,
-                        "_1": "f",
-                      },
-                    ],
-                    "tl": 0,
-                  },
-                },
+                  Array [
+                    "f",
+                    Object {
+                      "TAG": 8,
+                      "_0": 105,
+                      "_1": "f",
+                    },
+                  ],
+                ],
               },
-              "_1": 0,
+              "_1": Array [],
             },
-            "_1": 0,
+            "_1": Array [],
           },
         },
-        "tl": 0,
-      },
+      ],
     },
   },
   Object {
@@ -985,67 +933,58 @@ Array [
     "_1": "g",
     "_2": Object {
       "_0": Object {
-        "ast": Object {
-          "hd": Object {
+        "ast": Array [
+          Object {
             "TAG": 0,
             "_0": "
   ",
             "_1": 3,
           },
-          "tl": Object {
-            "hd": Object {
-              "TAG": 1,
-              "_0": 164,
-              "_1": Object {
-                "_0": Object {
-                  "TAG": 0,
-                  "_0": 165,
-                  "_1": "index",
-                  "_2": 1,
-                },
-                "_1": 0,
-              },
-            },
-            "tl": Object {
-              "hd": Object {
+          Object {
+            "TAG": 1,
+            "_0": 164,
+            "_1": Object {
+              "_0": Object {
                 "TAG": 0,
-                "_0": " ",
-                "_1": 3,
+                "_0": 165,
+                "_1": "index",
+                "_2": 1,
               },
-              "tl": Object {
-                "hd": Object {
-                  "TAG": 1,
-                  "_0": 176,
-                  "_1": Object {
-                    "_0": Object {
-                      "TAG": 0,
-                      "_0": 177,
-                      "_1": "g",
-                      "_2": 1,
-                    },
-                    "_1": 0,
-                  },
-                },
-                "tl": Object {
-                  "hd": Object {
-                    "TAG": 0,
-                    "_0": "
-",
-                    "_1": 3,
-                  },
-                  "tl": 0,
-                },
-              },
+              "_1": Array [],
             },
           },
-        },
+          Object {
+            "TAG": 0,
+            "_0": " ",
+            "_1": 3,
+          },
+          Object {
+            "TAG": 1,
+            "_0": 176,
+            "_1": Object {
+              "_0": Object {
+                "TAG": 0,
+                "_0": 177,
+                "_1": "g",
+                "_2": 1,
+              },
+              "_1": Array [],
+            },
+          },
+          Object {
+            "TAG": 0,
+            "_0": "
+",
+            "_1": 3,
+          },
+        ],
         "patterns": Object {
           "_0": Object {
             "_0": Object {
               "TAG": 7,
               "_0": 146,
-              "_1": Object {
-                "hd": Array [
+              "_1": Array [
+                Array [
                   "h",
                   Object {
                     "TAG": 8,
@@ -1053,22 +992,20 @@ Array [
                     "_1": "h",
                   },
                 ],
-                "tl": 0,
-              },
+              ],
             },
-            "_1": Object {
-              "hd": Object {
+            "_1": Array [
+              Object {
                 "TAG": 8,
                 "_0": 151,
                 "_1": "index",
               },
-              "tl": 0,
-            },
+            ],
           },
-          "_1": 0,
+          "_1": Array [],
         },
       },
-      "_1": 0,
+      "_1": Array [],
     },
   },
   Object {
@@ -1096,20 +1033,19 @@ Array [
         10,
         "a",
       ],
-      "_1": 0,
+      "_1": Array [],
     },
     "_2": Object {
       "_0": Object {
-        "ast": Object {
-          "hd": Object {
+        "ast": Array [
+          Object {
             "TAG": 0,
             "_0": "
   b
 ",
             "_1": 3,
           },
-          "tl": 0,
-        },
+        ],
         "patterns": Object {
           "_0": Object {
             "_0": Object {
@@ -1117,23 +1053,22 @@ Array [
               "_0": 20,
               "_1": 1,
             },
-            "_1": 0,
+            "_1": Array [],
           },
-          "_1": 0,
+          "_1": Array [],
         },
       },
-      "_1": Object {
-        "hd": Object {
-          "ast": Object {
-            "hd": Object {
+      "_1": Array [
+        Object {
+          "ast": Array [
+            Object {
               "TAG": 0,
               "_0": "
   c
 ",
               "_1": 3,
             },
-            "tl": 0,
-          },
+          ],
           "patterns": Object {
             "_0": Object {
               "_0": Object {
@@ -1141,48 +1076,43 @@ Array [
                 "_0": 37,
                 "_1": 2,
               },
-              "_1": 0,
+              "_1": Array [],
             },
-            "_1": Object {
-              "hd": Object {
+            "_1": Array [
+              Object {
                 "_0": Object {
                   "TAG": 4,
                   "_0": 47,
                   "_1": 3,
                 },
-                "_1": 0,
+                "_1": Array [],
               },
-              "tl": 0,
-            },
+            ],
           },
         },
-        "tl": Object {
-          "hd": Object {
-            "ast": Object {
-              "hd": Object {
-                "TAG": 0,
-                "_0": "
+        Object {
+          "ast": Array [
+            Object {
+              "TAG": 0,
+              "_0": "
   d
 ",
-                "_1": 3,
-              },
-              "tl": 0,
+              "_1": 3,
             },
-            "patterns": Object {
+          ],
+          "patterns": Object {
+            "_0": Object {
               "_0": Object {
-                "_0": Object {
-                  "TAG": 4,
-                  "_0": 64,
-                  "_1": 4,
-                },
-                "_1": 0,
+                "TAG": 4,
+                "_0": 64,
+                "_1": 4,
               },
-              "_1": 0,
+              "_1": Array [],
             },
+            "_1": Array [],
           },
-          "tl": 0,
         },
-      },
+      ],
     },
   },
   Object {
@@ -1199,60 +1129,54 @@ Array [
         95,
         "e",
       ],
-      "_1": Object {
-        "hd": Array [
+      "_1": Array [
+        Array [
           98,
           "f",
         ],
-        "tl": 0,
-      },
+      ],
     },
     "_2": Object {
       "_0": Object {
-        "ast": Object {
-          "hd": Object {
+        "ast": Array [
+          Object {
             "TAG": 0,
             "_0": "
   ",
             "_1": 3,
           },
-          "tl": Object {
-            "hd": Object {
-              "TAG": 1,
-              "_0": 125,
-              "_1": Object {
-                "_0": Object {
-                  "TAG": 0,
-                  "_0": 126,
-                  "_1": "g",
-                  "_2": 1,
-                },
-                "_1": 0,
-              },
-            },
-            "tl": Object {
-              "hd": Object {
+          Object {
+            "TAG": 1,
+            "_0": 125,
+            "_1": Object {
+              "_0": Object {
                 "TAG": 0,
-                "_0": "
-",
-                "_1": 3,
+                "_0": 126,
+                "_1": "g",
+                "_2": 1,
               },
-              "tl": 0,
+              "_1": Array [],
             },
           },
-        },
+          Object {
+            "TAG": 0,
+            "_0": "
+",
+            "_1": 3,
+          },
+        ],
         "patterns": Object {
           "_0": Object {
             "_0": Object {
               "TAG": 2,
               "_0": 108,
             },
-            "_1": Object {
-              "hd": Object {
+            "_1": Array [
+              Object {
                 "TAG": 7,
                 "_0": 114,
-                "_1": Object {
-                  "hd": Array [
+                "_1": Array [
+                  Array [
                     "g",
                     Object {
                       "TAG": 8,
@@ -1260,47 +1184,42 @@ Array [
                       "_1": "g",
                     },
                   ],
-                  "tl": 0,
-                },
+                ],
               },
-              "tl": 0,
-            },
+            ],
           },
-          "_1": 0,
+          "_1": Array [],
         },
       },
-      "_1": Object {
-        "hd": Object {
-          "ast": Object {
-            "hd": Object {
+      "_1": Array [
+        Object {
+          "ast": Array [
+            Object {
               "TAG": 0,
               "_0": "
   h
 ",
               "_1": 3,
             },
-            "tl": 0,
-          },
+          ],
           "patterns": Object {
             "_0": Object {
               "_0": Object {
                 "TAG": 1,
                 "_0": 139,
               },
-              "_1": Object {
-                "hd": Object {
+              "_1": Array [
+                Object {
                   "TAG": 8,
                   "_0": 146,
                   "_1": "_",
                 },
-                "tl": 0,
-              },
+              ],
             },
-            "_1": 0,
+            "_1": Array [],
           },
         },
-        "tl": 0,
-      },
+      ],
     },
   },
   Object {
