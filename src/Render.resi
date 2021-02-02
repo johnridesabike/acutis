@@ -15,18 +15,11 @@
 */
 
 module Pattern: {
-  type toJsonErrors =
-    | BindingTypeMismatch({
-        data: Js.Json.tagged_t,
-        pattern: Acutis_Types.Ast_Pattern.t,
-        binding: string,
-      })
-    | BindingDoesNotExist({loc: Acutis_Types.loc, binding: string})
-
   let toJson: (
     Acutis_Types.Ast_Pattern.t,
     ~props: Acutis_Types.props,
-  ) => result<Js.Json.t, toJsonErrors>
+    ~stack: Acutis_Types.Errors.Stack.t,
+  ) => result<Js.Json.t, Acutis_Types.Errors.t>
 
   type errors =
     | NoMatch

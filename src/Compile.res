@@ -26,20 +26,20 @@ open Acutis_Types
 module Pattern = {
   let rec parseNode = (t: Token.t, tokens): Ast_Pattern.t =>
     switch t {
-    | Null(loc) => Null(loc)
-    | False(loc) => False(loc)
-    | True(loc) => True(loc)
-    | Identifier(loc, x) => Binding(loc, x)
-    | Number(loc, x) => Number(loc, x)
-    | String(loc, x) => String(loc, x)
+    | Null(loc) => #Null(loc)
+    | False(loc) => #False(loc)
+    | True(loc) => #True(loc)
+    | Identifier(loc, x) => #Binding(loc, x)
+    | Number(loc, x) => #Number(loc, x)
+    | String(loc, x) => #String(loc, x)
     | OpenBracket(loc) =>
       switch Lexer.popExn(tokens) {
-      | CloseBracket(_) => Array(loc, [])
+      | CloseBracket(_) => #Array(loc, [])
       | t => parseArray(loc, t, tokens)
       }
     | OpenBrace(loc) =>
       switch Lexer.popExn(tokens) {
-      | CloseBrace(_) => Object(loc, [])
+      | CloseBrace(_) => #Object(loc, [])
       | t => parseObject(loc, t, tokens)
       }
     | t => Debug.unexpectedTokenExn(t, ~name=Lexer.name(tokens))
@@ -49,7 +49,7 @@ module Pattern = {
     Queue.add(q, parseNode(t, tokens))
     let rec aux = (): Ast_Pattern.t =>
       switch Lexer.popExn(tokens) {
-      | CloseBracket(_) => Array(loc, Queue.toArray(q))
+      | CloseBracket(_) => #Array(loc, Queue.toArray(q))
       | Comma(_) =>
         switch Lexer.popExn(tokens) {
         | Spread(_) =>
@@ -57,12 +57,7 @@ module Pattern = {
           | Identifier(bindingLoc, tailBinding) =>
             switch Lexer.popExn(tokens) {
             | CloseBracket(_) =>
-              ArrayWithTailBinding({
-                loc: loc,
-                array: Queue.toArray(q),
-                bindLoc: bindingLoc,
-                binding: tailBinding,
-              })
+              #ArrayWithTailBinding(loc, Queue.toArray(q), #Binding(bindingLoc, tailBinding))
             | t => Debug.unexpectedTokenExn(t, ~name=Lexer.name(tokens))
             }
           | t => Debug.unexpectedTokenExn(t, ~name=Lexer.name(tokens))
@@ -80,7 +75,7 @@ module Pattern = {
     Queue.add(q, parseObjectKeyValue(t, tokens))
     let rec aux = (): Ast_Pattern.t =>
       switch Lexer.popExn(tokens) {
-      | CloseBrace(_) => Object(loc, Queue.toArray(q))
+      | CloseBrace(_) => #Object(loc, Queue.toArray(q))
       | Comma(_) =>
         Queue.add(q, parseObjectKeyValue(Lexer.popExn(tokens), tokens))
         aux()
@@ -100,7 +95,7 @@ module Pattern = {
       | Colon(_) =>
         Lexer.popExn(tokens)->ignore
         (key, parseNode(Lexer.popExn(tokens), tokens))
-      | _ => (key, Binding(loc, key))
+      | _ => (key, #Binding(loc, key))
       }
     | t => Debug.unexpectedTokenExn(t, ~name=Lexer.name(tokens))
     }
@@ -221,10 +216,14 @@ let rec parse = (t, tokens, ~until) => {
       let withs = parseWithBlocks(tokens, ~block="match")
       Queue.add(q, Match(loc, identifiers, withs))
       aux(Lexer.popExn(tokens))
-    | Identifier(_, "map") =>
-      let (loc, identifier) = parseBindingName(tokens)
+    | Identifier(loc, "map") =>
+      let pattern = switch Pattern.parseNode(Lexer.popExn(tokens), tokens) {
+      | (#Binding(_) | #Array(_) | #ArrayWithTailBinding(_)) as x => x
+      | (#Null(_) | #True(_) | #False(_) | #String(_) | #Number(_) | #Object(_)) as x =>
+        Debug.badMapTypeParseExn(x, ~name=Lexer.name(tokens))
+      }
       let withs = parseWithBlocks(tokens, ~block="map")
-      Queue.add(q, Map(loc, identifier, withs))
+      Queue.add(q, Map(loc, pattern, withs))
       aux(Lexer.popExn(tokens))
     | Echo(loc) =>
       let (t, echoes) = parseEchoes(tokens)
@@ -309,7 +308,7 @@ and parseProps = tokens => {
         Queue.add(props, (key, prop))
         aux(Lexer.popExn(tokens))
       | t =>
-        Queue.add(props, (key, Binding(loc, key)))
+        Queue.add(props, (key, #Binding(loc, key)))
         aux(t)
       }
     | ComponentName(_, name) =>

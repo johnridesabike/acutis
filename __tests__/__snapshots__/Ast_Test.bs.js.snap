@@ -636,38 +636,48 @@ Array [
                 Array [
                   "m",
                   Object {
-                    "TAG": 7,
-                    "_0": 98,
-                    "_1": Array [
+                    "NAME": "Object",
+                    "VAL": Array [
+                      98,
                       Array [
-                        "n",
-                        Object {
-                          "TAG": 8,
-                          "_0": 102,
-                          "_1": "o",
-                        },
-                      ],
-                      Array [
-                        "p",
-                        Object {
-                          "TAG": 5,
-                          "_0": 108,
-                          "_1": Array [
-                            Object {
-                              "TAG": 8,
-                              "_0": 109,
-                              "_1": "q",
-                            },
-                          ],
-                        },
-                      ],
-                      Array [
-                        "r",
-                        Object {
-                          "TAG": 8,
-                          "_0": 113,
-                          "_1": "r",
-                        },
+                        Array [
+                          "n",
+                          Object {
+                            "NAME": "Binding",
+                            "VAL": Array [
+                              102,
+                              "o",
+                            ],
+                          },
+                        ],
+                        Array [
+                          "p",
+                          Object {
+                            "NAME": "Array",
+                            "VAL": Array [
+                              108,
+                              Array [
+                                Object {
+                                  "NAME": "Binding",
+                                  "VAL": Array [
+                                    109,
+                                    "q",
+                                  ],
+                                },
+                              ],
+                            ],
+                          },
+                        ],
+                        Array [
+                          "r",
+                          Object {
+                            "NAME": "Binding",
+                            "VAL": Array [
+                              113,
+                              "r",
+                            ],
+                          },
+                        ],
                       ],
                     ],
                   },
@@ -690,32 +700,38 @@ Array [
       Array [
         "b",
         Object {
-          "TAG": 8,
-          "_0": 9,
-          "_1": "b",
+          "NAME": "Binding",
+          "VAL": Array [
+            9,
+            "b",
+          ],
         },
       ],
       Array [
         "c",
         Object {
-          "TAG": 4,
-          "_0": 16,
-          "_1": 1,
+          "NAME": "Number",
+          "VAL": Array [
+            16,
+            1,
+          ],
         },
       ],
       Array [
         "d",
         Object {
-          "TAG": 3,
-          "_0": 23,
-          "_1": "e",
+          "NAME": "String",
+          "VAL": Array [
+            23,
+            "e",
+          ],
         },
       ],
       Array [
         "f",
         Object {
-          "TAG": 2,
-          "_0": 32,
+          "NAME": "True",
+          "VAL": 32,
         },
       ],
     ],
@@ -739,8 +755,14 @@ Array [
   },
   Object {
     "TAG": 3,
-    "_0": 8,
-    "_1": "a",
+    "_0": 4,
+    "_1": Object {
+      "NAME": "Binding",
+      "VAL": Array [
+        8,
+        "a",
+      ],
+    },
     "_2": Object {
       "_0": Object {
         "ast": Array [
@@ -773,16 +795,20 @@ Array [
         "patterns": Object {
           "_0": Object {
             "_0": Object {
-              "TAG": 7,
-              "_0": 15,
-              "_1": Array [
+              "NAME": "Object",
+              "VAL": Array [
+                15,
                 Array [
-                  "b",
-                  Object {
-                    "TAG": 8,
-                    "_0": 16,
-                    "_1": "b",
-                  },
+                  Array [
+                    "b",
+                    Object {
+                      "NAME": "Binding",
+                      "VAL": Array [
+                        16,
+                        "b",
+                      ],
+                    },
+                  ],
                 ],
               ],
             },
@@ -802,8 +828,14 @@ Array [
   },
   Object {
     "TAG": 3,
-    "_0": 50,
-    "_1": "c",
+    "_0": 46,
+    "_1": Object {
+      "NAME": "Binding",
+      "VAL": Array [
+        50,
+        "c",
+      ],
+    },
     "_2": Object {
       "_0": Object {
         "ast": Array [
@@ -836,23 +868,27 @@ Array [
         "patterns": Object {
           "_0": Object {
             "_0": Object {
-              "TAG": 7,
-              "_0": 60,
-              "_1": Array [
+              "NAME": "Object",
+              "VAL": Array [
+                60,
                 Array [
-                  "d",
-                  Object {
-                    "TAG": 2,
-                    "_0": 64,
-                  },
-                ],
-                Array [
-                  "e",
-                  Object {
-                    "TAG": 8,
-                    "_0": 70,
-                    "_1": "e",
-                  },
+                  Array [
+                    "d",
+                    Object {
+                      "NAME": "True",
+                      "VAL": 64,
+                    },
+                  ],
+                  Array [
+                    "e",
+                    Object {
+                      "NAME": "Binding",
+                      "VAL": Array [
+                        70,
+                        "e",
+                      ],
+                    },
+                  ],
                 ],
               ],
             },
@@ -893,23 +929,27 @@ Array [
           "patterns": Object {
             "_0": Object {
               "_0": Object {
-                "TAG": 7,
-                "_0": 94,
-                "_1": Array [
+                "NAME": "Object",
+                "VAL": Array [
+                  94,
                   Array [
-                    "d",
-                    Object {
-                      "TAG": 1,
-                      "_0": 98,
-                    },
-                  ],
-                  Array [
-                    "f",
-                    Object {
-                      "TAG": 8,
-                      "_0": 105,
-                      "_1": "f",
-                    },
+                    Array [
+                      "d",
+                      Object {
+                        "NAME": "False",
+                        "VAL": 98,
+                      },
+                    ],
+                    Array [
+                      "f",
+                      Object {
+                        "NAME": "Binding",
+                        "VAL": Array [
+                          105,
+                          "f",
+                        ],
+                      },
+                    ],
                   ],
                 ],
               },
@@ -929,8 +969,14 @@ Array [
   },
   Object {
     "TAG": 3,
-    "_0": 139,
-    "_1": "g",
+    "_0": 135,
+    "_1": Object {
+      "NAME": "Binding",
+      "VAL": Array [
+        139,
+        "g",
+      ],
+    },
     "_2": Object {
       "_0": Object {
         "ast": Array [
@@ -981,24 +1027,30 @@ Array [
         "patterns": Object {
           "_0": Object {
             "_0": Object {
-              "TAG": 7,
-              "_0": 146,
-              "_1": Array [
+              "NAME": "Object",
+              "VAL": Array [
+                146,
                 Array [
-                  "h",
-                  Object {
-                    "TAG": 8,
-                    "_0": 147,
-                    "_1": "h",
-                  },
+                  Array [
+                    "h",
+                    Object {
+                      "NAME": "Binding",
+                      "VAL": Array [
+                        147,
+                        "h",
+                      ],
+                    },
+                  ],
                 ],
               ],
             },
             "_1": Array [
               Object {
-                "TAG": 8,
-                "_0": 151,
-                "_1": "index",
+                "NAME": "Binding",
+                "VAL": Array [
+                  151,
+                  "index",
+                ],
               },
             ],
           },
@@ -1049,9 +1101,11 @@ Array [
         "patterns": Object {
           "_0": Object {
             "_0": Object {
-              "TAG": 4,
-              "_0": 20,
-              "_1": 1,
+              "NAME": "Number",
+              "VAL": Array [
+                20,
+                1,
+              ],
             },
             "_1": Array [],
           },
@@ -1072,18 +1126,22 @@ Array [
           "patterns": Object {
             "_0": Object {
               "_0": Object {
-                "TAG": 4,
-                "_0": 37,
-                "_1": 2,
+                "NAME": "Number",
+                "VAL": Array [
+                  37,
+                  2,
+                ],
               },
               "_1": Array [],
             },
             "_1": Array [
               Object {
                 "_0": Object {
-                  "TAG": 4,
-                  "_0": 47,
-                  "_1": 3,
+                  "NAME": "Number",
+                  "VAL": Array [
+                    47,
+                    3,
+                  ],
                 },
                 "_1": Array [],
               },
@@ -1103,9 +1161,11 @@ Array [
           "patterns": Object {
             "_0": Object {
               "_0": Object {
-                "TAG": 4,
-                "_0": 64,
-                "_1": 4,
+                "NAME": "Number",
+                "VAL": Array [
+                  64,
+                  4,
+                ],
               },
               "_1": Array [],
             },
@@ -1168,21 +1228,25 @@ Array [
         "patterns": Object {
           "_0": Object {
             "_0": Object {
-              "TAG": 2,
-              "_0": 108,
+              "NAME": "True",
+              "VAL": 108,
             },
             "_1": Array [
               Object {
-                "TAG": 7,
-                "_0": 114,
-                "_1": Array [
+                "NAME": "Object",
+                "VAL": Array [
+                  114,
                   Array [
-                    "g",
-                    Object {
-                      "TAG": 8,
-                      "_0": 115,
-                      "_1": "g",
-                    },
+                    Array [
+                      "g",
+                      Object {
+                        "NAME": "Binding",
+                        "VAL": Array [
+                          115,
+                          "g",
+                        ],
+                      },
+                    ],
                   ],
                 ],
               },
@@ -1205,14 +1269,16 @@ Array [
           "patterns": Object {
             "_0": Object {
               "_0": Object {
-                "TAG": 1,
-                "_0": 139,
+                "NAME": "False",
+                "VAL": 139,
               },
               "_1": Array [
                 Object {
-                  "TAG": 8,
-                  "_0": 146,
-                  "_1": "_",
+                  "NAME": "Binding",
+                  "VAL": Array [
+                    146,
+                    "_",
+                  ],
                 },
               ],
             },

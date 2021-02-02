@@ -110,6 +110,17 @@ let unexpectedTokenExn = (t, ~name) =>
     }),
   )
 
+let badMapTypeParseExn = (t, ~name) =>
+  raise(
+    CompileError({
+      message: `Bad map type: "${Ast_Pattern.toString(t)}". I can only map bindings and arrays.`,
+      kind: #Parse,
+      location: Some(location(Ast_Pattern.toLocation(t))),
+      path: [nameToJson(name)],
+      exn: None,
+    }),
+  )
+
 /* Render errors */
 
 let jsonTaggedTToString = (x: Js.Json.tagged_t) =>

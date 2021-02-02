@@ -25,10 +25,6 @@ open Acutis_Types
 module Pattern = {
   module Result = Belt.Result
 
-  type toJsonErrors =
-    | BindingTypeMismatch({data: Json.tagged_t, pattern: Ast_Pattern.t, binding: string})
-    | BindingDoesNotExist({loc: loc, binding: string})
-
   let arrayToQueueResult = (a, ~f) => {
     let q = Queue.make()
     let rec aux = i =>
@@ -45,41 +41,49 @@ module Pattern = {
     aux(0)
   }
 
-  let rec toJson = (pattern: Ast_Pattern.t, ~props) =>
+  let rec toJson = (pattern: Ast_Pattern.t, ~props, ~stack) =>
     switch pattern {
-    | True(_) => Ok(Json.boolean(true))
-    | False(_) => Ok(Json.boolean(false))
-    | Null(_) => Ok(Json.null)
-    | String(_, x) => Ok(Json.string(x))
-    | Number(_, x) => Ok(Json.number(x))
-    | Array(_, x) =>
+    | #True(_) => Ok(Json.boolean(true))
+    | #False(_) => Ok(Json.boolean(false))
+    | #Null(_) => Ok(Json.null)
+    | #String(_, x) => Ok(Json.string(x))
+    | #Number(_, x) => Ok(Json.number(x))
+    | #Object(_, x) =>
       x
-      ->arrayToQueueResult(~f=(. x) => toJson(x, ~props))
-      ->Result.mapU((. q) => q->Queue.toArray->Json.array)
-    | ArrayWithTailBinding({array, bindLoc, binding, _}) =>
-      switch Js.Dict.get(props, binding) {
-      | Some(data) =>
-        switch Json.classify(data) {
-        | JSONArray(binding) =>
-          array
-          ->arrayToQueueResult(~f=(. x) => toJson(x, ~props))
-          ->Result.mapU((. q) => q->Queue.toArray->Array.concat(binding)->Json.array)
-        | data => Error(BindingTypeMismatch({data: data, pattern: pattern, binding: binding}))
-        }
-      | None => Error(BindingDoesNotExist({loc: bindLoc, binding: binding}))
-      }
-    | Object(_, x) =>
-      x
-      ->arrayToQueueResult(~f=(. (k, v)) => toJson(v, ~props)->Result.mapU((. v) => (k, v)))
+      ->arrayToQueueResult(~f=(. (k, v)) => toJson(v, ~props, ~stack)->Result.mapU((. v) => (k, v)))
       ->Result.mapU((. q) => {
         let d = Js.Dict.empty()
         Queue.forEachU(q, (. (k, v)) => Js.Dict.set(d, k, v))
         Json.object_(d)
       })
-    | Binding(loc, x) =>
-      switch Js.Dict.get(props, x) {
+    | #Binding(loc, binding) =>
+      switch Js.Dict.get(props, binding) {
       | Some(x) => Ok(x)
-      | None => Error(BindingDoesNotExist({loc: loc, binding: x}))
+      | None => Error(Debug.bindingDoesNotExist(~loc, ~binding, ~stack))
+      }
+    | (#Array(_) | #ArrayWithTailBinding(_)) as pattern =>
+      toArray(pattern, ~props, ~stack)->Result.mapU((. x) => Json.array(x))
+    }
+  and toArray = (pattern: Ast_Pattern.arr, ~props, ~stack) =>
+    switch pattern {
+    | #Array(_, x) =>
+      x
+      ->arrayToQueueResult(~f=(. x) => toJson(x, ~props, ~stack))
+      ->Result.mapU((. q) => Queue.toArray(q))
+    | #ArrayWithTailBinding(_, array, #Binding(bindLoc, binding)) =>
+      switch Js.Dict.get(props, binding) {
+      | Some(data) =>
+        switch Json.classify(data) {
+        | JSONArray(binding) =>
+          array
+          ->arrayToQueueResult(~f=(. x) => toJson(x, ~props, ~stack))
+          ->Result.mapU((. q) => q->Queue.toArray->Array.concat(binding))
+        | data =>
+          Error(
+            Debug.bindingTypeMismatch(~data, ~pattern=(pattern :> Ast_Pattern.t), ~binding, ~stack),
+          )
+        }
+      | None => Error(Debug.bindingDoesNotExist(~loc=bindLoc, ~binding, ~stack))
       }
     }
 
@@ -102,22 +106,22 @@ module Pattern = {
 
   let rec testValue = (~pattern: Ast_Pattern.t, ~json, ~bindings) =>
     switch (pattern, Json.classify(json)) {
-    | (Binding(loc, identifier), _) => setBinding(bindings, identifier, json, ~loc)
-    | (Number(_, x), JSONNumber(y)) when x == y => Ok(bindings)
-    | (String(_, x), JSONString(y)) when x == y => Ok(bindings)
-    | (True(_), JSONTrue)
-    | (False(_), JSONFalse)
-    | (Null(_), JSONNull) =>
+    | (#Binding(loc, identifier), _) => setBinding(bindings, identifier, json, ~loc)
+    | (#Number(_, x), JSONNumber(y)) when x == y => Ok(bindings)
+    | (#String(_, x), JSONString(y)) when x == y => Ok(bindings)
+    | (#True(_), JSONTrue)
+    | (#False(_), JSONFalse)
+    | (#Null(_), JSONNull) =>
       Ok(bindings)
-    | (Number(_), JSONNumber(_))
-    | (String(_), JSONString(_))
-    | (False(_), JSONTrue)
-    | (True(_), JSONFalse) =>
+    | (#Number(_), JSONNumber(_))
+    | (#String(_), JSONString(_))
+    | (#False(_), JSONTrue)
+    | (#True(_), JSONFalse) =>
       Error(NoMatch)
-    | (Array(_, []), JSONArray([])) => Ok(bindings)
-    | (Array(_, []), JSONArray(_)) => Error(NoMatch)
-    | (Array(_, x), JSONArray(data)) => testArray(~patterns=x, ~data, ~bindings)
-    | (ArrayWithTailBinding({array, bindLoc, binding, _}), JSONArray(data)) =>
+    | (#Array(_, []), JSONArray([])) => Ok(bindings)
+    | (#Array(_, []), JSONArray(_)) => Error(NoMatch)
+    | (#Array(_, x), JSONArray(data)) => testArray(~patterns=x, ~data, ~bindings)
+    | (#ArrayWithTailBinding(_, array, #Binding(bindLoc, binding)), JSONArray(data)) =>
       testArray(~patterns=array, ~data, ~bindings)->Result.flatMapU((. bindings) =>
         setBinding(
           bindings,
@@ -126,10 +130,10 @@ module Pattern = {
           ~loc=bindLoc,
         )
       )
-    | (Object(_, []), JSONObject(obj)) when obj->Js.Dict.keys->Array.size == 0 => Ok(bindings)
-    | (Object(_, []), JSONObject(_)) => Error(NoMatch)
-    | (Object(_, x), JSONObject(obj)) => testObject(~patterns=x, ~obj, ~bindings)
-    | (_, JSONNull) | (Null(_), _) => Error(NoMatch)
+    | (#Object(_, []), JSONObject(obj)) when obj->Js.Dict.keys->Array.size == 0 => Ok(bindings)
+    | (#Object(_, []), JSONObject(_)) => Error(NoMatch)
+    | (#Object(_, x), JSONObject(obj)) => testObject(~patterns=x, ~obj, ~bindings)
+    | (_, JSONNull) | (#Null(_), _) => Error(NoMatch)
     | (pattern, data) => Error(PatternTypeMismatch({data: data, pattern: pattern}))
     }
   and testArray = (~patterns, ~data, ~bindings) => {
@@ -260,7 +264,7 @@ let echoBinding = (props, binding) =>
 
 let addImplicitIndexBinding = (~loc, . x: NonEmpty.t<_>): NonEmpty.t<Ast_Pattern.t> =>
   switch x {
-  | NonEmpty(x, []) => NonEmpty(x, [Binding(loc, "_")])
+  | NonEmpty(x, []) => NonEmpty(x, [#Binding(loc, "_")])
   | x => x
   }
 
@@ -345,7 +349,7 @@ let rec make = (~ast, ~props, ~children, ~envData, ~makeEnv, ~error, ~try_, ~red
         ),
       )
     | Match(loc, identifiers, cases) =>
-      let patterns = NonEmpty.map(cases, ~f=(. {patterns, ast}): Pattern.t<'a> => {
+      let patterns = NonEmpty.map(cases, ~f=(. {patterns, ast}): Pattern.t<_> => {
         patterns: patterns,
         f: (. props') =>
           make(
@@ -364,11 +368,21 @@ let rec make = (~ast, ~props, ~children, ~envData, ~makeEnv, ~error, ~try_, ~red
       | Ok(result) => Queue.transfer(result, queue)
       | Error(e) => Queue.add(queue, error(.[e]))
       }
-    | Map(loc, binding, cases) =>
-      switch Json.classify(getBindingOrNull(props, binding)) {
-      | JSONArray(arr) =>
+    | Map(loc, pattern, cases) =>
+      let data = switch pattern {
+      | #Binding(loc, binding) =>
+        switch Js.Json.classify(getBindingOrNull(props, binding)) {
+        | JSONArray(arr) => Ok(arr)
+        | type_ => Error(Debug.badMapType(~binding, ~type_, ~loc, ~stack))
+        }
+      | (#Array(_) | #ArrayWithTailBinding(_)) as pattern =>
+        Pattern.toArray(pattern, ~props, ~stack)
+      }
+      switch data {
+      | Error(e) => Queue.add(queue, error(.[e]))
+      | Ok(arr) =>
         Array.forEachWithIndexU(arr, (. index, json) => {
-          let patterns = NonEmpty.map(cases, ~f=(. {patterns, ast}): Pattern.t<'a> => {
+          let patterns = NonEmpty.map(cases, ~f=(. {patterns, ast}): Pattern.t<_> => {
             patterns: NonEmpty.map(patterns, ~f=addImplicitIndexBinding(~loc)),
             f: (. props') =>
               make(
@@ -387,7 +401,6 @@ let rec make = (~ast, ~props, ~children, ~envData, ~makeEnv, ~error, ~try_, ~red
           | Error(e) => Queue.add(queue, error(.[e]))
           }
         })
-      | type_ => Queue.add(queue, error(.[Debug.badMapType(~binding, ~type_, ~loc, ~stack)]))
       }
     | Component({loc, name, props: compPropsRaw, children: compChildrenRaw}) =>
       switch Js.Dict.get(components, name) {
@@ -425,12 +438,9 @@ let rec make = (~ast, ~props, ~children, ~envData, ~makeEnv, ~error, ~try_, ~red
           }
         )
         Array.forEachU(compPropsRaw, (. (key, data)) =>
-          switch Pattern.toJson(data, ~props) {
+          switch Pattern.toJson(data, ~props, ~stack) {
           | Ok(data) => Js.Dict.set(compProps, key, data)
-          | Error(BindingTypeMismatch({data, pattern, binding})) =>
-            Queue.add(errors, Debug.bindingTypeMismatch(~data, ~pattern, ~binding, ~stack))
-          | Error(BindingDoesNotExist({loc, binding})) =>
-            Queue.add(errors, Debug.bindingDoesNotExist(~loc, ~binding, ~stack))
+          | Error(e) => Queue.add(errors, e)
           }
         )
         if Queue.isEmpty(errors) {

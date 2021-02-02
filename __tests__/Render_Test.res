@@ -129,7 +129,20 @@ describe("All together", ({test, _}) => {
       emptyComponents,
     )
     expect.value(result).toEqual(#data(` 0 John.  1 Megan. `))
+    let result = render(
+      `{% map [{name: "Carlo"}, {name: "John"}] with {name} %} {{ name }}. {% /map %}`,
+      data,
+      emptyComponents,
+    )
+    expect.value(result).toEqual(#data(` Carlo.  John. `))
+    let result = render(
+      `{% map [{name: "Carlo"}, ...a] with {name} %} {{ name }}. {% /map %}`,
+      data,
+      emptyComponents,
+    )
+    expect.value(result).toEqual(#data(` Carlo.  John.  Megan. `))
   })
+
   test("Component", ({expect, _}) => {
     let ohHai: Acutis_Types.template<_> = (. env, props, templates) =>
       env.render(. Compile.makeAst("{{ Children }} Oh hai {{ name }}."), props, templates)

@@ -1,3 +1,8 @@
+## 0.8.0
+
+- Added ability to `map` static array patterns.
+- Internal AST changes.
+
 ## 0.7.0
 
 - Changed non-escape echo syntax: `{% raw x %}` is now `{{ &x }}`.

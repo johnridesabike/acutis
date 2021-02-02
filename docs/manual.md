@@ -210,7 +210,7 @@ And this template:
 ```jinja2
 {% map articles with {title, author} ~%}
   The article "{{ title }}" was written by {{ author }}.
-{% /map %}}
+{% /map %}
 ```
 
 Renders:
@@ -229,6 +229,25 @@ different template sections based on an value's content.
   The article "{{ title }}" was written anonymously.
 {% with {title, author} %}
   The article "{{ title }}" was written by {{ author }}.
+{% /map %}
+```
+
+### Mapping static patterns
+
+You can map static array patterns.
+
+```jinja2
+{% map ["Carlo", "John"] with name ~%}
+  Hello, {{ name }}.
+{% /map %}
+```
+
+You can also concatenate a static array pattern with an array binding by
+using the `...` (spread) syntax.
+
+```jinja2
+{% map ["Carlo", "John", ...others] with name ~%}
+  Hello, {{ name }}.
 {% /map %}
 ```
 

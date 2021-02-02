@@ -310,7 +310,7 @@ describe("Encoding to JSON", ({test, _}) => {
             f: {g: 1},
             h: [true, false, null, ...rest],
             i: ["j"]
-          }`)->Pattern.toJson(~props),
+          }`)->Pattern.toJson(~props, ~stack=list{}),
     ).toEqual(
       Ok(
         json(`
@@ -330,23 +330,24 @@ describe("Encoding to JSON", ({test, _}) => {
 
   test("Encoding errors", ({expect, _}) => {
     let pattern = parseString(`[a, ...b]`)
-    expect.value(pattern->Pattern.toJson(~props)).toEqual(
-      Error(
-        BindingTypeMismatch({
-          data: JSONString("b"),
-          pattern: pattern,
-          binding: "b",
-        }),
-      ),
+    expect.value(pattern->Pattern.toJson(~props, ~stack=list{})).toEqual(
+      Error({
+        message: `"b" is type array but the data is type string.`,
+        kind: #Type,
+        location: Some({character: 4}),
+        path: [],
+        exn: None,
+      }),
     )
     let pattern = parseString(`c`)
-    expect.value(pattern->Pattern.toJson(~props)).toEqual(
-      Error(
-        BindingDoesNotExist({
-          loc: Loc(3),
-          binding: "c",
-        }),
-      ),
+    expect.value(pattern->Pattern.toJson(~props, ~stack=list{})).toEqual(
+      Error({
+        message: `Binding "c" does not exist.`,
+        kind: #Render,
+        location: Some({character: 4}),
+        path: [],
+        exn: None,
+      }),
     )
   })
 })

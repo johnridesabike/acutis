@@ -669,7 +669,7 @@ Array [
     "exn": undefined,
     "kind": "Pattern",
     "location": Object {
-      "character": 8,
+      "character": 4,
     },
     "message": "The number of patterns does not match the number of data.",
     "path": Array [
@@ -680,7 +680,7 @@ Array [
     "exn": undefined,
     "kind": "Pattern",
     "location": Object {
-      "character": 8,
+      "character": 4,
     },
     "message": "The number of patterns does not match the number of data.",
     "path": Array [
@@ -792,7 +792,7 @@ Array [
     "exn": undefined,
     "kind": "Pattern",
     "location": Object {
-      "character": 9,
+      "character": 5,
     },
     "message": "None of the patterns match the data. Consider a catch-all case to avoid this.",
     "path": Array [
@@ -1709,6 +1709,86 @@ Array [
 ]
 `;
 
+exports[`Rendering Map type mismatches 1`] = `
+Array [
+  Object {
+    "exn": undefined,
+    "kind": "Type",
+    "location": Object {
+      "character": 8,
+    },
+    "message": "\\"a\\" is a string. I can only map arrays.",
+    "path": Array [
+      null,
+    ],
+  },
+]
+`;
+
+exports[`Rendering Map type mismatches 2`] = `
+Array [
+  Object {
+    "exn": undefined,
+    "kind": "Type",
+    "location": Object {
+      "character": 8,
+    },
+    "message": "\\"b\\" is a boolean. I can only map arrays.",
+    "path": Array [
+      null,
+    ],
+  },
+]
+`;
+
+exports[`Rendering Map type mismatches 3`] = `
+Array [
+  Object {
+    "exn": undefined,
+    "kind": "Parse",
+    "location": Object {
+      "character": 8,
+    },
+    "message": "Bad map type: \\"null\\". I can only map bindings and arrays.",
+    "path": Array [
+      null,
+    ],
+  },
+]
+`;
+
+exports[`Rendering Map type mismatches 4`] = `
+Array [
+  Object {
+    "exn": undefined,
+    "kind": "Type",
+    "location": Object {
+      "character": 8,
+    },
+    "message": "\\"a\\" is type array but the data is type string.",
+    "path": Array [
+      null,
+    ],
+  },
+]
+`;
+
+exports[`Rendering Map type mismatches 5`] = `
+Array [
+  Object {
+    "exn": undefined,
+    "kind": "Render",
+    "location": Object {
+      "character": 18,
+    },
+    "message": "Binding \\"z\\" does not exist.",
+    "path": Array [
+      null,
+    ],
+  },
+]
+`;
+
 exports[`Rendering Missing bindings 1`] = `
 Array [
   Object {
@@ -1815,54 +1895,6 @@ exports[`Rendering Type mismatches 1`] = `
 Array [
   Object {
     "exn": undefined,
-    "kind": "Type",
-    "location": Object {
-      "character": 8,
-    },
-    "message": "\\"a\\" is a string. I can only map arrays.",
-    "path": Array [
-      null,
-    ],
-  },
-]
-`;
-
-exports[`Rendering Type mismatches 2`] = `
-Array [
-  Object {
-    "exn": undefined,
-    "kind": "Type",
-    "location": Object {
-      "character": 8,
-    },
-    "message": "\\"b\\" is a boolean. I can only map arrays.",
-    "path": Array [
-      null,
-    ],
-  },
-]
-`;
-
-exports[`Rendering Type mismatches 3`] = `
-Array [
-  Object {
-    "exn": undefined,
-    "kind": "Type",
-    "location": Object {
-      "character": 8,
-    },
-    "message": "\\"a\\" is a string. I can only map arrays.",
-    "path": Array [
-      null,
-    ],
-  },
-]
-`;
-
-exports[`Rendering Type mismatches 4`] = `
-Array [
-  Object {
-    "exn": undefined,
     "kind": "Render",
     "location": Object {
       "character": 4,
@@ -1875,7 +1907,7 @@ Array [
 ]
 `;
 
-exports[`Rendering Type mismatches 5`] = `
+exports[`Rendering Type mismatches 2`] = `
 Array [
   Object {
     "exn": undefined,
@@ -1891,7 +1923,7 @@ Array [
 ]
 `;
 
-exports[`Rendering Type mismatches 6`] = `
+exports[`Rendering Type mismatches 3`] = `
 Array [
   Object {
     "exn": undefined,

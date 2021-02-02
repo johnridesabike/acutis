@@ -174,39 +174,42 @@ module Valid = {
 }
 
 module Ast_Pattern = {
-  type rec t =
-    | Null(loc)
-    | False(loc)
-    | True(loc)
-    | String(loc, string)
-    | Number(loc, float)
-    | Array(loc, array<t>)
-    | ArrayWithTailBinding({loc: loc, array: array<t>, bindLoc: loc, binding: string})
-    | Object(loc, array<(string, t)>)
-    | Binding(loc, string)
+  type binding = [#Binding(loc, string)]
+  type arr_<'t> = [#Array(loc, array<'t>) | #ArrayWithTailBinding(loc, array<'t>, binding)]
+  type rec t = [
+    | #Null(loc)
+    | #False(loc)
+    | #True(loc)
+    | #String(loc, string)
+    | #Number(loc, float)
+    | #Object(loc, array<(string, t)>)
+    | arr_<t>
+    | binding
+  ]
+  type arr = arr_<t>
 
-  let toString = x =>
+  let toString = (x: t) =>
     switch x {
-    | True(_) | False(_) => "boolean"
-    | Null(_) => "null"
-    | String(_) => "string"
-    | Number(_) => "number"
-    | Array(_) | ArrayWithTailBinding(_) => "array"
-    | Object(_) => "object"
-    | Binding(_, x) => `binding: \`${x}\``
+    | #True(_) | #False(_) => "boolean"
+    | #Null(_) => "null"
+    | #String(_) => "string"
+    | #Number(_) => "number"
+    | #Array(_) | #ArrayWithTailBinding(_) => "array"
+    | #Object(_) => "object"
+    | #Binding(_, x) => `binding: \`${x}\``
     }
 
-  let toLocation = x =>
+  let toLocation = (x: t) =>
     switch x {
-    | True(x)
-    | False(x)
-    | Null(x)
-    | String(x, _)
-    | Number(x, _)
-    | Array(x, _)
-    | ArrayWithTailBinding({loc: x, _})
-    | Object(x, _)
-    | Binding(x, _) => x
+    | #True(x)
+    | #False(x)
+    | #Null(x)
+    | #String(x, _)
+    | #Number(x, _)
+    | #Array(x, _)
+    | #ArrayWithTailBinding(x, _, _)
+    | #Object(x, _)
+    | #Binding(x, _) => x
     }
 }
 
@@ -225,7 +228,7 @@ module Ast = {
     // The first echo item that isn't null will be returned.
     | Echo(loc, NonEmpty.t<Echo.t>)
     | Match(loc, NonEmpty.t<(loc, string)>, NonEmpty.t<case>)
-    | Map(loc, string, NonEmpty.t<case>)
+    | Map(loc, [Ast_Pattern.binding | Ast_Pattern.arr], NonEmpty.t<case>)
     | Component({
         loc: loc,
         name: string,

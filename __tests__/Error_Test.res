@@ -349,6 +349,17 @@ describe("Rendering", ({test, _}) => {
       ("b", Js.Json.boolean(true)),
       ("c", Js.Json.stringArray([])),
     ])
+    expect.value(render("{{ b }}", data, components)).toMatchSnapshot()
+    expect.value(render("{{ c }}", data, components)).toMatchSnapshot()
+    expect.value(render("{{ &b }}", data, components)).toMatchSnapshot()
+  })
+
+  test("Map type mismatches", ({expect, _}) => {
+    let data = dict([
+      ("a", Js.Json.string("a")),
+      ("b", Js.Json.boolean(true)),
+      ("c", Js.Json.stringArray([])),
+    ])
     expect.value(
       render("{% map a with {a} %}{{ a }}{% /map %}", data, components),
     ).toMatchSnapshot()
@@ -356,11 +367,14 @@ describe("Rendering", ({test, _}) => {
       render("{% map b with {a} %}{{ a }}{% /map %}", data, components),
     ).toMatchSnapshot()
     expect.value(
-      render("{% map a with {a} %}{{ a }}{% /map %}", data, components),
+      render("{% map null with {a} %}{{ a }}{% /map %}", data, components),
     ).toMatchSnapshot()
-    expect.value(render("{{ b }}", data, components)).toMatchSnapshot()
-    expect.value(render("{{ c }}", data, components)).toMatchSnapshot()
-    expect.value(render("{{ &b }}", data, components)).toMatchSnapshot()
+    expect.value(
+      render("{% map [1, 2, ...a] with {a} %}{{ a }}{% /map %}", data, components),
+    ).toMatchSnapshot()
+    expect.value(
+      render("{% map [1, 2, ...z] with {a} %}{{ a }}{% /map %}", data, components),
+    ).toMatchSnapshot()
   })
 
   test("Missing bindings", ({expect, _}) => {
