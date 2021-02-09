@@ -14,7 +14,7 @@
  *   limitations under the License.
  */
 
-const { Compile, Environment } = require("../src/AcutisJs.bs");
+const { Compile, Environment } = require("../");
 
 describe("The JS interface works as expected", () => {
   test("Bad input is reported correctly", () => {

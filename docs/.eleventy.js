@@ -24,12 +24,6 @@ module.exports = (eleventyConfig) => {
   eleventyConfig.addPlugin(syntaxHighlight);
   eleventyConfig.addPlugin(acutis);
   eleventyConfig.addPassthroughCopy("playground.js");
-  eleventyConfig.addPassthroughCopy({
-    "../dist/acutis.mjs": "acutis.js",
-  });
-  eleventyConfig.addPassthroughCopy({
-    "../dist/acutis.mjs.map": "acutis.mjs.map",
-  });
   eleventyConfig.setLibrary(
     "md",
     MarkdownIt({
@@ -42,16 +36,6 @@ module.exports = (eleventyConfig) => {
         containerFooterHtml: `</details>`,
         listType: "ol",
         includeLevel: [1, 2, 3],
-        slugify: (s) =>
-          encodeURIComponent(
-            String(s)
-              .trim()
-              .toLowerCase()
-              .replace(/\s+/g, "-")
-              // a hacky workaround. md-it-anchor parses the rendered text but
-              // md-it-toc parses the raw markdown.
-              .replace(/`/g, "")
-          ),
       })
   );
   return {

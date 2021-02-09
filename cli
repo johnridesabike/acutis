@@ -1,5 +1,4 @@
 #!/usr/bin/env node
-
 /**
  *    Copyright 2021 John Jackson
  *
@@ -19,7 +18,7 @@
 const util = require("util");
 const fs = require("fs");
 const minimist = require("minimist");
-const Acutis = require("./dist/acutis");
+const Acutis = require("./lib/js/src/AcutisJs");
 const { loadTemplate, filenameToComponent } = require("./node-utils");
 const { version } = require("./package.json");
 const { stdin } = process;

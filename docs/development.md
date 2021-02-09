@@ -164,11 +164,6 @@ will generate `.js` files alongside the source.
 You can test your changes with `yarn test` or `yarn test:watch` for watch
 mode. This tests the generated JavaScript files.
 
-The compiler's only dependency is the ReScript standard library. Since it's a
-relatively heavy dependency, and we're only using a few modules from it, the
-final distributed source code is bundled. Run `yarn bundle` to create the
-bundles.
-
 ## Syntax design
 
 I designed Acutis' syntax to build on the work of existing conventions in

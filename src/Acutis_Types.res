@@ -223,12 +223,13 @@ module Ast = {
       | Number(float, escape)
   }
   type trim = TrimStart | TrimEnd | TrimBoth | NoTrim
+  type mapPattern = [Ast_Pattern.binding | Ast_Pattern.arr]
   type rec node =
     | Text(string, trim)
     // The first echo item that isn't null will be returned.
     | Echo(loc, NonEmpty.t<Echo.t>)
     | Match(loc, NonEmpty.t<(loc, string)>, NonEmpty.t<case>)
-    | Map(loc, [Ast_Pattern.binding | Ast_Pattern.arr], NonEmpty.t<case>)
+    | Map(loc, mapPattern, NonEmpty.t<case>)
     | Component({
         loc: loc,
         name: string,

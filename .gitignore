@@ -1,7 +1,6 @@
 .DS_Store
 lib/
 .vscode/
-dist/
 coverage/
 .merlin
 node_modules

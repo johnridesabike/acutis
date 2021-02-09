@@ -187,7 +187,7 @@ let rec parse = (t, tokens, ~until) => {
   let q: Queue.t<Ast.node> = Queue.make()
   let rec aux = (t: Token.t) =>
     switch t {
-    | t when until(. t) => (t, Queue.toArray(q))
+    | t if until(. t) => (t, Queue.toArray(q))
     | Text(_, x) =>
       switch Lexer.popExn(tokens) {
       | Tilde(_) =>
@@ -217,14 +217,14 @@ let rec parse = (t, tokens, ~until) => {
       Queue.add(q, Match(loc, identifiers, withs))
       aux(Lexer.popExn(tokens))
     | Identifier(loc, "map") =>
-      let pattern = switch Pattern.parseNode(Lexer.popExn(tokens), tokens) {
-      | (#Binding(_) | #Array(_) | #ArrayWithTailBinding(_)) as x => x
+      switch Pattern.parseNode(Lexer.popExn(tokens), tokens) {
+      | #...Ast.mapPattern as pattern =>
+        let withs = parseWithBlocks(tokens, ~block="map")
+        Queue.add(q, Map(loc, pattern, withs))
+        aux(Lexer.popExn(tokens))
       | (#Null(_) | #True(_) | #False(_) | #String(_) | #Number(_) | #Object(_)) as x =>
         Debug.badMapTypeParseExn(x, ~name=Lexer.name(tokens))
       }
-      let withs = parseWithBlocks(tokens, ~block="map")
-      Queue.add(q, Map(loc, pattern, withs))
-      aux(Lexer.popExn(tokens))
     | Echo(loc) =>
       let (t, echoes) = parseEchoes(tokens)
       Queue.add(q, Echo(loc, echoes))
@@ -259,7 +259,7 @@ and parseWithBlocks = (tokens, ~block) =>
       switch t {
       | Slash(_) =>
         switch Lexer.popExn(tokens) {
-        | Identifier(_, x) when x == block => NonEmpty(head, Queue.toArray(q))
+        | Identifier(_, x) if x == block => NonEmpty(head, Queue.toArray(q))
         | t => Debug.unexpectedTokenExn(t, ~name=Lexer.name(tokens))
         }
       /* This is guaranteed to be a "with" clause. */
@@ -284,7 +284,7 @@ and parseComponent = (loc, name, tokens) => {
   | t =>
     let (_, child) = parse(t, tokens, ~until=slash)
     switch Lexer.popExn(tokens) {
-    | ComponentName(_, name') when name == name' =>
+    | ComponentName(_, name') if name == name' =>
       Queue.add(children, ("Children", ChildBlock(child)))
       Component({
         loc: loc,

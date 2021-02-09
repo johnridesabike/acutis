@@ -61,7 +61,7 @@ module Pattern = {
       | Some(x) => Ok(x)
       | None => Error(Debug.bindingDoesNotExist(~loc, ~binding, ~stack))
       }
-    | (#Array(_) | #ArrayWithTailBinding(_)) as pattern =>
+    | #...Ast_Pattern.arr as pattern =>
       toArray(pattern, ~props, ~stack)->Result.mapU((. x) => Json.array(x))
     }
   and toArray = (pattern: Ast_Pattern.arr, ~props, ~stack) =>
@@ -107,8 +107,8 @@ module Pattern = {
   let rec testValue = (~pattern: Ast_Pattern.t, ~json, ~bindings) =>
     switch (pattern, Json.classify(json)) {
     | (#Binding(loc, identifier), _) => setBinding(bindings, identifier, json, ~loc)
-    | (#Number(_, x), JSONNumber(y)) when x == y => Ok(bindings)
-    | (#String(_, x), JSONString(y)) when x == y => Ok(bindings)
+    | (#Number(_, x), JSONNumber(y)) if x == y => Ok(bindings)
+    | (#String(_, x), JSONString(y)) if x == y => Ok(bindings)
     | (#True(_), JSONTrue)
     | (#False(_), JSONFalse)
     | (#Null(_), JSONNull) =>
@@ -130,7 +130,7 @@ module Pattern = {
           ~loc=bindLoc,
         )
       )
-    | (#Object(_, []), JSONObject(obj)) when obj->Js.Dict.keys->Array.size == 0 => Ok(bindings)
+    | (#Object(_, []), JSONObject(obj)) if obj->Js.Dict.keys->Array.size == 0 => Ok(bindings)
     | (#Object(_, []), JSONObject(_)) => Error(NoMatch)
     | (#Object(_, x), JSONObject(obj)) => testObject(~patterns=x, ~obj, ~bindings)
     | (_, JSONNull) | (#Null(_), _) => Error(NoMatch)
@@ -310,7 +310,7 @@ let echo = (head, tail, ~props, ~stack, ~children, ~env, ~error) => {
       | Error(type_) =>
         switch (type_, tail[i]) {
         | (JSONNull, Some(head)) => aux(head, succ(i))
-        | (type_, _) => error(.[Debug.badEchoType(~binding, ~type_, ~loc, ~stack)])
+        | (type_, _) => error(. [Debug.badEchoType(~binding, ~type_, ~loc, ~stack)])
         }
       }
     | Child(loc, child) =>
@@ -319,7 +319,7 @@ let echo = (head, tail, ~props, ~stack, ~children, ~env, ~error) => {
       | None =>
         switch tail[i] {
         | Some(head) => aux(head, succ(i))
-        | None => error(.[Debug.childDoesNotExist(~loc, ~child, ~stack)])
+        | None => error(. [Debug.childDoesNotExist(~loc, ~child, ~stack)])
         }
       }
     | String(x, esc) => env.return(. escape(esc, x))
@@ -366,7 +366,7 @@ let rec make = (~ast, ~props, ~children, ~envData, ~makeEnv, ~error, ~try_, ~red
       let data = NonEmpty.map(identifiers, ~f=(. (_loc, x)) => getBindingOrNull(props, x))
       switch match(patterns, data, ~loc, ~stack) {
       | Ok(result) => Queue.transfer(result, queue)
-      | Error(e) => Queue.add(queue, error(.[e]))
+      | Error(e) => Queue.add(queue, error(. [e]))
       }
     | Map(loc, pattern, cases) =>
       let data = switch pattern {
@@ -375,11 +375,10 @@ let rec make = (~ast, ~props, ~children, ~envData, ~makeEnv, ~error, ~try_, ~red
         | JSONArray(arr) => Ok(arr)
         | type_ => Error(Debug.badMapType(~binding, ~type_, ~loc, ~stack))
         }
-      | (#Array(_) | #ArrayWithTailBinding(_)) as pattern =>
-        Pattern.toArray(pattern, ~props, ~stack)
+      | #...Ast_Pattern.arr as x => Pattern.toArray(x, ~props, ~stack)
       }
       switch data {
-      | Error(e) => Queue.add(queue, error(.[e]))
+      | Error(e) => Queue.add(queue, error(. [e]))
       | Ok(arr) =>
         Array.forEachWithIndexU(arr, (. index, json) => {
           let patterns = NonEmpty.map(cases, ~f=(. {patterns, ast}): Pattern.t<_> => {
@@ -398,7 +397,7 @@ let rec make = (~ast, ~props, ~children, ~envData, ~makeEnv, ~error, ~try_, ~red
           })
           switch match(patterns, NonEmpty(json, [index->Int.toFloat->Json.number]), ~loc, ~stack) {
           | Ok(result) => Queue.transfer(result, queue)
-          | Error(e) => Queue.add(queue, error(.[e]))
+          | Error(e) => Queue.add(queue, error(. [e]))
           }
         })
       }
@@ -448,14 +447,14 @@ let rec make = (~ast, ~props, ~children, ~envData, ~makeEnv, ~error, ~try_, ~red
             queue,
             try_(.
               (. ()) => component(. env, compProps, compChildren),
-              ~catch=(. e) => error(.[Debug.componentExn(e, ~stack)]),
+              ~catch=(. e) => error(. [Debug.componentExn(e, ~stack)]),
             ),
           )
         } else {
           Queue.add(queue, error(. Queue.toArray(errors)))
         }
       | None =>
-        Queue.add(queue, error(.[Debug.componentDoesNotExist(~component=name, ~loc, ~stack)]))
+        Queue.add(queue, error(. [Debug.componentDoesNotExist(~component=name, ~loc, ~stack)]))
       }
     }
   )

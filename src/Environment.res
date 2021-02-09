@@ -91,7 +91,7 @@ module Async = {
     flatMapChild: flatMapChildAsync,
   }
 
-  let make = components => makeAux(.{components: components, stack: list{}})
+  let make = components => makeAux(. {components: components, stack: list{}})
 }
 
 type template = Acutis_Types.template<result>
@@ -161,4 +161,4 @@ let rec makeAux = (. {components, stack}) => {
   flatMapChild: flatMapChild,
 }
 
-let make = components => makeAux(.{components: components, stack: list{}})
+let make = components => makeAux(. {components: components, stack: list{}})

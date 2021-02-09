@@ -1,3 +1,0 @@
-{% A title content=title / %} {% Bb title / %} {% D title / %}
-
-<p>{% C title / %}</p>

@@ -49,14 +49,16 @@ or globally:
 npm install -g acutis-lang
 ```
 
-If you're using it in a ReScript project, then add it to your `bsconfig.json`
-file.
+If you're using it in a ReScript project, then add it to the dependencies in
+your `bsconfig.json` file.
 
 ```json
 {
   "bs-dependencies": ["acutis-lang"]
 }
 ```
+
+⚠️ Acutis requires ReScript compiler version 9.0 or higher.
 
 ## Conventions
 

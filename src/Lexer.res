@@ -108,7 +108,7 @@ let readComment = (source, ~name) => {
       }
     | "*" =>
       switch peekCharAt(source, position + 1) {
-      | "}" when nested == 0 =>
+      | "}" if nested == 0 =>
         let result = readSubstringBy(source, position)
         skipBy(source, 2)
         result
@@ -173,7 +173,7 @@ let makeExpression = (source, tokens: Queue.t<Token.t>, ~name, ~until) => {
   while loop.contents {
     let loc = loc(source)
     switch peekChar(source) {
-    | c when c == until =>
+    | c if c == until =>
       skipChar(source)
       loop := false
     | "" => Debug.unexpectedEofExn(~loc, ~name)
@@ -224,8 +224,8 @@ let makeExpression = (source, tokens: Queue.t<Token.t>, ~name, ~until) => {
       Queue.add(tokens, Ampersand(loc))
     | "-" | "0" | "1" | "2" | "3" | "4" | "5" | "6" | "7" | "8" | "9" =>
       Queue.add(tokens, Number(loc, readNumber(source, ~name)))
-    | c when isValidIdentifierStart(c) => Queue.add(tokens, readIdentifier(source, loc))
-    | c when isValidComponentStart(c) =>
+    | c if isValidIdentifierStart(c) => Queue.add(tokens, readIdentifier(source, loc))
+    | c if isValidComponentStart(c) =>
       Queue.add(tokens, ComponentName(loc, readSubstring(source, ~until=endOfIdentifier)))
     | c => Debug.invalidCharacterExn(~loc, ~character=c, ~name)
     }

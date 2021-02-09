@@ -3,9 +3,11 @@ name: Build & test
 on:
   # Triggers the workflow on push or pull request events but only for the master branch
   push:
-    branches: [ master ]
+    branches:
+      - master
   pull_request:
-    branches: [ master ]
+    branches:
+      - master
 
   # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
@@ -13,24 +15,23 @@ on:
 jobs:
   test:
     runs-on: ubuntu-latest
-    
+
     strategy:
       matrix:
         node-version:
-        - 10
-        - 12
-        - 14
+          - 12
+          - 14
 
     steps:
-    - name: Checkout
-      uses: actions/checkout@v2
-    - name: Setup Node.js ${{ matrix.node-version }}
-      uses: actions/setup-node@v2.1.4
-      with:
-        node-version: ${{ matrix.node-version }}
-    - name: Install dependencies
-      run: yarn install
-    - name: Build ReScript source
-      run: yarn build
-    - name: Run the tests
-      run: yarn test
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: Setup Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v2.1.4
+        with:
+          node-version: ${{ matrix.node-version }}
+      - name: Install dependencies
+        run: yarn install
+      - name: Build ReScript source
+        run: yarn build
+      - name: Run the tests
+        run: yarn test

@@ -1,17 +1,24 @@
 {
   "name": "acutis-lang",
   "namespace": true,
-  "suffix": ".bs.js",
   "bs-dependencies": [],
   "bs-dev-dependencies": ["reason-test-framework"],
-  "package-specs": {
-    "in-source": true,
-    "module": "es6"
-  },
+  "external-stdlib": "@rescript/std",
+  "package-specs": [
+    {
+      "in-source": false,
+      "module": "es6",
+      "suffix": ".mjs"
+    },
+    {
+      "in-source": false,
+      "module": "commonjs",
+      "suffix": ".js"
+    }
+  ],
   "sources": [
     {
-      "dir": "src",
-      "subdirs": true
+      "dir": "src"
     },
     {
       "dir": "__tests__",

@@ -24,16 +24,16 @@
   },
   "exports": {
     ".": {
-      "import": "./dist/acutis.mjs",
-      "require": "./dist/acutis.js"
+      "import": "./lib/es6/src/AcutisJs.mjs",
+      "require": "./lib/js/src/AcutisJs.js"
     },
     "./lib/*": "./lib/*",
     "./node-utils": "./node-utils.js",
     "./package.json": "./package.json",
     "./src/*": "./src/*"
   },
-  "main": "dist/acutis.js",
-  "module": "dist/acutis.mjs",
+  "main": "lib/js/src/AcutisJs.js",
+  "module": "lib/es6/src/AcutisJs.mjs",
   "bin": {
     "acutis": "cli",
     "acutis-lang": "cli"
@@ -41,17 +41,15 @@
   "files": [
     "bsconfig.json",
     "cli",
-    "dist/",
+    "lib/es6/src/",
+    "lib/js/src/",
     "node-utils.js",
-    "src/**/*.res",
-    "src/**/*.resi"
+    "src/"
   ],
   "scripts": {
     "build": "bsb -make-world",
-    "bundle": "rollup --config",
     "clean": "bsb -clean-world",
-    "prebundle": "yarn build",
-    "prepublishOnly": "yarn bundle && yarn test",
+    "prepublishOnly": "yarn build",
     "preversion": "yarn build && yarn test",
     "start": "bsb -w",
     "test": "jest",
@@ -59,19 +57,15 @@
     "test:watch:coverage": "jest --watchAll --coverage"
   },
   "dependencies": {
+    "@rescript/std": "^9.0.0",
     "minimist": "^1.2.5"
   },
   "devDependencies": {
-    "@babel/core": "^7.12.10",
-    "@babel/plugin-transform-modules-commonjs": "^7.12.1",
-    "@rollup/plugin-node-resolve": "^11.1.0",
-    "bs-platform": "8.4.2",
+    "bs-platform": "^9.0.0",
     "jest": "^26.6.3",
-    "reason-test-framework": "^0.3.2",
-    "rollup": "^2.38.0",
-    "rollup-plugin-terser": "^7.0.2"
+    "reason-test-framework": "^0.3.2"
   },
   "engines": {
-    "node": ">= 10"
+    "node": ">= 12"
   }
 }

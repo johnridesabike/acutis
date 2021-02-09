@@ -1,4 +1,6 @@
-const banner = `/**!
+#!/usr/bin/env node
+
+/**
  *    Copyright 2021 John Jackson
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
@@ -12,30 +14,22 @@ const banner = `/**!
  *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  *   See the License for the specific language governing permissions and
  *   limitations under the License.
- */`;
+ */
 
-import resolve from "@rollup/plugin-node-resolve";
-import { terser } from "rollup-plugin-terser";
+const path = require("path");
+const cwd = process.cwd();
 
-export default [
-  {
-    input: "./src/AcutisJs.bs.js",
-    output: {
-      file: "./dist/acutis.js",
-      format: "cjs",
-      banner: banner,
-      sourcemap: true,
-    },
-    plugins: [resolve(), terser()],
-  },
-  {
-    input: "./src/AcutisJs.bs.js",
-    output: {
-      file: "./dist/acutis.mjs",
-      format: "esm",
-      banner: banner,
-      sourcemap: true,
-    },
-    plugins: [resolve(), terser()],
-  },
-];
+require("esbuild")
+  .build({
+    entryPoints: [path.join(cwd, "..", "lib", "es6", "src", "AcutisJs.mjs")],
+    bundle: true,
+    minify: true,
+    format: "esm",
+    target: ["chrome58", "firefox57", "safari11", "edge16"],
+    sourcemap: true,
+    outfile: path.join(cwd, "_site", "acutis.js"),
+  })
+  .catch((e) => {
+    console.error(e);
+    process.exitCode = 1;
+  });

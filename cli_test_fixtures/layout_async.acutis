@@ -1,3 +1,0 @@
-{% A title content=title / %} {% Bb_async title / %} {% D_async title / %}
-
-<p>{% C title / %}</p>

@@ -1,3 +1,11 @@
+## 0.9.0
+
+- Upgraded ReScript compiler to 9.0.
+- Added ReScript standard library as a dependency.
+- Removed JavaScript bundles. We now publish the compiled ReScript directly.
+- Dropped Node 10 from testing and `package.json` engines. However, nothing
+  else has changed yet that should stop Node 10 from working.
+
 ## 0.8.0
 
 - Added ability to `map` static array patterns.

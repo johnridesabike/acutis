@@ -17,7 +17,7 @@
 const util = require("util");
 const fs = require("fs");
 const path = require("path");
-const Acutis = require("./dist/acutis");
+const Acutis = require("./lib/js/src/AcutisJs");
 
 const readFile = util.promisify(fs.readFile);
 

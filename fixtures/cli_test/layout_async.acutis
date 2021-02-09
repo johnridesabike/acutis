@@ -1,0 +1,7 @@
+{% A content=name / %}
+
+{% Bb_async name / %}
+
+{% D_async name / %}
+
+<p>{% C name / %}</p>
