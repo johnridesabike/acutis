@@ -76,9 +76,10 @@ person who uses it who I know of, and it’s far from battle tested.</p>
 <pre class="language-shell"><code class="language-shell"><span class="token function">npm</span> <span class="token function">install</span> acutis-lang</code></pre>
 <p>or globally:</p>
 <pre class="language-shell"><code class="language-shell"><span class="token function">npm</span> <span class="token function">install</span> -g acutis-lang</code></pre>
-<p>If you’re using it in a ReScript project, then add it to your <code>bsconfig.json</code>
-file.</p>
+<p>If you’re using it in a ReScript project, then add it to the dependencies in
+your <code>bsconfig.json</code> file.</p>
 <pre class="language-json"><code class="language-json"><span class="token punctuation">{</span><br>  <span class="token property">"bs-dependencies"</span><span class="token operator">:</span> <span class="token punctuation">[</span><span class="token string">"acutis-lang"</span><span class="token punctuation">]</span><br><span class="token punctuation">}</span></code></pre>
+<p>⚠️ Acutis requires ReScript compiler version 9.0 or higher.</p>
 <h2 id="conventions">Conventions</h2>
 <p>I use the <code>.acutis</code> file extension for my templates, but there’s nothing in
 the language that enforces that. You can use something else (for example,
