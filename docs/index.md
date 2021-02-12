@@ -25,7 +25,7 @@ Handlebars, Liquid, and Nunjucks.
         {* no image *}
       {% with {src, alt} %}
         <img src="{{ src }}" alt="{{ alt }}" />
-      {% /match}
+      {% /match %}
       <h2> {{ title }} </h2>
       <span class="byline"> By {{ name ? "Anonymous" }} </span>
       {% DateTime date format="MMMM Do, YYYY" / %}
