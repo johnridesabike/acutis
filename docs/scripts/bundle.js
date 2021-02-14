@@ -21,13 +21,13 @@ const cwd = process.cwd();
 
 require("esbuild")
   .build({
-    entryPoints: [path.join(cwd, "..", "lib", "es6", "src", "AcutisJs.mjs")],
+    entryPoints: [path.join(cwd, "_assets", "playground.mjs")],
     bundle: true,
     minify: true,
     format: "esm",
     target: ["chrome58", "firefox57", "safari11", "edge16"],
     sourcemap: true,
-    outfile: path.join(cwd, "_site", "acutis.js"),
+    outfile: path.join(cwd, "_site", "playground.js"),
   })
   .catch((e) => {
     console.error(e);

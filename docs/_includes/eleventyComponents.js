@@ -15,8 +15,19 @@
  */
 
 const { Compile } = require("../../");
+const site = require("../_data/site");
 
-const ast = Compile.makeAst(
+module.exports.Log = (env, props, _children) => {
+  console.log(props);
+  return env.return("");
+};
+
+module.exports.Debugger = (env, _props, _children) => {
+  debugger;
+  return env.return("");
+};
+
+const footerAst = Compile.makeAst(
   `<footer class="footer">
   <p>
     Published in {{ year }} by
@@ -30,12 +41,25 @@ const ast = Compile.makeAst(
   </p>
 </footer>
 `,
-  module.filename
+  "Footer"
 );
 
-module.exports = (env, props, children) => {
+module.exports.Footer = (env, props, children) => {
   if (!props.year) {
     props.year = new Date().getFullYear();
   }
-  return env.render(ast, props, children);
+  return env.render(footerAst, props, children);
+};
+
+const linkAst = Compile.makeAst(
+  `<a href="{{ href }}" aria-current="{{ current }}">
+  {{ Children }}
+</a>`,
+  "Link"
+);
+
+module.exports.Link = (env, { path, page }, children) => {
+  const current = path === page.url ? "true" : "false";
+  const href = site.url + path;
+  return env.render(linkAst, { href, current }, children);
 };

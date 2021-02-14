@@ -14,7 +14,7 @@
  *   limitations under the License.
  */
 
-import * as Acutis from "./acutis.js";
+import * as Acutis from "./../../lib/es6/src/AcutisJs.mjs";
 
 window.onload = function playground(_event) {
   var propsText = document.getElementById("props");
@@ -50,21 +50,21 @@ window.onload = function playground(_event) {
     null,
     2
   );
-  sourceText.value =
-    'Hello {{ name ? "dear user" }},\n' +
-    "\n" +
-    "{% map objects with {name, color} ~%}\n" +
-    "  Have you noticed the {{ name }} is {{ color }} today?\n" +
-    "{% match name, color\n" +
-    '   with "sky", "blue"\n' +
-    '   with "grass", "green" ~%}\n' +
-    "  That's an ordinary color for it.\n" +
-    "{% with _, _ ~%}\n" +
-    "  That seems odd.\n" +
-    "{% /match %}\n" +
-    "{% with {name} ~%}\n" +
-    "  The {{ name }}, I suppose, has no color.\n" +
-    "{%~ /map %}\n";
+  sourceText.value = `Hello {{ name ? "dear user" }},
+
+{% map objects with {name, color} ~%}
+  Have you noticed the {{ name }} is {{ color }} today?
+{% match name, color
+   with "sky", "blue"
+   with "grass", "green" ~%}
+  That's an ordinary color for it.
+{% with _, _ ~%}
+  That seems odd.
+{% /match %}
+{% with {name} ~%}
+  The {{ name }}, I suppose, has no color.
+{%~ /map %}
+`;
 
   var env = Acutis.Environment.make({});
 

@@ -15,15 +15,20 @@
  */
 
 const syntaxHighlight = require("@11ty/eleventy-plugin-syntaxhighlight");
-const acutis = require("./eleventyAcutis");
 const MarkdownIt = require("markdown-it");
 const markdownItAnchor = require("markdown-it-anchor");
 const markdownItToc = require("markdown-it-table-of-contents");
 
+const acutis = require("./_11ty/eleventyAcutis");
+const acutisComponents = require("./_includes/eleventyComponents");
+const { pathPrefix } = require("./_data/site");
+
 module.exports = (eleventyConfig) => {
   eleventyConfig.addPlugin(syntaxHighlight);
-  eleventyConfig.addPlugin(acutis);
-  eleventyConfig.addPassthroughCopy("playground.js");
+  eleventyConfig.addPlugin(acutis, { components: acutisComponents });
+  eleventyConfig.addPassthroughCopy({
+    "_assets/playground.js": "playground.js",
+  });
   eleventyConfig.setLibrary(
     "md",
     MarkdownIt({
@@ -40,5 +45,6 @@ module.exports = (eleventyConfig) => {
   );
   return {
     markdownTemplateEngine: false,
+    pathPrefix,
   };
 };

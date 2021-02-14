@@ -14,11 +14,13 @@
  *   limitations under the License.
  */
 
+const path = require("path");
+
 module.exports = () => ({
   plugins: [
     require("postcss-import"),
     require("postcss-custom-properties")({
-      importFrom: "style.css",
+      importFrom: path.join("_assets", "style.css"),
     }),
     require("cssnano"),
   ],

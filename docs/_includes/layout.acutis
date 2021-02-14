@@ -48,7 +48,7 @@
           <ol class="site-header__nav-list">
             {%~ map menu with {path, name} ~%}
               <li>
-                {% Link siteUrl path page %}{{ name }}{% /Link %}
+                {% Link path page %}{{ name }}{% /Link %}
               </li>
             {%~ /map ~%}
           </ol>
