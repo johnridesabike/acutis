@@ -14,20 +14,20 @@
  *   limitations under the License.
  */
 
-const { Compile, Environment } = require("../");
+const { Compile, Environment, Result, Source } = require("../");
 
 describe("The JS interface works as expected", () => {
   test("Bad input is reported correctly", () => {
-    function X(env, props, children) {
-      return env.render(Compile.makeAst(1, "X"), props, children);
-    }
-    expect(X(Environment.make({}), { name: "Carlo" })).toEqual({
+    const X = Source.funcWithString("X", 1, (ast) => (env, props, children) =>
+      env.render(ast, props, children)
+    );
+    expect(Compile.make(X)).toEqual({
       NAME: "errors",
       VAL: [
         {
           kind: "Compile",
           message:
-            "An exception was thrown while rendering this template. This is probably due to malformed input.",
+            "An exception was thrown while compiling this template. This is probably due to malformed input.",
           exn: {
             RE_EXN_ID: "Caml_js_exceptions.Error/2",
             _1: new TypeError("source.str.charAt is not a function"),
@@ -36,64 +36,40 @@ describe("The JS interface works as expected", () => {
         },
       ],
     });
-    function Y(env, props, children) {
-      return env.render("{{ name }}", props, children);
-    }
-    expect(Y(Environment.make({}), { name: "Carlo" }, {})).toEqual({
-      NAME: "errors",
-      VAL: [
-        {
-          kind: "Render",
-          message:
-            "A template AST was not valid. Did you forget to compile one?",
-          path: [],
-        },
-      ],
-    });
   });
 });
 
 describe("Async templates", () => {
   test("Async env", async () => {
-    const X = Compile.make("{{ name }}", "X");
-    const env = Environment.Async.make({});
-    const x = await X(env, { name: "Carlo" }, {});
-    expect(x).toEqual({ NAME: "data", VAL: "Carlo" });
+    const X = Compile.make(Source.string("X", "{{ name }}"));
+    const env = Environment.Async.make(Compile.emptyMap);
+    const result = Result.map(X, (X) => X(env, { name: "Carlo" }, {}));
+    const x = await Result.getExn(result);
+    expect(x).toEqual({ NAME: "ok", VAL: "Carlo" });
   });
 
   test("Async template components", async () => {
-    const yAst = Compile.makeAst("{{ name }}");
-    async function Y(env, props, children) {
-      return env.render(yAst, props, children);
-    }
-    const X = Compile.make("{% Y name /%}", "X");
-    const env = Environment.Async.make({ Y: Y });
+    const Y = Source.funcWithString(
+      "Y",
+      "{{ name }}",
+      (ast) => async (env, props, children) => env.render(ast, props, children)
+    );
+    const comps = Result.getExn(Compile.fromArray([Y]));
+    const env = Environment.Async.make(comps);
+    const X = Result.getExn(Compile.make(Source.string("X", "{% Y name /%}")));
     const x = await X(env, { name: "Carlo" }, {});
-    expect(x).toEqual({ NAME: "data", VAL: "Carlo" });
+    expect(x).toEqual({ NAME: "ok", VAL: "Carlo" });
   });
 
   test("Async template component errors", async () => {
-    async function Y(env, props, children) {
-      return env.render(123, props, children);
-    }
-    const X = Compile.make("{% Y name /%}", "X");
-    const env = Environment.Async.make({ Y: Y });
-    expect(await X(env, { name: "Carlo" }, {})).toEqual({
-      NAME: "errors",
-      VAL: [
-        {
-          kind: "Render",
-          message:
-            "A template AST was not valid. Did you forget to compile one?",
-          path: ["X"],
-        },
-      ],
-    });
-    async function A(env, props, children) {
-      return env.render(Compile.makeAst("{{ name }}", "A"), props, children);
-    }
-    const B = Compile.make("{% A /%}", "B");
-    const env2 = Environment.Async.make({ A: A });
+    const A = Source.funcWithString(
+      "A",
+      "{{ name }}",
+      (ast) => async (env, props, children) => env.render(ast, props, children)
+    );
+    const comps2 = Result.getExn(Compile.fromArray([A]));
+    const env2 = Environment.Async.make(comps2);
+    const B = Result.getExn(Compile.make(Source.string("B", "{% A /%}")));
     expect(await B(env2, {}, {})).toEqual({
       NAME: "errors",
       VAL: [
@@ -105,24 +81,12 @@ describe("Async templates", () => {
         },
       ],
     });
-    const C = Compile.make("{{ a", "C");
-    const env3 = Environment.Async.make({});
-    expect(await C(env3, {}, {})).toEqual({
-      NAME: "errors",
-      VAL: [
-        {
-          message: "Unexpected end of file.",
-          location: { character: 5 },
-          kind: "Syntax",
-          path: ["C"],
-        },
-      ],
-    });
-    async function D(_env, _props, _children) {
+    const D = Source.func("D", async (_env, _props, _children) => {
       throw new Error("fail.");
-    }
-    const E = Compile.make("{% D /%}", "E");
-    const env4 = Environment.Async.make({ D: D });
+    });
+    const comps = Result.getExn(Compile.fromArray([D]));
+    const env4 = Environment.Async.make(comps);
+    const E = Result.getExn(Compile.make(Source.string("E", "{% D /%}")));
     expect(await E(env4, {}, {})).toEqual({
       NAME: "errors",
       VAL: [
@@ -139,43 +103,50 @@ describe("Async templates", () => {
 
 describe("Async helper functions", () => {
   test("env.return", async () => {
-    const X = (env, _props, _children) => {
-      return env.return("a");
-    };
-    const Template = Compile.make("{% X / %}");
-    const env = Environment.Async.make({ X: X });
-    expect(await Template(env, {}, {})).toEqual({ NAME: "data", VAL: "a" });
+    const X = Source.func("X", (env, _props, _children) => env.return("a"));
+    const comps = Result.getExn(Compile.fromArray([X]));
+    const env = Environment.Async.make(comps);
+    const Template = Result.getExn(
+      Compile.make(Source.string("", "{% X / %}"))
+    );
+    expect(await Template(env, {}, {})).toEqual({ NAME: "ok", VAL: "a" });
   });
 
   test("env.error", async () => {
-    const X = (env, _props, _children) => {
-      return env.error("e");
-    };
-    const Template = Compile.make("{% X / %}");
-    const env = Environment.Async.make({ X: X });
+    const X = Source.func("X", (env, _props, _children) => env.error("e"));
+    const comps = Result.getExn(Compile.fromArray([X]));
+    const env = Environment.Async.make(comps);
+    const Template = Result.getExn(
+      Compile.make(Source.string("Template", "{% X / %}"))
+    );
     expect(await Template(env, {}, {})).toEqual({
       NAME: "errors",
       VAL: [
         {
           message: "e",
           kind: "Render",
-          path: [null],
+          path: ["Template"],
         },
       ],
     });
   });
 
   test("env.mapChild", async () => {
-    const X = (env, _props, { Children }) => {
-      return env.mapChild(Children, (x) => x.toUpperCase());
-    };
-    const env = Environment.Async.make({ X: X });
-    const Template = Compile.make("{% X ~%} a {%~ /X %}");
+    const X = Source.func("X", (env, _props, { Children }) =>
+      env.mapChild(Children, (x) => x.toUpperCase())
+    );
+    const comps = Result.getExn(Compile.fromArray([X]));
+    const env = Environment.Async.make(comps);
+    const Template = Result.getExn(
+      Compile.make(Source.string("", "{% X ~%} a {%~ /X %}"))
+    );
     expect(await Template(env, {}, {})).toEqual({
-      NAME: "data",
+      NAME: "ok",
       VAL: "A",
     });
-    const BadTemplate = Compile.make("{% X %} {{ e }} {% /X %}", "BadTemplate");
+    const BadTemplate = Result.getExn(
+      Compile.make(Source.string("BadTemplate", "{% X %} {{ e }} {% /X %}"))
+    );
     expect(await BadTemplate(env, {}, {})).toEqual({
       NAME: "errors",
       VAL: [
@@ -190,16 +161,21 @@ describe("Async helper functions", () => {
   });
 
   test("env.flatMapChild", async () => {
-    const X = (env, _props, { Children }) => {
-      return env.flatMapChild(Children, (x) => env.return(x.toUpperCase()));
-    };
-    const env = Environment.Async.make({ X: X });
-    const Template = Compile.make("{% X %} a {% /X %}");
+    const X = Source.func("X", (env, _props, { Children }) =>
+      env.flatMapChild(Children, (x) => env.return(x.toUpperCase()))
+    );
+    const comps = Result.getExn(Compile.fromArray([X]));
+    const env = Environment.Async.make(comps);
+    const Template = Result.getExn(
+      Compile.make(Source.string("", "{% X %} a {% /X %}"))
+    );
     expect(await Template(env, {}, {})).toEqual({
-      NAME: "data",
+      NAME: "ok",
       VAL: " A ",
     });
-    const BadTemplate = Compile.make("{% X %} {{ e }} {% /X %}", "BadTemplate");
+    const BadTemplate = Result.getExn(
+      Compile.make(Source.string("BadTemplate", "{% X %} {{ e }} {% /X %}"))
+    );
     expect(await BadTemplate(env, {}, {})).toEqual({
       NAME: "errors",
       VAL: [

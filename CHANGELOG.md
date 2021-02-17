@@ -1,3 +1,17 @@
+# Changelog
+
+## Unreleased
+
+- New `Source` module with functions for classifying raw template sources.
+- Template names are no longer optional.
+- Results now use `[#ok(_) | #errors(_)]` type.
+- New `Result` module with utility functions for using result types.
+- Components are now stored in `Belt.Map.String.t` instead of `Js.Dict.t`.
+- `Compile.make` now takes a `Source.t.` type.
+- New `Compile.fromArray` creates a string map for components.
+- Removed documentation for `Compile.makeAst`.
+- Rescript: Added a `public` configuration to only export selected modules.
+
 ## 0.9.0
 
 - Upgraded ReScript compiler to 9.0.

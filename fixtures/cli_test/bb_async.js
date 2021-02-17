@@ -1,7 +1,8 @@
-const { Compile } = require("../../");
+const { Source } = require("../../");
 
-const ast = Compile.makeAst("B: {{ name }}", module.filename);
-
-module.exports = async (env, { name }, children) => {
-  return env.render(ast, { name: name.toUpperCase() }, children);
-};
+module.exports = Source.funcWithString(
+  "Bb_async",
+  "B: {{ name }}",
+  (ast) => async (env, { name }, children) =>
+    env.render(ast, { name: name.toUpperCase() }, children)
+);

@@ -16,12 +16,12 @@
 
 type t
 
-let make: (~name: string=?, string) => t
+let make: (~name: string, string) => t
 
 let peekExn: t => Acutis_Types.Token.t
 
 let popExn: t => Acutis_Types.Token.t
 
-let name: t => option<string>
+let name: t => string
 
 let debugToArray: t => array<Acutis_Types.Token.t>

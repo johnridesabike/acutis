@@ -1,7 +1,8 @@
-import { Compile } from "../../lib/es6/src/AcutisJs.mjs";
+import { Source } from "../../lib/es6/src/AcutisJs.mjs";
 
-const ast = Compile.makeAst("D: {{ name }}", import.meta.url);
-
-export default async (env, { name }, children) => {
-  return env.render(ast, { name: name.toUpperCase() }, children);
-};
+export default Source.funcWithString(
+  "D_async",
+  "D: {{ name }}",
+  (ast) => async (env, { name }, children) =>
+    env.render(ast, { name: name.toUpperCase() }, children)
+);

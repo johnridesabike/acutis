@@ -402,7 +402,7 @@ let rec make = (~ast, ~props, ~children, ~envData, ~makeEnv, ~error, ~try_, ~red
         })
       }
     | Component({loc, name, props: compPropsRaw, children: compChildrenRaw}) =>
-      switch Js.Dict.get(components, name) {
+      switch MapString.get(components, name) {
       | Some(component) =>
         let compProps = Js.Dict.empty()
         let compChildren = Js.Dict.empty()

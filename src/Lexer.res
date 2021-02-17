@@ -65,7 +65,7 @@ let endOfNumber = (. c) =>
   | _ => true
   }
 
-type t = {tokens: Queue.t<Token.t>, name: option<string>}
+type t = {tokens: Queue.t<Token.t>, name: string}
 
 type mode = EchoMode | ExpressionMode | CommentMode | EndMode
 
@@ -232,7 +232,7 @@ let makeExpression = (source, tokens: Queue.t<Token.t>, ~name, ~until) => {
   }
 }
 
-let make = (~name=?, str) => {
+let make = (~name, str) => {
   let source = {str: str, position: 0}
   let tokens: Queue.t<Token.t> = Queue.make()
   let rec aux = mode =>

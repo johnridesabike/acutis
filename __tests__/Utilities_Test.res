@@ -1,0 +1,36 @@
+/**
+   Copyright 2021 John Jackson
+
+   Licensed under the Apache License, Version 2.0 (the "License");
+   you may not use this file except in compliance with the License.
+   You may obtain a copy of the License at
+
+       http://www.apache.org/licenses/LICENSE-2.0
+
+   Unless required by applicable law or agreed to in writing, software
+   distributed under the License is distributed on an "AS IS" BASIS,
+   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+   See the License for the specific language governing permissions and
+   limitations under the License.
+*/
+open TestFramework
+
+describe("Result", ({test, _}) => {
+  test("getOr", ({expect, _}) => {
+    let good = Source.string(~name="Good", "{{ x }}")->Compile.make
+    let bad = Source.string(~name="Bad", "{{")->Compile.make
+    let getOr = x => Result.getOr(x, _ => #error)
+    expect.value(good->Result.map(_ => #noerror)->getOr).toEqual(#noerror)
+    expect.value(bad->Result.map(_ => #noerror)->getOr).toEqual(#error)
+  })
+
+  test("getExn", ({expect, _}) => {
+    let bad = Source.string(~name="Bad", "{{")->Compile.make
+    expect.value(
+      switch Result.getExn(bad) {
+      | exception Not_found => #error
+      | _ => #noerror
+      },
+    ).toEqual(#error)
+  })
+})

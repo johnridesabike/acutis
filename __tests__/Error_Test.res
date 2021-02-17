@@ -17,17 +17,23 @@ open TestFramework
 
 let getError = x =>
   switch x {
-  | #data(_) => raise(Not_found)
+  | #ok(_) => raise(Not_found)
   | #errors(x) => x
   }
 
-let render = (~name=?, src, json, components) =>
-  getError(Compile.make(src, ~name?)(. Environment.make(components), json, Js.Dict.empty()))
+let render = (~name="", src, json, components) => {
+  Source.string(~name, src)
+  ->Compile.make
+  ->Result.flatMap(f => f(. components->Environment.make, json, Js.Dict.empty()))
+  ->getError
+}
 
-let compile = (~name=?, x) =>
-  x->Compile.makeAst(~name?)->Acutis_Types.Valid.validate->Belt.Option.getExn->getError
+let compile = (~name="", x) =>
+  switch Compile.makeAst(~name, x) {
+  | #ok(_) => raise(Not_found)
+  | #errors(e) => e
+  }
 
-let components = Js.Dict.empty()
 let dict = Js.Dict.fromArray
 
 let props = dict([
@@ -68,7 +74,7 @@ describe("Lexer", ({test, _}) => {
 
 describe("Parser", ({test, _}) => {
   test("Unexpected tokens", ({expect, _}) => {
-    expect.value(compile(~name="BadToken", `a {% { %}`)).toMatchSnapshot()
+    expect.value(compile(`a {% { %}`)).toMatchSnapshot()
     expect.value(compile(`a {% [ %}`)).toMatchSnapshot()
     expect.value(compile(`a {% } %}`)).toMatchSnapshot()
     expect.value(compile(`a {% ] %}`)).toMatchSnapshot()
@@ -108,6 +114,21 @@ describe("Parser", ({test, _}) => {
   test("You can't unescape child templates", ({expect, _}) => {
     expect.value(compile("{{ &A }}")).toMatchSnapshot()
   })
+
+  test("Components that didn't compile are reported correctly", ({expect, _}) => {
+    let a = Source.string(~name="A", "{{")
+    let b = Source.string(~name="B", "{%")
+    let c = Source.string(~name="c", "ok")
+    let components = Compile.fromArray([a, b, c])
+    expect.value(components).toMatchSnapshot()
+  })
+
+  test("Duplicate components are reported correctly", ({expect, _}) => {
+    let a1 = Source.func(~name="A", (. env, _, _) => env.return(. ""))
+    let a2 = Source.func(~name="A", (. env, _, _) => env.return(. ""))
+    let components = Compile.fromArray([a1, a2])
+    expect.value(components).toMatchSnapshot()
+  })
 })
 
 describe("Patterns", ({test, _}) => {
@@ -140,14 +161,14 @@ describe("Patterns", ({test, _}) => {
       render(
         `{% match a, b, c with 1, 2 %} d {% /match %}`,
         dict([("a", json("1")), ("b", json("2")), ("c", json("3"))]),
-        components,
+        Compile.emptyMap,
       ),
     ).toMatchSnapshot()
     expect.value(
       render(
         `{% map a with b, c, d %} {{ b }} {% /map %}`,
         dict([("a", json("[1, 2]"))]),
-        components,
+        Compile.emptyMap,
       ),
     ).toMatchSnapshot()
   })
@@ -162,7 +183,7 @@ describe("Patterns", ({test, _}) => {
   {{name}}'s favorite color is {{favoriteColor}}
 {% /match %}`,
         dict([("a", json(`{"name": "John", "favoriteColor": "green"}`))]),
-        components,
+        Compile.emptyMap,
       ),
     ).toMatchSnapshot()
     expect.value(
@@ -174,7 +195,7 @@ describe("Patterns", ({test, _}) => {
   {{name}}'s favorite color is {{favoriteColor}}
 {% /map %}`,
         dict([("a", json(`[{"name": "John", "favoriteColor": "green"}]`))]),
-        components,
+        Compile.emptyMap,
       ),
     ).toMatchSnapshot()
   })
@@ -184,7 +205,7 @@ describe("Patterns", ({test, _}) => {
       render(
         "{% match a with [x, x] %} a {% /match %}",
         dict([("a", Js.Json.stringArray(["a", "b"]))]),
-        components,
+        Compile.emptyMap,
       ),
     ).toMatchSnapshot()
   })
@@ -197,29 +218,24 @@ describe("Patterns", ({test, _}) => {
       ("falseKey", json(`{"false": 1}`)),
     ])
     expect.value(
-      render(`{% match numberKey with Abc %} {% /match %}`, props, components),
+      render(`{% match numberKey with Abc %} {% /match %}`, props, Compile.emptyMap),
     ).toMatchSnapshot()
     expect.value(
-      render(`{% match nullKey with {null} %} {% /match %}`, props, components),
+      render(`{% match nullKey with {null} %} {% /match %}`, props, Compile.emptyMap),
     ).toMatchSnapshot()
     expect.value(
-      render(`{% match trueKey with {true} %} {% /match %}`, props, components),
+      render(`{% match trueKey with {true} %} {% /match %}`, props, Compile.emptyMap),
     ).toMatchSnapshot()
     expect.value(
-      render(`{% match falseKey with {false} %} {% /match %}`, props, components),
+      render(`{% match falseKey with {false} %} {% /match %}`, props, Compile.emptyMap),
     ).toMatchSnapshot()
-    expect.value(render(`{{ &null }}`, props, components)).toMatchSnapshot()
+    expect.value(render(`{{ &null }}`, props, Compile.emptyMap)).toMatchSnapshot()
   })
 
   test("Missing bindings", ({expect, _}) => {
     let props = dict([("a", Js.Json.number(1.0)), ("c", Js.Json.null)])
-    let components = dict([
-      (
-        "A",
-        (. env: Acutis_Types.environment<'a>, props, children) =>
-          env.render(. Compile.makeAst(""), props, children),
-      ),
-    ])
+    let a = Source.func(~name="A", (. env, _p, _c) => env.return(. ""))
+    let components = Compile.fromArray([a])->Result.getExn
     expect.value(render(`{% A b={b} / %}`, props, components)).toMatchSnapshot()
     expect.value(render(`{% A b=[a, ...b] / %}`, props, components)).toMatchSnapshot()
     expect.value(render(`{% A b=[a, ...c] / %}`, props, components)).toMatchSnapshot()
@@ -228,115 +244,115 @@ describe("Patterns", ({test, _}) => {
   describe("Type errors", ({test, _}) => {
     test("number pattern", ({expect, _}) => {
       expect.value(
-        render(`{% match string with 1 %} a {% /match %}`, props, components),
+        render(`{% match string with 1 %} a {% /match %}`, props, Compile.emptyMap),
       ).toMatchSnapshot()
       expect.value(
-        render(`{% match true_ with 1 %} a {% /match %}`, props, components),
+        render(`{% match true_ with 1 %} a {% /match %}`, props, Compile.emptyMap),
       ).toMatchSnapshot()
       expect.value(
-        render(`{% match false_ with 1 %} a {% /match %}`, props, components),
+        render(`{% match false_ with 1 %} a {% /match %}`, props, Compile.emptyMap),
       ).toMatchSnapshot()
       expect.value(
-        render(`{% match array with 1 %} a {% /match %}`, props, components),
+        render(`{% match array with 1 %} a {% /match %}`, props, Compile.emptyMap),
       ).toMatchSnapshot()
       expect.value(
-        render(`{% match object with 1 %} a {% /match %}`, props, components),
+        render(`{% match object with 1 %} a {% /match %}`, props, Compile.emptyMap),
       ).toMatchSnapshot()
     })
 
     test("string pattern", ({expect, _}) => {
       expect.value(
-        render(`{% match number with "a" %} a {% /match %}`, props, components),
+        render(`{% match number with "a" %} a {% /match %}`, props, Compile.emptyMap),
       ).toMatchSnapshot()
       expect.value(
-        render(`{% match true_ with "a" %} a {% /match %}`, props, components),
+        render(`{% match true_ with "a" %} a {% /match %}`, props, Compile.emptyMap),
       ).toMatchSnapshot()
       expect.value(
-        render(`{% match false_ with "a" %} a {% /match %}`, props, components),
+        render(`{% match false_ with "a" %} a {% /match %}`, props, Compile.emptyMap),
       ).toMatchSnapshot()
       expect.value(
-        render(`{% match array with "a" %} a {% /match %}`, props, components),
+        render(`{% match array with "a" %} a {% /match %}`, props, Compile.emptyMap),
       ).toMatchSnapshot()
       expect.value(
-        render(`{% match object with "" %} a {% /match %}`, props, components),
+        render(`{% match object with "" %} a {% /match %}`, props, Compile.emptyMap),
       ).toMatchSnapshot()
     })
 
     test("Boolean pattern", ({expect, _}) => {
       expect.value(
-        render(`{% match string with true %} a {% /match %}`, props, components),
+        render(`{% match string with true %} a {% /match %}`, props, Compile.emptyMap),
       ).toMatchSnapshot()
       expect.value(
-        render(`{% match string with false %} a {% /match %}`, props, components),
+        render(`{% match string with false %} a {% /match %}`, props, Compile.emptyMap),
       ).toMatchSnapshot()
       expect.value(
-        render(`{% match number with true %} a {% /match %}`, props, components),
+        render(`{% match number with true %} a {% /match %}`, props, Compile.emptyMap),
       ).toMatchSnapshot()
       expect.value(
-        render(`{% match number with false %} a {% /match %}`, props, components),
+        render(`{% match number with false %} a {% /match %}`, props, Compile.emptyMap),
       ).toMatchSnapshot()
       expect.value(
-        render(`{% match array with true %} a {% /match %}`, props, components),
+        render(`{% match array with true %} a {% /match %}`, props, Compile.emptyMap),
       ).toMatchSnapshot()
       expect.value(
-        render(`{% match array with false %} a {% /match %}`, props, components),
+        render(`{% match array with false %} a {% /match %}`, props, Compile.emptyMap),
       ).toMatchSnapshot()
       expect.value(
-        render(`{% match object with true %} a {% /match %}`, props, components),
+        render(`{% match object with true %} a {% /match %}`, props, Compile.emptyMap),
       ).toMatchSnapshot()
     })
 
     test("array pattern", ({expect, _}) => {
       expect.value(
-        render(`{% match string with [] %} a {% /match %}`, props, components),
+        render(`{% match string with [] %} a {% /match %}`, props, Compile.emptyMap),
       ).toMatchSnapshot()
       expect.value(
-        render(`{% match string with [1, ...a] %} a {% /match %}`, props, components),
+        render(`{% match string with [1, ...a] %} a {% /match %}`, props, Compile.emptyMap),
       ).toMatchSnapshot()
       expect.value(
-        render(`{% match true_ with [] %} a {% /match %}`, props, components),
+        render(`{% match true_ with [] %} a {% /match %}`, props, Compile.emptyMap),
       ).toMatchSnapshot()
       expect.value(
-        render(`{% match true_ with [1] %} a {% /match %}`, props, components),
+        render(`{% match true_ with [1] %} a {% /match %}`, props, Compile.emptyMap),
       ).toMatchSnapshot()
       expect.value(
-        render(`{% match true_ with [1, ...a] %} a {% /match %}`, props, components),
+        render(`{% match true_ with [1, ...a] %} a {% /match %}`, props, Compile.emptyMap),
       ).toMatchSnapshot()
       expect.value(
-        render(`{% match false_ with [] %} a {% /match %}`, props, components),
+        render(`{% match false_ with [] %} a {% /match %}`, props, Compile.emptyMap),
       ).toMatchSnapshot()
       expect.value(
-        render(`{% match number with [] %} a {% /match %}`, props, components),
+        render(`{% match number with [] %} a {% /match %}`, props, Compile.emptyMap),
       ).toMatchSnapshot()
       expect.value(
-        render(`{% match object with [] %} a {% /match %}`, props, components),
+        render(`{% match object with [] %} a {% /match %}`, props, Compile.emptyMap),
       ).toMatchSnapshot()
       expect.value(
-        render(`{% match object with [1] %} a {% /match %}`, props, components),
+        render(`{% match object with [1] %} a {% /match %}`, props, Compile.emptyMap),
       ).toMatchSnapshot()
     })
 
     test("Object pattern", ({expect, _}) => {
       expect.value(
-        render(`{% match string with {} %} a {% /match %}`, props, components),
+        render(`{% match string with {} %} a {% /match %}`, props, Compile.emptyMap),
       ).toMatchSnapshot()
       expect.value(
-        render(`{% match true_ with {} %} a {% /match %}`, props, components),
+        render(`{% match true_ with {} %} a {% /match %}`, props, Compile.emptyMap),
       ).toMatchSnapshot()
       expect.value(
-        render(`{% match true_ with {a: 1} %} a {% /match %}`, props, components),
+        render(`{% match true_ with {a: 1} %} a {% /match %}`, props, Compile.emptyMap),
       ).toMatchSnapshot()
       expect.value(
-        render(`{% match false_ with {} %} a {% /match %}`, props, components),
+        render(`{% match false_ with {} %} a {% /match %}`, props, Compile.emptyMap),
       ).toMatchSnapshot()
       expect.value(
-        render(`{% match array with {} %} a {% /match %}`, props, components),
+        render(`{% match array with {} %} a {% /match %}`, props, Compile.emptyMap),
       ).toMatchSnapshot()
       expect.value(
-        render(`{% match number with {} %} a {% /match %}`, props, components),
+        render(`{% match number with {} %} a {% /match %}`, props, Compile.emptyMap),
       ).toMatchSnapshot()
       expect.value(
-        render(`{% match number with {a: 1} %} a {% /match %}`, props, components),
+        render(`{% match number with {a: 1} %} a {% /match %}`, props, Compile.emptyMap),
       ).toMatchSnapshot()
     })
   })
@@ -349,9 +365,9 @@ describe("Rendering", ({test, _}) => {
       ("b", Js.Json.boolean(true)),
       ("c", Js.Json.stringArray([])),
     ])
-    expect.value(render("{{ b }}", data, components)).toMatchSnapshot()
-    expect.value(render("{{ c }}", data, components)).toMatchSnapshot()
-    expect.value(render("{{ &b }}", data, components)).toMatchSnapshot()
+    expect.value(render("{{ b }}", data, Compile.emptyMap)).toMatchSnapshot()
+    expect.value(render("{{ c }}", data, Compile.emptyMap)).toMatchSnapshot()
+    expect.value(render("{{ &b }}", data, Compile.emptyMap)).toMatchSnapshot()
   })
 
   test("Map type mismatches", ({expect, _}) => {
@@ -361,38 +377,39 @@ describe("Rendering", ({test, _}) => {
       ("c", Js.Json.stringArray([])),
     ])
     expect.value(
-      render("{% map a with {a} %}{{ a }}{% /map %}", data, components),
+      render("{% map a with {a} %}{{ a }}{% /map %}", data, Compile.emptyMap),
     ).toMatchSnapshot()
     expect.value(
-      render("{% map b with {a} %}{{ a }}{% /map %}", data, components),
+      render("{% map b with {a} %}{{ a }}{% /map %}", data, Compile.emptyMap),
     ).toMatchSnapshot()
     expect.value(
-      render("{% map null with {a} %}{{ a }}{% /map %}", data, components),
+      render("{% map null with {a} %}{{ a }}{% /map %}", data, Compile.emptyMap),
     ).toMatchSnapshot()
     expect.value(
-      render("{% map [1, 2, ...a] with {a} %}{{ a }}{% /map %}", data, components),
+      render("{% map [1, 2, ...a] with {a} %}{{ a }}{% /map %}", data, Compile.emptyMap),
     ).toMatchSnapshot()
     expect.value(
-      render("{% map [1, 2, ...z] with {a} %}{{ a }}{% /map %}", data, components),
+      render("{% map [1, 2, ...z] with {a} %}{{ a }}{% /map %}", data, Compile.emptyMap),
     ).toMatchSnapshot()
   })
 
   test("Missing bindings", ({expect, _}) => {
-    expect.value(render("{{ z }}", Js.Dict.empty(), components)).toMatchSnapshot()
-    expect.value(render("{{ Z }}", Js.Dict.empty(), components)).toMatchSnapshot()
-    expect.value(render("{% Z / %}", Js.Dict.empty(), components)).toMatchSnapshot()
-    let a: Acutis_Types.template<_> = (. env, props, templates) => {
-      env.render(. Compile.makeAst("{{ B }}"), props, templates)
-    }
-    let result = render(`{% A B=C / %}`, Js.Dict.empty(), dict([("A", a)]))
+    expect.value(render("{{ z }}", Js.Dict.empty(), Compile.emptyMap)).toMatchSnapshot()
+    expect.value(render("{{ Z }}", Js.Dict.empty(), Compile.emptyMap)).toMatchSnapshot()
+    expect.value(render("{% Z / %}", Js.Dict.empty(), Compile.emptyMap)).toMatchSnapshot()
+    let a = Source.funcWithString(~name="A", "{{ B }}", (. ast, . env, props, children) => {
+      env.render(. ast, props, children)
+    })
+    let components = Compile.fromArray([a])->Result.getExn
+    let result = render(`{% A B=C / %}`, Js.Dict.empty(), components)
     expect.value(result).toMatchSnapshot()
   })
 
   test("Error messages display component name correctly", ({expect, _}) => {
-    let a: Acutis_Types.template<_> = (. env, props, templates) => {
-      env.render(. Compile.makeAst("{{ a }}", ~name="A"), props, templates)
-    }
-    let components = dict([("A", a)])
+    let a = Source.funcWithString(~name="A", "{{ a }}", (. ast, . env, props, children) => {
+      env.render(. ast, props, children)
+    })
+    let components = Compile.fromArray([a])->Result.getExn
     let data = Js.Dict.empty()
     let result = render(`{% A / %}`, data, components)
     expect.value(result).toMatchSnapshot()
@@ -403,16 +420,16 @@ describe("Rendering", ({test, _}) => {
       render(
         "{{ a }} {{ b }} {{ c }}",
         dict([("a", Js.Json.null), ("b", Js.Json.numberArray([1.0, 2.0]))]),
-        Js.Dict.empty(),
+        Compile.emptyMap,
       ),
     ).toMatchSnapshot()
   })
 
   test("Exceptions thrown in components are caught correctly", ({expect, _}) => {
-    let a = (. _env, _props, _children) => {
+    let a = Source.func(~name="A", (. _env, _props, _children) => {
       raise(Failure("fail."))
-    }
-    let components = dict([("A", a)])
+    })
+    let components = Compile.fromArray([a])->Result.getExn
     let data = Js.Dict.empty()
     let result = render(~name="ExceptionsTest", `{% A / %}`, data, components)
     expect.value(result).toMatchSnapshot()
@@ -423,10 +440,8 @@ describe("Inputs", ({test, _}) => {
   test("Bad source input", ({expect, _}) => {
     expect.value(
       getError(
-        Compile.make(Obj.magic(1))(.
-          Environment.make(Js.Dict.empty()),
-          Js.Dict.empty(),
-          Js.Dict.empty(),
+        Compile.make(Source.string(~name="Template", Obj.magic(1)))->Result.flatMap(f =>
+          f(. Compile.emptyMap->Environment.make, Js.Dict.empty(), Js.Dict.empty())
         ),
       ),
     ).toMatchSnapshot()
@@ -440,7 +455,7 @@ describe("Stack trace is rendered correctly", ({test, _}) => {
         ~name="MatchTest",
         `{% match a with 1.0 %} {% match a with 1.0 %} {{ b }} {% /match %} {% /match %}`,
         dict([("a", Js.Json.number(1.0))]),
-        Js.Dict.empty(),
+        Compile.emptyMap,
       ),
     ).toMatchSnapshot()
   })
@@ -451,32 +466,33 @@ describe("Stack trace is rendered correctly", ({test, _}) => {
         ~name="MapTest",
         `{% map a with b %} {{ c }} {% /map %}`,
         dict([("a", Js.Json.numberArray([1.0, 2.0]))]),
-        Js.Dict.empty(),
+        Compile.emptyMap,
       ),
     ).toMatchSnapshot()
   })
 
   test("components", ({expect, _}) => {
-    let c: Acutis_Types.template<_> = (. env, props, templates) => {
-      env.render(. Compile.makeAst("{{ c }}", ~name="C"), props, templates)
-    }
-    let b: Acutis_Types.template<_> = (. env, props, templates) => {
-      env.render(.
-        Compile.makeAst(`{% match x with "x" %} {% C /%} {% /match %}`, ~name="B"),
-        props,
-        templates,
-      )
-    }
-    let components = dict([("C", c), ("B", b)])
+    let c = Source.funcWithString(~name="C", "{{ c }}", (. ast, . env, props, children) => {
+      env.render(. ast, props, children)
+    })
+    let b = Source.funcWithString(~name="B", `{% match x with "x" %} {% C /%} {% /match %}`, (.
+      ast,
+      . env,
+      props,
+      templates,
+    ) => {
+      env.render(. ast, props, templates)
+    })
+    let components = Compile.fromArray([c, b])->Result.getExn
     let data = dict([("x", Js.Json.string("x"))])
     expect.value(render(~name="A", `{% B x / %}`, data, components)).toMatchSnapshot()
   })
 
   test("child templates", ({expect, _}) => {
-    let b: Acutis_Types.template<_> = (. env, props, templates) => {
-      env.render(. Compile.makeAst(`{{ Children }}`, ~name="B"), props, templates)
-    }
-    let components = dict([("B", b)])
+    let b = Source.funcWithString(~name="B", "{{ Children }}", (. ast, . env, props, children) => {
+      env.render(. ast, props, children)
+    })
+    let components = Compile.fromArray([b])->Result.getExn
     let data = Js.Dict.empty()
     expect.value(render(~name="A", `{% B %} {{ y }} {% /B %}`, data, components)).toMatchSnapshot()
   })

@@ -21,42 +21,25 @@ const Acutis = require("./lib/js/src/AcutisJs");
 
 const readFile = util.promisify(fs.readFile);
 
-function functionOrThrow(x, filePath) {
-  const xType = typeof x;
-  if (xType === "function") {
-    return x;
-  } else {
-    throw new Error(
-      `${filePath} exported type ${xType} instead of a function.`
-    );
-  }
+function filenameToComponent(file) {
+  const basename = path.basename(file, path.extname(file));
+  const firstChar = basename.charAt(0).toUpperCase();
+  const rest = basename.slice(1);
+  return firstChar + rest;
 }
 
 function loadTemplate(fileName) {
   const filePath = path.resolve(process.cwd(), fileName);
   switch (path.extname(fileName)) {
     case ".js":
-      return new Promise((resolve, reject) => {
-        try {
-          return resolve(functionOrThrow(require(filePath), filePath));
-        } catch (e) {
-          return reject(e);
-        }
-      });
     case ".mjs":
-      return import(filePath).then((x) => functionOrThrow(x.default, filePath));
+      return import(filePath).then((x) => x.default);
     default:
-      return readFile(filePath, "utf8").then((contents) =>
-        Acutis.Compile.make(contents, fileName)
+      const name = filenameToComponent(filePath);
+      return readFile(filePath, "utf-8").then((src) =>
+        Acutis.Source.string(name, src)
       );
   }
-}
-
-function filenameToComponent(file) {
-  const basename = path.basename(file, path.extname(file));
-  const firstChar = basename.charAt(0).toUpperCase();
-  const rest = basename.slice(1);
-  return firstChar + rest;
 }
 
 module.exports = { loadTemplate, filenameToComponent };

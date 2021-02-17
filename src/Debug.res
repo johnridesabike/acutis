@@ -17,14 +17,6 @@
 open Acutis_Types
 open Errors
 
-%%private(
-  let nameToJson = x =>
-    switch x {
-    | None => Js.Json.null
-    | Some(x) => Js.Json.string(x)
-    }
-)
-
 let stackToPath = x => x->Belt.List.toArray->Belt.Array.mapU(Stack.nameToJson)
 
 exception CompileError(Errors.t)
@@ -37,7 +29,7 @@ let unexpectedEofExn = (~loc, ~name) =>
       kind: #Syntax,
       message: "Unexpected end of file.",
       location: Some(location(loc)),
-      path: [nameToJson(name)],
+      path: [Js.Json.string(name)],
       exn: None,
     }),
   )
@@ -48,7 +40,7 @@ let unterminatedCommentExn = (~loc, ~name) =>
       kind: #Syntax,
       message: "Unterminated comment.",
       location: Some(location(loc)),
-      path: [nameToJson(name)],
+      path: [Js.Json.string(name)],
       exn: None,
     }),
   )
@@ -59,7 +51,7 @@ let unterminatedStringExn = (~loc, ~name) =>
       kind: #Syntax,
       message: "Unterminated string.",
       location: Some(location(loc)),
-      path: [nameToJson(name)],
+      path: [Js.Json.string(name)],
       exn: None,
     }),
   )
@@ -70,7 +62,7 @@ let illegalIdentifierExn = (~loc, ~name, ~identifier) =>
       kind: #Parse,
       message: `"${identifier}" is an illegal identifier name.`,
       location: Some(location(loc)),
-      path: [nameToJson(name)],
+      path: [Js.Json.string(name)],
       exn: None,
     }),
   )
@@ -81,7 +73,7 @@ let invalidCharacterExn = (~loc, ~name, ~character) =>
       kind: #Syntax,
       message: `Invalid character: "${character}".`,
       location: Some(location(loc)),
-      path: [nameToJson(name)],
+      path: [Js.Json.string(name)],
       exn: None,
     }),
   )
@@ -92,7 +84,7 @@ let unexpectedCharacterExn = (~loc, ~name, ~character, ~expected) =>
       kind: #Syntax,
       message: `Unexpected character: "${character}". Expected: "${expected}".`,
       location: Some(location(loc)),
-      path: [nameToJson(name)],
+      path: [Js.Json.string(name)],
       exn: None,
     }),
   )
@@ -105,7 +97,7 @@ let unexpectedTokenExn = (t, ~name) =>
       message: `Unexpected token: "${Token.toString(t)}".`,
       kind: #Parse,
       location: Some(location(Token.toLocation(t))),
-      path: [nameToJson(name)],
+      path: [Js.Json.string(name)],
       exn: None,
     }),
   )
@@ -116,7 +108,7 @@ let badMapTypeParseExn = (t, ~name) =>
       message: `Bad map type: "${Ast_Pattern.toString(t)}". I can only map bindings and arrays.`,
       kind: #Parse,
       location: Some(location(Ast_Pattern.toLocation(t))),
-      path: [nameToJson(name)],
+      path: [Js.Json.string(name)],
       exn: None,
     }),
   )
@@ -229,18 +221,10 @@ let badMapType = (~loc, ~binding, ~type_, ~stack) => {
 
 /* Input errors */
 
-let invalidInput = (~stack) => {
-  message: "A template AST was not valid. Did you forget to compile one?",
-  location: None,
-  path: stackToPath(stack),
-  kind: #Render,
-  exn: None,
-}
-
 let compileExn = (e, ~name) => {
-  message: `An exception was thrown while rendering this template. This is probably due to malformed input.`,
+  message: `An exception was thrown while compiling this template. This is probably due to malformed input.`,
   location: None,
-  path: [nameToJson(name)],
+  path: [Js.Json.string(name)],
   kind: #Compile,
   exn: Some(AnyExn(e)),
 }
@@ -251,6 +235,14 @@ let componentExn = (e, ~stack) => {
   path: stackToPath(stack),
   kind: #Render,
   exn: Some(AnyExn(e)),
+}
+
+let duplicateCompName = name => {
+  message: `The template component name "${name}" was used twice. Every component needs a unique name.`,
+  location: None,
+  path: [],
+  kind: #Compile,
+  exn: None,
 }
 
 let customError = (message, ~stack) => {

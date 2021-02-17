@@ -16,11 +16,7 @@
 
 open TestFramework
 
-let getAst = (x: Acutis_Types.Ast.t) =>
-  switch Acutis_Types.Valid.validate(x) {
-  | Some(#data(x)) => x.ast
-  | Some(#errors(_)) | None => raise(Not_found)
-  }
+let getAst = (x: Acutis_Types.Ast.t) => x.ast
 
 describe("Lexer", ({test, _}) => {
   test("Tokens are generated correctly", ({expect, _}) => {
@@ -47,7 +43,7 @@ describe("Lexer", ({test, _}) => {
 }}
 {* {q*r *}
 {{ S }}`
-      ->Lexer.make
+      ->Lexer.make(~name="")
       ->Lexer.debugToArray,
     ).toMatchSnapshot()
   })
@@ -55,7 +51,7 @@ describe("Lexer", ({test, _}) => {
 
 describe("Patterns", ({test, _}) => {
   let parseString = source => {
-    let tokens = Lexer.make("{% " ++ source ++ "%}")
+    let tokens = Lexer.make("{% " ++ source ++ "%}", ~name="")
     Lexer.popExn(tokens)->ignore // Skip the opening string
     Compile.Pattern.make(tokens)
   }
@@ -213,14 +209,19 @@ describe("Patterns", ({test, _}) => {
 describe("Parser", ({test, _}) => {
   test("Basic syntax", ({expect, _}) => {
     expect.value(
-      Compile.makeAst(`
+      Compile.makeAst(
+        ~name="",
+        `
 a
 {* b *}
 {{ c }}
 {{ "d" }}
 {{ 1.5 }}
 {{ &e }}
-f`)->getAst,
+f`,
+      )
+      ->Result.getExn
+      ->getAst,
     ).toEqual([
       Text("\na\n", NoTrim),
       Text("\n", NoTrim),
@@ -236,7 +237,9 @@ f`)->getAst,
   })
   test("Matching", ({expect, _}) => {
     expect.value(
-      Compile.makeAst(`
+      Compile.makeAst(
+        ~name="",
+        `
 {% match a
    with 1 %}
   b
@@ -252,12 +255,17 @@ f`)->getAst,
 {% with false, _ %}
   h
 {% /match %}
-`)->getAst,
+`,
+      )
+      ->Result.getExn
+      ->getAst,
     ).toMatchSnapshot()
   })
   test("Mapping", ({expect, _}) => {
     expect.value(
-      Compile.makeAst(`
+      Compile.makeAst(
+        ~name="",
+        `
 {% map a with {b} %}
   {{ b }}
 {% /map %}
@@ -270,12 +278,17 @@ f`)->getAst,
 {% map g with {h}, index %}
   {{ index }} {{ g }}
 {% /map %}
-`)->getAst,
+`,
+      )
+      ->Result.getExn
+      ->getAst,
     ).toMatchSnapshot()
   })
   test("Components", ({expect, _}) => {
     expect.value(
-      Compile.makeAst(`
+      Compile.makeAst(
+        ~name="",
+        `
 {% A
    b
    c=1
@@ -288,7 +301,10 @@ f`)->getAst,
    k
    {% L m={n: o, p: [q], r} / %}
 {% /A %}
-`)->getAst,
+`,
+      )
+      ->Result.getExn
+      ->getAst,
     ).toMatchSnapshot()
   })
 })

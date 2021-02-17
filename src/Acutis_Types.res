@@ -42,7 +42,7 @@ module Errors = {
 
   module Stack = {
     type name =
-      | Component(option<string>)
+      | Component(string)
       | Section({component: string, section: string})
       | Match
       | Map
@@ -51,19 +51,13 @@ module Errors = {
 
     let nameToJson = (. x) =>
       switch x {
-      | Component(Some(x)) => Js.Json.string(x)
-      | Component(None) => Js.Json.null
+      | Component(x) => Js.Json.string(x)
       | Section({component, section}) => Js.Json.string(`section: ${component}#${section}`)
       | Match => Js.Json.string("match")
       | Map => Js.Json.string("map")
       | Index(x) => x->Belt.Int.toFloat->Js.Json.number
       }
   }
-}
-
-module Result = {
-  /* We're using a polymorphic variant because it has nicer JS representation. */
-  type t<'a, 'e> = [#data('a) | #errors('e)]
 }
 
 module Token = {
@@ -155,24 +149,6 @@ module Token = {
     }
 }
 
-module Valid = {
-  /* This provides a thin layer of runtime type checking without needing
-     to validate the entire data structure. It's useful for reporting when JS
-     code sends the wrong data type. */
-  type t<'a> = {
-    data: 'a,
-    acutis_is_valid: string,
-  }
-
-  let make = x => {data: x, acutis_is_valid: "ACUTIS_IS_VALID"}
-
-  let validate = x =>
-    switch x {
-    | {data, acutis_is_valid: "ACUTIS_IS_VALID"} => Some(data)
-    | _ => None
-    }
-}
-
 module Ast_Pattern = {
   type binding = [#Binding(loc, string)]
   type arr_<'t> = [#Array(loc, array<'t>) | #ArrayWithTailBinding(loc, array<'t>, binding)]
@@ -240,8 +216,7 @@ module Ast = {
   and ast = array<node>
   and child = ChildName(string) | ChildBlock(ast)
 
-  type t' = {ast: ast, name: option<string>}
-  type t = Valid.t<Result.t<t', Errors.t>>
+  type t = {ast: ast, name: string}
 }
 
 type props = Js.Dict.t<Js.Json.t>
@@ -256,6 +231,6 @@ type environment<'a> = {
 
 type rec template<'a> = (. environment<'a>, props, Js.Dict.t<'a>) => 'a
 and environmentData<'a> = {
-  components: Js.Dict.t<template<'a>>,
+  components: Belt.Map.String.t<template<'a>>,
   stack: Errors.Stack.t,
 }

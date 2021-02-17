@@ -19,7 +19,7 @@ const util = require("util");
 const fs = require("fs");
 const minimist = require("minimist");
 const Acutis = require("./lib/js/src/AcutisJs");
-const { loadTemplate, filenameToComponent } = require("./node-utils");
+const { loadTemplate } = require("./node-utils");
 const { version } = require("./package.json");
 const { stdin } = process;
 
@@ -57,6 +57,8 @@ const args = minimist(process.argv.slice(2), {
   },
 });
 
+const logError = args.table ? console.table : console.error;
+
 if (args.version) {
   console.log(version);
 } else if (args.help || args._.length === 0) {
@@ -82,14 +84,7 @@ Examples:
   curl https://example.com/api | acutis Index.acutis *.(js|acutis) -o index.html 
 `);
 } else {
-  Promise.all(
-    args._.map((fileName) =>
-      loadTemplate(fileName).then((file) => ({
-        name: filenameToComponent(fileName),
-        content: file,
-      }))
-    )
-  )
+  Promise.all(args._.map((fileName) => loadTemplate(fileName)))
     .then((files) => {
       const props = (args.data ? readFile(args.data) : getStdin()).then(
         (contents) => {
@@ -100,31 +95,35 @@ Examples:
           }
         }
       );
-      if (!files[0] || !files[0].content) {
+      const firstFile = files.shift();
+      if (!firstFile) {
         throw Error("I couldn't load the main template.");
       }
-      const MainTemplate = files[0].content;
-      const templates = {};
-      for (file of files) {
-        templates[file.name] = file.content;
-      }
-      const render = args.async
-        ? Acutis.Environment.Async.make(templates)
-        : Acutis.Environment.make(templates);
+      const MainTemplate = Acutis.Result.getOr(
+        Acutis.Compile.make(firstFile),
+        (e) => {
+          logError(e);
+          throw new Error("Couldn't compile the main template.");
+        }
+      );
+      const components = Acutis.Result.getOr(
+        Acutis.Compile.fromArray(files),
+        (e) => {
+          logError(e);
+          throw new Error("Couldn't compile the template components.");
+        }
+      );
+      const env = args.async
+        ? Acutis.Environment.Async.make(components)
+        : Acutis.Environment.make(components);
       return props
-        .then((props) => MainTemplate(render, props, {}))
-        .then(({ NAME, VAL }) => {
-          if (NAME === "errors") {
-            if (args.table) {
-              console.table(VAL);
-            } else {
-              console.error(VAL);
-            }
+        .then((props) => MainTemplate(env, props, {}))
+        .then((result) =>
+          Acutis.Result.getOr(result, (e) => {
+            logError(e);
             throw new Error("I can't continue due to these errors.");
-          } else {
-            return VAL;
-          }
-        });
+          })
+        );
     })
     .then((result) => {
       if (args.output) {

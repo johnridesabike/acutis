@@ -9,642 +9,777 @@ Array [
     },
     "kind": "Compile",
     "location": undefined,
-    "message": "An exception was thrown while rendering this template. This is probably due to malformed input.",
+    "message": "An exception was thrown while compiling this template. This is probably due to malformed input.",
     "path": Array [
-      null,
+      "Template",
     ],
   },
 ]
 `;
 
 exports[`Lexer Illegal binding names 1`] = `
-Object {
-  "exn": undefined,
-  "kind": "Parse",
-  "location": Object {
-    "character": 6,
+Array [
+  Object {
+    "exn": undefined,
+    "kind": "Parse",
+    "location": Object {
+      "character": 6,
+    },
+    "message": "Unexpected token: \\"null\\".",
+    "path": Array [
+      "",
+    ],
   },
-  "message": "Unexpected token: \\"null\\".",
-  "path": Array [
-    null,
-  ],
-}
+]
 `;
 
 exports[`Lexer Illegal binding names 2`] = `
-Object {
-  "exn": undefined,
-  "kind": "Parse",
-  "location": Object {
-    "character": 6,
+Array [
+  Object {
+    "exn": undefined,
+    "kind": "Parse",
+    "location": Object {
+      "character": 6,
+    },
+    "message": "Unexpected token: \\"false\\".",
+    "path": Array [
+      "",
+    ],
   },
-  "message": "Unexpected token: \\"false\\".",
-  "path": Array [
-    null,
-  ],
-}
+]
 `;
 
 exports[`Lexer Illegal characters 1`] = `
-Object {
-  "exn": undefined,
-  "kind": "Syntax",
-  "location": Object {
-    "character": 11,
+Array [
+  Object {
+    "exn": undefined,
+    "kind": "Syntax",
+    "location": Object {
+      "character": 11,
+    },
+    "message": "Invalid character: \\"*\\".",
+    "path": Array [
+      "BadCharacter",
+    ],
   },
-  "message": "Invalid character: \\"*\\".",
-  "path": Array [
-    "BadCharacter",
-  ],
-}
+]
 `;
 
 exports[`Lexer Illegal characters 2`] = `
-Object {
-  "exn": undefined,
-  "kind": "Syntax",
-  "location": Object {
-    "character": 6,
+Array [
+  Object {
+    "exn": undefined,
+    "kind": "Syntax",
+    "location": Object {
+      "character": 6,
+    },
+    "message": "Unexpected character: \\". %\\". Expected: \\"...\\".",
+    "path": Array [
+      "BadCharacter",
+    ],
   },
-  "message": "Unexpected character: \\". %\\". Expected: \\"...\\".",
-  "path": Array [
-    "BadCharacter",
-  ],
-}
+]
 `;
 
 exports[`Lexer Illegal characters 3`] = `
-Object {
-  "exn": undefined,
-  "kind": "Syntax",
-  "location": Object {
-    "character": 16,
+Array [
+  Object {
+    "exn": undefined,
+    "kind": "Syntax",
+    "location": Object {
+      "character": 16,
+    },
+    "message": "Unexpected character: \\"%\\". Expected: \\"}\\".",
+    "path": Array [
+      "",
+    ],
   },
-  "message": "Unexpected character: \\"%\\". Expected: \\"}\\".",
-  "path": Array [
-    null,
-  ],
-}
+]
 `;
 
 exports[`Lexer Illegal characters 4`] = `
-Object {
-  "exn": undefined,
-  "kind": "Syntax",
-  "location": Object {
-    "character": 8,
+Array [
+  Object {
+    "exn": undefined,
+    "kind": "Syntax",
+    "location": Object {
+      "character": 8,
+    },
+    "message": "Invalid character: \\"%\\".",
+    "path": Array [
+      "",
+    ],
   },
-  "message": "Invalid character: \\"%\\".",
-  "path": Array [
-    null,
-  ],
-}
+]
 `;
 
 exports[`Lexer Illegal characters 5`] = `
-Object {
-  "exn": undefined,
-  "kind": "Parse",
-  "location": Object {
-    "character": 8,
+Array [
+  Object {
+    "exn": undefined,
+    "kind": "Parse",
+    "location": Object {
+      "character": 8,
+    },
+    "message": "Unexpected token: \\"b\\".",
+    "path": Array [
+      "",
+    ],
   },
-  "message": "Unexpected token: \\"b\\".",
-  "path": Array [
-    null,
-  ],
-}
+]
 `;
 
 exports[`Lexer Illegal characters 6`] = `
-Object {
-  "exn": undefined,
-  "kind": "Parse",
-  "location": Object {
-    "character": 6,
+Array [
+  Object {
+    "exn": undefined,
+    "kind": "Parse",
+    "location": Object {
+      "character": 6,
+    },
+    "message": "Unexpected token: \\"?\\".",
+    "path": Array [
+      "BadCharacter",
+    ],
   },
-  "message": "Unexpected token: \\"?\\".",
-  "path": Array [
-    "BadCharacter",
-  ],
-}
+]
 `;
 
 exports[`Lexer Illegal characters 7`] = `
-Object {
-  "exn": undefined,
-  "kind": "Syntax",
-  "location": Object {
-    "character": 10,
+Array [
+  Object {
+    "exn": undefined,
+    "kind": "Syntax",
+    "location": Object {
+      "character": 10,
+    },
+    "message": "Unexpected character: \\"%\\". Expected: \\"}\\".",
+    "path": Array [
+      "",
+    ],
   },
-  "message": "Unexpected character: \\"%\\". Expected: \\"}\\".",
-  "path": Array [
-    null,
-  ],
-}
+]
 `;
 
 exports[`Lexer Other stuff 1`] = `
-Object {
-  "exn": undefined,
-  "kind": "Syntax",
-  "location": Object {
-    "character": 7,
+Array [
+  Object {
+    "exn": undefined,
+    "kind": "Syntax",
+    "location": Object {
+      "character": 7,
+    },
+    "message": "Unterminated string.",
+    "path": Array [
+      "BadString",
+    ],
   },
-  "message": "Unterminated string.",
-  "path": Array [
-    "BadString",
-  ],
-}
+]
 `;
 
 exports[`Lexer Other stuff 2`] = `
-Object {
-  "exn": undefined,
-  "kind": "Syntax",
-  "location": Object {
-    "character": 8,
+Array [
+  Object {
+    "exn": undefined,
+    "kind": "Syntax",
+    "location": Object {
+      "character": 8,
+    },
+    "message": "Unterminated string.",
+    "path": Array [
+      "",
+    ],
   },
-  "message": "Unterminated string.",
-  "path": Array [
-    null,
-  ],
-}
+]
 `;
 
 exports[`Lexer Other stuff 3`] = `
-Object {
-  "exn": undefined,
-  "kind": "Syntax",
-  "location": Object {
-    "character": 5,
+Array [
+  Object {
+    "exn": undefined,
+    "kind": "Syntax",
+    "location": Object {
+      "character": 5,
+    },
+    "message": "Unterminated comment.",
+    "path": Array [
+      "",
+    ],
   },
-  "message": "Unterminated comment.",
-  "path": Array [
-    null,
-  ],
-}
+]
 `;
 
 exports[`Lexer Other stuff 4`] = `
-Object {
-  "exn": undefined,
-  "kind": "Syntax",
-  "location": Object {
-    "character": 5,
+Array [
+  Object {
+    "exn": undefined,
+    "kind": "Syntax",
+    "location": Object {
+      "character": 5,
+    },
+    "message": "Unterminated comment.",
+    "path": Array [
+      "BadComment",
+    ],
   },
-  "message": "Unterminated comment.",
-  "path": Array [
-    "BadComment",
-  ],
-}
+]
 `;
 
 exports[`Lexer Other stuff 5`] = `
-Object {
-  "exn": undefined,
-  "kind": "Syntax",
-  "location": Object {
-    "character": 7,
+Array [
+  Object {
+    "exn": undefined,
+    "kind": "Syntax",
+    "location": Object {
+      "character": 7,
+    },
+    "message": "Unexpected end of file.",
+    "path": Array [
+      "",
+    ],
   },
-  "message": "Unexpected end of file.",
-  "path": Array [
-    null,
+]
+`;
+
+exports[`Lexer Other stuff 6`] = `
+Array [
+  Object {
+    "exn": undefined,
+    "kind": "Parse",
+    "location": Object {
+      "character": 6,
+    },
+    "message": "\\"--1\\" is an illegal identifier name.",
+    "path": Array [
+      "BadIdentifier",
+    ],
+  },
+]
+`;
+
+exports[`Parser Components that didn't compile are reported correctly 1`] = `
+Object {
+  "NAME": "errors",
+  "VAL": Array [
+    Object {
+      "exn": undefined,
+      "kind": "Syntax",
+      "location": Object {
+        "character": 3,
+      },
+      "message": "Unexpected end of file.",
+      "path": Array [
+        "A",
+      ],
+    },
+    Object {
+      "exn": undefined,
+      "kind": "Syntax",
+      "location": Object {
+        "character": 3,
+      },
+      "message": "Unexpected end of file.",
+      "path": Array [
+        "B",
+      ],
+    },
   ],
 }
 `;
 
-exports[`Lexer Other stuff 6`] = `
+exports[`Parser Duplicate components are reported correctly 1`] = `
 Object {
-  "exn": undefined,
-  "kind": "Parse",
-  "location": Object {
-    "character": 6,
-  },
-  "message": "\\"--1\\" is an illegal identifier name.",
-  "path": Array [
-    "BadIdentifier",
+  "NAME": "errors",
+  "VAL": Array [
+    Object {
+      "exn": undefined,
+      "kind": "Compile",
+      "location": undefined,
+      "message": "The template component name \\"A\\" was used twice. Every component needs a unique name.",
+      "path": Array [],
+    },
   ],
 }
 `;
 
 exports[`Parser Illegal binding name 1`] = `
-Object {
-  "exn": undefined,
-  "kind": "Parse",
-  "location": Object {
-    "character": 10,
+Array [
+  Object {
+    "exn": undefined,
+    "kind": "Parse",
+    "location": Object {
+      "character": 10,
+    },
+    "message": "Unexpected token: \\"null\\".",
+    "path": Array [
+      "BadBinding",
+    ],
   },
-  "message": "Unexpected token: \\"null\\".",
-  "path": Array [
-    "BadBinding",
-  ],
-}
+]
 `;
 
 exports[`Parser Illegal binding name 2`] = `
-Object {
-  "exn": undefined,
-  "kind": "Parse",
-  "location": Object {
-    "character": 13,
+Array [
+  Object {
+    "exn": undefined,
+    "kind": "Parse",
+    "location": Object {
+      "character": 13,
+    },
+    "message": "Unexpected token: \\"null\\".",
+    "path": Array [
+      "",
+    ],
   },
-  "message": "Unexpected token: \\"null\\".",
-  "path": Array [
-    null,
-  ],
-}
+]
 `;
 
 exports[`Parser Illegal binding name 3`] = `
-Object {
-  "exn": undefined,
-  "kind": "Parse",
-  "location": Object {
-    "character": 24,
+Array [
+  Object {
+    "exn": undefined,
+    "kind": "Parse",
+    "location": Object {
+      "character": 24,
+    },
+    "message": "Unexpected token: \\"null\\".",
+    "path": Array [
+      "",
+    ],
   },
-  "message": "Unexpected token: \\"null\\".",
-  "path": Array [
-    null,
-  ],
-}
+]
 `;
 
 exports[`Parser Illegal binding name 4`] = `
-Object {
-  "exn": undefined,
-  "kind": "Parse",
-  "location": Object {
-    "character": 6,
+Array [
+  Object {
+    "exn": undefined,
+    "kind": "Parse",
+    "location": Object {
+      "character": 6,
+    },
+    "message": "Unexpected token: \\"null\\".",
+    "path": Array [
+      "",
+    ],
   },
-  "message": "Unexpected token: \\"null\\".",
-  "path": Array [
-    null,
-  ],
-}
+]
 `;
 
 exports[`Parser Invalid statements 1`] = `
-Object {
-  "exn": undefined,
-  "kind": "Parse",
-  "location": Object {
-    "character": 6,
+Array [
+  Object {
+    "exn": undefined,
+    "kind": "Parse",
+    "location": Object {
+      "character": 6,
+    },
+    "message": "Unexpected token: \\"c\\".",
+    "path": Array [
+      "BadStatement",
+    ],
   },
-  "message": "Unexpected token: \\"c\\".",
-  "path": Array [
-    "BadStatement",
-  ],
-}
+]
 `;
 
 exports[`Parser Unexpected tokens 1`] = `
-Object {
-  "exn": undefined,
-  "kind": "Parse",
-  "location": Object {
-    "character": 6,
+Array [
+  Object {
+    "exn": undefined,
+    "kind": "Parse",
+    "location": Object {
+      "character": 6,
+    },
+    "message": "Unexpected token: \\"{\\".",
+    "path": Array [
+      "",
+    ],
   },
-  "message": "Unexpected token: \\"{\\".",
-  "path": Array [
-    "BadToken",
-  ],
-}
+]
 `;
 
 exports[`Parser Unexpected tokens 2`] = `
-Object {
-  "exn": undefined,
-  "kind": "Parse",
-  "location": Object {
-    "character": 6,
+Array [
+  Object {
+    "exn": undefined,
+    "kind": "Parse",
+    "location": Object {
+      "character": 6,
+    },
+    "message": "Unexpected token: \\"[\\".",
+    "path": Array [
+      "",
+    ],
   },
-  "message": "Unexpected token: \\"[\\".",
-  "path": Array [
-    null,
-  ],
-}
+]
 `;
 
 exports[`Parser Unexpected tokens 3`] = `
-Object {
-  "exn": undefined,
-  "kind": "Parse",
-  "location": Object {
-    "character": 6,
+Array [
+  Object {
+    "exn": undefined,
+    "kind": "Parse",
+    "location": Object {
+      "character": 6,
+    },
+    "message": "Unexpected token: \\"}\\".",
+    "path": Array [
+      "",
+    ],
   },
-  "message": "Unexpected token: \\"}\\".",
-  "path": Array [
-    null,
-  ],
-}
+]
 `;
 
 exports[`Parser Unexpected tokens 4`] = `
-Object {
-  "exn": undefined,
-  "kind": "Parse",
-  "location": Object {
-    "character": 6,
+Array [
+  Object {
+    "exn": undefined,
+    "kind": "Parse",
+    "location": Object {
+      "character": 6,
+    },
+    "message": "Unexpected token: \\"]\\".",
+    "path": Array [
+      "",
+    ],
   },
-  "message": "Unexpected token: \\"]\\".",
-  "path": Array [
-    null,
-  ],
-}
+]
 `;
 
 exports[`Parser Unexpected tokens 5`] = `
-Object {
-  "exn": undefined,
-  "kind": "Parse",
-  "location": Object {
-    "character": 6,
+Array [
+  Object {
+    "exn": undefined,
+    "kind": "Parse",
+    "location": Object {
+      "character": 6,
+    },
+    "message": "Unexpected token: \\",\\".",
+    "path": Array [
+      "",
+    ],
   },
-  "message": "Unexpected token: \\",\\".",
-  "path": Array [
-    null,
-  ],
-}
+]
 `;
 
 exports[`Parser Unexpected tokens 6`] = `
-Object {
-  "exn": undefined,
-  "kind": "Parse",
-  "location": Object {
-    "character": 10,
+Array [
+  Object {
+    "exn": undefined,
+    "kind": "Parse",
+    "location": Object {
+      "character": 10,
+    },
+    "message": "Unexpected token: \\"/\\".",
+    "path": Array [
+      "",
+    ],
   },
-  "message": "Unexpected token: \\"/\\".",
-  "path": Array [
-    null,
-  ],
-}
+]
 `;
 
 exports[`Parser Unexpected tokens 7`] = `
-Object {
-  "exn": undefined,
-  "kind": "Parse",
-  "location": Object {
-    "character": 6,
+Array [
+  Object {
+    "exn": undefined,
+    "kind": "Parse",
+    "location": Object {
+      "character": 6,
+    },
+    "message": "Unexpected token: \\":\\".",
+    "path": Array [
+      "",
+    ],
   },
-  "message": "Unexpected token: \\":\\".",
-  "path": Array [
-    null,
-  ],
-}
+]
 `;
 
 exports[`Parser Unexpected tokens 8`] = `
-Object {
-  "exn": undefined,
-  "kind": "Parse",
-  "location": Object {
-    "character": 6,
+Array [
+  Object {
+    "exn": undefined,
+    "kind": "Parse",
+    "location": Object {
+      "character": 6,
+    },
+    "message": "Unexpected token: \\"\\"a\\"\\".",
+    "path": Array [
+      "",
+    ],
   },
-  "message": "Unexpected token: \\"\\"a\\"\\".",
-  "path": Array [
-    null,
-  ],
-}
+]
 `;
 
 exports[`Parser Unexpected tokens 9`] = `
-Object {
-  "exn": undefined,
-  "kind": "Parse",
-  "location": Object {
-    "character": 6,
+Array [
+  Object {
+    "exn": undefined,
+    "kind": "Parse",
+    "location": Object {
+      "character": 6,
+    },
+    "message": "Unexpected token: \\"1\\".",
+    "path": Array [
+      "",
+    ],
   },
-  "message": "Unexpected token: \\"1\\".",
-  "path": Array [
-    null,
-  ],
-}
+]
 `;
 
 exports[`Parser Unexpected tokens 10`] = `
-Object {
-  "exn": undefined,
-  "kind": "Parse",
-  "location": Object {
-    "character": 10,
+Array [
+  Object {
+    "exn": undefined,
+    "kind": "Parse",
+    "location": Object {
+      "character": 10,
+    },
+    "message": "Unexpected token: \\"[\\".",
+    "path": Array [
+      "",
+    ],
   },
-  "message": "Unexpected token: \\"[\\".",
-  "path": Array [
-    null,
-  ],
-}
+]
 `;
 
 exports[`Parser Unexpected tokens 11`] = `
-Object {
-  "exn": undefined,
-  "kind": "Parse",
-  "location": Object {
-    "character": 10,
+Array [
+  Object {
+    "exn": undefined,
+    "kind": "Parse",
+    "location": Object {
+      "character": 10,
+    },
+    "message": "Unexpected token: \\"1\\".",
+    "path": Array [
+      "",
+    ],
   },
-  "message": "Unexpected token: \\"1\\".",
-  "path": Array [
-    null,
-  ],
-}
+]
 `;
 
 exports[`Parser Unexpected tokens 12`] = `
-Object {
-  "exn": undefined,
-  "kind": "Parse",
-  "location": Object {
-    "character": 13,
+Array [
+  Object {
+    "exn": undefined,
+    "kind": "Parse",
+    "location": Object {
+      "character": 13,
+    },
+    "message": "Unexpected token: \\"[\\".",
+    "path": Array [
+      "",
+    ],
   },
-  "message": "Unexpected token: \\"[\\".",
-  "path": Array [
-    null,
-  ],
-}
+]
 `;
 
 exports[`Parser Unexpected tokens 13`] = `
-Object {
-  "exn": undefined,
-  "kind": "Parse",
-  "location": Object {
-    "character": 13,
+Array [
+  Object {
+    "exn": undefined,
+    "kind": "Parse",
+    "location": Object {
+      "character": 13,
+    },
+    "message": "Unexpected token: \\"1\\".",
+    "path": Array [
+      "",
+    ],
   },
-  "message": "Unexpected token: \\"1\\".",
-  "path": Array [
-    null,
-  ],
-}
+]
 `;
 
 exports[`Parser Unexpected tokens 14`] = `
-Object {
-  "exn": undefined,
-  "kind": "Parse",
-  "location": Object {
-    "character": 28,
+Array [
+  Object {
+    "exn": undefined,
+    "kind": "Parse",
+    "location": Object {
+      "character": 28,
+    },
+    "message": "Unexpected token: \\"[end of file]\\".",
+    "path": Array [
+      "",
+    ],
   },
-  "message": "Unexpected token: \\"[end of file]\\".",
-  "path": Array [
-    null,
-  ],
-}
+]
 `;
 
 exports[`Parser Unexpected tokens 15`] = `
-Object {
-  "exn": undefined,
-  "kind": "Parse",
-  "location": Object {
-    "character": 31,
+Array [
+  Object {
+    "exn": undefined,
+    "kind": "Parse",
+    "location": Object {
+      "character": 31,
+    },
+    "message": "Unexpected token: \\"[end of file]\\".",
+    "path": Array [
+      "",
+    ],
   },
-  "message": "Unexpected token: \\"[end of file]\\".",
-  "path": Array [
-    null,
-  ],
-}
+]
 `;
 
 exports[`Parser Unexpected tokens 16`] = `
-Object {
-  "exn": undefined,
-  "kind": "Parse",
-  "location": Object {
-    "character": 6,
+Array [
+  Object {
+    "exn": undefined,
+    "kind": "Parse",
+    "location": Object {
+      "character": 6,
+    },
+    "message": "Unexpected token: \\"/\\".",
+    "path": Array [
+      "",
+    ],
   },
-  "message": "Unexpected token: \\"/\\".",
-  "path": Array [
-    null,
-  ],
-}
+]
 `;
 
 exports[`Parser Unexpected tokens 17`] = `
-Object {
-  "exn": undefined,
-  "kind": "Parse",
-  "location": Object {
-    "character": 8,
+Array [
+  Object {
+    "exn": undefined,
+    "kind": "Parse",
+    "location": Object {
+      "character": 8,
+    },
+    "message": "Unexpected token: \\"#\\".",
+    "path": Array [
+      "",
+    ],
   },
-  "message": "Unexpected token: \\"#\\".",
-  "path": Array [
-    null,
-  ],
-}
+]
 `;
 
 exports[`Parser Unexpected tokens 18`] = `
-Object {
-  "exn": undefined,
-  "kind": "Parse",
-  "location": Object {
-    "character": 21,
+Array [
+  Object {
+    "exn": undefined,
+    "kind": "Parse",
+    "location": Object {
+      "character": 21,
+    },
+    "message": "Unexpected token: \\"[text]:  d\\".",
+    "path": Array [
+      "",
+    ],
   },
-  "message": "Unexpected token: \\"[text]:  d\\".",
-  "path": Array [
-    null,
-  ],
-}
+]
 `;
 
 exports[`Parser Unexpected tokens 19`] = `
-Object {
-  "exn": undefined,
-  "kind": "Parse",
-  "location": Object {
-    "character": 8,
+Array [
+  Object {
+    "exn": undefined,
+    "kind": "Parse",
+    "location": Object {
+      "character": 8,
+    },
+    "message": "Unexpected token: \\"1\\".",
+    "path": Array [
+      "",
+    ],
   },
-  "message": "Unexpected token: \\"1\\".",
-  "path": Array [
-    null,
-  ],
-}
+]
 `;
 
 exports[`Parser Unexpected tokens 20`] = `
-Object {
-  "exn": undefined,
-  "kind": "Parse",
-  "location": Object {
-    "character": 4,
+Array [
+  Object {
+    "exn": undefined,
+    "kind": "Parse",
+    "location": Object {
+      "character": 4,
+    },
+    "message": "Unexpected token: \\"...\\".",
+    "path": Array [
+      "",
+    ],
   },
-  "message": "Unexpected token: \\"...\\".",
-  "path": Array [
-    null,
-  ],
-}
+]
 `;
 
 exports[`Parser Unexpected tokens 21`] = `
-Object {
-  "exn": undefined,
-  "kind": "Parse",
-  "location": Object {
-    "character": 4,
+Array [
+  Object {
+    "exn": undefined,
+    "kind": "Parse",
+    "location": Object {
+      "character": 4,
+    },
+    "message": "Unexpected token: \\"=\\".",
+    "path": Array [
+      "",
+    ],
   },
-  "message": "Unexpected token: \\"=\\".",
-  "path": Array [
-    null,
-  ],
-}
+]
 `;
 
 exports[`Parser Unexpected tokens 22`] = `
-Object {
-  "exn": undefined,
-  "kind": "Parse",
-  "location": Object {
-    "character": 10,
+Array [
+  Object {
+    "exn": undefined,
+    "kind": "Parse",
+    "location": Object {
+      "character": 10,
+    },
+    "message": "Unexpected token: \\"~\\".",
+    "path": Array [
+      "",
+    ],
   },
-  "message": "Unexpected token: \\"~\\".",
-  "path": Array [
-    null,
-  ],
-}
+]
 `;
 
 exports[`Parser Unexpected tokens 23`] = `
-Object {
-  "exn": undefined,
-  "kind": "Parse",
-  "location": Object {
-    "character": 8,
+Array [
+  Object {
+    "exn": undefined,
+    "kind": "Parse",
+    "location": Object {
+      "character": 8,
+    },
+    "message": "Unexpected token: \\"match\\".",
+    "path": Array [
+      "",
+    ],
   },
-  "message": "Unexpected token: \\"match\\".",
-  "path": Array [
-    null,
-  ],
-}
+]
 `;
 
 exports[`Parser Unexpected tokens 24`] = `
-Object {
-  "exn": undefined,
-  "kind": "Parse",
-  "location": Object {
-    "character": 6,
+Array [
+  Object {
+    "exn": undefined,
+    "kind": "Parse",
+    "location": Object {
+      "character": 6,
+    },
+    "message": "Unexpected token: \\"&\\".",
+    "path": Array [
+      "",
+    ],
   },
-  "message": "Unexpected token: \\"&\\".",
-  "path": Array [
-    null,
-  ],
-}
+]
 `;
 
 exports[`Parser You can't unescape child templates 1`] = `
-Object {
-  "exn": undefined,
-  "kind": "Parse",
-  "location": Object {
-    "character": 5,
+Array [
+  Object {
+    "exn": undefined,
+    "kind": "Parse",
+    "location": Object {
+      "character": 5,
+    },
+    "message": "Unexpected token: \\"A\\".",
+    "path": Array [
+      "",
+    ],
   },
-  "message": "Unexpected token: \\"A\\".",
-  "path": Array [
-    null,
-  ],
-}
+]
 `;
 
 exports[`Patterns Count mismatch failure 1`] = `
@@ -657,7 +792,7 @@ Array [
     },
     "message": "The number of patterns does not match the number of data.",
     "path": Array [
-      null,
+      "",
     ],
   },
 ]
@@ -673,7 +808,7 @@ Array [
     },
     "message": "The number of patterns does not match the number of data.",
     "path": Array [
-      null,
+      "",
     ],
   },
   Object {
@@ -684,7 +819,7 @@ Array [
     },
     "message": "The number of patterns does not match the number of data.",
     "path": Array [
-      null,
+      "",
     ],
   },
 ]
@@ -700,7 +835,7 @@ Array [
     },
     "message": "Unexpected token: \\"Abc\\".",
     "path": Array [
-      null,
+      "",
     ],
   },
 ]
@@ -716,7 +851,7 @@ Array [
     },
     "message": "Unexpected token: \\"null\\".",
     "path": Array [
-      null,
+      "",
     ],
   },
 ]
@@ -732,7 +867,7 @@ Array [
     },
     "message": "Unexpected token: \\"true\\".",
     "path": Array [
-      null,
+      "",
     ],
   },
 ]
@@ -748,7 +883,7 @@ Array [
     },
     "message": "Unexpected token: \\"false\\".",
     "path": Array [
-      null,
+      "",
     ],
   },
 ]
@@ -764,7 +899,7 @@ Array [
     },
     "message": "Unexpected token: \\"null\\".",
     "path": Array [
-      null,
+      "",
     ],
   },
 ]
@@ -780,7 +915,7 @@ Array [
     },
     "message": "None of the patterns match the data. Consider a catch-all case to avoid this.",
     "path": Array [
-      null,
+      "",
     ],
   },
 ]
@@ -796,7 +931,7 @@ Array [
     },
     "message": "None of the patterns match the data. Consider a catch-all case to avoid this.",
     "path": Array [
-      null,
+      "",
     ],
   },
 ]
@@ -812,7 +947,7 @@ Array [
     },
     "message": "Binding \\"b\\" does not exist.",
     "path": Array [
-      null,
+      "",
     ],
   },
 ]
@@ -828,7 +963,7 @@ Array [
     },
     "message": "Binding \\"b\\" does not exist.",
     "path": Array [
-      null,
+      "",
     ],
   },
 ]
@@ -844,7 +979,7 @@ Array [
     },
     "message": "\\"c\\" is type array but the data is type null.",
     "path": Array [
-      null,
+      "",
     ],
   },
 ]
@@ -860,7 +995,7 @@ Array [
     },
     "message": "This pattern is type boolean but the data is type string.",
     "path": Array [
-      null,
+      "",
     ],
   },
 ]
@@ -876,7 +1011,7 @@ Array [
     },
     "message": "This pattern is type boolean but the data is type string.",
     "path": Array [
-      null,
+      "",
     ],
   },
 ]
@@ -892,7 +1027,7 @@ Array [
     },
     "message": "This pattern is type boolean but the data is type number.",
     "path": Array [
-      null,
+      "",
     ],
   },
 ]
@@ -908,7 +1043,7 @@ Array [
     },
     "message": "This pattern is type boolean but the data is type number.",
     "path": Array [
-      null,
+      "",
     ],
   },
 ]
@@ -924,7 +1059,7 @@ Array [
     },
     "message": "This pattern is type boolean but the data is type array.",
     "path": Array [
-      null,
+      "",
     ],
   },
 ]
@@ -940,7 +1075,7 @@ Array [
     },
     "message": "This pattern is type boolean but the data is type array.",
     "path": Array [
-      null,
+      "",
     ],
   },
 ]
@@ -956,7 +1091,7 @@ Array [
     },
     "message": "This pattern is type boolean but the data is type object.",
     "path": Array [
-      null,
+      "",
     ],
   },
 ]
@@ -972,7 +1107,7 @@ Array [
     },
     "message": "This pattern is type object but the data is type string.",
     "path": Array [
-      null,
+      "",
     ],
   },
 ]
@@ -988,7 +1123,7 @@ Array [
     },
     "message": "This pattern is type object but the data is type boolean.",
     "path": Array [
-      null,
+      "",
     ],
   },
 ]
@@ -1004,7 +1139,7 @@ Array [
     },
     "message": "This pattern is type object but the data is type boolean.",
     "path": Array [
-      null,
+      "",
     ],
   },
 ]
@@ -1020,7 +1155,7 @@ Array [
     },
     "message": "This pattern is type object but the data is type boolean.",
     "path": Array [
-      null,
+      "",
     ],
   },
 ]
@@ -1036,7 +1171,7 @@ Array [
     },
     "message": "This pattern is type object but the data is type array.",
     "path": Array [
-      null,
+      "",
     ],
   },
 ]
@@ -1052,7 +1187,7 @@ Array [
     },
     "message": "This pattern is type object but the data is type number.",
     "path": Array [
-      null,
+      "",
     ],
   },
 ]
@@ -1068,7 +1203,7 @@ Array [
     },
     "message": "This pattern is type object but the data is type number.",
     "path": Array [
-      null,
+      "",
     ],
   },
 ]
@@ -1084,7 +1219,7 @@ Array [
     },
     "message": "This pattern is type array but the data is type string.",
     "path": Array [
-      null,
+      "",
     ],
   },
 ]
@@ -1100,7 +1235,7 @@ Array [
     },
     "message": "This pattern is type array but the data is type string.",
     "path": Array [
-      null,
+      "",
     ],
   },
 ]
@@ -1116,7 +1251,7 @@ Array [
     },
     "message": "This pattern is type array but the data is type boolean.",
     "path": Array [
-      null,
+      "",
     ],
   },
 ]
@@ -1132,7 +1267,7 @@ Array [
     },
     "message": "This pattern is type array but the data is type boolean.",
     "path": Array [
-      null,
+      "",
     ],
   },
 ]
@@ -1148,7 +1283,7 @@ Array [
     },
     "message": "This pattern is type array but the data is type boolean.",
     "path": Array [
-      null,
+      "",
     ],
   },
 ]
@@ -1164,7 +1299,7 @@ Array [
     },
     "message": "This pattern is type array but the data is type boolean.",
     "path": Array [
-      null,
+      "",
     ],
   },
 ]
@@ -1180,7 +1315,7 @@ Array [
     },
     "message": "This pattern is type array but the data is type number.",
     "path": Array [
-      null,
+      "",
     ],
   },
 ]
@@ -1196,7 +1331,7 @@ Array [
     },
     "message": "This pattern is type array but the data is type object.",
     "path": Array [
-      null,
+      "",
     ],
   },
 ]
@@ -1212,7 +1347,7 @@ Array [
     },
     "message": "This pattern is type array but the data is type object.",
     "path": Array [
-      null,
+      "",
     ],
   },
 ]
@@ -1228,7 +1363,7 @@ Array [
     },
     "message": "This pattern is type number but the data is type string.",
     "path": Array [
-      null,
+      "",
     ],
   },
 ]
@@ -1244,7 +1379,7 @@ Array [
     },
     "message": "This pattern is type number but the data is type boolean.",
     "path": Array [
-      null,
+      "",
     ],
   },
 ]
@@ -1260,7 +1395,7 @@ Array [
     },
     "message": "This pattern is type number but the data is type boolean.",
     "path": Array [
-      null,
+      "",
     ],
   },
 ]
@@ -1276,7 +1411,7 @@ Array [
     },
     "message": "This pattern is type number but the data is type array.",
     "path": Array [
-      null,
+      "",
     ],
   },
 ]
@@ -1292,7 +1427,7 @@ Array [
     },
     "message": "This pattern is type number but the data is type object.",
     "path": Array [
-      null,
+      "",
     ],
   },
 ]
@@ -1308,7 +1443,7 @@ Array [
     },
     "message": "This pattern is type string but the data is type number.",
     "path": Array [
-      null,
+      "",
     ],
   },
 ]
@@ -1324,7 +1459,7 @@ Array [
     },
     "message": "This pattern is type string but the data is type boolean.",
     "path": Array [
-      null,
+      "",
     ],
   },
 ]
@@ -1340,7 +1475,7 @@ Array [
     },
     "message": "This pattern is type string but the data is type boolean.",
     "path": Array [
-      null,
+      "",
     ],
   },
 ]
@@ -1356,7 +1491,7 @@ Array [
     },
     "message": "This pattern is type string but the data is type array.",
     "path": Array [
-      null,
+      "",
     ],
   },
 ]
@@ -1372,290 +1507,330 @@ Array [
     },
     "message": "This pattern is type string but the data is type object.",
     "path": Array [
-      null,
+      "",
     ],
   },
 ]
 `;
 
 exports[`Patterns Unexpected tokens 1`] = `
-Object {
-  "exn": undefined,
-  "kind": "Parse",
-  "location": Object {
-    "character": 17,
+Array [
+  Object {
+    "exn": undefined,
+    "kind": "Parse",
+    "location": Object {
+      "character": 17,
+    },
+    "message": "Unexpected token: \\"}\\".",
+    "path": Array [
+      "",
+    ],
   },
-  "message": "Unexpected token: \\"}\\".",
-  "path": Array [
-    null,
-  ],
-}
+]
 `;
 
 exports[`Patterns Unexpected tokens 2`] = `
-Object {
-  "exn": undefined,
-  "kind": "Parse",
-  "location": Object {
-    "character": 18,
+Array [
+  Object {
+    "exn": undefined,
+    "kind": "Parse",
+    "location": Object {
+      "character": 18,
+    },
+    "message": "Unexpected token: \\",\\".",
+    "path": Array [
+      "",
+    ],
   },
-  "message": "Unexpected token: \\",\\".",
-  "path": Array [
-    null,
-  ],
-}
+]
 `;
 
 exports[`Patterns Unexpected tokens 3`] = `
-Object {
-  "exn": undefined,
-  "kind": "Parse",
-  "location": Object {
-    "character": 18,
+Array [
+  Object {
+    "exn": undefined,
+    "kind": "Parse",
+    "location": Object {
+      "character": 18,
+    },
+    "message": "Unexpected token: \\"1\\".",
+    "path": Array [
+      "",
+    ],
   },
-  "message": "Unexpected token: \\"1\\".",
-  "path": Array [
-    null,
-  ],
-}
+]
 `;
 
 exports[`Patterns Unexpected tokens 4`] = `
-Object {
-  "exn": undefined,
-  "kind": "Parse",
-  "location": Object {
-    "character": 22,
+Array [
+  Object {
+    "exn": undefined,
+    "kind": "Parse",
+    "location": Object {
+      "character": 22,
+    },
+    "message": "Unexpected token: \\"[\\".",
+    "path": Array [
+      "",
+    ],
   },
-  "message": "Unexpected token: \\"[\\".",
-  "path": Array [
-    null,
-  ],
-}
+]
 `;
 
 exports[`Patterns Unexpected tokens 5`] = `
-Object {
-  "exn": undefined,
-  "kind": "Parse",
-  "location": Object {
-    "character": 20,
+Array [
+  Object {
+    "exn": undefined,
+    "kind": "Parse",
+    "location": Object {
+      "character": 20,
+    },
+    "message": "Unexpected token: \\"\\"a\\"\\".",
+    "path": Array [
+      "",
+    ],
   },
-  "message": "Unexpected token: \\"\\"a\\"\\".",
-  "path": Array [
-    null,
-  ],
-}
+]
 `;
 
 exports[`Patterns Unexpected tokens 6`] = `
-Object {
-  "exn": undefined,
-  "kind": "Parse",
-  "location": Object {
-    "character": 21,
+Array [
+  Object {
+    "exn": undefined,
+    "kind": "Parse",
+    "location": Object {
+      "character": 21,
+    },
+    "message": "Unexpected token: \\",\\".",
+    "path": Array [
+      "",
+    ],
   },
-  "message": "Unexpected token: \\",\\".",
-  "path": Array [
-    null,
-  ],
-}
+]
 `;
 
 exports[`Patterns Unexpected tokens 7`] = `
-Object {
-  "exn": undefined,
-  "kind": "Parse",
-  "location": Object {
-    "character": 24,
+Array [
+  Object {
+    "exn": undefined,
+    "kind": "Parse",
+    "location": Object {
+      "character": 24,
+    },
+    "message": "Unexpected token: \\"\\"a\\"\\".",
+    "path": Array [
+      "",
+    ],
   },
-  "message": "Unexpected token: \\"\\"a\\"\\".",
-  "path": Array [
-    null,
-  ],
-}
+]
 `;
 
 exports[`Patterns Unexpected tokens 8`] = `
-Object {
-  "exn": undefined,
-  "kind": "Parse",
-  "location": Object {
-    "character": 24,
+Array [
+  Object {
+    "exn": undefined,
+    "kind": "Parse",
+    "location": Object {
+      "character": 24,
+    },
+    "message": "Unexpected token: \\"{\\".",
+    "path": Array [
+      "",
+    ],
   },
-  "message": "Unexpected token: \\"{\\".",
-  "path": Array [
-    null,
-  ],
-}
+]
 `;
 
 exports[`Patterns Unexpected tokens 9`] = `
-Object {
-  "exn": undefined,
-  "kind": "Parse",
-  "location": Object {
-    "character": 26,
+Array [
+  Object {
+    "exn": undefined,
+    "kind": "Parse",
+    "location": Object {
+      "character": 26,
+    },
+    "message": "Unexpected token: \\"[\\".",
+    "path": Array [
+      "",
+    ],
   },
-  "message": "Unexpected token: \\"[\\".",
-  "path": Array [
-    null,
-  ],
-}
+]
 `;
 
 exports[`Patterns Unexpected tokens 10`] = `
-Object {
-  "exn": undefined,
-  "kind": "Parse",
-  "location": Object {
-    "character": 26,
+Array [
+  Object {
+    "exn": undefined,
+    "kind": "Parse",
+    "location": Object {
+      "character": 26,
+    },
+    "message": "Unexpected token: \\"b\\".",
+    "path": Array [
+      "",
+    ],
   },
-  "message": "Unexpected token: \\"b\\".",
-  "path": Array [
-    null,
-  ],
-}
+]
 `;
 
 exports[`Patterns Unexpected tokens 11`] = `
-Object {
-  "exn": undefined,
-  "kind": "Parse",
-  "location": Object {
-    "character": 20,
+Array [
+  Object {
+    "exn": undefined,
+    "kind": "Parse",
+    "location": Object {
+      "character": 20,
+    },
+    "message": "Unexpected token: \\"b\\".",
+    "path": Array [
+      "",
+    ],
   },
-  "message": "Unexpected token: \\"b\\".",
-  "path": Array [
-    null,
-  ],
-}
+]
 `;
 
 exports[`Patterns Unexpected tokens 12`] = `
-Object {
-  "exn": undefined,
-  "kind": "Parse",
-  "location": Object {
-    "character": 20,
+Array [
+  Object {
+    "exn": undefined,
+    "kind": "Parse",
+    "location": Object {
+      "character": 20,
+    },
+    "message": "Unexpected token: \\"]\\".",
+    "path": Array [
+      "",
+    ],
   },
-  "message": "Unexpected token: \\"]\\".",
-  "path": Array [
-    null,
-  ],
-}
+]
 `;
 
 exports[`Patterns Unexpected tokens 13`] = `
-Object {
-  "exn": undefined,
-  "kind": "Parse",
-  "location": Object {
-    "character": 12,
+Array [
+  Object {
+    "exn": undefined,
+    "kind": "Parse",
+    "location": Object {
+      "character": 12,
+    },
+    "message": "Unexpected token: \\"}\\".",
+    "path": Array [
+      "",
+    ],
   },
-  "message": "Unexpected token: \\"}\\".",
-  "path": Array [
-    null,
-  ],
-}
+]
 `;
 
 exports[`Patterns Unexpected tokens 14`] = `
-Object {
-  "exn": undefined,
-  "kind": "Parse",
-  "location": Object {
-    "character": 12,
+Array [
+  Object {
+    "exn": undefined,
+    "kind": "Parse",
+    "location": Object {
+      "character": 12,
+    },
+    "message": "Unexpected token: \\"match\\".",
+    "path": Array [
+      "",
+    ],
   },
-  "message": "Unexpected token: \\"match\\".",
-  "path": Array [
-    null,
-  ],
-}
+]
 `;
 
 exports[`Patterns Unexpected tokens 15`] = `
-Object {
-  "exn": undefined,
-  "kind": "Parse",
-  "location": Object {
-    "character": 19,
+Array [
+  Object {
+    "exn": undefined,
+    "kind": "Parse",
+    "location": Object {
+      "character": 19,
+    },
+    "message": "Unexpected token: \\"a\\".",
+    "path": Array [
+      "",
+    ],
   },
-  "message": "Unexpected token: \\"a\\".",
-  "path": Array [
-    null,
-  ],
-}
+]
 `;
 
 exports[`Patterns Unexpected tokens 16`] = `
-Object {
-  "exn": undefined,
-  "kind": "Parse",
-  "location": Object {
-    "character": 27,
+Array [
+  Object {
+    "exn": undefined,
+    "kind": "Parse",
+    "location": Object {
+      "character": 27,
+    },
+    "message": "Unexpected token: \\"map\\".",
+    "path": Array [
+      "",
+    ],
   },
-  "message": "Unexpected token: \\"map\\".",
-  "path": Array [
-    null,
-  ],
-}
+]
 `;
 
 exports[`Patterns Unexpected tokens 17`] = `
-Object {
-  "exn": undefined,
-  "kind": "Parse",
-  "location": Object {
-    "character": 27,
+Array [
+  Object {
+    "exn": undefined,
+    "kind": "Parse",
+    "location": Object {
+      "character": 27,
+    },
+    "message": "Unexpected token: \\"1\\".",
+    "path": Array [
+      "",
+    ],
   },
-  "message": "Unexpected token: \\"1\\".",
-  "path": Array [
-    null,
-  ],
-}
+]
 `;
 
 exports[`Patterns Unexpected tokens 18`] = `
-Object {
-  "exn": undefined,
-  "kind": "Parse",
-  "location": Object {
-    "character": 14,
+Array [
+  Object {
+    "exn": undefined,
+    "kind": "Parse",
+    "location": Object {
+      "character": 14,
+    },
+    "message": "Unexpected token: \\"B\\".",
+    "path": Array [
+      "",
+    ],
   },
-  "message": "Unexpected token: \\"B\\".",
-  "path": Array [
-    null,
-  ],
-}
+]
 `;
 
 exports[`Patterns Unexpected tokens 19`] = `
-Object {
-  "exn": undefined,
-  "kind": "Parse",
-  "location": Object {
-    "character": 14,
+Array [
+  Object {
+    "exn": undefined,
+    "kind": "Parse",
+    "location": Object {
+      "character": 14,
+    },
+    "message": "Unexpected token: \\"1\\".",
+    "path": Array [
+      "",
+    ],
   },
-  "message": "Unexpected token: \\"1\\".",
-  "path": Array [
-    null,
-  ],
-}
+]
 `;
 
 exports[`Patterns Unexpected tokens 20`] = `
-Object {
-  "exn": undefined,
-  "kind": "Parse",
-  "location": Object {
-    "character": 6,
+Array [
+  Object {
+    "exn": undefined,
+    "kind": "Parse",
+    "location": Object {
+      "character": 6,
+    },
+    "message": "Unexpected token: \\"1\\".",
+    "path": Array [
+      "",
+    ],
   },
-  "message": "Unexpected token: \\"1\\".",
-  "path": Array [
-    null,
-  ],
-}
+]
 `;
 
 exports[`Patterns You can't bind a value more than once. 1`] = `
@@ -1668,7 +1843,7 @@ Array [
     },
     "message": "\\"x\\" is bound multiple times in this pattern.",
     "path": Array [
-      null,
+      "",
     ],
   },
 ]
@@ -1685,7 +1860,7 @@ Array [
     "message": "\\"a\\" is type null. I can only echo strings and numbers.",
     "path": Array [
       "A",
-      null,
+      "",
     ],
   },
 ]
@@ -1719,7 +1894,7 @@ Array [
     },
     "message": "\\"a\\" is a string. I can only map arrays.",
     "path": Array [
-      null,
+      "",
     ],
   },
 ]
@@ -1735,7 +1910,7 @@ Array [
     },
     "message": "\\"b\\" is a boolean. I can only map arrays.",
     "path": Array [
-      null,
+      "",
     ],
   },
 ]
@@ -1751,7 +1926,7 @@ Array [
     },
     "message": "Bad map type: \\"null\\". I can only map bindings and arrays.",
     "path": Array [
-      null,
+      "",
     ],
   },
 ]
@@ -1767,7 +1942,7 @@ Array [
     },
     "message": "\\"a\\" is type array but the data is type string.",
     "path": Array [
-      null,
+      "",
     ],
   },
 ]
@@ -1783,7 +1958,7 @@ Array [
     },
     "message": "Binding \\"z\\" does not exist.",
     "path": Array [
-      null,
+      "",
     ],
   },
 ]
@@ -1799,7 +1974,7 @@ Array [
     },
     "message": "\\"z\\" is type null. I can only echo strings and numbers.",
     "path": Array [
-      null,
+      "",
     ],
   },
 ]
@@ -1815,7 +1990,7 @@ Array [
     },
     "message": "Template child \\"Z\\" does not exist.",
     "path": Array [
-      null,
+      "",
     ],
   },
 ]
@@ -1831,7 +2006,7 @@ Array [
     },
     "message": "Component \\"Z\\" does not exist.",
     "path": Array [
-      null,
+      "",
     ],
   },
 ]
@@ -1847,7 +2022,7 @@ Array [
     },
     "message": "Template child \\"C\\" does not exist.",
     "path": Array [
-      null,
+      "",
     ],
   },
 ]
@@ -1863,7 +2038,7 @@ Array [
     },
     "message": "\\"a\\" is type null. I can only echo strings and numbers.",
     "path": Array [
-      null,
+      "",
     ],
   },
   Object {
@@ -1874,7 +2049,7 @@ Array [
     },
     "message": "\\"b\\" is type array. I can only echo strings and numbers.",
     "path": Array [
-      null,
+      "",
     ],
   },
   Object {
@@ -1885,7 +2060,7 @@ Array [
     },
     "message": "\\"c\\" is type null. I can only echo strings and numbers.",
     "path": Array [
-      null,
+      "",
     ],
   },
 ]
@@ -1901,7 +2076,7 @@ Array [
     },
     "message": "\\"b\\" is type boolean. I can only echo strings and numbers.",
     "path": Array [
-      null,
+      "",
     ],
   },
 ]
@@ -1917,7 +2092,7 @@ Array [
     },
     "message": "\\"c\\" is type array. I can only echo strings and numbers.",
     "path": Array [
-      null,
+      "",
     ],
   },
 ]
@@ -1933,7 +2108,7 @@ Array [
     },
     "message": "\\"b\\" is type boolean. I can only echo strings and numbers.",
     "path": Array [
-      null,
+      "",
     ],
   },
 ]

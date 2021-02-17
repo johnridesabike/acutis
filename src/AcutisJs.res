@@ -15,9 +15,17 @@
 */
 
 module Compile = {
-  include Compile.Js
+  include Compile
 }
 
 module Environment = {
   include Environment
+}
+
+module Result = {
+  include Result
+}
+
+module Source = {
+  include Source
 }

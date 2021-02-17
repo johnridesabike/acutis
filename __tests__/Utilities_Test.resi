@@ -14,14 +14,5 @@
    limitations under the License.
 */
 
-module Pattern: {
-  let make: Lexer.t => Acutis_Types.NonEmpty.t<Acutis_Types.Ast_Pattern.t>
-}
+// This space intentionally left blank.
 
-let makeAst: (~name: string, string) => Result.t<Acutis_Types.Ast.t>
-
-let make: Source.t<'a> => Result.t<Acutis_Types.template<'a>>
-
-let emptyMap: Belt.Map.String.t<Acutis_Types.template<_>>
-
-let fromArray: array<Source.t<'a>> => Result.t<Belt.Map.String.t<Acutis_Types.template<'a>>>

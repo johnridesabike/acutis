@@ -14,17 +14,17 @@
    limitations under the License.
 */
 
-type result = Acutis_Types.Result.t<string, array<Acutis_Types.Errors.t>>
+type output = Result.t<string>
 
 module Async: {
-  type result = Js.Promise.t<result>
-  type template = Acutis_Types.template<result>
-  type t = Acutis_Types.environment<result>
+  type output = Js.Promise.t<output>
+  type template = Acutis_Types.template<output>
+  type t = Acutis_Types.environment<output>
 
-  let make: Js.Dict.t<template> => t
+  let make: Belt.Map.String.t<template> => t
 }
 
-type template = Acutis_Types.template<result>
-type t = Acutis_Types.environment<result>
+type template = Acutis_Types.template<output>
+type t = Acutis_Types.environment<output>
 
-let make: Js.Dict.t<template> => t
+let make: Belt.Map.String.t<template> => t

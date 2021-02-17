@@ -20,6 +20,8 @@
   "peek" operations needed to switch code paths.
 */
 
+module Array = Belt.Array
+module MapString = Belt.Map.String
 module Queue = Belt.MutableQueue
 open Acutis_Types
 
@@ -337,23 +339,49 @@ and parseProps = tokens => {
   aux(Lexer.popExn(tokens))
 }
 
-let makeAst = (~name=?, source): Ast.t => {
+let makeAst = (~name, source) => {
   try {
-    let tokens = Lexer.make(source, ~name?)
+    let tokens = Lexer.make(source, ~name)
     let (_, ast) = parse(Lexer.popExn(tokens), tokens, ~until=endOfFile)
-    Valid.make(#data({Ast.ast: ast, name: name}))
+    #ok({Ast.ast: ast, name: name})
   } catch {
-  | Debug.CompileError(e) => Valid.make(#errors(e))
-  | e => Valid.make(#errors(Debug.compileExn(e, ~name)))
+  | Debug.CompileError(e) => #errors([e])
+  | e => #errors([Debug.compileExn(e, ~name)])
   }
 }
 
-let make = (~name=?, source) => {
-  let ast = makeAst(source, ~name?)
-  (. env, props, templates) => env.render(. ast, props, templates)
-}
+let make = (x: Source.t<_>) =>
+  switch x {
+  | String({name, src}) =>
+    makeAst(src, ~name)->Result.mapU((. ast, . env, props, templates) =>
+      env.render(. ast, props, templates)
+    )
+  | StringFunc({name, src, f}) => makeAst(src, ~name)->Result.mapU((. ast) => f(. ast))
+  | Func({f, _}) => #ok(f)
+  }
 
-module Js = {
-  let makeAst = (. source, name) => makeAst(source, ~name?)
-  let make = (. source, name) => make(source, ~name?)
+let emptyMap = MapString.empty
+
+let fromArray = q => {
+  let errors = Queue.make()
+  let result = Array.reduceU(q, MapString.empty, (. acc, src) =>
+    switch make(src) {
+    | #ok(f) =>
+      let name = Source.name(src)
+      if MapString.has(acc, name) {
+        Queue.add(errors, Debug.duplicateCompName(name))
+        acc
+      } else {
+        MapString.set(acc, name, f)
+      }
+    | #errors(e) =>
+      e->Queue.fromArray->Queue.transfer(errors)
+      acc
+    }
+  )
+  if Queue.isEmpty(errors) {
+    #ok(result)
+  } else {
+    #errors(Queue.toArray(errors))
+  }
 }

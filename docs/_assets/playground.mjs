@@ -14,7 +14,12 @@
  *   limitations under the License.
  */
 
-import * as Acutis from "./../../lib/es6/src/AcutisJs.mjs";
+import {
+  Compile,
+  Environment,
+  Source,
+  Result,
+} from "./../../lib/es6/src/AcutisJs.mjs";
 
 window.onload = function playground(_event) {
   var propsText = document.getElementById("props");
@@ -66,20 +71,22 @@ window.onload = function playground(_event) {
 {%~ /map %}
 `;
 
-  var env = Acutis.Environment.make({});
+  var env = Environment.make(Compile.emptyMap);
 
   var resultText = document.getElementById("result");
 
   function render(_event) {
     try {
       var props = JSON.parse(propsText.value);
-      var template = Acutis.Compile.make(sourceText.value, "playground");
-      var result = template(env, props, {});
-      if (result.NAME === "errors") {
-        resultText.value = "Errors:\n" + JSON.stringify(result.VAL, null, 2);
-      } else {
-        resultText.value = result.VAL;
-      }
+      var src = Source.string("Playground", sourceText.value);
+      var template = Compile.make(src);
+      var result = Result.flatMap(template, (template) =>
+        template(env, props, {})
+      );
+      resultText.value = Result.getOr(
+        result,
+        (errors) => "Errors:\n" + JSON.stringify(errors, null, 2)
+      );
     } catch (e) {
       resultText.value = e.message;
     }

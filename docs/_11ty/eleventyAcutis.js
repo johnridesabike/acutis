@@ -18,15 +18,13 @@ const path = require("path");
 const fs = require("fs");
 const util = require("util");
 const fastGlob = require("fast-glob");
-const { Compile, Environment } = require("../../lib/js/src/AcutisJs");
+const { Compile, Environment, Result, Source } = require("../../");
 const { filenameToComponent } = require("../../node-utils");
 
 const readFile = util.promisify(fs.readFile);
 
-const cache = new Map();
-
 module.exports = (eleventyConfig, config) => {
-  let env = Environment.Async.make({});
+  let env = Environment.Async.make(Compile.emptyMap);
   eleventyConfig.addTemplateFormats("acutis");
   eleventyConfig.addExtension("acutis", {
     read: true,
@@ -37,40 +35,36 @@ module.exports = (eleventyConfig, config) => {
         this.config.dir.includes,
         "**/*.acutis"
       );
-      const components = {};
       return fastGlob(filesGlob)
         .then((files) =>
           Promise.all(
             files.map((fileName) =>
-              readFile(fileName, "utf-8")
-                .then((src) => {
-                  if (!cache.has(src)) {
-                    cache.set(src, Compile.make(src, fileName));
-                  }
-                  components[filenameToComponent(fileName)] = cache.get(src);
-                })
-                .catch((e) => console.error(e.message))
+              readFile(fileName, "utf-8").then((src) => {
+                const name = filenameToComponent(fileName);
+                return Source.string(name, src);
+              })
             )
           )
         )
-        .then(() => {
-          env = Environment.Async.make({ ...components, ...config.components });
+        .then((queue) => {
+          const comps = Result.getOr(
+            Compile.fromArray([...queue, ...config.components]),
+            (e) => {
+              console.error(e);
+              throw new Error("Couldn't compile includes.");
+            }
+          );
+          env = Environment.Async.make(comps);
         });
     },
     compile: (src, inputPath) => (props) => {
-      if (!cache.has(src)) {
-        cache.set(src, Compile.make(src, inputPath));
-      }
-      return cache
-        .get(src)(env, props, {})
-        .then(({ NAME, VAL }) => {
-          if (NAME === "errors") {
-            console.error(VAL);
-            throw new Error(`Error with ${props.permalink}`);
-          } else {
-            return VAL;
-          }
+      const getOrThrow = (result) =>
+        Result.getOr(result, (e) => {
+          console.error(e);
+          throw new Error(`Error with ${props.permalink}`);
         });
+      const Template = getOrThrow(Compile.make(Source.string(inputPath, src)));
+      return Template(env, props, {}).then(getOrThrow);
     },
   });
 };
