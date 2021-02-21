@@ -60,6 +60,11 @@ your `bsconfig.json` file.
 
 ⚠️ Acutis requires ReScript compiler version 9.0 or higher.
 
+## Examples
+
+- This documentation uses Acutis with [Eleventy]. [Browse the source here][1].
+- [The Acutis CLI][2].
+
 ## Conventions
 
 I use the `.acutis` file extension for my templates, but there's nothing in
@@ -67,6 +72,9 @@ the language that enforces that. You can use something else (for example,
 `.html`) or you can configure your editor to treat `.acutis` files as HTML
 (or whatever format you want).
 
-[license]: ../license/
+[1]: https://github.com/johnridesabike/acutis/tree/master/docs
+[2]: https://github.com/johnridesabike/acutis/blob/master/cli
 [API]: ../api/
 [CLI]: ../api/#acutis-command-line-interface-(cli)
+[Eleventy]: https://www.11ty.dev/
+[license]: ../license/

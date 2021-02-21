@@ -9,14 +9,14 @@
     "build": "NODE_ENV=production concurrently yarn:build:*",
     "build:11ty": "ELEVENTY_EXPERIMENTAL=true eleventy",
     "build:js": "node scripts/bundle.js",
-    "build:postcss": "postcss _assets/style.css -d _site/",
+    "build:postcss": "postcss _assets/style.css -d _site/ --config=scripts",
     "clean": "rm -r _site",
     "deploy": "gh-pages -d _site",
     "predeploy": "yarn clean && yarn build",
     "prestart": "yarn build:js",
     "start": "concurrently yarn:start:*",
     "start:11ty": "ELEVENTY_EXPERIMENTAL=true eleventy --serve",
-    "start:postcss": "postcss _assets/style.css -d _site/ -w"
+    "start:postcss": "postcss _assets/style.css -d _site/ -w --config=scripts"
   },
   "dependencies": {},
   "devDependencies": {
