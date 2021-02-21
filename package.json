@@ -1,6 +1,6 @@
 {
   "name": "acutis-lang",
-  "version": "0.9.0",
+  "version": "0.10.0",
   "private": false,
   "description": "A declarative template language for web documents & beyond.",
   "keywords": [
