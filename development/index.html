@@ -19,33 +19,19 @@
         </header>
         <nav class="site-header__nav">
           <ol class="site-header__nav-list"><li>
-                <a href="https:&#x2F;&#x2F;johnridesa.bike&#x2F;acutis&#x2F;" aria-current="false">
-  Home
-</a>
+                <a href="https:&#x2F;&#x2F;johnridesa.bike&#x2F;acutis&#x2F;" aria-current="false">Home</a>
               </li><li>
-                <a href="https:&#x2F;&#x2F;johnridesa.bike&#x2F;acutis&#x2F;introduction&#x2F;" aria-current="false">
-  Getting started
-</a>
+                <a href="https:&#x2F;&#x2F;johnridesa.bike&#x2F;acutis&#x2F;introduction&#x2F;" aria-current="false">Getting started</a>
               </li><li>
-                <a href="https:&#x2F;&#x2F;johnridesa.bike&#x2F;acutis&#x2F;manual&#x2F;" aria-current="false">
-  Language manual
-</a>
+                <a href="https:&#x2F;&#x2F;johnridesa.bike&#x2F;acutis&#x2F;manual&#x2F;" aria-current="false">Language manual</a>
               </li><li>
-                <a href="https:&#x2F;&#x2F;johnridesa.bike&#x2F;acutis&#x2F;api&#x2F;" aria-current="false">
-  API
-</a>
+                <a href="https:&#x2F;&#x2F;johnridesa.bike&#x2F;acutis&#x2F;api&#x2F;" aria-current="false">API</a>
               </li><li>
-                <a href="https:&#x2F;&#x2F;johnridesa.bike&#x2F;acutis&#x2F;playground&#x2F;" aria-current="false">
-  Playground
-</a>
+                <a href="https:&#x2F;&#x2F;johnridesa.bike&#x2F;acutis&#x2F;playground&#x2F;" aria-current="false">Playground</a>
               </li><li>
-                <a href="https:&#x2F;&#x2F;johnridesa.bike&#x2F;acutis&#x2F;development&#x2F;" aria-current="true">
-  Development
-</a>
+                <a href="https:&#x2F;&#x2F;johnridesa.bike&#x2F;acutis&#x2F;development&#x2F;" aria-current="true">Development</a>
               </li><li>
-                <a href="https:&#x2F;&#x2F;johnridesa.bike&#x2F;acutis&#x2F;credits&#x2F;" aria-current="false">
-  Credits
-</a>
+                <a href="https:&#x2F;&#x2F;johnridesa.bike&#x2F;acutis&#x2F;credits&#x2F;" aria-current="false">Credits</a>
               </li></ol>
         </nav>
       </div><main class="main" id="content">
@@ -122,7 +108,7 @@ concatenated.</p>
 <p>The <code>env</code> argument in 2 is the same <code>env</code> record as in 1. This record
 contains the <code>render</code> function with the logic and data that must be global
 across the entire template tree.</p>
-<p>The specific “logic” here is how to use the output type, synchronously or
+<p>The specific logic is how to use the output type, synchronously or
 asynchronously. This is why there are two functions to create render
 environments:</p>
 <ol>
@@ -209,12 +195,8 @@ their maintenance.</p>
 “layers” of the language due to their internal type differences. This feels
 like a leaky implementation detail though, and theoretically it would be nice
 if they could all coexist in one single <code>props</code> object for each template.</p>
-<p>For users working with the API in ReScript, type errors can be cryptic. This
-is a side effect of the fact that template component functions rely on
-several recursive function types. The compiler can’t always infer a concrete
-type in time to provide a useful error.</p>
-<p>I have not done any performance measurements. In the “make it work, make it
-right, make it fast,” order, performance comes last.</p>
+<p>I have only done minimal performance measurements. In the “make it work, make
+it right, make it fast,” order, performance comes last.</p>
 <p>Editor tooling, build system plugins, etc. are all on the wishlist.</p>
 
       </article>
