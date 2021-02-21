@@ -465,10 +465,10 @@
     "@types/yargs" "^15.0.0"
     chalk "^4.0.0"
 
-"@rescript/std@^9.0.0":
-  version "9.0.0"
-  resolved "https://registry.yarnpkg.com/@rescript/std/-/std-9.0.0.tgz#df53f3fa5911cb4e85bd66b92e9e58ddf3e4a7e1"
-  integrity sha512-zGzFsgtZ44mgL4Xef2gOy1hrRVdrs9mcxCOOKZrIPsmbZW14yTkaF591GXxpQvjXiHtgZ/iA9qLyWH6oSReIxQ==
+"@rescript/std@^9.0.1":
+  version "9.0.1"
+  resolved "https://registry.yarnpkg.com/@rescript/std/-/std-9.0.1.tgz#4597be595256f79f4c2f3eaeb56981340e18e700"
+  integrity sha512-JUdxfVjHjRzrTwcZbLaPHEzN3id6XGdLFxubp6Bimj0/1CmIYgfLaUhflac1KAyI1lKIM2Htrz6U6bHkuihnZg==
 
 "@sinonjs/commons@^1.7.0":
   version "1.8.2"
@@ -836,10 +836,10 @@ browser-process-hrtime@^1.0.0:
   resolved "https://registry.yarnpkg.com/browser-process-hrtime/-/browser-process-hrtime-1.0.0.tgz#3c9b4b7d782c8121e56f10106d84c0d0ffc94626"
   integrity sha512-9o5UecI3GhkpM6DrXr69PblIuWxPKk9Y0jHBRhdocZ2y7YECBFCsHm79Pr3OyR2AvjhDkabFJaDJMYRazHgsow==
 
-bs-platform@^9.0.0:
-  version "9.0.0"
-  resolved "https://registry.yarnpkg.com/bs-platform/-/bs-platform-9.0.0.tgz#873e9edcfe49a89b082e71c604d73bdb8276e2fb"
-  integrity sha512-32gIXIUt1RO+OUWLrkhXFOuZKS5Cka6lEShXaVC/ohg5N8cUnoNZW9M/vW3CWnmgZkQ0Hp9g9vj5I5NfzHpy5A==
+bs-platform@^9.0.1:
+  version "9.0.1"
+  resolved "https://registry.yarnpkg.com/bs-platform/-/bs-platform-9.0.1.tgz#069dae007aadb400963cec25c8349ea1f3f6cae0"
+  integrity sha512-RxUrwxVBCx9AiiyFIthZwfPn+tAn9noRHCb9xJK4Uw2deGxIytqyoWDepMbH35v7EpxX0OhfXL5RrjHTaXersA==
 
 bser@2.1.1:
   version "2.1.1"
@@ -2793,6 +2793,11 @@ read-pkg@^5.2.0:
     normalize-package-data "^2.5.0"
     parse-json "^5.0.0"
     type-fest "^0.6.0"
+
+reanalyze@^2.13.0:
+  version "2.13.0"
+  resolved "https://registry.yarnpkg.com/reanalyze/-/reanalyze-2.13.0.tgz#8d2d8845d0fb7bd2cb20dfa6c9910a74f46153fa"
+  integrity sha512-Ao4U0U3Bb2ZDQMR65VnTHojldvQQvvN6TQPCb2V24vrKGGN5fhAqiNo7PLhLcqfV0OGC1q4Us+MVuDOuRW21IQ==
 
 reason-test-framework@^0.3.2:
   version "0.3.2"

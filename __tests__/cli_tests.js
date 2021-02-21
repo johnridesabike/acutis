@@ -48,7 +48,7 @@ test("async", () =>
     `./cli \
     fixtures/cli_test/layout_async.acutis \
     fixtures/cli_test/A.acutis \
-    fixtures/cli_test/bb_async.js \
+    fixtures/cli_test/bb_async.cjs \
     fixtures/cli_test/subdir/C.acutis \
     fixtures/cli_test/D_async.mjs \
     < fixtures/cli_test/data.json \

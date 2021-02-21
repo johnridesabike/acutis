@@ -1,4 +1,4 @@
-const { Source } = require("../../");
+const { Source } = require("../../lib/js/src/AcutisJs");
 
 module.exports = Source.funcWithString(
   "Bb_async",

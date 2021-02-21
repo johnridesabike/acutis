@@ -23,10 +23,10 @@ let getExn = (x: t<_>) =>
   | #errors(_) => raise(Not_found)
   }
 
-let getOrU = (x: t<_>, onError) =>
+let getOrElseU = (x: t<_>, onError) =>
   switch x {
   | #ok(x) => x
   | #errors(e) => onError(. e)
   }
 
-let getOr = (x, f) => getOrU(x, (. x) => f(x))
+let getOrElse = (x, f) => getOrElseU(x, (. x) => f(x))

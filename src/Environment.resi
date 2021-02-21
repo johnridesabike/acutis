@@ -15,16 +15,13 @@
 */
 
 type output = Result.t<string>
+type t = Acutis_Types.environment<output>
+@live
+let make: Belt.Map.String.t<Acutis_Types.template<output>> => t
 
 module Async: {
-  type output = Js.Promise.t<output>
-  type template = Acutis_Types.template<output>
+  type output = Js.Promise.t<Result.t<string>>
   type t = Acutis_Types.environment<output>
-
-  let make: Belt.Map.String.t<template> => t
+  @live
+  let make: Belt.Map.String.t<Acutis_Types.template<output>> => t
 }
-
-type template = Acutis_Types.template<output>
-type t = Acutis_Types.environment<output>
-
-let make: Belt.Map.String.t<template> => t

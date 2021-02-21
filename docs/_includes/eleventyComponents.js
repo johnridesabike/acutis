@@ -17,17 +17,18 @@
 const { Source } = require("../../");
 const site = require("../_data/site");
 
-const Log = Source.func("Log", (env, props, _children) => {
-  console.log(props);
-  return env.return("");
-});
-
-const Debugger = Source.func("Debugger", (env, _props, _children) => {
-  debugger;
-  return env.return("");
-});
-
-const footerSrc = `<footer class="footer">
+module.exports = [
+  Source.func("Log", (env, props, _children) => {
+    console.log(props);
+    return env.return("");
+  }),
+  Source.func("Debugger", (env, props, children) => {
+    debugger;
+    return env.return("");
+  }),
+  Source.funcWithString(
+    "Footer",
+    `<footer class="footer">
   <p>
     Published in {{ year }} by
     {%~ match link with null ~%} {{ name }}
@@ -39,31 +40,21 @@ const footerSrc = `<footer class="footer">
     <a href="{{ siteUrl }}/license/">View the license</a>.
   </p>
 </footer>
-`;
-
-const Footer = Source.funcWithString(
-  "Footer",
-  footerSrc,
-  (ast) => (env, props, children) => {
-    if (!props.year) {
-      props.year = new Date().getFullYear();
+`,
+    (ast) => (env, props, children) => {
+      if (!props.year) {
+        props.year = new Date().getFullYear();
+      }
+      return env.render(ast, props, children);
     }
-    return env.render(ast, props, children);
-  }
-);
-
-const linkSrc = `<a href="{{ href }}" aria-current="{{ current }}">
-  {{ Children }}
-</a>`;
-
-const Link = Source.funcWithString(
-  "Link",
-  linkSrc,
-  (ast) => (env, { path, page }, children) => {
-    const current = path === page.url ? "true" : "false";
-    const href = site.url + path;
-    return env.render(ast, { href, current }, children);
-  }
-);
-
-module.exports = [Log, Debugger, Footer, Link];
+  ),
+  Source.funcWithString(
+    "Link",
+    `<a href="{{ href }}" aria-current="{{ current }}">{{ Children }}</a>`,
+    (ast) => (env, { path, page }, children) => {
+      const current = path === page.url ? "true" : "false";
+      const href = site.url + path;
+      return env.render(ast, { href, current }, children);
+    }
+  ),
+];

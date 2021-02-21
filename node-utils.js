@@ -28,17 +28,18 @@ function filenameToComponent(file) {
   return firstChar + rest;
 }
 
-function loadTemplate(fileName) {
+async function loadTemplate(fileName) {
   const filePath = path.resolve(process.cwd(), fileName);
   switch (path.extname(fileName)) {
     case ".js":
     case ".mjs":
-      return import(filePath).then((x) => x.default);
+    case ".cjs":
+      const jsmodule = await import(filePath);
+      return jsmodule.default;
     default:
       const name = filenameToComponent(filePath);
-      return readFile(filePath, "utf-8").then((src) =>
-        Acutis.Source.string(name, src)
-      );
+      const src = await readFile(filePath, "utf-8");
+      return Acutis.Source.string(name, src);
   }
 }
 

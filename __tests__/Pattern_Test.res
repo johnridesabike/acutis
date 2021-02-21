@@ -29,6 +29,7 @@ let json = Js.Json.parseExn
 let jsonList = (x): NonEmpty.t<Js.Json.t> => NonEmpty(json(x), [])
 let dict = Js.Dict.fromArray
 let emptyBindings = Js.Dict.empty()
+let noMatch = Render.Pattern.noMatch
 
 describe("Equality", ({test, _}) => {
   test("One value", ({expect, _}) => {
@@ -99,15 +100,15 @@ describe("Equality", ({test, _}) => {
 
 describe("Inequality", ({test, _}) => {
   test("One value", ({expect, _}) => {
-    expect.value(Pattern.test(parseString("1"), jsonList("2"))).toEqual(Error(NoMatch))
-    expect.value(Pattern.test(parseString(`"string"`), jsonList(`"a"`))).toEqual(Error(NoMatch))
-    expect.value(Pattern.test(parseString("true"), jsonList("false"))).toEqual(Error(NoMatch))
-    expect.value(Pattern.test(parseString("false"), jsonList("true"))).toEqual(Error(NoMatch))
-    expect.value(Pattern.test(parseString("{}"), jsonList(`{"a": "b"}`))).toEqual(Error(NoMatch))
-    expect.value(Pattern.test(parseString(`{a: "b"}`), jsonList("{}"))).toEqual(Error(NoMatch))
-    expect.value(Pattern.test(parseString("[]"), jsonList("[1]"))).toEqual(Error(NoMatch))
-    expect.value(Pattern.test(parseString("[1]"), jsonList("[]"))).toEqual(Error(NoMatch))
-    expect.value(Pattern.test(parseString("[1]"), jsonList("[2]"))).toEqual(Error(NoMatch))
+    expect.value(Pattern.test(parseString("1"), jsonList("2"))).toEqual(Error(noMatch))
+    expect.value(Pattern.test(parseString(`"string"`), jsonList(`"a"`))).toEqual(Error(noMatch))
+    expect.value(Pattern.test(parseString("true"), jsonList("false"))).toEqual(Error(noMatch))
+    expect.value(Pattern.test(parseString("false"), jsonList("true"))).toEqual(Error(noMatch))
+    expect.value(Pattern.test(parseString("{}"), jsonList(`{"a": "b"}`))).toEqual(Error(noMatch))
+    expect.value(Pattern.test(parseString(`{a: "b"}`), jsonList("{}"))).toEqual(Error(noMatch))
+    expect.value(Pattern.test(parseString("[]"), jsonList("[1]"))).toEqual(Error(noMatch))
+    expect.value(Pattern.test(parseString("[1]"), jsonList("[]"))).toEqual(Error(noMatch))
+    expect.value(Pattern.test(parseString("[1]"), jsonList("[2]"))).toEqual(Error(noMatch))
   })
 
   test("Nested values", ({expect, _}) => {
@@ -150,32 +151,32 @@ describe("Inequality", ({test, _}) => {
            }
          `),
       ),
-    ).toEqual(Error(NoMatch))
+    ).toEqual(Error(noMatch))
   })
 })
 
 describe("Nullables", ({test, _}) => {
   test("Null data", ({expect, _}) => {
     let null = jsonList("null")
-    expect.value(Pattern.test(parseString("1"), null)).toEqual(Error(NoMatch))
-    expect.value(Pattern.test(parseString(`"a"`), null)).toEqual(Error(NoMatch))
-    expect.value(Pattern.test(parseString("true"), null)).toEqual(Error(NoMatch))
-    expect.value(Pattern.test(parseString("false"), null)).toEqual(Error(NoMatch))
-    expect.value(Pattern.test(parseString("[]"), null)).toEqual(Error(NoMatch))
-    expect.value(Pattern.test(parseString("[1]"), null)).toEqual(Error(NoMatch))
-    expect.value(Pattern.test(parseString("[1, ...a]"), null)).toEqual(Error(NoMatch))
-    expect.value(Pattern.test(parseString("{}"), null)).toEqual(Error(NoMatch))
-    expect.value(Pattern.test(parseString("{a}"), null)).toEqual(Error(NoMatch))
+    expect.value(Pattern.test(parseString("1"), null)).toEqual(Error(noMatch))
+    expect.value(Pattern.test(parseString(`"a"`), null)).toEqual(Error(noMatch))
+    expect.value(Pattern.test(parseString("true"), null)).toEqual(Error(noMatch))
+    expect.value(Pattern.test(parseString("false"), null)).toEqual(Error(noMatch))
+    expect.value(Pattern.test(parseString("[]"), null)).toEqual(Error(noMatch))
+    expect.value(Pattern.test(parseString("[1]"), null)).toEqual(Error(noMatch))
+    expect.value(Pattern.test(parseString("[1, ...a]"), null)).toEqual(Error(noMatch))
+    expect.value(Pattern.test(parseString("{}"), null)).toEqual(Error(noMatch))
+    expect.value(Pattern.test(parseString("{a}"), null)).toEqual(Error(noMatch))
   })
 
   test("Null patterns", ({expect, _}) => {
     let null = parseString("null")
-    expect.value(Pattern.test(null, jsonList("1"))).toEqual(Error(NoMatch))
-    expect.value(Pattern.test(null, jsonList(`"a"`))).toEqual(Error(NoMatch))
-    expect.value(Pattern.test(null, jsonList("true"))).toEqual(Error(NoMatch))
-    expect.value(Pattern.test(null, jsonList("false"))).toEqual(Error(NoMatch))
-    expect.value(Pattern.test(null, jsonList("[]"))).toEqual(Error(NoMatch))
-    expect.value(Pattern.test(null, jsonList("{}"))).toEqual(Error(NoMatch))
+    expect.value(Pattern.test(null, jsonList("1"))).toEqual(Error(noMatch))
+    expect.value(Pattern.test(null, jsonList(`"a"`))).toEqual(Error(noMatch))
+    expect.value(Pattern.test(null, jsonList("true"))).toEqual(Error(noMatch))
+    expect.value(Pattern.test(null, jsonList("false"))).toEqual(Error(noMatch))
+    expect.value(Pattern.test(null, jsonList("[]"))).toEqual(Error(noMatch))
+    expect.value(Pattern.test(null, jsonList("{}"))).toEqual(Error(noMatch))
   })
 })
 
@@ -200,7 +201,7 @@ describe("Binding", ({test, _}) => {
       Pattern.test(parseString("{key: x, key2: y}"), jsonList(`{"key": true, "key2": false}`)),
     ).toEqual(Ok(dict([("x", json("true")), ("y", json("false"))])))
     expect.value(Pattern.test(parseString("{x, y}"), jsonList(`{"x": true}`))).toEqual(
-      Error(NoMatch),
+      Error(noMatch),
     )
     expect.value(
       Pattern.test(parseString("[x, ...rest]"), jsonList(`["thing 1", "thing 2", "thing 3"]`)),
@@ -271,7 +272,7 @@ describe("Multiple patterns and data", ({test, _}) => {
         parseString("100, true, true"),
         NonEmpty(json("100"), [json("true"), json("false")]),
       ),
-    ).toEqual(Error(NoMatch))
+    ).toEqual(Error(noMatch))
   })
 
   test("Complex", ({expect, _}) => {

@@ -24,7 +24,7 @@ let getError = x =>
 let render = (~name="", src, json, components) => {
   Source.string(~name, src)
   ->Compile.make
-  ->Result.flatMap(f => f(. components->Environment.make, json, Js.Dict.empty()))
+  ->Result.flatMap(f => f(Environment.make(components), json, Js.Dict.empty()))
   ->getError
 }
 
@@ -124,8 +124,8 @@ describe("Parser", ({test, _}) => {
   })
 
   test("Duplicate components are reported correctly", ({expect, _}) => {
-    let a1 = Source.func(~name="A", (. env, _, _) => env.return(. ""))
-    let a2 = Source.func(~name="A", (. env, _, _) => env.return(. ""))
+    let a1 = Source.func(~name="A", (env, _, _) => env.return(. ""))
+    let a2 = Source.func(~name="A", (env, _, _) => env.return(. ""))
     let components = Compile.fromArray([a1, a2])
     expect.value(components).toMatchSnapshot()
   })
@@ -234,7 +234,7 @@ describe("Patterns", ({test, _}) => {
 
   test("Missing bindings", ({expect, _}) => {
     let props = dict([("a", Js.Json.number(1.0)), ("c", Js.Json.null)])
-    let a = Source.func(~name="A", (. env, _p, _c) => env.return(. ""))
+    let a = Source.func(~name="A", (env, _p, _c) => env.return(. ""))
     let components = Compile.fromArray([a])->Result.getExn
     expect.value(render(`{% A b={b} / %}`, props, components)).toMatchSnapshot()
     expect.value(render(`{% A b=[a, ...b] / %}`, props, components)).toMatchSnapshot()
@@ -397,7 +397,7 @@ describe("Rendering", ({test, _}) => {
     expect.value(render("{{ z }}", Js.Dict.empty(), Compile.emptyMap)).toMatchSnapshot()
     expect.value(render("{{ Z }}", Js.Dict.empty(), Compile.emptyMap)).toMatchSnapshot()
     expect.value(render("{% Z / %}", Js.Dict.empty(), Compile.emptyMap)).toMatchSnapshot()
-    let a = Source.funcWithString(~name="A", "{{ B }}", (. ast, . env, props, children) => {
+    let a = Source.funcWithString(~name="A", "{{ B }}", (ast, env, props, children) => {
       env.render(. ast, props, children)
     })
     let components = Compile.fromArray([a])->Result.getExn
@@ -406,7 +406,7 @@ describe("Rendering", ({test, _}) => {
   })
 
   test("Error messages display component name correctly", ({expect, _}) => {
-    let a = Source.funcWithString(~name="A", "{{ a }}", (. ast, . env, props, children) => {
+    let a = Source.funcWithString(~name="A", "{{ a }}", (ast, env, props, children) => {
       env.render(. ast, props, children)
     })
     let components = Compile.fromArray([a])->Result.getExn
@@ -426,7 +426,7 @@ describe("Rendering", ({test, _}) => {
   })
 
   test("Exceptions thrown in components are caught correctly", ({expect, _}) => {
-    let a = Source.func(~name="A", (. _env, _props, _children) => {
+    let a = Source.func(~name="A", (_env, _props, _children) => {
       raise(Failure("fail."))
     })
     let components = Compile.fromArray([a])->Result.getExn
@@ -441,7 +441,7 @@ describe("Inputs", ({test, _}) => {
     expect.value(
       getError(
         Compile.make(Source.string(~name="Template", Obj.magic(1)))->Result.flatMap(f =>
-          f(. Compile.emptyMap->Environment.make, Js.Dict.empty(), Js.Dict.empty())
+          f(Compile.emptyMap->Environment.make, Js.Dict.empty(), Js.Dict.empty())
         ),
       ),
     ).toMatchSnapshot()
@@ -472,12 +472,12 @@ describe("Stack trace is rendered correctly", ({test, _}) => {
   })
 
   test("components", ({expect, _}) => {
-    let c = Source.funcWithString(~name="C", "{{ c }}", (. ast, . env, props, children) => {
+    let c = Source.funcWithString(~name="C", "{{ c }}", (ast, env, props, children) => {
       env.render(. ast, props, children)
     })
-    let b = Source.funcWithString(~name="B", `{% match x with "x" %} {% C /%} {% /match %}`, (.
+    let b = Source.funcWithString(~name="B", `{% match x with "x" %} {% C /%} {% /match %}`, (
       ast,
-      . env,
+      env,
       props,
       templates,
     ) => {
@@ -489,7 +489,7 @@ describe("Stack trace is rendered correctly", ({test, _}) => {
   })
 
   test("child templates", ({expect, _}) => {
-    let b = Source.funcWithString(~name="B", "{{ Children }}", (. ast, . env, props, children) => {
+    let b = Source.funcWithString(~name="B", "{{ Children }}", (ast, env, props, children) => {
       env.render(. ast, props, children)
     })
     let components = Compile.fromArray([b])->Result.getExn

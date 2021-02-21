@@ -93,6 +93,8 @@ module Pattern = {
     | PatternTypeMismatch({data: Json.tagged_t, pattern: Ast_Pattern.t})
     | TooManyBindings({loc: loc, binding: string})
 
+  let noMatch = NoMatch
+
   let setBinding = (bindings, identifier, json, ~loc) =>
     switch identifier {
     | "_" => Ok(bindings)

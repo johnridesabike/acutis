@@ -15,37 +15,88 @@
 */
 
 module Array = Belt.Array
+module MapString = Belt.Map.String
 module Queue = Belt.MutableQueue
 open Acutis_Types
 
+// This gives us a slight performance boost during rendering.
+let uncurry = m => MapString.mapU(m, (. f, . a, b, c) => f(a, b, c))
+
 type output = Result.t<string>
+type t = environment<output>
+
+let return = (. x) => #ok(x)
+
+let error = (. x) => #errors(x)
+
+let try_ = (. f, ~catch) =>
+  try {
+    f(.)
+  } catch {
+  | e => catch(. e)
+  }
+
+let mapChild = (. child, f) => Result.map(child, f)
+
+let flatMapChild = (. child, f) => Result.flatMap(child, f)
+
+let reduceQueue = (. q) => {
+  let result = ref("")
+  let errors = Queue.make()
+  Queue.forEachU(q, (. x) =>
+    switch x {
+    | #ok(s) => result := result.contents ++ s
+    | #errors(e) => e->Queue.fromArray->Queue.transfer(errors)
+    }
+  )
+  if Queue.isEmpty(errors) {
+    #ok(result.contents)
+  } else {
+    #errors(Queue.toArray(errors))
+  }
+}
+
+let rec makeAux = (. {components, stack}) => {
+  render: (. {ast, name}, props, children) =>
+    reduceQueue(.
+      Render.make(
+        ~ast,
+        ~props,
+        ~children,
+        ~envData={components: components, stack: list{Component(name), ...stack}},
+        ~makeEnv=makeAux,
+        ~error,
+        ~try_,
+        ~reduceQueue,
+      ),
+    ),
+  return: return,
+  error: (. message) => #errors([Debug.customError(message, ~stack)]),
+  mapChild: mapChild,
+  flatMapChild: flatMapChild,
+}
+
+let make = components => makeAux(. {components: uncurry(components), stack: list{}})
 
 module Async = {
-  type output = Js.Promise.t<output>
-  type template = Acutis_Types.template<output>
+  type output = Js.Promise.t<Result.t<string>>
   type t = environment<output>
 
   let returnAsync = (. x) => Js.Promise.resolve(#ok(x))
 
   let error = (. x) => Js.Promise.resolve(#errors(x))
 
-  let try_ = (. f, ~catch) => f(.) |> Js.Promise.catch(e => catch(. e))
+  let try_ = (. f, ~catch) => Js.Promise.catch(e => catch(. e), f(.))
 
   let mapChildAsync = (. child, f) =>
-    child |> Js.Promise.then_(child =>
-      switch child {
-      | #ok(child) => Js.Promise.resolve(#ok(f(. child)))
-      | #errors(_) as e => Js.Promise.resolve(e)
-      }
-    )
+    Js.Promise.then_(child => Js.Promise.resolve(Result.map(child, f)), child)
 
-  let flatMapChildAsync = (. child, f) =>
-    child |> Js.Promise.then_(child =>
+  let flatMapChildAsync = (. child, f) => Js.Promise.then_(child =>
       switch child {
-      | #ok(child) => f(. child)
+      | #ok(child) => f(child)
       | #errors(_) as e => Js.Promise.resolve(e)
       }
-    )
+    , child)
 
   let reduceArray = a => {
     let result = ref("")
@@ -86,69 +137,5 @@ module Async = {
     flatMapChild: flatMapChildAsync,
   }
 
-  let make = components => makeAux(. {components: components, stack: list{}})
+  let make = components => makeAux(. {components: uncurry(components), stack: list{}})
 }
-
-type template = Acutis_Types.template<output>
-type t = environment<output>
-
-let return = (. x) => #ok(x)
-
-let error = (. x) => #errors(x)
-
-let try_ = (. f, ~catch) =>
-  try {
-    f(.)
-  } catch {
-  | e => catch(. e)
-  }
-
-let mapChild = (. child, f) =>
-  switch child {
-  | #ok(child) => #ok(f(. child))
-  | #errors(_) as e => e
-  }
-
-let flatMapChild = (. child, f) =>
-  switch child {
-  | #ok(child) => f(. child)
-  | #errors(_) as e => e
-  }
-
-let reduceQueue = (. q) => {
-  let result = ref("")
-  let errors = Queue.make()
-  Queue.forEachU(q, (. x) =>
-    switch x {
-    | #ok(s) => result := result.contents ++ s
-    | #errors(e) => e->Queue.fromArray->Queue.transfer(errors)
-    }
-  )
-  if Queue.isEmpty(errors) {
-    #ok(result.contents)
-  } else {
-    #errors(Queue.toArray(errors))
-  }
-}
-
-let rec makeAux = (. {components, stack}) => {
-  render: (. {ast, name}, props, children) =>
-    reduceQueue(.
-      Render.make(
-        ~ast,
-        ~props,
-        ~children,
-        ~envData={components: components, stack: list{Component(name), ...stack}},
-        ~makeEnv=makeAux,
-        ~error,
-        ~try_,
-        ~reduceQueue,
-      ),
-    ),
-  return: return,
-  error: (. message) => #errors([Debug.customError(message, ~stack)]),
-  mapChild: mapChild,
-  flatMapChild: flatMapChild,
-}
-
-let make = components => makeAux(. {components: components, stack: list{}})

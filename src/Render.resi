@@ -21,11 +21,8 @@ module Pattern: {
     ~stack: Acutis_Types.Errors.Stack.t,
   ) => result<Js.Json.t, Acutis_Types.Errors.t>
 
-  type errors =
-    | NoMatch
-    | PatternNumberMismatch
-    | PatternTypeMismatch({data: Js.Json.tagged_t, pattern: Acutis_Types.Ast_Pattern.t})
-    | TooManyBindings({loc: Acutis_Types.loc, binding: string})
+  type errors
+  let noMatch: errors // exported for debugging
 
   let test: (
     Acutis_Types.NonEmpty.t<Acutis_Types.Ast_Pattern.t>,

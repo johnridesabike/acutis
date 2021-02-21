@@ -110,7 +110,7 @@ The `env` argument in 2 is the same `env` record as in 1. This record
 contains the `render` function with the logic and data that must be global
 across the entire template tree.
 
-The specific "logic" here is how to use the output type, synchronously or
+The specific logic is how to use the output type, synchronously or
 asynchronously. This is why there are two functions to create render
 environments:
 
@@ -220,12 +220,7 @@ Props, template children, and template components each live in separate
 like a leaky implementation detail though, and theoretically it would be nice
 if they could all coexist in one single `props` object for each template.
 
-For users working with the API in ReScript, type errors can be cryptic. This
-is a side effect of the fact that template component functions rely on
-several recursive function types. The compiler can't always infer a concrete
-type in time to provide a useful error.
-
-I have not done any performance measurements. In the "make it work, make it
-right, make it fast," order, performance comes last.
+I have only done minimal performance measurements. In the "make it work, make
+it right, make it fast," order, performance comes last.
 
 Editor tooling, build system plugins, etc. are all on the wishlist.

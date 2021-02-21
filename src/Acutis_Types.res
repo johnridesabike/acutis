@@ -25,7 +25,7 @@ type loc = Loc(int)
 module Errors = {
   type kind = [#Type | #Render | #Compile | #Pattern | #Parse | #Syntax]
 
-  type location = {character: int}
+  type location = {@live character: int}
 
   let location = (Loc(x)) => {character: x + 1}
 
@@ -33,11 +33,11 @@ module Errors = {
   type rec anyExn = AnyExn(_): anyExn
 
   type t = {
-    message: string,
-    kind: kind,
-    location: option<location>,
-    path: array<Js.Json.t>,
-    exn: option<anyExn>,
+    @live message: string,
+    @live kind: kind,
+    @live location: option<location>,
+    @live path: array<Js.Json.t>,
+    @live exn: option<anyExn>,
   }
 
   module Stack = {
@@ -225,12 +225,14 @@ type environment<'a> = {
   render: (. Ast.t, props, Js.Dict.t<'a>) => 'a,
   return: (. string) => 'a,
   error: (. string) => 'a,
-  mapChild: (. 'a, (. string) => string) => 'a,
-  flatMapChild: (. 'a, (. string) => 'a) => 'a,
+  mapChild: (. 'a, string => string) => 'a,
+  flatMapChild: (. 'a, string => 'a) => 'a,
 }
 
-type rec template<'a> = (. environment<'a>, props, Js.Dict.t<'a>) => 'a
-and environmentData<'a> = {
-  components: Belt.Map.String.t<template<'a>>,
+type template<'a> = (environment<'a>, props, Js.Dict.t<'a>) => 'a
+type templateU<'a> = (. environment<'a>, props, Js.Dict.t<'a>) => 'a
+
+type environmentData<'a> = {
+  components: Belt.Map.String.t<templateU<'a>>,
   stack: Errors.Stack.t,
 }

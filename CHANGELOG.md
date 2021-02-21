@@ -11,6 +11,14 @@
 - New `Compile.fromArray` creates a string map for components.
 - Removed documentation for `Compile.makeAst`.
 - Rescript: Added a `public` configuration to only export selected modules.
+- Some public API functions changed from uncurried to curried[^1]:
+  - `Source.func` function argument.
+  - `Source.funcWithString` function argument.
+  - `env.mapChild` function argument.
+  - `env.flatMapChild` function argument.
+- Upgraded ReScript to 9.0.1.
+
+[^1]: My measurements showed negligible performance differences.
 
 ## 0.9.0
 

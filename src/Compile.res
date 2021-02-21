@@ -353,10 +353,10 @@ let makeAst = (~name, source) => {
 let make = (x: Source.t<_>) =>
   switch x {
   | String({name, src}) =>
-    makeAst(src, ~name)->Result.mapU((. ast, . env, props, templates) =>
+    makeAst(src, ~name)->Result.map((ast, env, props, templates) =>
       env.render(. ast, props, templates)
     )
-  | StringFunc({name, src, f}) => makeAst(src, ~name)->Result.mapU((. ast) => f(. ast))
+  | StringFunc({name, src, f}) => makeAst(src, ~name)->Result.map(f)
   | Func({f, _}) => #ok(f)
   }
 

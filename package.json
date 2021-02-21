@@ -47,22 +47,25 @@
     "src/"
   ],
   "scripts": {
+    "analyze-dead-code": "reanalyze -dce",
     "build": "bsb -make-world",
     "clean": "bsb -clean-world",
     "prepublishOnly": "yarn build",
     "preversion": "yarn build && yarn test",
     "start": "bsb -w",
+    "pretest": "reanalyze -dce",
     "test": "jest",
     "test:watch": "jest --watchAll",
     "test:watch:coverage": "jest --watchAll --coverage"
   },
   "dependencies": {
-    "@rescript/std": "^9.0.0",
+    "@rescript/std": "^9.0.1",
     "minimist": "^1.2.5"
   },
   "devDependencies": {
-    "bs-platform": "^9.0.0",
+    "bs-platform": "^9.0.1",
     "jest": "^26.6.3",
+    "reanalyze": "^2.13.0",
     "reason-test-framework": "^0.3.2"
   },
   "engines": {

@@ -83,7 +83,7 @@ window.onload = function playground(_event) {
       var result = Result.flatMap(template, (template) =>
         template(env, props, {})
       );
-      resultText.value = Result.getOr(
+      resultText.value = Result.getOrElse(
         result,
         (errors) => "Errors:\n" + JSON.stringify(errors, null, 2)
       );

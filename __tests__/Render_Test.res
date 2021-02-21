@@ -19,8 +19,8 @@ let json = Js.Json.parseExn
 let dict = Js.Dict.fromArray
 
 let render = (~name="", ~children=Js.Dict.empty(), src, props, components) =>
-  (Compile.make(Source.string(~name, src))->Result.getExn)(.
-    components->Environment.make,
+  (Source.string(~name, src)->Compile.make->Result.getExn)(
+    Environment.make(components),
     props,
     children,
   )
@@ -98,9 +98,9 @@ describe("All together", ({test, _}) => {
       Compile.emptyMap,
     )
     expect.value(result).toEqual(#ok(` _hi_ `))
-    let ohHai = Source.funcWithString(~name="OhHai", "{{ Children }} Oh hai {{ name }}.", (.
+    let ohHai = Source.funcWithString(~name="OhHai", "{{ Children }} Oh hai {{ name }}.", (
       ast,
-      . env,
+      env,
       props,
       templates,
     ) => env.render(. ast, props, templates))
@@ -151,9 +151,9 @@ describe("All together", ({test, _}) => {
   })
 
   test("Component", ({expect, _}) => {
-    let ohHai = Source.funcWithString(~name="OhHai", "{{ Children }} Oh hai {{ name }}.", (.
+    let ohHai = Source.funcWithString(~name="OhHai", "{{ Children }} Oh hai {{ name }}.", (
       ast,
-      . env,
+      env,
       props,
       templates,
     ) => env.render(. ast, props, templates))
@@ -164,7 +164,7 @@ describe("All together", ({test, _}) => {
       components->Result.getExn,
     )
     expect.value(result).toEqual(#ok(` I did not.  Oh hai Mark.`))
-    let addOne = Source.func(~name="AddOne", (. env, props, _children) => {
+    let addOne = Source.func(~name="AddOne", (env, props, _children) => {
       let index =
         props->Js.Dict.get("index")->Belt.Option.flatMap(Js.Json.decodeNumber)->Belt.Option.getExn
       env.return(. Belt.Float.toString(index +. 1.0))
@@ -207,7 +207,7 @@ describe("Nullish coalescing", ({test, _}) => {
 
 describe("Template sections", ({test, _}) => {
   test("Default `Children` child", ({expect, _}) => {
-    let a = Source.funcWithString(~name="A", "{{ Children }}", (. ast, . env, props, children) => {
+    let a = Source.funcWithString(~name="A", "{{ Children }}", (ast, env, props, children) => {
       env.render(. ast, props, children)
     })
     let components = Compile.fromArray([a])
@@ -218,17 +218,17 @@ describe("Template sections", ({test, _}) => {
   })
 
   test("Child props are passed correctly", ({expect, _}) => {
-    let x = Source.funcWithString(~name="X", "{{ PassthroughChild }}", (.
+    let x = Source.funcWithString(~name="X", "{{ PassthroughChild }}", (
       ast,
-      . env,
+      env,
       props,
       children,
     ) => {
       env.render(. ast, props, children)
     })
-    let y = Source.funcWithString(~name="Y", "{% X PassthroughChild=A /%}", (.
+    let y = Source.funcWithString(~name="Y", "{% X PassthroughChild=A /%}", (
       ast,
-      . env,
+      env,
       props,
       children,
     ) => {
@@ -240,17 +240,17 @@ describe("Template sections", ({test, _}) => {
   })
 
   test("Child props are passed correctly with punning", ({expect, _}) => {
-    let x = Source.funcWithString(~name="X", "{{ PassthroughChild }}", (.
+    let x = Source.funcWithString(~name="X", "{{ PassthroughChild }}", (
       ast,
-      . env,
+      env,
       props,
       children,
     ) => {
       env.render(. ast, props, children)
     })
-    let y = Source.funcWithString(~name="Y", "{% X PassthroughChild /%}", (.
+    let y = Source.funcWithString(~name="Y", "{% X PassthroughChild /%}", (
       ast,
-      . env,
+      env,
       props,
       children,
     ) => {
@@ -268,7 +268,7 @@ describe("Template sections", ({test, _}) => {
 
 describe("API helper functions", ({test, _}) => {
   test("env.return", ({expect, _}) => {
-    let x = Source.func(~name="X", (. env, _props, _children) => {
+    let x = Source.func(~name="X", (env, _props, _children) => {
       env.return(. "a")
     })
     let components = Compile.fromArray([x])
@@ -277,7 +277,7 @@ describe("API helper functions", ({test, _}) => {
   })
 
   test("env.error", ({expect, _}) => {
-    let x = Source.func(~name="X", (. env, _props, _children) => {
+    let x = Source.func(~name="X", (env, _props, _children) => {
       env.error(. "e")
     })
     let components = Compile.fromArray([x])
@@ -296,10 +296,8 @@ describe("API helper functions", ({test, _}) => {
   })
 
   test("env.mapChild", ({expect, _}) => {
-    let x = Source.func(~name="X", (. env, _props, children) => {
-      env.mapChild(.Js.Dict.unsafeGet(children, "Children"), (. child) =>
-        Js.String.toUpperCase(child)
-      )
+    let x = Source.func(~name="X", (env, _props, children) => {
+      env.mapChild(.Js.Dict.unsafeGet(children, "Children"), child => Js.String.toUpperCase(child))
     })
     let components = Compile.fromArray([x])
     let result = render(`{% X ~%} a {%~ /X %}`, Js.Dict.empty(), components->Result.getExn)
@@ -324,11 +322,11 @@ describe("API helper functions", ({test, _}) => {
   })
 
   test("env.flatMapChild", ({expect, _}) => {
-    let x = Source.func(~name="X", (. env, _props, children) => {
-      env.flatMapChild(.Js.Dict.unsafeGet(children, "Children"), (. child) =>
+    let x = Source.func(~name="X", (env, _props, children) =>
+      env.flatMapChild(.Js.Dict.unsafeGet(children, "Children"), child =>
         env.return(. Js.String.toUpperCase(child))
       )
-    })
+    )
     let components = Compile.fromArray([x])
     let result = render(`{% X %} a {% /X %}`, Js.Dict.empty(), components->Result.getExn)
     expect.value(result).toEqual(#ok(" A "))

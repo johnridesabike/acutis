@@ -1,6 +1,6 @@
 open Acutis_Types
 
-type stringFunc<'a> = (. Ast.t) => template<'a>
+type stringFunc<'a> = Ast.t => template<'a>
 
 type t<'a> =
   | String({name: string, src: string})

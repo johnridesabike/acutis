@@ -23,48 +23,53 @@ const { filenameToComponent } = require("../../node-utils");
 
 const readFile = util.promisify(fs.readFile);
 
-module.exports = (eleventyConfig, config) => {
+function onComponentsError(e) {
+  console.error(e);
+  throw new Error(
+    "I couldn't compile Acutis components due to the previous errors."
+  );
+}
+
+module.exports = function (eleventyConfig, config) {
   let env = Environment.Async.make(Compile.emptyMap);
   eleventyConfig.addTemplateFormats("acutis");
   eleventyConfig.addExtension("acutis", {
     read: true,
     data: true,
-    init: function () {
-      const filesGlob = path.join(
+    init: async function () {
+      const glob = path.join(
         this.config.inputDir,
         this.config.dir.includes,
         "**/*.acutis"
       );
-      return fastGlob(filesGlob)
-        .then((files) =>
-          Promise.all(
-            files.map((fileName) =>
-              readFile(fileName, "utf-8").then((src) => {
-                const name = filenameToComponent(fileName);
-                return Source.string(name, src);
-              })
-            )
-          )
-        )
-        .then((queue) => {
-          const comps = Result.getOr(
-            Compile.fromArray([...queue, ...config.components]),
-            (e) => {
-              console.error(e);
-              throw new Error("Couldn't compile includes.");
-            }
-          );
-          env = Environment.Async.make(comps);
-        });
+      const files = await fastGlob(glob);
+      const queue = await Promise.all(
+        files.map(async (fileName) => {
+          const str = await readFile(fileName, "utf-8");
+          const name = filenameToComponent(fileName);
+          return Source.string(name, str);
+        })
+      );
+      const componentsResult = Compile.fromArray([
+        ...queue,
+        ...config.components,
+      ]);
+      const components = Result.getOrElse(componentsResult, onComponentsError);
+      env = Environment.Async.make(components);
     },
-    compile: (src, inputPath) => (props) => {
-      const getOrThrow = (result) =>
-        Result.getOr(result, (e) => {
-          console.error(e);
-          throw new Error(`Error with ${props.permalink}`);
-        });
-      const Template = getOrThrow(Compile.make(Source.string(inputPath, src)));
-      return Template(env, props, {}).then(getOrThrow);
+    compile: function (str, inputPath) {
+      function onError(e) {
+        console.error(e);
+        throw new Error(
+          `I couldn't render ${inputPath} due to the previous errors.`
+        );
+      }
+      return async function (data) {
+        const src = Source.string(inputPath, str);
+        const template = Result.getOrElse(Compile.make(src), onError);
+        const result = await template(env, data, {});
+        return Result.getOrElse(result, onError);
+      };
     },
   });
 };

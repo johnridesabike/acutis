@@ -16,12 +16,12 @@
 open TestFramework
 
 describe("Result", ({test, _}) => {
-  test("getOr", ({expect, _}) => {
+  test("getOrElse", ({expect, _}) => {
     let good = Source.string(~name="Good", "{{ x }}")->Compile.make
     let bad = Source.string(~name="Bad", "{{")->Compile.make
-    let getOr = x => Result.getOr(x, _ => #error)
-    expect.value(good->Result.map(_ => #noerror)->getOr).toEqual(#noerror)
-    expect.value(bad->Result.map(_ => #noerror)->getOr).toEqual(#error)
+    let getOrElse = x => Result.getOrElse(x, _ => #error)
+    expect.value(good->Result.map(_ => #noerror)->getOrElse).toEqual(#noerror)
+    expect.value(bad->Result.map(_ => #noerror)->getOrElse).toEqual(#error)
   })
 
   test("getExn", ({expect, _}) => {

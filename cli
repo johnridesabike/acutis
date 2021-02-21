@@ -18,7 +18,7 @@
 const util = require("util");
 const fs = require("fs");
 const minimist = require("minimist");
-const Acutis = require("./lib/js/src/AcutisJs");
+const { Compile, Environment, Result } = require("./lib/js/src/AcutisJs");
 const { loadTemplate } = require("./node-utils");
 const { version } = require("./package.json");
 const { stdin } = process;
@@ -26,22 +26,17 @@ const { stdin } = process;
 const readFile = util.promisify(fs.readFile);
 const writeFile = util.promisify(fs.writeFile);
 
-function getStdin() {
-  return new Promise((resolve, reject) => {
-    let result = "";
-    if (stdin.isTTY) {
-      return resolve(result);
-    }
+async function getStdin() {
+  let result = "";
+  if (stdin.isTTY) {
+    return result;
+  } else {
     stdin.setEncoding("utf8");
-    stdin.on("readable", () => {
-      let chunk;
-      while (null !== (chunk = stdin.read())) {
-        result += chunk;
-      }
-    });
-    stdin.on("end", () => resolve(result));
-    stdin.on("error", reject);
-  });
+    for await (const chunk of stdin) {
+      result += chunk;
+    }
+    return result;
+  }
 }
 
 const args = minimist(process.argv.slice(2), {
@@ -59,6 +54,11 @@ const args = minimist(process.argv.slice(2), {
 
 const logError = args.table ? console.table : console.error;
 
+function onError(e) {
+  logError(e);
+  throw new Error("I can't continue due to these errors.");
+}
+
 if (args.version) {
   console.log(version);
 } else if (args.help || args._.length === 0) {
@@ -74,72 +74,41 @@ Options:
   -v, --version                 Show the version and exit.
 
 Templates:
-  The first template listed is the root template. Templates with .js or .mjs
-  extensions are rendered using their default export function. For all other
+  The first template listed is the root template. Templates with .js, .mjs,
+  or .cjs extensions are rendered using their default export. For all other
   file types, their text content is used as the template.
 
 Examples:
   acutis --data=data.json --output=index.html Index.acutis Header.js Footer.acutis
   acutis Index.acutis _includes/**/*.(js|mjs|acutis) < data.json > index.html
-  curl https://example.com/api | acutis Index.acutis *.(js|acutis) -o index.html 
-`);
+  curl https://example.com/api | acutis Index.acutis *.(js|acutis) -o index.html`);
 } else {
-  Promise.all(args._.map((fileName) => loadTemplate(fileName)))
-    .then((files) => {
-      const props = (args.data ? readFile(args.data) : getStdin()).then(
-        (contents) => {
-          if (contents === "") {
-            return {};
-          } else {
-            return JSON.parse(contents);
-          }
-        }
-      );
+  (async function () {
+    try {
+      const files = await Promise.all(args._.map(loadTemplate));
+      const json = await (args.data ? readFile(args.data) : getStdin());
+      const props = json === "" ? {} : JSON.parse(json);
       const firstFile = files.shift();
-      if (!firstFile) {
-        throw Error("I couldn't load the main template.");
-      }
-      const MainTemplate = Acutis.Result.getOr(
-        Acutis.Compile.make(firstFile),
-        (e) => {
-          logError(e);
-          throw new Error("Couldn't compile the main template.");
-        }
-      );
-      const components = Acutis.Result.getOr(
-        Acutis.Compile.fromArray(files),
-        (e) => {
-          logError(e);
-          throw new Error("Couldn't compile the template components.");
-        }
-      );
+      const template = Result.getOrElse(Compile.make(firstFile), onError);
+      const components = Result.getOrElse(Compile.fromArray(files), onError);
       const env = args.async
-        ? Acutis.Environment.Async.make(components)
-        : Acutis.Environment.make(components);
-      return props
-        .then((props) => MainTemplate(env, props, {}))
-        .then((result) =>
-          Acutis.Result.getOr(result, (e) => {
-            logError(e);
-            throw new Error("I can't continue due to these errors.");
-          })
-        );
-    })
-    .then((result) => {
+        ? Environment.Async.make(components)
+        : Environment.make(components);
+      const result = await template(env, props, {});
+      const output = Result.getOrElse(result, onError);
       if (args.output) {
-        return writeFile(args.output, result).then(() =>
-          console.log(`I successfully wrote ${args.output}.`)
-        );
+        await writeFile(args.output, output, "utf8");
+        console.log(`I successfully wrote ${args.output}.`);
       } else {
-        return process.stdout.write(result, "utf8");
+        process.stdout.write(output, "utf8");
       }
-    })
-    .catch((e) => {
+    } catch (e) {
       if (e.message) {
         console.error(e.message);
       } else {
         console.error(e);
       }
       process.exitCode = 1;
-    });
+    }
+  })();
 }
