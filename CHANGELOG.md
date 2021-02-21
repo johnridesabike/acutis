@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.10.0
 
 - New `Source` module with functions for classifying raw template sources.
 - Template names are no longer optional.
