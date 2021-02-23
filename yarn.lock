@@ -2794,10 +2794,10 @@ read-pkg@^5.2.0:
     parse-json "^5.0.0"
     type-fest "^0.6.0"
 
-reanalyze@^2.13.0:
-  version "2.13.0"
-  resolved "https://registry.yarnpkg.com/reanalyze/-/reanalyze-2.13.0.tgz#8d2d8845d0fb7bd2cb20dfa6c9910a74f46153fa"
-  integrity sha512-Ao4U0U3Bb2ZDQMR65VnTHojldvQQvvN6TQPCb2V24vrKGGN5fhAqiNo7PLhLcqfV0OGC1q4Us+MVuDOuRW21IQ==
+reanalyze@^2.14.0:
+  version "2.14.0"
+  resolved "https://registry.yarnpkg.com/reanalyze/-/reanalyze-2.14.0.tgz#1768deccc43356438897854c0d4712abcf8371f3"
+  integrity sha512-khOF3AMnrW3uNHJsKOtAaW+bo3kx6zjsheq8SSTGPDTxh6zbrafIHgRZgipEOhsgdg2ES2rhuovdjUHlImWCNw==
 
 reason-test-framework@^0.3.2:
   version "0.3.2"

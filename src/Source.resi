@@ -2,9 +2,9 @@ type stringFunc<'a> = Acutis_Types.Ast.t => Acutis_Types.template<'a>
 
 type t<'a> =
   private
-  | @live String({name: string, src: string})
-  | @live Func({name: string, f: Acutis_Types.template<'a>})
-  | @live StringFunc({name: string, src: string, f: stringFunc<'a>})
+  | String({name: string, src: string})
+  | Func({name: string, f: Acutis_Types.template<'a>})
+  | StringFunc({name: string, src: string, f: stringFunc<'a>})
 
 let string: (~name: string, string) => t<'a>
 
