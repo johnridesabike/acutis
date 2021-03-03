@@ -113,6 +113,38 @@ let badMapTypeParseExn = (t, ~name) =>
     }),
   )
 
+let jsonString = (. s) => Js.Json.string(s)
+
+let cyclicDependencyExn = (~loc, ~name, ~stack) =>
+  raise(
+    CompileError({
+      message: `Cyclic dependency detected. I can't compile any components in this path.`,
+      kind: #Compile,
+      location: Some(location(loc)),
+      path: list{name, ...stack}->Belt.List.toArray->Belt.Array.mapU(jsonString),
+      exn: None,
+    }),
+  )
+
+let componentDoesNotExistExn = (~loc, ~name, ~stack) =>
+  raise(
+    CompileError({
+      message: `Component "${name}" either does not exist or couldn't be compiled.`,
+      kind: #Compile,
+      location: Some(location(loc)),
+      path: stack->Belt.List.toArray->Belt.Array.mapU(jsonString),
+      exn: None,
+    }),
+  )
+
+let duplicateCompName = name => {
+  message: `The template component name "${name}" was used twice. Every component needs a unique name.`,
+  location: None,
+  path: [],
+  kind: #Compile,
+  exn: None,
+}
+
 /* Render errors */
 
 let jsonTaggedTToString = (x: Js.Json.tagged_t) =>
@@ -124,14 +156,6 @@ let jsonTaggedTToString = (x: Js.Json.tagged_t) =>
   | JSONArray(_) => "array"
   | JSONObject(_) => "object"
   }
-
-let componentDoesNotExist = (~loc, ~component, ~stack) => {
-  message: `Component "${component}" does not exist.`,
-  kind: #Render,
-  location: Some(location(loc)),
-  path: stackToPath(stack),
-  exn: None,
-}
 
 let patternTypeMismatch = (~data, ~pattern, ~stack) => {
   let data = jsonTaggedTToString(data)
@@ -221,7 +245,7 @@ let badMapType = (~loc, ~binding, ~type_, ~stack) => {
 
 /* Input errors */
 
-let compileExn = (e, ~name) => {
+let uncaughtCompileError = (e, ~name) => {
   message: `An exception was thrown while compiling this template. This is probably due to malformed input.`,
   location: None,
   path: [Js.Json.string(name)],
@@ -229,20 +253,12 @@ let compileExn = (e, ~name) => {
   exn: Some(AnyExn(e)),
 }
 
-let componentExn = (e, ~stack) => {
+let uncaughtComponentError = (e, ~stack) => {
   message: `An exception was thrown while rendering a template component.`,
   location: None,
   path: stackToPath(stack),
   kind: #Render,
   exn: Some(AnyExn(e)),
-}
-
-let duplicateCompName = name => {
-  message: `The template component name "${name}" was used twice. Every component needs a unique name.`,
-  location: None,
-  path: [],
-  kind: #Compile,
-  exn: None,
 }
 
 let customError = (message, ~stack) => {

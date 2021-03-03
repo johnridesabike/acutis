@@ -303,7 +303,7 @@ let trimEnd = string => {
 external dictMerge: (@as(json`{}`) _, ~base: Js.Dict.t<'a>, Js.Dict.t<'a>) => Js.Dict.t<'a> =
   "assign"
 
-let echo = (head, tail, ~props, ~stack, ~children, ~env, ~error) => {
+let echo = (head, tail, ~props, ~stack, ~children, ~env: environment<_>, ~error) => {
   let rec aux = (head: Ast.Echo.t, i) =>
     switch head {
     | Binding(loc, binding, esc) =>
@@ -330,11 +330,10 @@ let echo = (head, tail, ~props, ~stack, ~children, ~env, ~error) => {
   aux(head, 0)
 }
 
-let rec make = (~ast, ~props, ~children, ~envData, ~makeEnv, ~error, ~try_, ~reduceQueue) => {
-  let {components, stack} = envData
-  let env = makeEnv(. envData)
+let rec make = (~ast, ~props, ~children, ~stack, ~makeEnv, ~error, ~try_, ~reduceQueue) => {
+  let env = makeEnv(. stack)
   let queue = Queue.make()
-  Array.forEachU(ast, (. node: Ast.node) =>
+  Array.forEachU(ast, (. node: Ast.node<_>) =>
     switch node {
     | Echo(_, NonEmpty(head, tail)) =>
       Queue.add(queue, echo(head, tail, ~props, ~stack, ~children, ~env, ~error))
@@ -358,7 +357,7 @@ let rec make = (~ast, ~props, ~children, ~envData, ~makeEnv, ~error, ~try_, ~red
             ~ast,
             ~props=dictMerge(~base=props, props'),
             ~children,
-            ~envData={...envData, stack: list{Match, ...stack}},
+            ~stack=list{Match, ...stack},
             ~makeEnv,
             ~error,
             ~try_,
@@ -390,7 +389,7 @@ let rec make = (~ast, ~props, ~children, ~envData, ~makeEnv, ~error, ~try_, ~red
                 ~ast,
                 ~props=dictMerge(~base=props, props'),
                 ~children,
-                ~envData={...envData, stack: list{Index(index), Map, ...stack}},
+                ~stack=list{Index(index), Map, ...stack},
                 ~makeEnv,
                 ~error,
                 ~try_,
@@ -403,60 +402,52 @@ let rec make = (~ast, ~props, ~children, ~envData, ~makeEnv, ~error, ~try_, ~red
           }
         })
       }
-    | Component({loc, name, props: compPropsRaw, children: compChildrenRaw}) =>
-      switch MapString.get(components, name) {
-      | Some(component) =>
-        let compProps = Js.Dict.empty()
-        let compChildren = Js.Dict.empty()
-        let errors = Queue.make()
-        Array.forEachU(compChildrenRaw, (. (key, child)) =>
-          switch child {
-          | ChildBlock(ast) =>
-            Js.Dict.set(
-              compChildren,
-              key,
-              reduceQueue(.
-                make(
-                  ~ast,
-                  ~props,
-                  ~children,
-                  ~envData={
-                    ...envData,
-                    stack: list{Section({component: name, section: key}), ...stack},
-                  },
-                  ~makeEnv,
-                  ~error,
-                  ~try_,
-                  ~reduceQueue,
-                ),
+    | Component({loc, name, props: compPropsRaw, children: compChildrenRaw, f}) =>
+      let compProps = Js.Dict.empty()
+      let compChildren = Js.Dict.empty()
+      let errors = Queue.make()
+      Array.forEachU(compChildrenRaw, (. (key, child)) =>
+        switch child {
+        | ChildBlock(ast) =>
+          Js.Dict.set(
+            compChildren,
+            key,
+            reduceQueue(.
+              make(
+                ~ast,
+                ~props,
+                ~children,
+                ~stack=list{Section({component: name, section: key}), ...stack},
+                ~makeEnv,
+                ~error,
+                ~try_,
+                ~reduceQueue,
               ),
-            )
-          | ChildName(child) =>
-            switch Js.Dict.get(children, child) {
-            | Some(data) => Js.Dict.set(compChildren, key, data)
-            | None => Queue.add(errors, Debug.childDoesNotExist(~loc, ~child, ~stack))
-            }
-          }
-        )
-        Array.forEachU(compPropsRaw, (. (key, data)) =>
-          switch Pattern.toJson(data, ~props, ~stack) {
-          | Ok(data) => Js.Dict.set(compProps, key, data)
-          | Error(e) => Queue.add(errors, e)
-          }
-        )
-        if Queue.isEmpty(errors) {
-          Queue.add(
-            queue,
-            try_(.
-              (. ()) => component(. env, compProps, compChildren),
-              ~catch=(. e) => error(. [Debug.componentExn(e, ~stack)]),
             ),
           )
-        } else {
-          Queue.add(queue, error(. Queue.toArray(errors)))
+        | ChildName(child) =>
+          switch Js.Dict.get(children, child) {
+          | Some(data) => Js.Dict.set(compChildren, key, data)
+          | None => Queue.add(errors, Debug.childDoesNotExist(~loc, ~child, ~stack))
+          }
         }
-      | None =>
-        Queue.add(queue, error(. [Debug.componentDoesNotExist(~component=name, ~loc, ~stack)]))
+      )
+      Array.forEachU(compPropsRaw, (. (key, data)) =>
+        switch Pattern.toJson(data, ~props, ~stack) {
+        | Ok(data) => Js.Dict.set(compProps, key, data)
+        | Error(e) => Queue.add(errors, e)
+        }
+      )
+      if Queue.isEmpty(errors) {
+        Queue.add(
+          queue,
+          try_(.
+            (. ()) => f(. env, compProps, compChildren),
+            ~catch=(. e) => error(. [Debug.uncaughtComponentError(e, ~stack)]),
+          ),
+        )
+      } else {
+        Queue.add(queue, error(. Queue.toArray(errors)))
       }
     }
   )

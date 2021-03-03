@@ -89,11 +89,15 @@ Examples:
       const json = await (args.data ? readFile(args.data) : getStdin());
       const props = json === "" ? {} : JSON.parse(json);
       const firstFile = files.shift();
-      const template = Result.getOrElse(Compile.make(firstFile), onError);
-      const components = Result.getOrElse(Compile.fromArray(files), onError);
-      const env = args.async
-        ? Environment.Async.make(components)
-        : Environment.make(components);
+      const components = Result.getOrElse(
+        Compile.Components.make(files),
+        onError
+      );
+      const template = Result.getOrElse(
+        Compile.make(firstFile, components),
+        onError
+      );
+      const env = args.async ? Environment.async : Environment.sync;
       const result = await template(env, props, {});
       const output = Result.getOrElse(result, onError);
       if (args.output) {

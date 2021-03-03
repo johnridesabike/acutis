@@ -18,10 +18,17 @@ module Pattern: {
   let make: Lexer.t => Acutis_Types.NonEmpty.t<Acutis_Types.Ast_Pattern.t>
 }
 
-let makeAst: (~name: string, string) => Result.t<Acutis_Types.Ast.t>
+let makeAstInternalExn: (
+  ~name: string,
+  ~g: 'g, // This is for an internal graph format
+  ~getComponent: (. 'g, string, Acutis_Types.loc) => 'a,
+  string,
+) => Acutis_Types.Ast.t<'a>
 
-let make: Source.t<'a> => Result.t<Acutis_Types.template<'a>>
+module Components: {
+  type t<'a>
+  let empty: unit => t<_>
+  let make: array<Source.t<'a>> => Result.t<t<'a>>
+}
 
-let emptyMap: Belt.Map.String.t<Acutis_Types.template<_>>
-
-let fromArray: array<Source.t<'a>> => Result.t<Belt.Map.String.t<Acutis_Types.template<'a>>>
+let make: (Source.t<'a>, Components.t<'a>) => Result.t<Acutis_Types.template<'a>>

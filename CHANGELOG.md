@@ -1,5 +1,19 @@
 # Changelog
 
+## Unreleased
+
+- Compile API changes:
+  - Internal ASTs are now statically linked into directed acyclic graphs at
+    compile time.
+  - Circular template component dependencies are no longer allowed.
+  - Components are compiled to an internal `Compile.Components.t` type.
+  - `Compile.fromArray` replaced with `Compile.Components.make`.
+  - `Compile.emptyMap` replaced with `Compile.Components.empty`.
+  - `Compile.make` requires a second argument of `Compile.Components.t` type.
+- Environments are no longer dynamically constructed from functions.
+  - `Environment.make` function replaced with static `Environment.sync`.
+  - `Environment.Async.make` function replaced with static `Environment.async`.
+
 ## 0.10.0
 
 - New `Source` module with functions for classifying raw template sources.

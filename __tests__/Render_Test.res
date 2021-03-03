@@ -19,8 +19,8 @@ let json = Js.Json.parseExn
 let dict = Js.Dict.fromArray
 
 let render = (~name="", ~children=Js.Dict.empty(), src, props, components) =>
-  (Source.string(~name, src)->Compile.make->Result.getExn)(
-    Environment.make(components),
+  (Source.string(~name, src)->Compile.make(components)->Result.getExn)(
+    Environment.sync,
     props,
     children,
   )
@@ -32,12 +32,12 @@ describe("All together", ({test, _}) => {
       ("b", Js.Json.string("World")),
       ("c", Js.Json.string("&\"'></`=")),
     ])
-    let children = dict([("Z", render(`Z`, props, Compile.emptyMap))])
+    let children = dict([("Z", render(`Z`, props, Compile.Components.empty()))])
     let result = render(
       `{{ a }} {{ b }}! {{ c }} {{ &c }} {{ &"<" }} {{ "d" }} {{ 1.5 }} {{ Z }}`,
       props,
       ~children,
-      Compile.emptyMap,
+      Compile.Components.empty(),
     )
     expect.value(result).toEqual(
       #ok("Hello World! &amp;&quot;&apos;&gt;&lt;&#x2F;&#x60;&#x3D; &\"'></`= < d 1.5 Z"),
@@ -48,36 +48,44 @@ describe("All together", ({test, _}) => {
     let result = render(
       "{% match a with null %} a doesn't exist. {% with a %} {{ a }} {% /match %}",
       Js.Dict.empty(),
-      Compile.emptyMap,
+      Compile.Components.empty(),
     )
     expect.value(result).toEqual(#ok(" a doesn't exist. "))
   })
 
   test("Nested comments", ({expect, _}) => {
-    let result = render("a {* b {* c *} d *} e", Js.Dict.empty(), Compile.emptyMap)
+    let result = render("a {* b {* c *} d *} e", Js.Dict.empty(), Compile.Components.empty())
     expect.value(result).toEqual(#ok("a  e"))
   })
 
   test("Match", ({expect, _}) => {
     let data = dict([("a", json(`{"a": "a"}`))])
-    let result = render(`{% match a with {a} %} {{ a }} {% /match %}`, data, Compile.emptyMap)
+    let result = render(
+      `{% match a with {a} %} {{ a }} {% /match %}`,
+      data,
+      Compile.Components.empty(),
+    )
     expect.value(result).toEqual(#ok(` a `))
     let data = dict([("a", json(`{"a": "a", "b": true}`))])
     let result = render(
       `{% match a with {b: false, a} %} b is false. {{ a }} {% with {b: true, a} %} b is true. {{ a }} {% /match %}`,
       data,
-      Compile.emptyMap,
+      Compile.Components.empty(),
     )
     expect.value(result).toEqual(#ok(` b is true. a `))
     let data = dict([("a", json(`{"a": true, "b": {"c": "hi"}}`))])
     let result = render(
       `{% match a with {a: false} %} a is false. {% with {a: true, b} %} {% match b with {c} %} {{ c }} {% /match %} {% /match %}`,
       data,
-      Compile.emptyMap,
+      Compile.Components.empty(),
     )
     expect.value(result).toEqual(#ok(`  hi  `))
     let data = dict([("a", json(`{"a": {"b": "hi"}}`))])
-    let result = render(`{% match a with {a: {b}} %} {{ b }} {% /match %}`, data, Compile.emptyMap)
+    let result = render(
+      `{% match a with {a: {b}} %} {{ b }} {% /match %}`,
+      data,
+      Compile.Components.empty(),
+    )
     expect.value(result).toEqual(#ok(` hi `))
   })
 
@@ -88,14 +96,14 @@ describe("All together", ({test, _}) => {
    \t  _ {{ b }} _
     \t \r  {%~ /match %}`,
       data,
-      Compile.emptyMap,
+      Compile.Components.empty(),
     )
     expect.value(result).toEqual(#ok(`_ hi _`))
     let data = dict([("a", json(`{"a": {"b": "hi"}}`))])
     let result = render(
       `{% match a with {a: {b}} %} _ {{~ b ~}} _ {% /match %}`,
       data,
-      Compile.emptyMap,
+      Compile.Components.empty(),
     )
     expect.value(result).toEqual(#ok(` _hi_ `))
     let ohHai = Source.funcWithString(~name="OhHai", "{{ Children }} Oh hai {{ name }}.", (
@@ -104,7 +112,7 @@ describe("All together", ({test, _}) => {
       props,
       templates,
     ) => env.render(. ast, props, templates))
-    let components = Compile.fromArray([ohHai])
+    let components = Compile.Components.make([ohHai])
     let result = render(
       `{% OhHai name="Mark" ~%} I did not. {%~ /OhHai %}`,
       Js.Dict.empty(),
@@ -121,31 +129,35 @@ describe("All together", ({test, _}) => {
 
   test("Map", ({expect, _}) => {
     let data = dict([("a", json(`[{"name": "John"}, {"name": "Megan"}]`))])
-    let result = render(`{% map a with {name} %} {{ name }} {% /map %}`, data, Compile.emptyMap)
+    let result = render(
+      `{% map a with {name} %} {{ name }} {% /map %}`,
+      data,
+      Compile.Components.empty(),
+    )
     expect.value(result).toEqual(#ok(` John  Megan `))
     let data = dict([("a", json(`[{"name": "John"}, {"name": "Megan"}]`)), ("b", json(`"hi"`))])
     let result = render(
       `{% map a with {name} %} {{ b }} {{ name }}. {% /map %}`,
       data,
-      Compile.emptyMap,
+      Compile.Components.empty(),
     )
     expect.value(result).toEqual(#ok(` hi John.  hi Megan. `))
     let result = render(
       `{% map a with {name}, index %} {{ index }} {{ name }}. {% /map %}`,
       data,
-      Compile.emptyMap,
+      Compile.Components.empty(),
     )
     expect.value(result).toEqual(#ok(` 0 John.  1 Megan. `))
     let result = render(
       `{% map [{name: "Carlo"}, {name: "John"}] with {name} %} {{ name }}. {% /map %}`,
       data,
-      Compile.emptyMap,
+      Compile.Components.empty(),
     )
     expect.value(result).toEqual(#ok(` Carlo.  John. `))
     let result = render(
       `{% map [{name: "Carlo"}, ...a] with {name} %} {{ name }}. {% /map %}`,
       data,
-      Compile.emptyMap,
+      Compile.Components.empty(),
     )
     expect.value(result).toEqual(#ok(` Carlo.  John.  Megan. `))
   })
@@ -157,7 +169,7 @@ describe("All together", ({test, _}) => {
       props,
       templates,
     ) => env.render(. ast, props, templates))
-    let components = Compile.fromArray([ohHai])
+    let components = Compile.Components.make([ohHai])
     let result = render(
       `{% OhHai name="Mark" %} I did not. {% /OhHai %}`,
       Js.Dict.empty(),
@@ -169,7 +181,7 @@ describe("All together", ({test, _}) => {
         props->Js.Dict.get("index")->Belt.Option.flatMap(Js.Json.decodeNumber)->Belt.Option.getExn
       env.return(. Belt.Float.toString(index +. 1.0))
     })
-    let components = Compile.fromArray([addOne])
+    let components = Compile.Components.make([addOne])
     let data = dict([("a", json(`[{"name": "John"}, {"name": "Megan"}]`))])
     let result = render(
       `{% map a with {name}, index %} {% AddOne index / %} {{ name }}. {% /map %}`,
@@ -188,19 +200,36 @@ describe("All together", ({test, _}) => {
 
 describe("Nullish coalescing", ({test, _}) => {
   test("Nullish coalescing", ({expect, _}) => {
-    let children = Js.Dict.fromArray([("Z", render("z", Js.Dict.empty(), Compile.emptyMap))])
+    let children = Js.Dict.fromArray([
+      ("Z", render("z", Js.Dict.empty(), Compile.Components.empty())),
+    ])
     let props = Js.Dict.fromArray([("b", Js.Json.string("b")), ("c", Js.Json.string("c"))])
-    let result = render(`{{ a ? b ? c }}`, props, Compile.emptyMap)
+    let result = render(`{{ a ? b ? c }}`, props, Compile.Components.empty())
     expect.value(result).toEqual(#ok("b"))
-    let result = render(`{{ a ? d ? c }}`, props, Compile.emptyMap)
+    let result = render(`{{ a ? d ? c }}`, props, Compile.Components.empty())
     expect.value(result).toEqual(#ok("c"))
-    let result = render(`{{ a ? B ? Z }}`, Js.Dict.empty(), Compile.emptyMap, ~children)
+    let result = render(`{{ a ? B ? Z }}`, Js.Dict.empty(), Compile.Components.empty(), ~children)
     expect.value(result).toEqual(#ok("z"))
-    let result = render(`{{ a ? B ? X ? "y" }}`, Js.Dict.empty(), Compile.emptyMap, ~children)
+    let result = render(
+      `{{ a ? B ? X ? "y" }}`,
+      Js.Dict.empty(),
+      Compile.Components.empty(),
+      ~children,
+    )
     expect.value(result).toEqual(#ok("y"))
-    let result = render(` {{~ &a ? B ? X ? 1 ~}} `, Js.Dict.empty(), Compile.emptyMap, ~children)
+    let result = render(
+      ` {{~ &a ? B ? X ? 1 ~}} `,
+      Js.Dict.empty(),
+      Compile.Components.empty(),
+      ~children,
+    )
     expect.value(result).toEqual(#ok("1"))
-    let result = render(`{{ &x ? Y ? Z ? X }}`, Js.Dict.empty(), Compile.emptyMap, ~children)
+    let result = render(
+      `{{ &x ? Y ? Z ? X }}`,
+      Js.Dict.empty(),
+      Compile.Components.empty(),
+      ~children,
+    )
     expect.value(result).toEqual(#ok("z"))
   })
 })
@@ -210,7 +239,7 @@ describe("Template sections", ({test, _}) => {
     let a = Source.funcWithString(~name="A", "{{ Children }}", (ast, env, props, children) => {
       env.render(. ast, props, children)
     })
-    let components = Compile.fromArray([a])
+    let components = Compile.Components.make([a])
     let result = render(`{% A %} b {%/ A %}`, Js.Dict.empty(), components->Result.getExn)
     expect.value(result).toEqual(#ok(" b "))
     let result = render(`{% A Children=#%} b {%/# / %}`, Js.Dict.empty(), components->Result.getExn)
@@ -234,7 +263,7 @@ describe("Template sections", ({test, _}) => {
     ) => {
       env.render(. ast, props, children)
     })
-    let components = Compile.fromArray([x, y])
+    let components = Compile.Components.make([x, y])
     let result = render(`{% Y A=#%} a {%/# / %}`, Js.Dict.empty(), components->Result.getExn)
     expect.value(result).toEqual(#ok(" a "))
   })
@@ -256,7 +285,7 @@ describe("Template sections", ({test, _}) => {
     ) => {
       env.render(. ast, props, children)
     })
-    let components = Compile.fromArray([x, y])
+    let components = Compile.Components.make([x, y])
     let result = render(
       `{% Y PassthroughChild=#%} a {%/# / %}`,
       Js.Dict.empty(),
@@ -271,7 +300,7 @@ describe("API helper functions", ({test, _}) => {
     let x = Source.func(~name="X", (env, _props, _children) => {
       env.return(. "a")
     })
-    let components = Compile.fromArray([x])
+    let components = Compile.Components.make([x])
     let result = render(`{% X / %}`, Js.Dict.empty(), components->Result.getExn)
     expect.value(result).toEqual(#ok("a"))
   })
@@ -280,7 +309,7 @@ describe("API helper functions", ({test, _}) => {
     let x = Source.func(~name="X", (env, _props, _children) => {
       env.error(. "e")
     })
-    let components = Compile.fromArray([x])
+    let components = Compile.Components.make([x])
     let result = render(`{% X / %}`, Js.Dict.empty(), components->Result.getExn)
     expect.value(result).toEqual(
       #errors([
@@ -299,7 +328,7 @@ describe("API helper functions", ({test, _}) => {
     let x = Source.func(~name="X", (env, _props, children) => {
       env.mapChild(.Js.Dict.unsafeGet(children, "Children"), child => Js.String.toUpperCase(child))
     })
-    let components = Compile.fromArray([x])
+    let components = Compile.Components.make([x])
     let result = render(`{% X ~%} a {%~ /X %}`, Js.Dict.empty(), components->Result.getExn)
     expect.value(result).toEqual(#ok("A"))
     let errors = render(
@@ -327,7 +356,7 @@ describe("API helper functions", ({test, _}) => {
         env.return(. Js.String.toUpperCase(child))
       )
     )
-    let components = Compile.fromArray([x])
+    let components = Compile.Components.make([x])
     let result = render(`{% X %} a {% /X %}`, Js.Dict.empty(), components->Result.getExn)
     expect.value(result).toEqual(#ok(" A "))
     let errors = render(

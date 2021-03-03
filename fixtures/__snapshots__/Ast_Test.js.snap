@@ -630,6 +630,7 @@ Array [
             Object {
               "TAG": 4,
               "children": Array [],
+              "f": undefined,
               "loc": 94,
               "name": "L",
               "props": Array [
@@ -694,6 +695,7 @@ Array [
         },
       ],
     ],
+    "f": undefined,
     "loc": 4,
     "name": "A",
     "props": Array [

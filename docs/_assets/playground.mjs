@@ -71,17 +71,15 @@ window.onload = function playground(_event) {
 {%~ /map %}
 `;
 
-  var env = Environment.make(Compile.emptyMap);
-
   var resultText = document.getElementById("result");
 
   function render(_event) {
     try {
       var props = JSON.parse(propsText.value);
       var src = Source.string("Playground", sourceText.value);
-      var template = Compile.make(src);
+      var template = Compile.make(src, Compile.Components.empty());
       var result = Result.flatMap(template, (template) =>
-        template(env, props, {})
+        template(Environment.sync, props, {})
       );
       resultText.value = Result.getOrElse(
         result,

@@ -2000,11 +2000,11 @@ exports[`Rendering Missing bindings 3`] = `
 Array [
   Object {
     "exn": undefined,
-    "kind": "Render",
+    "kind": "Compile",
     "location": Object {
       "character": 4,
     },
-    "message": "Component \\"Z\\" does not exist.",
+    "message": "Component \\"Z\\" either does not exist or couldn't be compiled.",
     "path": Array [
       "",
     ],

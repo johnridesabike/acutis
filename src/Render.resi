@@ -17,7 +17,7 @@
 module Pattern: {
   let toJson: (
     Acutis_Types.Ast_Pattern.t,
-    ~props: Acutis_Types.props,
+    ~props: Js.Dict.t<Js.Json.t>,
     ~stack: Acutis_Types.Errors.Stack.t,
   ) => result<Js.Json.t, Acutis_Types.Errors.t>
 
@@ -31,11 +31,11 @@ module Pattern: {
 }
 
 let make: (
-  ~ast: Acutis_Types.Ast.ast,
-  ~props: Acutis_Types.props,
+  ~ast: Acutis_Types.Ast.nodes<Acutis_Types.templateU<'a>>,
+  ~props: Js.Dict.t<Js.Json.t>,
   ~children: Js.Dict.t<'a>,
-  ~envData: Acutis_Types.environmentData<'a>,
-  ~makeEnv: (. Acutis_Types.environmentData<'a>) => Acutis_Types.environment<'a>,
+  ~stack: Acutis_Types.Errors.Stack.t,
+  ~makeEnv: (. Acutis_Types.Errors.Stack.t) => Acutis_Types.environment<'a>,
   ~error: (. array<Acutis_Types.Errors.t>) => 'a,
   ~try_: (. (. unit) => 'a, ~catch: (. _) => 'a) => 'a,
   ~reduceQueue: (. Belt.MutableQueue.t<'a>) => 'a,

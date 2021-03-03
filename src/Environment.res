@@ -15,15 +15,13 @@
 */
 
 module Array = Belt.Array
-module MapString = Belt.Map.String
 module Queue = Belt.MutableQueue
 open Acutis_Types
 
 // This gives us a slight performance boost during rendering.
-let uncurry = m => MapString.mapU(m, (. f, . a, b, c) => f(a, b, c))
+//let uncurry = m => MapString.mapU(m, (. f, . a, b, c) => f(a, b, c))
 
-type output = Result.t<string>
-type t = environment<output>
+type t<'a> = environment<'a>
 
 let return = (. x) => #ok(x)
 
@@ -56,15 +54,15 @@ let reduceQueue = (. q) => {
   }
 }
 
-let rec makeAux = (. {components, stack}) => {
+let rec makeEnv = (. stack) => {
   render: (. {ast, name}, props, children) =>
     reduceQueue(.
       Render.make(
         ~ast,
         ~props,
         ~children,
-        ~envData={components: components, stack: list{Component(name), ...stack}},
-        ~makeEnv=makeAux,
+        ~stack=list{Component(name), ...stack},
+        ~makeEnv,
         ~error,
         ~try_,
         ~reduceQueue,
@@ -76,66 +74,61 @@ let rec makeAux = (. {components, stack}) => {
   flatMapChild: flatMapChild,
 }
 
-let make = components => makeAux(. {components: uncurry(components), stack: list{}})
+let sync = makeEnv(. list{})
 
-module Async = {
-  type output = Js.Promise.t<Result.t<string>>
-  type t = environment<output>
+let returnAsync = (. x) => Js.Promise.resolve(#ok(x))
 
-  let returnAsync = (. x) => Js.Promise.resolve(#ok(x))
+let error = (. x) => Js.Promise.resolve(#errors(x))
 
-  let error = (. x) => Js.Promise.resolve(#errors(x))
+let try_ = (. f, ~catch) => Js.Promise.catch(e => catch(. e), f(.))
 
-  let try_ = (. f, ~catch) => Js.Promise.catch(e => catch(. e), f(.))
+let mapChildAsync = (. child, f) =>
+  Js.Promise.then_(child => Js.Promise.resolve(Result.map(child, f)), child)
 
-  let mapChildAsync = (. child, f) =>
-    Js.Promise.then_(child => Js.Promise.resolve(Result.map(child, f)), child)
-
-  let flatMapChildAsync = (. child, f) => Js.Promise.then_(child =>
-      switch child {
-      | #ok(child) => f(child)
-      | #errors(_) as e => Js.Promise.resolve(e)
-      }
-    , child)
-
-  let reduceArray = a => {
-    let result = ref("")
-    let errors = Queue.make()
-    Array.forEachU(a, (. x) => {
-      switch x {
-      | #ok(s) => result := result.contents ++ s
-      | #errors(e) => e->Queue.fromArray->Queue.transfer(errors)
-      }
-    })
-    if Queue.isEmpty(errors) {
-      Js.Promise.resolve(#ok(result.contents))
-    } else {
-      Js.Promise.resolve(#errors(Queue.toArray(errors)))
+let flatMapChildAsync = (. child, f) => Js.Promise.then_(child =>
+    switch child {
+    | #ok(child) => f(child)
+    | #errors(_) as e => Js.Promise.resolve(e)
     }
+  , child)
+
+let reduceArray = a => {
+  let result = ref("")
+  let errors = Queue.make()
+  Array.forEachU(a, (. x) => {
+    switch x {
+    | #ok(s) => result := result.contents ++ s
+    | #errors(e) => e->Queue.fromArray->Queue.transfer(errors)
+    }
+  })
+  if Queue.isEmpty(errors) {
+    Js.Promise.resolve(#ok(result.contents))
+  } else {
+    Js.Promise.resolve(#errors(Queue.toArray(errors)))
   }
-
-  // We could possibly replace Queue.toArray with a custom JS iterable.
-  let reduceQueue = (. q) => q |> Queue.toArray |> Js.Promise.all |> Js.Promise.then_(reduceArray)
-
-  let rec makeAux = (. {components, stack}) => {
-    render: (. {ast, name}, props, children) =>
-      reduceQueue(.
-        Render.make(
-          ~ast,
-          ~props,
-          ~children,
-          ~envData={components: components, stack: list{Component(name), ...stack}},
-          ~makeEnv=makeAux,
-          ~error,
-          ~try_,
-          ~reduceQueue,
-        ),
-      ),
-    return: returnAsync,
-    error: (. message) => Js.Promise.resolve(#errors([Debug.customError(message, ~stack)])),
-    mapChild: mapChildAsync,
-    flatMapChild: flatMapChildAsync,
-  }
-
-  let make = components => makeAux(. {components: uncurry(components), stack: list{}})
 }
+
+// We could possibly replace Queue.toArray with a custom JS iterable.
+let reduceQueue = (. q) => q |> Queue.toArray |> Js.Promise.all |> Js.Promise.then_(reduceArray)
+
+let rec makeEnv = (. stack) => {
+  render: (. {ast, name}, props, children) =>
+    reduceQueue(.
+      Render.make(
+        ~ast,
+        ~props,
+        ~children,
+        ~stack=list{Component(name), ...stack},
+        ~makeEnv,
+        ~error,
+        ~try_,
+        ~reduceQueue,
+      ),
+    ),
+  return: returnAsync,
+  error: (. message) => Js.Promise.resolve(#errors([Debug.customError(message, ~stack)])),
+  mapChild: mapChildAsync,
+  flatMapChild: flatMapChildAsync,
+}
+
+let async = makeEnv(. list{})

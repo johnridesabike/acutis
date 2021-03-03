@@ -15,17 +15,19 @@
 */
 open TestFramework
 
+let emptyComponents = Compile.Components.make([])->Result.getExn
+
 describe("Result", ({test, _}) => {
   test("getOrElse", ({expect, _}) => {
-    let good = Source.string(~name="Good", "{{ x }}")->Compile.make
-    let bad = Source.string(~name="Bad", "{{")->Compile.make
+    let good = Source.string(~name="Good", "{{ x }}")->Compile.make(emptyComponents)
+    let bad = Source.string(~name="Bad", "{{")->Compile.make(emptyComponents)
     let getOrElse = x => Result.getOrElse(x, _ => #error)
     expect.value(good->Result.map(_ => #noerror)->getOrElse).toEqual(#noerror)
     expect.value(bad->Result.map(_ => #noerror)->getOrElse).toEqual(#error)
   })
 
   test("getExn", ({expect, _}) => {
-    let bad = Source.string(~name="Bad", "{{")->Compile.make
+    let bad = Source.string(~name="Bad", "{{")->Compile.make(emptyComponents)
     expect.value(
       switch Result.getExn(bad) {
       | exception Not_found => #error

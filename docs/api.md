@@ -8,8 +8,8 @@ layout: layout.acutis
 next: null
 ---
 
-An Acutis template tree is rendered using a *template source*, a *props
-object*, an *environment object*, and an *object with template components*.
+An Acutis template tree is rendered using *template source(s)*, a *props
+object*, and an *environment object*,
 
 Template sources are compiled into functions. These functions are then
 executed with their props and their environment's renderer, which produces
@@ -26,12 +26,12 @@ JavaScript. In ReScript, these are either records or dictionaries.)
 
 ```js
 const { Compile, Environment, Result, Source } = require("acutis-lang");
-const components = Compile.fromArray([
+const components = Compile.Components.make([
   Source.string("Footer", "Copyright 2021.")
 ]);
-const env = Environment.make(Result.getExn(components));
+const env = Environment.sync
 const src = Source.string("Main", "Hello {{ name }}");
-const template = Compile.make(src);
+const template = Compile.make(src, Result.getExn(components));
 const result = Result.flatMap(
   template,
   template => template(env, {name: "Carlo"}, {})
@@ -50,13 +50,13 @@ console.log(output); // Logs: "Hello Carlo."
 
 ```reason
 open AcutisLang
-let components = Compile.fromArray([
+let components = Compile.Components.make([
   Source.string(~name="Footer", "Copyright 2021.")
 ])
-let env = Environment.make(Result.getExn(components))
+let env = Environment.sync
 let props = Js.Dict.fromArray([("name", "Carlo")])
 Source.string(~name="Main", "Hello {{ name }}")
-  ->Compile.make
+  ->Compile.make(Result.getExn(components))
   ->Result.flatMap(template => template(env, props, Js.Dict.empty()))
   ->Result.getOrElse(errors => {
     Js.Console.error(errors)
@@ -67,9 +67,9 @@ Source.string(~name="Main", "Hello {{ name }}")
 
 ## Sources
 
-The `Source` module's functions are for classifying different types of
-sources to prepare them for the compiler. They return an internal data type
-that the compiler uses.
+The `Source` module's functions classify different types of sources to
+prepare them for the compiler. They return an internal data type that the
+compiler uses.
 
 ⚠️ Note: The first `name` argument for each source will be the name used if
 the you include the template as a [component]. The compiler currently allows
@@ -127,6 +127,9 @@ raw template source as a string, and a function which accepts the compiled
 template and returns a template function. See [template functions] for more
 on how these work.
 
+This is useful if you have a regular string template, but you want to wrap it
+in some custom runtime logic.
+
 #### JavaScript example
 
 ```js
@@ -156,32 +159,32 @@ the next step is compiling it.
 
 ### `Compile.make`
 
-The `Compile.make` function compiles a source into a [result] of a template
-function. See [results] and [template functions] to read about how these work.
+The `Compile.make` function compiles a source and its components into a
+[result] of a template function. See [results] and [template functions] to
+read about how these work.
 
 #### JavaScript example
 
 ```js
 const { Compile, Source } = require("acutis-lang");
+const components = Compile.Components.empty();
 const src = Source.string("Main", "Hello {{ name }}");
-const templateResult = Compile.make(src)
+const templateResult = Compile.make(src, components);
 ```
 
 #### ReScript example
 
 ```reason
 open AcutisLang
+let components = Compile.Components.empty()
 let src = Source.string(~name="Main", "Hello {{ name }}")
-let templateResult = Compile.make(src)
+let templateResult = Compile.make(src, components)
 ```
 
-### `Compile.fromArray`
+### `Compile.Components.make`
 
-The `Compile.fromArray` function accepts an array of [sources] and returns a
-[result] of a ReScript [string map] of components.
-
-If you aren't using components, or you need a placeholder, then
-`Compile.emptyMap` is an empty map.
+The `Compile.Components.make` function accepts an array of [sources] and
+returns a [result] of their compiled output.
 
 #### JavaScript example
 
@@ -189,7 +192,7 @@ If you aren't using components, or you need a placeholder, then
 const { Compile, Source } = require("acutis-lang");
 const header = Source.string("Header", "<h1>Hello</h1>");
 const footer = Source.string("Footer", "Copyright 2021 Carlo.");
-const componentsResult = Compile.fromArray([header, footer])
+const componentsResult = Compile.Components.make([header, footer])
 ```
 
 #### ReScript example
@@ -198,43 +201,16 @@ const componentsResult = Compile.fromArray([header, footer])
 open AcutisLang
 let header = Source.string(~name="Header", "<h1>Hello</h1>");
 let footer = Source.string(~name="Footer", "Copyright 2021 Carlo.");
-let componentsResult = Compile.fromArray([header, footer])
+let componentsResult = Compile.Components.make([header, footer])
 ```
 
-## Environment
+### `Compile.Components.empty`
 
-An environment is a closure containing data that is global across all levels
-of the template rendering tree, from the top-level template to all of its
-sub-components. 
+If you aren't using components, or you need a placeholder, then the
+`Compile.Components.empty` function will return an empty components value.
 
-### `Environment.make`
-
-The `Environment.make` function accepts a [string map] with all of the
-template components. It returns an object with functions used to render
-compiled templates.
-
-#### JavaScript example
-
-```js
-const { Compile, Environment } = require("acutis-lang");
-// Assume that the components are already defined.
-const env = Environment.make(components);
-```
-
-#### ReScript example
-
-```reason
-open AcutisLang
-// Assume that the components are already defined.
-let env = Environment.make(components)
-```
-
-### `Environment.Async.make`
-
-The environment returned by `Environment.Async.make` work identically to
-`Environment.make` except that its rendered functions each return a
-[Promise]. Use this if you have [template functions] that require
-asynchronous logic.
+Running `Compile.Components.empty()` is equivalent to
+`Compile.Components.make([])`. It's just slightly more efficient.
 
 ## Results
 
@@ -308,14 +284,20 @@ The `Result.map` function accepts a result and a function that accepts its
 contents and returns a new value. The given function only executes if the
 result does not have errors.
 
-#### Example
+#### JavaScript Example
 
-JavaScript and ReScript can both be written identically.
+```js
+// Assume props and children are already defined.
+const result = template(Environment.sync, props, children);
+const resultALLCAPS = Result.map(result, x => x.toUpperCase());
+```
+
+#### ReScript Example
 
 ```reason
-// Assume header and footer are defined already.
-let componentsResult = Compile.fromArray([header, footer])
-let envResult = Result.map(components, Environment.make)
+// Assume props and children are already defined.
+let result = template(Environment.sync, props, children)
+let resultALLCAPS = Result.map(result, Js.String.toUpperCase)
 ```
 
 ### `Result.flatMap`
@@ -325,14 +307,14 @@ except that the given function must _return another `result`_.
 
 #### Example
 
-JavaScript and ReScript can both be written identically.
+We can write the JavaScript and ReScript example identically.
 
 ```reason
-// Assume src, env, props, and children is defined already
-let templateResult = Compile.make(src)
+// Assume src, components, props, and children is defined already
+let templateResult = Compile.make(src, components)
 let outputResult = Result.flatMap(
   templateResult,
-  (template) => template(env, props, children)
+  (template) => template(Environment.sync, props, children)
 )
 ```
 
@@ -347,7 +329,7 @@ nicely with JavaScript tooling. Often, you'll want to use the more flexible
 
 #### Example
 
-JavaScript and ReScript can both be written identically.
+We can write the JavaScript and ReScript example identically.
 
 ```reason
 // Raises an exception if the result has errors.
@@ -472,10 +454,30 @@ let footer =
   )
 ```
 
-## The environment functions
+## Environment
 
-The environment object (taken from the first argument) contains functions for
-returning rendered template contents.
+An environment is an object that contains logic that is global across all
+levels of a template tree.
+
+### `Environment.sync`
+
+If you use `Environment.sync`, then your templates will render as [results]
+of strings.
+
+### `Environment.async`
+
+This works identically to `Environment.sync`, except except that its render
+functions each return a [Promise] of a [result] of a string. Use this if you
+have [template functions] that require asynchronous logic.
+
+If you don't need asynchronous template component functions, then
+`Environment.sync` is a bit faster, since it doesn't need to allocate a bunch
+of Promises.
+
+## Environment functions
+
+Each environment object contains functions for returning rendered template
+contents.
 
 ⚠️ In ReScript, environment functions are [uncurried].
 
@@ -614,7 +616,7 @@ to represent failures.
 ```js
 const { Source } = require("acutis-lang");
 // assume we already defined a function called somethingThatThrows
-const template = Source.func(
+const src = Source.func(
   "Template",
   (env, props, { Children }) => {
     return env.flatMapChild(Children, (contents) => {
@@ -632,7 +634,7 @@ const template = Source.func(
 
 ```reason
 // assume we already defined a function called somethingThatThrows
-let shout =
+let src =
   AcutisLang.Source.func(
     ~name="Template",
     (env, props, children) =>

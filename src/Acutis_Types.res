@@ -200,39 +200,32 @@ module Ast = {
   }
   type trim = TrimStart | TrimEnd | TrimBoth | NoTrim
   type mapPattern = [Ast_Pattern.binding | Ast_Pattern.arr]
-  type rec node =
+  type rec node<'a> =
     | Text(string, trim)
     // The first echo item that isn't null will be returned.
     | Echo(loc, NonEmpty.t<Echo.t>)
-    | Match(loc, NonEmpty.t<(loc, string)>, NonEmpty.t<case>)
-    | Map(loc, mapPattern, NonEmpty.t<case>)
+    | Match(loc, NonEmpty.t<(loc, string)>, NonEmpty.t<case<'a>>)
+    | Map(loc, mapPattern, NonEmpty.t<case<'a>>)
     | Component({
         loc: loc,
         name: string,
         props: array<(string, Ast_Pattern.t)>,
-        children: array<(string, child)>,
+        children: array<(string, child<'a>)>,
+        f: 'a,
       })
-  and case = {patterns: NonEmpty.t<NonEmpty.t<Ast_Pattern.t>>, ast: ast}
-  and ast = array<node>
-  and child = ChildName(string) | ChildBlock(ast)
-
-  type t = {ast: ast, name: string}
+  and nodes<'a> = array<node<'a>>
+  and case<'a> = {patterns: NonEmpty.t<NonEmpty.t<Ast_Pattern.t>>, ast: nodes<'a>}
+  and child<'a> = ChildName(string) | ChildBlock(nodes<'a>)
+  type t<'a> = {ast: nodes<'a>, name: string}
 }
 
-type props = Js.Dict.t<Js.Json.t>
-
-type environment<'a> = {
-  render: (. Ast.t, props, Js.Dict.t<'a>) => 'a,
+type rec ast<'a> = Ast.t<templateU<'a>>
+and template<'a> = (environment<'a>, Js.Dict.t<Js.Json.t>, Js.Dict.t<'a>) => 'a
+and templateU<'a> = (. environment<'a>, Js.Dict.t<Js.Json.t>, Js.Dict.t<'a>) => 'a
+and environment<'a> = {
+  render: (. ast<'a>, Js.Dict.t<Js.Json.t>, Js.Dict.t<'a>) => 'a,
   return: (. string) => 'a,
   error: (. string) => 'a,
   mapChild: (. 'a, string => string) => 'a,
   flatMapChild: (. 'a, string => 'a) => 'a,
-}
-
-type template<'a> = (environment<'a>, props, Js.Dict.t<'a>) => 'a
-type templateU<'a> = (. environment<'a>, props, Js.Dict.t<'a>) => 'a
-
-type environmentData<'a> = {
-  components: Belt.Map.String.t<templateU<'a>>,
-  stack: Errors.Stack.t,
 }

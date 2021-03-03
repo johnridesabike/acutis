@@ -13,15 +13,10 @@
    See the License for the specific language governing permissions and
    limitations under the License.
 */
+type t<'a> = Acutis_Types.environment<'a>
 
-type output = Result.t<string>
-type t = Acutis_Types.environment<output>
 @live
-let make: Belt.Map.String.t<Acutis_Types.template<output>> => t
+let sync: t<Result.t<string>>
 
-module Async: {
-  type output = Js.Promise.t<Result.t<string>>
-  type t = Acutis_Types.environment<output>
-  @live
-  let make: Belt.Map.String.t<Acutis_Types.template<output>> => t
-}
+@live
+let async: t<Js.Promise.t<Result.t<string>>>

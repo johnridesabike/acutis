@@ -15,8 +15,11 @@
 */
 
 open TestFramework
+open Acutis_Types
 
-let getAst = (x: Acutis_Types.Ast.t) => x.ast
+let getAst = (x: Ast.t<_>) => x.ast
+
+let dontGetComponent = (. _, _, _) => ()
 
 describe("Lexer", ({test, _}) => {
   test("Tokens are generated correctly", ({expect, _}) => {
@@ -209,8 +212,10 @@ describe("Patterns", ({test, _}) => {
 describe("Parser", ({test, _}) => {
   test("Basic syntax", ({expect, _}) => {
     expect.value(
-      Compile.makeAst(
+      Compile.makeAstInternalExn(
         ~name="",
+        ~g=(),
+        ~getComponent=dontGetComponent,
         `
 a
 {* b *}
@@ -219,9 +224,7 @@ a
 {{ 1.5 }}
 {{ &e }}
 f`,
-      )
-      ->Result.getExn
-      ->getAst,
+      )->getAst,
     ).toEqual([
       Text("\na\n", NoTrim),
       Text("\n", NoTrim),
@@ -237,8 +240,10 @@ f`,
   })
   test("Matching", ({expect, _}) => {
     expect.value(
-      Compile.makeAst(
+      Compile.makeAstInternalExn(
         ~name="",
+        ~g=(),
+        ~getComponent=dontGetComponent,
         `
 {% match a
    with 1 %}
@@ -256,15 +261,15 @@ f`,
   h
 {% /match %}
 `,
-      )
-      ->Result.getExn
-      ->getAst,
+      )->getAst,
     ).toMatchSnapshot()
   })
   test("Mapping", ({expect, _}) => {
     expect.value(
-      Compile.makeAst(
+      Compile.makeAstInternalExn(
         ~name="",
+        ~g=(),
+        ~getComponent=dontGetComponent,
         `
 {% map a with {b} %}
   {{ b }}
@@ -279,15 +284,15 @@ f`,
   {{ index }} {{ g }}
 {% /map %}
 `,
-      )
-      ->Result.getExn
-      ->getAst,
+      )->getAst,
     ).toMatchSnapshot()
   })
   test("Components", ({expect, _}) => {
     expect.value(
-      Compile.makeAst(
+      Compile.makeAstInternalExn(
         ~name="",
+        ~g=(),
+        ~getComponent=dontGetComponent,
         `
 {% A
    b
@@ -302,9 +307,20 @@ f`,
    {% L m={n: o, p: [q], r} / %}
 {% /A %}
 `,
-      )
-      ->Result.getExn
-      ->getAst,
+      )->getAst,
     ).toMatchSnapshot()
+  })
+})
+
+describe("Components", ({test, _}) => {
+  test("Components are only compiled once", ({expect, _}) => {
+    let a = Source.string(~name="A", "{% B /%}")
+    let b = Source.string(~name="B", "{% C /%}")
+    let c = Source.string(~name="C", "c")
+    let d = Source.string(~name="D", "{% C /%}")
+    let result = Compile.Components.make([a, b, c, d])
+    // This assertion doesn't really check that the test worked.
+    // It exists for code coverage.
+    expect.value(Result.map(result, _ => true)).toEqual(#ok(true))
   })
 })

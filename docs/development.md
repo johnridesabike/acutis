@@ -7,8 +7,8 @@ next: null
 ---
 
 The Acutis compiler is built in [ReScript] and compiled to JavaScript. The
-Acutis compiler doesn't use any dependencies, aside from the ReScript
-standard library, so almost everything is hand-written.
+Acutis compiler's only dependency is the ReScript standard library, so almost
+everything is hand-written.
 
 [ReScript]: https://rescript-lang.org/
 
@@ -31,7 +31,7 @@ developed the pattern matching logic before any of the other template logic.)
 
 ### Types
 
-All of the types are defined in `Acutis_Types.res` along with some of their
+Most of the types are defined in `Acutis_Types.res` along with some of their
 utility functions. This includes tokens, AST, pattern AST, and the types of
 some of the public API functions.
 
@@ -73,19 +73,31 @@ The AST is represented as an array of nodes. Some nodes, such as `map` or
 `match` expressions, contain arrays that represent branching paths of the
 tree.
 
+Template components are linked at compile-time to create a [directed acyclic
+graph][DAG].
+
+[DAG]: https://en.wikipedia.org/wiki/Directed_acyclic_graph
+
+When compiling template components, you must compile them all at once with
+`Compile.Components.make` so the linking can occur.
+
+When compiling a top-level template, `Compile.make` requires a
+`Compile.Components.t` value (created with `Components.make`) to link its
+dependencies.
+
 ### Rendering
 
-The `Environment.res` module generates functions for producing specific
-output formats. These functions call the `Render.res` module, which takes the
-AST and the input "props" to produce the final output.
+The `Environment.res` module contains functions for producing specific output
+formats. These functions use the `Render.res` module to take the AST and the
+input "props" to produce the final output.
 
-Like `Compile.res`, it exposes a submodule for rendering patterns.
+Like `Compile.res`, `Render.res` exposes a submodule for rendering patterns.
 
 We may normally expect the renderer to produce a string data type. However,
 the output could theoretically be anything defined in the environment. I
-designed this flexibility specifically for [promises].
+designed this flexibility specifically for [Promises].
 
-[promises]: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise
+[Promises]: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise
 
 When the renderer processes a node, it adds the result to a queue. Once it
 renders the entire AST, it concatenates the queue into the final output.
@@ -101,28 +113,22 @@ concatenated.
 
 Acutis relies on recursive function types to render.
 
-1. The render environment with a render function:
+1. The environment with a render function:
    `env.render(ast, props, children) → result`
 2. The template functions with this signature:
    `template(env, props, children) → result`
 
-The `env` argument in 2 is the same `env` record as in 1. This record
-contains the `render` function with the logic and data that must be global
-across the entire template tree.
+The `env` argument in 2 is the same `env` record as in 1.
+The `ast` in 1 can also contain template functions like in 2, which
+themselves render template components using the `env` from 1.
 
-The specific logic is how to use the output type, synchronously or
-asynchronously. This is why there are two functions to create render
-environments:
+The `env` record contains the `render` function with the logic that must be
+global across the entire template tree. Specifically, it controls whether to
+output synchronously or asynchronously. This is why there are two render
+environments.
 
-1. `Environment.make(components) →` \
-   `env.render(ast, props, children) →` \
-   `result`
-2. `Environment.Async.make(components) →` \
-   `env.render(ast, props, children) →` \
-   `promise<result>`
-
-In both versions, `components` is a dictionary object containing all of the
-template components.
+1. `Environment.sync.render(ast, props, children) → result`
+2. `Environment.async.render(ast, props, children) → Promise<result>`
 
 Suppose you have a root template, `template`, which you render like this:
 `template(env, props, children)`. What happens is:
@@ -145,7 +151,7 @@ Suppose you have a root template, `template`, which you render like this:
 Acutis shouldn't raise exceptions or reject promises. The AST and the
 rendered output is always returned inside of a variant that can return either
 successfully rendered data or an array of errors. If there are any errors,
-then they're formatted according to the `Acuits_Types.Errors.t` type.
+then they're formatted according to the `Acutis_Types.Errors.t` type.
 
 The `Debug.res` file handles creating the specific messages.
 
@@ -203,9 +209,6 @@ but that would require adding another step in the compiler.
 I borrowed the types themselves from JSON. This was convenient and "good
 enough," even though JSON is imperfect. A more flexible and robust set of
 types would be nice to have.
-
-Component dependencies are not analyzed. It might be nice to check those at
-compile time so that circular dependencies aren't allowed.
 
 I designed the language to be as simple as possible, with the philosophy of
 "there should be one obvious way to do something." For this reason, I've
