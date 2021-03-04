@@ -306,7 +306,7 @@ let trimEnd = string => {
 external dictMerge: (@as(json`{}`) _, ~base: Js.Dict.t<'a>, Js.Dict.t<'a>) => Js.Dict.t<'a> =
   "assign"
 
-let echo = (head, tail, ~props, ~stack, ~children, ~env: Environment.t<_>, ~error) => {
+let echo = (head, tail, ~props, ~stack, ~children, ~env: T.environment<_>, ~error) => {
   let rec aux = (head: Ast.Echo.t, i) =>
     switch head {
     | Binding(loc, binding, esc) =>
