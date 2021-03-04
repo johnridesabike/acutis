@@ -14,17 +14,19 @@
    limitations under the License.
 */
 
-type stringFunc<'a> = Acutis_Types.ast<'a> => Acutis_Types.template<'a>
+open Acutis_Types
+
+type stringFunc<'a> = ast<'a> => template<'a>
 
 type t<'a> =
   private
   | String({name: string, src: string})
-  | Func({name: string, f: Acutis_Types.template<'a>})
+  | Func({name: string, f: template<'a>})
   | StringFunc({name: string, src: string, f: stringFunc<'a>})
 
 let string: (~name: string, string) => t<'a>
 
-let func: (~name: string, Acutis_Types.template<'a>) => t<'a>
+let func: (~name: string, template<'a>) => t<'a>
 
 let funcWithString: (~name: string, string, stringFunc<'a>) => t<'a>
 

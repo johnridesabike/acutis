@@ -15,7 +15,7 @@
 */
 
 /* We're using a polymorphic variant because it has a nicer JS representation. */
-type t<'a> = [#ok('a) | #errors(array<Acutis_Types.Errors.t>)]
+type t<'a> = [#ok('a) | #errors(array<Debug.t>)]
 
 let mapU = (x: t<_>, f) =>
   switch x {

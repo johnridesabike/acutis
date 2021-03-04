@@ -16,7 +16,6 @@
 open TestFramework
 
 module NonEmpty = Acutis_Types.NonEmpty
-
 module Pattern = Render.Pattern
 
 let parseString = source => {

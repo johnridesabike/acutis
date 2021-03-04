@@ -16,12 +16,8 @@
 
 module Array = Belt.Array
 module Queue = Belt.MutableQueue
-open Acutis_Types
 
-// This gives us a slight performance boost during rendering.
-//let uncurry = m => MapString.mapU(m, (. f, . a, b, c) => f(a, b, c))
-
-type t<'a> = environment<'a>
+type t<'a> = Acutis_Types.environment<'a>
 
 let return = (. x) => #ok(x)
 
@@ -54,7 +50,7 @@ let reduceQueue = (. q) => {
   }
 }
 
-let rec makeEnv = (. stack) => {
+let rec makeEnv = (. stack): t<_> => {
   render: (. {ast, name}, props, children) =>
     reduceQueue(.
       Render.make(
@@ -111,7 +107,7 @@ let reduceArray = a => {
 // We could possibly replace Queue.toArray with a custom JS iterable.
 let reduceQueue = (. q) => q |> Queue.toArray |> Js.Promise.all |> Js.Promise.then_(reduceArray)
 
-let rec makeEnv = (. stack) => {
+let rec makeEnv = (. stack): t<_> => {
   render: (. {ast, name}, props, children) =>
     reduceQueue(.
       Render.make(

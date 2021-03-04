@@ -14,8 +14,12 @@
    limitations under the License.
 */
 
+module T = Acutis_Types
+
 module Queue = Belt.MutableQueue
-open Acutis_Types
+module Token = T.Token
+
+exception Exit = Debug.Exit
 
 type source = {
   str: string,
@@ -57,7 +61,7 @@ let readSubstringBy = (source, x) => {
   Js.String2.slice(source.str, ~from=start, ~to_=source.position)
 }
 
-let loc = x => Loc(x.position)
+let loc = x => T.Loc(x.position)
 
 let endOfNumber = (. c) =>
   switch c {
@@ -115,7 +119,7 @@ let readComment = (source, ~name) => {
       | "}" => aux(~position=position + 2, ~nested=nested - 1)
       | _ => aux(~position=position + 2, ~nested)
       }
-    | "" => Debug.unterminatedCommentExn(~loc, ~name)
+    | "" => raise(Exit(Debug.unterminatedComment(~loc, ~name)))
     | _ => aux(~position=position + 1, ~nested)
     }
   aux(~position=0, ~nested=0)
@@ -136,7 +140,7 @@ let readJsonString = (source, ~name) => {
       let result = source->readSubstringBy(position)->Js.String2.replaceByRe(unescapeQuotes, "\"")
       skipChar(source) // skip the "
       result
-    | "" => Debug.unterminatedStringExn(~loc, ~name)
+    | "" => raise(Exit(Debug.unterminatedString(~loc, ~name)))
     | _ => aux(position + 1)
     }
   aux(0)
@@ -147,7 +151,7 @@ let readNumber = (source, ~name) => {
   let num = readSubstring(source, ~until=endOfNumber)
   switch Belt.Float.fromString(num) {
   | Some(num) => num
-  | None => Debug.illegalIdentifierExn(~loc, ~identifier=num, ~name)
+  | None => raise(Exit(Debug.illegalIdentifier(~loc, ~identifier=num, ~name)))
   }
 }
 
@@ -176,7 +180,7 @@ let makeExpression = (source, tokens: Queue.t<Token.t>, ~name, ~until) => {
     | c if c == until =>
       skipChar(source)
       loop := false
-    | "" => Debug.unexpectedEofExn(~loc, ~name)
+    | "" => raise(Exit(Debug.unexpectedEof(~loc, ~name)))
     | " " | "\t" | "\n" | "\r" => skipChar(source)
     | "{" =>
       skipChar(source)
@@ -205,7 +209,7 @@ let makeExpression = (source, tokens: Queue.t<Token.t>, ~name, ~until) => {
     | "." =>
       switch readSubstringBy(source, 3) {
       | "..." => Queue.add(tokens, Spread(loc))
-      | c => Debug.unexpectedCharacterExn(~loc, ~expected="...", ~character=c, ~name)
+      | c => raise(Exit(Debug.unexpectedCharacter(~loc, ~expected="...", ~character=c, ~name)))
       }
     | "=" =>
       skipChar(source)
@@ -227,7 +231,7 @@ let makeExpression = (source, tokens: Queue.t<Token.t>, ~name, ~until) => {
     | c if isValidIdentifierStart(c) => Queue.add(tokens, readIdentifier(source, loc))
     | c if isValidComponentStart(c) =>
       Queue.add(tokens, ComponentName(loc, readSubstring(source, ~until=endOfIdentifier)))
-    | c => Debug.invalidCharacterExn(~loc, ~character=c, ~name)
+    | c => raise(Exit(Debug.invalidCharacter(~loc, ~character=c, ~name)))
     }
   }
 }
@@ -235,6 +239,7 @@ let makeExpression = (source, tokens: Queue.t<Token.t>, ~name, ~until) => {
 let make = (~name, str) => {
   let source = {str: str, position: 0}
   let tokens: Queue.t<Token.t> = Queue.make()
+
   let rec aux = mode =>
     switch mode {
     | EndMode =>
@@ -248,7 +253,8 @@ let make = (~name, str) => {
       makeExpression(source, tokens, ~name, ~until="%")
       switch readChar(source) {
       | "}" => aux(readText(source, tokens))
-      | c => Debug.unexpectedCharacterExn(~loc=loc(source), ~expected="}", ~character=c, ~name)
+      | c =>
+        raise(Exit(Debug.unexpectedCharacter(~loc=loc(source), ~expected="}", ~character=c, ~name)))
       }
     | EchoMode =>
       // The tilde must come *before* the echo token.
@@ -261,7 +267,8 @@ let make = (~name, str) => {
       makeExpression(source, tokens, ~name, ~until="}")
       switch readChar(source) {
       | "}" => aux(readText(source, tokens))
-      | c => Debug.unexpectedCharacterExn(~loc=loc(source), ~expected="}", ~character=c, ~name)
+      | c =>
+        raise(Exit(Debug.unexpectedCharacter(~loc=loc(source), ~expected="}", ~character=c, ~name)))
       }
     }
   // All sources begin as text

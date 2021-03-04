@@ -245,7 +245,7 @@ exports[`Lexer Other stuff 6`] = `
 Array [
   Object {
     "exn": undefined,
-    "kind": "Parse",
+    "kind": "Syntax",
     "location": Object {
       "character": 6,
     },

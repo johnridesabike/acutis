@@ -14,13 +14,13 @@
    limitations under the License.
 */
 
-open Acutis_Types
+module T = Acutis_Types
 
-type stringFunc<'a> = ast<'a> => template<'a>
+type stringFunc<'a> = T.ast<'a> => T.template<'a>
 
 type t<'a> =
   | String({name: string, src: string})
-  | Func({name: string, f: template<'a>})
+  | Func({name: string, f: T.template<'a>})
   | StringFunc({name: string, src: string, f: stringFunc<'a>})
 
 let string = (~name, src) => String({name: name, src: src})

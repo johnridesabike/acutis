@@ -14,6 +14,9 @@
    limitations under the License.
 */
 
+// These are types shared across modules. Keeping them here avoids cyclic
+// dependency errors.
+
 module NonEmpty = {
   type t<'a> = NonEmpty('a, array<'a>)
   let map = (NonEmpty(head, tail), ~f) => NonEmpty(f(. head), Belt.Array.mapU(tail, f))
@@ -21,44 +24,6 @@ module NonEmpty = {
 
 @unboxed
 type loc = Loc(int)
-
-module Errors = {
-  type kind = [#Type | #Render | #Compile | #Pattern | #Parse | #Syntax]
-
-  type location = {@live character: int}
-
-  let location = (Loc(x)) => {character: x + 1}
-
-  @unboxed
-  type rec anyExn = AnyExn(_): anyExn
-
-  type t = {
-    @live message: string,
-    @live kind: kind,
-    @live location: option<location>,
-    @live path: array<Js.Json.t>,
-    @live exn: option<anyExn>,
-  }
-
-  module Stack = {
-    type name =
-      | Component(string)
-      | Section({component: string, section: string})
-      | Match
-      | Map
-      | Index(int)
-    type t = list<name>
-
-    let nameToJson = (. x) =>
-      switch x {
-      | Component(x) => Js.Json.string(x)
-      | Section({component, section}) => Js.Json.string(`section: ${component}#${section}`)
-      | Match => Js.Json.string("match")
-      | Map => Js.Json.string("map")
-      | Index(x) => x->Belt.Int.toFloat->Js.Json.number
-      }
-  }
-}
 
 module Token = {
   type t =

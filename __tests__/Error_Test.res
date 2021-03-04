@@ -33,7 +33,7 @@ let dontGetComponent = (. _, _, _) => ()
 let compile = (~name="", x) =>
   switch Compile.makeAstInternalExn(~name, ~g=(), ~getComponent=dontGetComponent, x) {
   | _ => raise(Not_found)
-  | exception Debug.CompileError(e) => [e]
+  | exception Debug.Exit(e) => [e]
   }
 
 let dict = Js.Dict.fromArray

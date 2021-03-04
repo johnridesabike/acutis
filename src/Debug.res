@@ -14,128 +14,135 @@
    limitations under the License.
 */
 
-open Acutis_Types
-open Errors
+module T = Acutis_Types
+
+type kind = [#Type | #Render | #Compile | #Pattern | #Parse | #Syntax]
+
+type location = {character: int}
+
+let location = (T.Loc(x)) => {character: x + 1}
+
+@unboxed
+type rec anyExn = AnyExn(_): anyExn
+
+type t = {
+  message: string,
+  kind: kind,
+  location: option<location>,
+  path: array<Js.Json.t>,
+  exn: option<anyExn>,
+}
+
+module Stack = {
+  type name =
+    | Component(string)
+    | Section({component: string, section: string})
+    | Match
+    | Map
+    | Index(int)
+  type t = list<name>
+
+  let nameToJson = (. x) =>
+    switch x {
+    | Component(x) => Js.Json.string(x)
+    | Section({component, section}) => Js.Json.string(`section: ${component}#${section}`)
+    | Match => Js.Json.string("match")
+    | Map => Js.Json.string("map")
+    | Index(x) => x->Belt.Int.toFloat->Js.Json.number
+    }
+}
+
+exception Exit(t)
 
 let stackToPath = x => x->Belt.List.toArray->Belt.Array.mapU(Stack.nameToJson)
 
-exception CompileError(Errors.t)
-
 /* Lexer errors. */
 
-let unexpectedEofExn = (~loc, ~name) =>
-  raise(
-    CompileError({
-      kind: #Syntax,
-      message: "Unexpected end of file.",
-      location: Some(location(loc)),
-      path: [Js.Json.string(name)],
-      exn: None,
-    }),
-  )
+let unexpectedEof = (~loc, ~name) => {
+  kind: #Syntax,
+  message: "Unexpected end of file.",
+  location: Some(location(loc)),
+  path: [Js.Json.string(name)],
+  exn: None,
+}
 
-let unterminatedCommentExn = (~loc, ~name) =>
-  raise(
-    CompileError({
-      kind: #Syntax,
-      message: "Unterminated comment.",
-      location: Some(location(loc)),
-      path: [Js.Json.string(name)],
-      exn: None,
-    }),
-  )
+let unterminatedComment = (~loc, ~name) => {
+  kind: #Syntax,
+  message: "Unterminated comment.",
+  location: Some(location(loc)),
+  path: [Js.Json.string(name)],
+  exn: None,
+}
 
-let unterminatedStringExn = (~loc, ~name) =>
-  raise(
-    CompileError({
-      kind: #Syntax,
-      message: "Unterminated string.",
-      location: Some(location(loc)),
-      path: [Js.Json.string(name)],
-      exn: None,
-    }),
-  )
+let unterminatedString = (~loc, ~name) => {
+  kind: #Syntax,
+  message: "Unterminated string.",
+  location: Some(location(loc)),
+  path: [Js.Json.string(name)],
+  exn: None,
+}
 
-let illegalIdentifierExn = (~loc, ~name, ~identifier) =>
-  raise(
-    CompileError({
-      kind: #Parse,
-      message: `"${identifier}" is an illegal identifier name.`,
-      location: Some(location(loc)),
-      path: [Js.Json.string(name)],
-      exn: None,
-    }),
-  )
+let illegalIdentifier = (~loc, ~name, ~identifier) => {
+  kind: #Syntax,
+  message: `"${identifier}" is an illegal identifier name.`,
+  location: Some(location(loc)),
+  path: [Js.Json.string(name)],
+  exn: None,
+}
 
-let invalidCharacterExn = (~loc, ~name, ~character) =>
-  raise(
-    CompileError({
-      kind: #Syntax,
-      message: `Invalid character: "${character}".`,
-      location: Some(location(loc)),
-      path: [Js.Json.string(name)],
-      exn: None,
-    }),
-  )
+let invalidCharacter = (~loc, ~name, ~character) => {
+  kind: #Syntax,
+  message: `Invalid character: "${character}".`,
+  location: Some(location(loc)),
+  path: [Js.Json.string(name)],
+  exn: None,
+}
 
-let unexpectedCharacterExn = (~loc, ~name, ~character, ~expected) =>
-  raise(
-    CompileError({
-      kind: #Syntax,
-      message: `Unexpected character: "${character}". Expected: "${expected}".`,
-      location: Some(location(loc)),
-      path: [Js.Json.string(name)],
-      exn: None,
-    }),
-  )
+let unexpectedCharacter = (~loc, ~name, ~character, ~expected) => {
+  kind: #Syntax,
+  message: `Unexpected character: "${character}". Expected: "${expected}".`,
+  location: Some(location(loc)),
+  path: [Js.Json.string(name)],
+  exn: None,
+}
 
 /* Parse errors. */
 
-let unexpectedTokenExn = (t, ~name) =>
-  raise(
-    CompileError({
-      message: `Unexpected token: "${Token.toString(t)}".`,
-      kind: #Parse,
-      location: Some(location(Token.toLocation(t))),
-      path: [Js.Json.string(name)],
-      exn: None,
-    }),
-  )
+let unexpectedToken = (t, ~name) => {
+  message: `Unexpected token: "${T.Token.toString(t)}".`,
+  kind: #Parse,
+  location: Some(location(T.Token.toLocation(t))),
+  path: [Js.Json.string(name)],
+  exn: None,
+}
 
-let badMapTypeParseExn = (t, ~name) =>
-  raise(
-    CompileError({
-      message: `Bad map type: "${Ast_Pattern.toString(t)}". I can only map bindings and arrays.`,
-      kind: #Parse,
-      location: Some(location(Ast_Pattern.toLocation(t))),
-      path: [Js.Json.string(name)],
-      exn: None,
-    }),
-  )
+let badMapTypeParse = (t, ~name) => {
+  message: `Bad map type: "${T.Ast_Pattern.toString(t)}". I can only map bindings and arrays.`,
+  kind: #Parse,
+  location: Some(location(T.Ast_Pattern.toLocation(t))),
+  path: [Js.Json.string(name)],
+  exn: None,
+}
+
+/* Compile errors. */
 
 let jsonString = (. s) => Js.Json.string(s)
 
-let cyclicDependencyExn = (~loc, ~name, ~stack) =>
-  raise(
-    CompileError({
-      message: `Cyclic dependency detected. I can't compile any components in this path.`,
-      kind: #Compile,
-      location: Some(location(loc)),
-      path: list{name, ...stack}->Belt.List.toArray->Belt.Array.mapU(jsonString),
-      exn: None,
-    }),
-  )
+let cyclicDependency = (~loc, ~name, ~stack) => {
+  message: `Cyclic dependency detected. I can't compile any components in this path.`,
+  kind: #Compile,
+  location: Some(location(loc)),
+  path: list{name, ...stack}->Belt.List.toArray->Belt.Array.mapU(jsonString),
+  exn: None,
+}
 
-let componentDoesNotExistExn = (~loc, ~name, ~stack) =>
-  raise(
-    CompileError({
-      message: `Component "${name}" either does not exist or couldn't be compiled.`,
-      kind: #Compile,
-      location: Some(location(loc)),
-      path: stack->Belt.List.toArray->Belt.Array.mapU(jsonString),
-      exn: None,
-    }),
-  )
+let componentDoesNotExist = (~loc, ~name, ~stack) => {
+  message: `Component "${name}" either does not exist or couldn't be compiled.`,
+  kind: #Compile,
+  location: Some(location(loc)),
+  path: stack->Belt.List.toArray->Belt.Array.mapU(jsonString),
+  exn: None,
+}
 
 let duplicateCompName = name => {
   message: `The template component name "${name}" was used twice. Every component needs a unique name.`,
@@ -143,6 +150,14 @@ let duplicateCompName = name => {
   path: [],
   kind: #Compile,
   exn: None,
+}
+
+let uncaughtCompileError = (e, ~name) => {
+  message: `An exception was thrown while compiling this template. This is probably due to malformed input.`,
+  location: None,
+  path: [Js.Json.string(name)],
+  kind: #Compile,
+  exn: Some(AnyExn(e)),
 }
 
 /* Render errors */
@@ -159,11 +174,11 @@ let jsonTaggedTToString = (x: Js.Json.tagged_t) =>
 
 let patternTypeMismatch = (~data, ~pattern, ~stack) => {
   let data = jsonTaggedTToString(data)
-  let type_ = Ast_Pattern.toString(pattern)
+  let type_ = T.Ast_Pattern.toString(pattern)
   {
     message: `This pattern is type ${type_} but the data is type ${data}.`,
     kind: #Type,
-    location: Some(location(Ast_Pattern.toLocation(pattern))),
+    location: Some(location(T.Ast_Pattern.toLocation(pattern))),
     path: stackToPath(stack),
     exn: None,
   }
@@ -171,11 +186,11 @@ let patternTypeMismatch = (~data, ~pattern, ~stack) => {
 
 let bindingTypeMismatch = (~data, ~pattern, ~binding, ~stack) => {
   let data = jsonTaggedTToString(data)
-  let p = Ast_Pattern.toString(pattern)
+  let p = T.Ast_Pattern.toString(pattern)
   {
     message: `"${binding}" is type ${p} but the data is type ${data}.`,
     kind: #Type,
-    location: Some(location(Ast_Pattern.toLocation(pattern))),
+    location: Some(location(T.Ast_Pattern.toLocation(pattern))),
     path: stackToPath(stack),
     exn: None,
   }
@@ -241,16 +256,6 @@ let badMapType = (~loc, ~binding, ~type_, ~stack) => {
     message: `"${binding}" is a ${type_}. I can only map arrays.`,
     exn: None,
   }
-}
-
-/* Input errors */
-
-let uncaughtCompileError = (e, ~name) => {
-  message: `An exception was thrown while compiling this template. This is probably due to malformed input.`,
-  location: None,
-  path: [Js.Json.string(name)],
-  kind: #Compile,
-  exn: Some(AnyExn(e)),
 }
 
 let uncaughtComponentError = (e, ~stack) => {

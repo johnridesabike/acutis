@@ -14,29 +14,31 @@
    limitations under the License.
 */
 
+open Acutis_Types
+
 module Pattern: {
   let toJson: (
-    Acutis_Types.Ast_Pattern.t,
+    Ast_Pattern.t,
     ~props: Js.Dict.t<Js.Json.t>,
-    ~stack: Acutis_Types.Errors.Stack.t,
-  ) => result<Js.Json.t, Acutis_Types.Errors.t>
+    ~stack: Debug.Stack.t,
+  ) => result<Js.Json.t, Debug.t>
 
   type errors
   let noMatch: errors // exported for debugging
 
   let test: (
-    Acutis_Types.NonEmpty.t<Acutis_Types.Ast_Pattern.t>,
-    Acutis_Types.NonEmpty.t<Js.Json.t>,
+    NonEmpty.t<Ast_Pattern.t>,
+    NonEmpty.t<Js.Json.t>,
   ) => result<Js.Dict.t<Js.Json.t>, errors>
 }
 
 let make: (
-  ~ast: Acutis_Types.Ast.nodes<Acutis_Types.templateU<'a>>,
+  ~ast: Ast.nodes<templateU<'a>>,
   ~props: Js.Dict.t<Js.Json.t>,
   ~children: Js.Dict.t<'a>,
-  ~stack: Acutis_Types.Errors.Stack.t,
-  ~makeEnv: (. Acutis_Types.Errors.Stack.t) => Acutis_Types.environment<'a>,
-  ~error: (. array<Acutis_Types.Errors.t>) => 'a,
+  ~stack: Debug.Stack.t,
+  ~makeEnv: (. Debug.Stack.t) => environment<'a>,
+  ~error: (. array<Debug.t>) => 'a,
   ~try_: (. (. unit) => 'a, ~catch: (. _) => 'a) => 'a,
   ~reduceQueue: (. Belt.MutableQueue.t<'a>) => 'a,
 ) => Belt.MutableQueue.t<'a>

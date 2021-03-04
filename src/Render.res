@@ -13,14 +13,17 @@
    See the License for the specific language governing permissions and
    limitations under the License.
 */
+module T = Acutis_Types
 
 module Array = Belt.Array
+module Ast = T.Ast
+module Ast_Pattern = T.Ast_Pattern
 module Float = Belt.Float
 module Int = Belt.Int
 module Json = Js.Json
 module MapString = Belt.Map.String
+module NonEmpty = T.NonEmpty
 module Queue = Belt.MutableQueue
-open Acutis_Types
 
 module Pattern = {
   module Result = Belt.Result
@@ -91,7 +94,7 @@ module Pattern = {
     | NoMatch
     | PatternNumberMismatch
     | PatternTypeMismatch({data: Json.tagged_t, pattern: Ast_Pattern.t})
-    | TooManyBindings({loc: loc, binding: string})
+    | TooManyBindings({loc: T.loc, binding: string})
 
   let noMatch = NoMatch
 
@@ -303,7 +306,7 @@ let trimEnd = string => {
 external dictMerge: (@as(json`{}`) _, ~base: Js.Dict.t<'a>, Js.Dict.t<'a>) => Js.Dict.t<'a> =
   "assign"
 
-let echo = (head, tail, ~props, ~stack, ~children, ~env: environment<_>, ~error) => {
+let echo = (head, tail, ~props, ~stack, ~children, ~env: Environment.t<_>, ~error) => {
   let rec aux = (head: Ast.Echo.t, i) =>
     switch head {
     | Binding(loc, binding, esc) =>

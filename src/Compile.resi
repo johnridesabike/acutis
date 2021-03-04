@@ -14,16 +14,20 @@
    limitations under the License.
 */
 
+open Acutis_Types
+
+type t<'a> = template<'a>
+
 module Pattern: {
-  let make: Lexer.t => Acutis_Types.NonEmpty.t<Acutis_Types.Ast_Pattern.t>
+  let make: Lexer.t => NonEmpty.t<Ast_Pattern.t>
 }
 
 let makeAstInternalExn: (
   ~name: string,
   ~g: 'g, // This is for an internal graph format
-  ~getComponent: (. 'g, string, Acutis_Types.loc) => 'a,
+  ~getComponent: (. 'g, string, loc) => 'a,
   string,
-) => Acutis_Types.Ast.t<'a>
+) => Ast.t<'a>
 
 module Components: {
   type t<'a>
@@ -31,4 +35,4 @@ module Components: {
   let make: array<Source.t<'a>> => Result.t<t<'a>>
 }
 
-let make: (Source.t<'a>, Components.t<'a>) => Result.t<Acutis_Types.template<'a>>
+let make: (Source.t<'a>, Components.t<'a>) => Result.t<t<'a>>

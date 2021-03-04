@@ -15,7 +15,7 @@
 */
 
 open TestFramework
-open Acutis_Types
+module Ast = Acutis_Types.Ast
 
 let getAst = (x: Ast.t<_>) => x.ast
 

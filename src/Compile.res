@@ -20,11 +20,20 @@
   "peek" operations needed to switch code paths.
 */
 
+module T = Acutis_Types
+
 module Array = Belt.Array
+module Ast = T.Ast
+module Ast_Pattern = T.Ast_Pattern
 module List = Belt.List
-module MutableMapString = Belt.MutableMap.String
+module MutMapString = Belt.MutableMap.String
+module NonEmpty = T.NonEmpty
 module Queue = Belt.MutableQueue
-open Acutis_Types
+module Token = T.Token
+
+exception Exit = Debug.Exit
+
+type t<'a> = T.template<'a>
 
 module Pattern = {
   let rec parseNode = (t: Token.t, tokens): Ast_Pattern.t =>
@@ -45,7 +54,7 @@ module Pattern = {
       | CloseBrace(_) => #Object(loc, [])
       | t => parseObject(loc, t, tokens)
       }
-    | t => Debug.unexpectedTokenExn(t, ~name=Lexer.name(tokens))
+    | t => raise(Exit(Debug.unexpectedToken(t, ~name=Lexer.name(tokens))))
     }
   and parseArray = (loc, t, tokens) => {
     let q = Queue.make()
@@ -61,15 +70,15 @@ module Pattern = {
             switch Lexer.popExn(tokens) {
             | CloseBracket(_) =>
               #ArrayWithTailBinding(loc, Queue.toArray(q), #Binding(bindingLoc, tailBinding))
-            | t => Debug.unexpectedTokenExn(t, ~name=Lexer.name(tokens))
+            | t => raise(Exit(Debug.unexpectedToken(t, ~name=Lexer.name(tokens))))
             }
-          | t => Debug.unexpectedTokenExn(t, ~name=Lexer.name(tokens))
+          | t => raise(Exit(Debug.unexpectedToken(t, ~name=Lexer.name(tokens))))
           }
         | t =>
           Queue.add(q, parseNode(t, tokens))
           aux()
         }
-      | t => Debug.unexpectedTokenExn(t, ~name=Lexer.name(tokens))
+      | t => raise(Exit(Debug.unexpectedToken(t, ~name=Lexer.name(tokens))))
       }
     aux()
   }
@@ -82,7 +91,7 @@ module Pattern = {
       | Comma(_) =>
         Queue.add(q, parseObjectKeyValue(Lexer.popExn(tokens), tokens))
         aux()
-      | t => Debug.unexpectedTokenExn(t, ~name=Lexer.name(tokens))
+      | t => raise(Exit(Debug.unexpectedToken(t, ~name=Lexer.name(tokens))))
       }
     aux()
   }
@@ -91,7 +100,7 @@ module Pattern = {
     | String(_, key) =>
       switch Lexer.popExn(tokens) {
       | Colon(_) => (key, parseNode(Lexer.popExn(tokens), tokens))
-      | t => Debug.unexpectedTokenExn(t, ~name=Lexer.name(tokens))
+      | t => raise(Exit(Debug.unexpectedToken(t, ~name=Lexer.name(tokens))))
       }
     | Identifier(loc, key) =>
       switch Lexer.peekExn(tokens) {
@@ -100,7 +109,7 @@ module Pattern = {
         (key, parseNode(Lexer.popExn(tokens), tokens))
       | _ => (key, #Binding(loc, key))
       }
-    | t => Debug.unexpectedTokenExn(t, ~name=Lexer.name(tokens))
+    | t => raise(Exit(Debug.unexpectedToken(t, ~name=Lexer.name(tokens))))
     }
 
   let make = tokens => {
@@ -127,7 +136,7 @@ type parseData<'a> = {
 let parseBindingName = tokens =>
   switch Lexer.popExn(tokens) {
   | Identifier(loc, x) => (loc, x)
-  | t => Debug.unexpectedTokenExn(t, ~name=Lexer.name(tokens))
+  | t => raise(Exit(Debug.unexpectedToken(t, ~name=Lexer.name(tokens))))
   }
 
 let parseCommaSequence = tokens => {
@@ -149,7 +158,7 @@ let parseEchoAux = (t: Token.t, tokens, esc): Ast.Echo.t =>
   | Identifier(loc, x) => Binding(loc, x, esc)
   | String(_, x) => String(x, esc)
   | Number(_, x) => Number(x, esc)
-  | t => Debug.unexpectedTokenExn(t, ~name=Lexer.name(tokens))
+  | t => raise(Exit(Debug.unexpectedToken(t, ~name=Lexer.name(tokens))))
   }
 
 let parseEcho = tokens =>
@@ -168,7 +177,7 @@ let parseEchoes = tokens => {
     | Question(_) =>
       Queue.add(q, parseEcho(tokens))
       aux()
-    | t => Debug.unexpectedTokenExn(t, ~name=Lexer.name(tokens))
+    | t => raise(Exit(Debug.unexpectedToken(t, ~name=Lexer.name(tokens))))
     }
   aux()
 }
@@ -216,7 +225,7 @@ let rec parse = (t, tokens, ~until, ~g, ~getComponent): parseData<_> => {
           Queue.add(q, Text(x, TrimStart))
           aux(t)
         }
-      | t => Debug.unexpectedTokenExn(t, ~name=Lexer.name(tokens))
+      | t => raise(Exit(Debug.unexpectedToken(t, ~name=Lexer.name(tokens))))
       }
     | Comment(_) => aux(Lexer.popExn(tokens))
     | Identifier(loc, "match") =>
@@ -231,7 +240,7 @@ let rec parse = (t, tokens, ~until, ~g, ~getComponent): parseData<_> => {
         Queue.add(q, Map(loc, pattern, withs))
         aux(Lexer.popExn(tokens))
       | (#Null(_) | #True(_) | #False(_) | #String(_) | #Number(_) | #Object(_)) as x =>
-        Debug.badMapTypeParseExn(x, ~name=Lexer.name(tokens))
+        raise(Exit(Debug.badMapTypeParse(x, ~name=Lexer.name(tokens))))
       }
     | Echo(loc) =>
       let {nextToken, data: echoes} = parseEchoes(tokens)
@@ -240,7 +249,7 @@ let rec parse = (t, tokens, ~until, ~g, ~getComponent): parseData<_> => {
     | ComponentName(loc, name) =>
       Queue.add(q, parseComponent(loc, name, tokens, ~g, ~getComponent))
       aux(Lexer.popExn(tokens))
-    | t => Debug.unexpectedTokenExn(t, ~name=Lexer.name(tokens))
+    | t => raise(Exit(Debug.unexpectedToken(t, ~name=Lexer.name(tokens))))
     }
   aux(t)
 }
@@ -268,7 +277,7 @@ and parseWithBlocks = (tokens, ~block, ~g, ~getComponent) =>
       | Slash(_) =>
         switch Lexer.popExn(tokens) {
         | Identifier(_, x) if x == block => NonEmpty(head, Queue.toArray(q))
-        | t => Debug.unexpectedTokenExn(t, ~name=Lexer.name(tokens))
+        | t => raise(Exit(Debug.unexpectedToken(t, ~name=Lexer.name(tokens))))
         }
       /* This is guaranteed to be a "with" clause. */
       | _with =>
@@ -277,7 +286,7 @@ and parseWithBlocks = (tokens, ~block, ~g, ~getComponent) =>
         aux(nextToken)
       }
     aux(nextToken)
-  | t => Debug.unexpectedTokenExn(t, ~name=Lexer.name(tokens))
+  | t => raise(Exit(Debug.unexpectedToken(t, ~name=Lexer.name(tokens))))
   }
 and parseComponent = (loc, name, tokens, ~g, ~getComponent) => {
   let {nextToken, data: (props, children)} = parseProps(tokens, ~g, ~getComponent)
@@ -302,7 +311,7 @@ and parseComponent = (loc, name, tokens, ~g, ~getComponent) => {
         children: Queue.toArray(children),
         f: getComponent(. g, name, loc),
       })
-    | t => Debug.unexpectedTokenExn(t, ~name=Lexer.name(tokens))
+    | t => raise(Exit(Debug.unexpectedToken(t, ~name=Lexer.name(tokens))))
     }
   }
 }
@@ -337,12 +346,12 @@ and parseProps = (tokens, ~g, ~getComponent) => {
           | Block(_) =>
             Queue.add(children, (name, Ast.ChildBlock(child)))
             aux(Lexer.popExn(tokens))
-          | t => Debug.unexpectedTokenExn(t, ~name=Lexer.name(tokens))
+          | t => raise(Exit(Debug.unexpectedToken(t, ~name=Lexer.name(tokens))))
           }
         | ComponentName(_, name') =>
           Queue.add(children, (name, ChildName(name')))
           aux(Lexer.popExn(tokens))
-        | t => Debug.unexpectedTokenExn(t, ~name=Lexer.name(tokens))
+        | t => raise(Exit(Debug.unexpectedToken(t, ~name=Lexer.name(tokens))))
         }
       | t =>
         Queue.add(children, (name, ChildName(name)))
@@ -363,7 +372,7 @@ let compileExn = (src: Source.t<_>, ~g, ~getComponent) =>
   switch src {
   | String({name, src}) =>
     let ast = makeAstInternalExn(~name, ~g, ~getComponent, src)
-    (env, props, children) => env.render(. ast, props, children)
+    (env: T.environment<_>, props, children) => env.render(. ast, props, children)
   | Func({f, _}) => f
   | StringFunc({name, src, f}) => f(makeAstInternalExn(~name, ~g, ~getComponent, src))
   }
@@ -372,89 +381,89 @@ let compile = (src, ~g, ~getComponent) =>
   try {
     #ok(compileExn(~getComponent, ~g, src))
   } catch {
-  | Debug.CompileError(e) => #errors([e])
+  | Exit(e) => #errors([e])
   | e => #errors([Debug.uncaughtCompileError(e, ~name=Source.name(src))])
   }
 
-let stringEq = (. a: string, b: string) => a == b
+module Components = {
+  let stringEq = (. a: string, b: string) => a == b
 
-let uncurry = (f, . a, b, c) => f(a, b, c) // this makes components render faster.
+  // this makes components render faster.
+  let uncurry = (f, . a, b, c) => f(a, b, c)
 
-// Mutable structures have the advantage of being able to update data even
-// when an exception is raised during compiling.
-type graph<'a> = {
-  compiled: MutableMapString.t<templateU<'a>>,
-  sources: MutableMapString.t<Source.t<'a>>,
-  stack: list<string>,
-}
-
-// When we compile a new component in the tree, ensure that it keeps the
-// directed-acyclic structure.
-let rec makeComponentGraph = (. g, name, loc) =>
-  switch MutableMapString.get(g.compiled, name) {
-  | Some(f) => f // It was compiled already during a previous search.
-  | None =>
-    switch MutableMapString.get(g.sources, name) {
-    | Some(src) =>
-      // Remove it from the source queue so a cycle isn't possible.
-      MutableMapString.remove(g.sources, name)
-      let f = compileExn(
-        src,
-        ~g={...g, stack: list{name, ...g.stack}},
-        ~getComponent=makeComponentGraph,
-      )
-      let result = uncurry(f)
-      MutableMapString.set(g.compiled, name, result)
-      result
-    | None =>
-      // It is either being compiled (thus in a cycle) or it doesn't exist.
-      if List.hasU(g.stack, name, stringEq) {
-        Debug.cyclicDependencyExn(~loc, ~name, ~stack=g.stack)
-      } else {
-        Debug.componentDoesNotExistExn(~loc, ~name, ~stack=g.stack)
-      }
-    }
+  // Mutable structures have the advantage of being able to update even when the
+  // compiler exits early via raising an exception.
+  type graph<'a> = {
+    compiled: MutMapString.t<T.templateU<'a>>,
+    srcQueue: MutMapString.t<Source.t<'a>>,
+    stack: list<string>,
   }
 
-module Components = {
-  type t<'a> = MutableMapString.t<templateU<'a>>
+  // When we compile a new component in the tree, ensure that it keeps the
+  // directed-acyclic structure.
+  let rec makeComponentGraph = (. g, name, loc) =>
+    switch MutMapString.get(g.compiled, name) {
+    | Some(f) => f // It was compiled already during a previous search.
+    | None =>
+      switch MutMapString.get(g.srcQueue, name) {
+      | Some(src) =>
+        // Remove it from the source queue so a cycle isn't possible.
+        MutMapString.remove(g.srcQueue, name)
+        let f = compileExn(
+          src,
+          ~g={...g, stack: list{name, ...g.stack}},
+          ~getComponent=makeComponentGraph,
+        )
+        let result = uncurry(f)
+        MutMapString.set(g.compiled, name, result)
+        result
+      | None =>
+        // It is either being compiled (thus in a cycle) or it doesn't exist.
+        if List.hasU(g.stack, name, stringEq) {
+          raise(Exit(Debug.cyclicDependency(~loc, ~name, ~stack=g.stack)))
+        } else {
+          raise(Exit(Debug.componentDoesNotExist(~loc, ~name, ~stack=g.stack)))
+        }
+      }
+    }
 
-  let empty = () => MutableMapString.make()
+  type t<'a> = MutMapString.t<T.templateU<'a>>
+
+  let empty = () => MutMapString.make()
 
   let make = a => {
     let errors = Queue.make()
-    let compiled = MutableMapString.make()
-    let sources = MutableMapString.make()
-    let names = Queue.make()
-    Array.forEachU(a, (. src) => {
-      let name = Source.name(src)
-      if MutableMapString.has(sources, name) {
-        Queue.add(errors, Debug.duplicateCompName(name))
-      } else {
-        MutableMapString.set(sources, name, src)
-        Queue.add(names, name)
-      }
-    })
-    // Compile each component in the queue in a way that ensures the output
-    // graph has no cycles.
-    Queue.forEachU(names, (. name) =>
-      switch (MutableMapString.has(compiled, name), MutableMapString.get(sources, name)) {
-      | (true, _) // It was already compiled by a dependent.
-      | (false, None) => () // It was compiled but wasn't saved due to errors.
-      | (false, Some(src)) =>
-        MutableMapString.remove(sources, name)
-        let g = {compiled: compiled, sources: sources, stack: list{name}}
+    let compiled = MutMapString.make()
+    let srcQueue = MutMapString.make()
+    Array.forEachU(a, (. src) =>
+      MutMapString.updateU(srcQueue, Source.name(src), (. x) =>
+        switch x {
+        | None => Some(src)
+        | Some(_) as x =>
+          Queue.add(errors, Debug.duplicateCompName(Source.name(src)))
+          x
+        }
+      )
+    )
+    // Compile each source in a way that ensures the output graph has no cycles.
+    let rec aux = () =>
+      switch MutMapString.minimum(srcQueue) {
+      | Some((name, src)) =>
+        MutMapString.remove(srcQueue, name)
+        let g = {compiled: compiled, srcQueue: srcQueue, stack: list{name}}
         switch compile(src, ~g, ~getComponent=makeComponentGraph) {
-        | #ok(template) => MutableMapString.set(compiled, name, uncurry(template))
+        | #ok(template) => MutMapString.set(compiled, name, uncurry(template))
         | #errors(e) => e->Queue.fromArray->Queue.transfer(errors)
         }
+        aux()
+      | None =>
+        if Queue.isEmpty(errors) {
+          #ok(compiled)
+        } else {
+          #errors(Queue.toArray(errors))
+        }
       }
-    )
-    if Queue.isEmpty(errors) {
-      #ok(compiled)
-    } else {
-      #errors(Queue.toArray(errors))
-    }
+    aux()
   }
 }
 
@@ -462,9 +471,9 @@ let make = (src, components) =>
   compile(
     src,
     ~g={
-      compiled: components,
-      sources: MutableMapString.make(),
+      Components.compiled: components,
+      srcQueue: MutMapString.make(),
       stack: list{Source.name(src)},
     },
-    ~getComponent=makeComponentGraph,
+    ~getComponent=Components.makeComponentGraph,
   )
