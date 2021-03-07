@@ -21,15 +21,16 @@ module Pattern: {
     Ast_Pattern.t,
     ~props: Js.Dict.t<Js.Json.t>,
     ~stack: Debug.Stack.t,
-  ) => result<Js.Json.t, Debug.t>
+  ) => Result.t<Js.Json.t>
 
-  type errors
-  let noMatch: errors // exported for debugging
+  type testResult<'a> = NoMatch | Result(Result.t<'a>)
 
   let test: (
     NonEmpty.t<Ast_Pattern.t>,
     NonEmpty.t<Js.Json.t>,
-  ) => result<Js.Dict.t<Js.Json.t>, errors>
+    ~loc: loc,
+    ~stack: Debug.Stack.t,
+  ) => testResult<Belt.Map.String.t<Js.Json.t>>
 }
 
 let make: (

@@ -1087,7 +1087,7 @@ Array [
     "exn": undefined,
     "kind": "Type",
     "location": Object {
-      "character": 22,
+      "character": 27,
     },
     "message": "This pattern is type boolean but the data is type object.",
     "path": Array [
@@ -1202,6 +1202,22 @@ Array [
       "character": 22,
     },
     "message": "This pattern is type object but the data is type number.",
+    "path": Array [
+      "",
+    ],
+  },
+]
+`;
+
+exports[`Patterns Type errors Object pattern 8`] = `
+Array [
+  Object {
+    "exn": undefined,
+    "kind": "Type",
+    "location": Object {
+      "character": 26,
+    },
+    "message": "This pattern is type number but the data is type string.",
     "path": Array [
       "",
     ],
@@ -1327,7 +1343,7 @@ Array [
     "exn": undefined,
     "kind": "Type",
     "location": Object {
-      "character": 22,
+      "character": 27,
     },
     "message": "This pattern is type array but the data is type object.",
     "path": Array [
@@ -1343,9 +1359,41 @@ Array [
     "exn": undefined,
     "kind": "Type",
     "location": Object {
-      "character": 22,
+      "character": 27,
     },
     "message": "This pattern is type array but the data is type object.",
+    "path": Array [
+      "",
+    ],
+  },
+]
+`;
+
+exports[`Patterns Type errors array pattern 10`] = `
+Array [
+  Object {
+    "exn": undefined,
+    "kind": "Pattern",
+    "location": Object {
+      "character": 4,
+    },
+    "message": "None of the patterns match the data. Consider a catch-all case to avoid this.",
+    "path": Array [
+      "",
+    ],
+  },
+]
+`;
+
+exports[`Patterns Type errors array pattern 11`] = `
+Array [
+  Object {
+    "exn": undefined,
+    "kind": "Type",
+    "location": Object {
+      "character": 22,
+    },
+    "message": "This pattern is type number but the data is type string.",
     "path": Array [
       "",
     ],
@@ -1423,7 +1471,7 @@ Array [
     "exn": undefined,
     "kind": "Type",
     "location": Object {
-      "character": 22,
+      "character": 27,
     },
     "message": "This pattern is type number but the data is type object.",
     "path": Array [
@@ -1503,7 +1551,7 @@ Array [
     "exn": undefined,
     "kind": "Type",
     "location": Object {
-      "character": 22,
+      "character": 27,
     },
     "message": "This pattern is type string but the data is type object.",
     "path": Array [

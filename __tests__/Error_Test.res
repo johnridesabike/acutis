@@ -45,7 +45,8 @@ let props = dict([
   ("number", Js.Json.number(1.0)),
   ("string", Js.Json.string("a")),
   ("array", Js.Json.stringArray(["a"])),
-  ("object", Js.Json.object_(Js.Dict.empty())),
+  ("emptyObject", Js.Json.object_(Js.Dict.empty())),
+  ("object", Js.Json.object_(Js.Dict.fromArray([("a", Js.Json.string("b"))]))),
 ])
 
 describe("Lexer", ({test, _}) => {
@@ -258,7 +259,7 @@ describe("Patterns", ({test, _}) => {
         render(`{% match array with 1 %} a {% /match %}`, props, Compile.Components.empty()),
       ).toMatchSnapshot()
       expect.value(
-        render(`{% match object with 1 %} a {% /match %}`, props, Compile.Components.empty()),
+        render(`{% match emptyObject with 1 %} a {% /match %}`, props, Compile.Components.empty()),
       ).toMatchSnapshot()
     })
 
@@ -276,7 +277,7 @@ describe("Patterns", ({test, _}) => {
         render(`{% match array with "a" %} a {% /match %}`, props, Compile.Components.empty()),
       ).toMatchSnapshot()
       expect.value(
-        render(`{% match object with "" %} a {% /match %}`, props, Compile.Components.empty()),
+        render(`{% match emptyObject with "" %} a {% /match %}`, props, Compile.Components.empty()),
       ).toMatchSnapshot()
     })
 
@@ -300,7 +301,11 @@ describe("Patterns", ({test, _}) => {
         render(`{% match array with false %} a {% /match %}`, props, Compile.Components.empty()),
       ).toMatchSnapshot()
       expect.value(
-        render(`{% match object with true %} a {% /match %}`, props, Compile.Components.empty()),
+        render(
+          `{% match emptyObject with true %} a {% /match %}`,
+          props,
+          Compile.Components.empty(),
+        ),
       ).toMatchSnapshot()
     })
 
@@ -335,10 +340,28 @@ describe("Patterns", ({test, _}) => {
         render(`{% match number with [] %} a {% /match %}`, props, Compile.Components.empty()),
       ).toMatchSnapshot()
       expect.value(
-        render(`{% match object with [] %} a {% /match %}`, props, Compile.Components.empty()),
+        render(`{% match emptyObject with [] %} a {% /match %}`, props, Compile.Components.empty()),
       ).toMatchSnapshot()
       expect.value(
-        render(`{% match object with [1] %} a {% /match %}`, props, Compile.Components.empty()),
+        render(
+          `{% match emptyObject with [1] %} a {% /match %}`,
+          props,
+          Compile.Components.empty(),
+        ),
+      ).toMatchSnapshot()
+      expect.value(
+        render(
+          `{% match array with [a, b, ...c] %} a {% /match %}`,
+          props,
+          Compile.Components.empty(),
+        ),
+      ).toMatchSnapshot()
+      expect.value(
+        render(
+          `{% match array with [1, ...a] %} a {% /match %}`,
+          props,
+          Compile.Components.empty(),
+        ),
       ).toMatchSnapshot()
     })
 
@@ -363,6 +386,9 @@ describe("Patterns", ({test, _}) => {
       ).toMatchSnapshot()
       expect.value(
         render(`{% match number with {a: 1} %} a {% /match %}`, props, Compile.Components.empty()),
+      ).toMatchSnapshot()
+      expect.value(
+        render(`{% match object with {a: 1} %} a {% /match %}`, props, Compile.Components.empty()),
       ).toMatchSnapshot()
     })
   })
