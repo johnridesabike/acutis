@@ -56,8 +56,8 @@ The lexer has two basic modes:
 Every template starts in string mode. As soon as the lexer encounters a `{%`,
 it begins expression mode.
 
-All of the tokens are stored in a temporary [`Belt.MutableQueue.t`][1] data
-type.
+All of the tokens are stored in a temporary [`Belt.MutableQueue.t`][1]
+structure.
 
 [1]: https://rescript-lang.org/docs/manual/latest/api/belt/mutable-queue
 
@@ -93,9 +93,9 @@ input "props" to produce the final output.
 
 Like `Compile.res`, `Render.res` exposes a submodule for rendering patterns.
 
-We may normally expect the renderer to produce a string data type. However,
-the output could theoretically be anything defined in the environment. I
-designed this flexibility specifically for [Promises].
+You may expect the renderer to produce a string data type. However, the
+output could theoretically be anything defined in the environment. I designed
+this flexibility specifically for [Promises].
 
 [Promises]: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise
 
@@ -202,9 +202,9 @@ already doing too much work.
 
 I made Acutis strongly typed because this catches errors early and makes
 fixing bugs easier. Acutis is dynamically typed (where types are checked at
-runtime) only because that was easier to build. I think of Acutis templates
-as theoretically statically typed (where types are checked at compile time),
-but that would require adding another step in the compiler.
+runtime), but I think of Acutis templates as theoretically statically typed
+(where types are checked at compile time). However, that would require adding
+another step in the compiler.
 
 I borrowed the types themselves from JSON. This was convenient and "good
 enough," even though JSON is imperfect. A more flexible and robust set of

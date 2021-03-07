@@ -351,7 +351,7 @@ const output = Result.getOrElse(
   result,
   (errors) => {
     console.error(errors);
-    throw new Error("I can't continue due to those errors.");
+    return "Some default value.";
   }
 );
 ```
@@ -363,7 +363,7 @@ let output = Result.getOrElse(
   result,
   (errors) => {
     Js.Console.error(errors)
-    failwith("I can't continue due to those errors.")
+    "Some default value."
   }
 )
 ```

@@ -8,12 +8,12 @@ next:
   url: /manual/
 ---
 
-Acutis is designed for you to integrate with your existing build process
-through its [API], so currently there aren't any configuration files or
-starter projects to clone.
+Acutis allows you to integrate it with your existing build process through
+its [API]. Currently, there aren't any configuration files or starter projects
+to clone.
 
-To quickly start experimenting with it, you can install it and use the [CLI]
-without needing a complicated build system.
+To start quickly experimenting with it without a build system, you can use
+the [CLI].
 
 ## Why Acutis?
 
@@ -24,8 +24,7 @@ I created Acutis because there were specific language features I wanted. I
 was inspired by the functional, component-based, composable design in React
 as well as the pattern-matching abilities in ReScript (and OCaml, Reason, and
 all of the other languages in that family). You'll get the most out of using
-Acutis if you want to experiment with something different. Be prepared to get
-your hands dirty to fit it into your existing build system.
+Acutis if you want to experiment with something different.
 
 ## What state is it in?
 
@@ -67,10 +66,8 @@ your `bsconfig.json` file.
 
 ## Conventions
 
-I use the `.acutis` file extension for my templates, but there's nothing in
-the language that enforces that. You can use something else (for example,
-`.html`) or you can configure your editor to treat `.acutis` files as HTML
-(or whatever format you want).
+I use the `.acutis` file extension for my templates, and I configure my
+editor to treat `.acutis` files as HTML. But you can use whatever you want.
 
 [1]: https://github.com/johnridesabike/acutis/tree/master/docs
 [2]: https://github.com/johnridesabike/acutis/blob/master/cli
