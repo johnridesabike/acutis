@@ -37,7 +37,7 @@ module Stack: {
     | Section({component: string, section: string})
     | Match
     | Map
-    | Index(int)
+    | Index(Js.Json.t)
   type t = list<name>
 }
 

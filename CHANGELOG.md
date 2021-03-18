@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.12.0
+
+- Added objects as a mappable type.
+
 ## 0.11.0
 
 - Compile API changes:

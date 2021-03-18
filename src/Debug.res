@@ -39,7 +39,7 @@ module Stack = {
     | Section({component: string, section: string})
     | Match
     | Map
-    | Index(int)
+    | Index(Js.Json.t)
   type t = list<name>
 
   let nameToJson = (. x) =>
@@ -48,7 +48,7 @@ module Stack = {
     | Section({component, section}) => Js.Json.string(`section: ${component}#${section}`)
     | Match => Js.Json.string("match")
     | Map => Js.Json.string("map")
-    | Index(x) => x->Belt.Int.toFloat->Js.Json.number
+    | Index(x) => x
     }
 }
 

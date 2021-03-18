@@ -2076,6 +2076,22 @@ Array [
 ]
 `;
 
+exports[`Rendering Missing bindings 5`] = `
+Array [
+  Object {
+    "exn": undefined,
+    "kind": "Render",
+    "location": Object {
+      "character": 12,
+    },
+    "message": "Binding \\"b\\" does not exist.",
+    "path": Array [
+      "",
+    ],
+  },
+]
+`;
+
 exports[`Rendering Multiple render errors are all reported 1`] = `
 Array [
   Object {

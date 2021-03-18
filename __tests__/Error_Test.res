@@ -441,6 +441,14 @@ describe("Rendering", ({test, _}) => {
     let components = Compile.Components.make([a])->Result.getExn
     let result = render(`{% A B=C / %}`, Js.Dict.empty(), components)
     expect.value(result).toMatchSnapshot()
+    // Get some coverage on the map-object error path.
+    expect.value(
+      render(
+        "{% map {a: b} with b %} {{ b }} {% /map %}",
+        Js.Dict.empty(),
+        Compile.Components.empty(),
+      ),
+    ).toMatchSnapshot()
   })
 
   test("Error messages display component name correctly", ({expect, _}) => {

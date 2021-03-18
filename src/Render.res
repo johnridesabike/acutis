@@ -378,48 +378,58 @@ let rec make = (~ast, ~props, ~children, ~stack, ~makeEnv, ~error, ~try_, ~reduc
       | #errors(e) => Queue.add(queue, error(. e))
       }
     | Map(loc, pattern, cases) =>
-      let data = switch pattern {
-      | #Binding(loc, binding) =>
-        switch Js.Json.classify(getBindingOrNull(props, binding)) {
-        | JSONArray(arr) => #ok(arr)
-        | type_ => #errors([Debug.badMapType(~binding, ~type_, ~loc, ~stack)])
-        }
-      | #...Ast_Pattern.arr as x => Pattern.toArray(x, ~props, ~stack)
-      }
-      switch data {
-      | #errors(e) => Queue.add(queue, error(. e))
-      | #ok(arr) =>
-        Array.forEachWithIndexU(arr, (. index, json) => {
-          let patterns = NonEmpty.map(cases, ~f=(. {patterns, ast}): Pattern.t<_> => {
-            patterns: NonEmpty.map(patterns, ~f=(. x): NonEmpty.t<_> =>
-              switch x {
-              // Add a default binding for the index
-              | NonEmpty(x, []) => NonEmpty(x, [#Binding(loc, "_")])
-              | x => x
-              }
+      let f = (index, json) => {
+        let patterns = NonEmpty.map(cases, ~f=(. {patterns, ast}): Pattern.t<_> => {
+          patterns: NonEmpty.map(patterns, ~f=(. x): NonEmpty.t<_> =>
+            switch x {
+            // Add a default binding for the index
+            | NonEmpty(x, []) => NonEmpty(x, [#Binding(loc, "_")])
+            | x => x
+            }
+          ),
+          f: (. props') =>
+            make(
+              ~ast,
+              ~props=dictMerge(~base=props, props'),
+              ~children,
+              ~stack=list{Index(index), Map, ...stack},
+              ~makeEnv,
+              ~error,
+              ~try_,
+              ~reduceQueue,
             ),
-            f: (. props') =>
-              make(
-                ~ast,
-                ~props=dictMerge(~base=props, props'),
-                ~children,
-                ~stack=list{Index(index), Map, ...stack},
-                ~makeEnv,
-                ~error,
-                ~try_,
-                ~reduceQueue,
-              ),
-          })
-          switch Pattern.match(
-            patterns,
-            NonEmpty(json, [index->Int.toFloat->Json.number]),
-            ~loc,
-            ~stack,
-          ) {
-          | #ok(result) => Queue.transfer(result, queue)
-          | #errors(e) => Queue.add(queue, error(. e))
-          }
         })
+        switch Pattern.match(patterns, NonEmpty(json, [index]), ~loc, ~stack) {
+        | #ok(result) => Queue.transfer(result, queue)
+        | #errors(e) => Queue.add(queue, error(. e))
+        }
+      }
+      switch pattern {
+      | #Binding(loc, binding) =>
+        switch Json.classify(getBindingOrNull(props, binding)) {
+        | JSONArray(a) => Array.forEachWithIndexU(a, (. i, x) => f(Json.number(Int.toFloat(i)), x))
+        | JSONObject(o) =>
+          // Js.Dict.forEach doesn't exist
+          let keys = Js.Dict.keys(o)
+          let l = Array.size(keys)
+          for i in 0 to l - 1 {
+            let key = Array.getUnsafe(keys, i)
+            f(Json.string(key), Js.Dict.unsafeGet(o, key))
+          }
+        | type_ => Queue.add(queue, error(. [Debug.badMapType(~binding, ~type_, ~loc, ~stack)]))
+        }
+      | #...Ast_Pattern.arr as a =>
+        Pattern.toArray(a, ~props, ~stack)
+        ->Result.mapU((. a) =>
+          Array.forEachWithIndexU(a, (. i, x) => f(Json.number(Int.toFloat(i)), x))
+        )
+        ->Result.getOrElseU((. e) => Queue.add(queue, error(. e)))
+      | #Object(_, o) =>
+        Pattern.arrayToQueueResult(o, ~f=(. (k, v)) =>
+          Pattern.toJson(v, ~props, ~stack)->Result.mapU((. x) => (Js.Json.string(k), x))
+        )
+        ->Result.mapU((. q) => Queue.forEachU(q, (. (k, v)) => f(k, v)))
+        ->Result.getOrElseU((. e) => Queue.add(queue, error(. e)))
       }
     | Component({loc, name, props: compPropsRaw, children: compChildrenRaw, f}) =>
       let compProps = Js.Dict.empty()

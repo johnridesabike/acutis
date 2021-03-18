@@ -162,6 +162,27 @@ describe("All together", ({test, _}) => {
     expect.value(result).toEqual(#ok(` Carlo.  John.  Megan. `))
   })
 
+  test("Map: objects", ({expect, _}) => {
+    let data = dict([
+      ("people", json(`{"lisa": {"job": "computers"}, "tommy": {"job": "banking"}}`)),
+    ])
+    let result = render(
+      `{% map people with {job}, key ~%} {{ key }}: {{ job }}. {% /map %}`,
+      data,
+      Compile.Components.empty(),
+    )
+    expect.value(result).toEqual(#ok(`lisa: computers. tommy: banking. `))
+    let result = render(
+      `{% map {
+          lisa: {job: "computers"},
+          tommy: {job: "banking"}
+        } with {job}, key ~%} {{ key }}: {{ job }}. {% /map %}`,
+      Js.Dict.empty(),
+      Compile.Components.empty(),
+    )
+    expect.value(result).toEqual(#ok(`lisa: computers. tommy: banking. `))
+  })
+
   test("Component", ({expect, _}) => {
     let ohHai = Source.funcWithString(~name="OhHai", "{{ Children }} Oh hai {{ name }}.", (
       ast,

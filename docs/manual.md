@@ -101,7 +101,7 @@ Renders:
 <p>Blue</p>
 ```
 
-## Patterns, matching, and mapping
+## Pattern matching
 
 The `match` and `map` statements are the core of Acutis' superpowers. They
 use pattern matching to conditionally output sections of a template.
@@ -110,6 +110,8 @@ Pattern matching in Acutis combines object destructuring with equality
 checking. If you're used to destructuring objects and using the `switch`
 statement in JavaScript, then this may seem like a natural progression from
 that.
+
+### Example
 
 Consider this pattern:
 
@@ -189,10 +191,15 @@ But my favorite is still blue.
 
 The top-level `color` is not affected by the nested `color` binding.
 
-## Map
+## Mapping
 
-The `map` statement is similar to `match` except that it is used on arrays to
-render each value of the array. 
+The `map` statement is similar to `match` except that it is used on arrays
+and objects to render each value of the array or object.
+
+The value types must be homogenous (all the same type), or else a type error
+is likely.
+
+### Example
 
 These props:
 
@@ -254,7 +261,7 @@ using the `...` (spread) syntax.
 ### Matching the item index
 
 You can optionally include an item's index in the pattern.
-*Indices always begin at zero.*
+*For arrays, indices always begin at zero.*
 
 ```jinja2
 {% map articles with {title, author}, index %}
@@ -271,6 +278,21 @@ conditionally render sections by matching the index with specific numbers.
   Our first article is {{ title }}.
 {% with {title} %}
   {{ title }}
+{% /map %}
+```
+
+### Mapping objects
+
+You can `map` an object binding or pattern. Each of the object's values will
+be matched with the pattern after the `with` clause. The index will be the
+key associated with the value.
+
+```jinja2
+{% map {
+    author: {name: "John"},
+    editor: {name: "Carlo"}
+  } with {name}, role ~%}
+  {{ name }} is the {{ role }}.
 {% /map %}
 ```
 

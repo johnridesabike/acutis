@@ -116,18 +116,23 @@ module Token = {
 
 module Ast_Pattern = {
   type binding = [#Binding(loc, string)]
-  type arr_<'t> = [#Array(loc, array<'t>) | #ArrayWithTailBinding(loc, array<'t>, binding)]
+  type arr_<'t> = [
+    | #Array(loc, array<'t>)
+    | #ArrayWithTailBinding(loc, array<'t>, binding)
+  ]
+  type obj_<'t> = [#Object(loc, array<(string, 't)>)]
   type rec t = [
     | #Null(loc)
     | #False(loc)
     | #True(loc)
     | #String(loc, string)
     | #Number(loc, float)
-    | #Object(loc, array<(string, t)>)
     | arr_<t>
+    | obj_<t>
     | binding
   ]
   type arr = arr_<t>
+  type obj = obj_<t>
 
   let toString = (x: t) =>
     switch x {
@@ -164,7 +169,7 @@ module Ast = {
       | Number(float, escape)
   }
   type trim = TrimStart | TrimEnd | TrimBoth | NoTrim
-  type mapPattern = [Ast_Pattern.binding | Ast_Pattern.arr]
+  type mapPattern = [Ast_Pattern.binding | Ast_Pattern.arr | Ast_Pattern.obj]
   type rec node<'a> =
     | Text(string, trim)
     // The first echo item that isn't null will be returned.

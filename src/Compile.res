@@ -239,7 +239,7 @@ let rec parse = (t, tokens, ~until, ~g, ~getComponent): parseData<_> => {
         let withs = parseWithBlocks(tokens, ~block="map", ~g, ~getComponent)
         Queue.add(q, Map(loc, pattern, withs))
         aux(Lexer.popExn(tokens))
-      | (#Null(_) | #True(_) | #False(_) | #String(_) | #Number(_) | #Object(_)) as x =>
+      | (#Null(_) | #True(_) | #False(_) | #String(_) | #Number(_)) as x =>
         raise(Exit(Debug.badMapTypeParse(x, ~name=Lexer.name(tokens))))
       }
     | Echo(loc) =>
