@@ -39,8 +39,8 @@
           <header class="header">
             <h1>Acutis development information</h1>
           </header><p>The Acutis compiler is built in <a href="https://rescript-lang.org/">ReScript</a> and compiled to JavaScript. The
-Acutis compiler doesn’t use any dependencies, aside from the ReScript
-standard library, so almost everything is hand-written.</p>
+Acutis compiler’s only dependency is the ReScript standard library, so almost
+everything is hand-written.</p>
 <p><a href="https://github.com/johnridesabike/acutis">Get the source code</a>.</p>
 <p>The compiler follows these basic steps:</p>
 <pre><code>source → lexical analysis → abstract syntax tree → render
@@ -52,7 +52,7 @@ developed the pattern matching logic before any of the other template logic.)</p
 <p><div class="table-of-contents"><details open><summary class="toc-container-header">Contents</summary><ol><li><a href="#technical-overview">Technical overview</a><ol><li><a href="#types">Types</a></li><li><a href="#lexical-analysis-%2F-tokenization">Lexical analysis / tokenization</a></li><li><a href="#compiling-the-abstract-syntax-tree">Compiling the abstract syntax tree</a></li><li><a href="#rendering">Rendering</a></li></ol></li><li><a href="#rendering-concepts">Rendering concepts</a></li><li><a href="#error-handling">Error handling</a></li><li><a href="#building-the-source">Building the source</a></li><li><a href="#syntax-design">Syntax design</a></li><li><a href="#current-limitations-and-ideas-for-the-future">Current limitations and ideas for the future</a></li></ol></details></div></p>
 <h2 id="technical-overview">Technical overview</h2>
 <h3 id="types">Types</h3>
-<p>All of the types are defined in <code>Acutis_Types.res</code> along with some of their
+<p>Most of the types are defined in <code>Acutis_Types.res</code> along with some of their
 utility functions. This includes tokens, AST, pattern AST, and the types of
 some of the public API functions.</p>
 <p><code>Types</code> is a common module name in ReScript projects. <code>Acutis_Types</code> has that
@@ -72,8 +72,8 @@ of the other parts of the language.</li>
 </ol>
 <p>Every template starts in string mode. As soon as the lexer encounters a <code>{%</code>,
 it begins expression mode.</p>
-<p>All of the tokens are stored in a temporary <a href="https://rescript-lang.org/docs/manual/latest/api/belt/mutable-queue"><code>Belt.MutableQueue.t</code></a> data
-type.</p>
+<p>All of the tokens are stored in a temporary <a href="https://rescript-lang.org/docs/manual/latest/api/belt/mutable-queue"><code>Belt.MutableQueue.t</code></a>
+structure.</p>
 <h3 id="compiling-the-abstract-syntax-tree">Compiling the abstract syntax tree</h3>
 <p>The tokens compile into the AST with <code>Compile.res</code>. The functions in this
 module inspect each token in the queue and create nodes for the AST.</p>
@@ -82,14 +82,21 @@ for testing purposes.</p>
 <p>The AST is represented as an array of nodes. Some nodes, such as <code>map</code> or
 <code>match</code> expressions, contain arrays that represent branching paths of the
 tree.</p>
+<p>Template components are linked at compile-time to create a <a href="https://en.wikipedia.org/wiki/Directed_acyclic_graph">directed acyclic
+graph</a>.</p>
+<p>When compiling template components, you must compile them all at once with
+<code>Compile.Components.make</code> so the linking can occur.</p>
+<p>When compiling a top-level template, <code>Compile.make</code> requires a
+<code>Compile.Components.t</code> value (created with <code>Components.make</code>) to link its
+dependencies.</p>
 <h3 id="rendering">Rendering</h3>
-<p>The <code>Environment.res</code> module generates functions for producing specific
-output formats. These functions call the <code>Render.res</code> module, which takes the
-AST and the input “props” to produce the final output.</p>
-<p>Like <code>Compile.res</code>, it exposes a submodule for rendering patterns.</p>
-<p>We may normally expect the renderer to produce a string data type. However,
-the output could theoretically be anything defined in the environment. I
-designed this flexibility specifically for <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise">promises</a>.</p>
+<p>The <code>Environment.res</code> module contains functions for producing specific output
+formats. These functions use the <code>Render.res</code> module to take the AST and the
+input “props” to produce the final output.</p>
+<p>Like <code>Compile.res</code>, <code>Render.res</code> exposes a submodule for rendering patterns.</p>
+<p>You may expect the renderer to produce a string data type. However, the
+output could theoretically be anything defined in the environment. I designed
+this flexibility specifically for <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise">Promises</a>.</p>
 <p>When the renderer processes a node, it adds the result to a queue. Once it
 renders the entire AST, it concatenates the queue into the final output.</p>
 <p>If we’re processing templates synchronously, then the queue is filled with
@@ -100,27 +107,22 @@ concatenated.</p>
 <h2 id="rendering-concepts">Rendering concepts</h2>
 <p>Acutis relies on recursive function types to render.</p>
 <ol>
-<li>The render environment with a render function:
+<li>The environment with a render function:
 <code>env.render(ast, props, children) → result</code></li>
 <li>The template functions with this signature:
 <code>template(env, props, children) → result</code></li>
 </ol>
-<p>The <code>env</code> argument in 2 is the same <code>env</code> record as in 1. This record
-contains the <code>render</code> function with the logic and data that must be global
-across the entire template tree.</p>
-<p>The specific logic is how to use the output type, synchronously or
-asynchronously. This is why there are two functions to create render
-environments:</p>
+<p>The <code>env</code> argument in 2 is the same <code>env</code> record as in 1.
+The <code>ast</code> in 1 can also contain template functions like in 2, which
+themselves render template components using the <code>env</code> from 1.</p>
+<p>The <code>env</code> record contains the <code>render</code> function with the logic that must be
+global across the entire template tree. Specifically, it controls whether to
+output synchronously or asynchronously. This is why there are two render
+environments.</p>
 <ol>
-<li><code>Environment.make(components) →</code> <br>
-<code>env.render(ast, props, children) →</code> <br>
-<code>result</code></li>
-<li><code>Environment.Async.make(components) →</code> <br>
-<code>env.render(ast, props, children) →</code> <br>
-<code>promise&lt;result&gt;</code></li>
+<li><code>Environment.sync.render(ast, props, children) → result</code></li>
+<li><code>Environment.async.render(ast, props, children) → Promise&lt;result&gt;</code></li>
 </ol>
-<p>In both versions, <code>components</code> is a dictionary object containing all of the
-template components.</p>
 <p>Suppose you have a root template, <code>template</code>, which you render like this:
 <code>template(env, props, children)</code>. What happens is:</p>
 <ol>
@@ -141,7 +143,7 @@ in the original queue.</li>
 <p>Acutis shouldn’t raise exceptions or reject promises. The AST and the
 rendered output is always returned inside of a variant that can return either
 successfully rendered data or an array of errors. If there are any errors,
-then they’re formatted according to the <code>Acuits_Types.Errors.t</code> type.</p>
+then they’re formatted according to the <code>Acutis_Types.Errors.t</code> type.</p>
 <p>The <code>Debug.res</code> file handles creating the specific messages.</p>
 <p>The lexer and compiler both stop as soon as they encounter an error. The
 renderer will always transverse as much of the AST as possible and report all
@@ -176,14 +178,12 @@ already doing too much work.</p>
 <h2 id="current-limitations-and-ideas-for-the-future">Current limitations and ideas for the future</h2>
 <p>I made Acutis strongly typed because this catches errors early and makes
 fixing bugs easier. Acutis is dynamically typed (where types are checked at
-runtime) only because that was easier to build. I think of Acutis templates
-as theoretically statically typed (where types are checked at compile time),
-but that would require adding another step in the compiler.</p>
+runtime), but I think of Acutis templates as theoretically statically typed
+(where types are checked at compile time). However, that would require adding
+another step in the compiler.</p>
 <p>I borrowed the types themselves from JSON. This was convenient and “good
 enough,” even though JSON is imperfect. A more flexible and robust set of
 types would be nice to have.</p>
-<p>Component dependencies are not analyzed. It might be nice to check those at
-compile time so that circular dependencies aren’t allowed.</p>
 <p>I designed the language to be as simple as possible, with the philosophy of
 “there should be one obvious way to do something.” For this reason, I’ve
 excluded some utility features such as <code>if</code>…<code>else</code> statements and direct
