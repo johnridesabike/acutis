@@ -22,6 +22,7 @@ module NonEmpty = {
   let map = (NonEmpty(head, tail), ~f) => NonEmpty(f(. head), Belt.Array.mapU(tail, f))
 }
 
+// This is a placeholder type until we add more sophisticated error reporting.
 @unboxed
 type loc = Loc(int)
 

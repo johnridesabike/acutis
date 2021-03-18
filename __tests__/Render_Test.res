@@ -25,7 +25,7 @@ let render = (~name="", ~children=Js.Dict.empty(), src, props, components) =>
     children,
   )
 
-describe("All together", ({test, _}) => {
+describe("Render essentials", ({test, _}) => {
   test("Basic", ({expect, _}) => {
     let props = dict([
       ("a", Js.Json.string("Hello")),
