@@ -22,15 +22,12 @@ type location = {character: int}
 
 let location = (T.Loc(x)) => {character: x + 1}
 
-@unboxed
-type rec anyExn = AnyExn(_): anyExn
-
 type t = {
   message: string,
   kind: kind,
   location: option<location>,
   path: array<Js.Json.t>,
-  exn: option<anyExn>,
+  exn: option<exn>,
 }
 
 module Stack = {
@@ -157,7 +154,7 @@ let uncaughtCompileError = (e, ~name) => {
   location: None,
   path: [Js.Json.string(name)],
   kind: #Compile,
-  exn: Some(AnyExn(e)),
+  exn: Some(e),
 }
 
 /* Render errors */
@@ -263,7 +260,7 @@ let uncaughtComponentError = (e, ~stack) => {
   location: None,
   path: stackToPath(stack),
   kind: #Render,
-  exn: Some(AnyExn(e)),
+  exn: Some(e),
 }
 
 let customError = (message, ~stack) => {

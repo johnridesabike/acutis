@@ -72,21 +72,22 @@ let rec makeEnv = (. stack): t<_> => {
 
 let sync = makeEnv(. list{})
 
-let returnAsync = (. x) => Js.Promise.resolve(#ok(x))
+let returnAsync = (. x) => Promise.resolve(#ok(x))
 
-let error = (. x) => Js.Promise.resolve(#errors(x))
+let error = (. x) => Promise.resolve(#errors(x))
 
-let try_ = (. f, ~catch) => Js.Promise.catch(e => catch(. e), f(.))
+let try_ = (. f, ~catch) => Promise.catch(f(.), e => catch(. e))
 
 let mapChildAsync = (. child, f) =>
-  Js.Promise.then_(child => Js.Promise.resolve(Result.map(child, f)), child)
+  Promise.then(child, child => Promise.resolve(Result.map(child, f)))
 
-let flatMapChildAsync = (. child, f) => Js.Promise.then_(child =>
+let flatMapChildAsync = (. child, f) =>
+  Promise.then(child, child =>
     switch child {
     | #ok(child) => f(child)
-    | #errors(_) as e => Js.Promise.resolve(e)
+    | #errors(_) as e => Promise.resolve(e)
     }
-  , child)
+  )
 
 let reduceArray = a => {
   let result = ref("")
@@ -98,14 +99,14 @@ let reduceArray = a => {
     }
   })
   if Queue.isEmpty(errors) {
-    Js.Promise.resolve(#ok(result.contents))
+    Promise.resolve(#ok(result.contents))
   } else {
-    Js.Promise.resolve(#errors(Queue.toArray(errors)))
+    Promise.resolve(#errors(Queue.toArray(errors)))
   }
 }
 
 // We could possibly replace Queue.toArray with a custom JS iterable.
-let reduceQueue = (. q) => q |> Queue.toArray |> Js.Promise.all |> Js.Promise.then_(reduceArray)
+let reduceQueue = (. q) => q->Queue.toArray->Promise.all->Promise.then(reduceArray)
 
 let rec makeEnv = (. stack): t<_> => {
   render: (. {ast, name}, props, children) =>
@@ -122,7 +123,7 @@ let rec makeEnv = (. stack): t<_> => {
       ),
     ),
   return: returnAsync,
-  error: (. message) => Js.Promise.resolve(#errors([Debug.customError(message, ~stack)])),
+  error: (. message) => Promise.resolve(#errors([Debug.customError(message, ~stack)])),
   mapChild: mapChildAsync,
   flatMapChild: flatMapChildAsync,
 }

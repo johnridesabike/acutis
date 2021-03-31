@@ -40,6 +40,6 @@ let make: (
   ~stack: Debug.Stack.t,
   ~makeEnv: (. Debug.Stack.t) => environment<'a>,
   ~error: (. array<Debug.t>) => 'a,
-  ~try_: (. (. unit) => 'a, ~catch: (. _) => 'a) => 'a,
+  ~try_: (. (. unit) => 'a, ~catch: (. exn) => 'a) => 'a,
   ~reduceQueue: (. Belt.MutableQueue.t<'a>) => 'a,
 ) => Belt.MutableQueue.t<'a>

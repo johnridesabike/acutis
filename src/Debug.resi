@@ -20,15 +20,12 @@ type kind = [#Type | #Render | #Compile | #Pattern | #Parse | #Syntax]
 
 type location = {@live character: int}
 
-@unboxed
-type rec anyExn = AnyExn(_): anyExn
-
 type t = {
   @live message: string,
   @live kind: kind,
   @live location: option<location>,
   @live path: array<Js.Json.t>,
-  @live exn: option<anyExn>,
+  @live exn: option<exn>,
 }
 
 module Stack: {
@@ -59,7 +56,7 @@ let unexpectedToken: (Token.t, ~name: string) => t
 let componentDoesNotExist: (~loc: loc, ~name: string, ~stack: list<string>) => t
 let cyclicDependency: (~loc: loc, ~name: string, ~stack: list<string>) => t
 let duplicateCompName: string => t
-let uncaughtCompileError: ('e, ~name: string) => t
+let uncaughtCompileError: (exn, ~name: string) => t
 
 /* Render errors */
 let badEchoType: (~loc: loc, ~binding: string, ~type_: Js.Json.tagged_t, ~stack: Stack.t) => t
@@ -77,4 +74,4 @@ let nameBoundMultipleTimes: (~loc: loc, ~binding: string, ~stack: Stack.t) => t
 let noMatchFound: (~loc: loc, ~stack: Stack.t) => t
 let patternTypeMismatch: (~data: Js.Json.tagged_t, ~pattern: Ast_Pattern.t, ~stack: Stack.t) => t
 let patternNumberMismatch: (~loc: loc, ~stack: Stack.t) => t
-let uncaughtComponentError: ('e, ~stack: Stack.t) => t
+let uncaughtComponentError: (exn, ~stack: Stack.t) => t

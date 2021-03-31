@@ -470,6 +470,11 @@
   resolved "https://registry.yarnpkg.com/@rescript/std/-/std-9.0.1.tgz#4597be595256f79f4c2f3eaeb56981340e18e700"
   integrity sha512-JUdxfVjHjRzrTwcZbLaPHEzN3id6XGdLFxubp6Bimj0/1CmIYgfLaUhflac1KAyI1lKIM2Htrz6U6bHkuihnZg==
 
+"@ryyppy/rescript-promise@^2.0.0":
+  version "2.0.0"
+  resolved "https://registry.yarnpkg.com/@ryyppy/rescript-promise/-/rescript-promise-2.0.0.tgz#e0f31e8d5d85a822485113d34d3e5ee77c7e8523"
+  integrity sha512-Nyej9ESV32rG+fxDlK+BtmSiN4mAQ6vCYxYNuU7LqGXKUmr9XiiEbLYEtQXKg3KDpMfKZTwbyjyj2LOiCHrAmQ==
+
 "@sinonjs/commons@^1.7.0":
   version "1.8.2"
   resolved "https://registry.yarnpkg.com/@sinonjs/commons/-/commons-1.8.2.tgz#858f5c4b48d80778fde4b9d541f27edc0d56488b"

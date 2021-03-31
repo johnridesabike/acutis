@@ -625,7 +625,7 @@ describe("Graphs are parsed correctly", ({test, _}) => {
     expect.value(result).toEqual(
       #errors([
         {
-          exn: Some(AnyExn(e)),
+          exn: Some(e),
           kind: #Compile,
           location: None,
           message: "An exception was thrown while compiling this template. This is probably due to malformed input.",
@@ -636,7 +636,7 @@ describe("Graphs are parsed correctly", ({test, _}) => {
     expect.value(Compile.make(b, emptyComponents)).toEqual(
       #errors([
         {
-          exn: Some(AnyExn(e)),
+          exn: Some(e),
           kind: #Compile,
           location: None,
           message: "An exception was thrown while compiling this template. This is probably due to malformed input.",

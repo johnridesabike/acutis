@@ -59,6 +59,7 @@
   },
   "dependencies": {
     "@rescript/std": "^9.0.1",
+    "@ryyppy/rescript-promise": "^2.0.0",
     "minimist": "^1.2.5"
   },
   "devDependencies": {

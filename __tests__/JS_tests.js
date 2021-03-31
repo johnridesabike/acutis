@@ -102,7 +102,10 @@ describe("Async templates", () => {
           message: `An exception was thrown while rendering a template component.`,
           kind: "Render",
           path: ["E"],
-          exn: new Error("fail."),
+          exn: {
+            RE_EXN_ID: "Promise.JsError/3",
+            _1: new Error("fail."),
+          },
         },
       ],
     });
