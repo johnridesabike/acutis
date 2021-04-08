@@ -200,7 +200,7 @@ let slash = (. t: Token.t) =>
   | _ => false
   }
 
-let rec parse = (t, tokens, ~until, ~g, ~getComponent): parseData<_> => {
+let rec parse = (t, tokens, ~until, ~g, ~getComponent) => {
   let q: Queue.t<Ast.node<_>> = Queue.make()
   let rec aux = (t: Token.t) =>
     switch t {
