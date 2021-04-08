@@ -1,4 +1,4 @@
-<p align="center"><img src="./docs/favicon.svg" height="64" width="64" alt="Acutis icon." /></p>
+<p align="center"><img src="./docs/icon.svg" height="64" width="64" alt="Acutis icon." /></p>
 
 ## Acutis language
 
