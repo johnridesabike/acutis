@@ -59,6 +59,12 @@ your `bsconfig.json` file.
 
 ⚠️ Acutis requires ReScript compiler version 9.0 or higher.
 
+## Editor plugin
+
+### VS Code
+
+You can enable syntax highlighting with [the VS Code extension.][vscode]
+
 ## Examples
 
 - This documentation uses Acutis with [Eleventy]. [Browse the source here][1].
@@ -75,3 +81,4 @@ editor to treat `.acutis` files as HTML. But you can use whatever you want.
 [CLI]: ../api/#acutis-command-line-interface-(cli)
 [Eleventy]: https://www.11ty.dev/
 [license]: ../license/
+[vscode]: https://marketplace.visualstudio.com/items?itemName=jbpjackson.acutis-vscode

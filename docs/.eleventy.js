@@ -20,15 +20,20 @@ const markdownItAnchor = require("markdown-it-anchor");
 const markdownItToc = require("markdown-it-table-of-contents");
 
 const acutis = require("./_11ty/eleventyAcutis");
+const acutisSyntax = require("./_11ty/syntax");
 const acutisComponents = require("./_includes/eleventyComponents");
 const { pathPrefix } = require("./_data/site");
 
 module.exports = (eleventyConfig) => {
-  eleventyConfig.addPlugin(syntaxHighlight);
+  eleventyConfig.addPlugin(syntaxHighlight, {
+    init: ({ Prism }) => acutisSyntax(Prism),
+  });
   eleventyConfig.addPlugin(acutis, { components: acutisComponents });
   eleventyConfig.addPassthroughCopy({
     "_assets/playground.js": "playground.js",
   });
+  eleventyConfig.addPassthroughCopy("icon.svg");
+  eleventyConfig.addPassthroughCopy("favicon.ico");
   eleventyConfig.setLibrary(
     "md",
     MarkdownIt({

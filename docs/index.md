@@ -15,7 +15,7 @@ Handlebars, Liquid, and Nunjucks.
 
 [Source code][1] | [Changelog][2]
 
-```jinja2
+```acutis
 <h1> Blog posts for {{ siteTitle }} </h1>
 {% map blogPosts with {image, title, date, excerpt, author: {name}} %}
   <article>

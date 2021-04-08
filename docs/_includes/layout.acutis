@@ -27,19 +27,39 @@
       content="width=device-width, initial-scale=1, shrink-to-fit=no"
     />
     <link rel="stylesheet" href="{{ siteUrl }}/style.css" />
+    <link rel="icon" href="{{ siteUrl}}/icon.svg" type="image/svg+xml" />
+    <link rel="icon" href="{{ siteUrl}}/favicon.ico" />
   </head>
   <body>
     <a class="skip-nav" href="#content">Skip to content.</a>
     {%~ match site with {title, subtitle, menu} ~%}
       <div class="site-header__wrapper">
-        <header>
+        <header class="site-header">
           {%~ match showTitle with false ~%}
             <h1 class="site-header__title">
-              <a href="{{ siteUrl }}/">{{ title }}</a>
+              <a href="{{ siteUrl }}/">
+                <img
+                  src="{{ siteUrl}}/icon.svg"
+                  height="48"
+                  width="48"
+                  alt="Acutis icon."
+                  style="vertical-align:middle;"
+                />
+                {{ title }}
+              </a>
             </h1>
           {%~ with true ~%}
             <p class="site-header__title">
-              <a href="{{ siteUrl }}/">{{ title }}</a>
+              <a href="{{ siteUrl }}/">
+                <img
+                  src="{{ siteUrl}}/icon.svg"
+                  height="48"
+                  width="48"
+                  alt="Acutis icon."
+                  style="vertical-align:middle;"
+                />
+                {{ title }}
+              </a>
             </p>
           {%~ /match ~%}
           <p class="site-header__subtitle">{{ subtitle }}</p>

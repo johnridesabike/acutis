@@ -225,5 +225,3 @@ if they could all coexist in one single `props` object for each template.
 
 I have only done minimal performance measurements. In the "make it work, make
 it right, make it fast," order, performance comes last.
-
-Editor tooling, build system plugins, etc. are all on the wishlist.

@@ -1,3 +1,5 @@
+<p align="center"><img src="./docs/favicon.svg" height="64" width="64" alt="Acutis icon." /></p>
+
 ## Acutis language
 
 Acutis is a template language for building documents. It features strong
@@ -8,7 +10,7 @@ Acutis is a small, personal project and is not stable yet. Use Acutis if you
 want to experiment with a different kind of template language.
 
 
-```jinja2
+```acutis
 <h1> Blog posts for {{ siteTitle }} </h1>
 {% map blogPosts with {image, title, date, excerpt, author: {name}} %}
   <article>
