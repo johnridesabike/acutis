@@ -70,11 +70,6 @@ You can enable syntax highlighting with [the VS Code extension.][vscode]
 - This documentation uses Acutis with [Eleventy]. [Browse the source here][1].
 - [The Acutis CLI][2].
 
-## Conventions
-
-I use the `.acutis` file extension for my templates, and I configure my
-editor to treat `.acutis` files as HTML. But you can use whatever you want.
-
 [1]: https://github.com/johnridesabike/acutis/tree/master/docs
 [2]: https://github.com/johnridesabike/acutis/blob/master/cli
 [API]: ../api/
