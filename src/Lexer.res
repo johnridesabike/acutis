@@ -168,8 +168,8 @@ let makeExpression = (source, tokens: Queue.t<Token.t>, ~name, ~until) => {
     | "." =>
       switch (readChar(source), readChar(source)) {
       | (".", ".") => Queue.add(tokens, Spread(loc))
-      | (c, ".") | (_, c) =>
-        raise(Exit(Debug.unexpectedCharacter(~loc, ~expected="...", ~character=c, ~name)))
+      | (".", c) | (c, _) =>
+        raise(Exit(Debug.unexpectedCharacter(~loc, ~expected=".", ~character=c, ~name)))
       }
     | "=" => Queue.add(tokens, Equals(loc))
     | "\"" => Queue.add(tokens, String(loc, readJsonString(source, ~name)))

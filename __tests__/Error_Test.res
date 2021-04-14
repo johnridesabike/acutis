@@ -52,7 +52,8 @@ let props = dict([
 describe("Lexer", ({test, _}) => {
   test("Illegal characters", ({expect, _}) => {
     expect.value(compile(~name="BadCharacter", `a {% match*`)).toMatchSnapshot()
-    expect.value(compile(~name="BadCharacter", `a {% . %}`)).toMatchSnapshot()
+    expect.value(compile(~name="BadCharacter", `a {% .a %}`)).toMatchSnapshot()
+    expect.value(compile(~name="BadCharacter", `a {% ..b %}`)).toMatchSnapshot()
     expect.value(compile(`a {% match a %%}`)).toMatchSnapshot()
     expect.value(compile(`a {{ b %}`)).toMatchSnapshot()
     expect.value(compile(`a {{ a b }}`)).toMatchSnapshot()

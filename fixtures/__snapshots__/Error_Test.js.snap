@@ -73,7 +73,7 @@ Array [
     "location": Object {
       "character": 6,
     },
-    "message": "Unexpected character: \\"%\\". Expected: \\"...\\".",
+    "message": "Unexpected character: \\"a\\". Expected: \\".\\".",
     "path": Array [
       "BadCharacter",
     ],
@@ -82,6 +82,22 @@ Array [
 `;
 
 exports[`Lexer Illegal characters 3`] = `
+Array [
+  Object {
+    "exn": undefined,
+    "kind": "Syntax",
+    "location": Object {
+      "character": 6,
+    },
+    "message": "Unexpected character: \\"b\\". Expected: \\".\\".",
+    "path": Array [
+      "BadCharacter",
+    ],
+  },
+]
+`;
+
+exports[`Lexer Illegal characters 4`] = `
 Array [
   Object {
     "exn": undefined,
@@ -97,7 +113,7 @@ Array [
 ]
 `;
 
-exports[`Lexer Illegal characters 4`] = `
+exports[`Lexer Illegal characters 5`] = `
 Array [
   Object {
     "exn": undefined,
@@ -113,7 +129,7 @@ Array [
 ]
 `;
 
-exports[`Lexer Illegal characters 5`] = `
+exports[`Lexer Illegal characters 6`] = `
 Array [
   Object {
     "exn": undefined,
@@ -129,7 +145,7 @@ Array [
 ]
 `;
 
-exports[`Lexer Illegal characters 6`] = `
+exports[`Lexer Illegal characters 7`] = `
 Array [
   Object {
     "exn": undefined,
@@ -145,7 +161,7 @@ Array [
 ]
 `;
 
-exports[`Lexer Illegal characters 7`] = `
+exports[`Lexer Illegal characters 8`] = `
 Array [
   Object {
     "exn": undefined,
