@@ -73,7 +73,7 @@ Array [
     "location": Object {
       "character": 6,
     },
-    "message": "Unexpected character: \\". %\\". Expected: \\"...\\".",
+    "message": "Unexpected character: \\"%\\". Expected: \\"...\\".",
     "path": Array [
       "BadCharacter",
     ],

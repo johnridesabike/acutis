@@ -36,26 +36,12 @@ let readChar = source => {
   c
 }
 
-let peek = (source, ~until) => {
-  let position = ref(source.position)
-  while !until(. Js.String2.charAt(source.str, position.contents)) {
-    position := succ(position.contents)
+let rec readSubstring = (str, source, ~until) =>
+  if until(. peekChar(source)) {
+    str
+  } else {
+    readSubstring(str ++ readChar(source), source, ~until)
   }
-  position.contents
-}
-
-let readSubstring = (source, ~until) => {
-  let start = source.position
-  let end = peek(source, ~until)
-  source.position = min(end, Js.String2.length(source.str))
-  Js.String2.slice(source.str, ~from=start, ~to_=end)
-}
-
-let readSubstringBy = (source, x) => {
-  let start = source.position
-  source.position = min(source.position + x, Js.String2.length(source.str))
-  Js.String2.slice(source.str, ~from=start, ~to_=source.position)
-}
 
 let loc = x => T.Loc(x.position)
 
@@ -129,9 +115,8 @@ let readJsonString = (source, ~name) => {
   aux("")
 }
 
-let readNumber = (source, ~name) => {
-  let loc = loc(source)
-  let num = readSubstring(source, ~until=endOfNumber)
+let readNumber = (c, source, ~loc, ~name) => {
+  let num = readSubstring(c, source, ~until=endOfNumber)
   switch Belt.Float.fromString(num) {
   | Some(num) => num
   | None => raise(Exit(Debug.illegalIdentifier(~loc, ~identifier=num, ~name)))
@@ -147,8 +132,8 @@ let isValidIdentifierStart = c => Js.Re.test_(identifierStartChar, c)
 let componentStart = %re("/^[A-Z]$/")
 let isValidComponentStart = c => Js.Re.test_(componentStart, c)
 
-let readIdentifier = (source, loc): Token.t =>
-  switch readSubstring(source, ~until=endOfIdentifier) {
+let readIdentifier = (c, source, loc): Token.t =>
+  switch readSubstring(c, source, ~until=endOfIdentifier) {
   | "true" => True(loc)
   | "false" => False(loc)
   | "null" => Null(loc)
@@ -159,61 +144,34 @@ let makeExpression = (source, tokens: Queue.t<Token.t>, ~name, ~until) => {
   let loop = ref(true)
   while loop.contents {
     let loc = loc(source)
-    switch peekChar(source) {
-    | c if c == until =>
-      skipChar(source)
-      loop := false
+    switch readChar(source) {
+    | c if c == until => loop := false
     | "" => raise(Exit(Debug.unexpectedEof(~loc, ~name)))
-    | " " | "\t" | "\n" | "\r" => skipChar(source)
-    | "{" =>
-      skipChar(source)
-      Queue.add(tokens, OpenBrace(loc))
-    | "}" =>
-      skipChar(source)
-      Queue.add(tokens, CloseBrace(loc))
-    | "#" =>
-      skipChar(source)
-      Queue.add(tokens, Block(loc))
-    | "/" =>
-      skipChar(source)
-      Queue.add(tokens, Slash(loc))
-    | ":" =>
-      skipChar(source)
-      Queue.add(tokens, Colon(loc))
-    | "[" =>
-      skipChar(source)
-      Queue.add(tokens, OpenBracket(loc))
-    | "]" =>
-      skipChar(source)
-      Queue.add(tokens, CloseBracket(loc))
-    | "," =>
-      skipChar(source)
-      Queue.add(tokens, Comma(loc))
+    | " " | "\t" | "\n" | "\r" => ()
+    | "{" => Queue.add(tokens, OpenBrace(loc))
+    | "}" => Queue.add(tokens, CloseBrace(loc))
+    | "#" => Queue.add(tokens, Block(loc))
+    | "/" => Queue.add(tokens, Slash(loc))
+    | ":" => Queue.add(tokens, Colon(loc))
+    | "[" => Queue.add(tokens, OpenBracket(loc))
+    | "]" => Queue.add(tokens, CloseBracket(loc))
+    | "," => Queue.add(tokens, Comma(loc))
     | "." =>
-      switch readSubstringBy(source, 3) {
-      | "..." => Queue.add(tokens, Spread(loc))
-      | c => raise(Exit(Debug.unexpectedCharacter(~loc, ~expected="...", ~character=c, ~name)))
+      switch (readChar(source), readChar(source)) {
+      | (".", ".") => Queue.add(tokens, Spread(loc))
+      | (c, ".") | (_, c) =>
+        raise(Exit(Debug.unexpectedCharacter(~loc, ~expected="...", ~character=c, ~name)))
       }
-    | "=" =>
-      skipChar(source)
-      Queue.add(tokens, Equals(loc))
-    | "\"" =>
-      skipChar(source)
-      Queue.add(tokens, String(loc, readJsonString(source, ~name)))
-    | "~" =>
-      skipChar(source)
-      Queue.add(tokens, Tilde(loc))
-    | "?" =>
-      skipChar(source)
-      Queue.add(tokens, Question(loc))
-    | "&" =>
-      skipChar(source)
-      Queue.add(tokens, Ampersand(loc))
-    | "-" | "0" | "1" | "2" | "3" | "4" | "5" | "6" | "7" | "8" | "9" =>
-      Queue.add(tokens, Number(loc, readNumber(source, ~name)))
-    | c if isValidIdentifierStart(c) => Queue.add(tokens, readIdentifier(source, loc))
+    | "=" => Queue.add(tokens, Equals(loc))
+    | "\"" => Queue.add(tokens, String(loc, readJsonString(source, ~name)))
+    | "~" => Queue.add(tokens, Tilde(loc))
+    | "?" => Queue.add(tokens, Question(loc))
+    | "&" => Queue.add(tokens, Ampersand(loc))
+    | ("-" | "0" | "1" | "2" | "3" | "4" | "5" | "6" | "7" | "8" | "9") as c =>
+      Queue.add(tokens, Number(loc, readNumber(c, source, ~loc, ~name)))
+    | c if isValidIdentifierStart(c) => Queue.add(tokens, readIdentifier(c, source, loc))
     | c if isValidComponentStart(c) =>
-      Queue.add(tokens, ComponentName(loc, readSubstring(source, ~until=endOfIdentifier)))
+      Queue.add(tokens, ComponentName(loc, readSubstring(c, source, ~until=endOfIdentifier)))
     | c => raise(Exit(Debug.invalidCharacter(~loc, ~character=c, ~name)))
     }
   }
