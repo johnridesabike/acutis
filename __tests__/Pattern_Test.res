@@ -26,6 +26,7 @@ let parseString = source => {
 
 let json = Js.Json.parseExn
 let jsonList = (x): NonEmpty.t<_> => NonEmpty(json(x), [])
+let jsonList2 = (x): NonEmpty.t<_> => NonEmpty(x, [])
 
 let patternTest = (patterns, json) =>
   switch Pattern.test(patterns, json, ~loc=Loc(0), ~stack=list{}) {
@@ -33,6 +34,19 @@ let patternTest = (patterns, json) =>
   | Result(#ok(d)) => #Ok(Belt.Map.String.toArray(d))
   | Result(#errors(_)) => raise(Not_found)
   }
+
+describe("Escaped strings work", ({test, _}) => {
+  test("\\\"", ({expect, _}) => {
+    expect.value(patternTest(parseString("\"\\\"\""), jsonList2(Js.Json.string("\"")))).toEqual(
+      #Ok([]),
+    )
+  })
+  test("\\\\", ({expect, _}) => {
+    expect.value(patternTest(parseString("\"\\\\\""), jsonList2(Js.Json.string("\\")))).toEqual(
+      #Ok([]),
+    )
+  })
+})
 
 describe("Equality", ({test, _}) => {
   test("One value", ({expect, _}) => {

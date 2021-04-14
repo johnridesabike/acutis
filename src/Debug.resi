@@ -50,6 +50,7 @@ let unexpectedCharacter: (~loc: loc, ~name: string, ~character: string, ~expecte
 let unexpectedEof: (~loc: loc, ~name: string) => t
 let unterminatedComment: (~loc: loc, ~name: string) => t
 let unterminatedString: (~loc: loc, ~name: string) => t
+let unknownEscapeSequence: (~loc: loc, ~name: string, ~char: string) => t
 
 /* Parse errors. */
 let badMapTypeParse: (Ast_Pattern.t, ~name: string) => t

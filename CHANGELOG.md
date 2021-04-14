@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.13.0
+
+- Breaking change: invalid string escape sequences are now compile errors.
+  - The only valid escape sequences currently are `\\` and `\"`.
+- Fixed related escape sequence bugs.
+
 ## 0.12.0
 
 - Added objects as a mappable type.

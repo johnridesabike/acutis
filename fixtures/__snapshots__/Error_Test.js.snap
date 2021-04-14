@@ -167,7 +167,7 @@ Array [
     "exn": undefined,
     "kind": "Syntax",
     "location": Object {
-      "character": 7,
+      "character": 8,
     },
     "message": "Unterminated string.",
     "path": Array [
@@ -183,7 +183,7 @@ Array [
     "exn": undefined,
     "kind": "Syntax",
     "location": Object {
-      "character": 8,
+      "character": 9,
     },
     "message": "Unterminated string.",
     "path": Array [
@@ -199,7 +199,7 @@ Array [
     "exn": undefined,
     "kind": "Syntax",
     "location": Object {
-      "character": 5,
+      "character": 7,
     },
     "message": "Unterminated comment.",
     "path": Array [
@@ -215,7 +215,7 @@ Array [
     "exn": undefined,
     "kind": "Syntax",
     "location": Object {
-      "character": 5,
+      "character": 15,
     },
     "message": "Unterminated comment.",
     "path": Array [
@@ -252,6 +252,22 @@ Array [
     "message": "\\"--1\\" is an illegal identifier name.",
     "path": Array [
       "BadIdentifier",
+    ],
+  },
+]
+`;
+
+exports[`Lexer Other stuff 7`] = `
+Array [
+  Object {
+    "exn": undefined,
+    "kind": "Syntax",
+    "location": Object {
+      "character": 7,
+    },
+    "message": "Unknown escape sequence: a.",
+    "path": Array [
+      "InvalidEscapeToken",
     ],
   },
 ]

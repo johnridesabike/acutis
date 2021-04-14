@@ -82,6 +82,14 @@ let unterminatedString = (~loc, ~name) => {
   exn: None,
 }
 
+let unknownEscapeSequence = (~loc, ~name, ~char) => {
+  kind: #Syntax,
+  message: `Unknown escape sequence: ${char}.`,
+  location: Some(location(loc)),
+  path: [Js.Json.string(name)],
+  exn: None,
+}
+
 let illegalIdentifier = (~loc, ~name, ~identifier) => {
   kind: #Syntax,
   message: `"${identifier}" is an illegal identifier name.`,

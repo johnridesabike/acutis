@@ -72,6 +72,7 @@ describe("Lexer", ({test, _}) => {
     expect.value(compile(~name="BadComment", `a {* b {* c *}`)).toMatchSnapshot()
     expect.value(compile(`a {% b`)).toMatchSnapshot()
     expect.value(compile(~name="BadIdentifier", `a {{ --1 }}`)).toMatchSnapshot()
+    expect.value(compile(~name="InvalidEscapeToken", "{{ \"\\a\" }}")).toMatchSnapshot()
   })
 })
 

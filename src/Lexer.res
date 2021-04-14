@@ -26,11 +26,9 @@ type source = {
   mutable position: int,
 }
 
-let peekCharAt = (source, x) => Js.String2.charAt(source.str, source.position + x)
-
 let peekChar = source => Js.String2.charAt(source.str, source.position)
 
-let skipChar = source => source.position = succ(source.position)
+let skipChar = source => source.position = min(succ(source.position), Js.String2.length(source.str))
 
 let readChar = source => {
   let c = peekChar(source)
@@ -46,18 +44,16 @@ let peek = (source, ~until) => {
   position.contents
 }
 
-let skipBy = (source, x) => source.position = source.position + x
-
 let readSubstring = (source, ~until) => {
   let start = source.position
   let end = peek(source, ~until)
-  source.position = end
+  source.position = min(end, Js.String2.length(source.str))
   Js.String2.slice(source.str, ~from=start, ~to_=end)
 }
 
 let readSubstringBy = (source, x) => {
   let start = source.position
-  source.position = source.position + x
+  source.position = min(source.position + x, Js.String2.length(source.str))
   Js.String2.slice(source.str, ~from=start, ~to_=source.position)
 }
 
@@ -74,76 +70,63 @@ type t = {tokens: Queue.t<Token.t>, name: string}
 type mode = EchoMode | ExpressionMode | CommentMode | EndMode
 
 let readText = (source, tokens: Queue.t<Token.t>) => {
-  let loc = loc(source)
-  let rec aux = position =>
-    switch peekCharAt(source, position) {
+  let loc' = loc(source)
+  let rec aux = str =>
+    switch readChar(source) {
     | "" =>
-      Queue.add(tokens, Text(loc, readSubstringBy(source, position)))
+      Queue.add(tokens, Text(loc', str))
       EndMode
-    | "{" =>
-      switch peekCharAt(source, position + 1) {
+    | "{" as c =>
+      switch readChar(source) {
       | "%" =>
-        Queue.add(tokens, Text(loc, readSubstringBy(source, position)))
-        skipBy(source, 2)
+        Queue.add(tokens, Text(loc', str))
         ExpressionMode
       | "*" =>
-        Queue.add(tokens, Text(loc, readSubstringBy(source, position)))
-        skipBy(source, 2)
+        Queue.add(tokens, Text(loc', str))
         CommentMode
       | "{" =>
-        Queue.add(tokens, Text(loc, readSubstringBy(source, position)))
-        skipBy(source, 2)
+        Queue.add(tokens, Text(loc', str))
         EchoMode
-      | _ => aux(position + 2)
+      | c' => aux(str ++ c ++ c')
       }
-    | _ => aux(succ(position))
+    | c => aux(str ++ c)
     }
-  aux(0)
+  aux("")
 }
 
 let readComment = (source, ~name) => {
-  let loc = loc(source)
-  let rec aux = (~position, ~nested) =>
-    switch peekCharAt(source, position) {
-    | "{" =>
-      switch peekCharAt(source, position + 1) {
-      | "*" => aux(~position=position + 2, ~nested=nested + 1)
-      | _ => aux(~position=position + 1, ~nested)
+  let rec aux = (str, ~nested) =>
+    switch readChar(source) {
+    | "{" as c =>
+      switch readChar(source) {
+      | "*" as c' => aux(str ++ c ++ c', ~nested=nested + 1)
+      | c' => aux(str ++ c ++ c', ~nested)
       }
-    | "*" =>
-      switch peekCharAt(source, position + 1) {
-      | "}" if nested == 0 =>
-        let result = readSubstringBy(source, position)
-        skipBy(source, 2)
-        result
-      | "}" => aux(~position=position + 2, ~nested=nested - 1)
-      | _ => aux(~position=position + 2, ~nested)
+    | "*" as c =>
+      switch readChar(source) {
+      | "}" if nested == 0 => str
+      | "}" as c' => aux(str ++ c ++ c', ~nested=nested - 1)
+      | c' => aux(str ++ c ++ c', ~nested)
       }
-    | "" => raise(Exit(Debug.unterminatedComment(~loc, ~name)))
-    | _ => aux(~position=position + 1, ~nested)
+    | "" => raise(Exit(Debug.unterminatedComment(~loc=loc(source), ~name)))
+    | c => aux(str ++ c, ~nested)
     }
-  aux(~position=0, ~nested=0)
+  aux("", ~nested=0)
 }
 
-let unescapeQuotes = %re(`/\\\"/g`)
-
 let readJsonString = (source, ~name) => {
-  let loc = loc(source)
-  let rec aux = position =>
-    switch peekCharAt(source, position) {
+  let rec aux = str =>
+    switch readChar(source) {
     | "\\" =>
-      switch peekCharAt(source, position + 1) {
-      | "\"" | "\\" => aux(position + 2)
-      | _ => aux(position + 1)
+      switch readChar(source) {
+      | ("\"" | "\\") as c => aux(str ++ c)
+      | c => raise(Exit(Debug.unknownEscapeSequence(~loc=loc(source), ~name, ~char=c)))
       }
-    | "\"" =>
-      let result = source->readSubstringBy(position)->Js.String2.replaceByRe(unescapeQuotes, "\"")
-      skipChar(source) // skip the "
-      result
-    | "" => raise(Exit(Debug.unterminatedString(~loc, ~name)))
-    | _ => aux(position + 1)
+    | "\"" => str
+    | "" => raise(Exit(Debug.unterminatedString(~loc=loc(source), ~name)))
+    | c => aux(str ++ c)
     }
-  aux(0)
+  aux("")
 }
 
 let readNumber = (source, ~name) => {
