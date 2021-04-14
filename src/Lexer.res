@@ -55,49 +55,58 @@ type t = {tokens: Queue.t<Token.t>, name: string}
 
 type mode = EchoMode | ExpressionMode | CommentMode | EndMode
 
+// Peeking at each character and slicing it at the end is much more performant
+// than consuming each character at a time.
 let readText = (source, tokens: Queue.t<Token.t>) => {
-  let loc' = loc(source)
-  let rec aux = str =>
-    switch readChar(source) {
+  let loc = loc(source)
+  let rec aux = pos =>
+    switch Js.String2.charAt(source.str, pos) {
     | "" =>
-      Queue.add(tokens, Text(loc', str))
+      Queue.add(tokens, Text(loc, Js.String2.slice(source.str, ~from=source.position, ~to_=pos)))
+      source.position = pos
       EndMode
-    | "{" as c =>
-      switch readChar(source) {
+    | "{" =>
+      switch Js.String2.charAt(source.str, pos + 1) {
       | "%" =>
-        Queue.add(tokens, Text(loc', str))
+        Queue.add(tokens, Text(loc, Js.String2.slice(source.str, ~from=source.position, ~to_=pos)))
+        source.position = pos + 2
         ExpressionMode
       | "*" =>
-        Queue.add(tokens, Text(loc', str))
+        Queue.add(tokens, Text(loc, Js.String2.slice(source.str, ~from=source.position, ~to_=pos)))
+        source.position = pos + 2
         CommentMode
       | "{" =>
-        Queue.add(tokens, Text(loc', str))
+        Queue.add(tokens, Text(loc, Js.String2.slice(source.str, ~from=source.position, ~to_=pos)))
+        source.position = pos + 2
         EchoMode
-      | c' => aux(str ++ c ++ c')
+      | _ => aux(pos + 2)
       }
-    | c => aux(str ++ c)
+    | _ => aux(succ(pos))
     }
-  aux("")
+  aux(source.position)
 }
 
 let readComment = (source, ~name) => {
-  let rec aux = (str, ~nested) =>
-    switch readChar(source) {
-    | "{" as c =>
-      switch readChar(source) {
-      | "*" as c' => aux(str ++ c ++ c', ~nested=nested + 1)
-      | c' => aux(str ++ c ++ c', ~nested)
+  let rec aux = (pos, ~nested) =>
+    switch Js.String2.charAt(source.str, pos) {
+    | "{" =>
+      switch Js.String2.charAt(source.str, pos + 1) {
+      | "*" => aux(pos + 2, ~nested=nested + 1)
+      | _ => aux(pos + 2, ~nested)
       }
-    | "*" as c =>
-      switch readChar(source) {
-      | "}" if nested == 0 => str
-      | "}" as c' => aux(str ++ c ++ c', ~nested=nested - 1)
-      | c' => aux(str ++ c ++ c', ~nested)
+    | "*" =>
+      switch Js.String2.charAt(source.str, pos + 1) {
+      | "}" if nested == 0 =>
+        let result = Js.String2.slice(source.str, ~from=source.position, ~to_=pos)
+        source.position = pos + 2
+        result
+      | "}" => aux(pos + 2, ~nested=nested - 1)
+      | _ => aux(pos + 2, ~nested)
       }
     | "" => raise(Exit(Debug.unterminatedComment(~loc=loc(source), ~name)))
-    | c => aux(str ++ c, ~nested)
+    | _ => aux(pos + 1, ~nested)
     }
-  aux("", ~nested=0)
+  aux(source.position, ~nested=0)
 }
 
 let readJsonString = (source, ~name) => {
