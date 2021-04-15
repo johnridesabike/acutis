@@ -33,6 +33,7 @@ let flatMapU = (x: t<_>, f) =>
 
 let flatMap = (x, f) => flatMapU(x, (. x) => f(x))
 
+@raises(Not_found)
 let getExn = (x: t<_>) =>
   switch x {
   | #ok(x) => x

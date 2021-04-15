@@ -47,7 +47,8 @@
     "src/"
   ],
   "scripts": {
-    "analyze-dead-code": "reanalyze -dce",
+    "analyze:dead-code": "reanalyze -dce",
+    "analyze:exception": "reanalyze -exception",
     "build": "bsb -make-world",
     "clean": "bsb -clean-world",
     "prepublishOnly": "yarn build",

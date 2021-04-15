@@ -17,20 +17,26 @@ open TestFramework
 
 let getError = x =>
   switch x {
-  | #ok(_) => raise(Not_found)
+  | #ok(_) => []
   | #errors(x) => x
   }
 
-let render = (~name="", src, json, components) => {
+let json = x =>
+  try {
+    Js.Json.parseExn(x)
+  } catch {
+  | _ => Js.Json.string("THIS IS EASIER THAN DEALING WITH EXCEPTIONS.")
+  }
+
+let render = (~name="", src, json, components) =>
   Source.string(~name, src)
   ->Compile.make(components)
   ->Result.flatMap(f => f(Environment.sync, json, Js.Dict.empty()))
   ->getError
-}
 
 let compile = (~name="", x) =>
   switch Compile.makeAstInternalExn(~name, x) {
-  | _ => raise(Not_found)
+  | _ => []
   | exception Debug.Exit(e) => [e]
   }
 
@@ -158,19 +164,18 @@ describe("Patterns", ({test, _}) => {
     expect.value(compile(`{% A 1 /A %}`)).toMatchSnapshot()
   })
 
-  let json = Js.Json.parseExn
   test("Count mismatch failure", ({expect, _}) => {
     expect.value(
       render(
         `{% match a, b, c with 1, 2 %} d {% /match %}`,
-        dict([("a", json("1")), ("b", json("2")), ("c", json("3"))]),
+        dict([("a", Js.Json.number(1.0)), ("b", Js.Json.number(2.)), ("c", Js.Json.number(3.))]),
         Compile.Components.empty(),
       ),
     ).toMatchSnapshot()
     expect.value(
       render(
         `{% map a with b, c, d %} {{ b }} {% /map %}`,
-        dict([("a", json("[1, 2]"))]),
+        dict([("a", Js.Json.numberArray([1., 2.]))]),
         Compile.Components.empty(),
       ),
     ).toMatchSnapshot()
@@ -213,6 +218,7 @@ describe("Patterns", ({test, _}) => {
     ).toMatchSnapshot()
   })
 
+  @raises(Js.Exn.Error)
   test("Illegal bindings", ({expect, _}) => {
     let props = dict([
       ("numberKey", json(`{"1": 1}`)),
@@ -394,6 +400,7 @@ describe("Patterns", ({test, _}) => {
   })
 })
 
+@raises(Failure)
 describe("Rendering", ({test, _}) => {
   test("Type mismatches", ({expect, _}) => {
     let data = dict([
@@ -472,6 +479,7 @@ describe("Rendering", ({test, _}) => {
   })
 
   test("Exceptions thrown in components are caught correctly", ({expect, _}) => {
+    @raises(Failure)
     let a = Source.func(~name="A", (_env, _props, _children) => {
       raise(Failure("fail."))
     })
@@ -545,6 +553,7 @@ describe("Stack trace is rendered correctly", ({test, _}) => {
   })
 })
 
+@raises(Failure)
 describe("Graphs are parsed correctly", ({test, _}) => {
   let emptyComponents = Compile.Components.make([])->Result.getExn
   test("Cyclic dependencies are reported", ({expect, _}) => {
@@ -617,6 +626,8 @@ describe("Graphs are parsed correctly", ({test, _}) => {
   })
   test("Runtime AST errors are reported", ({expect, _}) => {
     let a = Source.string(~name="A", "{% B /%}")
+
+    @raises(Failure)
     let b = Source.funcWithString(~name="B", "", _ => failwith("lol"))
     let result = Compile.Components.make([a, b])
     let e = try {failwith("lol")} catch {

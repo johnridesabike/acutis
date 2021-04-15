@@ -24,7 +24,13 @@ let parseString = source => {
   Compile.Pattern.make(tokens)
 }
 
-let json = Js.Json.parseExn
+let json = x =>
+  try {
+    Js.Json.parseExn(x)
+  } catch {
+  | _ => Js.Json.string("THIS IS EASIER THAN DEALING WITH EXCEPTIONS.")
+  }
+
 let jsonList = (x): NonEmpty.t<_> => NonEmpty(json(x), [])
 let jsonList2 = (x): NonEmpty.t<_> => NonEmpty(x, [])
 
@@ -32,7 +38,7 @@ let patternTest = (patterns, json) =>
   switch Pattern.test(patterns, json, ~loc=Loc(0), ~stack=list{}) {
   | NoMatch => #NoMatch
   | Result(#ok(d)) => #Ok(Belt.Map.String.toArray(d))
-  | Result(#errors(_)) => raise(Not_found)
+  | Result(#errors(_)) => #Error
   }
 
 describe("Escaped strings work", ({test, _}) => {

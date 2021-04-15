@@ -36,6 +36,7 @@ exception Exit = Debug.Exit
 type t<'a> = T.template<'a>
 
 module Pattern = {
+  @raises(Exit)
   let rec parseNode = (t: Token.t, tokens): Ast_Pattern.t =>
     switch t {
     | Null(loc) => #Null(loc)
@@ -56,9 +57,12 @@ module Pattern = {
       }
     | t => raise(Exit(Debug.unexpectedToken(t, ~name=Lexer.name(tokens))))
     }
+  @raises(Exit)
   and parseArray = (loc, t, tokens) => {
     let q = Queue.make()
     Queue.add(q, parseNode(t, tokens))
+
+    @raises(Exit)
     let rec aux = (): Ast_Pattern.t =>
       switch Lexer.popExn(tokens) {
       | CloseBracket(_) => #Array(loc, Queue.toArray(q))
@@ -82,9 +86,12 @@ module Pattern = {
       }
     aux()
   }
+  @raises(Exit)
   and parseObject = (loc, t, tokens) => {
     let q = Queue.make()
     Queue.add(q, parseObjectKeyValue(t, tokens))
+
+    @raises(Exit)
     let rec aux = (): Ast_Pattern.t =>
       switch Lexer.popExn(tokens) {
       | CloseBrace(_) => #Object(loc, Queue.toArray(q))
@@ -95,6 +102,7 @@ module Pattern = {
       }
     aux()
   }
+  @raises(Exit)
   and parseObjectKeyValue = (t, tokens) =>
     switch t {
     | String(_, key) =>
@@ -112,9 +120,12 @@ module Pattern = {
     | t => raise(Exit(Debug.unexpectedToken(t, ~name=Lexer.name(tokens))))
     }
 
+  @raises(Exit)
   let make = tokens => {
     let head = parseNode(Lexer.popExn(tokens), tokens)
     let q = Queue.make()
+
+    @raises(Exit)
     let rec aux = (): NonEmpty.t<_> => {
       switch Lexer.peekExn(tokens) {
       | Comma(_) =>
@@ -133,15 +144,19 @@ type parseData<'a> = {
   data: 'a,
 }
 
+@raises(Exit)
 let parseBindingName = tokens =>
   switch Lexer.popExn(tokens) {
   | Identifier(loc, x) => (loc, x)
   | t => raise(Exit(Debug.unexpectedToken(t, ~name=Lexer.name(tokens))))
   }
 
+@raises(Exit)
 let parseCommaSequence = tokens => {
   let head = parseBindingName(tokens)
   let q = Queue.make()
+
+  @raises(Exit)
   let rec aux = (): NonEmpty.t<_> =>
     switch Lexer.peekExn(tokens) {
     | Comma(_) =>
@@ -153,6 +168,7 @@ let parseCommaSequence = tokens => {
   aux()
 }
 
+@raises(Exit)
 let parseEchoAux = (t: Token.t, tokens, esc): Ast.Echo.t =>
   switch t {
   | Identifier(loc, x) => Binding(loc, x, esc)
@@ -161,6 +177,7 @@ let parseEchoAux = (t: Token.t, tokens, esc): Ast.Echo.t =>
   | t => raise(Exit(Debug.unexpectedToken(t, ~name=Lexer.name(tokens))))
   }
 
+@raises(Exit)
 let parseEcho = tokens =>
   switch Lexer.popExn(tokens) {
   | Ampersand(_) => parseEchoAux(Lexer.popExn(tokens), tokens, NoEscape)
@@ -168,9 +185,12 @@ let parseEcho = tokens =>
   | t => parseEchoAux(t, tokens, Escape)
   }
 
+@raises(Exit)
 let parseEchoes = tokens => {
   let head = parseEcho(tokens)
   let q = Queue.make()
+
+  @raises(Exit)
   let rec aux = (): parseData<NonEmpty.t<_>> =>
     switch Lexer.popExn(tokens) {
     | (Tilde(_) | Text(_)) as t => {nextToken: t, data: NonEmpty(head, Queue.toArray(q))}
@@ -200,8 +220,11 @@ let slash = (. t: Token.t) =>
   | _ => false
   }
 
+@raises(Exit)
 let rec parse = (t, tokens, ~until) => {
   let q: Queue.t<Ast.node<_>> = Queue.make()
+
+  @raises(Exit)
   let rec aux = (t: Token.t) =>
     switch t {
     | t if until(. t) => {nextToken: t, data: Queue.toArray(q)}
@@ -253,9 +276,12 @@ let rec parse = (t, tokens, ~until) => {
     }
   aux(t)
 }
+@raises(Exit)
 and parseWithBlock = tokens => {
   let head = Pattern.make(tokens)
   let q = Queue.make()
+
+  @raises(Exit)
   let rec aux = () =>
     switch Lexer.popExn(tokens) {
     | Identifier(_, "with") =>
@@ -267,11 +293,14 @@ and parseWithBlock = tokens => {
     }
   aux()
 }
+@raises(Exit)
 and parseWithBlocks = (tokens, ~block) =>
   switch Lexer.popExn(tokens) {
   | Identifier(_, "with") =>
     let {nextToken, data: head} = parseWithBlock(tokens)
     let q = Queue.make()
+
+    @raises(Exit)
     let rec aux = (t: Token.t): NonEmpty.t<_> =>
       switch t {
       | Slash(_) =>
@@ -288,6 +317,7 @@ and parseWithBlocks = (tokens, ~block) =>
     aux(nextToken)
   | t => raise(Exit(Debug.unexpectedToken(t, ~name=Lexer.name(tokens))))
   }
+@raises(Exit)
 and parseComponent = (loc, name, tokens) => {
   let {nextToken, data: (props, children)} = parseProps(tokens)
   switch nextToken {
@@ -315,9 +345,12 @@ and parseComponent = (loc, name, tokens) => {
     }
   }
 }
+@raises(Exit)
 and parseProps = tokens => {
   let props = Queue.make()
   let children = Queue.make()
+
+  @raises(Exit)
   let rec aux = (t: Token.t) =>
     switch t {
     | Identifier(loc, key) =>
@@ -356,6 +389,7 @@ and parseProps = tokens => {
   aux(Lexer.popExn(tokens))
 }
 
+@raises(Exit)
 let makeAstInternalExn = (~name, source) => {
   let tokens = Lexer.make(source, ~name)
   let {data, _} = parse(Lexer.popExn(tokens), tokens, ~until=endOfFile)
@@ -374,6 +408,7 @@ let name = x =>
   | Ast({name, _}) | Func({name, _}) | AstFunc({name, _}) => name
   }
 
+@raises(Exit)
 let compileExn = (src: Source.t<_>) =>
   switch src {
   | String({name, src}) => Ast({name: name, nodes: makeAstInternalExn(~name, src)})
@@ -410,6 +445,7 @@ module Components = {
 
   // When we link components in the tree, ensure that it keeps the
   // directed-acyclic structure.
+  @raises(Exit)
   let rec getComponentExn = (g, name, loc) =>
     switch MutMapString.get(g.linked, name) {
     | Some(f) => f // It was linked already during a previous search.
@@ -431,6 +467,7 @@ module Components = {
       }
     }
   // Recursively map the nodes to link the components.
+  @raises(Exit)
   and mapNodesExn = (nodes, graph) =>
     Array.mapU(nodes, (. node: Ast.node<_>) =>
       switch node {
@@ -468,6 +505,7 @@ module Components = {
         })
       }
     )
+  @raises(Exit)
   and linkComponentsExn = (src, graph) =>
     switch src {
     | Ast({name, nodes}) =>

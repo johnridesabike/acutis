@@ -15,16 +15,21 @@
 */
 open TestFramework
 
-let json = Js.Json.parseExn
+let json = x =>
+  try {
+    Js.Json.parseExn(x)
+  } catch {
+  | _ => Js.Json.string("THIS IS EASIER THAN DEALING WITH EXCEPTIONS.")
+  }
+
 let dict = Js.Dict.fromArray
 
 let render = (~name="", ~children=Js.Dict.empty(), src, props, components) =>
-  (Source.string(~name, src)->Compile.make(components)->Result.getExn)(
-    Environment.sync,
-    props,
-    children,
-  )
+  Source.string(~name, src)
+  ->Compile.make(components)
+  ->Result.flatMap(f => f(Environment.sync, props, children))
 
+@raises(Not_found)
 describe("Render essentials", ({test, _}) => {
   test("Basic", ({expect, _}) => {
     let props = dict([
@@ -197,11 +202,15 @@ describe("Render essentials", ({test, _}) => {
       components->Result.getExn,
     )
     expect.value(result).toEqual(#ok(` I did not.  Oh hai Mark.`))
+
+    @raises(Not_found)
     let addOne = Source.func(~name="AddOne", (env, props, _children) => {
       let index =
         props->Js.Dict.get("index")->Belt.Option.flatMap(Js.Json.decodeNumber)->Belt.Option.getExn
       env.return(. Belt.Float.toString(index +. 1.0))
     })
+
+    @raises(Not_found)
     let components = Compile.Components.make([addOne])
     let data = dict([("a", json(`[{"name": "John"}, {"name": "Megan"}]`))])
     let result = render(

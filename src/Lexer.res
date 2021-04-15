@@ -57,8 +57,11 @@ type mode = EchoMode | ExpressionMode | CommentMode | EndMode
 
 // Peeking at each character and slicing it at the end is much more performant
 // than consuming each character at a time.
+@raises(Exit)
 let readText = (source, tokens: Queue.t<Token.t>) => {
   let loc = loc(source)
+
+  @raises(Exit)
   let rec aux = pos =>
     switch Js.String2.charAt(source.str, pos) {
     | "" =>
@@ -86,7 +89,9 @@ let readText = (source, tokens: Queue.t<Token.t>) => {
   aux(source.position)
 }
 
+@raises(Exit)
 let readComment = (source, ~name) => {
+  @raises(Exit)
   let rec aux = (pos, ~nested) =>
     switch Js.String2.charAt(source.str, pos) {
     | "{" =>
@@ -109,7 +114,9 @@ let readComment = (source, ~name) => {
   aux(source.position, ~nested=0)
 }
 
+@raises(Exit)
 let readJsonString = (source, ~name) => {
+  @raises(Exit)
   let rec aux = str =>
     switch readChar(source) {
     | "\\" =>
@@ -124,6 +131,7 @@ let readJsonString = (source, ~name) => {
   aux("")
 }
 
+@raises(Exit)
 let readNumber = (c, source, ~loc, ~name) => {
   let num = readSubstring(c, source, ~until=endOfNumber)
   switch Belt.Float.fromString(num) {
@@ -149,6 +157,7 @@ let readIdentifier = (c, source, loc): Token.t =>
   | s => Identifier(loc, s)
   }
 
+@raises(Exit)
 let makeExpression = (source, tokens: Queue.t<Token.t>, ~name, ~until) => {
   let loop = ref(true)
   while loop.contents {
@@ -186,10 +195,12 @@ let makeExpression = (source, tokens: Queue.t<Token.t>, ~name, ~until) => {
   }
 }
 
+@raises(Exit)
 let make = (~name, str) => {
   let source = {str: str, position: 0}
   let tokens: Queue.t<Token.t> = Queue.make()
 
+  @raises(Exit)
   let rec aux = mode =>
     switch mode {
     | EndMode =>
