@@ -51,10 +51,10 @@ let reduceQueue = (. q) => {
 }
 
 let rec makeEnv = (. stack): t<_> => {
-  render: (. {ast, name}, props, children) =>
+  render: (. {name, nodes}, props, children) =>
     reduceQueue(.
       Render.make(
-        ~ast,
+        ~nodes,
         ~props,
         ~children,
         ~stack=list{Component(name), ...stack},
@@ -108,10 +108,10 @@ let reduceArray = a => {
 let reduceQueue = (. q) => q |> Queue.toArray |> Js.Promise.all |> Js.Promise.then_(reduceArray)
 
 let rec makeEnv = (. stack): t<_> => {
-  render: (. {ast, name}, props, children) =>
+  render: (. {name, nodes}, props, children) =>
     reduceQueue(.
       Render.make(
-        ~ast,
+        ~nodes,
         ~props,
         ~children,
         ~stack=list{Component(name), ...stack},

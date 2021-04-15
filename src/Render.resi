@@ -34,7 +34,7 @@ module Pattern: {
 }
 
 let make: (
-  ~ast: Ast.nodes<templateU<'a>>,
+  ~nodes: Ast.nodes<templateU<'a>>,
   ~props: Js.Dict.t<Js.Json.t>,
   ~children: Js.Dict.t<'a>,
   ~stack: Debug.Stack.t,

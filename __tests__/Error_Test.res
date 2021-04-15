@@ -28,10 +28,8 @@ let render = (~name="", src, json, components) => {
   ->getError
 }
 
-let dontGetComponent = (. _, _, _) => ()
-
 let compile = (~name="", x) =>
-  switch Compile.makeAstInternalExn(~name, ~g=(), ~getComponent=dontGetComponent, x) {
+  switch Compile.makeAstInternalExn(~name, x) {
   | _ => raise(Not_found)
   | exception Debug.Exit(e) => [e]
   }

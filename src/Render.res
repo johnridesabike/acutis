@@ -338,10 +338,10 @@ let echo = (head, tail, ~props, ~stack, ~children, ~env: T.environment<_>, ~erro
   aux(head, 0)
 }
 
-let rec make = (~ast, ~props, ~children, ~stack, ~makeEnv, ~error, ~try_, ~reduceQueue) => {
+let rec make = (~nodes, ~props, ~children, ~stack, ~makeEnv, ~error, ~try_, ~reduceQueue) => {
   let env = makeEnv(. stack)
   let queue = Queue.make()
-  Array.forEachU(ast, (. node: Ast.node<_>) =>
+  Array.forEachU(nodes, (. node: Ast.node<_>) =>
     switch node {
     | Echo(_, NonEmpty(head, tail)) =>
       Queue.add(queue, echo(head, tail, ~props, ~stack, ~children, ~env, ~error))
@@ -358,11 +358,11 @@ let rec make = (~ast, ~props, ~children, ~stack, ~makeEnv, ~error, ~try_, ~reduc
         ),
       )
     | Match(loc, identifiers, cases) =>
-      let patterns = NonEmpty.map(cases, ~f=(. {patterns, ast}): Pattern.t<_> => {
+      let patterns = NonEmpty.map(cases, ~f=(. {patterns, nodes}): Pattern.t<_> => {
         patterns: patterns,
         f: (. props') =>
           make(
-            ~ast,
+            ~nodes,
             ~props=dictMerge(~base=props, props'),
             ~children,
             ~stack=list{Match, ...stack},
@@ -379,7 +379,7 @@ let rec make = (~ast, ~props, ~children, ~stack, ~makeEnv, ~error, ~try_, ~reduc
       }
     | Map(loc, pattern, cases) =>
       let f = (index, json) => {
-        let patterns = NonEmpty.map(cases, ~f=(. {patterns, ast}): Pattern.t<_> => {
+        let patterns = NonEmpty.map(cases, ~f=(. {patterns, nodes}): Pattern.t<_> => {
           patterns: NonEmpty.map(patterns, ~f=(. x): NonEmpty.t<_> =>
             switch x {
             // Add a default binding for the index
@@ -389,7 +389,7 @@ let rec make = (~ast, ~props, ~children, ~stack, ~makeEnv, ~error, ~try_, ~reduc
           ),
           f: (. props') =>
             make(
-              ~ast,
+              ~nodes,
               ~props=dictMerge(~base=props, props'),
               ~children,
               ~stack=list{Index(index), Map, ...stack},
@@ -437,13 +437,13 @@ let rec make = (~ast, ~props, ~children, ~stack, ~makeEnv, ~error, ~try_, ~reduc
       let errors = Queue.make()
       Array.forEachU(compChildrenRaw, (. (key, child)) =>
         switch child {
-        | ChildBlock(ast) =>
+        | ChildBlock(nodes) =>
           Js.Dict.set(
             compChildren,
             key,
             reduceQueue(.
               make(
-                ~ast,
+                ~nodes,
                 ~props,
                 ~children,
                 ~stack=list{Section({component: name, section: key}), ...stack},

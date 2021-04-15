@@ -185,9 +185,9 @@ module Ast = {
         f: 'a,
       })
   and nodes<'a> = array<node<'a>>
-  and case<'a> = {patterns: NonEmpty.t<NonEmpty.t<Ast_Pattern.t>>, ast: nodes<'a>}
+  and case<'a> = {patterns: NonEmpty.t<NonEmpty.t<Ast_Pattern.t>>, nodes: nodes<'a>}
   and child<'a> = ChildName(string) | ChildBlock(nodes<'a>)
-  type t<'a> = {ast: nodes<'a>, name: string}
+  type t<'a> = {nodes: nodes<'a>, name: string}
 }
 
 type rec ast<'a> = Ast.t<templateU<'a>>

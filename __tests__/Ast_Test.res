@@ -15,11 +15,6 @@
 */
 
 open TestFramework
-module Ast = Acutis_Types.Ast
-
-let getAst = (x: Ast.t<_>) => x.ast
-
-let dontGetComponent = (. _, _, _) => ()
 
 describe("Lexer", ({test, _}) => {
   test("Tokens are generated correctly", ({expect, _}) => {
@@ -214,8 +209,6 @@ describe("Parser", ({test, _}) => {
     expect.value(
       Compile.makeAstInternalExn(
         ~name="",
-        ~g=(),
-        ~getComponent=dontGetComponent,
         `
 a
 {* b *}
@@ -224,7 +217,7 @@ a
 {{ 1.5 }}
 {{ &e }}
 f`,
-      )->getAst,
+      ),
     ).toEqual([
       Text("\na\n", NoTrim),
       Text("\n", NoTrim),
@@ -242,8 +235,6 @@ f`,
     expect.value(
       Compile.makeAstInternalExn(
         ~name="",
-        ~g=(),
-        ~getComponent=dontGetComponent,
         `
 {% match a
    with 1 %}
@@ -261,15 +252,13 @@ f`,
   h
 {% /match %}
 `,
-      )->getAst,
+      ),
     ).toMatchSnapshot()
   })
   test("Mapping", ({expect, _}) => {
     expect.value(
       Compile.makeAstInternalExn(
         ~name="",
-        ~g=(),
-        ~getComponent=dontGetComponent,
         `
 {% map a with {b} %}
   {{ b }}
@@ -284,15 +273,13 @@ f`,
   {{ index }} {{ g }}
 {% /map %}
 `,
-      )->getAst,
+      ),
     ).toMatchSnapshot()
   })
   test("Components", ({expect, _}) => {
     expect.value(
       Compile.makeAstInternalExn(
         ~name="",
-        ~g=(),
-        ~getComponent=dontGetComponent,
         `
 {% A
    b
@@ -307,7 +294,7 @@ f`,
    {% L m={n: o, p: [q], r} / %}
 {% /A %}
 `,
-      )->getAst,
+      ),
     ).toMatchSnapshot()
   })
 })

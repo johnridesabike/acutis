@@ -22,12 +22,7 @@ module Pattern: {
   let make: Lexer.t => NonEmpty.t<Ast_Pattern.t>
 }
 
-let makeAstInternalExn: (
-  ~name: string,
-  ~g: 'g, // This is for an internal graph format
-  ~getComponent: (. 'g, string, loc) => 'a,
-  string,
-) => Ast.t<'a>
+let makeAstInternalExn: (~name: string, string) => Ast.nodes<unit>
 
 module Components: {
   type t<'a>
