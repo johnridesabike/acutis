@@ -44,6 +44,8 @@ module Token = {
     | CloseBracket(loc)
     | OpenBrace(loc)
     | CloseBrace(loc)
+    | OpenParen(loc)
+    | CloseParen(loc)
     | Spread(loc)
     // Component syntax
     | ComponentName(loc, string)
@@ -76,6 +78,8 @@ module Token = {
     | CloseBracket(_) => "]"
     | OpenBrace(_) => "{"
     | CloseBrace(_) => "}"
+    | OpenParen(_) => "("
+    | CloseParen(_) => ")"
     | Spread(_) => "..."
     | Block(_) => "#"
     | Equals(_) => "="
@@ -104,6 +108,8 @@ module Token = {
     | CloseBracket(x)
     | OpenBrace(x)
     | CloseBrace(x)
+    | OpenParen(x)
+    | CloseParen(x)
     | Spread(x)
     | Block(x)
     | Equals(x)
@@ -128,6 +134,7 @@ module Ast_Pattern = {
     | #True(loc)
     | #String(loc, string)
     | #Number(loc, float)
+    | #Tuple(loc, array<t>)
     | arr_<t>
     | obj_<t>
     | binding
@@ -141,6 +148,7 @@ module Ast_Pattern = {
     | #Null(_) => "null"
     | #String(_) => "string"
     | #Number(_) => "number"
+    | #Tuple(_) => "tuple"
     | #Array(_) | #ArrayWithTailBinding(_) => "array"
     | #Object(_) => "object"
     | #Binding(_, x) => `binding: \`${x}\``
@@ -153,6 +161,7 @@ module Ast_Pattern = {
     | #Null(x)
     | #String(x, _)
     | #Number(x, _)
+    | #Tuple(x, _)
     | #Array(x, _)
     | #ArrayWithTailBinding(x, _, _)
     | #Object(x, _)

@@ -173,6 +173,8 @@ let makeExpression = (source, tokens: Queue.t<Token.t>, ~name, ~until) => {
     | ":" => Queue.add(tokens, Colon(loc))
     | "[" => Queue.add(tokens, OpenBracket(loc))
     | "]" => Queue.add(tokens, CloseBracket(loc))
+    | "(" => Queue.add(tokens, OpenParen(loc))
+    | ")" => Queue.add(tokens, CloseParen(loc))
     | "," => Queue.add(tokens, Comma(loc))
     | "." =>
       switch (readChar(source), readChar(source)) {

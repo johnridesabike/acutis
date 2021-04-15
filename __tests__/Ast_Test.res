@@ -40,7 +40,9 @@ describe("Lexer", ({test, _}) => {
 {{ \t a
 }}
 {* {q*r *}
-{{ S }}`
+{% match t with (1, "2") %}
+  {{ S }}
+{% /match %}`
       ->Lexer.make(~name="")
       ->Lexer.debugToArray,
     ).toMatchSnapshot()
@@ -250,6 +252,9 @@ f`,
   {{ g }}
 {% with false, _ %}
   h
+{% /match %}
+{% match tuple with (i, "j") %}
+  k
 {% /match %}
 `,
       ),

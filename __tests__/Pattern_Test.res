@@ -63,6 +63,7 @@ describe("Equality", ({test, _}) => {
     expect.value(patternTest(parseString("false"), jsonList("false"))).toEqual(#Ok([]))
     expect.value(patternTest(parseString("{}"), jsonList("{}"))).toEqual(#Ok([]))
     expect.value(patternTest(parseString("[]"), jsonList("[]"))).toEqual(#Ok([]))
+    expect.value(patternTest(parseString("()"), jsonList("[]"))).toEqual(#Ok([]))
   })
 
   test("Nested values", ({expect, _}) => {
@@ -73,6 +74,9 @@ describe("Equality", ({test, _}) => {
       ),
     ).toEqual(#Ok([]))
     expect.value(patternTest(parseString(`["thing 1"]`), jsonList(`["thing 1"]`))).toEqual(#Ok([]))
+    expect.value(patternTest(parseString(`("thing 1", 2)`), jsonList(`["thing 1", 2]`))).toEqual(
+      #Ok([]),
+    )
     expect.value(
       patternTest(parseString(`["thing 1", "thing 2"]`), jsonList(`["thing 1", "thing 2"]`)),
     ).toEqual(#Ok([]))

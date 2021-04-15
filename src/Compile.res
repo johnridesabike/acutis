@@ -45,6 +45,11 @@ module Pattern = {
     | Identifier(loc, x) => #Binding(loc, x)
     | Number(loc, x) => #Number(loc, x)
     | String(loc, x) => #String(loc, x)
+    | OpenParen(loc) =>
+      switch Lexer.popExn(tokens) {
+      | CloseParen(_) => #Tuple(loc, [])
+      | t => parseTuple(loc, t, tokens)
+      }
     | OpenBracket(loc) =>
       switch Lexer.popExn(tokens) {
       | CloseBracket(_) => #Array(loc, [])
@@ -82,6 +87,22 @@ module Pattern = {
           Queue.add(q, parseNode(t, tokens))
           aux()
         }
+      | t => raise(Exit(Debug.unexpectedToken(t, ~name=Lexer.name(tokens))))
+      }
+    aux()
+  }
+  @raises(Exit)
+  and parseTuple = (loc, t, tokens) => {
+    let q = Queue.make()
+    Queue.add(q, parseNode(t, tokens))
+
+    @raises(Exit)
+    let rec aux = (): Ast_Pattern.t =>
+      switch Lexer.popExn(tokens) {
+      | CloseParen(_) => #Tuple(loc, Queue.toArray(q))
+      | Comma(_) =>
+        Queue.add(q, parseNode(Lexer.popExn(tokens), tokens))
+        aux()
       | t => raise(Exit(Debug.unexpectedToken(t, ~name=Lexer.name(tokens))))
       }
     aux()
@@ -262,7 +283,7 @@ let rec parse = (t, tokens, ~until) => {
         let withs = parseWithBlocks(tokens, ~block="map")
         Queue.add(q, Map(loc, pattern, withs))
         aux(Lexer.popExn(tokens))
-      | (#Null(_) | #True(_) | #False(_) | #String(_) | #Number(_)) as x =>
+      | (#Null(_) | #True(_) | #False(_) | #Tuple(_) | #String(_) | #Number(_)) as x =>
         raise(Exit(Debug.badMapTypeParse(x, ~name=Lexer.name(tokens))))
       }
     | Echo(loc) =>

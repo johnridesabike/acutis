@@ -62,6 +62,10 @@ module Pattern = {
       | Some(x) => #ok(x)
       | None => #errors([Debug.bindingDoesNotExist(~loc, ~binding, ~stack)])
       }
+    | #Tuple(_, a) =>
+      a
+      ->arrayToQueueResult(~f=(. x) => toJson(x, ~props, ~stack))
+      ->Result.mapU((. q) => Queue.toArray(q)->Js.Json.array)
     | #...Ast_Pattern.arr as pattern =>
       toArray(pattern, ~props, ~stack)->Result.mapU((. x) => Json.array(x))
     }
@@ -117,6 +121,7 @@ module Pattern = {
       NoMatch
     | (#Array(_, []), JSONArray([])) => Result(#ok(bindings))
     | (#Array(_, []), JSONArray(_)) => NoMatch
+    | (#Tuple(_, x), JSONArray(data)) => testArray(~patterns=x, ~data, ~bindings, ~stack)
     | (#Array(_, x), JSONArray(data)) => testArray(~patterns=x, ~data, ~bindings, ~stack)
     | (#ArrayWithTailBinding(_, patterns, binding), JSONArray(data)) =>
       switch testArray(~patterns, ~data, ~bindings, ~stack) {
