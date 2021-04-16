@@ -48,7 +48,8 @@ module Pattern = {
     | #False(_) => #ok(Json.boolean(false))
     | #Null(_) => #ok(Json.null)
     | #String(_, x) => #ok(Json.string(x))
-    | #Number(_, x) => #ok(Json.number(x))
+    | #Int(_, x) => #ok(Json.number(Int.toFloat(x)))
+    | #Float(_, x) => #ok(Json.number(x))
     | #Object(_, x) | #Dict(_, x) =>
       x
       ->arrayToQueueResult(~f=(. (k, v)) => toJson(v, ~props, ~stack)->Result.mapU((. v) => (k, v)))
@@ -108,13 +109,15 @@ module Pattern = {
   let rec testValue = (~pattern: Ast_Pattern.t, ~json, ~bindings, ~stack) =>
     switch (pattern, Json.classify(json)) {
     | (#Binding(_) as b, _) => Result(setBinding(bindings, b, json, ~stack))
-    | (#Number(_, x), JSONNumber(y)) if x == y => Result(#ok(bindings))
+    | (#Int(_, x), JSONNumber(y)) if Int.toFloat(x) == y => Result(#ok(bindings))
+    | (#Float(_, x), JSONNumber(y)) if x == y => Result(#ok(bindings))
     | (#String(_, x), JSONString(y)) if x == y => Result(#ok(bindings))
     | (#True(_), JSONTrue)
     | (#False(_), JSONFalse)
     | (#Null(_), JSONNull) =>
       Result(#ok(bindings))
-    | (#Number(_), JSONNumber(_))
+    | (#Int(_), JSONNumber(_))
+    | (#Float(_), JSONNumber(_))
     | (#String(_), JSONString(_))
     | (#False(_), JSONTrue)
     | (#True(_), JSONFalse) =>
@@ -343,7 +346,8 @@ let echo = (head, tail, ~props, ~stack, ~children, ~env: T.environment<_>, ~erro
         }
       }
     | String(x, esc) => env.return(. escape(esc, x))
-    | Number(x, esc) => env.return(. escape(esc, Float.toString(x)))
+    | Int(x, esc) => env.return(. escape(esc, Int.toString(x)))
+    | Float(x, esc) => env.return(. escape(esc, Float.toString(x)))
     }
   aux(head, 0)
 }

@@ -1249,7 +1249,7 @@ Array [
     "location": Object {
       "character": 26,
     },
-    "message": "This pattern is type number but the data is type string.",
+    "message": "This pattern is type int but the data is type string.",
     "path": Array [
       "",
     ],
@@ -1425,7 +1425,7 @@ Array [
     "location": Object {
       "character": 22,
     },
-    "message": "This pattern is type number but the data is type string.",
+    "message": "This pattern is type int but the data is type string.",
     "path": Array [
       "",
     ],
@@ -1441,7 +1441,7 @@ Array [
     "location": Object {
       "character": 22,
     },
-    "message": "This pattern is type number but the data is type string.",
+    "message": "This pattern is type int but the data is type string.",
     "path": Array [
       "",
     ],
@@ -1457,7 +1457,7 @@ Array [
     "location": Object {
       "character": 21,
     },
-    "message": "This pattern is type number but the data is type boolean.",
+    "message": "This pattern is type int but the data is type boolean.",
     "path": Array [
       "",
     ],
@@ -1473,7 +1473,7 @@ Array [
     "location": Object {
       "character": 22,
     },
-    "message": "This pattern is type number but the data is type boolean.",
+    "message": "This pattern is type int but the data is type boolean.",
     "path": Array [
       "",
     ],
@@ -1489,7 +1489,7 @@ Array [
     "location": Object {
       "character": 21,
     },
-    "message": "This pattern is type number but the data is type array.",
+    "message": "This pattern is type int but the data is type array.",
     "path": Array [
       "",
     ],
@@ -1505,7 +1505,7 @@ Array [
     "location": Object {
       "character": 27,
     },
-    "message": "This pattern is type number but the data is type object.",
+    "message": "This pattern is type int but the data is type object.",
     "path": Array [
       "",
     ],

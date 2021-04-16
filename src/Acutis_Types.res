@@ -33,7 +33,8 @@ module Token = {
     | Comment(loc, string)
     // JSON values
     | String(loc, string)
-    | Number(loc, float)
+    | Int(loc, int)
+    | Float(loc, float)
     | True(loc) // a reserved identifier
     | False(loc) // a reserved identifier
     | Null(loc) // a reserved identifier
@@ -66,7 +67,8 @@ module Token = {
     switch x {
     | Text(_, x) => "[text]: " ++ x
     | String(_, x) => `"${x}"`
-    | Number(_, x) => Belt.Float.toString(x)
+    | Int(_, x) => Belt.Int.toString(x)
+    | Float(_, x) => Belt.Float.toString(x)
     | True(_) => "true"
     | False(_) => "false"
     | Null(_) => "null"
@@ -98,7 +100,8 @@ module Token = {
     switch x {
     | Text(x, _)
     | String(x, _)
-    | Number(x, _)
+    | Int(x, _)
+    | Float(x, _)
     | Identifier(x, _)
     | True(x)
     | False(x)
@@ -139,7 +142,8 @@ module Ast_Pattern = {
     | #False(loc)
     | #True(loc)
     | #String(loc, string)
-    | #Number(loc, float)
+    | #Int(loc, int)
+    | #Float(loc, float)
     | #Tuple(loc, array<t>)
     | arr_<t>
     | dict_<t>
@@ -154,7 +158,8 @@ module Ast_Pattern = {
     | #True(_) | #False(_) => "boolean"
     | #Null(_) => "null"
     | #String(_) => "string"
-    | #Number(_) => "number"
+    | #Int(_) => "int"
+    | #Float(_) => "float"
     | #Tuple(_) => "tuple"
     | #Array(_) | #ArrayWithTailBinding(_) => "array"
     | #Object(_) => "object"
@@ -168,7 +173,8 @@ module Ast_Pattern = {
     | #False(x)
     | #Null(x)
     | #String(x, _)
-    | #Number(x, _)
+    | #Int(x, _)
+    | #Float(x, _)
     | #Tuple(x, _)
     | #Array(x, _)
     | #ArrayWithTailBinding(x, _, _)
@@ -185,7 +191,8 @@ module Ast = {
       | Binding(loc, string, escape)
       | Child(loc, string)
       | String(string, escape)
-      | Number(float, escape)
+      | Int(int, escape)
+      | Float(float, escape)
   }
   type trim = TrimStart | TrimEnd | TrimBoth | NoTrim
   type mapPattern = [Ast_Pattern.binding | Ast_Pattern.arr | Ast_Pattern.dict]

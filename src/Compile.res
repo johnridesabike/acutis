@@ -43,7 +43,8 @@ module Pattern = {
     | False(loc) => #False(loc)
     | True(loc) => #True(loc)
     | Identifier(loc, x) => #Binding(loc, x)
-    | Number(loc, x) => #Number(loc, x)
+    | Int(loc, x) => #Int(loc, x)
+    | Float(loc, x) => #Float(loc, x)
     | String(loc, x) => #String(loc, x)
     | OpenParen(loc) =>
       switch Lexer.popExn(tokens) {
@@ -215,7 +216,8 @@ let parseEchoAux = (t: Token.t, tokens, esc): Ast.Echo.t =>
   switch t {
   | Identifier(loc, x) => Binding(loc, x, esc)
   | String(_, x) => String(x, esc)
-  | Number(_, x) => Number(x, esc)
+  | Int(_, x) => Int(x, esc)
+  | Float(_, x) => Float(x, esc)
   | t => raise(Exit(Debug.unexpectedToken(t, ~name=Lexer.name(tokens))))
   }
 
@@ -304,7 +306,14 @@ let rec parse = (t, tokens, ~until) => {
         let withs = parseWithBlocks(tokens, ~block="map")
         Queue.add(q, Map(loc, pattern, withs))
         aux(Lexer.popExn(tokens))
-      | (#Null(_) | #True(_) | #False(_) | #Tuple(_) | #String(_) | #Number(_) | #Object(_)) as x =>
+      | (#Null(_)
+        | #True(_)
+        | #False(_)
+        | #Tuple(_)
+        | #String(_)
+        | #Int(_)
+        | #Float(_)
+        | #Object(_)) as x =>
         raise(Exit(Debug.badMapTypeParse(x, ~name=Lexer.name(tokens))))
       }
     | Echo(loc) =>

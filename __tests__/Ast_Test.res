@@ -40,7 +40,7 @@ describe("Lexer", ({test, _}) => {
 {{ \t a
 }}
 {* {q*r *}
-{% match t with (1, "2") %}
+{% match t with (1.5, "2") %}
   {{ S }}
 {% /match %}`
       ->Lexer.make(~name="")
@@ -63,12 +63,15 @@ describe("Patterns", ({test, _}) => {
   })
 
   test("Numbers", ({expect, _}) => {
-    expect.value(parseString("1")).toEqual(NonEmpty(#Number(Loc(3), 1.0), []))
-    expect.value(parseString("12345")).toEqual(NonEmpty(#Number(Loc(3), 12345.0), []))
-    expect.value(parseString("1234.5")).toEqual(NonEmpty(#Number(Loc(3), 1234.5), []))
-    expect.value(parseString("-12345")).toEqual(NonEmpty(#Number(Loc(3), -12345.0), []))
-    expect.value(parseString("1e+1")).toEqual(NonEmpty(#Number(Loc(3), 10.0), []))
-    expect.value(parseString("-1E+1")).toEqual(NonEmpty(#Number(Loc(3), -10.0), []))
+    expect.value(parseString("1")).toEqual(NonEmpty(#Int(Loc(3), 1), []))
+    expect.value(parseString("1.")).toEqual(NonEmpty(#Float(Loc(3), 1.0), []))
+    expect.value(parseString("12345")).toEqual(NonEmpty(#Int(Loc(3), 12345), []))
+    expect.value(parseString("1234.5")).toEqual(NonEmpty(#Float(Loc(3), 1234.5), []))
+    expect.value(parseString("-12345")).toEqual(NonEmpty(#Int(Loc(3), -12345), []))
+    expect.value(parseString("1e+1")).toEqual(NonEmpty(#Int(Loc(3), 10), []))
+    expect.value(parseString("-1E+1")).toEqual(NonEmpty(#Int(Loc(3), -10), []))
+    expect.value(parseString("175.0e-2")).toEqual(NonEmpty(#Float(Loc(3), 1.75), []))
+    expect.value(parseString("175e-2")).toEqual(NonEmpty(#Int(Loc(3), 1), []))
   })
 
   test("Strings", ({expect, _}) => {
@@ -88,11 +91,11 @@ describe("Patterns", ({test, _}) => {
 
   test("Arrays", ({expect, _}) => {
     expect.value(parseString("[]")).toEqual(NonEmpty(#Array(Loc(3), []), []))
-    expect.value(parseString("[1]")).toEqual(NonEmpty(#Array(Loc(3), [#Number(Loc(4), 1.0)]), []))
+    expect.value(parseString("[1]")).toEqual(NonEmpty(#Array(Loc(3), [#Int(Loc(4), 1)]), []))
     expect.value(parseString("[null]")).toEqual(NonEmpty(#Array(Loc(3), [#Null(Loc(4))]), []))
     expect.value(parseString(`["a"]`)).toEqual(NonEmpty(#Array(Loc(3), [#String(Loc(4), "a")]), []))
     expect.value(parseString(`[1, "a", null]`)).toEqual(
-      NonEmpty(#Array(Loc(3), [#Number(Loc(4), 1.0), #String(Loc(7), "a"), #Null(Loc(12))]), []),
+      NonEmpty(#Array(Loc(3), [#Int(Loc(4), 1), #String(Loc(7), "a"), #Null(Loc(12))]), []),
     )
     expect.value(parseString(`["b", x]`)).toEqual(
       NonEmpty(#Array(Loc(3), [#String(Loc(4), "b"), #Binding(Loc(9), "x")]), []),
@@ -104,7 +107,7 @@ describe("Patterns", ({test, _}) => {
       NonEmpty(
         #Array(
           Loc(3),
-          [#Array(Loc(4), [#String(Loc(5), "b"), #Number(Loc(10), 1.0)]), #Binding(Loc(14), "x")],
+          [#Array(Loc(4), [#String(Loc(5), "b"), #Int(Loc(10), 1)]), #Binding(Loc(14), "x")],
         ),
         [],
       ),
@@ -145,7 +148,7 @@ describe("Patterns", ({test, _}) => {
         #Object(
           Loc(3),
           [
-            ("a", #Number(Loc(7), 1.5)),
+            ("a", #Float(Loc(7), 1.5)),
             ("b", #String(Loc(15), "b")),
             ("c", #Null(Loc(23))),
             ("d", #Binding(Loc(29), "d")),
@@ -175,7 +178,7 @@ describe("Patterns", ({test, _}) => {
           Loc(4),
           [
             ("a", #Binding(Loc(11), "bindingA")),
-            ("b", #Number(Loc(26), 1.5)),
+            ("b", #Float(Loc(26), 1.5)),
             (
               "c",
               #ArrayWithTailBinding(
@@ -227,7 +230,7 @@ f`,
       Text("\n", NoTrim),
       Echo(Loc(21), NonEmpty(String("d", Escape), [])),
       Text("\n", NoTrim),
-      Echo(Loc(31), NonEmpty(Number(1.5, Escape), [])),
+      Echo(Loc(31), NonEmpty(Float(1.5, Escape), [])),
       Text("\n", NoTrim),
       Echo(Loc(41), NonEmpty(Binding(Loc(43), "e", NoEscape), [])),
       Text("\nf", NoTrim),

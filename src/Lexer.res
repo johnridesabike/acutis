@@ -16,6 +16,8 @@
 
 module T = Acutis_Types
 
+module Int = Belt.Int
+module Float = Belt.Float
 module Queue = Belt.MutableQueue
 module Token = T.Token
 
@@ -45,9 +47,9 @@ let rec readSubstring = (str, source, ~until) =>
 
 let loc = x => T.Loc(x.position)
 
-let endOfNumber = (. c) =>
+let endOfInt = (. c) =>
   switch c {
-  | "-" | "+" | "0" | "1" | "2" | "3" | "4" | "5" | "6" | "7" | "8" | "9" | "." | "e" | "E" => false
+  | "-" | "+" | "0" | "1" | "2" | "3" | "4" | "5" | "6" | "7" | "8" | "9" | "e" | "E" => false
   | _ => true
   }
 
@@ -132,11 +134,21 @@ let readJsonString = (source, ~name) => {
 }
 
 @raises(Exit)
-let readNumber = (c, source, ~loc, ~name) => {
-  let num = readSubstring(c, source, ~until=endOfNumber)
-  switch Belt.Float.fromString(num) {
-  | Some(num) => num
-  | None => raise(Exit(Debug.illegalIdentifier(~loc, ~identifier=num, ~name)))
+let readNumber = (c, source, ~loc, ~name): T.Token.t => {
+  let intStr = readSubstring(c, source, ~until=endOfInt)
+  switch peekChar(source) {
+  | "." =>
+    let floatStr = intStr ++ readSubstring(readChar(source), source, ~until=endOfInt)
+    switch Float.fromString(floatStr) {
+    | Some(num) => Float(loc, num)
+    | None => raise(Exit(Debug.illegalIdentifier(~loc, ~identifier=floatStr, ~name)))
+    }
+  | _ =>
+    // Int.fromString isn't consistent with Float.fromString number syntax.
+    switch Float.fromString(intStr) {
+    | Some(num) => Int(loc, Int.fromFloat(num))
+    | None => raise(Exit(Debug.illegalIdentifier(~loc, ~identifier=intStr, ~name)))
+    }
   }
 }
 
@@ -190,7 +202,7 @@ let makeExpression = (source, tokens: Queue.t<Token.t>, ~name, ~until) => {
     | "?" => Queue.add(tokens, Question(loc))
     | "&" => Queue.add(tokens, Ampersand(loc))
     | ("-" | "0" | "1" | "2" | "3" | "4" | "5" | "6" | "7" | "8" | "9") as c =>
-      Queue.add(tokens, Number(loc, readNumber(c, source, ~loc, ~name)))
+      Queue.add(tokens, readNumber(c, source, ~loc, ~name))
     | c if isValidIdentifierStart(c) => Queue.add(tokens, readIdentifier(c, source, loc))
     | c if isValidComponentStart(c) =>
       Queue.add(tokens, ComponentName(loc, readSubstring(c, source, ~until=endOfIdentifier)))
