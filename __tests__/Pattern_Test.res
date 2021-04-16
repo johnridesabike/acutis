@@ -38,7 +38,7 @@ let patternTest = (patterns, json) =>
   switch Pattern.test(patterns, json, ~loc=Loc(0), ~stack=list{}) {
   | NoMatch => #NoMatch
   | Result(#ok(d)) => #Ok(Belt.Map.String.toArray(d))
-  | Result(#errors(_)) => #Error
+  | Result(#errors(x)) => #Error(x)
   }
 
 describe("Escaped strings work", ({test, _}) => {
@@ -70,6 +70,12 @@ describe("Equality", ({test, _}) => {
     expect.value(
       patternTest(
         parseString("{key: true, key2: {key3: false}}"),
+        jsonList(`{"key": true, "key2": {"key3": false}}`),
+      ),
+    ).toEqual(#Ok([]))
+    expect.value(
+      patternTest(
+        parseString("<key: true, key2: {key3: false}>"),
         jsonList(`{"key": true, "key2": {"key3": false}}`),
       ),
     ).toEqual(#Ok([]))

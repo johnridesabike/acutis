@@ -253,8 +253,8 @@ f`,
 {% with false, _ %}
   h
 {% /match %}
-{% match tuple with (i, "j") %}
-  k
+{% match tuple, dict with (i, "j"), <k: l> %}
+  m
 {% /match %}
 `,
       ),

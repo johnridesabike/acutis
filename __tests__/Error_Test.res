@@ -451,7 +451,7 @@ describe("Rendering", ({test, _}) => {
     // Get some coverage on the map-object error path.
     expect.value(
       render(
-        "{% map {a: b} with b %} {{ b }} {% /map %}",
+        "{% map <a: b> with b %} {{ b }} {% /map %}",
         Js.Dict.empty(),
         Compile.Components.empty(),
       ),

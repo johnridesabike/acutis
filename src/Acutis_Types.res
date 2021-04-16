@@ -46,6 +46,8 @@ module Token = {
     | CloseBrace(loc)
     | OpenParen(loc)
     | CloseParen(loc)
+    | OpenPointyBracket(loc)
+    | ClosePoointyBracket(loc)
     | Spread(loc)
     // Component syntax
     | ComponentName(loc, string)
@@ -80,6 +82,8 @@ module Token = {
     | CloseBrace(_) => "}"
     | OpenParen(_) => "("
     | CloseParen(_) => ")"
+    | OpenPointyBracket(_) => "<"
+    | ClosePoointyBracket(_) => ">"
     | Spread(_) => "..."
     | Block(_) => "#"
     | Equals(_) => "="
@@ -110,6 +114,8 @@ module Token = {
     | CloseBrace(x)
     | OpenParen(x)
     | CloseParen(x)
+    | OpenPointyBracket(x)
+    | ClosePoointyBracket(x)
     | Spread(x)
     | Block(x)
     | Equals(x)
@@ -127,7 +133,7 @@ module Ast_Pattern = {
     | #Array(loc, array<'t>)
     | #ArrayWithTailBinding(loc, array<'t>, binding)
   ]
-  type obj_<'t> = [#Object(loc, array<(string, 't)>)]
+  type dict_<'t> = [#Dict(loc, array<(string, 't)>)]
   type rec t = [
     | #Null(loc)
     | #False(loc)
@@ -136,11 +142,12 @@ module Ast_Pattern = {
     | #Number(loc, float)
     | #Tuple(loc, array<t>)
     | arr_<t>
-    | obj_<t>
+    | dict_<t>
+    | #Object(loc, array<(string, t)>)
     | binding
   ]
   type arr = arr_<t>
-  type obj = obj_<t>
+  type dict = dict_<t>
 
   let toString = (x: t) =>
     switch x {
@@ -151,6 +158,7 @@ module Ast_Pattern = {
     | #Tuple(_) => "tuple"
     | #Array(_) | #ArrayWithTailBinding(_) => "array"
     | #Object(_) => "object"
+    | #Dict(_) => "dictionary"
     | #Binding(_, x) => `binding: \`${x}\``
     }
 
@@ -165,6 +173,7 @@ module Ast_Pattern = {
     | #Array(x, _)
     | #ArrayWithTailBinding(x, _, _)
     | #Object(x, _)
+    | #Dict(x, _)
     | #Binding(x, _) => x
     }
 }
@@ -179,7 +188,7 @@ module Ast = {
       | Number(float, escape)
   }
   type trim = TrimStart | TrimEnd | TrimBoth | NoTrim
-  type mapPattern = [Ast_Pattern.binding | Ast_Pattern.arr | Ast_Pattern.obj]
+  type mapPattern = [Ast_Pattern.binding | Ast_Pattern.arr | Ast_Pattern.dict]
   type rec node<'a> =
     | Text(string, trim)
     // The first echo item that isn't null will be returned.

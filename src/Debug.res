@@ -125,11 +125,14 @@ let unexpectedToken = (t, ~name) => {
 }
 
 let badMapTypeParse = (t, ~name) => {
-  message: `Bad map type: "${T.Ast_Pattern.toString(t)}". I can only map bindings and arrays.`,
-  kind: #Parse,
-  location: Some(location(T.Ast_Pattern.toLocation(t))),
-  path: [Js.Json.string(name)],
-  exn: None,
+  let t' = T.Ast_Pattern.toString(t)
+  {
+    message: `Bad map type: "${t'}". I can only map bindings, arrays, and dictionaries.`,
+    kind: #Parse,
+    location: Some(location(T.Ast_Pattern.toLocation(t))),
+    path: [Js.Json.string(name)],
+    exn: None,
+  }
 }
 
 /* Compile errors. */

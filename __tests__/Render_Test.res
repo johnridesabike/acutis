@@ -178,10 +178,10 @@ describe("Render essentials", ({test, _}) => {
     )
     expect.value(result).toEqual(#ok(`lisa: computers. tommy: banking. `))
     let result = render(
-      `{% map {
+      `{% map <
           lisa: {job: "computers"},
           tommy: {job: "banking"}
-        } with {job}, key ~%} {{ key }}: {{ job }}. {% /map %}`,
+        > with {job}, key ~%} {{ key }}: {{ job }}. {% /map %}`,
       Js.Dict.empty(),
       Compile.Components.empty(),
     )

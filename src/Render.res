@@ -49,7 +49,7 @@ module Pattern = {
     | #Null(_) => #ok(Json.null)
     | #String(_, x) => #ok(Json.string(x))
     | #Number(_, x) => #ok(Json.number(x))
-    | #Object(_, x) =>
+    | #Object(_, x) | #Dict(_, x) =>
       x
       ->arrayToQueueResult(~f=(. (k, v)) => toJson(v, ~props, ~stack)->Result.mapU((. v) => (k, v)))
       ->Result.mapU((. q) => {
@@ -136,10 +136,15 @@ module Pattern = {
         )
       | (Result(#errors(_)) | NoMatch) as e => e
       }
-    | (#Object(_, []), JSONObject(obj)) if obj->Js.Dict.keys->Array.size == 0 =>
+    | (#Object(_, []), JSONObject(obj))
+    | (#Dict(_, []), JSONObject(obj)) if obj->Js.Dict.keys->Array.size == 0 =>
       Result(#ok(bindings))
-    | (#Object(_, []), JSONObject(_)) => NoMatch
-    | (#Object(_, patterns), JSONObject(obj)) => testObject(~patterns, ~obj, ~bindings, ~stack)
+    | (#Object(_, []), JSONObject(_))
+    | (#Dict(_, []), JSONObject(_)) =>
+      NoMatch
+    | (#Object(_, patterns), JSONObject(obj))
+    | (#Dict(_, patterns), JSONObject(obj)) =>
+      testObject(~patterns, ~obj, ~bindings, ~stack)
     | (_, JSONNull) | (#Null(_), _) => NoMatch
     | (pattern, data) => Result(#errors([Debug.patternTypeMismatch(~pattern, ~data, ~stack)]))
     }
@@ -429,7 +434,7 @@ let rec make = (~nodes, ~props, ~children, ~stack, ~makeEnv, ~error, ~try_, ~red
           Array.forEachWithIndexU(a, (. i, x) => f(Json.number(Int.toFloat(i)), x))
         )
         ->Result.getOrElseU((. e) => Queue.add(queue, error(. e)))
-      | #Object(_, o) =>
+      | #Dict(_, o) =>
         Pattern.arrayToQueueResult(o, ~f=(. (k, v)) =>
           Pattern.toJson(v, ~props, ~stack)->Result.mapU((. x) => (Js.Json.string(k), x))
         )

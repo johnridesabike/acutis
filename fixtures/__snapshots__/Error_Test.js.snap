@@ -2004,7 +2004,7 @@ Array [
     "location": Object {
       "character": 8,
     },
-    "message": "Bad map type: \\"null\\". I can only map bindings and arrays.",
+    "message": "Bad map type: \\"null\\". I can only map bindings, arrays, and dictionaries.",
     "path": Array [
       "",
     ],
