@@ -345,9 +345,9 @@ let echo = (head, tail, ~props, ~stack, ~children, ~env: T.environment<_>, ~erro
         | None => error(. [Debug.childDoesNotExist(~loc, ~child, ~stack)])
         }
       }
-    | String(x, esc) => env.return(. escape(esc, x))
-    | Int(x, esc) => env.return(. escape(esc, Int.toString(x)))
-    | Float(x, esc) => env.return(. escape(esc, Float.toString(x)))
+    | String(_, x, esc) => env.return(. escape(esc, x))
+    | Int(_, x, esc) => env.return(. escape(esc, Int.toString(x)))
+    | Float(_, x, esc) => env.return(. escape(esc, Float.toString(x)))
     }
   aux(head, 0)
 }

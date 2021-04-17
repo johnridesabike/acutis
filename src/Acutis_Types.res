@@ -190,9 +190,9 @@ module Ast = {
     type t =
       | Binding(loc, string, escape)
       | Child(loc, string)
-      | String(string, escape)
-      | Int(int, escape)
-      | Float(float, escape)
+      | String(loc, string, escape)
+      | Int(loc, int, escape)
+      | Float(loc, float, escape)
   }
   type trim = TrimStart | TrimEnd | TrimBoth | NoTrim
   type mapPattern = [Ast_Pattern.binding | Ast_Pattern.arr | Ast_Pattern.dict]

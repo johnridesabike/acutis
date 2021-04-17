@@ -215,9 +215,9 @@ let parseCommaSequence = tokens => {
 let parseEchoAux = (t: Token.t, tokens, esc): Ast.Echo.t =>
   switch t {
   | Identifier(loc, x) => Binding(loc, x, esc)
-  | String(_, x) => String(x, esc)
-  | Int(_, x) => Int(x, esc)
-  | Float(_, x) => Float(x, esc)
+  | String(loc, x) => String(loc, x, esc)
+  | Int(loc, x) => Int(loc, x, esc)
+  | Float(loc, x) => Float(loc, x, esc)
   | t => raise(Exit(Debug.unexpectedToken(t, ~name=Lexer.name(tokens))))
   }
 
