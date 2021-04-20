@@ -1141,10 +1141,13 @@ Array [
     "TAG": 2,
     "_0": 4,
     "_1": Object {
-      "_0": Array [
-        10,
-        "a",
-      ],
+      "_0": Object {
+        "NAME": "Binding",
+        "VAL": Array [
+          10,
+          "a",
+        ],
+      },
       "_1": Array [],
     },
     "_2": Object {
@@ -1245,15 +1248,21 @@ Array [
     "TAG": 2,
     "_0": 89,
     "_1": Object {
-      "_0": Array [
-        95,
-        "e",
-      ],
-      "_1": Array [
-        Array [
-          98,
-          "f",
+      "_0": Object {
+        "NAME": "Binding",
+        "VAL": Array [
+          95,
+          "e",
         ],
+      },
+      "_1": Array [
+        Object {
+          "NAME": "Binding",
+          "VAL": Array [
+            98,
+            "f",
+          ],
+        },
       ],
     },
     "_2": Object {
@@ -1358,15 +1367,21 @@ Array [
     "TAG": 2,
     "_0": 171,
     "_1": Object {
-      "_0": Array [
-        177,
-        "tuple",
-      ],
-      "_1": Array [
-        Array [
-          184,
-          "dict",
+      "_0": Object {
+        "NAME": "Binding",
+        "VAL": Array [
+          177,
+          "tuple",
         ],
+      },
+      "_1": Array [
+        Object {
+          "NAME": "Binding",
+          "VAL": Array [
+            184,
+            "dict",
+          ],
+        },
       ],
     },
     "_2": Object {

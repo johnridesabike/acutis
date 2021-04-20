@@ -200,7 +200,7 @@ module Ast = {
     | Text(string, trim)
     // The first echo item that isn't null will be returned.
     | Echo(loc, NonEmpty.t<Echo.t>)
-    | Match(loc, NonEmpty.t<(loc, string)>, NonEmpty.t<case<'a>>)
+    | Match(loc, NonEmpty.t<Ast_Pattern.binding>, NonEmpty.t<case<'a>>)
     | Map(loc, mapPattern, NonEmpty.t<case<'a>>)
     | Component({
         loc: loc,

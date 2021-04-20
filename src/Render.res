@@ -386,7 +386,7 @@ let rec make = (~nodes, ~props, ~children, ~stack, ~makeEnv, ~error, ~try_, ~red
             ~reduceQueue,
           ),
       })
-      let data = NonEmpty.map(identifiers, ~f=(. (_loc, x)) => getBindingOrNull(props, x))
+      let data = NonEmpty.map(identifiers, ~f=(. #Binding(_loc, x)) => getBindingOrNull(props, x))
       switch Pattern.match(patterns, data, ~loc, ~stack) {
       | #ok(result) => Queue.transfer(result, queue)
       | #errors(e) => Queue.add(queue, error(. e))

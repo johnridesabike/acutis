@@ -190,7 +190,7 @@ type parseData<'a> = {
 @raises(Exit)
 let parseBindingName = tokens =>
   switch Lexer.popExn(tokens) {
-  | Identifier(loc, x) => (loc, x)
+  | Identifier(loc, x) => #Binding(loc, x)
   | t => raise(Exit(Debug.unexpectedToken(t, ~name=Lexer.name(tokens))))
   }
 
