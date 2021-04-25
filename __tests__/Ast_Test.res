@@ -277,8 +277,8 @@ f`,
 {% with {d: false, f} %}
   {{ f }}
 {% /map %}
-{% map g with {h}, index %}
-  {{ index }} {{ g }}
+{% map g with {h}, i %}
+  {{ i }} {{ j }}
 {% /map %}
 `,
       ),
