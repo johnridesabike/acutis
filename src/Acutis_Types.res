@@ -195,13 +195,15 @@ module Ast = {
       | Float(loc, float, escape)
   }
   type trim = TrimStart | TrimEnd | TrimBoth | NoTrim
-  type mapPattern = [Ast_Pattern.binding | Ast_Pattern.arr | Ast_Pattern.dict]
+  type mapArrayPattern = [Ast_Pattern.binding | Ast_Pattern.arr]
+  type mapDictPattern = [Ast_Pattern.binding | Ast_Pattern.dict]
   type rec node<'a> =
     | Text(string, trim)
     // The first echo item that isn't null will be returned.
     | Echo(loc, NonEmpty.t<Echo.t>)
     | Match(loc, NonEmpty.t<Ast_Pattern.binding>, NonEmpty.t<case<'a>>)
-    | Map(loc, mapPattern, NonEmpty.t<case<'a>>)
+    | MapArray(loc, mapArrayPattern, NonEmpty.t<case<'a>>)
+    | MapDict(loc, mapDictPattern, NonEmpty.t<case<'a>>)
     | Component({
         loc: loc,
         name: string,

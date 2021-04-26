@@ -167,21 +167,21 @@ describe("Render essentials", ({test, _}) => {
     expect.value(result).toEqual(#ok(` Carlo.  John.  Megan. `))
   })
 
-  test("Map: objects", ({expect, _}) => {
+  test("Map: dictionaries", ({expect, _}) => {
     let data = dict([
       ("people", json(`{"lisa": {"job": "computers"}, "tommy": {"job": "banking"}}`)),
     ])
     let result = render(
-      `{% map people with {job}, key ~%} {{ key }}: {{ job }}. {% /map %}`,
+      `{% map_dict people with {job}, key ~%} {{ key }}: {{ job }}. {% /map_dict %}`,
       data,
       Compile.Components.empty(),
     )
     expect.value(result).toEqual(#ok(`lisa: computers. tommy: banking. `))
     let result = render(
-      `{% map <
+      `{% map_dict <
           lisa: {job: "computers"},
           tommy: {job: "banking"}
-        > with {job}, key ~%} {{ key }}: {{ job }}. {% /map %}`,
+        > with {job}, key ~%} {{ key }}: {{ job }}. {% /map_dict %}`,
       Js.Dict.empty(),
       Compile.Components.empty(),
     )

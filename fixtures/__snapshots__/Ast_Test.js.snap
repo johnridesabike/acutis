@@ -633,7 +633,7 @@ Array [
     "_1": 3,
   },
   Object {
-    "TAG": 4,
+    "TAG": 5,
     "children": Array [
       Array [
         "G",
@@ -686,7 +686,7 @@ Array [
               "_1": 3,
             },
             Object {
-              "TAG": 4,
+              "TAG": 5,
               "children": Array [],
               "f": undefined,
               "loc": 94,

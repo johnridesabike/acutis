@@ -37,6 +37,7 @@ module Stack: {
     | Section({component: string, section: string})
     | Match
     | Map
+    | MapDict
     | Index(Js.Json.t)
   type t = list<name>
 }
@@ -53,7 +54,8 @@ let unterminatedString: (~loc: loc, ~name: string) => t
 let unknownEscapeSequence: (~loc: loc, ~name: string, ~char: string) => t
 
 /* Parse errors. */
-let badMapTypeParse: (Ast_Pattern.t, ~name: string) => t
+let badMapArrayPattern: (Ast_Pattern.t, ~name: string) => t
+let badMapDictPattern: (Ast_Pattern.t, ~name: string) => t
 let unexpectedToken: (Token.t, ~name: string) => t
 
 /* Compile errors. */
@@ -64,7 +66,8 @@ let uncaughtCompileError: ('e, ~name: string) => t
 
 /* Render errors */
 let badEchoType: (~loc: loc, ~binding: string, ~type_: Js.Json.tagged_t, ~stack: Stack.t) => t
-let badMapType: (~loc: loc, ~binding: string, ~type_: Js.Json.tagged_t, ~stack: Stack.t) => t
+let badMapArrayType: (~loc: loc, ~binding: string, ~type_: Js.Json.tagged_t, ~stack: Stack.t) => t
+let badMapDictType: (~loc: loc, ~binding: string, ~type_: Js.Json.tagged_t, ~stack: Stack.t) => t
 let bindingDoesNotExist: (~loc: loc, ~binding: string, ~stack: Stack.t) => t
 let bindingTypeMismatch: (
   ~data: Js.Json.tagged_t,

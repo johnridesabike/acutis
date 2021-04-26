@@ -302,19 +302,21 @@ let rec parse = (t, tokens, ~until) => {
       aux(Lexer.popExn(tokens))
     | Identifier(loc, "map") =>
       switch Pattern.parseNode(Lexer.popExn(tokens), tokens) {
-      | #...Ast.mapPattern as pattern =>
+      | #...Ast.mapArrayPattern as pattern =>
         let withs = parseWithBlocks(tokens, ~block="map")
-        Queue.add(q, Map(loc, pattern, withs))
+        Queue.add(q, MapArray(loc, pattern, withs))
         aux(Lexer.popExn(tokens))
-      | (#Null(_)
-        | #True(_)
-        | #False(_)
-        | #Tuple(_)
-        | #String(_)
-        | #Int(_)
-        | #Float(_)
-        | #Object(_)) as x =>
-        raise(Exit(Debug.badMapTypeParse(x, ~name=Lexer.name(tokens))))
+      // Using #...Ast_Pattern.t is slightly more performant than _
+      | #...Ast_Pattern.t as x => raise(Exit(Debug.badMapArrayPattern(x, ~name=Lexer.name(tokens))))
+      }
+    | Identifier(loc, "map_dict") =>
+      switch Pattern.parseNode(Lexer.popExn(tokens), tokens) {
+      | #...Ast.mapDictPattern as pattern =>
+        let withs = parseWithBlocks(tokens, ~block="map_dict")
+        Queue.add(q, MapDict(loc, pattern, withs))
+        aux(Lexer.popExn(tokens))
+      // Using #...Ast_Pattern.t is slightly more performant than _
+      | #...Ast_Pattern.t as x => raise(Exit(Debug.badMapDictPattern(x, ~name=Lexer.name(tokens))))
       }
     | Echo(loc) =>
       let {nextToken, data: echoes} = parseEchoes(tokens)
@@ -534,8 +536,17 @@ module Components = {
             nodes: mapNodesExn(nodes, graph),
           }),
         )
-      | Map(l, p, cases) =>
-        Map(
+      | MapArray(l, p, cases) =>
+        MapArray(
+          l,
+          p,
+          NonEmpty.map(cases, ~f=(. {patterns, nodes}): T.Ast.case<_> => {
+            patterns: patterns,
+            nodes: mapNodesExn(nodes, graph),
+          }),
+        )
+      | MapDict(l, p, cases) =>
+        MapDict(
           l,
           p,
           NonEmpty.map(cases, ~f=(. {patterns, nodes}): T.Ast.case<_> => {

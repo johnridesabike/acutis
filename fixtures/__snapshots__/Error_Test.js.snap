@@ -950,6 +950,7 @@ Array [
     },
     "message": "None of the patterns match the data. Consider a catch-all case to avoid this.",
     "path": Array [
+      "map",
       "",
     ],
   },
@@ -1991,7 +1992,7 @@ Array [
     "location": Object {
       "character": 8,
     },
-    "message": "Bad map type: \\"null\\". I can only map bindings, arrays, and dictionaries.",
+    "message": "Bad map type: \\"null\\". I can only map bindings and arrays. (Tip: Use map_dict for dictionaries.)",
     "path": Array [
       "",
     ],
@@ -2101,7 +2102,7 @@ Array [
     "exn": undefined,
     "kind": "Render",
     "location": Object {
-      "character": 12,
+      "character": 17,
     },
     "message": "Binding \\"b\\" does not exist.",
     "path": Array [

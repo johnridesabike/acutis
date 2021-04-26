@@ -39,6 +39,7 @@ module Stack = {
     | Section({component: string, section: string})
     | Match
     | Map
+    | MapDict
     | Index(Js.Json.t)
   type t = list<name>
 
@@ -48,6 +49,7 @@ module Stack = {
     | Section({component, section}) => Js.Json.string(`section: ${component}#${section}`)
     | Match => Js.Json.string("match")
     | Map => Js.Json.string("map")
+    | MapDict => Js.Json.string("map_dict")
     | Index(x) => x
     }
 }
@@ -124,10 +126,21 @@ let unexpectedToken = (t, ~name) => {
   exn: None,
 }
 
-let badMapTypeParse = (t, ~name) => {
+let badMapArrayPattern = (t, ~name) => {
   let t' = T.Ast_Pattern.toString(t)
   {
-    message: `Bad map type: "${t'}". I can only map bindings, arrays, and dictionaries.`,
+    message: `Bad map type: "${t'}". I can only map bindings and arrays. (Tip: Use map_dict for dictionaries.)`,
+    kind: #Parse,
+    location: Some(location(T.Ast_Pattern.toLocation(t))),
+    path: [Js.Json.string(name)],
+    exn: None,
+  }
+}
+
+let badMapDictPattern = (t, ~name) => {
+  let t' = T.Ast_Pattern.toString(t)
+  {
+    message: `Bad map_dict type: "${t'}". I can only use map_dict for bindings and dictionaries. (Tip: Use map for arrays.)`,
     kind: #Parse,
     location: Some(location(T.Ast_Pattern.toLocation(t))),
     path: [Js.Json.string(name)],
@@ -258,13 +271,24 @@ let childDoesNotExist = (~loc, ~child, ~stack) => {
   exn: None,
 }
 
-let badMapType = (~loc, ~binding, ~type_, ~stack) => {
+let badMapArrayType = (~loc, ~binding, ~type_, ~stack) => {
   let type_ = jsonTaggedTToString(type_)
   {
     location: Some(location(loc)),
     path: stackToPath(stack),
     kind: #Type,
     message: `"${binding}" is a ${type_}. I can only map arrays.`,
+    exn: None,
+  }
+}
+
+let badMapDictType = (~loc, ~binding, ~type_, ~stack) => {
+  let type_ = jsonTaggedTToString(type_)
+  {
+    location: Some(location(loc)),
+    path: stackToPath(stack),
+    kind: #Type,
+    message: `"${binding}" is a ${type_}. I can only use map_dict on dictionaries.`,
     exn: None,
   }
 }

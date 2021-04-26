@@ -337,8 +337,8 @@ module Global = {
     ) => Context.set(ctx, k, t, ~loc))
   }
 
-  let unifyMapCases = (
-    id: Ast.mapPattern,
+  let unifyMapArrayCases = (
+    id: Ast.mapArrayPattern,
     NonEmpty(case_hd, case_tl): NonEmpty.t<ref<t>>,
     ctx: Context.t,
     ~loc,
@@ -356,6 +356,24 @@ module Global = {
       let (a_t, _) = fromPattern(a, ctx)
       unify(a_t, ref(Array(case_hd)), ~loc)
       ctx
+    }
+  }
+
+  let unifyMapDictCases = (
+    id: Ast.mapDictPattern,
+    NonEmpty(case_hd, case_tl): NonEmpty.t<ref<t>>,
+    ctx: Context.t,
+    ~loc,
+  ): Context.t => {
+    let int = ref(String)
+    let index = switch case_tl {
+    | [] => int
+    | [tl] => tl
+    | _ => raise(Exit(Debug2.mapPatternSizeMismatch(~loc)))
+    }
+    unify(index, int, ~loc)
+    switch id {
+    | #Binding(loc, binding) => Context.set(ctx, binding, ref(Array(case_hd)), ~loc)
     | #Dict(loc, _) as d =>
       let (t, _) = fromPattern(d, ctx)
       unify(t, ref(Dict(case_hd)), ~loc)
@@ -458,9 +476,12 @@ and checkNodes = (nodes: Ast.nodes<_>, ctx: Context.t): Context.t => {
     | Match(loc, bindingArray, cases) =>
       let casetype = makeCase(cases, ctx, ~loc)
       Global.unifyMatchCases(bindingArray, casetype, ctx)
-    | Map(loc, pattern, cases) =>
+    | MapArray(loc, pattern, cases) =>
       let casetype = makeCase(cases, ctx, ~loc)
-      Global.unifyMapCases(pattern, casetype, ctx, ~loc)
+      Global.unifyMapArrayCases(pattern, casetype, ctx, ~loc)
+    | MapDict(loc, pattern, cases) =>
+      let casetype = makeCase(cases, ctx, ~loc)
+      Global.unifyMapDictCases(pattern, casetype, ctx, ~loc)
     }
   )
 }
