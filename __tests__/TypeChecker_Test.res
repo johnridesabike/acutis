@@ -21,6 +21,34 @@ module Queue = Belt.MutableQueue
 module MutMapString = Belt.MutableMap.String
 module MapString = Belt.Map.String
 
+type rec debug = [
+  | #Polymorphic
+  | #Boolean
+  | #Int
+  | #Float
+  | #String
+  | #Echo
+  | #Nullable(debug)
+  | #Array(debug)
+  | #Tuple(array<debug>)
+  | #Dict(debug)
+  | #Object(array<(string, debug)>)
+]
+let rec debug = (x): debug =>
+  switch x.contents {
+  | Polymorphic => #Polymorphic
+  | Boolean => #Boolean
+  | Int => #Int
+  | Float => #Float
+  | String => #String
+  | Echo => #Echo
+  | Nullable(x) => #Nullable(debug(x))
+  | Array(x) => #Array(debug(x))
+  | Tuple(x) => #Tuple(Array.map(x.contents, debug))
+  | Dict(x) => #Dict(debug(x))
+  | Object(x) => #Object(MapString.map(x.contents, debug)->MapString.toArray)
+  }
+
 describe("basic", ({test, _}) => {
   test("pattern", ({expect, _}) => {
     let pat1: T.Ast_Pattern.t = #Object(
@@ -43,9 +71,9 @@ describe("basic", ({test, _}) => {
     )
     let (t1, _) = Local.fromPattern(pat1, Context.make())
     let (t2, _) = Local.fromPattern(pat2, Context.make())
-    unify(t1, t2)
+    unify(t1, t2, ~loc=Loc(1))
     expect.value(debug(t1)).toEqual(
-      #Record([
+      #Object([
         ("a", #Boolean),
         ("b", #Nullable(#String)),
         ("c", #Nullable(#Float)),
@@ -73,7 +101,7 @@ describe("match", ({test, _}) => {
     `
     let nodes = Compile.makeAstInternalExn(~name="test", src)
     let bindingsGlobal = make(nodes)->MapString.map(debug)->MapString.toArray
-    expect.value(bindingsGlobal).toEqual([("a", #Record([("b", #Nullable(#Int))]))])
+    expect.value(bindingsGlobal).toEqual([("a", #Object([("b", #Nullable(#Int))]))])
     let src = `
     {% match a with {b: {c}, d } %}
       {% match c with 1 %} {{ d }} {% with null %} {% /match %}
@@ -82,7 +110,7 @@ describe("match", ({test, _}) => {
     let nodes = Compile.makeAstInternalExn(~name="test", src)
     let bindingsGlobal = make(nodes)->MapString.map(debug)->MapString.toArray
     expect.value(bindingsGlobal).toEqual([
-      ("a", #Record([("b", #Record([("c", #Nullable(#Int))])), ("d", #Echo)])),
+      ("a", #Object([("b", #Object([("c", #Nullable(#Int))])), ("d", #Echo)])),
     ])
   })
 
@@ -95,7 +123,7 @@ describe("match", ({test, _}) => {
     let nodes = Compile.makeAstInternalExn(~name="test", src)
     let bindingsGlobal = make(nodes)->MapString.map(debug)->MapString.toArray
     expect.value(bindingsGlobal).toEqual([
-      ("a", #Record([("c", #Nullable(#Record([("d", #Int)])))])),
+      ("a", #Object([("c", #Nullable(#Object([("d", #Int)])))])),
       ("b", #Int),
     ])
   })
@@ -123,7 +151,7 @@ describe("match", ({test, _}) => {
     expect.value(bindingsGlobal).toEqual([
       ("a", #Nullable(#Echo)),
       ("b", #Echo),
-      ("c", #Record([("d", #Echo), ("e", #Int), ("f", #Record([("g", #Nullable(#String))]))])),
+      ("c", #Object([("d", #Echo), ("e", #Int), ("f", #Object([("g", #Nullable(#String))]))])),
     ])
   })
 })

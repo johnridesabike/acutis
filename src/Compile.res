@@ -444,6 +444,8 @@ and parseProps = tokens => {
 let makeAstInternalExn = (~name, source) => {
   let tokens = Lexer.make(source, ~name)
   let {data, _} = parse(Lexer.popExn(tokens), tokens, ~until=endOfFile)
+  // check the types for testing but ignore them for now.
+  TypeChecker.make(data)->ignore
   data
 }
 

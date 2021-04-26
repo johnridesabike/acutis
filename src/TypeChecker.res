@@ -13,12 +13,14 @@
    See the License for the specific language governing permissions and
    limitations under the License.
 */
-
 module Array = Belt.Array
 module Ast = Acutis_Types.Ast
 module Ast_Pattern = Acutis_Types.Ast_Pattern
+module Debug2 = TypeChecker_Debug
 module MapString = Belt.Map.String
 module Queue = Belt.MutableQueue
+
+exception Exit = Debug.Exit
 
 module NonEmpty = {
   include Acutis_Types.NonEmpty
@@ -26,13 +28,9 @@ module NonEmpty = {
   //let hd = (NonEmpty(hd, _)) => hd
 
   //let eq = (NonEmpty(hd1, tl1), NonEmpty(hd2, tl2), ~f) => f(. hd1, hd2) && Array.eqU(tl1, tl2, f)
+  let size = (NonEmpty(_, tl)) => Array.size(tl) + 1
 
-  let zipExn = (NonEmpty(hd1, tl1), NonEmpty(hd2, tl2)) =>
-    if Array.size(tl1) == Array.size(tl2) {
-      NonEmpty((hd1, hd2), Array.zip(tl1, tl2))
-    } else {
-      assert false
-    }
+  let zipExn = (NonEmpty(hd1, tl1), NonEmpty(hd2, tl2)) => NonEmpty((hd1, hd2), Array.zip(tl1, tl2))
 
   /*
   let unzip = (NonEmpty((hd1, hd2), tl)) => {
@@ -72,55 +70,50 @@ type rec t =
   | Echo
   | Nullable(ref<t>)
   | Array(ref<t>)
+  | Dict(ref<t>)
   // 0 and 1 sized tuples are legal.
   | Tuple(ref<array<ref<t>>>)
-  | Dict(ref<t>)
-  | Record(ref<MapString.t<ref<t>>>)
+  | Object(ref<MapString.t<ref<t>>>)
 // The discriminant field, common field, and variant fields cannot intersect.
 //| UnionStr({discriminant: string, common: MapString.t<t>, variants: MapString.t<MapString.t<t>>})
 //| UnionInt({discriminant: string, common: MapString.t<t>, variants: MapInt.t<MapString.t<t>>})
 
+let rec toString = x =>
+  switch x.contents {
+  | Polymorphic => "polymorphic"
+  | Boolean => "boolean"
+  | Int => "int"
+  | Float => "float"
+  | String => "string"
+  | Echo => "echoable"
+  | Nullable(x) => `nullable(${toString(x)})`
+  | Array(x) => `array [${toString(x)}]`
+  | Dict(x) => `dictionary <${toString(x)}>`
+  | Tuple(x) =>
+    let x = Array.joinWith(x.contents, ", ", toString)
+    `tuple (${x})`
+  | Object(x) =>
+    let x =
+      MapString.toArray(x.contents)->Array.joinWith(", ", ((k, v)) => `"${k}": ${toString(v)}`)
+    `object {${x}}`
+  }
+
 module Child = {
   type t = Child | NullableChild
+  let toString = x =>
+    switch x.contents {
+    | Child => "Child"
+    | NullableChild => "NullableChild"
+    }
   let unify = (a: ref<t>, b: ref<t>) =>
     if a.contents == b.contents {
       ()
     } else {
-      assert false
+      raise(Exit(Debug2.childTypeMismatch(a, b, ~f=toString)))
     }
 }
 
-type rec debug = [
-  | #Polymorphic
-  | #Boolean
-  | #Int
-  | #Float
-  | #String
-  | #Echo
-  | #Nullable(debug)
-  | #Array(debug)
-  | #Tuple(array<debug>)
-  | #Dict(debug)
-  | #Record(array<(string, debug)>)
-]
-let rec debug = (x): debug =>
-  switch x.contents {
-  | Polymorphic => #Polymorphic
-  | Boolean => #Boolean
-  | Int => #Int
-  | Float => #Float
-  | String => #String
-  | Echo => #Echo
-  | Nullable(x) => #Nullable(debug(x))
-  | Array(x) => #Array(debug(x))
-  | Tuple(x) => #Tuple(Array.map(x.contents, debug))
-  | Dict(x) => #Dict(debug(x))
-  | Record(x) => #Record(MapString.map(x.contents, debug)->MapString.toArray)
-  }
-
-exception Fail(debug, debug)
-
-let rec unify = (tref1, tref2): unit =>
+let rec unify = (tref1, tref2, ~loc) =>
   switch (tref1.contents, tref2.contents) {
   | (Boolean, Boolean)
   | (Int, Int)
@@ -130,33 +123,30 @@ let rec unify = (tref1, tref2): unit =>
   | (t, Polymorphic) => tref2 := t
   | (Echo, (Int | Float | String | Echo) as t) => tref1 := t
   | ((Int | Float | String) as t, Echo) => tref2 := t
-  | (Nullable(t1), Nullable(t2)) => unify(t1, t2)
+  | (Nullable(t1), Nullable(t2)) => unify(t1, t2, ~loc)
   | (Nullable(t), _) =>
-    unify(t, tref2)
+    unify(t, tref2, ~loc)
     tref2 := tref1.contents
   | (_, Nullable(t)) =>
-    unify(t, tref1)
+    unify(t, tref1, ~loc)
     tref1 := tref2.contents
-  | (Array(t1), Array(t2)) | (Dict(t1), Dict(t2)) => unify(t1, t2)
-  | (Tuple(t1), Tuple(t2)) => unifyTuple(t1, t2)
-  | (Record(t1), Record(t2)) => unifyRecord(t1, t2)
-  | _ =>
-    let d1 = debug(tref1)
-    let d2 = debug(tref2)
-    raise(Fail(d1, d2))
+  | (Array(t1), Array(t2)) | (Dict(t1), Dict(t2)) => unify(t1, t2, ~loc)
+  | (Tuple(t1), Tuple(t2)) => unifyTuple(t1, t2, ~loc)
+  | (Object(t1), Object(t2)) => unifyObject(t1, t2, ~loc)
+  | _ => raise(Exit(Debug2.typeMismatch(tref1, tref2, ~f=toString, ~loc)))
   }
-and unifyTuple = (t1, t2) => {
+and unifyTuple = (t1, t2, ~loc) => {
   if Array.size(t1.contents) == Array.size(t2.contents) {
-    Array.zip(t1.contents, t2.contents)->Array.forEachU((. (a, b)) => unify(a, b))
+    Array.zip(t1.contents, t2.contents)->Array.forEachU((. (a, b)) => unify(a, b, ~loc))
   } else {
-    assert false
+    raise(Exit(Debug2.tupleSizeMismatch(Array.size(t1.contents), Array.size(t2.contents))))
   }
 }
-and unifyRecord = (t1, t2) => {
+and unifyObject = (t1, t2, ~loc) => {
   let r = MapString.mergeU(t1.contents, t2.contents, (. _, v1, v2) =>
     switch (v1, v2) {
     | (Some(v1) as r, Some(v2)) =>
-      unify(v1, v2)
+      unify(v1, v2, ~loc)
       r
     | (Some(_) as r, None) | (None, Some(_) as r) => r
     | (None, None) => None
@@ -189,12 +179,12 @@ module Context = {
       {...ctx, scope: scope}
     }
 
-  let set = (ctx, k, v) =>
+  let set = (ctx, k, v, ~loc) =>
     updateAux(ctx, k, ~f=(. v') =>
       switch v' {
       | None => Some(v)
       | Some(v') as r =>
-        unify(v', v)
+        unify(v', v, ~loc)
         r
       }
     )
@@ -224,28 +214,28 @@ module Local = {
     | #Tuple(_, t) =>
       let types = Array.mapU(t, (. x) => fromPattern(x, ctx))
       ref(Tuple(ref(types)))
-    | #Array(_, a) =>
+    | #Array(loc, a) =>
       let t = switch a[0] {
       | None => ref(Polymorphic)
       | Some(hd) => fromPattern(hd, ctx)
       }
-      Array.forEachU(a, (. x) => unify(t, fromPattern(x, ctx)))
+      Array.forEachU(a, (. x) => unify(t, fromPattern(x, ctx), ~loc))
       ref(Array(t))
-    | #ArrayWithTailBinding(_, a, #Binding(_, b)) =>
+    | #ArrayWithTailBinding(loc, a, #Binding(_, b)) =>
       let t = switch a[0] {
       | None => ref(Polymorphic)
       | Some(hd) => fromPattern(hd, ctx)
       }
-      Array.forEachU(a, (. x) => unify(t, fromPattern(x, ctx)))
+      Array.forEachU(a, (. x) => unify(t, fromPattern(x, ctx), ~loc))
       let t = ref(Array(t))
       ctx := Context.setLocal(ctx.contents, b, t)
       t
-    | #Dict(_, d) =>
+    | #Dict(loc, d) =>
       let t = switch d[0] {
       | None => ref(Polymorphic)
       | Some((_, hd)) => fromPattern(hd, ctx)
       }
-      Array.forEachU(d, (. (_, x)) => unify(t, fromPattern(x, ctx)))
+      Array.forEachU(d, (. (_, x)) => unify(t, fromPattern(x, ctx), ~loc))
       ref(Dict(t))
     | #Object(_, o) =>
       let types = o->Array.mapU((. (k, x)) => {
@@ -253,7 +243,7 @@ module Local = {
         (k, types)
       })
       let types = MapString.fromArray(types)
-      ref(Record(ref(types)))
+      ref(Object(ref(types)))
     | #Binding(_, b) =>
       let t = ref(Polymorphic)
       ctx := Context.setLocal(ctx.contents, b, t)
@@ -277,28 +267,28 @@ module Global = {
     | #Tuple(_, t) =>
       let types = Array.mapU(t, (. x) => fromPattern(x, q))
       ref(Tuple(ref(types)))
-    | #Array(_, a) =>
+    | #Array(loc, a) =>
       let t = switch a[0] {
       | None => ref(Polymorphic)
       | Some(hd) => fromPattern(hd, q)
       }
-      Array.forEachU(a, (. x) => unify(t, fromPattern(x, q)))
+      Array.forEachU(a, (. x) => unify(t, fromPattern(x, q), ~loc))
       ref(Array(t))
-    | #ArrayWithTailBinding(_, a, #Binding(_, b)) =>
+    | #ArrayWithTailBinding(loc, a, #Binding(bloc, b)) =>
       let t = switch a[0] {
       | None => ref(Polymorphic)
       | Some(hd) => fromPattern(hd, q)
       }
-      Array.forEachU(a, (. x) => unify(t, fromPattern(x, q)))
+      Array.forEachU(a, (. x) => unify(t, fromPattern(x, q), ~loc))
       let t = ref(Array(t))
-      Queue.add(q, (b, t))
+      Queue.add(q, (bloc, b, t))
       t
-    | #Dict(_, d) =>
+    | #Dict(loc, d) =>
       let t = switch d[0] {
       | None => ref(Polymorphic)
       | Some((_, hd)) => fromPattern(hd, q)
       }
-      Array.forEachU(d, (. (_, x)) => unify(t, fromPattern(x, q)))
+      Array.forEachU(d, (. (_, x)) => unify(t, fromPattern(x, q), ~loc))
       ref(Dict(t))
     | #Object(_, o) =>
       let types = o->Array.mapU((. (k, x)) => {
@@ -306,16 +296,16 @@ module Global = {
         (k, types)
       })
       let types = MapString.fromArray(types)
-      ref(Record(ref(types)))
-    | #Binding(_, b) =>
+      ref(Object(ref(types)))
+    | #Binding(loc, b) =>
       let t = ref(Polymorphic)
-      Queue.add(q, (b, t))
+      Queue.add(q, (loc, b, t))
       t
     }
   let fromPattern = (pattern, ctx: Context.t) => {
     let q = Queue.make()
     let t = fromPattern(pattern, q)
-    let ctx = Queue.reduceU(q, ctx, (. ctx, (k, v)) =>
+    let ctx = Queue.reduceU(q, ctx, (. ctx, (loc, k, v)) =>
       switch MapString.get(ctx.scope, k) {
       | None =>
         ctx.global :=
@@ -323,13 +313,13 @@ module Global = {
             switch x {
             | None => Some(v)
             | Some(v') as vopt =>
-              unify(v, v')
+              unify(v, v', ~loc)
               vopt
             }
           )
         ctx
       | Some(v') =>
-        unify(v, v')
+        unify(v, v', ~loc)
         ctx
       }
     )
@@ -343,31 +333,32 @@ module Global = {
   ): Context.t => {
     NonEmpty.zipExn(bindingArray, cases)->NonEmpty.reduce(~init=ctx, ~f=(.
       ctx,
-      (#Binding(_, k), t),
-    ) => Context.set(ctx, k, t))
+      (#Binding(loc, k), t),
+    ) => Context.set(ctx, k, t, ~loc))
   }
 
   let unifyMapCases = (
     id: Ast.mapPattern,
     NonEmpty(case_hd, case_tl): NonEmpty.t<ref<t>>,
     ctx: Context.t,
+    ~loc,
   ): Context.t => {
     let int = ref(Int)
     let index = switch case_tl {
     | [] => int
     | [tl] => tl
-    | _ => assert false
+    | _ => raise(Exit(Debug2.mapPatternSizeMismatch(~loc)))
     }
-    unify(index, int)
+    unify(index, int, ~loc)
     switch id {
-    | #Binding(_, binding) => Context.set(ctx, binding, ref(Array(case_hd)))
-    | (#Array(_) | #ArrayWithTailBinding(_)) as a =>
+    | #Binding(loc, binding) => Context.set(ctx, binding, ref(Array(case_hd)), ~loc)
+    | (#Array(loc, _) | #ArrayWithTailBinding(loc, _, _)) as a =>
       let (a_t, _) = fromPattern(a, ctx)
-      unify(a_t, ref(Array(case_hd)))
+      unify(a_t, ref(Array(case_hd)), ~loc)
       ctx
-    | #Dict(_) as d =>
+    | #Dict(loc, _) as d =>
       let (t, _) = fromPattern(d, ctx)
-      unify(t, ref(Dict(case_hd)))
+      unify(t, ref(Dict(case_hd)), ~loc)
       ctx
     }
   }
@@ -392,16 +383,17 @@ let unifyEchoes = (echoes: NonEmpty.t<Ast.Echo.t>, ctx): Context.t => {
     switch nullables[i] {
     | None =>
       switch default {
-      | Binding(_, binding, _) => Context.set(ctx, binding, ref(Echo))
+      | Binding(loc, binding, _) => Context.set(ctx, binding, ref(Echo), ~loc)
       | Child(_, child) =>
         Context.setChild(ctx, child, ref(Child.Child))
         ctx
       | String(_, _, _) | Int(_, _, _) | Float(_, _, _) => ctx
       }
-    | Some(Binding(_, binding, _)) =>
-      let ctx = Context.set(ctx, binding, ref(Nullable(ref(Echo))))
+    | Some(Binding(loc, binding, _)) =>
+      let ctx = Context.set(ctx, binding, ref(Nullable(ref(Echo))), ~loc)
       aux(succ(i), ctx)
-    | Some(String(_, _, _) | Int(_, _, _) | Float(_, _, _)) => assert false
+    | Some(String(_, _, _) | Int(_, _, _) | Float(_, _, _)) =>
+      raise(Exit(Debug2.nonNullableEchoLiteral()))
     | Some(Child(_, child)) =>
       Context.setChild(ctx, child, ref(Child.NullableChild))
       aux(succ(i), ctx)
@@ -410,17 +402,17 @@ let unifyEchoes = (echoes: NonEmpty.t<Ast.Echo.t>, ctx): Context.t => {
   aux(0, ctx)
 }
 
-let unifyNestedNonEmpty = (cases): NonEmpty.t<ref<t>> => {
+let unifyNestedNonEmpty = (cases, ~loc): NonEmpty.t<ref<t>> => {
   let x = NonEmpty.reduce3(cases, ~f=(. merged, case) => {
     NonEmpty.zipExn(merged, case)->NonEmpty.map(~f=(. (casea, caseb)) => {
-      unify(casea, caseb)
+      unify(casea, caseb, ~loc)
       casea
     })
   })
   x
 }
 
-let rec makeCase = (cases: NonEmpty.t<Ast.case<_>>, ctx: Context.t): NonEmpty.t<ref<t>> => {
+let rec makeCase = (cases: NonEmpty.t<Ast.case<_>>, ctx: Context.t, ~loc): NonEmpty.t<ref<t>> => {
   NonEmpty.map(cases, ~f=(. {patterns, nodes}) => {
     let scopes = Queue.make()
     let casetypes = NonEmpty.map(patterns, ~f=(. pattern) => {
@@ -431,7 +423,7 @@ let rec makeCase = (cases: NonEmpty.t<Ast.case<_>>, ctx: Context.t): NonEmpty.t<
       })
     })->NonEmpty.reduce3(~f=(. merged, pattern) => {
       NonEmpty.zipExn(merged, pattern)->NonEmpty.map(~f=(. (a, b)) => {
-        unify(a, b)
+        unify(a, b, ~loc)
         a
       })
     })
@@ -441,7 +433,7 @@ let rec makeCase = (cases: NonEmpty.t<Ast.case<_>>, ctx: Context.t): NonEmpty.t<
         | (None, None) => None
         | (Some(_) as x, None) | (None, Some(_) as x) => x
         | (Some(a) as x, Some(b)) =>
-          unify(a, b)
+          unify(a, b, ~loc)
           x
         }
       )
@@ -452,7 +444,7 @@ let rec makeCase = (cases: NonEmpty.t<Ast.case<_>>, ctx: Context.t): NonEmpty.t<
     }
     ctx.global := checkNodes(nodes, ctx).global.contents
     casetypes
-  })->unifyNestedNonEmpty
+  })->unifyNestedNonEmpty(~loc)
 }
 and checkNodes = (nodes: Ast.nodes<_>, ctx: Context.t): Context.t => {
   Array.reduceU(nodes, ctx, (. ctx, node) =>
@@ -463,12 +455,12 @@ and checkNodes = (nodes: Ast.nodes<_>, ctx: Context.t): Context.t => {
       let (t, ctx) = Global.fromPattern(#Object(loc, props), ctx)
       ignore(t) // We need to unify this with the Component's signature
       ctx
-    | Match(_, bindingArray, cases) =>
-      let casetype = makeCase(cases, ctx)
+    | Match(loc, bindingArray, cases) =>
+      let casetype = makeCase(cases, ctx, ~loc)
       Global.unifyMatchCases(bindingArray, casetype, ctx)
-    | Map(_, pattern, cases) =>
-      let casetype = makeCase(cases, ctx)
-      Global.unifyMapCases(pattern, casetype, ctx)
+    | Map(loc, pattern, cases) =>
+      let casetype = makeCase(cases, ctx, ~loc)
+      Global.unifyMapCases(pattern, casetype, ctx, ~loc)
     }
   )
 }
@@ -477,3 +469,30 @@ let make = nodes => {
   let ctx = Context.make()
   checkNodes(nodes, ctx).global.contents
 }
+
+let rec validate = (types, json) =>
+  switch (types.contents, Js.Json.classify(json)) {
+  | (Polymorphic, _)
+  | (Boolean, JSONTrue | JSONFalse)
+  | (Int | Float, JSONNumber(_))
+  | (String, JSONString(_))
+  | (Echo, JSONNumber(_) | JSONString(_))
+  | (Nullable(_), JSONNull) => ()
+  | (Nullable(x), _) => validate(x, json)
+  | (Array(x), JSONArray(json)) => Array.forEach(json, json => validate(x, json))
+  | (Dict(x), JSONObject(json)) => json->Js.Dict.values->Array.forEach(json => validate(x, json))
+  | (Tuple(x), JSONArray(json)) =>
+    if Array.size(x.contents) == Array.size(json) {
+      Array.zip(x.contents, json)->Array.forEach(((types, json)) => validate(types, json))
+    } else {
+      assert false
+    }
+  | (Object(x), JSONObject(json)) =>
+    MapString.forEach(x.contents, (k, v) =>
+      switch Js.Dict.get(json, k) {
+      | None => assert false
+      | Some(json) => validate(v, json)
+      }
+    )
+  | _ => assert false
+  }

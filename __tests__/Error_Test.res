@@ -429,10 +429,10 @@ describe("Rendering", ({test, _}) => {
       render("{% map null with {a} %}{{ a }}{% /map %}", data, Compile.Components.empty()),
     ).toMatchSnapshot()
     expect.value(
-      render("{% map [1, 2, ...a] with {a} %}{{ a }}{% /map %}", data, Compile.Components.empty()),
+      render("{% map [1, 2, ...a] with a %}{{ a }}{% /map %}", data, Compile.Components.empty()),
     ).toMatchSnapshot()
     expect.value(
-      render("{% map [1, 2, ...z] with {a} %}{{ a }}{% /map %}", data, Compile.Components.empty()),
+      render("{% map [1, 2, ...z] with a %}{{ a }}{% /map %}", data, Compile.Components.empty()),
     ).toMatchSnapshot()
   })
 

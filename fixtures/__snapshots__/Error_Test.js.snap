@@ -834,25 +834,12 @@ exports[`Patterns Count mismatch failure 2`] = `
 Array [
   Object {
     "exn": undefined,
-    "kind": "Pattern",
+    "kind": "Type",
     "location": Object {
       "character": 4,
     },
-    "message": "The number of patterns does not match the number of data.",
-    "path": Array [
-      "",
-    ],
-  },
-  Object {
-    "exn": undefined,
-    "kind": "Pattern",
-    "location": Object {
-      "character": 4,
-    },
-    "message": "The number of patterns does not match the number of data.",
-    "path": Array [
-      "",
-    ],
+    "message": "Map blocks can only have two patterns per \\"with\\" clause: the item and the index.",
+    "path": Array [],
   },
 ]
 `;
