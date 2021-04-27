@@ -49,6 +49,13 @@ let rec debug = (x): debug =>
   | Object(x) => #Object(MapString.map(x.contents, debug)->MapString.toArray)
   }
 
+let catch = (f): Result.t<_> =>
+  try {
+    #ok(f())
+  } catch {
+  | Debug.Exit(e) => #errors([e])
+  }
+
 describe("basic", ({test, _}) => {
   test("pattern", ({expect, _}) => {
     let pat1: T.Ast_Pattern.t = #Object(
@@ -71,7 +78,7 @@ describe("basic", ({test, _}) => {
     )
     let (t1, _) = Local.fromPattern(pat1, Context.make())
     let (t2, _) = Local.fromPattern(pat2, Context.make())
-    unify(t1, t2, ~loc=Loc(1))
+    unify(t1, t2, Incomplete, ~loc=Loc(1))
     expect.value(debug(t1)).toEqual(
       #Object([
         ("a", #Boolean),
@@ -164,5 +171,38 @@ describe("component", ({test, _}) => {
     let nodes = Compile.makeAstInternalExn(~name="test", src)
     let bindings = make(nodes)->MapString.map(debug)->MapString.toArray
     expect.value(bindings).toEqual([("a", #Int), ("b", #String)])
+  })
+})
+
+describe("complete vs incomplete", ({test, _}) => {
+  test("nullable - global scope", ({expect, _}) => {
+    let src = `
+    {% match a with 1 %} {% with null %} {% /match %}
+    {% match b with 1 %} {% /match %}
+    {% match b with null %} {% /match %}
+    `
+    let bindings = catch(() => {
+      let nodes = Compile.makeAstInternalExn(~name="test", src)
+      make(nodes)->MapString.map(debug)->MapString.toArray
+    })
+    expect.value(bindings).toEqual(
+      #errors([
+        {
+          exn: None,
+          kind: #Type,
+          location: Some({character: 107}),
+          message: "This is type int but expected type nullable(polymorphic).",
+          path: [],
+        },
+      ]),
+    )
+  })
+  test("nullable - local scope", ({expect, _}) => {
+    let src = `
+    {% match a with "a" with null %} {{ a ? "default" }} {% /match %}
+    `
+    let nodes = Compile.makeAstInternalExn(~name="test", src)
+    let bindings = make(nodes)->MapString.map(debug)->MapString.toArray
+    expect.value(bindings).toEqual([("a", #Nullable(#String))])
   })
 })
