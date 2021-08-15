@@ -13,17 +13,20 @@
    See the License for the specific language governing permissions and
    limitations under the License.
 */
+module T = Acutis_Types
 module Array = Belt.Array
-module Ast = Acutis_Types.Ast
-module Ast_Pattern = Acutis_Types.Ast_Pattern
+module Ast = T.Ast
+module Ast_Pattern = T.Ast_Pattern
 module Debug2 = TypeChecker_Debug
 module MapString = Belt.Map.String
 module Queue = Belt.MutableQueue
+module Option = Belt.Option
 
 exception Exit = Debug.Exit
+exception Exit2(string)
 
 module NonEmpty = {
-  include Acutis_Types.NonEmpty
+  include T.NonEmpty
 
   //let hd = (NonEmpty(hd, _)) => hd
 
@@ -73,7 +76,7 @@ type rec t =
   | Dict(ref<t>)
   // 0 and 1 sized tuples are legal.
   | Tuple(ref<array<ref<t>>>)
-  | Object(ref<MapString.t<ref<t>>>)
+  | Record(ref<MapString.t<ref<t>>>)
 // The discriminant field, common field, and variant fields cannot intersect.
 //| UnionStr({discriminant: string, common: MapString.t<t>, variants: MapString.t<MapString.t<t>>})
 //| UnionInt({discriminant: string, common: MapString.t<t>, variants: MapInt.t<MapString.t<t>>})
@@ -92,11 +95,408 @@ let rec toString = x =>
   | Tuple(x) =>
     let x = Array.joinWith(x.contents, ", ", toString)
     `tuple (${x})`
-  | Object(x) =>
+  | Record(x) =>
     let x =
       MapString.toArray(x.contents)->Array.joinWith(", ", ((k, v)) => `"${k}": ${toString(v)}`)
-    `object {${x}}`
+    `record {${x}}`
   }
+
+module Exhaustive = {
+  type types = t
+
+  module FloatSet = {
+    module Id = Belt.Id.MakeComparableU({
+      type t = float
+      let cmp = (. a: t, b: t) => compare(a, b)
+    })
+    type t = Belt.Set.t<Id.t, Id.identity>
+    let empty = Belt.Set.make(~id=module(Id))
+  }
+
+  type rec t =
+    | Exhaustive
+    | Polymorphic
+    | Echo
+    | True
+    | False
+    | Int(Belt.Set.Int.t)
+    | Float(FloatSet.t)
+    | String(Belt.Set.String.t)
+    | Nullable(t)
+    | Array
+    | ArrayWithTailBinding
+    | Dict
+    | Tuple(tupleTree)
+    | Record(recordTree)
+  and tupleTree =
+    | TupleNil
+    | TupleNode({val: t, child: tupleTree, sibling: tupleTree})
+  and recordTree =
+    | RecordNil
+    | RecordNode({key: string, val: t, child: recordTree, sibling: recordTree})
+
+  let rec getUnusedInt = (s, i) =>
+    if Belt.Set.Int.has(s, i) {
+      getUnusedInt(Belt.Set.Int.remove(s, i), succ(i))
+    } else {
+      i
+    }
+
+  let rec getUnusedFloat = (s, i) =>
+    if Belt.Set.has(s, i) {
+      getUnusedFloat(Belt.Set.remove(s, i), i +. 0.125)
+    } else {
+      i
+    }
+
+  /*
+  let rec isExhaustiveAux = (t: t'): option<Ast_Pattern.t> =>
+    switch t {
+    | Polymorphic | Echo => Some(#Binding(Loc(1), "_"))
+    | Boolean(Nil) => None
+    | Boolean(TrueAndFalse) => Some(#True(Loc(0)))
+    | Boolean(True) => Some(#False(Loc(0)))
+    | Boolean(False) => Some(#True(Loc(0)))
+    | Int(s) => Some(#Int(Loc(0), getUnusedInt(s, 0)))
+    | Float(s) => Some(#Float(Loc(0), getUnusedFloat(s, 0.0)))
+    | String(_s) => Some(#Binding(Loc(1), "_"))
+    | Nullable(_, NotNull) => Some(#Null(Loc(0)))
+    | Nullable(t, Null) => isExhaustive(t)
+    | Array(_a) => Some(#Array(Loc(0), [#Binding(T.Loc(0), "_")]))
+    | ArrayWithTailBinding(l) => isExhaustiveArray(l)
+    | Dict(_) => Some(#Dict(Loc(0), [("a", #Binding(T.Loc(0), "_"))]))
+    | Tuple(t) => isExhaustiveTuple(t, 0)
+    | Record(t) => isExhaustiveRecord(t)
+    }
+  and isExhaustiveArray = l =>
+    Belt.List.map(l, a => Array.keepMap(a, isExhaustive))
+    ->Belt.List.keep(a => Array.size(a) != 0)
+    ->Belt.List.head
+    ->Belt.Option.map(_ =>
+      #ArrayWithTailBinding(T.Loc(0), [#Binding(T.Loc(0), "_")], #Binding(T.Loc(0), "_"))
+    )
+  and isExhaustiveTuple = (a, i) =>
+    switch a[i] {
+    | None => None
+    | Some(t) =>
+      switch isExhaustive(t) {
+      | None => isExhaustiveTuple(a, succ(i))
+      | Some(_) as e => e
+      }
+    }
+  and isExhaustiveRecord = m =>
+    switch MapString.minimum(m) {
+    | None => None
+    | Some((k, v)) =>
+      switch isExhaustive(v) {
+      | None => isExhaustiveRecord(MapString.remove(m, k))
+      | Some(_) as e => e
+      }
+    }
+  and isExhaustive = (t): option<Ast_Pattern.t> =>
+    switch t {
+    | Binding => None
+    | Structure(t) => isExhaustiveAux(t)
+    }
+ */
+
+  let rec make = (p: Ast_Pattern.t): t =>
+    switch p {
+    | #Binding(_) => Exhaustive
+    | #True(_) => True
+    | #False(_) => False
+    | #Int(_, i) => Int(Belt.Set.Int.empty->Belt.Set.Int.add(i))
+    | #Float(_, f) => Float(FloatSet.empty->Belt.Set.add(f))
+    | #String(_, s) => String(Belt.Set.String.empty->Belt.Set.String.add(s))
+    | #Null(_) => Nullable(Polymorphic)
+    | #Array(_, _a) => Array
+    | #ArrayWithTailBinding(_, _a, _) => ArrayWithTailBinding
+    | #Dict(_, _d) => Dict
+    | #Tuple(_, t) => Tuple(makeTupleTree(t, 0, ~sibling=TupleNil))
+    | #Object(_, a) => Record(makeRecordTree(MapString.fromArray(a), ~sibling=RecordNil))
+    }
+  and makeTupleTree = (a, i, ~sibling) =>
+    switch a[i] {
+    | None => TupleNil
+    | Some(x) =>
+      TupleNode({
+        val: make(x),
+        child: makeTupleTree(a, succ(i), ~sibling=TupleNil),
+        sibling: sibling,
+      })
+    }
+  and makeRecordTree = (d, ~sibling) =>
+    switch MapString.minimum(d) {
+    | None => RecordNil
+    | Some((k, v)) =>
+      RecordNode({
+        key: k,
+        val: make(v),
+        child: makeRecordTree(MapString.remove(d, k), ~sibling=RecordNil),
+        sibling: sibling,
+      })
+    }
+
+  exception Fail(t, t)
+
+  let rec unify = (a: t, b: t) =>
+    switch (a, b) {
+    | (Exhaustive, _)
+    | (True, True)
+    | (False, False) =>
+      None
+    | (_, Exhaustive) | (True, False) | (False, True) => Some(Exhaustive)
+    | (Int(a), Int(b)) =>
+      let c = Belt.Set.Int.union(a, b)
+      if Belt.Set.Int.eq(a, c) {
+        None
+      } else {
+        Some(Int(c))
+      }
+    | (Float(a), Float(b)) =>
+      let c = Belt.Set.union(a, b)
+      if Belt.Set.eq(a, c) {
+        None
+      } else {
+        Some(Float(c))
+      }
+    | (String(a), String(b)) =>
+      let c = Belt.Set.String.union(a, b)
+      if Belt.Set.String.eq(a, c) {
+        None
+      } else {
+        Some(String(c))
+      }
+    | (Nullable(a), b) =>
+      switch unify(a, b) {
+      | None => None
+      | Some(c) => Some(Nullable(c))
+      }
+    | (a, Nullable(_)) => Some(Nullable(a))
+    | (Tuple(a), Tuple(b)) =>
+      switch unifyTuple(a, b) {
+      | None => None
+      | Some(t) =>
+        switch makeTupleExhaustive(t) {
+        | None => Some(Tuple(t))
+        | Some(_) as t => t
+        }
+      }
+    | _ => assert false
+    }
+
+  and unifyTuple = (a, b) => {
+    switch (a, b) {
+    | (TupleNil, TupleNil) => Some(TupleNil)
+    | (TupleNode(a), TupleNode(b) as bnode) =>
+      switch unify(a.val, b.val) {
+      // The value doesn't unify (its pattern is already covered).
+      // Follow this existing value's children.
+      | None =>
+        switch unifyTuple(a.child, b.child) {
+        // The children weren't able to unify either
+        | None => None
+        // The children unified, so they're a new pattern and create a new
+        // child tree
+        | Some(child) => Some(TupleNode({val: a.val, child: child, sibling: bnode}))
+        }
+      // The value unified, so this is a new pattern.
+      | Some(_) =>
+        // Compare it to the next sibling on this level of the tree.
+        unifyTupleLevel(a.sibling, bnode)
+      }
+    | (TupleNil, TupleNode(_)) | (TupleNode(_), TupleNil) => assert false
+    }
+  }
+  and unifyTupleLevel = (a, b) =>
+    switch (a, b) {
+    | (TupleNil | TupleNode(_), TupleNil) => Some(TupleNil)
+    | (TupleNil, TupleNode(b)) => Some(TupleNode(b))
+    | (TupleNode(a), TupleNode(b) as bNode) =>
+      switch unify(a.val, b.val) {
+      // The value doesn't unify (its pattern is already covered).
+      // Follow this existing value's children.
+      | None =>
+        switch unifyTuple(a.child, b.child) {
+        // The children weren't able to unify either.
+        | None => None
+        // The children unified, so they're a new pattern and create a new child tree.
+        | Some(child) => Some(TupleNode({val: a.val, child: child, sibling: TupleNode(b)}))
+        }
+      // The value unified, so this is a new pattern.
+      | Some(_) =>
+        // Compare it to the next sibling.
+        switch unifyTupleLevel(a.sibling, bNode) {
+        | None => None
+        | Some(sibling) => Some(TupleNode({...a, sibling: sibling}))
+        }
+      }
+    }
+
+  /*
+  (true, true)
+  (true, false)
+  ->
+  TupleNode({
+    val: True,
+    child: TupleNode({
+      val: True,
+      child: TupleNil,
+      sibling: TupleNode({
+        val: False,
+        child: TupleNil,
+        sibling: TupleNil,
+      })
+    }),
+    sibling: TupleNil,
+  })
+  ->
+  TupleNode({
+    val: True,
+    child: TupleNode({
+      val: Exhaustive, // val & sibling are collapsed into Exhaustive
+      val: TupleNil,
+      sibling: TupleNil,
+    }),
+    sibling: TupleNil
+  })
+ */
+
+  and makeTupleLevelExhaustive = (t, tree) =>
+    switch tree {
+    | TupleNil => Some(t)
+    | TupleNode({val, child: TupleNil, sibling}) =>
+      switch unify(t, val) {
+      | None => None
+      | Some(Exhaustive) as x => x
+      | Some(t) => makeTupleLevelExhaustive(t, sibling)
+      }
+    | TupleNode({val, child, sibling}) =>
+      switch makeTupleExhaustive(child) {
+      | Some(Exhaustive) =>
+        switch unify(t, val) {
+        | None => None
+        | Some(Exhaustive) as x => x
+        | Some(t) => makeTupleLevelExhaustive(t, sibling)
+        }
+      | Some(_) | None => None
+      }
+    }
+  and makeTupleExhaustive = tree =>
+    switch tree {
+    | TupleNil => None
+    | TupleNode({val, child: TupleNil, sibling}) =>
+      switch makeTupleLevelExhaustive(val, sibling) {
+      | Some(Exhaustive) as x => x
+      | Some(_) | None => None
+      }
+    | TupleNode({val, child, sibling}) =>
+      switch makeTupleExhaustive(child) {
+      | Some(Exhaustive) =>
+        switch makeTupleLevelExhaustive(val, sibling) {
+        | Some(Exhaustive) as x => x
+        | Some(_) | None => None
+        }
+      | None | Some(_) => None
+      }
+    }
+
+  let rec unifyPattern = (a: t, b: Ast_Pattern.t): option<t> =>
+    switch (a, b) {
+    | (Exhaustive, _)
+    | (True, #True(_))
+    | (False, #False(_))
+    | (Nullable(_), #Null(_)) =>
+      None
+    | (_, #Binding(_)) | (True, #False(_)) | (False, #True(_)) => Some(Exhaustive)
+    | (Int(a), #Int(_, b)) =>
+      let c = Belt.Set.Int.add(a, b)
+      if Belt.Set.Int.eq(a, c) {
+        None
+      } else {
+        Some(Int(c))
+      }
+    | (Float(a), #Float(_, b)) =>
+      let c = Belt.Set.add(a, b)
+      if Belt.Set.eq(a, c) {
+        None
+      } else {
+        Some(Float(c))
+      }
+    | (String(a), #String(_, b)) =>
+      let c = Belt.Set.String.add(a, b)
+      if Belt.Set.String.eq(a, c) {
+        None
+      } else {
+        Some(String(c))
+      }
+    | (Nullable(a), b) =>
+      switch unifyPattern(a, b) {
+      | None => None
+      | Some(c) => Some(Nullable(c))
+      }
+    | (a, #Null(_)) => Some(Nullable(a))
+    | (Tuple(a), #Tuple(_, b)) =>
+      switch unifyTuplePattern(a, b) {
+      | None => None
+      | Some(t) =>
+        switch makeTupleExhaustive(t) {
+        | None => Some(Tuple(t))
+        | Some(_) as t => t
+        }
+      }
+    | _ => assert false
+    }
+  and unifyTuplePattern = (tree, pats) => {
+    let rec aux = (tree, pat_opt, i) =>
+      switch (tree, pat_opt) {
+      // We've reached the end of the tree and still have a pattern.
+      // Return a new tree for this pattern.
+      | (TupleNil, Some(_)) => Some(makeTupleTree(pats, i, ~sibling=tree))
+      // We've reached the end of the tree and the end of the pattern.
+      | (TupleNil, None) => None
+      // We've reached a node. Compare the tuple's current value to it.
+      | (TupleNode({val, child, sibling}), Some(pat)) =>
+        switch unifyPattern(val, pat) {
+        // The value doesn't unify (its pattern is already covered).
+        // Follow this existing value's children
+        | None =>
+          let i = succ(i)
+          switch aux(child, pats[i], i) {
+          // the children weren't able to unify either.
+          | None => None
+          // The children unified, so they're a new pattern and create a new
+          // children tree
+          | Some(child) => Some(TupleNode({val: val, child: child, sibling: sibling}))
+          }
+        // The value unified, so it's a new pattern
+        | Some(_) =>
+          // Compare it to the rest of the items on this level of the tree.
+          switch aux(sibling, pat_opt, i) {
+          //
+          | None => None
+          | Some(sibling) => Some(TupleNode({val: val, child: child, sibling: sibling}))
+          }
+        }
+      | (TupleNode(_), None) => assert false
+      }
+    aux(tree, pats[0], 0)
+  }
+
+  let make = (NonEmpty(hd, tl): NonEmpty.t<Ast_Pattern.t>) => {
+    let hd = make(hd)
+    let rec aux = (acc, i) =>
+      switch tl[i] {
+      | None => Some(acc)
+      | Some(pat) =>
+        switch unify(acc, make(pat)) {
+        | None => None
+        | Some(acc) => aux(acc, succ(i))
+        }
+      }
+    aux(hd, 0)
+  }
+}
 
 module Child = {
   type t = Child | NullableChild
@@ -135,7 +535,7 @@ let rec unify = (tref1, tref2, complete, ~loc) =>
     tref1 := tref2.contents
   | (Array(t1), Array(t2)) | (Dict(t1), Dict(t2)) => unify(t1, t2, complete, ~loc)
   | (Tuple(t1), Tuple(t2)) => unifyTuple(t1, t2, complete, ~loc)
-  | (Object(t1), Object(t2)) => unifyObject(t1, t2, complete, ~loc)
+  | (Record(t1), Record(t2)) => unifyRecord(t1, t2, complete, ~loc)
   | _ => raise(Exit(Debug2.typeMismatch(tref1, tref2, ~f=toString, ~loc)))
   }
 and unifyTuple = (t1, t2, complete, ~loc) => {
@@ -145,7 +545,7 @@ and unifyTuple = (t1, t2, complete, ~loc) => {
     raise(Exit(Debug2.tupleSizeMismatch(Array.size(t1.contents), Array.size(t2.contents))))
   }
 }
-and unifyObject = (t1, t2, complete, ~loc) => {
+and unifyRecord = (t1, t2, complete, ~loc) => {
   let r = MapString.mergeU(t1.contents, t2.contents, (. _, v1, v2) =>
     switch (v1, v2) {
     | (Some(v1) as r, Some(v2)) =>
@@ -246,7 +646,7 @@ module Local = {
         (k, types)
       })
       let types = MapString.fromArray(types)
-      ref(Object(ref(types)))
+      ref(Record(ref(types)))
     | #Binding(_, b) =>
       let t = ref(Polymorphic)
       ctx := Context.setLocal(ctx.contents, b, t)
@@ -299,7 +699,7 @@ module Global = {
         (k, types)
       })
       let types = MapString.fromArray(types)
-      ref(Object(ref(types)))
+      ref(Record(ref(types)))
     | #Binding(loc, b) =>
       let t = ref(Polymorphic)
       Queue.add(q, (loc, b, t))
@@ -511,7 +911,7 @@ let rec validate = (types, json) =>
     } else {
       assert false
     }
-  | (Object(x), JSONObject(json)) =>
+  | (Record(x), JSONObject(json)) =>
     MapString.forEach(x.contents, (k, v) =>
       switch Js.Dict.get(json, k) {
       | None => assert false

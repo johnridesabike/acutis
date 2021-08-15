@@ -32,7 +32,7 @@ type rec debug = [
   | #Array(debug)
   | #Tuple(array<debug>)
   | #Dict(debug)
-  | #Object(array<(string, debug)>)
+  | #Record(array<(string, debug)>)
 ]
 let rec debug = (x): debug =>
   switch x.contents {
@@ -46,7 +46,7 @@ let rec debug = (x): debug =>
   | Array(x) => #Array(debug(x))
   | Tuple(x) => #Tuple(Array.map(x.contents, debug))
   | Dict(x) => #Dict(debug(x))
-  | Object(x) => #Object(MapString.map(x.contents, debug)->MapString.toArray)
+  | Record(x) => #Record(MapString.map(x.contents, debug)->MapString.toArray)
   }
 
 let catch = (f): Result.t<_> =>
@@ -80,7 +80,7 @@ describe("basic", ({test, _}) => {
     let (t2, _) = Local.fromPattern(pat2, Context.make())
     unify(t1, t2, Incomplete, ~loc=Loc(1))
     expect.value(debug(t1)).toEqual(
-      #Object([
+      #Record([
         ("a", #Boolean),
         ("b", #Nullable(#String)),
         ("c", #Nullable(#Float)),
@@ -108,7 +108,7 @@ describe("match", ({test, _}) => {
     `
     let nodes = Compile.makeAstInternalExn(~name="test", src)
     let bindingsGlobal = make(nodes)->MapString.map(debug)->MapString.toArray
-    expect.value(bindingsGlobal).toEqual([("a", #Object([("b", #Nullable(#Int))]))])
+    expect.value(bindingsGlobal).toEqual([("a", #Record([("b", #Nullable(#Int))]))])
     let src = `
     {% match a with {b: {c}, d } %}
       {% match c with 1 %} {{ d }} {% with null %} {% /match %}
@@ -117,7 +117,7 @@ describe("match", ({test, _}) => {
     let nodes = Compile.makeAstInternalExn(~name="test", src)
     let bindingsGlobal = make(nodes)->MapString.map(debug)->MapString.toArray
     expect.value(bindingsGlobal).toEqual([
-      ("a", #Object([("b", #Object([("c", #Nullable(#Int))])), ("d", #Echo)])),
+      ("a", #Record([("b", #Record([("c", #Nullable(#Int))])), ("d", #Echo)])),
     ])
   })
 
@@ -130,7 +130,7 @@ describe("match", ({test, _}) => {
     let nodes = Compile.makeAstInternalExn(~name="test", src)
     let bindingsGlobal = make(nodes)->MapString.map(debug)->MapString.toArray
     expect.value(bindingsGlobal).toEqual([
-      ("a", #Object([("c", #Nullable(#Object([("d", #Int)])))])),
+      ("a", #Record([("c", #Nullable(#Record([("d", #Int)])))])),
       ("b", #Int),
     ])
   })
@@ -158,7 +158,7 @@ describe("match", ({test, _}) => {
     expect.value(bindingsGlobal).toEqual([
       ("a", #Nullable(#Echo)),
       ("b", #Echo),
-      ("c", #Object([("d", #Echo), ("e", #Int), ("f", #Object([("g", #Nullable(#String))]))])),
+      ("c", #Record([("d", #Echo), ("e", #Int), ("f", #Record([("g", #Nullable(#String))]))])),
     ])
   })
 })
@@ -206,3 +206,453 @@ describe("complete vs incomplete", ({test, _}) => {
     expect.value(bindings).toEqual([("a", #Nullable(#String))])
   })
 })
+
+describe("Decision tree", ({test, _}) => {
+  test("Basic dec tree 1", ({expect, _}) => {
+    let l: T.loc = Loc(0)
+    let nodes1: T.Ast.nodes<_> = [Text("nodes1", NoTrim)]
+    let case1: T.Ast.case<_> = {
+      patterns: NonEmpty(
+        NonEmpty(#Int(l, 1), [#Int(l, 2), #Int(l, 3)]),
+        [
+          NonEmpty(#Int(l, 1), [#Int(l, 4), #Int(l, 5)]),
+          NonEmpty(#Int(l, 10), [#Int(l, 20), #Int(l, 30)]),
+          NonEmpty(#Int(l, 10), [#Int(l, 20), #Int(l, 40)]),
+        ],
+      ),
+      nodes: nodes1,
+    }
+    let nodes2: T.Ast.nodes<_> = [Text("nodes2", NoTrim)]
+    let case2: T.Ast.case<_> = {
+      patterns: NonEmpty(
+        NonEmpty(#Int(l, 100), [#Int(l, 102), #Int(l, 103)]),
+        [NonEmpty(#Int(l, 100), [#Int(l, 104), #Int(l, 105)])],
+      ),
+      nodes: nodes2,
+    }
+    let nodes3: T.Ast.nodes<_> = [Text("nodes3", NoTrim)]
+    let case3: T.Ast.case<_> = {
+      patterns: NonEmpty(
+        NonEmpty(#Int(l, 10), [#Int(l, 20), #Int(l, 50)]),
+        [
+          NonEmpty(#Int(l, 1), [#Int(l, 2), #Int(l, 100)]),
+          NonEmpty(#Int(l, 1), [#Int(l, 2), #Int(l, 101)]),
+          NonEmpty(#Int(l, 100), [#Int(l, 102), #Int(l, 106)]),
+        ],
+      ),
+      nodes: nodes3,
+    }
+    let result = Matching.make(NonEmpty(case1, [case2, case3])).tree
+    expect.value(result).toEqual(
+      Test({
+        default: None,
+        tests: {
+          val: TInt(1),
+          ifmatch: Test({
+            default: None,
+            tests: {
+              val: TInt(2),
+              ifmatch: Test({
+                default: None,
+                tests: {
+                  val: TInt(3),
+                  ifmatch: Leaf(0),
+                  ifnomatch: Some({
+                    val: TInt(100),
+                    ifmatch: Leaf(2),
+                    ifnomatch: Some({
+                      val: TInt(101),
+                      ifmatch: Leaf(2),
+                      ifnomatch: None,
+                    }),
+                  }),
+                },
+              }),
+              ifnomatch: Some({
+                val: TInt(4),
+                ifmatch: Test({
+                  default: None,
+                  tests: {
+                    val: TInt(5),
+                    ifmatch: Leaf(0),
+                    ifnomatch: None,
+                  },
+                }),
+                ifnomatch: None,
+              }),
+            },
+          }),
+          ifnomatch: Some({
+            val: TInt(10),
+            ifmatch: Test({
+              default: None,
+              tests: {
+                val: TInt(20),
+                ifmatch: Test({
+                  default: None,
+                  tests: {
+                    val: TInt(30),
+                    ifmatch: Leaf(0),
+                    ifnomatch: Some({
+                      val: TInt(40),
+                      ifmatch: Leaf(0),
+                      ifnomatch: Some({
+                        val: TInt(50),
+                        ifmatch: Leaf(2),
+                        ifnomatch: None,
+                      }),
+                    }),
+                  },
+                }),
+                ifnomatch: None,
+              },
+            }),
+            ifnomatch: Some({
+              val: TInt(100),
+              ifmatch: Test({
+                default: None,
+                tests: {
+                  val: TInt(102),
+                  ifmatch: Test({
+                    default: None,
+                    tests: {
+                      val: TInt(103),
+                      ifmatch: Leaf(1),
+                      ifnomatch: Some({
+                        val: TInt(106),
+                        ifmatch: Leaf(2),
+                        ifnomatch: None,
+                      }),
+                    },
+                  }),
+                  ifnomatch: Some({
+                    val: TInt(104),
+                    ifmatch: Test({
+                      default: None,
+                      tests: {
+                        val: TInt(105),
+                        ifmatch: Leaf(1),
+                        ifnomatch: None,
+                      },
+                    }),
+                    ifnomatch: None,
+                  }),
+                },
+              }),
+              ifnomatch: None,
+            }),
+          }),
+        },
+      }),
+    )
+  })
+  test("Basic dec tree 2", ({expect, _}) => {
+    let l: T.loc = Loc(0)
+    let nodes1: T.Ast.nodes<_> = [Text("a", NoTrim)]
+    let case1: T.Ast.case<_> = {
+      patterns: NonEmpty(
+        NonEmpty(#Int(l, 10), [#Int(l, 11), #Int(l, 12)]),
+        [
+          NonEmpty(#Binding(l, "_"), [#Int(l, 21), #Int(l, 22)]),
+          NonEmpty(#Int(l, 10), [#Int(l, 11), #Int(l, 12)]),
+          NonEmpty(#Int(l, 30), [#Int(l, 31), #Int(l, 32)]),
+          NonEmpty(#Int(l, 30), [#Binding(l, "_"), #Int(l, 42)]),
+          NonEmpty(#Int(l, 30), [#Int(l, 31), #Int(l, 42)]),
+        ],
+      ),
+      nodes: nodes1,
+    }
+
+    let result = Matching.make(NonEmpty(case1, [])).tree
+    expect.value(result).toEqual(
+      Test({
+        tests: {
+          val: TInt(10),
+          ifmatch: Test({
+            default: None,
+            tests: {
+              val: TInt(11),
+              ifmatch: Test({
+                default: None,
+                tests: {
+                  val: TInt(12),
+                  ifmatch: Leaf(0),
+                  ifnomatch: None,
+                },
+              }),
+              ifnomatch: Some({
+                val: TInt(21),
+                ifmatch: Test({
+                  default: None,
+                  tests: {
+                    val: TInt(22),
+                    ifmatch: Leaf(0),
+                    ifnomatch: None,
+                  },
+                }),
+                ifnomatch: None,
+              }),
+            },
+          }),
+          ifnomatch: Some({
+            val: TInt(30),
+            ifmatch: Test({
+              tests: {
+                val: TInt(21),
+                ifmatch: Test({
+                  default: None,
+                  tests: {
+                    val: TInt(22),
+                    ifmatch: Leaf(0),
+                    ifnomatch: Some({
+                      val: TInt(42),
+                      ifmatch: Leaf(0),
+                      ifnomatch: None,
+                    }),
+                  },
+                }),
+                ifnomatch: Some({
+                  val: TInt(31),
+                  ifmatch: Test({
+                    default: None,
+                    tests: {
+                      val: TInt(32),
+                      ifmatch: Leaf(0),
+                      ifnomatch: Some({
+                        val: TInt(42),
+                        ifmatch: Leaf(0),
+                        ifnomatch: None,
+                      }),
+                    },
+                  }),
+                  ifnomatch: None,
+                }),
+              },
+              default: Some(
+                Test({
+                  default: None,
+                  tests: {
+                    val: TInt(42),
+                    ifmatch: Leaf(0),
+                    ifnomatch: None,
+                  },
+                }),
+              ),
+            }),
+            ifnomatch: None,
+          }),
+        },
+        default: Some(
+          Test({
+            default: None,
+            tests: {
+              val: TInt(21),
+              ifmatch: Test({
+                default: None,
+                tests: {
+                  val: TInt(22),
+                  ifmatch: Leaf(0),
+                  ifnomatch: None,
+                },
+              }),
+              ifnomatch: None,
+            },
+          }),
+        ),
+      }),
+    )
+  })
+
+  test("dec tree tuple", ({expect, _}) => {
+    let l: T.loc = Loc(0)
+    let nodes1: T.Ast.nodes<_> = [Text("a", NoTrim)]
+    let case1: T.Ast.case<_> = {
+      patterns: NonEmpty(
+        NonEmpty(#Tuple(l, [#Int(l, 10), #Int(l, 12)]), [#Int(l, 13)]),
+        [
+          NonEmpty(#Tuple(l, [#Int(l, 10), #Int(l, 22)]), [#Int(l, 23)]),
+          NonEmpty(#Binding(l, "_"), [#Int(l, 33)]),
+        ],
+      ),
+      nodes: nodes1,
+    }
+    let result = Matching.make(NonEmpty(case1, [])).tree
+    expect.value(result).toEqual(
+      Tuple({
+        contents: Test({
+          tests: {
+            val: TInt(10),
+            ifmatch: Test({
+              tests: {
+                val: TInt(12),
+                ifmatch: End(
+                  Test({
+                    tests: {
+                      val: TInt(13),
+                      ifmatch: Leaf(0),
+                      ifnomatch: Some({
+                        val: TInt(33),
+                        ifmatch: Leaf(0),
+                        ifnomatch: None,
+                      }),
+                    },
+                    default: None,
+                  }),
+                ),
+                ifnomatch: Some({
+                  val: TInt(22),
+                  ifmatch: End(
+                    Test({
+                      tests: {
+                        val: TInt(23),
+                        ifmatch: Leaf(0),
+                        ifnomatch: Some({
+                          val: TInt(33),
+                          ifmatch: Leaf(0),
+                          ifnomatch: None,
+                        }),
+                      },
+                      default: None,
+                    }),
+                  ),
+                  ifnomatch: None,
+                }),
+              },
+              default: None,
+            }),
+            ifnomatch: None,
+          },
+          default: None,
+        }),
+        default: Some(
+          Test({
+            tests: {
+              val: TInt(33),
+              ifmatch: Leaf(0),
+              ifnomatch: None,
+            },
+            default: None,
+          }),
+        ),
+      }),
+    )
+  })
+})
+
+/*
+describe("exhaustive", ({test, _}) => {
+  test("nonexaustive tuple 1", ({expect, _}) => {
+    let pats: T.NonEmpty.t<T.Ast_Pattern.t> = NonEmpty(
+      #Tuple(Loc(0), [#True(Loc(0)), #True(Loc(0))]),
+      [#Tuple(Loc(0), [#True(Loc(0)), #False(Loc(0))])],
+    )
+    let result = Exhaustive.make(pats)
+    expect.value(result).toEqual(
+      Some(
+        Tuple(
+          TupleNode({
+            val: True,
+            child: TupleNode({
+              val: True,
+              child: TupleNil,
+              sibling: TupleNode({
+                val: False,
+                child: TupleNil,
+                sibling: TupleNil,
+              }),
+            }),
+            sibling: TupleNil,
+          }),
+        ),
+      ),
+    )
+  })
+  /*
+  test("nonexaustive tuple 2", ({expect, _}) => {
+    let pats: T.NonEmpty.t<T.Ast_Pattern.t> = NonEmpty(
+      #Tuple(Loc(0), [#True(Loc(0)), #True(Loc(0))]),
+      [
+        #Tuple(Loc(0), [#True(Loc(0)), #False(Loc(0))]),
+        #Tuple(Loc(0), [#True(Loc(0)), #False(Loc(0))]),
+      ],
+    )
+    let result = Exhaustive.make(pats)
+    expect.value(result).toEqual(None)
+  })
+  test("nonexaustive tuple 3", ({expect, _}) => {
+    let pats: T.NonEmpty.t<T.Ast_Pattern.t> = NonEmpty(
+      #Tuple(Loc(0), [#True(Loc(0)), #True(Loc(0))]),
+      [#Tuple(Loc(0), [#Binding(Loc(0), "_"), #False(Loc(0))])],
+    )
+    let result = Exhaustive.make(pats)
+    expect.value(result).toEqual(
+      Some(
+        Tuple(
+          TupleNode({
+            val: True,
+            child: TupleNode({
+              val: True,
+              child: TupleNil,
+              sibling: TupleNil,
+            }),
+            sibling: TupleNode({
+              val: Exhaustive,
+              child: TupleNode({
+                val: False,
+                child: TupleNil,
+                sibling: TupleNil,
+              }),
+              sibling: TupleNil,
+            }),
+          }),
+        ),
+      ),
+    )
+  })
+  test("exhaustive tuple 1", ({expect, _}) => {
+    let pats: T.NonEmpty.t<T.Ast_Pattern.t> = NonEmpty(
+      #Tuple(Loc(0), [#True(Loc(0)), #True(Loc(0))]),
+      [
+        #Tuple(Loc(0), [#True(Loc(0)), #False(Loc(0))]),
+        #Tuple(Loc(0), [#False(Loc(0)), #False(Loc(0))]),
+        #Tuple(Loc(0), [#False(Loc(0)), #True(Loc(0))]),
+      ],
+    )
+    let result = Exhaustive.make(pats)
+    expect.value(result).toEqual(Some(Exhaustive))
+  })
+  test("exhaustive tuple 2", ({expect, _}) => {
+    let pats: T.NonEmpty.t<T.Ast_Pattern.t> = NonEmpty(
+      #Tuple(Loc(0), [#True(Loc(0)), #True(Loc(0))]),
+      [
+        #Tuple(Loc(0), [#True(Loc(0)), #False(Loc(0))]),
+        #Tuple(Loc(0), [#False(Loc(0)), #False(Loc(0))]),
+        #Tuple(Loc(0), [#False(Loc(0)), #True(Loc(0))]),
+        #Tuple(Loc(0), [#False(Loc(0)), #True(Loc(0))]),
+      ],
+    )
+    let result = Exhaustive.make(pats)
+    expect.value(result).toEqual(None)
+  })
+  test("exhaustive tuple 2", ({expect, _}) => {
+    let pats: T.NonEmpty.t<T.Ast_Pattern.t> = NonEmpty(
+      #Tuple(Loc(0), [#True(Loc(0)), #True(Loc(0))]),
+      [
+        #Tuple(Loc(0), [#True(Loc(0)), #False(Loc(0))]),
+        #Tuple(Loc(0), [#False(Loc(0)), #Binding(Loc(0), "_")]),
+      ],
+    )
+    let result = Exhaustive.make(pats)
+    expect.value(result).toEqual(Some(Exhaustive))
+  })
+  test("exhaustive tuple 3", ({expect, _}) => {
+    let pats: T.NonEmpty.t<T.Ast_Pattern.t> = NonEmpty(
+      #Tuple(Loc(0), [#True(Loc(0)), #True(Loc(0))]),
+      [#Tuple(Loc(0), [#Binding(Loc(0), "_"), #Binding(Loc(0), "_")])],
+    )
+    let result = Exhaustive.make(pats)
+    expect.value(result).toEqual(Some(Exhaustive))
+  })
+ */
+})
+*/
