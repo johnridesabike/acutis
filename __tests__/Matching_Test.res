@@ -15,59 +15,58 @@
 */
 open TestFramework
 module T = Acutis_Types
+module TC = TypeChecker
+module NE = TC.NonEmpty2
+let ne = NE.fromArrayUnsafe
 
 describe("Decision tree", ({test, _}) => {
   test("Basic dec tree 1", ({expect, _}) => {
     let l = l => T.Loc(l)
     let nodes1: T.Ast.nodes<_> = [Text("nodes1", NoTrim)]
-    let case1: T.Ast.case<_> = {
-      patterns: NonEmpty(
-        NonEmpty(#Int(l(0), 1), [#Int(l(1), 2), #Int(l(2), 3)]),
-        [
-          NonEmpty(#Int(l(3), 1), [#Int(l(4), 4), #Int(l(5), 5)]),
-          NonEmpty(#Int(l(6), 10), [#Int(l(7), 20), #Int(l(8), 30)]),
-          NonEmpty(#Int(l(9), 10), [#Int(l(10), 20), #Int(l(11), 40)]),
-        ],
-      ),
+    let case1: TC.Ast2.case<_, _> = {
+      pats: [
+        [#Int(l(0), 1), #Int(l(1), 2), #Int(l(2), 3)]->ne,
+        [#Int(l(3), 1), #Int(l(4), 4), #Int(l(5), 5)]->ne,
+        [#Int(l(6), 10), #Int(l(7), 20), #Int(l(8), 30)]->ne,
+        [#Int(l(9), 10), #Int(l(10), 20), #Int(l(11), 40)]->ne,
+      ]->ne,
       nodes: nodes1,
     }
     let nodes2: T.Ast.nodes<_> = [Text("nodes2", NoTrim)]
-    let case2: T.Ast.case<_> = {
-      patterns: NonEmpty(
-        NonEmpty(#Int(l(12), 100), [#Int(l(13), 102), #Int(l(14), 103)]),
-        [NonEmpty(#Int(l(15), 100), [#Int(l(16), 104), #Int(l(17), 105)])],
-      ),
+    let case2: TC.Ast2.case<_, _> = {
+      pats: [
+        [#Int(l(12), 100), #Int(l(13), 102), #Int(l(14), 103)]->ne,
+        [#Int(l(15), 100), #Int(l(16), 104), #Int(l(17), 105)]->ne,
+      ]->ne,
       nodes: nodes2,
     }
     let nodes3: T.Ast.nodes<_> = [Text("nodes3", NoTrim)]
-    let case3: T.Ast.case<_> = {
-      patterns: NonEmpty(
-        NonEmpty(#Int(l(18), 10), [#Int(l(19), 20), #Int(l(20), 50)]),
-        [
-          NonEmpty(#Int(l(21), 1), [#Int(l(22), 2), #Int(l(23), 100)]),
-          NonEmpty(#Int(l(24), 1), [#Int(l(25), 2), #Int(l(26), 101)]),
-          NonEmpty(#Int(l(27), 100), [#Int(l(28), 102), #Int(l(29), 106)]),
-        ],
-      ),
+    let case3: TC.Ast2.case<_, _> = {
+      pats: [
+        [#Int(l(18), 10), #Int(l(19), 20), #Int(l(20), 50)]->ne,
+        [#Int(l(21), 1), #Int(l(22), 2), #Int(l(23), 100)]->ne,
+        [#Int(l(24), 1), #Int(l(25), 2), #Int(l(26), 101)]->ne,
+        [#Int(l(27), 100), #Int(l(28), 102), #Int(l(29), 106)]->ne,
+      ]->ne,
       nodes: nodes3,
     }
-    let result = Matching.make(NonEmpty(case1, [case2, case3])).tree
+    let result = Matching.make2(ne([case1, case2, case3])).tree
     expect.value(result).toEqual(
-      Test({
+      Switch({
         key: "",
-        ids: [],
+        names: [],
         wildcard: None,
         cases: {
           val: TInt(1),
-          ifMatch: Test({
+          ifMatch: Switch({
             key: "",
-            ids: [],
+            names: [],
             wildcard: None,
             cases: {
               val: TInt(2),
-              ifMatch: Test({
+              ifMatch: Switch({
                 key: "",
-                ids: [],
+                names: [],
                 wildcard: None,
                 cases: {
                   val: TInt(3),
@@ -85,9 +84,9 @@ describe("Decision tree", ({test, _}) => {
               }),
               nextCase: Some({
                 val: TInt(4),
-                ifMatch: Test({
+                ifMatch: Switch({
                   key: "",
-                  ids: [],
+                  names: [],
                   wildcard: None,
                   cases: {
                     val: TInt(5),
@@ -101,15 +100,15 @@ describe("Decision tree", ({test, _}) => {
           }),
           nextCase: Some({
             val: TInt(10),
-            ifMatch: Test({
+            ifMatch: Switch({
               key: "",
-              ids: [],
+              names: [],
               wildcard: None,
               cases: {
                 val: TInt(20),
-                ifMatch: Test({
+                ifMatch: Switch({
                   key: "",
-                  ids: [],
+                  names: [],
                   wildcard: None,
                   cases: {
                     val: TInt(30),
@@ -130,15 +129,15 @@ describe("Decision tree", ({test, _}) => {
             }),
             nextCase: Some({
               val: TInt(100),
-              ifMatch: Test({
+              ifMatch: Switch({
                 key: "",
-                ids: [],
+                names: [],
                 wildcard: None,
                 cases: {
                   val: TInt(102),
-                  ifMatch: Test({
+                  ifMatch: Switch({
                     key: "",
-                    ids: [],
+                    names: [],
                     wildcard: None,
                     cases: {
                       val: TInt(103),
@@ -152,9 +151,9 @@ describe("Decision tree", ({test, _}) => {
                   }),
                   nextCase: Some({
                     val: TInt(104),
-                    ifMatch: Test({
+                    ifMatch: Switch({
                       key: "",
-                      ids: [],
+                      names: [],
                       wildcard: None,
                       cases: {
                         val: TInt(105),
@@ -173,38 +172,38 @@ describe("Decision tree", ({test, _}) => {
       }),
     )
   })
+
   test("Basic dec tree 2", ({expect, _}) => {
     let l = l => T.Loc(l)
     let nodes1: T.Ast.nodes<_> = [Text("a", NoTrim)]
-    let case1: T.Ast.case<_> = {
-      patterns: NonEmpty(
-        NonEmpty(#Int(l(0), 10), [#Int(l(1), 11), #Int(l(2), 12)]),
-        [
-          NonEmpty(#Binding(l(3), "_"), [#Int(l(4), 21), #Int(l(5), 22)]),
-          NonEmpty(#Int(l(6), 10), [#Int(l(7), 11), #Int(l(8), 12)]),
-          NonEmpty(#Int(l(9), 30), [#Int(l(10), 31), #Int(l(11), 32)]),
-          NonEmpty(#Int(l(12), 30), [#Binding(l(13), "_"), #Int(l(14), 42)]),
-          NonEmpty(#Int(l(15), 30), [#Int(l(16), 31), #Int(l(17), 42)]),
-        ],
-      ),
+    let case1: TC.Ast2.case<_, _> = {
+      pats: [
+        [#Int(l(0), 10), #Int(l(1), 11), #Int(l(2), 12)]->ne,
+        [#Binding(l(3), "x"), #Int(l(4), 21), #Int(l(5), 22)]->ne,
+        [#Int(l(6), 10), #Int(l(7), 11), #Int(l(8), 12)]->ne,
+        [#Int(l(9), 30), #Int(l(10), 31), #Int(l(11), 32)]->ne,
+        [#Int(l(12), 30), #Binding(l(13), "y"), #Int(l(14), 42)]->ne,
+        [#Int(l(15), 30), #Int(l(16), 31), #Int(l(17), 42)]->ne,
+      ]->ne,
       nodes: nodes1,
     }
 
-    let result = Matching.make(NonEmpty(case1, [])).tree
+    let result = Matching.make2(ne([case1])).tree
     expect.value(result).toEqual(
-      Test({
+      Switch({
         key: "",
+        names: ["x"],
         cases: {
           val: TInt(10),
-          ifMatch: Test({
+          ifMatch: Switch({
             key: "",
-            ids: [],
+            names: [],
             wildcard: None,
             cases: {
               val: TInt(11),
-              ifMatch: Test({
+              ifMatch: Switch({
                 key: "",
-                ids: [],
+                names: [],
                 wildcard: None,
                 cases: {
                   val: TInt(12),
@@ -214,13 +213,13 @@ describe("Decision tree", ({test, _}) => {
               }),
               nextCase: Some({
                 val: TInt(21),
-                ifMatch: Test({
+                ifMatch: Switch({
                   key: "",
-                  ids: [],
+                  names: [],
                   wildcard: None,
                   cases: {
                     val: TInt(22),
-                    ifMatch: Leaf({bindings: [3], exit: 0}),
+                    ifMatch: Leaf({bindings: ["x"], exit: 0}),
                     nextCase: None,
                   },
                 }),
@@ -230,36 +229,37 @@ describe("Decision tree", ({test, _}) => {
           }),
           nextCase: Some({
             val: TInt(30),
-            ifMatch: Test({
+            ifMatch: Switch({
               key: "",
+              names: [],
               cases: {
                 val: TInt(21),
-                ifMatch: Test({
+                ifMatch: Switch({
                   key: "",
-                  ids: [],
+                  names: [],
                   wildcard: None,
                   cases: {
                     val: TInt(22),
-                    ifMatch: Leaf({bindings: [3], exit: 0}),
+                    ifMatch: Leaf({bindings: ["x"], exit: 0}),
                     nextCase: Some({
                       val: TInt(42),
-                      ifMatch: Leaf({bindings: [13], exit: 0}),
+                      ifMatch: Leaf({bindings: ["y"], exit: 0}),
                       nextCase: None,
                     }),
                   },
                 }),
                 nextCase: Some({
                   val: TInt(31),
-                  ifMatch: Test({
+                  ifMatch: Switch({
                     key: "",
-                    ids: [],
+                    names: [],
                     wildcard: None,
                     cases: {
                       val: TInt(32),
                       ifMatch: Leaf({bindings: [], exit: 0}),
                       nextCase: Some({
                         val: TInt(42),
-                        ifMatch: Leaf({bindings: [13], exit: 0}),
+                        ifMatch: Leaf({bindings: ["y"], exit: 0}),
                         nextCase: None,
                       }),
                     },
@@ -267,15 +267,14 @@ describe("Decision tree", ({test, _}) => {
                   nextCase: None,
                 }),
               },
-              ids: [],
               wildcard: Some(
-                Test({
+                Switch({
                   key: "",
-                  ids: [],
+                  names: [],
                   wildcard: None,
                   cases: {
                     val: TInt(42),
-                    ifMatch: Leaf({bindings: [13], exit: 0}),
+                    ifMatch: Leaf({bindings: ["y"], exit: 0}),
                     nextCase: None,
                   },
                 }),
@@ -284,21 +283,20 @@ describe("Decision tree", ({test, _}) => {
             nextCase: None,
           }),
         },
-        ids: [3],
         wildcard: Some(
-          Test({
+          Switch({
             key: "",
-            ids: [],
+            names: [],
             wildcard: None,
             cases: {
               val: TInt(21),
-              ifMatch: Test({
+              ifMatch: Switch({
                 key: "",
-                ids: [],
+                names: [],
                 wildcard: None,
                 cases: {
                   val: TInt(22),
-                  ifMatch: Leaf({bindings: [3], exit: 0}),
+                  ifMatch: Leaf({bindings: ["x"], exit: 0}),
                   nextCase: None,
                 },
               }),
@@ -313,78 +311,77 @@ describe("Decision tree", ({test, _}) => {
   test("dec tree tuple", ({expect, _}) => {
     let l = l => T.Loc(l)
     let nodes1: T.Ast.nodes<_> = [Text("a", NoTrim)]
-    let case1: T.Ast.case<_> = {
-      patterns: NonEmpty(
-        NonEmpty(#Tuple(l(0), [#Int(l(1), 10), #Int(l(2), 12)]), [#Int(l(3), 13)]),
-        [
-          NonEmpty(#Tuple(l(4), [#Int(l(5), 10), #Int(l(6), 22)]), [#Int(l(7), 23)]),
-          NonEmpty(#Binding(l(8), "_"), [#Int(l(9), 33)]),
-        ],
-      ),
+    let case1: TC.Ast2.case<_, _> = {
+      pats: [
+        [#Tuple(l(0), [#Int(l(1), 10), #Int(l(2), 12)]), #Int(l(3), 13)]->ne,
+        [#Tuple(l(4), [#Int(l(5), 10), #Int(l(6), 22)]), #Int(l(7), 23)]->ne,
+        [#Binding(l(8), "_"), #Int(l(9), 33)]->ne,
+      ]->ne,
       nodes: nodes1,
     }
-    let result = Matching.make(NonEmpty(case1, [])).tree
+    let result = Matching.make2(ne([case1])).tree
     expect.value(result).toEqual(
       Nest({
         key: "",
-        ids: [8],
-        val: TTuple,
-        child: Test({
+        names: [],
+        kind: TTuple,
+        child: Switch({
           key: "",
+          names: [],
           cases: {
             val: TInt(10),
-            ifMatch: Test({
+            ifMatch: Switch({
               key: "",
+              names: [],
               cases: {
                 val: TInt(12),
                 ifMatch: End(
-                  Test({
+                  Switch({
                     key: "",
+                    names: [],
                     cases: {
                       val: TInt(13),
                       ifMatch: Leaf({bindings: [], exit: 0}),
                       nextCase: Some({
                         val: TInt(33),
-                        ifMatch: Leaf({bindings: [8], exit: 0}),
+                        ifMatch: Leaf({bindings: [], exit: 0}),
                         nextCase: None,
                       }),
                     },
-                    ids: [],
                     wildcard: None,
                   }),
                 ),
                 nextCase: Some({
                   val: TInt(22),
                   ifMatch: End(
-                    Test({
+                    Switch({
                       key: "",
+                      names: [],
                       cases: {
                         val: TInt(23),
                         ifMatch: Leaf({bindings: [], exit: 0}),
                         nextCase: Some({
                           val: TInt(33),
-                          ifMatch: Leaf({bindings: [8], exit: 0}),
+                          ifMatch: Leaf({bindings: [], exit: 0}),
                           nextCase: None,
                         }),
                       },
-                      ids: [],
                       wildcard: None,
                     }),
                   ),
                   nextCase: None,
                 }),
               },
-              ids: [],
               wildcard: Some(
                 End(
-                  Test({
+                  Switch({
                     key: "",
+                    names: [],
                     cases: {
                       val: TInt(33),
-                      ifMatch: Leaf({bindings: [8], exit: 0}),
+                      ifMatch: Leaf({bindings: [], exit: 0}),
                       nextCase: None,
                     },
-                    ids: [],
                     wildcard: None,
                   }),
                 ),
@@ -392,17 +389,16 @@ describe("Decision tree", ({test, _}) => {
             }),
             nextCase: None,
           },
-          ids: [],
           wildcard: Some(
             End(
-              Test({
+              Switch({
                 key: "",
+                names: [],
                 cases: {
                   val: TInt(33),
-                  ifMatch: Leaf({bindings: [8], exit: 0}),
+                  ifMatch: Leaf({bindings: [], exit: 0}),
                   nextCase: None,
                 },
-                ids: [],
                 wildcard: None,
               }),
             ),
@@ -418,239 +414,225 @@ describe("Decision tree", ({test, _}) => {
     let nodes2: T.Ast.nodes<_> = [Text("a", NoTrim)]
     let nodes3: T.Ast.nodes<_> = [Text("a", NoTrim)]
     let nodes4: T.Ast.nodes<_> = [Text("a", NoTrim)]
-    let case1: T.Ast.case<_> = {
-      patterns: NonEmpty(
-        NonEmpty(#Array(l(0), [#Int(l(2), 10), #Int(l(3), 11)]), [#Int(l(4), 12)]),
-        [],
-      ),
+    let case1: TC.Ast2.case<_> = {
+      pats: [[#Array(l(0), [#Int(l(2), 10), #Int(l(3), 11)]), #Int(l(4), 12)]->ne]->ne,
       nodes: nodes1,
     }
-    let case2: T.Ast.case<_> = {
-      patterns: NonEmpty(
-        NonEmpty(
+    let case2: TC.Ast2.case<_> = {
+      pats: [
+        [
           #ArrayWithTailBinding(l(5), [#Int(l(6), 10), #Int(l(7), 11)], #Binding(l(8), "x")),
-          [#Int(l(9), 22)],
-        ),
-        [],
-      ),
+          #Int(l(9), 22),
+        ]->ne,
+      ]->ne,
       nodes: nodes2,
     }
-    let case3: T.Ast.case<_> = {
-      patterns: NonEmpty(NonEmpty(#Array(l(10), [#Int(l(11), 30)]), [#Int(l(12), 32)]), []),
+    let case3: TC.Ast2.case<_> = {
+      pats: [[#Array(l(10), [#Int(l(11), 30)]), #Int(l(12), 32)]->ne]->ne,
       nodes: nodes3,
     }
-    let case4: T.Ast.case<_> = {
-      patterns: NonEmpty(NonEmpty(#Binding(l(13), "x"), [#Int(l(14), 42)]), []),
+    let case4: TC.Ast2.case<_> = {
+      pats: [[#Binding(l(13), "y"), #Int(l(14), 42)]->ne]->ne,
       nodes: nodes4,
     }
-    let result = Matching.make(NonEmpty(case1, [case2, case3, case4])).tree
+    let result = Matching.make2(ne([case1, case2, case3, case4])).tree
     expect.value(result).toEqual(
-      Nest({
+      Variant({
         key: "",
-        ids: [13],
-        val: TList,
-        child: Test({
-          key: "",
-          cases: {
-            val: TLCons,
-            ifMatch: Test({
+        names: ["y"],
+        kind: TPat_List,
+        cons: Some(
+          Nest({
+            key: "",
+            names: ["y"],
+            kind: TTuple,
+            child: Switch({
               key: "",
+              names: [],
               cases: {
                 val: TInt(10),
-                ifMatch: Nest({
+                ifMatch: Variant({
                   key: "",
-                  ids: [],
-                  val: TList,
-                  child: Test({
-                    key: "",
-                    cases: {
-                      val: TLCons,
-                      ifMatch: Test({
+                  names: [],
+                  kind: TPat_List,
+                  cons: Some(
+                    Nest({
+                      key: "",
+                      names: [],
+                      kind: TTuple,
+                      child: Switch({
                         key: "",
+                        names: [],
                         cases: {
                           val: TInt(11),
-                          ifMatch: Nest({
+                          ifMatch: Variant({
                             key: "",
-                            ids: [5],
-                            val: TList,
-                            child: Test({
-                              key: "",
-                              cases: {
-                                val: TLNil,
-                                ifMatch: End(
-                                  End(
-                                    End(
-                                      Test({
-                                        key: "",
-                                        cases: {
-                                          val: TInt(12),
-                                          ifMatch: Leaf({bindings: [], exit: 0}),
-                                          nextCase: Some({
-                                            val: TInt(22),
-                                            ifMatch: Leaf({bindings: [5], exit: 1}),
-                                            nextCase: Some({
-                                              val: TInt(42),
-                                              ifMatch: Leaf({bindings: [13], exit: 3}),
-                                              nextCase: None,
-                                            }),
-                                          }),
-                                        },
-                                        ids: [],
-                                        wildcard: None,
-                                      }),
-                                    ),
-                                  ),
-                                ),
-                                nextCase: None,
-                              },
-                              ids: [],
-                              wildcard: Some(
+                            names: ["x"],
+                            kind: TPat_List,
+                            nil: Some(
+                              End(
                                 End(
-                                  End(
-                                    End(
-                                      Test({
-                                        key: "",
-                                        cases: {
-                                          val: TInt(22),
-                                          ifMatch: Leaf({bindings: [5], exit: 1}),
-                                          nextCase: Some({
-                                            val: TInt(42),
-                                            ifMatch: Leaf({bindings: [13], exit: 3}),
-                                            nextCase: None,
-                                          }),
-                                        },
-                                        ids: [],
-                                        wildcard: None,
+                                  Switch({
+                                    key: "",
+                                    names: [],
+                                    cases: {
+                                      val: TInt(12),
+                                      ifMatch: Leaf({bindings: [], exit: 0}),
+                                      nextCase: Some({
+                                        val: TInt(22),
+                                        ifMatch: Leaf({bindings: ["x"], exit: 1}),
+                                        nextCase: Some({
+                                          val: TInt(42),
+                                          ifMatch: Leaf({bindings: ["y"], exit: 3}),
+                                          nextCase: None,
+                                        }),
                                       }),
-                                    ),
-                                  ),
+                                    },
+                                    wildcard: None,
+                                  }),
                                 ),
                               ),
-                            }),
+                            ),
+                            cons: Some(
+                              Wildcard({
+                                key: "",
+                                names: ["x"],
+                                child: End(
+                                  End(
+                                    Switch({
+                                      key: "",
+                                      names: [],
+                                      cases: {
+                                        val: TInt(22),
+                                        ifMatch: Leaf({bindings: ["x"], exit: 1}),
+                                        nextCase: Some({
+                                          val: TInt(42),
+                                          ifMatch: Leaf({bindings: ["y"], exit: 3}),
+                                          nextCase: None,
+                                        }),
+                                      },
+                                      wildcard: None,
+                                    }),
+                                  ),
+                                ),
+                              }),
+                            ),
                           }),
                           nextCase: None,
                         },
-                        ids: [],
                         wildcard: Some(
                           End(
                             End(
-                              Test({
+                              Switch({
                                 key: "",
+                                names: [],
                                 cases: {
                                   val: TInt(42),
-                                  ifMatch: Leaf({bindings: [13], exit: 3}),
+                                  ifMatch: Leaf({bindings: ["y"], exit: 3}),
                                   nextCase: None,
                                 },
-                                ids: [],
                                 wildcard: None,
                               }),
                             ),
                           ),
                         ),
                       }),
-                      nextCase: None,
-                    },
-                    ids: [],
-                    wildcard: Some(
-                      End(
-                        End(
-                          Test({
-                            key: "",
-                            cases: {
-                              val: TInt(42),
-                              ifMatch: Leaf({bindings: [13], exit: 3}),
-                              nextCase: None,
-                            },
-                            ids: [],
-                            wildcard: None,
-                          }),
-                        ),
+                    }),
+                  ),
+                  nil: Some(
+                    Wildcard({
+                      key: "",
+                      names: [],
+                      child: End(
+                        Switch({
+                          key: "",
+                          names: [],
+                          cases: {
+                            val: TInt(42),
+                            ifMatch: Leaf({bindings: ["y"], exit: 3}),
+                            nextCase: None,
+                          },
+                          wildcard: None,
+                        }),
                       ),
-                    ),
-                  }),
+                    }),
+                  ),
                 }),
                 nextCase: Some({
                   val: TInt(30),
-                  ifMatch: Nest({
+                  ifMatch: Variant({
                     key: "",
-                    ids: [],
-                    val: TList,
-                    child: Test({
-                      key: "",
-                      cases: {
-                        val: TLNil,
-                        ifMatch: End(
-                          End(
-                            Test({
-                              key: "",
-                              cases: {
-                                val: TInt(32),
-                                ifMatch: Leaf({bindings: [], exit: 2}),
-                                nextCase: Some({
-                                  val: TInt(42),
-                                  ifMatch: Leaf({bindings: [13], exit: 3}),
-                                  nextCase: None,
-                                }),
-                              },
-                              ids: [],
-                              wildcard: None,
+                    names: [],
+                    kind: TPat_List,
+                    nil: Some(
+                      End(
+                        Switch({
+                          key: "",
+                          names: [],
+                          cases: {
+                            val: TInt(32),
+                            ifMatch: Leaf({bindings: [], exit: 2}),
+                            nextCase: Some({
+                              val: TInt(42),
+                              ifMatch: Leaf({bindings: ["y"], exit: 3}),
+                              nextCase: None,
                             }),
-                          ),
-                        ),
-                        nextCase: None,
-                      },
-                      ids: [],
-                      wildcard: Some(
-                        End(
-                          End(
-                            Test({
-                              key: "",
-                              cases: {
-                                val: TInt(42),
-                                ifMatch: Leaf({bindings: [13], exit: 3}),
-                                nextCase: None,
-                              },
-                              ids: [],
-                              wildcard: None,
-                            }),
-                          ),
-                        ),
+                          },
+                          wildcard: None,
+                        }),
                       ),
-                    }),
+                    ),
+                    cons: Some(
+                      Wildcard({
+                        key: "",
+                        names: [],
+                        child: End(
+                          Switch({
+                            key: "",
+                            names: [],
+                            cases: {
+                              val: TInt(42),
+                              ifMatch: Leaf({bindings: ["y"], exit: 3}),
+                              nextCase: None,
+                            },
+                            wildcard: None,
+                          }),
+                        ),
+                      }),
+                    ),
                   }),
                   nextCase: None,
                 }),
               },
-              ids: [],
               wildcard: Some(
                 End(
-                  Test({
+                  Switch({
                     key: "",
+                    names: [],
                     cases: {
                       val: TInt(42),
-                      ifMatch: Leaf({bindings: [13], exit: 3}),
+                      ifMatch: Leaf({bindings: ["y"], exit: 3}),
                       nextCase: None,
                     },
-                    ids: [],
                     wildcard: None,
                   }),
                 ),
               ),
             }),
-            nextCase: None,
-          },
-          ids: [],
-          wildcard: Some(
-            End(
-              Test({
-                key: "",
-                cases: {val: TInt(42), ifMatch: Leaf({bindings: [13], exit: 3}), nextCase: None},
-                ids: [],
-                wildcard: None,
-              }),
-            ),
-          ),
-        }),
+          }),
+        ),
+        nil: Some(
+          Switch({
+            key: "",
+            names: [],
+            cases: {
+              val: TInt(42),
+              ifMatch: Leaf({bindings: ["y"], exit: 3}),
+              nextCase: None,
+            },
+            wildcard: None,
+          }),
+        ),
       }),
     )
   })
@@ -658,67 +640,71 @@ describe("Decision tree", ({test, _}) => {
   test("Records sort fields correctly", ({expect, _}) => {
     let l: T.loc = Loc(0)
     let nodes1: T.Ast.nodes<_> = [Text("a", NoTrim)]
-    let case1: T.Ast.case<_> = {
-      patterns: NonEmpty(
-        NonEmpty(#Object(l, [("a", #Int(l, 10)), ("b", #Int(l, 11))]), [#Int(l, 12)]),
-        [NonEmpty(#Object(l, [("b", #Int(l, 21)), ("a", #Int(l, 20))]), [#Int(l, 22)])],
-      ),
+    let case1: TC.Ast2.case<_> = {
+      pats: [
+        [#Object(l, [("a", #Int(l, 10)), ("b", #Int(l, 11))]), #Int(l, 12)]->ne,
+        [#Object(l, [("b", #Int(l, 21)), ("a", #Int(l, 20))]), #Int(l, 22)]->ne,
+      ]->ne,
       nodes: nodes1,
     }
-    let result = Matching.make(NonEmpty(case1, [])).tree
+    let result = Matching.make2(ne([case1])).tree
     expect.value(result).toEqual(
       Nest({
         key: "",
-        ids: [],
-        val: TRecord,
-        child: Test({
+        names: [],
+        kind: TRecord,
+        child: Switch({
           key: "a",
+          names: [],
           cases: {
             val: TInt(10),
-            ifMatch: Test({
+            ifMatch: Switch({
               key: "b",
+              names: [],
               cases: {
                 val: TInt(11),
                 ifMatch: End(
-                  Test({
+                  Switch({
                     key: "",
-                    cases: {val: TInt(12), ifMatch: Leaf({bindings: [], exit: 0}), nextCase: None},
-                    ids: [],
+                    names: [],
+                    cases: {
+                      val: TInt(12),
+                      ifMatch: Leaf({bindings: [], exit: 0}),
+                      nextCase: None,
+                    },
                     wildcard: None,
                   }),
                 ),
                 nextCase: None,
               },
-              ids: [],
               wildcard: None,
             }),
             nextCase: Some({
               val: TInt(20),
-              ifMatch: Test({
+              ifMatch: Switch({
                 key: "b",
+                names: [],
                 cases: {
                   val: TInt(21),
                   ifMatch: End(
-                    Test({
+                    Switch({
                       key: "",
+                      names: [],
                       cases: {
                         val: TInt(22),
                         ifMatch: Leaf({bindings: [], exit: 0}),
                         nextCase: None,
                       },
-                      ids: [],
                       wildcard: None,
                     }),
                   ),
                   nextCase: None,
                 },
-                ids: [],
                 wildcard: None,
               }),
               nextCase: None,
             }),
           },
-          ids: [],
           wildcard: None,
         }),
       }),
@@ -728,74 +714,82 @@ describe("Decision tree", ({test, _}) => {
   test("Records: missing fields are automatically wildcards", ({expect, _}) => {
     let l: T.loc = Loc(0)
     let nodes1: T.Ast.nodes<_> = [Text("a", NoTrim)]
-    let case1: T.Ast.case<_> = {
-      patterns: NonEmpty(
-        NonEmpty(#Object(l, [("a", #Int(l, 10)), ("b", #Int(l, 11))]), [#Int(l, 12)]),
-        [NonEmpty(#Object(l, [("b", #Int(l, 21))]), [#Int(l, 22)])],
-      ),
+    let case1: TC.Ast2.case<_> = {
+      pats: [
+        [#Object(l, [("a", #Int(l, 10)), ("b", #Int(l, 11))]), #Int(l, 12)]->ne,
+        [#Object(l, [("b", #Int(l, 21))]), #Int(l, 22)]->ne,
+      ]->ne,
       nodes: nodes1,
     }
-    let result = Matching.make(NonEmpty(case1, [])).tree
+    let result = Matching.make2(ne([case1])).tree
     expect.value(result).toEqual(
       Nest({
         key: "",
-        ids: [],
-        val: TRecord,
-        child: Test({
+        names: [],
+        kind: TRecord,
+        child: Switch({
           key: "a",
+          names: [],
           cases: {
             val: TInt(10),
-            ifMatch: Test({
+            ifMatch: Switch({
               key: "b",
+              names: [],
               cases: {
                 val: TInt(11),
                 ifMatch: End(
-                  Test({
+                  Switch({
                     key: "",
-                    cases: {val: TInt(12), ifMatch: Leaf({bindings: [], exit: 0}), nextCase: None},
-                    ids: [],
+                    names: [],
+                    cases: {
+                      val: TInt(12),
+                      ifMatch: Leaf({bindings: [], exit: 0}),
+                      nextCase: None,
+                    },
                     wildcard: None,
                   }),
                 ),
                 nextCase: Some({
                   val: TInt(21),
                   ifMatch: End(
-                    Test({
+                    Switch({
                       key: "",
+                      names: [],
                       cases: {
                         val: TInt(22),
                         ifMatch: Leaf({bindings: [], exit: 0}),
                         nextCase: None,
                       },
-                      ids: [],
                       wildcard: None,
                     }),
                   ),
                   nextCase: None,
                 }),
               },
-              ids: [],
               wildcard: None,
             }),
             nextCase: None,
           },
-          ids: [],
           wildcard: Some(
-            Test({
+            Switch({
               key: "b",
+              names: [],
               cases: {
                 val: TInt(21),
                 ifMatch: End(
-                  Test({
+                  Switch({
                     key: "",
-                    cases: {val: TInt(22), ifMatch: Leaf({bindings: [], exit: 0}), nextCase: None},
-                    ids: [],
+                    names: [],
+                    cases: {
+                      val: TInt(22),
+                      ifMatch: Leaf({bindings: [], exit: 0}),
+                      nextCase: None,
+                    },
                     wildcard: None,
                   }),
                 ),
                 nextCase: None,
               },
-              ids: [],
               wildcard: None,
             }),
           ),
@@ -810,64 +804,66 @@ describe("Decision tree", ({test, _}) => {
     let nodes2: T.Ast.nodes<_> = [Text("y", NoTrim)]
     let nodes3: T.Ast.nodes<_> = [Text("z", NoTrim)]
     let nodes4: T.Ast.nodes<_> = [Text("zz", NoTrim)]
-    let case1: T.Ast.case<_> = {
-      patterns: NonEmpty(NonEmpty(#Object(l(0), [("b", #Int(l(1), 10))]), []), []),
+    let case1: TC.Ast2.case<_> = {
+      pats: [[#Object(l(0), [("b", #Int(l(1), 10))])]->ne]->ne,
       nodes: nodes1,
     }
-    let case2: T.Ast.case<_> = {
-      patterns: NonEmpty(NonEmpty(#Object(l(2), [("a", #Int(l(3), 20))]), []), []),
+    let case2: TC.Ast2.case<_> = {
+      pats: [[#Object(l(2), [("a", #Int(l(3), 20))])]->ne]->ne,
       nodes: nodes2,
     }
-    let case3: T.Ast.case<_> = {
-      patterns: NonEmpty(NonEmpty(#Object(l(4), [("c", #Int(l(5), 30))]), []), []),
+    let case3: TC.Ast2.case<_> = {
+      pats: [[#Object(l(4), [("c", #Int(l(5), 30))])]->ne]->ne,
       nodes: nodes3,
     }
-    let case4: T.Ast.case<_> = {
-      patterns: NonEmpty(NonEmpty(#Binding(l(6), "_"), []), []),
+    let case4: TC.Ast2.case<_> = {
+      pats: [[#Binding(l(6), "x")]->ne]->ne,
       nodes: nodes4,
     }
-    let result = Matching.make(NonEmpty(case1, [case2, case3, case4])).tree
+    let result = Matching.make2(ne([case1, case2, case3, case4])).tree
     expect.value(result).toEqual(
       Nest({
         key: "",
-        ids: [6],
-        val: TRecord,
-        child: Test({
+        names: ["x"],
+        kind: TRecord,
+        child: Switch({
           key: "a",
+          names: [],
           cases: {
             val: TInt(20),
-            ifMatch: Test({
+            ifMatch: Switch({
               key: "b",
+              names: [],
               cases: {
                 val: TInt(10),
-                ifMatch: End(Leaf({bindings: [], exit: 0})),
+                ifMatch: Wildcard({key: "c", names: [], child: End(Leaf({bindings: [], exit: 0}))}),
                 nextCase: None,
               },
-              ids: [],
-              wildcard: Some(End(Leaf({bindings: [], exit: 1}))),
+              wildcard: Some(
+                Wildcard({key: "c", names: [], child: End(Leaf({bindings: [], exit: 1}))}),
+              ),
             }),
             nextCase: None,
           },
-          ids: [],
           wildcard: Some(
-            Test({
+            Switch({
               key: "b",
+              names: [],
               cases: {
                 val: TInt(10),
-                ifMatch: End(Leaf({bindings: [], exit: 0})),
+                ifMatch: Wildcard({key: "c", names: [], child: End(Leaf({bindings: [], exit: 0}))}),
                 nextCase: None,
               },
-              ids: [],
               wildcard: Some(
-                Test({
+                Switch({
                   key: "c",
+                  names: [],
                   cases: {
                     val: TInt(30),
                     ifMatch: End(Leaf({bindings: [], exit: 2})),
                     nextCase: None,
                   },
-                  ids: [],
-                  wildcard: Some(End(Leaf({bindings: [6], exit: 3}))),
+                  wildcard: Some(End(Leaf({bindings: ["x"], exit: 3}))),
                 }),
               ),
             }),

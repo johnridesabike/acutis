@@ -3,12 +3,13 @@ module Array = Belt.Array
 module Ast = T.Ast
 module Ast_Pattern = T.Ast_Pattern
 module Debug2 = TypeChecker_Debug
-module SetInt = Belt.Set.Int
+module SetString = Belt.Set.String
 module MapString = Belt.Map.String
 module NonEmpty = T.NonEmpty
 module Queue = Belt.MutableQueue
 module Option = Belt.Option
 module SortArray = Belt.SortArray
+module TC = TypeChecker
 
 exception Exit = Debug.Exit
 exception Exit2(string)
@@ -17,31 +18,33 @@ module TestPat = {
   type t =
     | TTrue
     | TFalse
-    | TNull
     | TString(string)
     | TInt(int)
     | TFloat(float)
-    | TLNil
-    | TLCons
 
   type nest =
     | TTuple
     | TRecord
     | TDict
-    | TList
+
+  let make = x =>
+    switch x {
+    | TC.TypedPattern.TPat_False => TFalse
+    | TPat_True => TTrue
+    | TPat_String(s) => TString(s)
+    | TPat_Int(i) => TInt(i)
+    | TPat_Float(f) => TFloat(f)
+    }
 
   let compare = (a, b) =>
     switch (a, b) {
     | (TString(a), TString(b)) => compare(a, b)
     | (TFloat(a), TFloat(b)) => compare(a, b)
     | (TInt(a), TInt(b)) => compare(a, b)
-    | (TTrue, TFalse) | (TLCons, TLNil) => 1
-    | (TFalse, TTrue) | (TLNil, TLCons) => -1
     | (TTrue, TTrue)
-    | (TFalse, TFalse)
-    | (TNull, TNull)
-    | (TLCons, TLCons)
-    | (TLNil, TLNil) => 0
+    | (TFalse, TFalse) => 0
+    | (TTrue, TFalse) => 1
+    | (TFalse, TTrue) => -1
     // If the values are incoherent (not of the same type) then we sort the
     // newer value after the older value. When the type checker validates the
     // tree, it will assume that the earlier value is correct.
@@ -50,36 +53,38 @@ module TestPat = {
 }
 
 module P = {
+  type nc = PNil | PCons
+
   type t =
-    | PTest(string, TestPat.t)
+    | PSwitch(string, TestPat.t)
     | PNest(string, TestPat.nest)
+    | PVariant(string, TC.TypedPattern.variant, nc)
+    | PNull(string)
     | PEnd
-    | PWildcard({loc: T.loc, key: string, name: string})
+    | PWildcard({key: string, name: string})
 
   let compareByKey = (. (ka: string, _), (kb, _)) => compare(ka, kb)
 
   let rec add = (q, k, p: T.Ast_Pattern.t) =>
     switch p {
-    | #Null(_) => Queue.add(q, PTest(k, TNull))
-    | #False(_) => Queue.add(q, PTest(k, TFalse))
-    | #True(_) => Queue.add(q, PTest(k, TTrue))
-    | #String(_, s) => Queue.add(q, PTest(k, TString(s)))
-    | #Int(_, i) => Queue.add(q, PTest(k, TInt(i)))
-    | #Float(_, i) => Queue.add(q, PTest(k, TFloat(i)))
-    | #Binding(loc, x) => Queue.add(q, PWildcard({loc: loc, key: k, name: x}))
+    | #Null(_) => Queue.add(q, PNull(k))
+    | #False(_) => Queue.add(q, PSwitch(k, TFalse))
+    | #True(_) => Queue.add(q, PSwitch(k, TTrue))
+    | #String(_, s) => Queue.add(q, PSwitch(k, TString(s)))
+    | #Int(_, i) => Queue.add(q, PSwitch(k, TInt(i)))
+    | #Float(_, i) => Queue.add(q, PSwitch(k, TFloat(i)))
+    | #Binding(_, x) => Queue.add(q, PWildcard({key: k, name: x}))
     | #Tuple(_, t) =>
       Queue.add(q, PNest(k, TTuple))
       addTuple(q, t, 0)
     | #Array(_, a) =>
       let tail = Queue.make()
-      Queue.add(tail, PNest("", TList))
-      Queue.add(tail, PTest(k, TLNil))
-      Queue.add(tail, PEnd)
-      addList(q, a, 0, ~tail)
-    | #ArrayWithTailBinding(loc, a, #Binding(_, x)) =>
+      Queue.add(tail, PVariant("", TPat_List, PNil))
+      addList(q, k, a, 0, ~tail)
+    | #ArrayWithTailBinding(_, a, #Binding(_, x)) =>
       let tail = Queue.make()
-      Queue.add(tail, PWildcard({loc: loc, key: "", name: x}))
-      addList(q, a, 0, ~tail)
+      Queue.add(tail, PWildcard({key: "", name: x}))
+      addList(q, k, a, 0, ~tail)
     | #Object(_, a) =>
       Queue.add(q, PNest(k, TRecord))
       addKeyValues(q, SortArray.stableSortByU(a, compareByKey), 0)
@@ -87,6 +92,7 @@ module P = {
       Queue.add(q, PNest(k, TDict))
       addKeyValues(q, SortArray.stableSortByU(a, compareByKey), 0)
     }
+
   and addTuple = (q, a, i) =>
     switch a[i] {
     | None => Queue.add(q, PEnd)
@@ -94,16 +100,18 @@ module P = {
       add(q, "", p)
       addTuple(q, a, succ(i))
     }
-  and addList = (q, a, i, ~tail) =>
+
+  and addList = (q, k, a, i, ~tail) =>
     switch a[i] {
     | None => Queue.transfer(tail, q)
     | Some(p) =>
-      Queue.add(q, PNest("", TList))
-      Queue.add(q, PTest("", TLCons))
+      Queue.add(q, PVariant(k, TPat_List, PCons))
+      Queue.add(q, PNest("", TTuple))
       add(q, "", p)
       Queue.add(tail, PEnd)
-      addList(q, a, succ(i), ~tail)
+      addList(q, "", a, succ(i), ~tail)
     }
+
   and addKeyValues = (q, a, i) =>
     switch a[i] {
     | None => Queue.add(q, PEnd)
@@ -126,11 +134,18 @@ module P = {
 }
 
 type rec tree =
-  | Test({key: string, cases: testcase, wildcard: option<tree>, ids: array<int>})
-  | Wildcard(array<int>, string, tree)
-  | Nest({ids: array<int>, key: string, val: TestPat.nest, child: tree})
+  | Switch({names: array<string>, key: string, cases: testcase, wildcard: option<tree>})
+  | Nest({names: array<string>, key: string, kind: TestPat.nest, child: tree})
+  | Variant({
+      key: string,
+      names: array<string>,
+      kind: TC.TypedPattern.variant,
+      nil: option<tree>,
+      cons: option<tree>,
+    })
+  | Wildcard({names: array<string>, key: string, child: tree})
   | End(tree)
-  | Leaf({bindings: array<int>, exit: int})
+  | Leaf({bindings: array<string>, exit: int})
 
 and testcase = {
   val: TestPat.t,
@@ -154,15 +169,14 @@ let rec lvlToEnd = (tree, lvl) =>
   | S(lvl) => lvlToEnd(End(tree), lvl)
   }
 
-let realignByKey = (ka, a, kb, b) => {
+let realignByKey = (ka, a, kb, b) =>
   if ka == kb {
     None
   } else if ka < kb {
-    Some((a, Wildcard([], ka, b)))
+    Some((a, Wildcard({names: [], key: ka, child: b})))
   } else {
-    Some((Wildcard([], kb, a), b))
+    Some((Wildcard({names: [], key: kb, child: a}), b))
   }
-}
 
 exception MergeFail
 
@@ -205,68 +219,121 @@ and mergeTestCases = (~init=?, original, {val, ifMatch, nextCase}) => {
 }
 /* This only keeps successful mergers. */
 @raises(MergeFail)
-and mergeAndKeepWildcardIntoTestCases = (~init=?, a, b) => {
+and mergeAndKeepTestCasesIntoWildcard = (~init=?, ~wildcard, t) => {
   let init = try {
-    Some({...a, ifMatch: merge(a.ifMatch, b), nextCase: init})
+    Some({...t, ifMatch: merge(wildcard, t.ifMatch), nextCase: init})
   } catch {
   | MergeFail => init
   }
-  switch (a.nextCase, init) {
-  | (None, Some(init)) => reverseTestCases(init)
+  switch (t.nextCase, init) {
   | (None, None) => raise(MergeFail)
-  | (Some(a), init) => mergeAndKeepWildcardIntoTestCases(a, b, ~init?)
+  | (None, Some(init)) => reverseTestCases(init)
+  | (Some(t), init) => mergeAndKeepTestCasesIntoWildcard(~wildcard, t, ~init?)
   }
 }
 /* This only keeps successful mergers. */
 @raises(MergeFail)
-and mergeAndKeepTestCasesIntoWildcard = (~init=?, a, b) => {
-  let init = try {
-    Some({...b, ifMatch: merge(a, b.ifMatch), nextCase: init})
-  } catch {
-  | MergeFail => init
+and mergeWildcardAfterNest = (~wildcard, t, lvl) =>
+  switch (t, lvl) {
+  | (End(t), Z) => End(merge(wildcard, t))
+  | (End(t), S(lvl)) => End(mergeWildcardAfterNest(~wildcard, t, lvl))
+  | (Nest(t), lvl) => Nest({...t, child: mergeWildcardAfterNest(~wildcard, t.child, S(lvl))})
+  | (Variant(a), lvl) =>
+    let nil = switch a.nil {
+    | None => Ok(None)
+    | Some(child) =>
+      try {Ok(Some(mergeWildcardAfterNest(~wildcard, child, lvl)))} catch {
+      | MergeFail => Error(MergeFail)
+      }
+    }
+    let cons = switch a.cons {
+    | None => Ok(None)
+    | Some(child) =>
+      try {Ok(Some(mergeWildcardAfterNest(~wildcard, child, lvl)))} catch {
+      | MergeFail => Error(MergeFail)
+      }
+    }
+    switch (nil, cons) {
+    | (Ok(nil), Ok(cons)) => Variant({...a, nil: nil, cons: cons})
+    | (Ok(nil), Error(_)) => Variant({...a, nil: nil})
+    | (Error(_), Ok(cons)) => Variant({...a, cons: cons})
+    | (Error(_), Error(_)) => raise(MergeFail)
+    }
+  | (Wildcard(t), lvl) => Wildcard({...t, child: mergeWildcardAfterNest(~wildcard, t.child, lvl)})
+  | (Switch(t), lvl) =>
+    let wildcard = switch t.wildcard {
+    | None => lvlToEnd(wildcard, lvl)
+    | Some(t) => mergeWildcardAfterNest(~wildcard, t, lvl)
+    }
+    let rec aux = (~init=?, case) => {
+      let init = try {
+        Some({
+          ...case,
+          ifMatch: mergeWildcardAfterNest(~wildcard, case.ifMatch, lvl),
+          nextCase: init,
+        })
+      } catch {
+      | MergeFail => init
+      }
+      switch (case.nextCase, init) {
+      | (None, None) => raise(MergeFail)
+      | (None, Some(init)) =>
+        Switch({...t, cases: reverseTestCases(init), wildcard: Some(wildcard)})
+      | (Some(a), init) => aux(a, ~init?)
+      }
+    }
+    aux(t.cases)
+  | (Leaf(_), _) => assert false
   }
-  switch (b.nextCase, init) {
-  | (None, Some(init)) => reverseTestCases(init)
-  | (None, None) => raise(MergeFail)
-  | (Some(b), init) => mergeAndKeepTestCasesIntoWildcard(a, b, ~init?)
-  }
-}
-and expandWildcardAfterNest = (a, b, lvl) =>
+and expandWildcardAfterNest = (~wildcard, a, lvl) =>
   switch (a, lvl) {
   | (End(a), Z) =>
-    try {End(merge(a, b))} catch {
+    try {End(merge(a, wildcard))} catch {
     | MergeFail => End(a)
     }
-  | (End(a), S(lvl)) => End(expandWildcardAfterNest(a, b, lvl))
-  | (Nest(a), lvl) => Nest({...a, child: expandWildcardAfterNest(a.child, b, S(lvl))})
-  | (Wildcard(l, k, a), lvl) => Wildcard(l, k, expandWildcardAfterNest(a, b, lvl))
-  | (Test(a), lvl) =>
-    let wildcard = switch a.wildcard {
-    | None => lvlToEnd(b, lvl)
-    | Some(a) => expandWildcardAfterNest(a, b, lvl)
+  | (End(a), S(lvl)) => End(expandWildcardAfterNest(~wildcard, a, lvl))
+  | (Nest(a), lvl) => Nest({...a, child: expandWildcardAfterNest(~wildcard, a.child, S(lvl))})
+  | (Variant(a), lvl) =>
+    // Fix this.
+    Variant({
+      ...a,
+      nil: switch a.nil {
+      | None => Some(Wildcard({key: a.key, names: [], child: lvlToEnd(wildcard, lvl)}))
+      | Some(child) => Some(expandWildcardAfterNest(~wildcard, child, lvl))
+      },
+      cons: switch a.cons {
+      | None => Some(Wildcard({key: a.key, names: [], child: lvlToEnd(wildcard, lvl)}))
+      | Some(child) => Some(expandWildcardAfterNest(~wildcard, child, lvl))
+      },
+    })
+  | (Wildcard(a), lvl) => Wildcard({...a, child: expandWildcardAfterNest(~wildcard, a.child, lvl)})
+  | (Switch(a), lvl) =>
+    let wildcard' = switch a.wildcard {
+    | None => lvlToEnd(wildcard, lvl)
+    | Some(a) => expandWildcardAfterNest(~wildcard, a, lvl)
     }
     let rec aux = (~init=?, case) => {
       let init = {
         ...case,
-        ifMatch: expandWildcardAfterNest(case.ifMatch, b, lvl),
+        ifMatch: expandWildcardAfterNest(~wildcard, case.ifMatch, lvl),
         nextCase: init,
       }
       switch case.nextCase {
-      | None => Test({...a, cases: reverseTestCases(init), wildcard: Some(wildcard)})
+      | None => Switch({...a, cases: reverseTestCases(init), wildcard: Some(wildcard')})
       | Some(a) => aux(a, ~init)
       }
     }
     aux(a.cases)
-  | (Leaf(_), _) => a // assert false
+  | (Leaf(_), _) => assert false
   }
-and expandWildcardIntoTestCases = (~init=?, a, b) => {
-  let ifMatch = try {merge(a.ifMatch, b)} catch {
-  | MergeFail => a.ifMatch
+and expandWildcardIntoTestCases = (~init=?, ~wildcard, t) => {
+  let ifMatch = try {merge(t.ifMatch, wildcard)} catch {
+  | MergeFail => t.ifMatch
   }
-  let init = {...a, ifMatch: ifMatch, nextCase: init}
-  switch a.nextCase {
+  let init = {...t, ifMatch: ifMatch, nextCase: init}
+  switch t.nextCase {
   | None => reverseTestCases(init)
-  | Some(a) => expandWildcardIntoTestCases(a, b, ~init)
+  | Some(t) => expandWildcardIntoTestCases(~wildcard, t, ~init)
   }
 }
 @raises(MergeFail)
@@ -279,82 +346,147 @@ and merge = (a, b) =>
   /* Ends */
   | (End(a), End(b)) => End(merge(a, b))
   // Automatically extend rows when new keys are added.
-  | (End(_), Test({key: "", _}) | Wildcard(_, "", _) | Nest({key: "", _}))
-  | (Wildcard(_, "", _) | Nest({key: "", _}) | Test({key: "", _}), End(_)) =>
-    assert false
-  | (End(_) as a, (Test({key, _}) | Wildcard(_, key, _) | Nest({key, _})) as b) =>
-    merge(Wildcard([], key, a), b)
-  | ((Wildcard(_, key, _) | Nest({key, _}) | Test({key, _})) as a, End(_) as b) =>
-    merge(a, Wildcard([], key, b))
+  | (End(_) as a, (Switch({key, _}) | Wildcard({key, _}) | Nest({key, _})) as b) =>
+    merge(Wildcard({names: [], key: key, child: a}), b)
+  | ((Wildcard({key, _}) | Nest({key, _}) | Switch({key, _})) as a, End(_) as b) =>
+    merge(a, Wildcard({names: [], key: key, child: b}))
   /* Wildcards */
-  | (Wildcard(locA, keyA, a) as a', Wildcard(locB, keyB, b) as b') =>
-    switch realignByKey(keyA, a', keyB, b') {
+  | (Wildcard(a) as a', Wildcard(b) as b') =>
+    switch realignByKey(a.key, a', b.key, b') {
     | Some((a, b)) => merge(a, b)
-    | None => Wildcard(Array.concat(locA, locB), keyA, merge(a, b))
+    | None =>
+      Wildcard({...a, names: Array.concat(a.names, b.names), child: merge(a.child, b.child)})
     }
-  | (Wildcard(idsA, keyA, a) as a', Nest(b) as b') =>
-    switch realignByKey(keyA, a', b.key, b') {
+  | (Wildcard(a) as a', Nest(b) as b') =>
+    switch realignByKey(a.key, a', b.key, b') {
     | Some((a, b)) => merge(a, b)
-    | None => Nest({...b, ids: Array.concat(idsA, b.ids), child: merge(a, b.child)})
+    | None =>
+      let child = mergeWildcardAfterNest(~wildcard=a.child, b.child, Z)
+      Nest({...b, names: Array.concat(a.names, b.names), child: child})
     }
-  | (Wildcard(idsA, keyA, a) as a', Test(b) as b') =>
-    switch realignByKey(keyA, a', b.key, b') {
+  | (Wildcard(a) as a', Variant(b)) =>
+    let nil = switch b.nil {
+    | None => Ok(a.child)
+    | Some(b) =>
+      try {Ok(merge(a.child, b))} catch {
+      | MergeFail => Error(MergeFail)
+      }
+    }
+    let cons = switch b.cons {
+    | None => Ok(a')
+    | Some(b) =>
+      try {Ok(merge(a', b))} catch {
+      | MergeFail => Error(MergeFail)
+      }
+    }
+    let names = Array.concat(a.names, b.names)
+    switch (nil, cons) {
+    | (Ok(nil), Ok(cons)) => Variant({...b, names: names, nil: Some(nil), cons: Some(cons)})
+    | (Ok(nil), Error(_)) => Variant({...b, names: names, nil: Some(nil)})
+    | (Error(_), Ok(cons)) => Variant({...b, names: names, cons: Some(cons)})
+    | (Error(_), Error(_)) => raise(MergeFail)
+    }
+  | (Wildcard(a) as a', Switch(b) as b') =>
+    switch realignByKey(a.key, a', b.key, b') {
     | Some((a, b)) => merge(a, b)
     | None =>
       let wildcard = switch b.wildcard {
-      | None => a
-      | Some(b) => merge(a, b)
+      | None => a.child
+      | Some(b) => merge(a.child, b)
       }
-      let cases = mergeAndKeepTestCasesIntoWildcard(wildcard, b.cases)
-      Test({...b, ids: Array.concat(idsA, b.ids), cases: cases, wildcard: Some(wildcard)})
+      let cases = mergeAndKeepTestCasesIntoWildcard(~wildcard, b.cases)
+      Switch({
+        ...b,
+        names: Array.concat(a.names, b.names),
+        cases: cases,
+        wildcard: Some(wildcard),
+      })
     }
   /* Nests */
   | (Nest(a) as a', Nest(b) as b') =>
-    assert (a.val == b.val)
+    assert (a.kind == b.kind)
     switch realignByKey(a.key, a', b.key, b') {
     | Some((a, b)) => merge(a, b)
     | None =>
       let child = merge(a.child, b.child)
-      Nest({...a, ids: Array.concat(a.ids, b.ids), child: child})
+      Nest({...a, names: Array.concat(a.names, b.names), child: child})
     }
-  | (Nest(a) as a', Wildcard(idsB, keyB, b) as b') =>
-    switch realignByKey(a.key, a', keyB, b') {
+  | (Nest(a) as a', Wildcard(b) as b') =>
+    switch realignByKey(a.key, a', a.key, b') {
     | Some((a, b)) => merge(a, b)
     | None =>
-      Nest({...a, ids: Array.concat(a.ids, idsB), child: expandWildcardAfterNest(a.child, b, Z)})
+      let child = expandWildcardAfterNest(a.child, ~wildcard=b.child, Z)
+      Nest({...a, names: Array.concat(a.names, b.names), child: child})
     }
+  /* Variants */
+  | (Variant(a), Wildcard(b) as b') =>
+    let nil = switch a.nil {
+    | None => Ok(b.child)
+    | Some(a) =>
+      try {Ok(merge(a, b.child))} catch {
+      | MergeFail => Error(MergeFail)
+      }
+    }
+    let cons = switch a.cons {
+    | None => Ok(b')
+    | Some(a) =>
+      try {Ok(merge(a, b'))} catch {
+      | MergeFail => Error(MergeFail)
+      }
+    }
+    let names = Array.concat(a.names, b.names)
+    switch (nil, cons) {
+    | (Ok(nil), Ok(cons)) => Variant({...a, names: names, nil: Some(nil), cons: Some(cons)})
+    | (Ok(nil), Error(_)) => Variant({...a, names: names, nil: Some(nil)})
+    | (Error(_), Ok(cons)) => Variant({...a, names: names, cons: Some(cons)})
+    | (Error(_), Error(_)) => raise(MergeFail)
+    }
+  | (Variant(a), Variant(b)) =>
+    assert (a.kind == b.kind)
+    let nil = switch (a.nil, b.nil) {
+    | (None, None) => None
+    | (Some(x), None) | (None, Some(x)) => Some(x)
+    | (Some(a), Some(b)) => Some(merge(a, b))
+    }
+    let cons = switch (a.cons, b.cons) {
+    | (None, None) => None
+    | (Some(x), None) | (None, Some(x)) => Some(x)
+    | (Some(a), Some(b)) => Some(merge(a, b))
+    }
+    Variant({...a, nil: nil, cons: cons})
   /* Tests */
-  | (Test(a) as a', Wildcard(idsB, keyB, b) as b') =>
-    switch realignByKey(a.key, a', keyB, b') {
+  | (Switch(a) as a', Wildcard(b) as b') =>
+    switch realignByKey(a.key, a', b.key, b') {
     | Some((a, b)) => merge(a, b)
     | None =>
       let wildcard = switch a.wildcard {
-      | None => b
-      | Some(a) => merge(a, b)
+      | None => b.child
+      | Some(a) => merge(a, b.child)
       }
-      Test({
+      let cases = expandWildcardIntoTestCases(a.cases, ~wildcard)
+      Switch({
         ...a,
-        cases: expandWildcardIntoTestCases(a.cases, wildcard),
-        ids: Array.concat(a.ids, idsB),
+        names: Array.concat(a.names, b.names),
+        cases: cases,
         wildcard: Some(wildcard),
       })
     }
-  | (Test(a) as a', Test(b) as b') =>
+  | (Switch(a) as a', Switch(b) as b') =>
     switch realignByKey(a.key, a', b.key, b') {
     | Some((a, b)) => merge(a, b)
     | None =>
       let wildcard = switch (a.wildcard, b.wildcard) {
       | (None, None) => Ok(None)
-      | (Some(a), None) | (None, Some(a)) => Ok(Some(a))
+      | (Some(x), None) | (None, Some(x)) => Ok(Some(x))
       | (Some(a), Some(b)) =>
         try {Ok(Some(merge(a, b)))} catch {
-        | e => Error(e)
+        | MergeFail => Error(MergeFail)
         }
       }
       let bcases = switch wildcard {
       | Ok(Some(wildcard)) =>
-        try {Ok(mergeAndKeepWildcardIntoTestCases(b.cases, wildcard))} catch {
-        | e => Error(e)
+        try {Ok(mergeAndKeepTestCasesIntoWildcard(~wildcard, b.cases))} catch {
+        | MergeFail => Error(MergeFail)
         }
       | _ => Ok(b.cases)
       }
@@ -363,41 +495,64 @@ and merge = (a, b) =>
         let cases = mergeTestCases(a.cases, bcases)
         let cases = switch wildcard {
         | None => cases
-        | Some(wildcard) => expandWildcardIntoTestCases(cases, wildcard)
+        | Some(wildcard) => expandWildcardIntoTestCases(cases, ~wildcard)
         }
-        Test({...a, cases: cases, wildcard: wildcard})
+        Switch({...a, cases: cases, wildcard: wildcard})
       | (Ok(bcases), Error(_)) =>
         let cases = mergeTestCases(a.cases, bcases)
         let cases = switch a.wildcard {
         | None => cases
-        | Some(wildcard) => expandWildcardIntoTestCases(cases, wildcard)
+        | Some(wildcard) => expandWildcardIntoTestCases(cases, ~wildcard)
         }
-        Test({...a, cases: cases})
-      | (Error(_), Ok(wildcard)) => Test({...a, wildcard: wildcard})
+        Switch({...a, cases: cases})
+      | (Error(_), Ok(wildcard)) => Switch({...a, wildcard: wildcard})
       | (Error(_), Error(_)) => raise(MergeFail)
       }
     }
-  /* Failure cases... maybe? */
-  | (Test(_), Nest(_))
-  | (Nest(_), Test(_))
-  | (Leaf(_), Test(_) | Wildcard(_) | End(_) | Nest(_))
-  | (Test(_) | Wildcard(_) | End(_) | Nest(_), Leaf(_)) =>
+  /* Failure cases */
+  | (End(_), Variant(_))
+  | (Variant(_), End(_))
+  | (Switch(_), Nest(_) | Variant(_))
+  | (Nest(_) | Variant(_), Switch(_))
+  | (Nest(_), Variant(_))
+  | (Variant(_), Nest(_))
+  | (Leaf(_), Switch(_) | Wildcard(_) | End(_) | Nest(_) | Variant(_))
+  | (Switch(_) | Wildcard(_) | End(_) | Nest(_) | Variant(_), Leaf(_)) =>
     assert false
   }
 
 let rec fromQueue = (q: Queue.t<P.t>, bindings, exit) =>
   switch Queue.pop(q) {
-  | None => Leaf({bindings: SetInt.toArray(bindings), exit: exit})
+  | None => Leaf({bindings: SetString.toArray(bindings), exit: exit})
   | Some(p) =>
     switch p {
-    | PWildcard({loc: Loc(l), key, _}) =>
-      Wildcard([l], key, fromQueue(q, SetInt.add(bindings, l), exit))
-    | PNest(key, val) => Nest({ids: [], key: key, val: val, child: fromQueue(q, bindings, exit)})
-    | PEnd => End(fromQueue(q, bindings, exit))
-    | PTest(key, p) =>
-      Test({
+    | PWildcard({key, name}) =>
+      switch name {
+      | "_" => Wildcard({names: [], key: key, child: fromQueue(q, bindings, exit)})
+      | x => Wildcard({names: [x], key: key, child: fromQueue(q, SetString.add(bindings, x), exit)})
+      }
+    | PNest(key, kind) =>
+      Nest({names: [], key: key, kind: kind, child: fromQueue(q, bindings, exit)})
+    | PVariant(key, tag, nc) =>
+      Variant({
         key: key,
-        ids: [],
+        names: [],
+        kind: tag,
+        nil: switch nc {
+        | PNil => Some(fromQueue(q, bindings, exit))
+        | PCons => None
+        },
+        cons: switch nc {
+        | PCons => Some(fromQueue(q, bindings, exit))
+        | PNil => None
+        },
+      })
+    | PEnd => End(fromQueue(q, bindings, exit))
+    | PNull(_) => assert false
+    | PSwitch(key, p) =>
+      Switch({
+        key: key,
+        names: [],
         cases: {
           val: p,
           ifMatch: fromQueue(q, bindings, exit),
@@ -408,44 +563,149 @@ let rec fromQueue = (q: Queue.t<P.t>, bindings, exit) =>
     }
   }
 
-let fromNonEmpty = (ne, exit) => {
-  let q = P.make(ne)
-  fromQueue(q, SetInt.empty, exit)
+let rec fromTPat = (p, k, bindings, c) =>
+  switch p {
+  | TC.TypedPattern.TPat_Binding(name) =>
+    switch name {
+    | "_" => Wildcard({names: [], key: k, child: c(. bindings)})
+    | x => Wildcard({names: [x], key: k, child: c(. SetString.add(bindings, x))})
+    }
+  | TPat_Variant(kind, Some(cons)) =>
+    Variant({key: k, names: [], kind: kind, nil: None, cons: Some(fromTPat(cons, k, bindings, c))})
+  | TPat_Variant(kind, None) =>
+    Variant({
+      key: k,
+      names: [],
+      kind: kind,
+      nil: Some(c(. bindings)),
+      cons: None,
+    })
+  | TPat_Const(x) =>
+    Switch({
+      key: k,
+      names: [],
+      cases: {
+        val: TestPat.make(x),
+        ifMatch: c(. bindings),
+        nextCase: None,
+      },
+      wildcard: None,
+    })
+  | TPat_Tuple(a) =>
+    Nest({
+      key: k,
+      names: [],
+      kind: TTuple,
+      child: fromArray(a, bindings, 0, (. bindings) => End(c(. bindings))),
+    })
+  | TPat_Record(a) =>
+    Nest({
+      key: k,
+      names: [],
+      kind: TRecord,
+      child: fromKeyValues(a, bindings, 0, (. bindings) => End(c(. bindings))),
+    })
+  | TPat_Dict(a) =>
+    Nest({
+      key: k,
+      names: [],
+      kind: TDict,
+      child: fromKeyValues(a, bindings, 0, (. bindings) => End(c(. bindings))),
+    })
+  }
+and fromArray = (a, bindings, i, c) => {
+  switch a[i] {
+  | None => c(. bindings)
+  | Some(p) => fromTPat(p, "", bindings, (. bindings) => fromArray(a, bindings, succ(i), c))
+  }
+}
+and fromKeyValues = (a, bindings, i, c) => {
+  switch a[i] {
+  | None => c(. bindings)
+  | Some((k, v)) => fromTPat(v, k, bindings, (. bindings) => fromKeyValues(a, bindings, succ(i), c))
+  }
 }
 
-let mergeFromNonEmpty = (a, ne, exit) => {
-  let b = fromNonEmpty(ne, exit)
+let fromArray = (a, ~exit) =>
+  fromArray(a, SetString.empty, 0, (. bindings) => Leaf({
+    bindings: SetString.toArray(bindings),
+    exit: exit,
+  }))
+
+let fromNonEmpty = (ne, exit) => fromQueue(P.make(ne), SetString.empty, exit)
+
+let merge = (a, b) =>
   try {merge(a, b)} catch {
   | MergeFail => a
   }
-}
 
-let rec makeCase = (t, a, i, exit) =>
-  switch a[i] {
-  | None => t
-  | Some(ps) => makeCase(mergeFromNonEmpty(t, ps, exit), a, succ(i), exit)
-  }
+let makeCase2 = (hd, a, ~exit) => {
+  let rec aux = (t, i) =>
+    switch TC.NonEmpty2.get(a, i) {
+    | None => t
+    | Some(ps) =>
+      let b = fromArray(TC.NonEmpty2.toArray(ps), ~exit)
+      let t = merge(t, b)
+      aux(t, succ(i))
+    }
+  aux(hd, 1)
+}
+let makeCaseOld = (t, a, exit) => {
+  let rec aux = (t, i) =>
+    switch a[i] {
+    | None => t
+    | Some(ps) =>
+      let b = fromNonEmpty(ps, exit)
+      let t = merge(t, b)
+      aux(t, succ(i))
+    }
+  aux(t, 0)
+}
 
 type t<'a> = {
   tree: tree,
-  nodes: array<T.Ast.nodes<'a>>,
+  exits: array<T.Ast.nodes<'a>>,
 }
 
-let make = (NonEmpty({patterns: NonEmpty(hd, tl), nodes}, casestl): NonEmpty.t<T.Ast.case<_>>) => {
-  let nodesq = Queue.make()
-  Queue.add(nodesq, nodes)
-  let exit = Queue.size(nodesq) - 1
+let makeOld = (
+  NonEmpty({patterns: NonEmpty(hd, tl), nodes}, casestl): NonEmpty.t<T.Ast.case<_>>,
+) => {
+  let exitq = Queue.make()
+  Queue.add(exitq, nodes)
+  let exit = Queue.size(exitq) - 1
   let hd = fromNonEmpty(hd, exit)
-  let tree = makeCase(hd, tl, 0, exit)
+  let tree = makeCaseOld(hd, tl, exit)
   let rec aux = (tree, i) =>
     switch casestl[i] {
-    | None => {tree: tree, nodes: Queue.toArray(nodesq)}
+    | None => {tree: tree, exits: Queue.toArray(exitq)}
     | Some({patterns: NonEmpty(hd, tl), nodes}) =>
-      Queue.add(nodesq, nodes)
-      let exit = Queue.size(nodesq) - 1
-      let hd = mergeFromNonEmpty(tree, hd, exit)
-      let tree = makeCase(hd, tl, 0, exit)
+      Queue.add(exitq, nodes)
+      let exit = Queue.size(exitq) - 1
+      let hd = merge(tree, fromNonEmpty(hd, exit))
+      let tree = makeCaseOld(hd, tl, exit)
       aux(tree, succ(i))
     }
   aux(tree, 0)
+}
+
+let make2 = cases => {
+  let cases = TC.makeTypedCases(cases)
+  let exitq = Queue.make()
+  let hdcase = TC.NonEmpty2.hd(cases)
+  Queue.add(exitq, hdcase.nodes)
+  let exit = Queue.size(exitq) - 1
+  let hdTree = TC.NonEmpty2.hd(hdcase.pats)->TC.NonEmpty2.toArray->fromArray(~exit)
+  let tree = makeCase2(hdTree, hdcase.pats, ~exit)
+  let rec aux = (tree, i) =>
+    switch TC.NonEmpty2.get(cases, i) {
+    | None => {tree: tree, exits: Queue.toArray(exitq)}
+    | Some({pats, nodes}) =>
+      Queue.add(exitq, nodes)
+      let exit = Queue.size(exitq) - 1
+      let hdTree = TC.NonEmpty2.hd(pats)->TC.NonEmpty2.toArray->fromArray(~exit)
+      let tree = merge(tree, hdTree)
+      let tree = makeCase2(tree, pats, ~exit)
+      aux(tree, succ(i))
+    }
+  aux(tree, 1)
 }

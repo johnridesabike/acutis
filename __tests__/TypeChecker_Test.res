@@ -45,7 +45,7 @@ let rec debug = (x): debug =>
   | Nullable(x) => #Nullable(debug(x))
   | Array(x) => #Array(debug(x))
   | Tuple(x) => #Tuple(Array.map(x.contents, debug))
-  | Dict(x) => #Dict(debug(x))
+  | Dict(x, _) => #Dict(debug(x))
   | Record(x) => #Record(MapString.map(x.contents, debug)->MapString.toArray)
   }
 
