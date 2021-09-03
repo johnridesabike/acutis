@@ -14,12 +14,64 @@
    limitations under the License.
 */
 open TestFramework
+module Array = Belt.Array
 module T = Acutis_Types
 module TC = TypeChecker
-module NE = TC.NonEmpty2
+module NE = NonEmpty2
+module Option = Belt.Option
+module SetString = Belt.Set.String
 let ne = NE.fromArrayUnsafe
 
 describe("Decision tree", ({test, _}) => {
+  test("cases are sorted correctly", ({expect, _}) => {
+    let l = l => T.Loc(l)
+    let nodes1 = [T.Ast.Text("", NoTrim)]
+    let nodes2 = [T.Ast.Text("", NoTrim)]
+    let case1 = {
+      TC.Ast2.pats: [
+        [#Int(l(0), 0)]->ne,
+        [#Int(l(3), 10)]->ne,
+        [#Int(l(3), 20)]->ne,
+        [#Int(l(3), 30)]->ne,
+      ]->ne,
+      nodes: nodes1,
+    }
+    let case2 = {
+      TC.Ast2.pats: [[#Int(l(0), 15)]->ne]->ne,
+      nodes: nodes2,
+    }
+    let result = Matching.make(ne([case1, case2])).tree
+    expect.value(result).toEqual(
+      Switch({
+        idx: 0,
+        key: "",
+        names: SetString.empty,
+        cases: {
+          val: TPat_Int(0),
+          ifMatch: End({names: SetString.empty, exit: 0}),
+          nextCase: Some({
+            val: TPat_Int(10),
+            ifMatch: End({names: SetString.empty, exit: 0}),
+            nextCase: Some({
+              val: TPat_Int(15),
+              ifMatch: End({names: SetString.empty, exit: 1}),
+              nextCase: Some({
+                val: TPat_Int(20),
+                ifMatch: End({names: SetString.empty, exit: 0}),
+                nextCase: Some({
+                  val: TPat_Int(30),
+                  ifMatch: End({names: SetString.empty, exit: 0}),
+                  nextCase: None,
+                }),
+              }),
+            }),
+          }),
+        },
+        wildcard: None,
+      }),
+    )
+  })
+
   test("Basic dec tree 1", ({expect, _}) => {
     let l = l => T.Loc(l)
     let nodes1: T.Ast.nodes<_> = [Text("nodes1", NoTrim)]
@@ -50,47 +102,51 @@ describe("Decision tree", ({test, _}) => {
       ]->ne,
       nodes: nodes3,
     }
-    let result = Matching.make2(ne([case1, case2, case3])).tree
+    let result = Matching.make(ne([case1, case2, case3])).tree
     expect.value(result).toEqual(
       Switch({
+        idx: 0,
         key: "",
-        names: [],
+        names: SetString.empty,
         wildcard: None,
         cases: {
-          val: TInt(1),
+          val: TPat_Int(1),
           ifMatch: Switch({
+            idx: 1,
             key: "",
-            names: [],
+            names: SetString.empty,
             wildcard: None,
             cases: {
-              val: TInt(2),
+              val: TPat_Int(2),
               ifMatch: Switch({
+                idx: 2,
                 key: "",
-                names: [],
+                names: SetString.empty,
                 wildcard: None,
                 cases: {
-                  val: TInt(3),
-                  ifMatch: Leaf({bindings: [], exit: 0}),
+                  val: TPat_Int(3),
+                  ifMatch: End({names: SetString.empty, exit: 0}),
                   nextCase: Some({
-                    val: TInt(100),
-                    ifMatch: Leaf({bindings: [], exit: 2}),
+                    val: TPat_Int(100),
+                    ifMatch: End({names: SetString.empty, exit: 2}),
                     nextCase: Some({
-                      val: TInt(101),
-                      ifMatch: Leaf({bindings: [], exit: 2}),
+                      val: TPat_Int(101),
+                      ifMatch: End({names: SetString.empty, exit: 2}),
                       nextCase: None,
                     }),
                   }),
                 },
               }),
               nextCase: Some({
-                val: TInt(4),
+                val: TPat_Int(4),
                 ifMatch: Switch({
+                  idx: 2,
                   key: "",
-                  names: [],
+                  names: SetString.empty,
                   wildcard: None,
                   cases: {
-                    val: TInt(5),
-                    ifMatch: Leaf({bindings: [], exit: 0}),
+                    val: TPat_Int(5),
+                    ifMatch: End({names: SetString.empty, exit: 0}),
                     nextCase: None,
                   },
                 }),
@@ -99,26 +155,28 @@ describe("Decision tree", ({test, _}) => {
             },
           }),
           nextCase: Some({
-            val: TInt(10),
+            val: TPat_Int(10),
             ifMatch: Switch({
+              idx: 1,
               key: "",
-              names: [],
+              names: SetString.empty,
               wildcard: None,
               cases: {
-                val: TInt(20),
+                val: TPat_Int(20),
                 ifMatch: Switch({
+                  idx: 2,
                   key: "",
-                  names: [],
+                  names: SetString.empty,
                   wildcard: None,
                   cases: {
-                    val: TInt(30),
-                    ifMatch: Leaf({bindings: [], exit: 0}),
+                    val: TPat_Int(30),
+                    ifMatch: End({names: SetString.empty, exit: 0}),
                     nextCase: Some({
-                      val: TInt(40),
-                      ifMatch: Leaf({bindings: [], exit: 0}),
+                      val: TPat_Int(40),
+                      ifMatch: End({names: SetString.empty, exit: 0}),
                       nextCase: Some({
-                        val: TInt(50),
-                        ifMatch: Leaf({bindings: [], exit: 2}),
+                        val: TPat_Int(50),
+                        ifMatch: End({names: SetString.empty, exit: 2}),
                         nextCase: None,
                       }),
                     }),
@@ -128,36 +186,39 @@ describe("Decision tree", ({test, _}) => {
               },
             }),
             nextCase: Some({
-              val: TInt(100),
+              val: TPat_Int(100),
               ifMatch: Switch({
+                idx: 1,
                 key: "",
-                names: [],
+                names: SetString.empty,
                 wildcard: None,
                 cases: {
-                  val: TInt(102),
+                  val: TPat_Int(102),
                   ifMatch: Switch({
+                    idx: 2,
                     key: "",
-                    names: [],
+                    names: SetString.empty,
                     wildcard: None,
                     cases: {
-                      val: TInt(103),
-                      ifMatch: Leaf({bindings: [], exit: 1}),
+                      val: TPat_Int(103),
+                      ifMatch: End({names: SetString.empty, exit: 1}),
                       nextCase: Some({
-                        val: TInt(106),
-                        ifMatch: Leaf({bindings: [], exit: 2}),
+                        val: TPat_Int(106),
+                        ifMatch: End({names: SetString.empty, exit: 2}),
                         nextCase: None,
                       }),
                     },
                   }),
                   nextCase: Some({
-                    val: TInt(104),
+                    val: TPat_Int(104),
                     ifMatch: Switch({
+                      idx: 2,
                       key: "",
-                      names: [],
+                      names: SetString.empty,
                       wildcard: None,
                       cases: {
-                        val: TInt(105),
-                        ifMatch: Leaf({bindings: [], exit: 1}),
+                        val: TPat_Int(105),
+                        ifMatch: End({names: SetString.empty, exit: 1}),
                         nextCase: None,
                       },
                     }),
@@ -188,38 +249,42 @@ describe("Decision tree", ({test, _}) => {
       nodes: nodes1,
     }
 
-    let result = Matching.make2(ne([case1])).tree
+    let result = Matching.make(ne([case1])).tree
     expect.value(result).toEqual(
       Switch({
+        idx: 0,
         key: "",
-        names: ["x"],
+        names: SetString.fromArray(["x"]),
         cases: {
-          val: TInt(10),
+          val: TPat_Int(10),
           ifMatch: Switch({
+            idx: 1,
             key: "",
-            names: [],
+            names: SetString.empty,
             wildcard: None,
             cases: {
-              val: TInt(11),
+              val: TPat_Int(11),
               ifMatch: Switch({
+                idx: 2,
                 key: "",
-                names: [],
+                names: SetString.empty,
                 wildcard: None,
                 cases: {
-                  val: TInt(12),
-                  ifMatch: Leaf({bindings: [], exit: 0}),
+                  val: TPat_Int(12),
+                  ifMatch: End({names: SetString.empty, exit: 0}),
                   nextCase: None,
                 },
               }),
               nextCase: Some({
-                val: TInt(21),
+                val: TPat_Int(21),
                 ifMatch: Switch({
+                  idx: 2,
                   key: "",
-                  names: [],
+                  names: SetString.empty,
                   wildcard: None,
                   cases: {
-                    val: TInt(22),
-                    ifMatch: Leaf({bindings: ["x"], exit: 0}),
+                    val: TPat_Int(22),
+                    ifMatch: End({names: SetString.fromArray(["x"]), exit: 0}),
                     nextCase: None,
                   },
                 }),
@@ -228,38 +293,41 @@ describe("Decision tree", ({test, _}) => {
             },
           }),
           nextCase: Some({
-            val: TInt(30),
+            val: TPat_Int(30),
             ifMatch: Switch({
+              idx: 1,
               key: "",
-              names: [],
+              names: SetString.empty,
               cases: {
-                val: TInt(21),
+                val: TPat_Int(21),
                 ifMatch: Switch({
+                  idx: 2,
                   key: "",
-                  names: [],
+                  names: SetString.empty,
                   wildcard: None,
                   cases: {
-                    val: TInt(22),
-                    ifMatch: Leaf({bindings: ["x"], exit: 0}),
+                    val: TPat_Int(22),
+                    ifMatch: End({names: SetString.fromArray(["x"]), exit: 0}),
                     nextCase: Some({
-                      val: TInt(42),
-                      ifMatch: Leaf({bindings: ["y"], exit: 0}),
+                      val: TPat_Int(42),
+                      ifMatch: End({names: SetString.fromArray(["y"]), exit: 0}),
                       nextCase: None,
                     }),
                   },
                 }),
                 nextCase: Some({
-                  val: TInt(31),
+                  val: TPat_Int(31),
                   ifMatch: Switch({
+                    idx: 2,
                     key: "",
-                    names: [],
+                    names: SetString.empty,
                     wildcard: None,
                     cases: {
-                      val: TInt(32),
-                      ifMatch: Leaf({bindings: [], exit: 0}),
+                      val: TPat_Int(32),
+                      ifMatch: End({names: SetString.empty, exit: 0}),
                       nextCase: Some({
-                        val: TInt(42),
-                        ifMatch: Leaf({bindings: ["y"], exit: 0}),
+                        val: TPat_Int(42),
+                        ifMatch: End({names: SetString.fromArray(["y"]), exit: 0}),
                         nextCase: None,
                       }),
                     },
@@ -269,12 +337,13 @@ describe("Decision tree", ({test, _}) => {
               },
               wildcard: Some(
                 Switch({
+                  idx: 2,
                   key: "",
-                  names: [],
+                  names: SetString.empty,
                   wildcard: None,
                   cases: {
-                    val: TInt(42),
-                    ifMatch: Leaf({bindings: ["y"], exit: 0}),
+                    val: TPat_Int(42),
+                    ifMatch: End({names: SetString.fromArray(["y"]), exit: 0}),
                     nextCase: None,
                   },
                 }),
@@ -285,18 +354,20 @@ describe("Decision tree", ({test, _}) => {
         },
         wildcard: Some(
           Switch({
+            idx: 1,
             key: "",
-            names: [],
+            names: SetString.empty,
             wildcard: None,
             cases: {
-              val: TInt(21),
+              val: TPat_Int(21),
               ifMatch: Switch({
+                idx: 2,
                 key: "",
-                names: [],
+                names: SetString.empty,
                 wildcard: None,
                 cases: {
-                  val: TInt(22),
-                  ifMatch: Leaf({bindings: ["x"], exit: 0}),
+                  val: TPat_Int(22),
+                  ifMatch: End({names: SetString.fromArray(["x"]), exit: 0}),
                   nextCase: None,
                 },
               }),
@@ -319,32 +390,36 @@ describe("Decision tree", ({test, _}) => {
       ]->ne,
       nodes: nodes1,
     }
-    let result = Matching.make2(ne([case1])).tree
+    let result = Matching.make(ne([case1])).tree
     expect.value(result).toEqual(
       Nest({
+        idx: 0,
         key: "",
-        names: [],
-        kind: TTuple,
+        names: SetString.empty,
+        kind: Tuple,
         child: Switch({
+          idx: 0,
           key: "",
-          names: [],
+          names: SetString.empty,
           cases: {
-            val: TInt(10),
+            val: TPat_Int(10),
             ifMatch: Switch({
+              idx: 1,
               key: "",
-              names: [],
+              names: SetString.empty,
               cases: {
-                val: TInt(12),
+                val: TPat_Int(12),
                 ifMatch: End(
                   Switch({
+                    idx: 1,
                     key: "",
-                    names: [],
+                    names: SetString.empty,
                     cases: {
-                      val: TInt(13),
-                      ifMatch: Leaf({bindings: [], exit: 0}),
+                      val: TPat_Int(13),
+                      ifMatch: End({names: SetString.empty, exit: 0}),
                       nextCase: Some({
-                        val: TInt(33),
-                        ifMatch: Leaf({bindings: [], exit: 0}),
+                        val: TPat_Int(33),
+                        ifMatch: End({names: SetString.empty, exit: 0}),
                         nextCase: None,
                       }),
                     },
@@ -352,17 +427,18 @@ describe("Decision tree", ({test, _}) => {
                   }),
                 ),
                 nextCase: Some({
-                  val: TInt(22),
+                  val: TPat_Int(22),
                   ifMatch: End(
                     Switch({
+                      idx: 1,
                       key: "",
-                      names: [],
+                      names: SetString.empty,
                       cases: {
-                        val: TInt(23),
-                        ifMatch: Leaf({bindings: [], exit: 0}),
+                        val: TPat_Int(23),
+                        ifMatch: End({names: SetString.empty, exit: 0}),
                         nextCase: Some({
-                          val: TInt(33),
-                          ifMatch: Leaf({bindings: [], exit: 0}),
+                          val: TPat_Int(33),
+                          ifMatch: End({names: SetString.empty, exit: 0}),
                           nextCase: None,
                         }),
                       },
@@ -372,38 +448,107 @@ describe("Decision tree", ({test, _}) => {
                   nextCase: None,
                 }),
               },
-              wildcard: Some(
-                End(
+              wildcard: None,
+            }),
+            nextCase: None,
+          },
+          wildcard: None,
+        }),
+        wildcard: Some(
+          Switch({
+            idx: 1,
+            key: "",
+            names: SetString.empty,
+            cases: {
+              val: TPat_Int(33),
+              ifMatch: End({names: SetString.empty, exit: 0}),
+              nextCase: None,
+            },
+            wildcard: None,
+          }),
+        ),
+      }),
+    )
+  })
+
+  test("Nests merge into wildcards correctly.", ({expect, _}) => {
+    let l = l => T.Loc(l)
+    let nodes1 = [T.Ast.Text("", NoTrim)]
+    let nodes2 = [T.Ast.Text("", NoTrim)]
+    let nodes3 = [T.Ast.Text("", NoTrim)]
+    let case1 = {
+      TC.Ast2.pats: [[#Binding(l(0), "x"), #Int(l(1), 1)]->ne]->ne,
+      nodes: nodes1,
+    }
+    let case2 = {
+      TC.Ast2.pats: [
+        [#Tuple(l(2), [#String(l(3), "a"), #String(l(4), "b")]), #Int(l(5), 10)]->ne,
+      ]->ne,
+      nodes: nodes2,
+    }
+    let case3 = {
+      TC.Ast2.pats: [
+        [#Tuple(l(6), [#String(l(7), "a"), #String(l(8), "b")]), #Int(l(9), 1)]->ne,
+      ]->ne,
+      nodes: nodes3,
+    }
+    let {tree, _} = Matching.make(ne([case1, case2, case3]))
+    expect.value(tree).toEqual(
+      Nest({
+        idx: 0,
+        key: "",
+        names: SetString.fromArray(["x"]),
+        kind: Tuple,
+        child: Switch({
+          idx: 0,
+          key: "",
+          names: SetString.empty,
+          cases: {
+            val: TPat_String("a"),
+            ifMatch: Switch({
+              idx: 1,
+              key: "",
+              names: SetString.empty,
+              cases: {
+                val: TPat_String("b"),
+                ifMatch: End(
                   Switch({
+                    idx: 1,
                     key: "",
-                    names: [],
+                    names: SetString.empty,
                     cases: {
-                      val: TInt(33),
-                      ifMatch: Leaf({bindings: [], exit: 0}),
-                      nextCase: None,
+                      val: TPat_Int(1),
+                      ifMatch: End({names: SetString.fromArray(["x"]), exit: 0}),
+                      nextCase: Some({
+                        val: TPat_Int(10),
+                        ifMatch: End({names: SetString.empty, exit: 1}),
+                        nextCase: None,
+                      }),
                     },
                     wildcard: None,
                   }),
                 ),
-              ),
+                nextCase: None,
+              },
+              wildcard: None,
             }),
             nextCase: None,
           },
-          wildcard: Some(
-            End(
-              Switch({
-                key: "",
-                names: [],
-                cases: {
-                  val: TInt(33),
-                  ifMatch: Leaf({bindings: [], exit: 0}),
-                  nextCase: None,
-                },
-                wildcard: None,
-              }),
-            ),
-          ),
+          wildcard: None,
         }),
+        wildcard: Some(
+          Switch({
+            idx: 1,
+            key: "",
+            names: SetString.empty,
+            cases: {
+              val: TPat_Int(1),
+              ifMatch: End({names: SetString.fromArray(["x"]), exit: 0}),
+              nextCase: None,
+            },
+            wildcard: None,
+          }),
+        ),
       }),
     )
   })
@@ -435,55 +580,66 @@ describe("Decision tree", ({test, _}) => {
       pats: [[#Binding(l(13), "y"), #Int(l(14), 42)]->ne]->ne,
       nodes: nodes4,
     }
-    let result = Matching.make2(ne([case1, case2, case3, case4])).tree
+    let result = Matching.make(ne([case1, case2, case3, case4])).tree
     expect.value(result).toEqual(
-      Variant({
+      Construct({
+        idx: 0,
         key: "",
-        names: ["y"],
+        names: SetString.fromArray(["y"]),
         kind: TPat_List,
         cons: Some(
           Nest({
+            idx: 0,
             key: "",
-            names: ["y"],
-            kind: TTuple,
+            names: SetString.fromArray(["y"]),
+            kind: Tuple,
             child: Switch({
+              idx: 0,
               key: "",
-              names: [],
+              names: SetString.empty,
               cases: {
-                val: TInt(10),
-                ifMatch: Variant({
+                val: TPat_Int(10),
+                ifMatch: Construct({
+                  idx: 1,
                   key: "",
-                  names: [],
+                  names: SetString.empty,
                   kind: TPat_List,
                   cons: Some(
                     Nest({
+                      idx: 1,
                       key: "",
-                      names: [],
-                      kind: TTuple,
+                      names: SetString.empty,
+                      kind: Tuple,
                       child: Switch({
+                        idx: 0,
                         key: "",
-                        names: [],
+                        names: SetString.empty,
                         cases: {
-                          val: TInt(11),
-                          ifMatch: Variant({
+                          val: TPat_Int(11),
+                          ifMatch: Construct({
+                            idx: 1,
                             key: "",
-                            names: ["x"],
+                            names: SetString.fromArray(["x"]),
                             kind: TPat_List,
                             nil: Some(
                               End(
                                 End(
                                   Switch({
+                                    idx: 1,
                                     key: "",
-                                    names: [],
+                                    names: SetString.empty,
                                     cases: {
-                                      val: TInt(12),
-                                      ifMatch: Leaf({bindings: [], exit: 0}),
+                                      val: TPat_Int(12),
+                                      ifMatch: End({names: SetString.empty, exit: 0}),
                                       nextCase: Some({
-                                        val: TInt(22),
-                                        ifMatch: Leaf({bindings: ["x"], exit: 1}),
+                                        val: TPat_Int(22),
+                                        ifMatch: End({names: SetString.fromArray(["x"]), exit: 1}),
                                         nextCase: Some({
-                                          val: TInt(42),
-                                          ifMatch: Leaf({bindings: ["y"], exit: 3}),
+                                          val: TPat_Int(42),
+                                          ifMatch: End({
+                                            names: SetString.fromArray(["y"]),
+                                            exit: 3,
+                                          }),
                                           nextCase: None,
                                         }),
                                       }),
@@ -495,19 +651,24 @@ describe("Decision tree", ({test, _}) => {
                             ),
                             cons: Some(
                               Wildcard({
+                                idx: 1,
                                 key: "",
-                                names: ["x"],
+                                names: SetString.fromArray(["x"]),
                                 child: End(
                                   End(
                                     Switch({
+                                      idx: 1,
                                       key: "",
-                                      names: [],
+                                      names: SetString.empty,
                                       cases: {
-                                        val: TInt(22),
-                                        ifMatch: Leaf({bindings: ["x"], exit: 1}),
+                                        val: TPat_Int(22),
+                                        ifMatch: End({names: SetString.fromArray(["x"]), exit: 1}),
                                         nextCase: Some({
-                                          val: TInt(42),
-                                          ifMatch: Leaf({bindings: ["y"], exit: 3}),
+                                          val: TPat_Int(42),
+                                          ifMatch: End({
+                                            names: SetString.fromArray(["y"]),
+                                            exit: 3,
+                                          }),
                                           nextCase: None,
                                         }),
                                       },
@@ -520,61 +681,32 @@ describe("Decision tree", ({test, _}) => {
                           }),
                           nextCase: None,
                         },
-                        wildcard: Some(
-                          End(
-                            End(
-                              Switch({
-                                key: "",
-                                names: [],
-                                cases: {
-                                  val: TInt(42),
-                                  ifMatch: Leaf({bindings: ["y"], exit: 3}),
-                                  nextCase: None,
-                                },
-                                wildcard: None,
-                              }),
-                            ),
-                          ),
-                        ),
+                        wildcard: None,
                       }),
+                      wildcard: None,
                     }),
                   ),
-                  nil: Some(
-                    Wildcard({
-                      key: "",
-                      names: [],
-                      child: End(
-                        Switch({
-                          key: "",
-                          names: [],
-                          cases: {
-                            val: TInt(42),
-                            ifMatch: Leaf({bindings: ["y"], exit: 3}),
-                            nextCase: None,
-                          },
-                          wildcard: None,
-                        }),
-                      ),
-                    }),
-                  ),
+                  nil: None,
                 }),
                 nextCase: Some({
-                  val: TInt(30),
-                  ifMatch: Variant({
+                  val: TPat_Int(30),
+                  ifMatch: Construct({
+                    idx: 1,
                     key: "",
-                    names: [],
+                    names: SetString.empty,
                     kind: TPat_List,
                     nil: Some(
                       End(
                         Switch({
+                          idx: 1,
                           key: "",
-                          names: [],
+                          names: SetString.empty,
                           cases: {
-                            val: TInt(32),
-                            ifMatch: Leaf({bindings: [], exit: 2}),
+                            val: TPat_Int(32),
+                            ifMatch: End({names: SetString.empty, exit: 2}),
                             nextCase: Some({
-                              val: TInt(42),
-                              ifMatch: Leaf({bindings: ["y"], exit: 3}),
+                              val: TPat_Int(42),
+                              ifMatch: End({names: SetString.fromArray(["y"]), exit: 3}),
                               nextCase: None,
                             }),
                           },
@@ -582,52 +714,36 @@ describe("Decision tree", ({test, _}) => {
                         }),
                       ),
                     ),
-                    cons: Some(
-                      Wildcard({
-                        key: "",
-                        names: [],
-                        child: End(
-                          Switch({
-                            key: "",
-                            names: [],
-                            cases: {
-                              val: TInt(42),
-                              ifMatch: Leaf({bindings: ["y"], exit: 3}),
-                              nextCase: None,
-                            },
-                            wildcard: None,
-                          }),
-                        ),
-                      }),
-                    ),
+                    cons: None,
                   }),
                   nextCase: None,
                 }),
               },
-              wildcard: Some(
-                End(
-                  Switch({
-                    key: "",
-                    names: [],
-                    cases: {
-                      val: TInt(42),
-                      ifMatch: Leaf({bindings: ["y"], exit: 3}),
-                      nextCase: None,
-                    },
-                    wildcard: None,
-                  }),
-                ),
-              ),
+              wildcard: None,
             }),
+            wildcard: Some(
+              Switch({
+                idx: 1,
+                key: "",
+                names: SetString.empty,
+                cases: {
+                  val: TPat_Int(42),
+                  ifMatch: End({names: SetString.fromArray(["y"]), exit: 3}),
+                  nextCase: None,
+                },
+                wildcard: None,
+              }),
+            ),
           }),
         ),
         nil: Some(
           Switch({
+            idx: 1,
             key: "",
-            names: [],
+            names: SetString.empty,
             cases: {
-              val: TInt(42),
-              ifMatch: Leaf({bindings: ["y"], exit: 3}),
+              val: TPat_Int(42),
+              ifMatch: End({names: SetString.fromArray(["y"]), exit: 3}),
               nextCase: None,
             },
             wildcard: None,
@@ -647,29 +763,33 @@ describe("Decision tree", ({test, _}) => {
       ]->ne,
       nodes: nodes1,
     }
-    let result = Matching.make2(ne([case1])).tree
+    let result = Matching.make(ne([case1])).tree
     expect.value(result).toEqual(
       Nest({
+        idx: 0,
         key: "",
-        names: [],
-        kind: TRecord,
+        names: SetString.empty,
+        kind: Record,
         child: Switch({
+          idx: 0,
           key: "a",
-          names: [],
+          names: SetString.empty,
           cases: {
-            val: TInt(10),
+            val: TPat_Int(10),
             ifMatch: Switch({
+              idx: 1,
               key: "b",
-              names: [],
+              names: SetString.empty,
               cases: {
-                val: TInt(11),
+                val: TPat_Int(11),
                 ifMatch: End(
                   Switch({
+                    idx: 1,
                     key: "",
-                    names: [],
+                    names: SetString.empty,
                     cases: {
-                      val: TInt(12),
-                      ifMatch: Leaf({bindings: [], exit: 0}),
+                      val: TPat_Int(12),
+                      ifMatch: End({names: SetString.empty, exit: 0}),
                       nextCase: None,
                     },
                     wildcard: None,
@@ -680,19 +800,21 @@ describe("Decision tree", ({test, _}) => {
               wildcard: None,
             }),
             nextCase: Some({
-              val: TInt(20),
+              val: TPat_Int(20),
               ifMatch: Switch({
+                idx: 1,
                 key: "b",
-                names: [],
+                names: SetString.empty,
                 cases: {
-                  val: TInt(21),
+                  val: TPat_Int(21),
                   ifMatch: End(
                     Switch({
+                      idx: 1,
                       key: "",
-                      names: [],
+                      names: SetString.empty,
                       cases: {
-                        val: TInt(22),
-                        ifMatch: Leaf({bindings: [], exit: 0}),
+                        val: TPat_Int(22),
+                        ifMatch: End({names: SetString.empty, exit: 0}),
                         nextCase: None,
                       },
                       wildcard: None,
@@ -707,6 +829,7 @@ describe("Decision tree", ({test, _}) => {
           },
           wildcard: None,
         }),
+        wildcard: None,
       }),
     )
   })
@@ -721,43 +844,48 @@ describe("Decision tree", ({test, _}) => {
       ]->ne,
       nodes: nodes1,
     }
-    let result = Matching.make2(ne([case1])).tree
+    let result = Matching.make(ne([case1])).tree
     expect.value(result).toEqual(
       Nest({
+        idx: 0,
         key: "",
-        names: [],
-        kind: TRecord,
+        names: SetString.empty,
+        kind: Record,
         child: Switch({
+          idx: 0,
           key: "a",
-          names: [],
+          names: SetString.empty,
           cases: {
-            val: TInt(10),
+            val: TPat_Int(10),
             ifMatch: Switch({
+              idx: 1,
               key: "b",
-              names: [],
+              names: SetString.empty,
               cases: {
-                val: TInt(11),
+                val: TPat_Int(11),
                 ifMatch: End(
                   Switch({
+                    idx: 1,
                     key: "",
-                    names: [],
+                    names: SetString.empty,
                     cases: {
-                      val: TInt(12),
-                      ifMatch: Leaf({bindings: [], exit: 0}),
+                      val: TPat_Int(12),
+                      ifMatch: End({names: SetString.empty, exit: 0}),
                       nextCase: None,
                     },
                     wildcard: None,
                   }),
                 ),
                 nextCase: Some({
-                  val: TInt(21),
+                  val: TPat_Int(21),
                   ifMatch: End(
                     Switch({
+                      idx: 1,
                       key: "",
-                      names: [],
+                      names: SetString.empty,
                       cases: {
-                        val: TInt(22),
-                        ifMatch: Leaf({bindings: [], exit: 0}),
+                        val: TPat_Int(22),
+                        ifMatch: End({names: SetString.empty, exit: 0}),
                         nextCase: None,
                       },
                       wildcard: None,
@@ -772,17 +900,19 @@ describe("Decision tree", ({test, _}) => {
           },
           wildcard: Some(
             Switch({
+              idx: 1,
               key: "b",
-              names: [],
+              names: SetString.empty,
               cases: {
-                val: TInt(21),
+                val: TPat_Int(21),
                 ifMatch: End(
                   Switch({
+                    idx: 1,
                     key: "",
-                    names: [],
+                    names: SetString.empty,
                     cases: {
-                      val: TInt(22),
-                      ifMatch: Leaf({bindings: [], exit: 0}),
+                      val: TPat_Int(22),
+                      ifMatch: End({names: SetString.empty, exit: 0}),
                       nextCase: None,
                     },
                     wildcard: None,
@@ -794,6 +924,7 @@ describe("Decision tree", ({test, _}) => {
             }),
           ),
         }),
+        wildcard: None,
       }),
     )
   })
@@ -820,56 +951,141 @@ describe("Decision tree", ({test, _}) => {
       pats: [[#Binding(l(6), "x")]->ne]->ne,
       nodes: nodes4,
     }
-    let result = Matching.make2(ne([case1, case2, case3, case4])).tree
+    let result = Matching.make(ne([case1, case2, case3, case4])).tree
     expect.value(result).toEqual(
       Nest({
+        idx: 0,
         key: "",
-        names: ["x"],
-        kind: TRecord,
+        names: SetString.fromArray(["x"]),
+        kind: Record,
         child: Switch({
+          idx: 0,
           key: "a",
-          names: [],
+          names: SetString.empty,
           cases: {
-            val: TInt(20),
+            val: TPat_Int(20),
             ifMatch: Switch({
+              idx: 1,
               key: "b",
-              names: [],
+              names: SetString.empty,
               cases: {
-                val: TInt(10),
-                ifMatch: Wildcard({key: "c", names: [], child: End(Leaf({bindings: [], exit: 0}))}),
+                val: TPat_Int(10),
+                ifMatch: Wildcard({
+                  idx: 2,
+                  key: "c",
+                  names: SetString.empty,
+                  child: End(End({names: SetString.empty, exit: 0})),
+                }),
                 nextCase: None,
               },
               wildcard: Some(
-                Wildcard({key: "c", names: [], child: End(Leaf({bindings: [], exit: 1}))}),
+                Wildcard({
+                  idx: 2,
+                  key: "c",
+                  names: SetString.empty,
+                  child: End(End({names: SetString.empty, exit: 1})),
+                }),
               ),
             }),
             nextCase: None,
           },
           wildcard: Some(
             Switch({
+              idx: 1,
               key: "b",
-              names: [],
+              names: SetString.empty,
               cases: {
-                val: TInt(10),
-                ifMatch: Wildcard({key: "c", names: [], child: End(Leaf({bindings: [], exit: 0}))}),
+                val: TPat_Int(10),
+                ifMatch: Wildcard({
+                  idx: 2,
+                  key: "c",
+                  names: SetString.empty,
+                  child: End(End({names: SetString.empty, exit: 0})),
+                }),
                 nextCase: None,
               },
               wildcard: Some(
                 Switch({
+                  idx: 2,
                   key: "c",
-                  names: [],
+                  names: SetString.empty,
                   cases: {
-                    val: TInt(30),
-                    ifMatch: End(Leaf({bindings: [], exit: 2})),
+                    val: TPat_Int(30),
+                    ifMatch: End(End({names: SetString.empty, exit: 2})),
                     nextCase: None,
                   },
-                  wildcard: Some(End(Leaf({bindings: ["x"], exit: 3}))),
+                  wildcard: None,
                 }),
               ),
             }),
           ),
         }),
+        wildcard: Some(End({names: SetString.fromArray(["x"]), exit: 3})),
       }),
     )
+  })
+})
+
+describe("Partial matching", ({test, _}) => {
+  let toString = o => Option.map(o, a => Array.map(a, TC.TypedPattern.toString))
+  test("Partial match test 1", ({expect, _}) => {
+    let l = l => T.Loc(l)
+    let nodes1 = [T.Ast.Text("", NoTrim)]
+    let nodes2 = [T.Ast.Text("", NoTrim)]
+    let nodes3 = [T.Ast.Text("", NoTrim)]
+    let case1: TC.Ast2.case<_, _> = {
+      pats: [
+        [#Int(l(0), 0)]->ne,
+        [#Int(l(3), 10)]->ne,
+        [#Int(l(3), 20)]->ne,
+        [#Int(l(3), 30)]->ne,
+      ]->ne,
+      nodes: nodes1,
+    }
+    let case2: TC.Ast2.case<_, _> = {
+      pats: [[#Int(l(0), 15)]->ne]->ne,
+      nodes: nodes2,
+    }
+    let result = Matching.ParMatch.check(Matching.make(ne([case1, case2])).tree)->toString
+    expect.value(result).toEqual(Some(["1"]))
+
+    let case3: TC.Ast2.case<_, _> = {
+      pats: [[#Binding(l(0), "x")]->ne]->ne,
+      nodes: nodes3,
+    }
+    let result = Matching.ParMatch.check(Matching.make(ne([case1, case2, case3])).tree)->toString
+    expect.value(result).toEqual(None)
+    let case1 = {
+      TC.Ast2.pats: [[#True(l(0))]->ne]->ne,
+      nodes: nodes1,
+    }
+    let case2 = {
+      TC.Ast2.pats: [[#False(l(0))]->ne]->ne,
+      nodes: nodes2,
+    }
+    let result = Matching.ParMatch.check(Matching.make(ne([case1, case2])).tree)->toString
+    expect.value(result).toEqual(None)
+    let case1 = {
+      TC.Ast2.pats: [[#Array(l(0), [])]->ne, [#Array(l(0), [#Binding(l(1), "_")])]->ne]->ne,
+      nodes: nodes1,
+    }
+    let result = Matching.ParMatch.check(Matching.make(ne([case1])).tree)->toString
+    expect.value(result).toEqual(Some(["[_, ..._]"]))
+    let case1 = {
+      TC.Ast2.pats: [[#Array(l(0), [#Binding(l(1), "_")])]->ne]->ne,
+      nodes: nodes1,
+    }
+    let result = Matching.ParMatch.check(Matching.make(ne([case1])).tree)->toString
+    expect.value(result).toEqual(Some(["[]"]))
+    let case1 = {
+      TC.Ast2.pats: [[#Object(l(0), [("b", #Int(l(1), 10))])]->ne]->ne,
+      nodes: nodes1,
+    }
+    let case2 = {
+      TC.Ast2.pats: [[#Object(l(2), [("a", #Int(l(3), 20))])]->ne]->ne,
+      nodes: nodes2,
+    }
+    let result = Matching.ParMatch.check(Matching.make(ne([case1, case2])).tree)->toString
+    expect.value(result).toEqual(Some(["{a, b: 0}"]))
   })
 })

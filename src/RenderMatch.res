@@ -1,76 +1,105 @@
 module Array = Belt.Array
 module Dict = Js.Dict
+module Float = Belt.Float
 module Json = Js.Json
 module MapString = Belt.Map.String
 module Option = Belt.Option
+module SetString = Belt.Set.String
+module TC = TypeChecker
 
-/*
-let jsonEq = (j, p: Matching.TestPat.t) =>
+let jsonEq = (j, p) =>
   switch p {
-  | TTrue => Json.decodeBoolean(j)->Option.getExn == true
-  | TFalse => Json.decodeBoolean(j)->Option.getExn == false
-  | _ => assert false
+  | TC.TypedPattern.TPat_Bool(b) => Json.decodeBoolean(j)->Option.getExn == b
+  | TPat_String(s) => Json.decodeString(j)->Option.getExn == s
+  | TPat_Int(i) => Json.decodeNumber(j)->Option.getExn->Float.toInt == i
+  | TPat_Float(f) => Json.decodeNumber(j)->Option.getExn == f
   }
 
-let rec testCase = (json, case: Matching.testcase<_>) =>
-  if jsonEq(json, case.val) {
+let rec testCase = (json, case) =>
+  if jsonEq(json, case.Matching.val) {
     Some(case.ifMatch)
   } else {
     switch case.nextCase {
-    | Some(case) => testCase(json, case)
     | None => None
+    | Some(case) => testCase(json, case)
     }
   }
 
-let rec record = (r, tree: Matching.tree) =>
+let bindNames = (map, ns, val) =>
+  SetString.reduceU(ns, map, (. map, name) => MapString.set(map, name, val))
+
+type getter<'a> = (. 'a, int, string) => Json.t
+let arrayGet: getter<_> = (. a, i, _) => Array.getExn(a, i)
+let dictGet: getter<_> = (. d, _, k) => Js.Dict.get(d, k)->Option.getExn
+let nonemptyGet: getter<_> = (. a, i, _) => NonEmpty2.getExn(a, i)
+
+let rec make: 'a 'b. (Matching.tree<'a>, 'b, getter<'b>, _) => option<(_, 'a)> = (
+  tree,
+  args,
+  get,
+  vars,
+) =>
   switch tree {
-  | Switch({key, cases, wildcard, _}) =>
-    let v = Dict.get(r, key)->Option.getExn
-    switch testCase(v, cases) {
-    | Some(x) => record(r, x)
-    | None => record(r, Option.getExn(wildcard))
+  | End(x) => Some((vars, x))
+  | Switch({idx, key, cases, wildcard, names}) =>
+    let val = get(. args, idx, key)
+    let vars = bindNames(vars, names, val)
+    switch testCase(val, cases) {
+    | None =>
+      switch wildcard {
+      | None => None
+      | Some(tree) => make(tree, args, get, vars)
+      }
+    | Some(tree) => make(tree, args, get, vars)
     }
-  | Wildcard({child, _}) => record(r, child)
-  | End(child) => child
-  | Nest(_) => assert false
-  | Leaf(_) => assert false
+  | Wildcard({idx, key, names, child}) =>
+    let val = get(. args, idx, key)
+    let vars = bindNames(vars, names, val)
+    make(child, args, get, vars)
+  | Construct({idx, key, names, nil, cons, kind: _}) =>
+    let val = get(. args, idx, key)
+    let vars = bindNames(vars, names, val)
+    if Js.Json.test(val, Null) {
+      switch nil {
+      | None => None
+      | Some(tree) => make(tree, args, get, vars)
+      }
+    } else {
+      switch cons {
+      | None => None
+      | Some(tree) => make(tree, args, get, vars)
+      }
+    }
+  | Nest({idx, kind: Tuple, key, names, child, wildcard}) =>
+    let val = get(. args, idx, key)
+    let vars = bindNames(vars, names, val)
+    let tuple = val->Json.decodeArray->Option.getExn
+    switch make(child, tuple, arrayGet, vars) {
+    | Some((vars, tree)) => make(tree, args, get, vars)
+    | None =>
+      switch wildcard {
+      | Some(tree) => make(tree, args, get, vars)
+      | None => None
+      }
+    }
+  | Nest({idx, kind: Record | Dict, key, names, child, wildcard}) =>
+    let val = get(. args, idx, key)
+    let vars = bindNames(vars, names, val)
+    let dict = val->Json.decodeObject->Option.getExn
+    switch make(child, dict, dictGet, vars) {
+    | Some((vars, tree)) => make(tree, args, get, vars)
+    | None =>
+      switch wildcard {
+      | Some(tree) => make(tree, args, get, vars)
+      | None => None
+      }
+    }
   }
 
-and tuple = (t, i, tree: Matching.tree) =>
-  switch tree {
-  | End(t) => t
-  | Switch({cases, wildcard, _}) =>
-    switch testCase(Array.getExn(t, i), cases) {
-    | Some(x) => tuple(t, succ(i), x)
-    | None => tuple(t, succ(i), Option.getExn(wildcard))
-    }
-  | Wildcard({child, _}) => tuple(t, succ(i), child)
-  | Nest({tag: TRecord, child, _}) =>
-    let r = t->Array.getExn(i)->Json.decodeObject->Option.getExn
-    let tree = record(r, child)
-    tuple(t, succ(i), tree)
-  | Nest(_) => assert false
-  | Leaf(_) => assert false
+let make = ({Matching.tree: tree, exits}, args) =>
+  switch make(tree, args, nonemptyGet, MapString.empty) {
+  | Some((vars, {names, exit})) =>
+    let bindings = MapString.keepU(vars, (. k, _) => SetString.has(names, k))
+    Some((bindings, Array.getExn(exits, exit)))
+  | None => None
   }
-
-let rec make = (args, i, tree: Matching.tree, exits) =>
-  switch tree {
-  | Leaf({bindings: _, exit}) => Array.getUnsafe(exits, exit)
-  | Switch({cases, wildcard, _}) =>
-    switch testCase(Array.getExn(args, i), cases) {
-    | Some(x) => make(args, succ(i), x, exits)
-    | None => make(args, succ(i), Option.getExn(wildcard), exits)
-    }
-  | Wildcard({child, _}) => make(args, succ(i), child, exits)
-  | Nest({tag: TRecord, child, _}) =>
-    let r = args->Array.getExn(i)->Json.decodeObject->Option.getExn
-    let tree = record(r, child)
-    make(args, succ(i), tree, exits)
-  | Nest({tag: TTuple, child, _}) =>
-    let t = args->Array.getExn(i)->Json.decodeArray->Option.getExn
-    let tree = tuple(t, 0, child)
-    make(args, succ(i), tree, exits)
-  | Nest(_) => assert false
-  | End(_) => assert false
-  }
-*/

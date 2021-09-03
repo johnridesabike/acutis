@@ -26,38 +26,6 @@ module SetString = Belt.Set.String
 exception Exit = Debug.Exit
 exception Exit2(string)
 
-module NonEmpty2: {
-  type t<'a>
-  let toArray: t<'a> => array<'a>
-  let fromOld: T.NonEmpty.t<'a> => t<'a>
-  let fromArrayUnsafe: array<'a> => t<'a>
-  let hd: t<'a> => 'a
-  let get: (t<'a>, int) => option<'a>
-  let reduceHd: (t<'a>, (. 'a, 'a) => 'a) => 'a
-  let reduce: (t<'a>, 'b, (. 'b, 'a) => 'b) => 'b
-  let map: (t<'a>, (. 'a) => 'b) => t<'b>
-  let zip: (t<'a>, t<'b>) => t<('a, 'b)>
-  let zipBy: (t<'a>, t<'b>, (. 'a, 'b) => 'c) => t<'c>
-} = {
-  type t<'a> = array<'a>
-  let fromOld = (NonEmpty(h, t): T.NonEmpty.t<_>) => Array.concat([h], t)
-  let toArray = a => a
-  let fromArrayUnsafe = a => a
-  let hd = a => Array.getUnsafe(a, 0)
-  let get = Array.get
-  let map = Array.mapU
-  let zip = Array.zip
-  let zipBy = Array.zipByU
-  let reduce = Array.reduceU
-  let reduceHd = (a, f) => {
-    let r = ref(hd(a))
-    for i in 1 to Array.length(a) - 1 {
-      r.contents = f(. r.contents, Array.getUnsafe(a, i))
-    }
-    r.contents
-  }
-}
-
 type rec t =
   | Polymorphic
   | Boolean
@@ -104,44 +72,71 @@ module TypedPattern = {
   type types = t
 
   type constant =
-    | TPat_False
-    | TPat_True
+    | TPat_Bool(bool)
     | TPat_String(string)
     | TPat_Int(int)
     | TPat_Float(float)
 
-  type variant = TPat_List | TPat_Nullable
+  let compareConst = (a, b) =>
+    switch (a, b) {
+    | (TPat_String(a), TPat_String(b)) => compare(a, b)
+    | (TPat_Float(a), TPat_Float(b)) => compare(a, b)
+    | (TPat_Int(a), TPat_Int(b)) => compare(a, b)
+    | (TPat_Bool(a), TPat_Bool(b)) => compare(a, b)
+    | _ => assert false
+    }
+
+  let eqConst = (a, b) =>
+    switch (a, b) {
+    | (TPat_String(a), TPat_String(b)) => a == b
+    | (TPat_Float(a), TPat_Float(b)) => a == b
+    | (TPat_Int(a), TPat_Int(b)) => a == b
+    | (TPat_Bool(a), TPat_Bool(b)) => a == b
+    | _ => assert false
+    }
+
+  let toStringConst = x =>
+    switch x {
+    | TPat_Bool(true) => "true"
+    | TPat_Bool(false) => "false"
+    | TPat_String(s) => `"${s}"`
+    | TPat_Int(i) => Belt.Int.toString(i)
+    | TPat_Float(f) => Belt.Float.toString(f)
+    }
+
+  type construct = TPat_List | TPat_Nullable
 
   type rec t =
     | TPat_Const(constant)
-    | TPat_Variant(variant, option<t>)
+    | TPat_Construct(construct, option<t>)
     | TPat_Tuple(array<t>)
     | TPat_Record(array<(string, t)>)
     | TPat_Dict(array<(string, t)>)
-    | TPat_Binding(string)
+    | TPat_Var(string)
 
   let rec makeList = (a, i, ty, ~tail) =>
     switch a[i] {
     | None => tail
     | Some(p) =>
-      TPat_Variant(TPat_List, Some(TPat_Tuple([make(p, ty), makeList(a, succ(i), ty, ~tail)])))
+      TPat_Construct(TPat_List, Some(TPat_Tuple([make(p, ty), makeList(a, succ(i), ty, ~tail)])))
     }
+
   and make = (p: T.Ast_Pattern.t, ty: types) =>
     switch (p, ty) {
-    | (#Null(_), Nullable(_)) => TPat_Variant(TPat_Nullable, None)
+    | (#Null(_), Nullable(_)) => TPat_Construct(TPat_Nullable, None)
     | (p, Nullable({contents})) =>
-      TPat_Variant(TPat_Nullable, Some(TPat_Tuple([make(p, contents)])))
-    | (#False(_), _) => TPat_Const(TPat_False)
-    | (#True(_), _) => TPat_Const(TPat_True)
+      TPat_Construct(TPat_Nullable, Some(TPat_Tuple([make(p, contents)])))
+    | (#False(_), _) => TPat_Const(TPat_Bool(false))
+    | (#True(_), _) => TPat_Const(TPat_Bool(true))
     | (#String(_, s), _) => TPat_Const(TPat_String(s))
     | (#Int(_, i), _) => TPat_Const(TPat_Int(i))
     | (#Float(_, f), _) => TPat_Const(TPat_Float(f))
     | (#Tuple(_, t), Tuple({contents})) =>
       TPat_Tuple(Array.zipByU(t, contents, (. p, ty) => make(p, ty.contents)))
     | (#Array(_, l), Array({contents})) =>
-      makeList(l, 0, contents, ~tail=TPat_Variant(TPat_List, None))
+      makeList(l, 0, contents, ~tail=TPat_Construct(TPat_List, None))
     | (#ArrayWithTailBinding(_, l, #Binding(_, b)), Array({contents})) =>
-      makeList(l, 0, contents, ~tail=TPat_Binding(b))
+      makeList(l, 0, contents, ~tail=TPat_Var(b))
     | (#Dict(_, d), Dict(tys, {contents: ks})) =>
       let ks = ks->SetString.toArray->Array.mapU((. k) => (k, tys))->MapString.fromArray
       let d =
@@ -151,7 +146,7 @@ module TypedPattern = {
           switch (p, ty) {
           | (None, None) | (Some(_), None) => None
           | (Some(p), Some({contents})) => Some(make(p, contents))
-          | (None, Some(_)) => Some(TPat_Binding("_"))
+          | (None, Some(_)) => Some(TPat_Var("_"))
           }
         )
       TPat_Dict(MapString.toArray(d))
@@ -161,12 +156,43 @@ module TypedPattern = {
         switch (p, ty) {
         | (None, None) | (Some(_), None) => None
         | (Some(p), Some({contents})) => Some(make(p, contents))
-        | (None, Some(_)) => Some(TPat_Binding("_"))
+        | (None, Some(_)) => Some(TPat_Var("_"))
         }
       )
       TPat_Record(MapString.toArray(r))
-    | (#Binding(_, b), _) => TPat_Binding(b)
+    | (#Binding(_, b), _) => TPat_Var(b)
     | _ => assert false
+    }
+
+  let keyValuesToString = (k, v) =>
+    if v == k {
+      v
+    } else {
+      k ++ ": " ++ v
+    }
+
+  let rec toString = x =>
+    switch x {
+    | TPat_Const(x) => toStringConst(x)
+    | TPat_Tuple(t) => "(" ++ Array.joinWith(t, ", ", toString) ++ ")"
+    | TPat_Record(r) =>
+      "{" ++ Array.joinWith(r, ", ", ((k, v)) => keyValuesToString(k, toString(v))) ++ "}"
+    | TPat_Dict(r) =>
+      "<" ++ Array.joinWith(r, ", ", ((k, v)) => keyValuesToString(k, toString(v))) ++ ">"
+    | TPat_Var(v) => v
+    | TPat_Construct(TPat_Nullable, None) => "null"
+    | TPat_Construct(TPat_Nullable, Some(x)) => toString(x)
+    | TPat_Construct(TPat_List, None) => "[]"
+    | TPat_Construct(TPat_List, Some(l)) =>
+      let rec aux = (s, ~sep, tl) =>
+        switch tl {
+        | TPat_Var(x) => `${s}${sep} ...${x}]`
+        | TPat_Tuple([hd, TPat_Construct(_, None)]) => `${s}${sep} ${toString(hd)}]`
+        | TPat_Tuple([hd, TPat_Construct(_, Some(tl))]) =>
+          aux(s ++ sep ++ toString(hd), ~sep=",", tl)
+        | _ => assert false
+        }
+      aux("[", ~sep="", l)
     }
 }
 
