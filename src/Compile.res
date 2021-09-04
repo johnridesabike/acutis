@@ -27,7 +27,6 @@ module Ast = T.Ast
 module Ast_Pattern = T.Ast_Pattern
 module List = Belt.List
 module MutMapString = Belt.MutableMap.String
-module NonEmpty = T.NonEmpty
 module Queue = Belt.MutableQueue
 module Token = T.Token
 
@@ -169,13 +168,13 @@ module Pattern = {
     let q = Queue.make()
 
     @raises(Exit)
-    let rec aux = (): NonEmpty.t<_> => {
+    let rec aux = () => {
       switch Lexer.peekExn(tokens) {
       | Comma(_) =>
         Lexer.popExn(tokens)->ignore
         Queue.add(q, parseNode(Lexer.popExn(tokens), tokens))
         aux()
-      | _ => NonEmpty(head, Queue.toArray(q))
+      | _ => NonEmpty.fromQueue(head, q)
       }
     }
     aux()
@@ -200,13 +199,13 @@ let parseCommaSequence = tokens => {
   let q = Queue.make()
 
   @raises(Exit)
-  let rec aux = (): NonEmpty.t<_> =>
+  let rec aux = () =>
     switch Lexer.peekExn(tokens) {
     | Comma(_) =>
       Lexer.popExn(tokens)->ignore
       Queue.add(q, parseBindingName(tokens))
       aux()
-    | _ => NonEmpty(head, Queue.toArray(q))
+    | _ => NonEmpty.fromQueue(head, q)
     }
   aux()
 }
@@ -237,7 +236,7 @@ let parseEchoes = tokens => {
   @raises(Exit)
   let rec aux = (): parseData<NonEmpty.t<_>> =>
     switch Lexer.popExn(tokens) {
-    | (Tilde(_) | Text(_)) as t => {nextToken: t, data: NonEmpty(head, Queue.toArray(q))}
+    | (Tilde(_) | Text(_)) as t => {nextToken: t, data: NonEmpty.fromQueue(head, q)}
     | Question(_) =>
       Queue.add(q, parseEcho(tokens))
       aux()
@@ -342,7 +341,7 @@ and parseWithBlock = tokens => {
       aux()
     | t =>
       let {nextToken, data: nodes} = parse(t, tokens, ~until=endOfMatchMap)
-      {nextToken: nextToken, data: {Ast.patterns: NonEmpty(head, Queue.toArray(q)), nodes: nodes}}
+      {nextToken: nextToken, data: {Ast.patterns: NonEmpty.fromQueue(head, q), nodes: nodes}}
     }
   aux()
 }
@@ -354,11 +353,11 @@ and parseWithBlocks = (tokens, ~block) =>
     let q = Queue.make()
 
     @raises(Exit)
-    let rec aux = (t: Token.t): NonEmpty.t<_> =>
+    let rec aux = (t: Token.t) =>
       switch t {
       | Slash(_) =>
         switch Lexer.popExn(tokens) {
-        | Identifier(_, x) if x == block => NonEmpty(head, Queue.toArray(q))
+        | Identifier(_, x) if x == block => NonEmpty.fromQueue(head, q)
         | t => raise(Exit(Debug.unexpectedToken(t, ~name=Lexer.name(tokens))))
         }
       /* This is guaranteed to be a "with" clause. */
@@ -531,7 +530,7 @@ module Components = {
         Match(
           l,
           b,
-          NonEmpty.map(cases, ~f=(. {patterns, nodes}): T.Ast.case<_> => {
+          NonEmpty.map(cases, (. {patterns, nodes}): T.Ast.case<_> => {
             patterns: patterns,
             nodes: mapNodesExn(nodes, graph),
           }),
@@ -540,7 +539,7 @@ module Components = {
         MapArray(
           l,
           p,
-          NonEmpty.map(cases, ~f=(. {patterns, nodes}): T.Ast.case<_> => {
+          NonEmpty.map(cases, (. {patterns, nodes}): T.Ast.case<_> => {
             patterns: patterns,
             nodes: mapNodesExn(nodes, graph),
           }),
@@ -549,7 +548,7 @@ module Components = {
         MapDict(
           l,
           p,
-          NonEmpty.map(cases, ~f=(. {patterns, nodes}): T.Ast.case<_> => {
+          NonEmpty.map(cases, (. {patterns, nodes}): T.Ast.case<_> => {
             patterns: patterns,
             nodes: mapNodesExn(nodes, graph),
           }),

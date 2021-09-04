@@ -5,7 +5,6 @@ module Ast_Pattern = T.Ast_Pattern
 module Debug2 = TypeChecker_Debug
 module SetString = Belt.Set.String
 module MapString = Belt.Map.String
-module NonEmpty = T.NonEmpty
 module Queue = Belt.MutableQueue
 module Option = Belt.Option
 module SortArray = Belt.SortArray
@@ -500,10 +499,10 @@ let merge = (a, b) =>
 
 let makeCase = (hd, a, ~exit) => {
   let rec aux = (t, i) =>
-    switch NonEmpty2.get(a, i) {
+    switch NonEmpty.get(a, i) {
     | None => t
     | Some(ps) =>
-      let b = fromArray(NonEmpty2.toArray(ps), ~exit)
+      let b = fromArray(NonEmpty.toArray(ps), ~exit)
       let t = merge(t, b)
       aux(t, succ(i))
     }
@@ -513,18 +512,18 @@ let makeCase = (hd, a, ~exit) => {
 let make = cases => {
   let cases = TC.makeTypedCases(cases)
   let exitq = Queue.make()
-  let hdcase = NonEmpty2.hd(cases)
+  let hdcase = NonEmpty.hd(cases)
   Queue.add(exitq, hdcase.nodes)
   let exit = Queue.size(exitq) - 1
-  let hdTree = NonEmpty2.hd(hdcase.pats)->NonEmpty2.toArray->fromArray(~exit)
+  let hdTree = NonEmpty.hd(hdcase.pats)->NonEmpty.toArray->fromArray(~exit)
   let tree = makeCase(hdTree, hdcase.pats, ~exit)
   let rec aux = (tree, i) =>
-    switch NonEmpty2.get(cases, i) {
+    switch NonEmpty.get(cases, i) {
     | None => {tree: tree, exits: Queue.toArray(exitq)}
     | Some({pats, nodes}) =>
       Queue.add(exitq, nodes)
       let exit = Queue.size(exitq) - 1
-      let hdTree = NonEmpty2.hd(pats)->NonEmpty2.toArray->fromArray(~exit)
+      let hdTree = NonEmpty.hd(pats)->NonEmpty.toArray->fromArray(~exit)
       let tree = merge(tree, hdTree)
       let tree = makeCase(tree, pats, ~exit)
       aux(tree, succ(i))

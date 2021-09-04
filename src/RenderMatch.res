@@ -30,7 +30,7 @@ let bindNames = (map, ns, val) =>
 type getter<'a> = (. 'a, int, string) => Props.t
 let arrayGet: getter<_> = (. a, i, _) => Array.getExn(a, i)
 let recordGet: getter<_> = (. d, _, k) => Js.Dict.get(d, k)->Option.getExn
-let nonemptyGet: getter<_> = (. a, i, _) => NonEmpty2.getExn(a, i)
+let nonemptyGet: getter<_> = (. a, i, _) => NonEmpty.getExn(a, i)
 
 let rec make: 'a 'b. (Matching.tree<'a>, 'b, getter<'b>, _) => option<(_, 'a)> = (
   tree,

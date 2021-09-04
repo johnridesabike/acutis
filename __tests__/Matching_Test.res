@@ -17,10 +17,10 @@ open TestFramework
 module Array = Belt.Array
 module T = Acutis_Types
 module TC = TypeChecker
-module NE = NonEmpty2
+module NE = NonEmpty
 module Option = Belt.Option
 module SetString = Belt.Set.String
-let ne = NE.fromArrayUnsafe
+let ne = NE.fromArrayExn
 
 describe("Decision tree", ({test, _}) => {
   test("cases are sorted correctly", ({expect, _}) => {

@@ -198,19 +198,17 @@ module TypedPattern = {
 
 module Ast2 = {
   type pattern = T.Ast_Pattern.t
-  type case<'pat, 'a> = {pats: NonEmpty2.t<NonEmpty2.t<'pat>>, nodes: T.Ast.nodes<'a>}
+  type case<'pat, 'a> = {pats: NonEmpty.t<NonEmpty.t<'pat>>, nodes: T.Ast.nodes<'a>}
   let make = c =>
-    c
-    ->NonEmpty2.fromOld
-    ->NonEmpty2.map((. {T.Ast.patterns: patterns, nodes}) => {
-      pats: patterns->NonEmpty2.fromOld->NonEmpty2.map((. x) => NonEmpty2.fromOld(x)),
+    c->NonEmpty.map((. {T.Ast.patterns: patterns, nodes}) => {
+      pats: patterns,
       nodes: nodes,
     })
 
   let toTyped = (c, tys) =>
-    NonEmpty2.map(c, (. {pats, nodes}) => {
-      pats: NonEmpty2.map(pats, (. pats) =>
-        NonEmpty2.zipBy(pats, tys, (. p, ty) => TypedPattern.make(p, ty.contents))
+    NonEmpty.map(c, (. {pats, nodes}) => {
+      pats: NonEmpty.map(pats, (. pats) =>
+        NonEmpty.zipBy(pats, tys, (. p, ty) => TypedPattern.make(p, ty.contents))
       ),
       nodes: nodes,
     })
@@ -454,15 +452,15 @@ module Global = {
     (t, ctx)
   }
 
-  let unifyMatchCases = (bindingArray: NonEmpty2.t<Ast_Pattern.binding>, cases, ctx) => {
-    NonEmpty2.zip(bindingArray, cases)->NonEmpty2.reduce(ctx, (. ctx, (#Binding(loc, k), t)) =>
+  let unifyMatchCases = (bindingArray: NonEmpty.t<Ast_Pattern.binding>, cases, ctx) => {
+    NonEmpty.zip(bindingArray, cases)->NonEmpty.reduce(ctx, (. ctx, (#Binding(loc, k), t)) =>
       Context.set(ctx, k, t, Complete, ~loc)
     )
   }
 
   let unifyMapArrayCases = (id: Ast.mapArrayPattern, cases, ctx, ~loc): Context.t => {
     let int = ref(Int)
-    let (case_hd, index) = switch cases->NonEmpty2.toArray {
+    let (case_hd, index) = switch cases->NonEmpty.toArray {
     | [hd] => (hd, int)
     | [hd, tl] => (hd, tl)
     | _ => raise(Exit(Debug2.mapPatternSizeMismatch(~loc)))
@@ -479,7 +477,7 @@ module Global = {
 
   let unifyMapDictCases = (id: Ast.mapDictPattern, case, ctx, ~loc): Context.t => {
     let int = ref(String)
-    let (case_hd, index) = switch NonEmpty2.toArray(case) {
+    let (case_hd, index) = switch NonEmpty.toArray(case) {
     | [hd] => (hd, int)
     | [hd, tl] => (hd, tl)
     | _ => raise(Exit(Debug2.mapPatternSizeMismatch(~loc)))
@@ -496,19 +494,20 @@ module Global = {
 }
 
 // Until we upgrade the AST
-let fixEchoes = (NonEmpty(hd, tl): T.NonEmpty.t<_>) => {
+let fixEchoes = a => {
+  let hd = NonEmpty.hd(a)
   let q = Queue.make()
   let rec aux = (hd, i) =>
-    switch tl[i] {
+    switch NonEmpty.get(a, i) {
     | None => (Queue.toArray(q), hd)
     | Some(next) =>
       Queue.add(q, hd)
       aux(next, succ(i))
     }
-  aux(hd, 0)
+  aux(hd, 1)
 }
 
-let unifyEchoes = (echoes: T.NonEmpty.t<Ast.Echo.t>, ctx): Context.t => {
+let unifyEchoes = (echoes: NonEmpty.t<Ast.Echo.t>, ctx): Context.t => {
   let (nullables, default) = fixEchoes(echoes)
   let rec aux = (i, ctx) => {
     switch nullables[i] {
@@ -534,8 +533,8 @@ let unifyEchoes = (echoes: T.NonEmpty.t<Ast.Echo.t>, ctx): Context.t => {
 }
 
 let unifyNestedNonEmpty = (cases, ~loc) =>
-  NonEmpty2.reduceHd(cases, (. casea, caseb) => {
-    NonEmpty2.zipBy(casea, caseb, (. casea, caseb) => {
+  NonEmpty.reduceHd(cases, (. casea, caseb) => {
+    NonEmpty.zipBy(casea, caseb, (. casea, caseb) => {
       unify(casea, caseb, Incomplete, ~loc)
       casea
     })
@@ -543,16 +542,16 @@ let unifyNestedNonEmpty = (cases, ~loc) =>
 
 let rec makeCaseTypes = (cases, ctx, ~loc) => {
   cases
-  ->NonEmpty2.map((. {Ast2.pats: pats, nodes}) => {
+  ->NonEmpty.map((. {Ast2.pats: pats, nodes}) => {
     let scopes = Queue.make()
-    let casetypes = NonEmpty2.map(pats, (. pattern) => {
-      NonEmpty2.map(pattern, (. p) => {
+    let casetypes = NonEmpty.map(pats, (. pattern) => {
+      NonEmpty.map(pattern, (. p) => {
         let (t, ctx) = Local.fromPattern(p, ctx)
         Queue.add(scopes, ctx.scope)
         t
       })
-    })->NonEmpty2.reduceHd((. pat1, pat2) => {
-      NonEmpty2.zip(pat1, pat2)->NonEmpty2.map((. (a, b)) => {
+    })->NonEmpty.reduceHd((. pat1, pat2) => {
+      NonEmpty.zip(pat1, pat2)->NonEmpty.map((. (a, b)) => {
         unify(a, b, Incomplete, ~loc)
         a
       })
@@ -585,7 +584,6 @@ and checkNodes = (nodes: Ast.nodes<_>, ctx: Context.t): Context.t => {
       ignore(t) // We need to unify this with the Component's signature
       ctx
     | Match(loc, bindingArray, cases) =>
-      let bindingArray = NonEmpty2.fromOld(bindingArray)
       let cases = Ast2.make(cases)
       let casetypes = makeCaseTypes(cases, ctx, ~loc)
       //let typedcases = Ast2.toTyped(cases, casetypes)

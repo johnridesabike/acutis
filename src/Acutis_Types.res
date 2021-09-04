@@ -17,11 +17,6 @@
 // These are types shared across modules. Keeping them here avoids cyclic
 // dependency errors.
 
-module NonEmpty = {
-  type t<'a> = NonEmpty('a, array<'a>)
-  let map = (NonEmpty(head, tail), ~f) => NonEmpty(f(. head), Belt.Array.mapU(tail, f))
-}
-
 // This is a placeholder type until we add more sophisticated error reporting.
 @unboxed
 type loc = Loc(int)

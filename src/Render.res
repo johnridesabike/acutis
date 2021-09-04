@@ -22,7 +22,6 @@ module Float = Belt.Float
 module Int = Belt.Int
 module Json = Js.Json
 module MapString = Belt.Map.String
-module NonEmpty = T.NonEmpty
 module Queue = Belt.MutableQueue
 
 module Pattern = {
@@ -184,17 +183,12 @@ module Pattern = {
     aux(bindings, 0)
   }
 
-  let test = (
-    NonEmpty(patternHead, patternTail): NonEmpty.t<_>,
-    NonEmpty(jsonHead, jsonTail): NonEmpty.t<_>,
-    ~loc,
-    ~stack,
-  ) => {
+  let test = (pats, jsonArr, ~loc, ~stack) => {
     /* ALL of the patterns in the sequence need to match their data. */
     let rec aux = (pattern, json, bindings, i) =>
       switch testValue(~pattern, ~json, ~bindings, ~stack) {
       | Result(#ok(bindings)) =>
-        switch (patternTail[i], jsonTail[i]) {
+        switch (NonEmpty.get(pats, i), NonEmpty.get(jsonArr, i)) {
         | (None, None) => Result(#ok(bindings))
         | (Some(pattern), Some(json)) => aux(pattern, json, bindings, succ(i))
         | (None, Some(_)) | (Some(_), None) =>
@@ -202,7 +196,7 @@ module Pattern = {
         }
       | (Result(#errors(_)) | NoMatch) as e => e
       }
-    aux(patternHead, jsonHead, MapString.empty, 0)
+    aux(NonEmpty.hd(pats), NonEmpty.hd(jsonArr), MapString.empty, 1)
   }
 
   /*
@@ -232,7 +226,7 @@ module Pattern = {
     f: (. Js.Dict.t<Json.t>) => 'a,
   }
 
-  let matchCase = ({patterns: NonEmpty(head, tail), f}, json, ~loc, ~stack) => {
+  let matchCase = ({patterns, f}, json, ~loc, ~stack) => {
     let rec aux = (pattern, i) =>
       switch test(pattern, json, ~loc, ~stack) {
       | Result(#ok(bindings)) =>
@@ -241,25 +235,25 @@ module Pattern = {
         Result(#ok(f(. d)))
       | Result(#errors(_)) as e => e
       | NoMatch =>
-        switch tail[i] {
+        switch NonEmpty.get(patterns, i) {
         | None => NoMatch
         | Some(pattern) => aux(pattern, succ(i))
         }
       }
-    aux(head, 0)
+    aux(NonEmpty.hd(patterns), 1)
   }
 
-  let match = (NonEmpty(head, tail): NonEmpty.t<_>, data, ~loc, ~stack) => {
+  let match = (ne, data, ~loc, ~stack) => {
     let rec aux = (patterns, i) =>
       switch matchCase(patterns, data, ~loc, ~stack) {
       | Result((#ok(_) | #errors(_)) as x) => x
       | NoMatch =>
-        switch tail[i] {
+        switch NonEmpty.get(ne, i) {
         | Some(pattern) => aux(pattern, succ(i))
         | None => #errors([Debug.noMatchFound(~loc, ~stack)])
         }
       }
-    aux(head, 0)
+    aux(NonEmpty.hd(ne), 1)
   }
 }
 
@@ -324,14 +318,14 @@ let trimEnd = string => {
 external dictMerge: (@as(json`{}`) _, ~base: Js.Dict.t<'a>, Js.Dict.t<'a>) => Js.Dict.t<'a> =
   "assign"
 
-let echo = (head, tail, ~props, ~stack, ~children, ~env: T.environment<_>, ~error) => {
+let echo = (ne, ~props, ~stack, ~children, ~env: T.environment<_>, ~error) => {
   let rec aux = (head: Ast.Echo.t, i) =>
     switch head {
     | Binding(loc, binding, esc) =>
       switch echoBinding(props, binding) {
       | Ok(x) => env.return(. escape(esc, x))
       | Error(type_) =>
-        switch (type_, tail[i]) {
+        switch (type_, NonEmpty.get(ne, i)) {
         | (JSONNull, Some(head)) => aux(head, succ(i))
         | (type_, _) => error(. [Debug.badEchoType(~binding, ~type_, ~loc, ~stack)])
         }
@@ -340,7 +334,7 @@ let echo = (head, tail, ~props, ~stack, ~children, ~env: T.environment<_>, ~erro
       switch Js.Dict.get(children, child) {
       | Some(x) => x
       | None =>
-        switch tail[i] {
+        switch NonEmpty.get(ne, i) {
         | Some(head) => aux(head, succ(i))
         | None => error(. [Debug.childDoesNotExist(~loc, ~child, ~stack)])
         }
@@ -349,7 +343,7 @@ let echo = (head, tail, ~props, ~stack, ~children, ~env: T.environment<_>, ~erro
     | Int(_, x, esc) => env.return(. escape(esc, Int.toString(x)))
     | Float(_, x, esc) => env.return(. escape(esc, Float.toString(x)))
     }
-  aux(head, 0)
+  aux(NonEmpty.hd(ne), 1)
 }
 
 let rec make = (~nodes, ~props, ~children, ~stack, ~makeEnv, ~error, ~try_, ~reduceQueue) => {
@@ -357,8 +351,7 @@ let rec make = (~nodes, ~props, ~children, ~stack, ~makeEnv, ~error, ~try_, ~red
   let queue = Queue.make()
   Array.forEachU(nodes, (. node: Ast.node<_>) =>
     switch node {
-    | Echo(_, NonEmpty(head, tail)) =>
-      Queue.add(queue, echo(head, tail, ~props, ~stack, ~children, ~env, ~error))
+    | Echo(_, nonempty) => Queue.add(queue, echo(nonempty, ~props, ~stack, ~children, ~env, ~error))
     | Text(str, trim) =>
       Queue.add(
         queue,
@@ -372,7 +365,7 @@ let rec make = (~nodes, ~props, ~children, ~stack, ~makeEnv, ~error, ~try_, ~red
         ),
       )
     | Match(loc, identifiers, cases) =>
-      let patterns = NonEmpty.map(cases, ~f=(. {patterns, nodes}): Pattern.t<_> => {
+      let patterns = NonEmpty.map(cases, (. {patterns, nodes}): Pattern.t<_> => {
         patterns: patterns,
         f: (. props') =>
           make(
@@ -386,7 +379,7 @@ let rec make = (~nodes, ~props, ~children, ~stack, ~makeEnv, ~error, ~try_, ~red
             ~reduceQueue,
           ),
       })
-      let data = NonEmpty.map(identifiers, ~f=(. #Binding(_loc, x)) => getBindingOrNull(props, x))
+      let data = NonEmpty.map(identifiers, (. #Binding(_loc, x)) => getBindingOrNull(props, x))
       switch Pattern.match(patterns, data, ~loc, ~stack) {
       | #ok(result) => Queue.transfer(result, queue)
       | #errors(e) => Queue.add(queue, error(. e))
@@ -536,12 +529,12 @@ and maphelper = (
   ~reduceQueue,
   ~loc,
 ) => {
-  let patterns = NonEmpty.map(cases, ~f=(. {patterns, nodes}): Pattern.t<_> => {
-    patterns: NonEmpty.map(patterns, ~f=(. x): NonEmpty.t<_> =>
-      switch x {
+  let patterns = NonEmpty.map(cases, (. {patterns, nodes}): Pattern.t<_> => {
+    patterns: NonEmpty.map(patterns, (. x) =>
+      switch NonEmpty.toArray(x) {
       // Add a default binding for the index
-      | NonEmpty(x, []) => NonEmpty(x, [#Binding(loc, "_")])
-      | x => x
+      | [x] => NonEmpty.two(x, #Binding(loc, "_"))
+      | _ => x
       }
     ),
     f: (. props') =>
@@ -556,7 +549,7 @@ and maphelper = (
         ~reduceQueue,
       ),
   })
-  switch Pattern.match(patterns, NonEmpty(json, [index]), ~loc, ~stack) {
+  switch Pattern.match(patterns, NonEmpty.two(json, index), ~loc, ~stack) {
   | #ok(result) => Queue.transfer(result, queue)
   | #errors(e) => Queue.add(queue, error(. e))
   }

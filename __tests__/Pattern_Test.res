@@ -15,7 +15,6 @@
 */
 open TestFramework
 
-module NonEmpty = Acutis_Types.NonEmpty
 module Pattern = Render.Pattern
 
 let parseString = source => {
@@ -31,8 +30,8 @@ let json = x =>
   | _ => Js.Json.string("THIS IS EASIER THAN DEALING WITH EXCEPTIONS.")
   }
 
-let jsonList = (x): NonEmpty.t<_> => NonEmpty(json(x), [])
-let jsonList2 = (x): NonEmpty.t<_> => NonEmpty(x, [])
+let jsonList = x => NonEmpty.one(json(x))
+let jsonList2 = x => NonEmpty.one(x)
 
 let patternTest = (patterns, json) =>
   switch Pattern.test(patterns, json, ~loc=Loc(0), ~stack=list{}) {
@@ -283,19 +282,22 @@ describe("Binding", ({test, _}) => {
 
 describe("Multiple patterns and data", ({test, _}) => {
   test("Two bindings", ({expect, _}) => {
-    expect.value(patternTest(parseString("a, 1"), NonEmpty(json("0"), [json("1")]))).toEqual(
+    expect.value(patternTest(parseString("a, 1"), NonEmpty.two(json("0"), json("1")))).toEqual(
       #Ok([("a", json("0"))]),
     )
   })
 
   test("Three bindings", ({expect, _}) => {
     expect.value(
-      patternTest(parseString("100, a, b"), NonEmpty(json("100"), [json("true"), json("false")])),
+      patternTest(
+        parseString("100, a, b"),
+        NonEmpty.fromArrayExn([json("100"), json("true"), json("false")]),
+      ),
     ).toEqual(#Ok([("a", json("true")), ("b", json("false"))]))
     expect.value(
       patternTest(
         parseString("100, true, true"),
-        NonEmpty(json("100"), [json("true"), json("false")]),
+        NonEmpty.fromArrayExn([json("100"), json("true"), json("false")]),
       ),
     ).toEqual(#NoMatch)
   })
@@ -304,7 +306,7 @@ describe("Multiple patterns and data", ({test, _}) => {
     expect.value(
       patternTest(
         parseString("{a: true} , {b: false} , [c]"),
-        NonEmpty(json(`{"a": true}`), [json(`{"b": false}`), json("[true]")]),
+        NonEmpty.fromArrayExn([json(`{"a": true}`), json(`{"b": false}`), json("[true]")]),
       ),
     ).toEqual(#Ok([("c", json("true"))]))
   })
@@ -313,8 +315,7 @@ describe("Multiple patterns and data", ({test, _}) => {
 let parseString = source => {
   let tokens = Lexer.make(~name="", "{% " ++ source ++ " %}")
   Lexer.popExn(tokens)->ignore // skip the opening string
-  let NonEmpty.NonEmpty(result, _) = Compile.Pattern.make(tokens)
-  result
+  Compile.Pattern.make(tokens)->NonEmpty.hd
 }
 
 describe("Encoding to JSON", ({test, _}) => {

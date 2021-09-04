@@ -1,7 +1,9 @@
-type t<'a>
+type t<'a> = private array<'a>
+let fromQueue: ('a, Belt.MutableQueue.t<'a>) => t<'a>
 let toArray: t<'a> => array<'a>
-let fromOld: Acutis_Types.NonEmpty.t<'a> => t<'a>
-let fromArrayUnsafe: array<'a> => t<'a>
+let one: 'a => t<'a>
+let two: ('a, 'a) => t<'a>
+let fromArrayExn: array<'a> => t<'a>
 let hd: t<'a> => 'a
 let get: (t<'a>, int) => option<'a>
 let getExn: (t<'a>, int) => 'a
