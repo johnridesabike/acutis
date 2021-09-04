@@ -65,6 +65,7 @@ module Pattern = {
       | ClosePoointyBracket(_) => #Dict(loc, [])
       | t => parseDict(loc, t, tokens)
       }
+    | Bang(loc) => #Some(loc, parseNode(Lexer.popExn(tokens), tokens))
     | t => raise(Exit(Debug.unexpectedToken(t, ~name=Lexer.name(tokens))))
     }
   @raises(Exit)

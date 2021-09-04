@@ -55,6 +55,7 @@ module Token = {
     | Tilde(loc)
     | Question(loc)
     | Ampersand(loc)
+    | Bang(loc)
     | Echo(loc)
     | EndOfFile(loc)
 
@@ -87,6 +88,7 @@ module Token = {
     | Tilde(_) => "~"
     | Question(_) => "?"
     | Ampersand(_) => "&"
+    | Bang(_) => "!"
     | Echo(_) => "{{"
     | EndOfFile(_) => "[end of file]"
     }
@@ -121,6 +123,7 @@ module Token = {
     | Question(x)
     | Ampersand(x)
     | Echo(x)
+    | Bang(x)
     | EndOfFile(x) => x
     }
 }
@@ -134,6 +137,7 @@ module Ast_Pattern = {
   type dict_<'t> = [#Dict(loc, array<(string, 't)>)]
   type rec t = [
     | #Null(loc)
+    | #Some(loc, t)
     | #False(loc)
     | #True(loc)
     | #String(loc, string)
@@ -148,10 +152,11 @@ module Ast_Pattern = {
   type arr = arr_<t>
   type dict = dict_<t>
 
-  let toString = (x: t) =>
+  let rec toString = (x: t) =>
     switch x {
     | #True(_) | #False(_) => "boolean"
     | #Null(_) => "null"
+    | #Some(_, x) => toString(x)
     | #String(_) => "string"
     | #Int(_) => "int"
     | #Float(_) => "float"
@@ -167,6 +172,7 @@ module Ast_Pattern = {
     | #True(x)
     | #False(x)
     | #Null(x)
+    | #Some(x, _)
     | #String(x, _)
     | #Int(x, _)
     | #Float(x, _)

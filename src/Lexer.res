@@ -201,6 +201,7 @@ let makeExpression = (source, tokens: Queue.t<Token.t>, ~name, ~until) => {
     | "~" => Queue.add(tokens, Tilde(loc))
     | "?" => Queue.add(tokens, Question(loc))
     | "&" => Queue.add(tokens, Ampersand(loc))
+    | "!" => Queue.add(tokens, Bang(loc))
     | ("-" | "0" | "1" | "2" | "3" | "4" | "5" | "6" | "7" | "8" | "9") as c =>
       Queue.add(tokens, readNumber(c, source, ~loc, ~name))
     | c if isValidIdentifierStart(c) => Queue.add(tokens, readIdentifier(c, source, loc))

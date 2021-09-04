@@ -62,7 +62,7 @@ describe("basic", ({test, _}) => {
       Loc(1),
       [
         ("a", #True(Loc(1))),
-        ("b", #String(Loc(1), "lol")),
+        ("b", #Some(Loc(1), #String(Loc(1), "lol"))),
         ("c", #Null(Loc(1))),
         ("d", #Array(Loc(1), [#True(Loc(1)), #False(Loc(1))])),
       ],
@@ -72,13 +72,13 @@ describe("basic", ({test, _}) => {
       [
         ("a", #False(Loc(1))),
         ("b", #Null(Loc(1))),
-        ("c", #Float(Loc(1), 1.0)),
+        ("c", #Some(Loc(1), #Float(Loc(1), 1.0))),
         ("z", #Int(Loc(1), 1)),
       ],
     )
     let (t1, _) = Local.fromPattern(pat1, Context.make())
     let (t2, _) = Local.fromPattern(pat2, Context.make())
-    unify(t1, t2, Incomplete, ~loc=Loc(1))
+    unify(t1, t2, ~loc=Loc(1))
     expect.value(debug(t1)).toEqual(
       #Record([
         ("a", #Boolean),
@@ -94,7 +94,7 @@ describe("basic", ({test, _}) => {
 describe("match", ({test, _}) => {
   test("basic 1", ({expect, _}) => {
     let src = `
-    {% match a with 1 %} {% with null %} {% /match %}
+    {% match a with !1 %} {% with null %} {% /match %}
     `
     let nodes = Compile.makeAstInternalExn(~name="test", src)
     let bindings = make(nodes)->MapString.map(debug)->MapString.toArray
@@ -103,7 +103,7 @@ describe("match", ({test, _}) => {
   test("Typechecker nested", ({expect, _}) => {
     let src = `
     {% match a with {b} %}
-      {% match b with 1 %} {% with null %} {% /match %}
+      {% match b with !1 %} {% with null %} {% /match %}
     {% /match %}
     `
     let nodes = Compile.makeAstInternalExn(~name="test", src)
@@ -111,7 +111,7 @@ describe("match", ({test, _}) => {
     expect.value(bindingsGlobal).toEqual([("a", #Record([("b", #Nullable(#Int))]))])
     let src = `
     {% match a with {b: {c}, d } %}
-      {% match c with 1 %} {{ d }} {% with null %} {% /match %}
+      {% match c with !1 %} {{ d }} {% with null %} {% /match %}
     {% /match %}
     `
     let nodes = Compile.makeAstInternalExn(~name="test", src)
@@ -124,7 +124,7 @@ describe("match", ({test, _}) => {
   test("Typechecker multiple patterns", ({expect, _}) => {
     let src = `
     {% match a, b with {c}, 1 %}
-      {% match c with {d: 1} %} {% with null %} {% /match %}
+      {% match c with !{d: 1} %} {% with null %} {% /match %}
     {% /match %}
     `
     let nodes = Compile.makeAstInternalExn(~name="test", src)
@@ -146,7 +146,7 @@ describe("match", ({test, _}) => {
       {% match c with {f} %}
         {% match f with {g} %}
           {{ g ? "g" }}
-        {% with {g: ""} %}
+        {% with {g: !""} %}
           z
         {% with {g: null} %}
           z
@@ -174,10 +174,11 @@ describe("component", ({test, _}) => {
   })
 })
 
+/*
 describe("complete vs incomplete", ({test, _}) => {
   test("nullable - global scope", ({expect, _}) => {
     let src = `
-    {% match a with 1 %} {% with null %} {% /match %}
+    {% match a with !1 %} {% with null %} {% /match %}
     {% match b with 1 %} {% /match %}
     {% match b with null %} {% /match %}
     `
@@ -190,7 +191,7 @@ describe("complete vs incomplete", ({test, _}) => {
         {
           exn: None,
           kind: #Type,
-          location: Some({character: 107}),
+          location: Some({character: 108}),
           message: "This is type int but expected type nullable(polymorphic).",
           path: [],
         },
@@ -199,10 +200,11 @@ describe("complete vs incomplete", ({test, _}) => {
   })
   test("nullable - local scope", ({expect, _}) => {
     let src = `
-    {% match a with "a" with null %} {{ a ? "default" }} {% /match %}
+    {% match a with !"a" with null %} {{ a ? "default" }} {% /match %}
     `
     let nodes = Compile.makeAstInternalExn(~name="test", src)
     let bindings = make(nodes)->MapString.map(debug)->MapString.toArray
     expect.value(bindings).toEqual([("a", #Nullable(#String))])
   })
 })
+*/

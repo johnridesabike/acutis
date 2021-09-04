@@ -229,10 +229,10 @@ module Child = {
     }
 }
 
-// If a type is incomplete, then it can be unified more liberally.
-type complete = Complete | Incomplete
+// If a type is incomplete, then it can be unified more liberally. (Unused).
+// type complete = Complete | Incomplete
 
-let rec unify = (tref1, tref2, complete, ~loc) =>
+let rec unify = (tref1, tref2, ~loc) =>
   switch (tref1.contents, tref2.contents) {
   | (Boolean, Boolean)
   | (Int, Int)
@@ -242,35 +242,29 @@ let rec unify = (tref1, tref2, complete, ~loc) =>
   | (t, Polymorphic) => tref2 := t
   | (Echo, (Int | Float | String | Echo) as t) => tref1 := t
   | ((Int | Float | String) as t, Echo) => tref2 := t
-  | (Nullable(t1), Nullable(t2)) => unify(t1, t2, complete, ~loc)
-  | (Nullable(t), _) if complete == Incomplete =>
-    unify(t, tref2, complete, ~loc)
-    tref2 := tref1.contents
-  | (_, Nullable(t)) if complete == Incomplete =>
-    unify(tref1, t, complete, ~loc)
-    tref1 := tref2.contents
-  | (List(t1), List(t2)) => unify(t1, t2, complete, ~loc)
+  | (Nullable(t1), Nullable(t2)) => unify(t1, t2, ~loc)
+  | (List(t1), List(t2)) => unify(t1, t2, ~loc)
   | (Dict(t1, ks1), Dict(t2, ks2)) =>
     let ks' = SetString.union(ks1.contents, ks2.contents)
     ks1 := ks'
     ks2 := ks'
-    unify(t1, t2, complete, ~loc)
-  | (Tuple(t1), Tuple(t2)) => unifyTuple(t1, t2, complete, ~loc)
-  | (Record(t1), Record(t2)) => unifyRecord(t1, t2, complete, ~loc)
+    unify(t1, t2, ~loc)
+  | (Tuple(t1), Tuple(t2)) => unifyTuple(t1, t2, ~loc)
+  | (Record(t1), Record(t2)) => unifyRecord(t1, t2, ~loc)
   | _ => raise(Exit(Debug2.typeMismatch(tref1, tref2, ~f=toString, ~loc)))
   }
-and unifyTuple = (t1, t2, complete, ~loc) => {
+and unifyTuple = (t1, t2, ~loc) => {
   if Array.size(t1.contents) == Array.size(t2.contents) {
-    Array.zip(t1.contents, t2.contents)->Array.forEachU((. (a, b)) => unify(a, b, complete, ~loc))
+    Array.zip(t1.contents, t2.contents)->Array.forEachU((. (a, b)) => unify(a, b, ~loc))
   } else {
     raise(Exit(Debug2.tupleSizeMismatch(Array.size(t1.contents), Array.size(t2.contents))))
   }
 }
-and unifyRecord = (t1, t2, complete, ~loc) => {
+and unifyRecord = (t1, t2, ~loc) => {
   let r = MapString.mergeU(t1.contents, t2.contents, (. _, v1, v2) =>
     switch (v1, v2) {
     | (Some(v1) as r, Some(v2)) =>
-      unify(v1, v2, complete, ~loc)
+      unify(v1, v2, ~loc)
       r
     | (Some(_) as r, None) | (None, Some(_) as r) => r
     | (None, None) => None
@@ -303,12 +297,12 @@ module Context = {
       {...ctx, scope: scope}
     }
 
-  let set = (ctx, k, v, complete, ~loc) =>
+  let set = (ctx, k, v, ~loc) =>
     updateAux(ctx, k, ~f=(. v') =>
       switch v' {
       | None => Some(v)
       | Some(v') as r =>
-        unify(v', v, complete, ~loc)
+        unify(v', v, ~loc)
         r
       }
     )
@@ -331,6 +325,7 @@ module Local = {
   let rec fromPattern = (pattern: Ast_Pattern.t, ctx) =>
     switch pattern {
     | #Null(_) => ref(Nullable(ref(Polymorphic)))
+    | #Some(_, x) => ref(Nullable(fromPattern(x, ctx)))
     | #False(_) | #True(_) => ref(Boolean)
     | #String(_) => ref(String)
     | #Int(_) => ref(Int)
@@ -343,14 +338,14 @@ module Local = {
       | None => ref(Polymorphic)
       | Some(hd) => fromPattern(hd, ctx)
       }
-      Array.forEachU(a, (. x) => unify(t, fromPattern(x, ctx), Incomplete, ~loc))
+      Array.forEachU(a, (. x) => unify(t, fromPattern(x, ctx), ~loc))
       ref(List(t))
     | #ArrayWithTailBinding(loc, a, #Binding(_, b)) =>
       let t = switch a[0] {
       | None => ref(Polymorphic)
       | Some(hd) => fromPattern(hd, ctx)
       }
-      Array.forEachU(a, (. x) => unify(t, fromPattern(x, ctx), Incomplete, ~loc))
+      Array.forEachU(a, (. x) => unify(t, fromPattern(x, ctx), ~loc))
       let t = ref(List(t))
       ctx := Context.setLocal(ctx.contents, b, t)
       t
@@ -359,7 +354,7 @@ module Local = {
       | None => ref(Polymorphic)
       | Some((_, hd)) => fromPattern(hd, ctx)
       }
-      Array.forEachU(d, (. (_, x)) => unify(t, fromPattern(x, ctx), Incomplete, ~loc))
+      Array.forEachU(d, (. (_, x)) => unify(t, fromPattern(x, ctx), ~loc))
       let ks = d->Array.mapU((. (k, _)) => k)->SetString.fromArray
       ref(Dict(t, ref(ks)))
     | #Object(_, o) =>
@@ -385,6 +380,7 @@ module Global = {
   let rec fromPattern = (pattern: Ast_Pattern.t, q) =>
     switch pattern {
     | #Null(_) => ref(Nullable(ref(Polymorphic)))
+    | #Some(_, x) => ref(Nullable(fromPattern(x, q)))
     | #False(_) | #True(_) => ref(Boolean)
     | #String(_) => ref(String)
     | #Int(_) => ref(Int)
@@ -397,14 +393,14 @@ module Global = {
       | None => ref(Polymorphic)
       | Some(hd) => fromPattern(hd, q)
       }
-      Array.forEachU(a, (. x) => unify(t, fromPattern(x, q), Complete, ~loc))
+      Array.forEachU(a, (. x) => unify(t, fromPattern(x, q), ~loc))
       ref(List(t))
     | #ArrayWithTailBinding(loc, a, #Binding(bloc, b)) =>
       let t = switch a[0] {
       | None => ref(Polymorphic)
       | Some(hd) => fromPattern(hd, q)
       }
-      Array.forEachU(a, (. x) => unify(t, fromPattern(x, q), Complete, ~loc))
+      Array.forEachU(a, (. x) => unify(t, fromPattern(x, q), ~loc))
       let t = ref(List(t))
       Queue.add(q, (bloc, b, t))
       t
@@ -413,7 +409,7 @@ module Global = {
       | None => ref(Polymorphic)
       | Some((_, hd)) => fromPattern(hd, q)
       }
-      Array.forEachU(d, (. (_, x)) => unify(t, fromPattern(x, q), Complete, ~loc))
+      Array.forEachU(d, (. (_, x)) => unify(t, fromPattern(x, q), ~loc))
       let ks = d->Array.mapU((. (k, _)) => k)->SetString.fromArray
       ref(Dict(t, ref(ks)))
     | #Object(_, o) =>
@@ -439,13 +435,13 @@ module Global = {
             switch x {
             | None => Some(v)
             | Some(v') as vopt =>
-              unify(v, v', Complete, ~loc)
+              unify(v, v', ~loc)
               vopt
             }
           )
         ctx
       | Some(v') =>
-        unify(v, v', Complete, ~loc)
+        unify(v, v', ~loc)
         ctx
       }
     )
@@ -454,7 +450,7 @@ module Global = {
 
   let unifyMatchCases = (bindingArray: NonEmpty.t<Ast_Pattern.binding>, cases, ctx) => {
     NonEmpty.zip(bindingArray, cases)->NonEmpty.reduce(ctx, (. ctx, (#Binding(loc, k), t)) =>
-      Context.set(ctx, k, t, Complete, ~loc)
+      Context.set(ctx, k, t, ~loc)
     )
   }
 
@@ -465,12 +461,12 @@ module Global = {
     | [hd, tl] => (hd, tl)
     | _ => raise(Exit(Debug2.mapPatternSizeMismatch(~loc)))
     }
-    unify(index, int, Complete, ~loc)
+    unify(index, int, ~loc)
     switch id {
-    | #Binding(loc, binding) => Context.set(ctx, binding, ref(List(case_hd)), Complete, ~loc)
+    | #Binding(loc, binding) => Context.set(ctx, binding, ref(List(case_hd)), ~loc)
     | (#Array(loc, _) | #ArrayWithTailBinding(loc, _, _)) as a =>
       let (a_t, _) = fromPattern(a, ctx)
-      unify(a_t, ref(List(case_hd)), Complete, ~loc)
+      unify(a_t, ref(List(case_hd)), ~loc)
       ctx
     }
   }
@@ -482,12 +478,12 @@ module Global = {
     | [hd, tl] => (hd, tl)
     | _ => raise(Exit(Debug2.mapPatternSizeMismatch(~loc)))
     }
-    unify(index, int, Complete, ~loc)
+    unify(index, int, ~loc)
     switch id {
-    | #Binding(loc, binding) => Context.set(ctx, binding, ref(List(case_hd)), Complete, ~loc)
+    | #Binding(loc, binding) => Context.set(ctx, binding, ref(List(case_hd)), ~loc)
     | #Dict(loc, _) as d =>
       let (t, _) = fromPattern(d, ctx)
-      unify(t, ref(Dict(case_hd, ref(SetString.empty))), Complete, ~loc)
+      unify(t, ref(Dict(case_hd, ref(SetString.empty))), ~loc)
       ctx
     }
   }
@@ -513,14 +509,14 @@ let unifyEchoes = (echoes: NonEmpty.t<Ast.Echo.t>, ctx): Context.t => {
     switch nullables[i] {
     | None =>
       switch default {
-      | Binding(loc, binding, _) => Context.set(ctx, binding, ref(Echo), Complete, ~loc)
+      | Binding(loc, binding, _) => Context.set(ctx, binding, ref(Echo), ~loc)
       | Child(_, child) =>
         Context.setChild(ctx, child, ref(Child.Child))
         ctx
       | String(_, _, _) | Int(_, _, _) | Float(_, _, _) => ctx
       }
     | Some(Binding(loc, binding, _)) =>
-      let ctx = Context.set(ctx, binding, ref(Nullable(ref(Echo))), Complete, ~loc)
+      let ctx = Context.set(ctx, binding, ref(Nullable(ref(Echo))), ~loc)
       aux(succ(i), ctx)
     | Some(String(_, _, _) | Int(_, _, _) | Float(_, _, _)) =>
       raise(Exit(Debug2.nonNullableEchoLiteral()))
@@ -535,7 +531,7 @@ let unifyEchoes = (echoes: NonEmpty.t<Ast.Echo.t>, ctx): Context.t => {
 let unifyNestedNonEmpty = (cases, ~loc) =>
   NonEmpty.reduceHd(cases, (. casea, caseb) => {
     NonEmpty.zipBy(casea, caseb, (. casea, caseb) => {
-      unify(casea, caseb, Incomplete, ~loc)
+      unify(casea, caseb, ~loc)
       casea
     })
   })
@@ -552,7 +548,7 @@ let rec makeCaseTypes = (cases, ctx, ~loc) => {
       })
     })->NonEmpty.reduceHd((. pat1, pat2) => {
       NonEmpty.zip(pat1, pat2)->NonEmpty.map((. (a, b)) => {
-        unify(a, b, Incomplete, ~loc)
+        unify(a, b, ~loc)
         a
       })
     })
@@ -562,7 +558,7 @@ let rec makeCaseTypes = (cases, ctx, ~loc) => {
         | (None, None) => None
         | (Some(_) as x, None) | (None, Some(_) as x) => x
         | (Some(a) as x, Some(b)) =>
-          unify(a, b, Incomplete, ~loc)
+          unify(a, b, ~loc)
           x
         }
       )

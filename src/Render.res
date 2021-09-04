@@ -46,6 +46,7 @@ module Pattern = {
     | #True(_) => #ok(Json.boolean(true))
     | #False(_) => #ok(Json.boolean(false))
     | #Null(_) => #ok(Json.null)
+    | #Some(_, x) => toJson(x, ~props, ~stack)
     | #String(_, x) => #ok(Json.string(x))
     | #Int(_, x) => #ok(Json.number(Int.toFloat(x)))
     | #Float(_, x) => #ok(Json.number(x))
@@ -119,8 +120,10 @@ module Pattern = {
     | (#Float(_), JSONNumber(_))
     | (#String(_), JSONString(_))
     | (#False(_), JSONTrue)
-    | (#True(_), JSONFalse) =>
+    | (#True(_), JSONFalse)
+    | (#Some(_), JSONNull) =>
       NoMatch
+    | (#Some(_, pattern), _) => testValue(~pattern, ~json, ~bindings, ~stack)
     | (#Array(_, []), JSONArray([])) => Result(#ok(bindings))
     | (#Array(_, []), JSONArray(_)) => NoMatch
     | (#Tuple(_, x), JSONArray(data)) => testArray(~patterns=x, ~data, ~bindings, ~stack)

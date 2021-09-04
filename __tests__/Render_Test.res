@@ -51,11 +51,20 @@ describe("Render essentials", ({test, _}) => {
 
   test("Unbound identifiers default to null", ({expect, _}) => {
     let result = render(
-      "{% match a with null %} a doesn't exist. {% with a %} {{ a }} {% /match %}",
+      "{% match a with !a %} {{ a }} {% with null %} a doesn't exist. {% /match %}",
       Js.Dict.empty(),
       Compile.Components.empty(),
     )
     expect.value(result).toEqual(#ok(" a doesn't exist. "))
+  })
+
+  test("Unwrapping not-null (!) works.", ({expect, _}) => {
+    let result = render(
+      "{% match a with !a %} {{ a }} {% with null %} a doesn't exist. {% /match %}",
+      Js.Dict.fromArray([("a", Js.Json.string("works"))]),
+      Compile.Components.empty(),
+    )
+    expect.value(result).toEqual(#ok(" works "))
   })
 
   test("Nested comments", ({expect, _}) => {

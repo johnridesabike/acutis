@@ -59,6 +59,7 @@ describe("Patterns", ({test, _}) => {
 
   test("Enums", ({expect, _}) => {
     expect.value(parseString("null")).toEqual(NonEmpty.one(#Null(T.Loc(3))))
+    expect.value(parseString("!a")).toEqual(NonEmpty.one(#Some(T.Loc(3), #Binding(T.Loc(4), "a"))))
     expect.value(parseString("false")).toEqual(NonEmpty.one(#False(T.Loc(3))))
     expect.value(parseString("true")).toEqual(NonEmpty.one(#True(T.Loc(3))))
   })
