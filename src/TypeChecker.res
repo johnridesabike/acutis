@@ -39,7 +39,7 @@ type rec t =
   // | LiteralNull
   | Echo
   | Nullable(ref<t>)
-  | Array(ref<t>)
+  | List(ref<t>)
   | Dict(ref<t>, ref<SetString.t>)
   // 0 and 1 sized tuples are legal.
   | Tuple(ref<array<ref<t>>>)
@@ -57,7 +57,7 @@ let rec toString = x =>
   | String => "string"
   | Echo => "echoable"
   | Nullable(x) => `nullable(${toString(x)})`
-  | Array(x) => `array [${toString(x)}]`
+  | List(x) => `list [${toString(x)}]`
   | Dict(x, _) => `dictionary <${toString(x)}>`
   | Tuple(x) =>
     let x = Array.joinWith(x.contents, ", ", toString)
@@ -133,9 +133,9 @@ module TypedPattern = {
     | (#Float(_, f), _) => TPat_Const(TPat_Float(f))
     | (#Tuple(_, t), Tuple({contents})) =>
       TPat_Tuple(Array.zipByU(t, contents, (. p, ty) => make(p, ty.contents)))
-    | (#Array(_, l), Array({contents})) =>
+    | (#Array(_, l), List({contents})) =>
       makeList(l, 0, contents, ~tail=TPat_Construct(TPat_List, None))
-    | (#ArrayWithTailBinding(_, l, #Binding(_, b)), Array({contents})) =>
+    | (#ArrayWithTailBinding(_, l, #Binding(_, b)), List({contents})) =>
       makeList(l, 0, contents, ~tail=TPat_Var(b))
     | (#Dict(_, d), Dict(tys, {contents: ks})) =>
       let ks = ks->SetString.toArray->Array.mapU((. k) => (k, tys))->MapString.fromArray
@@ -251,7 +251,7 @@ let rec unify = (tref1, tref2, complete, ~loc) =>
   | (_, Nullable(t)) if complete == Incomplete =>
     unify(tref1, t, complete, ~loc)
     tref1 := tref2.contents
-  | (Array(t1), Array(t2)) => unify(t1, t2, complete, ~loc)
+  | (List(t1), List(t2)) => unify(t1, t2, complete, ~loc)
   | (Dict(t1, ks1), Dict(t2, ks2)) =>
     let ks' = SetString.union(ks1.contents, ks2.contents)
     ks1 := ks'
@@ -346,14 +346,14 @@ module Local = {
       | Some(hd) => fromPattern(hd, ctx)
       }
       Array.forEachU(a, (. x) => unify(t, fromPattern(x, ctx), Incomplete, ~loc))
-      ref(Array(t))
+      ref(List(t))
     | #ArrayWithTailBinding(loc, a, #Binding(_, b)) =>
       let t = switch a[0] {
       | None => ref(Polymorphic)
       | Some(hd) => fromPattern(hd, ctx)
       }
       Array.forEachU(a, (. x) => unify(t, fromPattern(x, ctx), Incomplete, ~loc))
-      let t = ref(Array(t))
+      let t = ref(List(t))
       ctx := Context.setLocal(ctx.contents, b, t)
       t
     | #Dict(loc, d) =>
@@ -400,14 +400,14 @@ module Global = {
       | Some(hd) => fromPattern(hd, q)
       }
       Array.forEachU(a, (. x) => unify(t, fromPattern(x, q), Complete, ~loc))
-      ref(Array(t))
+      ref(List(t))
     | #ArrayWithTailBinding(loc, a, #Binding(bloc, b)) =>
       let t = switch a[0] {
       | None => ref(Polymorphic)
       | Some(hd) => fromPattern(hd, q)
       }
       Array.forEachU(a, (. x) => unify(t, fromPattern(x, q), Complete, ~loc))
-      let t = ref(Array(t))
+      let t = ref(List(t))
       Queue.add(q, (bloc, b, t))
       t
     | #Dict(loc, d) =>
@@ -469,10 +469,10 @@ module Global = {
     }
     unify(index, int, Complete, ~loc)
     switch id {
-    | #Binding(loc, binding) => Context.set(ctx, binding, ref(Array(case_hd)), Complete, ~loc)
+    | #Binding(loc, binding) => Context.set(ctx, binding, ref(List(case_hd)), Complete, ~loc)
     | (#Array(loc, _) | #ArrayWithTailBinding(loc, _, _)) as a =>
       let (a_t, _) = fromPattern(a, ctx)
-      unify(a_t, ref(Array(case_hd)), Complete, ~loc)
+      unify(a_t, ref(List(case_hd)), Complete, ~loc)
       ctx
     }
   }
@@ -486,7 +486,7 @@ module Global = {
     }
     unify(index, int, Complete, ~loc)
     switch id {
-    | #Binding(loc, binding) => Context.set(ctx, binding, ref(Array(case_hd)), Complete, ~loc)
+    | #Binding(loc, binding) => Context.set(ctx, binding, ref(List(case_hd)), Complete, ~loc)
     | #Dict(loc, _) as d =>
       let (t, _) = fromPattern(d, ctx)
       unify(t, ref(Dict(case_hd, ref(SetString.empty))), Complete, ~loc)
@@ -612,30 +612,3 @@ let makeTypedCases = cases => {
   let casetypes = makeCaseTypes(cases, ctx, ~loc=Loc(0))
   Ast2.toTyped(cases, casetypes)
 }
-
-let rec validate = (types, json) =>
-  switch (types.contents, Js.Json.classify(json)) {
-  | (Polymorphic, _)
-  | (Boolean, JSONTrue | JSONFalse)
-  | (Int | Float, JSONNumber(_))
-  | (String, JSONString(_))
-  | (Echo, JSONNumber(_) | JSONString(_))
-  | (Nullable(_), JSONNull) => ()
-  | (Nullable(x), _) => validate(x, json)
-  | (Array(x), JSONArray(json)) => Array.forEach(json, json => validate(x, json))
-  | (Dict(x, _), JSONObject(json)) => json->Js.Dict.values->Array.forEach(json => validate(x, json))
-  | (Tuple(x), JSONArray(json)) =>
-    if Array.size(x.contents) == Array.size(json) {
-      Array.zip(x.contents, json)->Array.forEach(((types, json)) => validate(types, json))
-    } else {
-      assert false
-    }
-  | (Record(x), JSONObject(json)) =>
-    MapString.forEach(x.contents, (k, v) =>
-      switch Js.Dict.get(json, k) {
-      | None => assert false
-      | Some(json) => validate(v, json)
-      }
-    )
-  | _ => assert false
-  }

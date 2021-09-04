@@ -29,7 +29,7 @@ type rec debug = [
   | #String
   | #Echo
   | #Nullable(debug)
-  | #Array(debug)
+  | #List(debug)
   | #Tuple(array<debug>)
   | #Dict(debug)
   | #Record(array<(string, debug)>)
@@ -43,7 +43,7 @@ let rec debug = (x): debug =>
   | String => #String
   | Echo => #Echo
   | Nullable(x) => #Nullable(debug(x))
-  | Array(x) => #Array(debug(x))
+  | List(x) => #List(debug(x))
   | Tuple(x) => #Tuple(Array.map(x.contents, debug))
   | Dict(x, _) => #Dict(debug(x))
   | Record(x) => #Record(MapString.map(x.contents, debug)->MapString.toArray)
@@ -84,7 +84,7 @@ describe("basic", ({test, _}) => {
         ("a", #Boolean),
         ("b", #Nullable(#String)),
         ("c", #Nullable(#Float)),
-        ("d", #Array(#Boolean)),
+        ("d", #List(#Boolean)),
         ("z", #Int),
       ]),
     )
