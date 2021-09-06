@@ -193,7 +193,7 @@ module Ast = {
   type rec node<'a> =
     | Text(string, trim)
     // The first echo item that isn't null will be returned.
-    | Echo(loc, NonEmpty.t<Echo.t>)
+    | Echo({loc: loc, nullables: array<Echo.t>, default: Echo.t})
     | Match(loc, NonEmpty.t<Ast_Pattern.binding>, NonEmpty.t<case<'a>>)
     | MapArray(loc, mapArrayPattern, NonEmpty.t<case<'a>>)
     | MapDict(loc, mapDictPattern, NonEmpty.t<case<'a>>)
@@ -208,6 +208,16 @@ module Ast = {
   and case<'a> = {patterns: NonEmpty.t<NonEmpty.t<Ast_Pattern.t>>, nodes: nodes<'a>}
   and child<'a> = ChildName(string) | ChildBlock(nodes<'a>)
   type t<'a> = {nodes: nodes<'a>, name: string}
+}
+
+module Ast2 = {
+  type case<'pat, 'a> = {pats: NonEmpty.t<NonEmpty.t<'pat>>, nodes: Ast.nodes<'a>}
+
+  let makeCase = c =>
+    NonEmpty.map(c, (. {Ast.patterns: patterns, nodes}) => {
+      pats: patterns,
+      nodes: nodes,
+    })
 }
 
 type rec ast<'a> = Ast.t<templateU<'a>>

@@ -648,15 +648,14 @@ Array [
             },
             Object {
               "TAG": 1,
-              "_0": 55,
-              "_1": Array [
-                Object {
-                  "TAG": 0,
-                  "_0": 56,
-                  "_1": "i",
-                  "_2": 1,
-                },
-              ],
+              "default": Object {
+                "TAG": 0,
+                "_0": 56,
+                "_1": "i",
+                "_2": 1,
+              },
+              "loc": 55,
+              "nullables": Array [],
             },
             Object {
               "TAG": 0,
@@ -833,15 +832,14 @@ Array [
           },
           Object {
             "TAG": 1,
-            "_0": 26,
-            "_1": Array [
-              Object {
-                "TAG": 0,
-                "_0": 27,
-                "_1": "b",
-                "_2": 1,
-              },
-            ],
+            "default": Object {
+              "TAG": 0,
+              "_0": 27,
+              "_1": "b",
+              "_2": 1,
+            },
+            "loc": 26,
+            "nullables": Array [],
           },
           Object {
             "TAG": 0,
@@ -902,15 +900,14 @@ Array [
           },
           Object {
             "TAG": 1,
-            "_0": 80,
-            "_1": Array [
-              Object {
-                "TAG": 0,
-                "_0": 81,
-                "_1": "e",
-                "_2": 1,
-              },
-            ],
+            "default": Object {
+              "TAG": 0,
+              "_0": 81,
+              "_1": "e",
+              "_2": 1,
+            },
+            "loc": 80,
+            "nullables": Array [],
           },
           Object {
             "TAG": 0,
@@ -959,15 +956,14 @@ Array [
           },
           Object {
             "TAG": 1,
-            "_0": 115,
-            "_1": Array [
-              Object {
-                "TAG": 0,
-                "_0": 116,
-                "_1": "f",
-                "_2": 1,
-              },
-            ],
+            "default": Object {
+              "TAG": 0,
+              "_0": 116,
+              "_1": "f",
+              "_2": 1,
+            },
+            "loc": 115,
+            "nullables": Array [],
           },
           Object {
             "TAG": 0,
@@ -1035,15 +1031,14 @@ Array [
           },
           Object {
             "TAG": 1,
-            "_0": 160,
-            "_1": Array [
-              Object {
-                "TAG": 0,
-                "_0": 161,
-                "_1": "i",
-                "_2": 1,
-              },
-            ],
+            "default": Object {
+              "TAG": 0,
+              "_0": 161,
+              "_1": "i",
+              "_2": 1,
+            },
+            "loc": 160,
+            "nullables": Array [],
           },
           Object {
             "TAG": 0,
@@ -1052,15 +1047,14 @@ Array [
           },
           Object {
             "TAG": 1,
-            "_0": 168,
-            "_1": Array [
-              Object {
-                "TAG": 0,
-                "_0": 169,
-                "_1": "j",
-                "_2": 1,
-              },
-            ],
+            "default": Object {
+              "TAG": 0,
+              "_0": 169,
+              "_1": "j",
+              "_2": 1,
+            },
+            "loc": 168,
+            "nullables": Array [],
           },
           Object {
             "TAG": 0,
@@ -1244,15 +1238,14 @@ Array [
           },
           Object {
             "TAG": 1,
-            "_0": 125,
-            "_1": Array [
-              Object {
-                "TAG": 0,
-                "_0": 126,
-                "_1": "g",
-                "_2": 1,
-              },
-            ],
+            "default": Object {
+              "TAG": 0,
+              "_0": 126,
+              "_1": "g",
+              "_2": 1,
+            },
+            "loc": 125,
+            "nullables": Array [],
           },
           Object {
             "TAG": 0,

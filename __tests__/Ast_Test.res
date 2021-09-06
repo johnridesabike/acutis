@@ -227,13 +227,13 @@ f`,
     ).toEqual([
       Text("\na\n", NoTrim),
       Text("\n", NoTrim),
-      Echo(T.Loc(13), NonEmpty.one(T.Ast.Echo.Binding(T.Loc(14), "c", Escape))),
+      Echo({loc: T.Loc(13), nullables: [], default: T.Ast.Echo.Binding(T.Loc(14), "c", Escape)}),
       Text("\n", NoTrim),
-      Echo(T.Loc(21), NonEmpty.one(T.Ast.Echo.String(T.Loc(22), "d", Escape))),
+      Echo({loc: T.Loc(21), nullables: [], default: T.Ast.Echo.String(T.Loc(22), "d", Escape)}),
       Text("\n", NoTrim),
-      Echo(T.Loc(31), NonEmpty.one(T.Ast.Echo.Float(T.Loc(32), 1.5, Escape))),
+      Echo({loc: T.Loc(31), nullables: [], default: T.Ast.Echo.Float(T.Loc(32), 1.5, Escape)}),
       Text("\n", NoTrim),
-      Echo(T.Loc(41), NonEmpty.one(T.Ast.Echo.Binding(T.Loc(43), "e", NoEscape))),
+      Echo({loc: T.Loc(41), nullables: [], default: T.Ast.Echo.Binding(T.Loc(43), "e", NoEscape)}),
       Text("\nf", NoTrim),
     ])
   })

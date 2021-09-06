@@ -9,8 +9,6 @@
 open TestFramework
 open TypeChecker
 module T = Acutis_Types
-module Queue = Belt.MutableQueue
-module MutMapString = Belt.MutableMap.String
 module MapString = Belt.Map.String
 
 type rec debug = [
@@ -39,13 +37,6 @@ let rec debug = (x): debug =>
   | Tuple(x) => #Tuple(Array.map(x.contents, debug))
   | Dict(x, _) => #Dict(debug(x))
   | Record(x) => #Record(MapString.map(x.contents, debug)->MapString.toArray)
-  }
-
-let catch = (f): Result.t<_> =>
-  try {
-    #ok(f())
-  } catch {
-  | Debug.Exit(e) => #errors([e])
   }
 
 describe("basic", ({test, _}) => {

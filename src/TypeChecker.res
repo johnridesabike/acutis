@@ -9,7 +9,6 @@ module T = Acutis_Types
 module Array = Belt.Array
 module Ast = T.Ast
 module Ast_Pattern = T.Ast_Pattern
-module Debug2 = TypeChecker_Debug
 module MapString = Belt.Map.String
 module Queue = Belt.MutableQueue
 module Option = Belt.Option
@@ -49,15 +48,15 @@ let rec toString = x =>
   | String => "string"
   | Echo => "echoable"
   | Nullable(x) => `nullable(${toString(x)})`
-  | List(x) => `list [${toString(x)}]`
-  | Dict(x, _) => `dictionary <${toString(x)}>`
+  | List(x) => `[${toString(x)}]`
+  | Dict(x, _) => `<${toString(x)}>`
   | Tuple(x) =>
     let x = Array.joinWith(x.contents, ", ", toString)
-    `tuple (${x})`
+    `(${x})`
   | Record(x) =>
     let x =
       MapString.toArray(x.contents)->Array.joinWith(", ", ((k, v)) => `"${k}": ${toString(v)}`)
-    `record {${x}}`
+    `{${x}}`
   }
 
 module TypedPattern = {
@@ -186,24 +185,6 @@ module TypedPattern = {
         }
       aux("[", ~sep="", l)
     }
-}
-
-module Ast2 = {
-  type pattern = T.Ast_Pattern.t
-  type case<'pat, 'a> = {pats: NonEmpty.t<NonEmpty.t<'pat>>, nodes: T.Ast.nodes<'a>}
-  let make = c =>
-    c->NonEmpty.map((. {T.Ast.patterns: patterns, nodes}) => {
-      pats: patterns,
-      nodes: nodes,
-    })
-
-  let toTyped = (c, tys) =>
-    NonEmpty.map(c, (. {pats, nodes}) => {
-      pats: NonEmpty.map(pats, (. pats) =>
-        NonEmpty.zipBy(pats, tys, (. p, ty) => TypedPattern.make(p, ty.contents))
-      ),
-      nodes: nodes,
-    })
 }
 
 module Child = {
@@ -356,6 +337,7 @@ module Local = {
       })
       let types = MapString.fromArray(types)
       ref(Record(ref(types)))
+    | #Binding(_, "_") => ref(Polymorphic)
     | #Binding(_, b) =>
       let t = ref(Polymorphic)
       ctx := Context.setLocal(ctx.contents, b, t)
@@ -411,6 +393,7 @@ module Global = {
       })
       let types = MapString.fromArray(types)
       ref(Record(ref(types)))
+    | #Binding(_, "_") => ref(Polymorphic)
     | #Binding(loc, b) =>
       let t = ref(Polymorphic)
       Queue.add(q, (loc, b, t))
@@ -481,33 +464,18 @@ module Global = {
   }
 }
 
-// Until we upgrade the AST
-let fixEchoes = a => {
-  let hd = NonEmpty.hd(a)
-  let q = Queue.make()
-  let rec aux = (hd, i) =>
-    switch NonEmpty.get(a, i) {
-    | None => (Queue.toArray(q), hd)
-    | Some(next) =>
-      Queue.add(q, hd)
-      aux(next, succ(i))
-    }
-  aux(hd, 1)
-}
-
-let unifyEchoes = (echoes: NonEmpty.t<Ast.Echo.t>, ctx): Context.t => {
-  let (nullables, default) = fixEchoes(echoes)
+let unifyEchoes = (nullables, default, ctx): Context.t => {
   let rec aux = (i, ctx) => {
     switch nullables[i] {
     | None =>
       switch default {
-      | Binding(loc, binding, _) => Context.set(ctx, binding, ref(Echo), ~loc)
+      | T.Ast.Echo.Binding(loc, binding, _) => Context.set(ctx, binding, ref(Echo), ~loc)
       | Child(_, child) =>
         Context.setChild(ctx, child, ref(Child.Child))
         ctx
       | String(_, _, _) | Int(_, _, _) | Float(_, _, _) => ctx
       }
-    | Some(Binding(loc, binding, _)) =>
+    | Some(T.Ast.Echo.Binding(loc, binding, _)) =>
       let ctx = Context.set(ctx, binding, ref(Nullable(ref(Echo))), ~loc)
       aux(succ(i), ctx)
     | Some(String(_, _, _) | Int(_, _, _) | Float(_, _, _)) =>
@@ -530,7 +498,7 @@ let unifyNestedNonEmpty = (cases, ~loc) =>
 
 let rec makeCaseTypes = (cases, ctx, ~loc) => {
   cases
-  ->NonEmpty.map((. {Ast2.pats: pats, nodes}) => {
+  ->NonEmpty.map((. {T.Ast2.pats: pats, nodes}) => {
     let scopes = Queue.make()
     let casetypes = NonEmpty.map(pats, (. pattern) => {
       NonEmpty.map(pattern, (. p) => {
@@ -566,22 +534,22 @@ and checkNodes = (nodes: Ast.nodes<_>, ctx: Context.t): Context.t => {
   Array.reduceU(nodes, ctx, (. ctx, node) =>
     switch node {
     | Text(_) => ctx
-    | Echo(_, echoes) => unifyEchoes(echoes, ctx)
+    | Echo({loc: _, nullables, default}) => unifyEchoes(nullables, default, ctx)
     | Component({loc, props, _}) =>
       let (t, ctx) = Global.fromPattern(#Object(loc, props), ctx)
       ignore(t) // We need to unify this with the Component's signature
       ctx
     | Match(loc, bindingArray, cases) =>
-      let cases = Ast2.make(cases)
+      let cases = T.Ast2.makeCase(cases)
       let casetypes = makeCaseTypes(cases, ctx, ~loc)
       //let typedcases = Ast2.toTyped(cases, casetypes)
       Global.unifyMatchCases(bindingArray, casetypes, ctx)
     | MapArray(loc, pattern, cases) =>
-      let cases = Ast2.make(cases)
+      let cases = T.Ast2.makeCase(cases)
       let casetypes = makeCaseTypes(cases, ctx, ~loc)
       Global.unifyMapArrayCases(pattern, casetypes, ctx, ~loc)
     | MapDict(loc, pattern, cases) =>
-      let cases = Ast2.make(cases)
+      let cases = T.Ast2.makeCase(cases)
       let casetypes = makeCaseTypes(cases, ctx, ~loc)
       Global.unifyMapDictCases(pattern, casetypes, ctx, ~loc)
     }
@@ -595,6 +563,11 @@ let make = nodes => {
 
 let makeTypedCases = cases => {
   let ctx = Context.make()
-  let casetypes = makeCaseTypes(cases, ctx, ~loc=Loc(0))
-  Ast2.toTyped(cases, casetypes)
+  let tys = makeCaseTypes(cases, ctx, ~loc=Loc(0))
+  NonEmpty.map(cases, (. {pats, nodes}) => {
+    T.Ast2.pats: NonEmpty.map(pats, (. pats) =>
+      NonEmpty.zipBy(pats, tys, (. p, ty) => TypedPattern.make(p, ty.contents))
+    ),
+    nodes: nodes,
+  })
 }

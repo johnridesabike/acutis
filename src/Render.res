@@ -313,32 +313,45 @@ let trimEnd = string => {
 external dictMerge: (@as(json`{}`) _, ~base: Js.Dict.t<'a>, Js.Dict.t<'a>) => Js.Dict.t<'a> =
   "assign"
 
-let echo = (ne, ~props, ~stack, ~children, ~env: T.environment<_>, ~error) => {
-  let rec aux = (head: Ast.Echo.t, i) =>
-    switch head {
-    | Binding(loc, binding, esc) =>
-      switch echoBinding(props, binding) {
-      | Ok(x) => env.return(. escape(esc, x))
-      | Error(type_) =>
-        switch (type_, NonEmpty.get(ne, i)) {
-        | (JSONNull, Some(head)) => aux(head, succ(i))
-        | (type_, _) => error(. [Debug.badEchoType(~binding, ~type_, ~loc, ~stack)])
-        }
-      }
-    | Child(loc, child) =>
-      switch Js.Dict.get(children, child) {
-      | Some(x) => x
-      | None =>
-        switch NonEmpty.get(ne, i) {
-        | Some(head) => aux(head, succ(i))
-        | None => error(. [Debug.childDoesNotExist(~loc, ~child, ~stack)])
-        }
-      }
-    | String(_, x, esc) => env.return(. escape(esc, x))
-    | Int(_, x, esc) => env.return(. escape(esc, Int.toString(x)))
-    | Float(_, x, esc) => env.return(. escape(esc, Float.toString(x)))
+type echoResult<'a> =
+  | ENull(T.loc, string)
+  | ENullChild(T.loc, string)
+  | EResult('a)
+
+let echo' = (x, ~props, ~stack, ~children, ~env, ~error) =>
+  switch x {
+  | T.Ast.Echo.Binding(loc, binding, esc) =>
+    switch echoBinding(props, binding) {
+    | Ok(x) => EResult(env.T.return(. escape(esc, x)))
+    | Error(JSONNull) => ENull(loc, binding)
+    | Error(type_) => EResult(error(. [Debug.badEchoType(~binding, ~type_, ~loc, ~stack)]))
     }
-  aux(NonEmpty.hd(ne), 1)
+  | Child(loc, child) =>
+    switch Js.Dict.get(children, child) {
+    | Some(x) => EResult(x)
+    | None => ENullChild(loc, child)
+    }
+  | String(_, x, esc) => EResult(env.return(. escape(esc, x)))
+  | Int(_, x, esc) => EResult(env.return(. escape(esc, Int.toString(x))))
+  | Float(_, x, esc) => EResult(env.return(. escape(esc, Float.toString(x))))
+  }
+
+let echo = (nullables, default, ~props, ~stack, ~children, ~env: T.environment<_>, ~error) => {
+  let rec aux = i =>
+    switch nullables[i] {
+    | None =>
+      switch echo'(default, ~props, ~stack, ~children, ~env, ~error) {
+      | EResult(x) => x
+      | ENull(loc, binding) => error(. [Debug.badEchoType(~binding, ~type_=JSONNull, ~loc, ~stack)])
+      | ENullChild(loc, child) => error(. [Debug.childDoesNotExist(~loc, ~child, ~stack)])
+      }
+    | Some(x) =>
+      switch echo'(x, ~props, ~stack, ~children, ~env, ~error) {
+      | EResult(x) => x
+      | ENull(_) | ENullChild(_) => aux(succ(i))
+      }
+    }
+  aux(0)
 }
 
 let rec make = (~nodes, ~props, ~children, ~stack, ~makeEnv, ~error, ~try_, ~reduceQueue) => {
@@ -346,7 +359,8 @@ let rec make = (~nodes, ~props, ~children, ~stack, ~makeEnv, ~error, ~try_, ~red
   let queue = Queue.make()
   Array.forEachU(nodes, (. node: Ast.node<_>) =>
     switch node {
-    | Echo(_, nonempty) => Queue.add(queue, echo(nonempty, ~props, ~stack, ~children, ~env, ~error))
+    | Echo({loc: _, nullables, default}) =>
+      Queue.add(queue, echo(nullables, default, ~props, ~stack, ~children, ~env, ~error))
     | Text(str, trim) =>
       Queue.add(
         queue,

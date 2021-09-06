@@ -227,15 +227,15 @@ let parseEchoes = tokens => {
   let q = Queue.make()
 
   @raises(Exit)
-  let rec aux = (): parseData<NonEmpty.t<_>> =>
+  let rec aux = last =>
     switch Lexer.popExn(tokens) {
-    | (Tilde(_) | Text(_)) as t => {nextToken: t, data: NonEmpty.fromQueue(head, q)}
+    | (Tilde(_) | Text(_)) as t => {nextToken: t, data: (Queue.toArray(q), last)}
     | Question(_) =>
-      Queue.add(q, parseEcho(tokens))
-      aux()
+      Queue.add(q, last)
+      aux(parseEcho(tokens))
     | t => raise(Exit(Debug.unexpectedToken(t, ~name=Lexer.name(tokens))))
     }
-  aux()
+  aux(head)
 }
 
 let endOfMatchMap = (. t: Token.t) =>
@@ -311,8 +311,8 @@ let rec parse = (t, tokens, ~until) => {
       | #...Ast_Pattern.t as x => raise(Exit(Debug.badMapDictPattern(x, ~name=Lexer.name(tokens))))
       }
     | Echo(loc) =>
-      let {nextToken, data: echoes} = parseEchoes(tokens)
-      Queue.add(q, Echo(loc, echoes))
+      let {nextToken, data: (nullables, default)} = parseEchoes(tokens)
+      Queue.add(q, Echo({loc: loc, nullables: nullables, default: default}))
       aux(nextToken)
     | ComponentName(loc, name) =>
       Queue.add(q, parseComponent(loc, name, tokens))
