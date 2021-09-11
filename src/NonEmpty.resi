@@ -19,3 +19,4 @@ let reduce: (t<'a>, 'b, (. 'b, 'a) => 'b) => 'b
 let map: (t<'a>, (. 'a) => 'b) => t<'b>
 let zip: (t<'a>, t<'b>) => t<('a, 'b)>
 let zipBy: (t<'a>, t<'b>, (. 'a, 'b) => 'c) => t<'c>
+let joinWith: (t<'a>, string, (. 'a) => string) => string

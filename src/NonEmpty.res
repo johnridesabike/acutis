@@ -51,3 +51,5 @@ let zip = Array.zip
 let zipBy = Array.zipByU
 
 let reduce = Array.reduceU
+
+let joinWith = Array.joinWithU

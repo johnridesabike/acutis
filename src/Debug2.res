@@ -64,3 +64,15 @@ ${f(pat)}`,
   location: Some(location(loc)),
   path: [],
 }
+
+let unusedCase = (pat, ~f) => {
+  let pat = NonEmpty.joinWith(pat, ", ", (. x) => f(x))
+  {
+    message: `This match case is unused:
+${pat}`,
+    kind: #Matching,
+    exn: None,
+    location: None, // fix this
+    path: [],
+  }
+}

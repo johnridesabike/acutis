@@ -7,10 +7,10 @@
 */
 module Array = Belt.Array
 module Dict = Js.Dict
-module Float = Belt.Float
 module MapString = Belt.Map.String
+module MapInt = Belt.Map.Int
 module Option = Belt.Option
-module SetString = Belt.Set.String
+module SetInt = Belt.Set.Int
 module TC = TypeChecker
 module T = Acutis_Types
 
@@ -33,8 +33,8 @@ module RenderMatch = {
       }
     }
 
-  let bindNames = (map, ns, val) =>
-    SetString.reduceU(ns, map, (. map, name) => MapString.set(map, name, val))
+  let bindNames = (map, ids, val) =>
+    SetInt.reduceU(ids, map, (. map, id) => MapInt.set(map, id, val))
 
   type getter<'a> = (. 'a, int, string) => Props.t
   let arrayGet: getter<_> = (. a, i, _) => Array.getExn(a, i)
@@ -49,20 +49,20 @@ module RenderMatch = {
   ) =>
     switch tree {
     | End(x) => Some((vars, x))
-    | Switch({idx, key, cases, wildcard, names}) =>
+    | Switch({idx, key, cases, wildcard, ids}) =>
       let val = get(. args, idx, key)
-      let vars = bindNames(vars, names, val)
+      let vars = bindNames(vars, ids, val)
       switch testCase(val, cases, ~wildcard) {
       | Some(tree) => make(tree, args, get, vars)
       | None => None
       }
-    | Wildcard({idx, key, names, child}) =>
+    | Wildcard({idx, key, ids, child}) =>
       let val = get(. args, idx, key)
-      let vars = bindNames(vars, names, val)
+      let vars = bindNames(vars, ids, val)
       make(child, args, get, vars)
-    | Construct({idx, key, names, nil, cons, kind: _}) =>
+    | Construct({idx, key, ids, nil, cons, kind: _}) =>
       let val = get(. args, idx, key)
-      let vars = bindNames(vars, names, val)
+      let vars = bindNames(vars, ids, val)
       let child = if Props.isNull(val) {
         nil
       } else {
@@ -72,9 +72,9 @@ module RenderMatch = {
       | Some(tree) => make(tree, args, get, vars)
       | None => None
       }
-    | Nest({idx, key, kind, names, child, wildcard}) =>
+    | Nest({idx, key, kind, ids, child, wildcard}) =>
       let val = get(. args, idx, key)
-      let vars = bindNames(vars, names, val)
+      let vars = bindNames(vars, ids, val)
       let result = switch kind {
       | Tuple =>
         let tuple = Props.tupleExn(val)
@@ -99,27 +99,27 @@ module RenderMatch = {
   and makeDict: 'a. (Matching.tree<'a>, _, _) => option<(_, 'a)> = (tree, args, vars) =>
     switch tree {
     | End(x) => Some((vars, x))
-    | Switch({idx: _, key, cases, wildcard, names}) =>
+    | Switch({idx: _, key, cases, wildcard, ids}) =>
       switch Js.Dict.get(args, key) {
       | Some(val) =>
-        let vars = bindNames(vars, names, val)
+        let vars = bindNames(vars, ids, val)
         switch testCase(val, cases, ~wildcard) {
         | Some(tree) => makeDict(tree, args, vars)
         | None => None
         }
       | None => None
       }
-    | Wildcard({idx: _, key, names, child}) =>
+    | Wildcard({idx: _, key, ids, child}) =>
       switch Js.Dict.get(args, key) {
       | Some(val) =>
-        let vars = bindNames(vars, names, val)
+        let vars = bindNames(vars, ids, val)
         makeDict(child, args, vars)
       | None => None
       }
-    | Construct({idx: _, key, names, nil, cons, kind: _}) =>
+    | Construct({idx: _, key, ids, nil, cons, kind: _}) =>
       switch Js.Dict.get(args, key) {
       | Some(val) =>
-        let vars = bindNames(vars, names, val)
+        let vars = bindNames(vars, ids, val)
         let child = if Props.isNull(val) {
           nil
         } else {
@@ -131,10 +131,10 @@ module RenderMatch = {
         }
       | None => None
       }
-    | Nest({idx: _, key, kind, names, child, wildcard}) =>
+    | Nest({idx: _, key, kind, ids, child, wildcard}) =>
       switch Js.Dict.get(args, key) {
       | Some(val) =>
-        let vars = bindNames(vars, names, val)
+        let vars = bindNames(vars, ids, val)
         let result = switch kind {
         | Tuple =>
           let tuple = Props.tupleExn(val)
@@ -159,9 +159,12 @@ module RenderMatch = {
     }
 
   let make = ({Matching.tree: tree, exits, loc: _}, args) =>
-    switch make(tree, args, nonemptyGet, MapString.empty) {
+    switch make(tree, args, nonemptyGet, MapInt.empty) {
     | Some((vars, {names, exit})) =>
-      let bindings = MapString.keepU(vars, (. k, _) => SetString.has(names, k))
+      let bindings = MapInt.reduceU(names, MapString.empty, (. acc, id, name) => {
+        let val = MapInt.getExn(vars, id)
+        MapString.set(acc, name, val)
+      })
       Some((bindings, Array.getExn(exits, exit)))
     | None => None
     }

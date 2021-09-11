@@ -61,6 +61,7 @@ let rec toString = x =>
 
 module TypedPattern = {
   type types = t
+  type loc = T.loc
 
   type constant =
     | TPat_Bool(bool)
@@ -98,37 +99,41 @@ module TypedPattern = {
   type construct = TPat_List | TPat_Nullable
 
   type rec t =
-    | TPat_Const(constant)
-    | TPat_Construct(construct, option<t>)
-    | TPat_Tuple(array<t>)
-    | TPat_Record(array<(string, t)>)
-    | TPat_Dict(array<(string, t)>)
-    | TPat_Var(string)
+    | TPat_Const(loc, constant)
+    | TPat_Construct(loc, construct, option<t>)
+    | TPat_Tuple(loc, array<t>)
+    | TPat_Record(loc, array<(string, t)>)
+    | TPat_Dict(loc, array<(string, t)>)
+    | TPat_Var(loc, string) // any binding
+    | TPat_Any(loc) // ignored wildcard _
 
-  let rec makeList = (a, i, ty, ~tail) =>
-    switch a[i] {
-    | None => tail
-    | Some(p) =>
-      TPat_Construct(TPat_List, Some(TPat_Tuple([make(p, ty), makeList(a, succ(i), ty, ~tail)])))
+  let rec makeList = (a, ty, ~tail) => {
+    let r = ref(tail)
+    for i in Array.size(a) - 1 downto 0 {
+      let p = Array.getUnsafe(a, i)
+      let loc = T.Ast_Pattern.toLocation(p)
+      r := TPat_Construct(loc, TPat_List, Some(TPat_Tuple(loc, [make(p, ty), r.contents])))
     }
+    r.contents
+  }
 
   and make = (p: T.Ast_Pattern.t, ty: types) =>
     switch (p, ty) {
-    | (#Null(_), Nullable(_)) => TPat_Construct(TPat_Nullable, None)
-    | (p, Nullable({contents})) =>
-      TPat_Construct(TPat_Nullable, Some(TPat_Tuple([make(p, contents)])))
-    | (#False(_), _) => TPat_Const(TPat_Bool(false))
-    | (#True(_), _) => TPat_Const(TPat_Bool(true))
-    | (#String(_, s), _) => TPat_Const(TPat_String(s))
-    | (#Int(_, i), _) => TPat_Const(TPat_Int(i))
-    | (#Float(_, f), _) => TPat_Const(TPat_Float(f))
-    | (#Tuple(_, t), Tuple({contents})) =>
-      TPat_Tuple(Array.zipByU(t, contents, (. p, ty) => make(p, ty.contents)))
-    | (#Array(_, l), List({contents})) =>
-      makeList(l, 0, contents, ~tail=TPat_Construct(TPat_List, None))
-    | (#ArrayWithTailBinding(_, l, #Binding(_, b)), List({contents})) =>
-      makeList(l, 0, contents, ~tail=TPat_Var(b))
-    | (#Dict(_, d), Dict(tys, {contents: ks})) =>
+    | (#Null(l), Nullable(_)) => TPat_Construct(l, TPat_Nullable, None)
+    | (#Some(l, p), Nullable({contents})) =>
+      TPat_Construct(l, TPat_Nullable, Some(TPat_Tuple(l, [make(p, contents)])))
+    | (#False(l), _) => TPat_Const(l, TPat_Bool(false))
+    | (#True(l), _) => TPat_Const(l, TPat_Bool(true))
+    | (#String(l, s), _) => TPat_Const(l, TPat_String(s))
+    | (#Int(l, i), _) => TPat_Const(l, TPat_Int(i))
+    | (#Float(l, f), _) => TPat_Const(l, TPat_Float(f))
+    | (#Tuple(l, t), Tuple({contents})) =>
+      TPat_Tuple(l, Array.zipByU(t, contents, (. p, ty) => make(p, ty.contents)))
+    | (#Array(l, a), List({contents})) =>
+      makeList(a, contents, ~tail=TPat_Construct(l, TPat_List, None))
+    | (#ArrayWithTailBinding(_, l, tail), List({contents})) =>
+      makeList(l, contents, ~tail=make((tail :> T.Ast_Pattern.t), contents))
+    | (#Dict(l, d), Dict(tys, {contents: ks})) =>
       let ks = ks->SetString.toArray->Array.mapU((. k) => (k, tys))->MapString.fromArray
       let d =
         d
@@ -137,21 +142,22 @@ module TypedPattern = {
           switch (p, ty) {
           | (None, None) | (Some(_), None) => None
           | (Some(p), Some({contents})) => Some(make(p, contents))
-          | (None, Some(_)) => Some(TPat_Var("_"))
+          | (None, Some(_)) => Some(TPat_Any(l))
           }
         )
-      TPat_Dict(MapString.toArray(d))
-    | (#Object(_, o), Record({contents})) =>
+      TPat_Dict(l, MapString.toArray(d))
+    | (#Object(l, o), Record({contents})) =>
       let r = MapString.fromArray(o)
       let r = MapString.mergeU(r, contents, (. _, p, ty) =>
         switch (p, ty) {
         | (None, None) | (Some(_), None) => None
         | (Some(p), Some({contents})) => Some(make(p, contents))
-        | (None, Some(_)) => Some(TPat_Var("_"))
+        | (None, Some(_)) => Some(TPat_Any(l))
         }
       )
-      TPat_Record(MapString.toArray(r))
-    | (#Binding(_, b), _) => TPat_Var(b)
+      TPat_Record(l, MapString.toArray(r))
+    | (#Binding(l, "_"), _) => TPat_Any(l)
+    | (#Binding(l, b), _) => TPat_Var(l, b)
     | _ => assert false
     }
 
@@ -164,26 +170,27 @@ module TypedPattern = {
 
   let rec toString = x =>
     switch x {
-    | TPat_Const(x) => toStringConst(x)
-    | TPat_Tuple(t) => "(" ++ Array.joinWith(t, ", ", toString) ++ ")"
-    | TPat_Record(r) =>
+    | TPat_Const(_, x) => toStringConst(x)
+    | TPat_Tuple(_, t) => "(" ++ Array.joinWith(t, ", ", toString) ++ ")"
+    | TPat_Record(_, r) =>
       "{" ++ Array.joinWith(r, ", ", ((k, v)) => keyValuesToString(k, toString(v))) ++ "}"
-    | TPat_Dict(r) =>
+    | TPat_Dict(_, r) =>
       "<" ++ Array.joinWith(r, ", ", ((k, v)) => keyValuesToString(k, toString(v))) ++ ">"
-    | TPat_Var(v) => v
-    | TPat_Construct(TPat_Nullable, None) => "null"
-    | TPat_Construct(TPat_Nullable, Some(x)) => toString(x)
-    | TPat_Construct(TPat_List, None) => "[]"
-    | TPat_Construct(TPat_List, Some(l)) =>
-      let rec aux = (s, ~sep, tl) =>
-        switch tl {
-        | TPat_Var(x) => `${s}${sep} ...${x}]`
-        | TPat_Tuple([hd, TPat_Construct(_, None)]) => `${s}${sep} ${toString(hd)}]`
-        | TPat_Tuple([hd, TPat_Construct(_, Some(tl))]) =>
-          aux(s ++ sep ++ toString(hd), ~sep=",", tl)
-        | _ => assert false
+    | TPat_Var(_, v) => v
+    | TPat_Construct(_, TPat_Nullable, None) => "null"
+    | TPat_Construct(_, TPat_Nullable, Some(x)) => toString(x)
+    | TPat_Construct(_, TPat_List, None) => "[]"
+    | TPat_Construct(_, TPat_List, Some(l)) =>
+      let rec aux = (s, ~sep, l) =>
+        switch l {
+        | TPat_Tuple(_, [hd, TPat_Construct(_, _, Some(tl))]) =>
+          aux(s ++ sep ++ toString(hd), ~sep=", ", tl)
+        | TPat_Tuple(_, [hd, TPat_Construct(_, _, None)]) => `${s}${sep}${toString(hd)}]`
+        | TPat_Tuple(_, [hd, tl]) => `${s}${sep}${toString(hd)},...${toString(tl)}]`
+        | l => `${s}${sep}...${toString(l)}]`
         }
       aux("[", ~sep="", l)
+    | TPat_Any(_) => "_"
     }
 }
 
