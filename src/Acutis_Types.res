@@ -210,16 +210,6 @@ module Ast = {
   type t<'a> = {nodes: nodes<'a>, name: string}
 }
 
-module Ast2 = {
-  type case<'pat, 'a> = {pats: NonEmpty.t<NonEmpty.t<'pat>>, nodes: Ast.nodes<'a>}
-
-  let makeCase = c =>
-    NonEmpty.map(c, (. {Ast.patterns: patterns, nodes}) => {
-      pats: patterns,
-      nodes: nodes,
-    })
-}
-
 type rec ast<'a> = Ast.t<templateU<'a>>
 and template<'a> = (environment<'a>, Js.Dict.t<Js.Json.t>, Js.Dict.t<'a>) => 'a
 and templateU<'a> = (. environment<'a>, Js.Dict.t<Js.Json.t>, Js.Dict.t<'a>) => 'a

@@ -8,7 +8,7 @@
 
 open Acutis_Types
 
-type kind = [#Type | #Matching | #Render | #Compile | #Pattern | #Parse | #Syntax]
+type kind = [#Type | #Matching | #Render | #Compile | #Pattern | #Parse | #Syntax | #Decode]
 
 type location = {@live character: int}
 

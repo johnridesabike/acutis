@@ -8,7 +8,7 @@
 
 module T = Acutis_Types
 
-type kind = [#Type | #Matching | #Render | #Compile | #Pattern | #Parse | #Syntax]
+type kind = [#Type | #Matching | #Render | #Compile | #Pattern | #Parse | #Syntax | #Decode]
 
 type location = {character: int}
 

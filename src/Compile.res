@@ -438,8 +438,6 @@ and parseProps = tokens => {
 let makeAstInternalExn = (~name, source) => {
   let tokens = Lexer.make(source, ~name)
   let {data, _} = parse(Lexer.popExn(tokens), tokens, ~until=endOfFile)
-  // check the types for testing but ignore them for now.
-  TypeChecker.make(data)->ignore
   data
 }
 
@@ -458,7 +456,11 @@ let name = x =>
 @raises(Exit)
 let compileExn = (src: Source.t<_>) =>
   switch src {
-  | String({name, src}) => Ast({name: name, nodes: makeAstInternalExn(~name, src)})
+  | String({name, src}) =>
+    let nodes = makeAstInternalExn(~name, src)
+    // check the types for testing but ignore them for now.
+    TypeChecker.Deprecated.check(nodes)->ignore
+    Ast({name: name, nodes: nodes})
   | Func({name, f}) => Func({name: name, f: f})
   | StringFunc({name, src, f}) =>
     AstFunc({

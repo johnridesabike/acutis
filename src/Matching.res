@@ -7,10 +7,9 @@
 */
 module Array = Belt.Array
 module SetInt = Belt.Set.Int
-module MapInt = Belt.Map.Int
+module MapString = Belt.Map.String
 module Queue = Belt.MutableQueue
-module TC = TypeChecker
-module TP = TypeChecker.TypedPattern
+module TP = TypeChecker.Pattern
 
 type nest = Tuple | Record | Dict
 
@@ -49,12 +48,12 @@ and switchcase<'a> = {
   nextCase: option<switchcase<'a>>,
 }
 
-type leaf = {names: MapInt.t<string>, exit: int}
+type leaf = {names: MapString.t<int>, exit: int}
 
 type t<'a> = {
   loc: Acutis_Types.loc,
   tree: tree<leaf>,
-  exits: array<Acutis_Types.Ast.nodes<'a>>,
+  exits: array<'a>,
 }
 
 type rec nat<_, _> =
@@ -418,62 +417,65 @@ and merge:
       assert false
     }
 
-type continue<'a> = (. MapInt.t<string>) => tree<'a>
+type continue<'a> = (. MapString.t<int>) => tree<'a>
 
-let rec fromTPat: 'a. (_, _, _, _, continue<'a>) => tree<'a> = (p, i, k, b, c) =>
+let rec fromTPat: 'a. (_, _, _, _, ~name: _, continue<'a>) => tree<'a> = (p, i, key, b, ~name, k) =>
   switch p {
-  | TP.TPat_Any(_) => Wildcard({ids: SetInt.empty, idx: i, key: k, child: c(. b)})
-  | TP.TPat_Var(Loc(id), x) =>
+  | TP.TPat_Any(_) => Wildcard({ids: SetInt.empty, idx: i, key: key, child: k(. b)})
+  | TPat_Var(Loc(id), x) | TPat_OptionalVar(Loc(id), x) =>
+    if MapString.has(b, x) {
+      raise(Debug.Exit(Debug2.nameBoundMultipleTimes(~binding=x, ~loc=Loc(id), ~name)))
+    }
     Wildcard({
       ids: SetInt.add(SetInt.empty, id),
       idx: i,
-      key: k,
-      child: c(. MapInt.set(b, id, x)),
+      key: key,
+      child: k(. MapString.set(b, x, id)),
     })
   | TPat_Construct(_, kind, Some(cons)) =>
     Construct({
       idx: i,
-      key: k,
+      key: key,
       ids: SetInt.empty,
       kind: kind,
       nil: None,
-      cons: Some(fromTPat(cons, i, k, b, c)),
+      cons: Some(fromTPat(cons, i, key, b, k, ~name)),
     })
   | TPat_Construct(_, kind, None) =>
-    Construct({idx: i, key: k, ids: SetInt.empty, kind: kind, nil: Some(c(. b)), cons: None})
+    Construct({idx: i, key: key, ids: SetInt.empty, kind: kind, nil: Some(k(. b)), cons: None})
   | TPat_Const(_, val) =>
     Switch({
       idx: i,
-      key: k,
+      key: key,
       ids: SetInt.empty,
-      cases: {val: val, ifMatch: c(. b), nextCase: None},
+      cases: {val: val, ifMatch: k(. b), nextCase: None},
       wildcard: None,
     })
   | TPat_Tuple(_, a) =>
-    let child = fromArray(a, b, 0, (. b) => End(c(. b)))
-    Nest({idx: i, key: k, ids: SetInt.empty, kind: Tuple, child: child, wildcard: None})
+    let child = fromArray(a, b, 0, ~name, (. b) => End(k(. b)))
+    Nest({idx: i, key: key, ids: SetInt.empty, kind: Tuple, child: child, wildcard: None})
   | TPat_Record(_, a) =>
-    let child = fromKeyValues(a, b, 0, (. b) => End(c(. b)))
-    Nest({idx: i, key: k, ids: SetInt.empty, kind: Record, child: child, wildcard: None})
+    let child = fromKeyValues(a, b, 0, ~name, (. b) => End(k(. b)))
+    Nest({idx: i, key: key, ids: SetInt.empty, kind: Record, child: child, wildcard: None})
   | TPat_Dict(_, a) =>
-    let child = fromKeyValues(a, b, 0, (. b) => End(c(. b)))
-    Nest({idx: i, key: k, ids: SetInt.empty, kind: Dict, child: child, wildcard: None})
+    let child = fromKeyValues(a, b, 0, ~name, (. b) => End(k(. b)))
+    Nest({idx: i, key: key, ids: SetInt.empty, kind: Dict, child: child, wildcard: None})
   }
 
-and fromArray: 'a. (_, _, _, continue<'a>) => tree<'a> = (a, b, i, c) =>
+and fromArray: 'a. (_, _, _, ~name: _, continue<'a>) => tree<'a> = (a, b, i, ~name, k) =>
   switch a[i] {
-  | None => c(. b)
-  | Some(p) => fromTPat(p, i, "", b, (. b) => fromArray(a, b, succ(i), c))
+  | None => k(. b)
+  | Some(p) => fromTPat(p, i, "", b, ~name, (. b) => fromArray(a, b, succ(i), ~name, k))
   }
 
-and fromKeyValues: 'a. (_, _, _, continue<'a>) => tree<'a> = (a, b, i, c) =>
+and fromKeyValues: 'a. (_, _, _, ~name: _, continue<'a>) => tree<'a> = (a, b, i, ~name, k) =>
   switch a[i] {
-  | None => c(. b)
-  | Some((k, v)) => fromTPat(v, i, k, b, (. b) => fromKeyValues(a, b, succ(i), c))
+  | None => k(. b)
+  | Some((key, v)) => fromTPat(v, i, key, b, ~name, (. b) => fromKeyValues(a, b, succ(i), ~name, k))
   }
 
-let fromArray = (a, ~exit) =>
-  fromArray(a, MapInt.empty, 0, (. names) => End({names: names, exit: exit}))
+let fromArray = (~exit, ~name, a) =>
+  fromArray(a, MapString.empty, 0, ~name, (. names) => End({names: names, exit: exit}))
 
 let merge = (a, b) =>
   switch merge(a, b, Z) {
@@ -481,12 +483,12 @@ let merge = (a, b) =>
   | exception MergeFail => None
   }
 
-let makeCase = (hd, a, ~exit) => {
+let makeCase = (hd, a, ~exit, ~name) => {
   let rec aux = (t, i) =>
     switch NonEmpty.get(a, i) {
     | None => Ok(t)
     | Some(ps) =>
-      let b = fromArray(NonEmpty.toArray(ps), ~exit)
+      let b = fromArray(NonEmpty.toArray(ps), ~exit, ~name)
       switch merge(t, b) {
       | Some(t) => aux(t, succ(i))
       | None => Error(Debug2.unusedCase(ps, ~f=TP.toString))
@@ -645,14 +647,13 @@ module ParMatch = {
   }
 }
 
-let make = (~loc, cases) => {
-  let cases = TC.makeTypedCases(cases)
+let make = (~loc, ~name, cases: NonEmpty.t<TypeChecker.Ast.case<_>>) => {
   let exitq = Queue.make()
   let hdcase = NonEmpty.hd(cases)
   Queue.add(exitq, hdcase.nodes)
   let exit = Queue.size(exitq) - 1
-  let hdTree = NonEmpty.hd(hdcase.pats)->NonEmpty.toArray->fromArray(~exit)
-  switch makeCase(hdTree, hdcase.pats, ~exit) {
+  let hdTree = NonEmpty.hd(hdcase.pats)->NonEmpty.toArray->fromArray(~exit, ~name)
+  switch makeCase(hdTree, hdcase.pats, ~name, ~exit) {
   | Error(_) as e => e
   | Ok(tree) =>
     let rec aux = (tree, i) =>
@@ -661,10 +662,10 @@ let make = (~loc, cases) => {
       | Some({pats, nodes}) =>
         Queue.add(exitq, nodes)
         let exit = Queue.size(exitq) - 1
-        let hdTree = NonEmpty.hd(pats)->NonEmpty.toArray->fromArray(~exit)
+        let hdTree = NonEmpty.hd(pats)->NonEmpty.toArray->fromArray(~exit, ~name)
         switch merge(tree, hdTree) {
         | Some(tree) =>
-          switch makeCase(tree, pats, ~exit) {
+          switch makeCase(tree, pats, ~exit, ~name) {
           | Ok(tree) => aux(tree, succ(i))
           | Error(_) as e => e
           }

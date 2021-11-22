@@ -10,21 +10,35 @@ open TestFramework
 module T = Acutis_Types
 module NE = NonEmpty
 module SetString = Belt.Set.String
+module TC = TypeChecker
 let ne = NE.fromArrayExn
+
+let makeCases = c => {
+  let (_, cases) = TC.makeCases(
+    ne(c),
+    TC.Context.make(),
+    ~untyped=TC.MutMapString.make(),
+    ~done=TC.MutMapString.make(),
+    ~loc=Loc(0),
+    ~name="",
+  )
+  cases
+}
 
 describe("Unused patterns", ({test, _}) => {
   test("Basic dec tree 2", ({expect, _}) => {
     let l = l => T.Loc(l)
     let nodes1 = [T.Ast.Text("", NoTrim)]
     let case1 = {
-      T.Ast2.pats: [
+      T.Ast.patterns: [
         [#Int(l(0), 10), #Int(l(1), 11), #Int(l(2), 12)]->ne,
         [#Binding(l(3), "x"), #Int(l(4), 21), #Int(l(5), 22)]->ne,
         [#Int(l(6), 10), #Int(l(7), 11), #Int(l(8), 12)]->ne, // unused
       ]->ne,
       nodes: nodes1,
     }
-    let result = Matching.make(ne([case1]), ~loc=Loc(0))->Belt.Result.map(x => x.tree)
+    let result =
+      [case1]->makeCases->Matching.make(~loc=Loc(0), ~name="")->Belt.Result.map(x => x.tree)
     expect.value(result).toEqual(
       Error({
         message: `This match case is unused:
@@ -36,7 +50,7 @@ describe("Unused patterns", ({test, _}) => {
       }),
     )
     let case1 = {
-      T.Ast2.pats: [
+      T.Ast.patterns: [
         [#Int(l(0), 10), #Int(l(1), 11), #Int(l(2), 12)]->ne,
         [#Binding(l(3), "x"), #Int(l(4), 21), #Int(l(5), 22)]->ne,
         [#Int(l(9), 30), #Int(l(10), 31), #Int(l(11), 32)]->ne,
@@ -45,7 +59,7 @@ describe("Unused patterns", ({test, _}) => {
       ]->ne,
       nodes: nodes1,
     }
-    let result = Matching.make(ne([case1]), ~loc=Loc(0))
+    let result = [case1]->makeCases->Matching.make(~loc=Loc(0), ~name="")
     expect.value(result).toEqual(
       Error({
         message: `This match case is unused:
@@ -62,16 +76,16 @@ describe("Unused patterns", ({test, _}) => {
     let n1 = [T.Ast.Text("", NoTrim)]
     let n2 = [T.Ast.Text("", NoTrim)]
     let c1 = {
-      T.Ast2.pats: [[#Binding(l(3), "x"), #Binding(l(4), "y")]->ne]->ne,
+      T.Ast.patterns: [[#Binding(l(3), "x"), #Binding(l(4), "y")]->ne]->ne,
       nodes: n1,
     }
     let c2 = {
-      T.Ast2.pats: [
+      T.Ast.patterns: [
         [#Tuple(l(0), [#Binding(l(0), "_"), #Binding(l(1), "_")]), #Int(l(2), 40)]->ne,
       ]->ne,
       nodes: n2,
     }
-    let result = Matching.make(ne([c1, c2]), ~loc=Loc(0))
+    let result = [c1, c2]->makeCases->Matching.make(~loc=Loc(0), ~name="")
     expect.value(result).toEqual(
       Error({
         message: `This match case is unused:
@@ -89,22 +103,22 @@ describe("Unused patterns", ({test, _}) => {
     let nodes2 = [T.Ast.Text("", NoTrim)]
     let nodes3 = [T.Ast.Text("", NoTrim)]
     let case1 = {
-      T.Ast2.pats: [[#Binding(l(0), "x"), #Int(l(1), 1)]->ne]->ne,
+      T.Ast.patterns: [[#Binding(l(0), "x"), #Int(l(1), 1)]->ne]->ne,
       nodes: nodes1,
     }
     let case2 = {
-      T.Ast2.pats: [
+      T.Ast.patterns: [
         [#Tuple(l(2), [#String(l(3), "a"), #String(l(4), "b")]), #Int(l(5), 10)]->ne,
       ]->ne,
       nodes: nodes2,
     }
     let case3 = {
-      T.Ast2.pats: [
+      T.Ast.patterns: [
         [#Tuple(l(6), [#String(l(7), "a"), #String(l(8), "b")]), #Int(l(9), 1)]->ne,
       ]->ne,
       nodes: nodes3,
     }
-    let result = Matching.make(ne([case1, case2, case3]), ~loc=Loc(0))
+    let result = [case1, case2, case3]->makeCases->Matching.make(~loc=Loc(0), ~name="")
     expect.value(result).toEqual(
       Error({
         message: `This match case is unused:
@@ -128,8 +142,8 @@ describe("Partial matching", ({test, _}) => {
     let l = l => T.Loc(l)
     let nodes1 = [T.Ast.Text("", NoTrim)]
     let nodes2 = [T.Ast.Text("", NoTrim)]
-    let case1: T.Ast2.case<_, _> = {
-      pats: [
+    let case1 = {
+      T.Ast.patterns: [
         [#Int(l(0), 0)]->ne,
         [#Int(l(3), 10)]->ne,
         [#Int(l(3), 20)]->ne,
@@ -137,12 +151,14 @@ describe("Partial matching", ({test, _}) => {
       ]->ne,
       nodes: nodes1,
     }
-    let case2: T.Ast2.case<_, _> = {
-      pats: [[#Int(l(0), 15)]->ne]->ne,
+    let case2 = {
+      T.Ast.patterns: [[#Int(l(0), 15)]->ne]->ne,
       nodes: nodes2,
     }
     let result =
-      Matching.make(ne([case1, case2]), ~loc=Loc(0))
+      [case1, case2]
+      ->makeCases
+      ->Matching.make(~loc=Loc(0), ~name="")
       ->Belt.Result.flatMap(x => Matching.ParMatch.check(x.tree))
       ->getError
     expect.value(result).toEqual(
@@ -151,11 +167,13 @@ Here is an example of a case that is not matched:
 1`),
     )
     let case1 = {
-      T.Ast2.pats: [[#Array(l(0), [])]->ne, [#Array(l(0), [#Binding(l(1), "_")])]->ne]->ne,
+      T.Ast.patterns: [[#Array(l(0), [])]->ne, [#Array(l(0), [#Binding(l(1), "_")])]->ne]->ne,
       nodes: nodes1,
     }
     let result =
-      Matching.make(ne([case1]), ~loc=Loc(0))
+      [case1]
+      ->makeCases
+      ->Matching.make(~loc=Loc(0), ~name="")
       ->Belt.Result.flatMap(x => Matching.ParMatch.check(x.tree))
       ->getError
     expect.value(result).toEqual(
@@ -164,11 +182,13 @@ Here is an example of a case that is not matched:
 [_, ..._]`),
     )
     let case1 = {
-      T.Ast2.pats: [[#Array(l(0), [#Binding(l(1), "_")])]->ne]->ne,
+      T.Ast.patterns: [[#Array(l(0), [#Binding(l(1), "_")])]->ne]->ne,
       nodes: nodes1,
     }
     let result =
-      Matching.make(ne([case1]), ~loc=Loc(0))
+      [case1]
+      ->makeCases
+      ->Matching.make(~loc=Loc(0), ~name="")
       ->Belt.Result.flatMap(x => Matching.ParMatch.check(x.tree))
       ->getError
     expect.value(result).toEqual(
@@ -177,15 +197,17 @@ Here is an example of a case that is not matched:
 []`),
     )
     let case1 = {
-      T.Ast2.pats: [[#Object(l(0), [("b", #Int(l(1), 10))])]->ne]->ne,
+      T.Ast.patterns: [[#Object(l(0), [("b", #Int(l(1), 10))])]->ne]->ne,
       nodes: nodes1,
     }
     let case2 = {
-      T.Ast2.pats: [[#Object(l(2), [("a", #Int(l(3), 20))])]->ne]->ne,
+      T.Ast.patterns: [[#Object(l(2), [("a", #Int(l(3), 20))])]->ne]->ne,
       nodes: nodes2,
     }
     let result =
-      Matching.make(ne([case1, case2]), ~loc=Loc(0))
+      [case1, case2]
+      ->makeCases
+      ->Matching.make(~loc=Loc(0), ~name="")
       ->Belt.Result.flatMap(x => Matching.ParMatch.check(x.tree))
       ->getError
     expect.value(result).toEqual(

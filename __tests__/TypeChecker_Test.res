@@ -26,7 +26,7 @@ type rec debug = [
 ]
 let rec debug = (x): debug =>
   switch x.contents {
-  | Polymorphic => #Polymorphic
+  | TypeChecker.Unknown => #Polymorphic
   | Boolean => #Boolean
   | Int => #Int
   | Float => #Float
@@ -59,9 +59,9 @@ describe("basic", ({test, _}) => {
         ("z", #Int(Loc(1), 1)),
       ],
     )
-    let (t1, _) = Local.fromPattern(pat1, Context.make())
-    let (t2, _) = Local.fromPattern(pat2, Context.make())
-    unify(t1, t2, ~loc=Loc(1))
+    let t1 = Local.fromPattern(pat1, Belt.MutableQueue.make())
+    let t2 = Local.fromPattern(pat2, Belt.MutableQueue.make())
+    unify(t1, t2, Expand, ~loc=Loc(1))
     expect.value(debug(t1)).toEqual(
       #Record([
         ("a", #Boolean),
@@ -80,7 +80,7 @@ describe("match", ({test, _}) => {
     {% match a with !1 %} {% with null %} {% /match %}
     `
     let nodes = Compile.makeAstInternalExn(~name="test", src)
-    let bindings = make(nodes)->MapString.map(debug)->MapString.toArray
+    let bindings = Deprecated.check(nodes)->MapString.map(debug)->MapString.toArray
     expect.value(bindings).toEqual([("a", #Nullable(#Int))])
   })
   test("Typechecker nested", ({expect, _}) => {
@@ -90,7 +90,7 @@ describe("match", ({test, _}) => {
     {% /match %}
     `
     let nodes = Compile.makeAstInternalExn(~name="test", src)
-    let bindingsGlobal = make(nodes)->MapString.map(debug)->MapString.toArray
+    let bindingsGlobal = Deprecated.check(nodes)->MapString.map(debug)->MapString.toArray
     expect.value(bindingsGlobal).toEqual([("a", #Record([("b", #Nullable(#Int))]))])
     let src = `
     {% match a with {b: {c}, d } %}
@@ -98,7 +98,7 @@ describe("match", ({test, _}) => {
     {% /match %}
     `
     let nodes = Compile.makeAstInternalExn(~name="test", src)
-    let bindingsGlobal = make(nodes)->MapString.map(debug)->MapString.toArray
+    let bindingsGlobal = Deprecated.check(nodes)->MapString.map(debug)->MapString.toArray
     expect.value(bindingsGlobal).toEqual([
       ("a", #Record([("b", #Record([("c", #Nullable(#Int))])), ("d", #Echo)])),
     ])
@@ -111,7 +111,7 @@ describe("match", ({test, _}) => {
     {% /match %}
     `
     let nodes = Compile.makeAstInternalExn(~name="test", src)
-    let bindingsGlobal = make(nodes)->MapString.map(debug)->MapString.toArray
+    let bindingsGlobal = Deprecated.check(nodes)->MapString.map(debug)->MapString.toArray
     expect.value(bindingsGlobal).toEqual([
       ("a", #Record([("c", #Nullable(#Record([("d", #Int)])))])),
       ("b", #Int),
@@ -137,7 +137,7 @@ describe("match", ({test, _}) => {
       {% /match %}
     `
     let nodes = Compile.makeAstInternalExn(~name="test", src)
-    let bindingsGlobal = make(nodes)->MapString.map(debug)->MapString.toArray
+    let bindingsGlobal = Deprecated.check(nodes)->MapString.map(debug)->MapString.toArray
     expect.value(bindingsGlobal).toEqual([
       ("a", #Nullable(#Echo)),
       ("b", #Echo),
@@ -152,7 +152,7 @@ describe("component", ({test, _}) => {
     {% A a=[1, a] b=["b", b] /%}
     `
     let nodes = Compile.makeAstInternalExn(~name="test", src)
-    let bindings = make(nodes)->MapString.map(debug)->MapString.toArray
+    let bindings = Deprecated.check(nodes)->MapString.map(debug)->MapString.toArray
     expect.value(bindings).toEqual([("a", #Int), ("b", #String)])
   })
 })

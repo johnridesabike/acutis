@@ -820,7 +820,7 @@ Array [
     "exn": undefined,
     "kind": "Pattern",
     "location": Object {
-      "character": 4,
+      "character": 10,
     },
     "message": "The number of patterns does not match the number of data.",
     "path": Array [
@@ -839,7 +839,9 @@ Array [
       "character": 4,
     },
     "message": "Map blocks can only have two patterns per \\"with\\" clause: the item and the index.",
-    "path": Array [],
+    "path": Array [
+      "",
+    ],
   },
 ]
 `;
@@ -924,39 +926,6 @@ Array [
 ]
 `;
 
-exports[`Patterns Match failure 1`] = `
-Array [
-  Object {
-    "exn": undefined,
-    "kind": "Pattern",
-    "location": Object {
-      "character": 5,
-    },
-    "message": "None of the patterns match the data. Consider a catch-all case to avoid this.",
-    "path": Array [
-      "",
-    ],
-  },
-]
-`;
-
-exports[`Patterns Match failure 2`] = `
-Array [
-  Object {
-    "exn": undefined,
-    "kind": "Pattern",
-    "location": Object {
-      "character": 5,
-    },
-    "message": "None of the patterns match the data. Consider a catch-all case to avoid this.",
-    "path": Array [
-      "map",
-      "",
-    ],
-  },
-]
-`;
-
 exports[`Patterns Missing bindings 1`] = `
 Array [
   Object {
@@ -1005,15 +974,31 @@ Array [
 ]
 `;
 
+exports[`Patterns Non-exhuastive matching 1`] = `
+Array [
+  Object {
+    "exn": undefined,
+    "kind": "Matching",
+    "location": Object {
+      "character": 1,
+    },
+    "message": "This pattern-matching is not exhaustive.
+Here is an example of a case that is not matched:
+{favoriteColor: \\"a\\", firstName}",
+    "path": Array [],
+  },
+]
+`;
+
 exports[`Patterns Type errors Boolean pattern 1`] = `
 Array [
   Object {
     "exn": undefined,
     "kind": "Type",
     "location": Object {
-      "character": 22,
+      "character": 34,
     },
-    "message": "This pattern is type boolean but the data is type string.",
+    "message": "This pattern is type boolean but expected type string.",
     "path": Array [
       "",
     ],
@@ -1027,9 +1012,9 @@ Array [
     "exn": undefined,
     "kind": "Type",
     "location": Object {
-      "character": 22,
+      "character": 34,
     },
-    "message": "This pattern is type boolean but the data is type string.",
+    "message": "This pattern is type boolean but expected type string.",
     "path": Array [
       "",
     ],
@@ -1043,9 +1028,9 @@ Array [
     "exn": undefined,
     "kind": "Type",
     "location": Object {
-      "character": 22,
+      "character": 32,
     },
-    "message": "This pattern is type boolean but the data is type number.",
+    "message": "This pattern is type boolean but expected type int.",
     "path": Array [
       "",
     ],
@@ -1059,9 +1044,9 @@ Array [
     "exn": undefined,
     "kind": "Type",
     "location": Object {
-      "character": 22,
+      "character": 32,
     },
-    "message": "This pattern is type boolean but the data is type number.",
+    "message": "This pattern is type boolean but expected type int.",
     "path": Array [
       "",
     ],
@@ -1075,9 +1060,9 @@ Array [
     "exn": undefined,
     "kind": "Type",
     "location": Object {
-      "character": 21,
+      "character": 34,
     },
-    "message": "This pattern is type boolean but the data is type array.",
+    "message": "This pattern is type boolean but expected type [int].",
     "path": Array [
       "",
     ],
@@ -1091,9 +1076,9 @@ Array [
     "exn": undefined,
     "kind": "Type",
     "location": Object {
-      "character": 21,
+      "character": 34,
     },
-    "message": "This pattern is type boolean but the data is type array.",
+    "message": "This pattern is type boolean but expected type [int].",
     "path": Array [
       "",
     ],
@@ -1107,9 +1092,9 @@ Array [
     "exn": undefined,
     "kind": "Type",
     "location": Object {
-      "character": 27,
+      "character": 40,
     },
-    "message": "This pattern is type boolean but the data is type object.",
+    "message": "This pattern is type boolean but expected type {\\"a\\": unknown}.",
     "path": Array [
       "",
     ],
@@ -1117,15 +1102,15 @@ Array [
 ]
 `;
 
-exports[`Patterns Type errors Object pattern 1`] = `
+exports[`Patterns Type errors List pattern 1`] = `
 Array [
   Object {
     "exn": undefined,
     "kind": "Type",
     "location": Object {
-      "character": 22,
+      "character": 32,
     },
-    "message": "This pattern is type object but the data is type string.",
+    "message": "This pattern is type [int] but expected type string.",
     "path": Array [
       "",
     ],
@@ -1133,15 +1118,15 @@ Array [
 ]
 `;
 
-exports[`Patterns Type errors Object pattern 2`] = `
+exports[`Patterns Type errors List pattern 2`] = `
 Array [
   Object {
     "exn": undefined,
     "kind": "Type",
     "location": Object {
-      "character": 21,
+      "character": 32,
     },
-    "message": "This pattern is type object but the data is type boolean.",
+    "message": "This pattern is type [int] but expected type string.",
     "path": Array [
       "",
     ],
@@ -1149,15 +1134,15 @@ Array [
 ]
 `;
 
-exports[`Patterns Type errors Object pattern 3`] = `
+exports[`Patterns Type errors List pattern 3`] = `
 Array [
   Object {
     "exn": undefined,
     "kind": "Type",
     "location": Object {
-      "character": 21,
+      "character": 33,
     },
-    "message": "This pattern is type object but the data is type boolean.",
+    "message": "This pattern is type [int] but expected type boolean.",
     "path": Array [
       "",
     ],
@@ -1165,15 +1150,15 @@ Array [
 ]
 `;
 
-exports[`Patterns Type errors Object pattern 4`] = `
+exports[`Patterns Type errors List pattern 4`] = `
 Array [
   Object {
     "exn": undefined,
     "kind": "Type",
     "location": Object {
-      "character": 22,
+      "character": 34,
     },
-    "message": "This pattern is type object but the data is type boolean.",
+    "message": "This pattern is type [unknown] but expected type boolean.",
     "path": Array [
       "",
     ],
@@ -1181,15 +1166,15 @@ Array [
 ]
 `;
 
-exports[`Patterns Type errors Object pattern 5`] = `
+exports[`Patterns Type errors List pattern 5`] = `
 Array [
   Object {
     "exn": undefined,
     "kind": "Type",
     "location": Object {
-      "character": 21,
+      "character": 30,
     },
-    "message": "This pattern is type object but the data is type array.",
+    "message": "This pattern is type [unknown] but expected type int.",
     "path": Array [
       "",
     ],
@@ -1197,15 +1182,15 @@ Array [
 ]
 `;
 
-exports[`Patterns Type errors Object pattern 6`] = `
+exports[`Patterns Type errors List pattern 6`] = `
 Array [
   Object {
     "exn": undefined,
     "kind": "Type",
     "location": Object {
-      "character": 22,
+      "character": 40,
     },
-    "message": "This pattern is type object but the data is type number.",
+    "message": "This pattern is type [unknown] but expected type {\\"a\\": unknown}.",
     "path": Array [
       "",
     ],
@@ -1213,15 +1198,15 @@ Array [
 ]
 `;
 
-exports[`Patterns Type errors Object pattern 7`] = `
+exports[`Patterns Type errors List pattern 7`] = `
 Array [
   Object {
     "exn": undefined,
     "kind": "Type",
     "location": Object {
-      "character": 22,
+      "character": 40,
     },
-    "message": "This pattern is type object but the data is type number.",
+    "message": "This pattern is type int but expected type string.",
     "path": Array [
       "",
     ],
@@ -1229,15 +1214,15 @@ Array [
 ]
 `;
 
-exports[`Patterns Type errors Object pattern 8`] = `
+exports[`Patterns Type errors Record pattern 1`] = `
 Array [
   Object {
     "exn": undefined,
     "kind": "Type",
     "location": Object {
-      "character": 26,
+      "character": 33,
     },
-    "message": "This pattern is type int but the data is type string.",
+    "message": "This pattern is type {\\"a\\": unknown} but expected type string.",
     "path": Array [
       "",
     ],
@@ -1245,15 +1230,15 @@ Array [
 ]
 `;
 
-exports[`Patterns Type errors array pattern 1`] = `
+exports[`Patterns Type errors Record pattern 2`] = `
 Array [
   Object {
     "exn": undefined,
     "kind": "Type",
     "location": Object {
-      "character": 22,
+      "character": 34,
     },
-    "message": "This pattern is type array but the data is type string.",
+    "message": "This pattern is type {\\"a\\": unknown} but expected type boolean.",
     "path": Array [
       "",
     ],
@@ -1261,15 +1246,15 @@ Array [
 ]
 `;
 
-exports[`Patterns Type errors array pattern 2`] = `
+exports[`Patterns Type errors Record pattern 3`] = `
 Array [
   Object {
     "exn": undefined,
     "kind": "Type",
     "location": Object {
-      "character": 22,
+      "character": 35,
     },
-    "message": "This pattern is type array but the data is type string.",
+    "message": "This pattern is type {\\"a\\": unknown} but expected type boolean.",
     "path": Array [
       "",
     ],
@@ -1277,15 +1262,15 @@ Array [
 ]
 `;
 
-exports[`Patterns Type errors array pattern 3`] = `
+exports[`Patterns Type errors Record pattern 4`] = `
 Array [
   Object {
     "exn": undefined,
     "kind": "Type",
     "location": Object {
-      "character": 21,
+      "character": 32,
     },
-    "message": "This pattern is type array but the data is type boolean.",
+    "message": "This pattern is type {\\"a\\": unknown} but expected type [unknown].",
     "path": Array [
       "",
     ],
@@ -1293,15 +1278,15 @@ Array [
 ]
 `;
 
-exports[`Patterns Type errors array pattern 4`] = `
+exports[`Patterns Type errors Record pattern 5`] = `
 Array [
   Object {
     "exn": undefined,
     "kind": "Type",
     "location": Object {
-      "character": 21,
+      "character": 31,
     },
-    "message": "This pattern is type array but the data is type boolean.",
+    "message": "This pattern is type {\\"a\\": unknown} but expected type int.",
     "path": Array [
       "",
     ],
@@ -1309,111 +1294,15 @@ Array [
 ]
 `;
 
-exports[`Patterns Type errors array pattern 5`] = `
+exports[`Patterns Type errors Record pattern 6`] = `
 Array [
   Object {
     "exn": undefined,
     "kind": "Type",
     "location": Object {
-      "character": 21,
+      "character": 37,
     },
-    "message": "This pattern is type array but the data is type boolean.",
-    "path": Array [
-      "",
-    ],
-  },
-]
-`;
-
-exports[`Patterns Type errors array pattern 6`] = `
-Array [
-  Object {
-    "exn": undefined,
-    "kind": "Type",
-    "location": Object {
-      "character": 22,
-    },
-    "message": "This pattern is type array but the data is type boolean.",
-    "path": Array [
-      "",
-    ],
-  },
-]
-`;
-
-exports[`Patterns Type errors array pattern 7`] = `
-Array [
-  Object {
-    "exn": undefined,
-    "kind": "Type",
-    "location": Object {
-      "character": 22,
-    },
-    "message": "This pattern is type array but the data is type number.",
-    "path": Array [
-      "",
-    ],
-  },
-]
-`;
-
-exports[`Patterns Type errors array pattern 8`] = `
-Array [
-  Object {
-    "exn": undefined,
-    "kind": "Type",
-    "location": Object {
-      "character": 27,
-    },
-    "message": "This pattern is type array but the data is type object.",
-    "path": Array [
-      "",
-    ],
-  },
-]
-`;
-
-exports[`Patterns Type errors array pattern 9`] = `
-Array [
-  Object {
-    "exn": undefined,
-    "kind": "Type",
-    "location": Object {
-      "character": 27,
-    },
-    "message": "This pattern is type array but the data is type object.",
-    "path": Array [
-      "",
-    ],
-  },
-]
-`;
-
-exports[`Patterns Type errors array pattern 10`] = `
-Array [
-  Object {
-    "exn": undefined,
-    "kind": "Pattern",
-    "location": Object {
-      "character": 4,
-    },
-    "message": "None of the patterns match the data. Consider a catch-all case to avoid this.",
-    "path": Array [
-      "",
-    ],
-  },
-]
-`;
-
-exports[`Patterns Type errors array pattern 11`] = `
-Array [
-  Object {
-    "exn": undefined,
-    "kind": "Type",
-    "location": Object {
-      "character": 22,
-    },
-    "message": "This pattern is type int but the data is type string.",
+    "message": "This pattern is type int but expected type string.",
     "path": Array [
       "",
     ],
@@ -1427,9 +1316,9 @@ Array [
     "exn": undefined,
     "kind": "Type",
     "location": Object {
-      "character": 22,
+      "character": 34,
     },
-    "message": "This pattern is type int but the data is type string.",
+    "message": "This pattern is type int but expected type string.",
     "path": Array [
       "",
     ],
@@ -1443,9 +1332,9 @@ Array [
     "exn": undefined,
     "kind": "Type",
     "location": Object {
-      "character": 21,
+      "character": 35,
     },
-    "message": "This pattern is type int but the data is type boolean.",
+    "message": "This pattern is type int but expected type boolean.",
     "path": Array [
       "",
     ],
@@ -1459,9 +1348,9 @@ Array [
     "exn": undefined,
     "kind": "Type",
     "location": Object {
-      "character": 22,
+      "character": 36,
     },
-    "message": "This pattern is type int but the data is type boolean.",
+    "message": "This pattern is type int but expected type boolean.",
     "path": Array [
       "",
     ],
@@ -1475,9 +1364,9 @@ Array [
     "exn": undefined,
     "kind": "Type",
     "location": Object {
-      "character": 21,
+      "character": 33,
     },
-    "message": "This pattern is type int but the data is type array.",
+    "message": "This pattern is type int but expected type [unknown].",
     "path": Array [
       "",
     ],
@@ -1491,9 +1380,9 @@ Array [
     "exn": undefined,
     "kind": "Type",
     "location": Object {
-      "character": 27,
+      "character": 40,
     },
-    "message": "This pattern is type int but the data is type object.",
+    "message": "This pattern is type int but expected type {\\"a\\": unknown}.",
     "path": Array [
       "",
     ],
@@ -1507,9 +1396,9 @@ Array [
     "exn": undefined,
     "kind": "Type",
     "location": Object {
-      "character": 22,
+      "character": 32,
     },
-    "message": "This pattern is type string but the data is type number.",
+    "message": "This pattern is type string but expected type int.",
     "path": Array [
       "",
     ],
@@ -1523,9 +1412,9 @@ Array [
     "exn": undefined,
     "kind": "Type",
     "location": Object {
-      "character": 21,
+      "character": 35,
     },
-    "message": "This pattern is type string but the data is type boolean.",
+    "message": "This pattern is type string but expected type boolean.",
     "path": Array [
       "",
     ],
@@ -1539,9 +1428,9 @@ Array [
     "exn": undefined,
     "kind": "Type",
     "location": Object {
-      "character": 22,
+      "character": 36,
     },
-    "message": "This pattern is type string but the data is type boolean.",
+    "message": "This pattern is type string but expected type boolean.",
     "path": Array [
       "",
     ],
@@ -1555,9 +1444,9 @@ Array [
     "exn": undefined,
     "kind": "Type",
     "location": Object {
-      "character": 21,
+      "character": 34,
     },
-    "message": "This pattern is type string but the data is type array.",
+    "message": "This pattern is type string but expected type [int].",
     "path": Array [
       "",
     ],
@@ -1571,9 +1460,9 @@ Array [
     "exn": undefined,
     "kind": "Type",
     "location": Object {
-      "character": 27,
+      "character": 40,
     },
-    "message": "This pattern is type string but the data is type object.",
+    "message": "This pattern is type string but expected type {\\"a\\": unknown}.",
     "path": Array [
       "",
     ],
@@ -1956,13 +1845,11 @@ exports[`Rendering Map type mismatches 1`] = `
 Array [
   Object {
     "exn": undefined,
-    "kind": "Type",
-    "location": Object {
-      "character": 8,
-    },
-    "message": "\\"a\\" is a string. I can only map arrays.",
+    "kind": "Decode",
+    "location": undefined,
+    "message": "This input is type string, which does not match the template's required type, [{\\"a\\": echoable}].",
     "path": Array [
-      "",
+      "key: a",
     ],
   },
 ]
@@ -1972,13 +1859,11 @@ exports[`Rendering Map type mismatches 2`] = `
 Array [
   Object {
     "exn": undefined,
-    "kind": "Type",
-    "location": Object {
-      "character": 8,
-    },
-    "message": "\\"b\\" is a boolean. I can only map arrays.",
+    "kind": "Decode",
+    "location": undefined,
+    "message": "This input is type boolean, which does not match the template's required type, [{\\"a\\": echoable}].",
     "path": Array [
-      "",
+      "key: b",
     ],
   },
 ]
@@ -1988,13 +1873,11 @@ exports[`Rendering Map type mismatches 3`] = `
 Array [
   Object {
     "exn": undefined,
-    "kind": "Parse",
-    "location": Object {
-      "character": 8,
-    },
-    "message": "Bad map type: \\"null\\". I can only map bindings and arrays. (Tip: Use map_dict for dictionaries.)",
+    "kind": "Decode",
+    "location": undefined,
+    "message": "This input is type string, which does not match the template's required type, [int].",
     "path": Array [
-      "",
+      "key: a",
     ],
   },
 ]
@@ -2004,30 +1887,10 @@ exports[`Rendering Map type mismatches 4`] = `
 Array [
   Object {
     "exn": undefined,
-    "kind": "Type",
-    "location": Object {
-      "character": 8,
-    },
-    "message": "\\"a\\" is type array but the data is type string.",
-    "path": Array [
-      "",
-    ],
-  },
-]
-`;
-
-exports[`Rendering Map type mismatches 5`] = `
-Array [
-  Object {
-    "exn": undefined,
-    "kind": "Render",
-    "location": Object {
-      "character": 18,
-    },
-    "message": "Binding \\"z\\" does not exist.",
-    "path": Array [
-      "",
-    ],
+    "kind": "Decode",
+    "location": undefined,
+    "message": "Input is missing JSON object key \\"z\\" which is required.",
+    "path": Array [],
   },
 ]
 `;
@@ -2036,14 +1899,10 @@ exports[`Rendering Missing bindings 1`] = `
 Array [
   Object {
     "exn": undefined,
-    "kind": "Render",
-    "location": Object {
-      "character": 4,
-    },
-    "message": "\\"z\\" is type null. I can only echo strings and numbers.",
-    "path": Array [
-      "",
-    ],
+    "kind": "Decode",
+    "location": undefined,
+    "message": "Input is missing JSON object key \\"z\\" which is required.",
+    "path": Array [],
   },
 ]
 `;
@@ -2154,13 +2013,11 @@ exports[`Rendering Type mismatches 1`] = `
 Array [
   Object {
     "exn": undefined,
-    "kind": "Render",
-    "location": Object {
-      "character": 4,
-    },
-    "message": "\\"b\\" is type boolean. I can only echo strings and numbers.",
+    "kind": "Decode",
+    "location": undefined,
+    "message": "This input is type boolean, which does not match the template's required type, echoable.",
     "path": Array [
-      "",
+      "key: b",
     ],
   },
 ]
@@ -2170,13 +2027,11 @@ exports[`Rendering Type mismatches 2`] = `
 Array [
   Object {
     "exn": undefined,
-    "kind": "Render",
-    "location": Object {
-      "character": 4,
-    },
-    "message": "\\"c\\" is type array. I can only echo strings and numbers.",
+    "kind": "Decode",
+    "location": undefined,
+    "message": "This input is type array, which does not match the template's required type, echoable.",
     "path": Array [
-      "",
+      "key: c",
     ],
   },
 ]
@@ -2186,13 +2041,11 @@ exports[`Rendering Type mismatches 3`] = `
 Array [
   Object {
     "exn": undefined,
-    "kind": "Render",
-    "location": Object {
-      "character": 5,
-    },
-    "message": "\\"b\\" is type boolean. I can only echo strings and numbers.",
+    "kind": "Decode",
+    "location": undefined,
+    "message": "This input is type boolean, which does not match the template's required type, echoable.",
     "path": Array [
-      "",
+      "key: b",
     ],
   },
 ]

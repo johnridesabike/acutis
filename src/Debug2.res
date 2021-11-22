@@ -11,10 +11,20 @@ module Int = Belt.Int
 
 let location = (T.Loc(x)) => {character: x + 1}
 
+let json = j =>
+  switch Js.Json.classify(j) {
+  | JSONFalse | JSONTrue => "boolean"
+  | JSONNull => "null"
+  | JSONString(_) => "string"
+  | JSONNumber(_) => "number"
+  | JSONObject(_) => "object"
+  | JSONArray(_) => "array"
+  }
+
 /* Type errors */
 
 let childTypeMismatch = (a, b, ~f) => {
-  message: `This is type ${f(a)}} but expected type ${f(b)}.`,
+  message: `This pattern is type ${f(b)}} but expected type ${f(a)}.`,
   kind: #Type,
   exn: None,
   location: None,
@@ -22,10 +32,20 @@ let childTypeMismatch = (a, b, ~f) => {
 }
 
 let typeMismatch = (a, b, ~f, ~loc) => {
-  message: `This is type ${f(a)} but expected type ${f(b)}.`,
+  message: `This pattern is type ${f(b)} but expected type ${f(a)}.`,
   kind: #Type,
   exn: None,
   location: Some(location(loc)),
+  path: [],
+}
+
+let cantNarrowType = (a, b, ~f) => {
+  message: `These types have no subset:
+${f(a)}
+${f(b)}`,
+  kind: #Type,
+  exn: None,
+  location: None,
   path: [],
 }
 
@@ -75,4 +95,44 @@ ${pat}`,
     location: None, // fix this
     path: [],
   }
+}
+
+/////////////
+
+let patternNumberMismatch = (~loc, ~name) => {
+  location: Some(location(loc)),
+  path: [Js.Json.string(name)],
+  kind: #Pattern,
+  message: "The number of patterns does not match the number of data.",
+  exn: None,
+}
+
+let nameBoundMultipleTimes = (~loc, ~binding, ~name) => {
+  message: `"${binding}" is bound multiple times in this pattern.`,
+  kind: #Pattern,
+  location: Some(location(loc)),
+  path: [Js.Json.string(name)],
+  exn: None,
+}
+
+/////////
+
+let decodeError = (~f, ~stack, a, b) => {
+  let a = f(a)
+  let b = json(b)
+  {
+    message: `This input is type ${b}, which does not match the template's required type, ${a}.`,
+    kind: #Decode,
+    exn: None,
+    location: None,
+    path: Belt.List.toArray(stack),
+  }
+}
+
+let decodeErrorMissingKey = (~stack, k) => {
+  message: `Input is missing JSON object key "${k}" which is required.`,
+  kind: #Decode,
+  exn: None,
+  location: None,
+  path: Belt.List.toArray(stack),
 }

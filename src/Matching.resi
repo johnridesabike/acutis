@@ -28,7 +28,7 @@ type rec tree<'a> =
       idx: int,
       key: string,
       ids: Belt.Set.Int.t,
-      kind: TypeChecker.TypedPattern.construct,
+      kind: TypeChecker.Pattern.construct,
       // nil is like a wildcard. It always points to the *next* node.
       nil: option<tree<'a>>,
       // cons is always either a Wildcard node or a Nest-Tuple node.
@@ -38,23 +38,24 @@ type rec tree<'a> =
   | End('a)
 
 and switchcase<'a> = {
-  val: TypeChecker.TypedPattern.constant,
+  val: TypeChecker.Pattern.constant,
   ifMatch: tree<'a>,
   nextCase: option<switchcase<'a>>,
 }
 
-type leaf = {names: Belt.Map.Int.t<string>, exit: int}
+type leaf = {names: Belt.Map.String.t<int>, exit: int}
 
 type t<'a> = {
   loc: Acutis_Types.loc,
   tree: tree<leaf>,
-  exits: array<Acutis_Types.Ast.nodes<'a>>,
+  exits: array<'a>,
 }
 
 let make: (
   ~loc: Acutis_Types.loc,
-  NonEmpty.t<Acutis_Types.Ast2.case<Acutis_Types.Ast_Pattern.t, 'a>>,
-) => result<t<'a>, Debug.t>
+  ~name: string,
+  NonEmpty.t<TypeChecker.Ast.case<'a>>,
+) => result<t<TypeChecker.Ast.nodes<'a>>, Debug.t>
 
 module ParMatch: {
   let check: tree<'a> => result<tree<'a>, Debug.t>

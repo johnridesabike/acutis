@@ -19,6 +19,8 @@ let fromQueue = (hd, tl) => {
 
 let toArray = a => a
 
+let size = Array.size
+
 let hd = a => Array.getUnsafe(a, 0)
 
 let one = x => [x]
@@ -44,11 +46,23 @@ let get = Array.get
 
 let getExn = Array.getExn
 
+let forEach = Array.forEachU
+
 let map = Array.mapU
 
-let zip = Array.zip
+let unzip = Array.unzip
 
-let zipBy = Array.zipByU
+let zipUnsafe = Array.zip
+
+let zipExn = (a, b) => {
+  assert (Array.size(a) == Array.size(b))
+  Array.zip(a, b)
+}
+
+let zipByExn = (a, b, f) => {
+  assert (Array.size(a) == Array.size(b))
+  Array.zipByU(a, b, f)
+}
 
 let reduce = Array.reduceU
 

@@ -11,154 +11,266 @@ module Float = Belt.Float
 module Int = Belt.Int
 module MapString = Belt.Map.String
 
-type t
+type t = Json.t
 
-exception DecodeError
+exception Exit = Debug.Exit
 
-let polymorphic = Obj.magic
-@val external null: t = "null"
-let tuple_: array<t> => t = Obj.magic
+module Stack = {
+  let nullable = Js.Json.string("nullable")
+  let array = Js.Json.string("array") // add index
+  let obj_key = s => Js.Json.string("key: " ++ s)
+}
 
-let rec nullable = (ty, j) =>
-  if Json.test(j, Null) || Js.Types.test(j, Undefined) {
+let jsonInt = i => Json.number(Int.toFloat(i))
+
+let null = Json.null
+
+let some = x => Json.array([x])
+
+let rec nullable = (~stack, ty, j) =>
+  if Js.Types.test(j, Null) || Js.Types.test(j, Undefined) {
     null
   } else {
-    tuple_([make(ty, j)])
+    some(make(~stack=list{Stack.nullable, ...stack}, ty, j))
   }
 
-and boolean = json =>
-  if Json.test(json, Boolean) {
-    Obj.magic(json)
+and boolean = (~stack, j) =>
+  if Json.test(j, Boolean) {
+    j
   } else {
-    raise(DecodeError)
+    raise(Exit(Debug2.decodeError({contents: Boolean}, j, ~f=TypeChecker.toString, ~stack)))
   }
 
-and string = json =>
-  if Json.test(json, String) {
-    Obj.magic(json)
+and string = (~stack, j) =>
+  if Json.test(j, String) {
+    j
   } else {
-    raise(DecodeError)
+    raise(Exit(Debug2.decodeError({contents: String}, j, ~f=TypeChecker.toString, ~stack)))
   }
 
-and int = json =>
-  switch Json.decodeNumber(json) {
-  | None => raise(DecodeError)
-  | Some(i) => Obj.magic(Float.fromInt(Int.fromFloat(i)))
+and int = (~stack, j) =>
+  switch Json.decodeNumber(j) {
+  | None => raise(Exit(Debug2.decodeError({contents: Int}, j, ~f=TypeChecker.toString, ~stack)))
+  | Some(i) => Json.number(Float.fromInt(Int.fromFloat(i)))
   }
 
-and float = json =>
-  if Json.test(json, Number) {
-    Obj.magic(json)
+and float = (~stack, j) =>
+  if Json.test(j, Number) {
+    j
   } else {
-    raise(DecodeError)
+    raise(Exit(Debug2.decodeError({contents: Float}, j, ~f=TypeChecker.toString, ~stack)))
   }
 
-and echo = j =>
+and echo = (~stack, j) =>
   switch Json.classify(j) {
-  | JSONString(s) => Obj.magic(s)
-  | JSONNumber(n) => Obj.magic(n)
-  | _ => raise(DecodeError)
+  | JSONString(_) | JSONNumber(_) => j
+  | _ => raise(Exit(Debug2.decodeError({contents: Echo}, j, ~f=TypeChecker.toString, ~stack)))
   }
 
-and list = (ty, j) =>
+and list = (~stack, ty, j) =>
   switch Json.decodeArray(j) {
   | Some(a) =>
-    let l = ref(null)
+    let l = ref(Json.null)
     for i in Array.size(a) - 1 downto 0 {
       let x = Array.getUnsafe(a, i)
-      l := tuple_([make(ty, x), l.contents])
+      l := Json.array([make(~stack, ty, x), l.contents])
     }
     l.contents
-  | None => raise(DecodeError)
+  | None =>
+    raise(Exit(Debug2.decodeError({contents: List(ty)}, j, ~f=TypeChecker.toString, ~stack)))
   }
 
-and dict = (ty, j) =>
+and dict = (~stack, ty, j) =>
   switch Json.decodeObject(j) {
   | Some(obj) =>
     let dict = Js.Dict.empty()
     let keys = Js.Dict.keys(obj)
-    Array.forEachU(keys, (. key) => Js.Dict.set(dict, key, make(ty, Js.Dict.unsafeGet(obj, key))))
-    Obj.magic(dict)
-  | None => raise(DecodeError)
-  }
-
-and tuple = (tys, j) =>
-  switch Json.decodeArray(j) {
-  | Some(arr) => tuple_(Array.zipByU(tys, arr, (. {contents}, json) => make(contents, json)))
-  | None => raise(DecodeError)
-  }
-
-and record = (tys, j) =>
-  switch Json.decodeObject(j) {
-  | Some(obj) =>
-    let dict = Js.Dict.empty()
-    MapString.forEachU(tys, (. k, {contents}) =>
-      switch Js.Dict.get(obj, k) {
-      | None => raise(DecodeError)
-      | Some(json) => Js.Dict.set(dict, k, make(contents, json))
-      }
+    Array.forEachU(keys, (. key) =>
+      Js.Dict.set(dict, key, make(~stack, ty, Js.Dict.unsafeGet(obj, key)))
     )
-    Obj.magic(dict)
-  | _ => raise(DecodeError)
+    Json.object_(dict)
+  | None =>
+    raise(
+      Exit(
+        Debug2.decodeError(
+          {contents: Dict(ty, ref(Belt.Set.String.empty))},
+          j,
+          ~f=TypeChecker.toString,
+          ~stack,
+        ),
+      ),
+    )
   }
 
-and make = (ty, json) =>
-  switch ty {
-  | TypeChecker.Polymorphic => polymorphic(json)
-  | Nullable({contents}) => nullable(contents, json)
-  | Boolean => boolean(json)
-  | String => string(json)
-  | Int => int(json)
-  | Float => float(json)
-  | Echo => echo(json)
-  | List({contents}) => list(contents, json)
-  | Dict({contents}, _) => dict(contents, json)
-  | Tuple({contents}) => tuple(contents, json)
-  | Record({contents}) => record(contents, json)
+and tuple = (~stack, tys, j) =>
+  switch Json.decodeArray(j) {
+  | Some(arr) =>
+    Json.array(
+      Array.zipByU(tys, arr, (. ty, json) => make(~stack=list{Stack.array, ...stack}, ty, json)),
+    )
+  | None =>
+    raise(Exit(Debug2.decodeError({contents: Tuple(ref(tys))}, j, ~f=TypeChecker.toString, ~stack)))
   }
+
+and recordAux = (~stack, tys, j) => {
+  let dict = Js.Dict.empty()
+  MapString.forEachU(tys, (. k, ty) =>
+    switch (ty, Js.Dict.get(j, k)) {
+    | ({contents: TypeChecker.Nullable(_) | Unknown}, None) => Js.Dict.set(dict, k, null)
+    | (ty, Some(j)) => Js.Dict.set(dict, k, make(~stack=list{Stack.obj_key(k), ...stack}, ty, j))
+    | _ => raise(Exit(Debug2.decodeErrorMissingKey(~stack, k)))
+    }
+  )
+  dict
+}
+
+and record = (~stack, tys, j) =>
+  switch Json.decodeObject(j) {
+  | Some(obj) => Json.object_(recordAux(~stack, tys, obj))
+  | _ =>
+    raise(
+      Exit(Debug2.decodeError({contents: Record(ref(tys))}, j, ~f=TypeChecker.toString, ~stack)),
+    )
+  }
+
+and make = (~stack, ty, json) =>
+  switch ty.contents {
+  | TypeChecker.Unknown => json
+  | Nullable(ty) => nullable(~stack, ty, json)
+  | Boolean => boolean(~stack, json)
+  | String => string(~stack, json)
+  | Int => int(~stack, json)
+  | Float => float(~stack, json)
+  | Echo => echo(~stack, json)
+  | List(ty) => list(~stack, ty, json)
+  | Dict(ty, _) => dict(~stack, ty, json)
+  | Tuple(ty) => tuple(~stack, ty.contents, json)
+  | Record(ty) => record(~stack, ty.contents, json)
+  }
+
+let make = (ty, j) => recordAux(~stack=list{}, ty, j)
 
 exception RenderError
 
+@raises(RenderError)
 let booleanExn = t =>
-  if Js.typeof(t) == "boolean" {
-    Obj.magic(t)
-  } else {
+  switch Json.decodeBoolean(t) {
+  | Some(t) => t
+  | None =>
+    Js.log2("bool", t)
     raise(RenderError)
   }
 
+@raises(RenderError)
+let echoExn = t =>
+  switch Json.classify(t) {
+  | JSONString(s) => s
+  | JSONNumber(n) => Float.toString(n)
+  | _ =>
+    Js.log2("echo", t)
+    raise(RenderError)
+  }
+
+@raises(RenderError)
 let stringExn = t =>
-  if Js.typeof(t) == "string" {
-    Obj.magic(t)
-  } else {
+  switch Json.decodeString(t) {
+  | Some(t) => t
+  | None =>
+    Js.log2("string", t)
     raise(RenderError)
   }
 
+@raises(RenderError)
 let intExn = t =>
-  if Js.typeof(t) == "number" {
-    Obj.magic(t)
-  } else {
+  switch Json.decodeNumber(t) {
+  | Some(t) => Int.fromFloat(t)
+  | None =>
+    Js.log2("int", t)
     raise(RenderError)
   }
 
+@raises(RenderError)
 let floatExn = t =>
-  if Js.typeof(t) == "number" {
-    Obj.magic(t)
-  } else {
+  switch Json.decodeNumber(t) {
+  | Some(t) => t
+  | None =>
+    Js.log2("float", t)
     raise(RenderError)
   }
 
+@raises(RenderError)
 let tupleExn = t =>
-  if Js.Array2.isArray(t) {
-    Obj.magic(t)
-  } else {
-    raise(RenderError)
+  switch Json.decodeArray(t) {
+  | Some(t) => t
+  | None =>
+    Js.log2("tuple", Js.Json.stringifyAny(t))
+    assert false
   }
 
+@raises(RenderError)
 let dictExn = t =>
-  if Js.typeof(t) == "object" && !Js.Array2.isArray(t) && !(Obj.magic(t) == Js.null) {
-    Obj.magic(t)
-  } else {
+  switch Json.decodeObject(t) {
+  | Some(t) => t
+  | None =>
+    Js.log2("dict", t)
     raise(RenderError)
   }
 
-let isNull = t => Obj.magic(t) == Js.null
+let isNull = t => Json.test(t, Null)
+
+let nullableExn = t =>
+  switch Json.classify(t) {
+  | JSONNull => None
+  | JSONArray([t]) => Some(t)
+  | _ => assert false
+  }
+
+let rec fromPattern = (x, props) =>
+  switch x {
+  | TypeChecker.Pattern.TPat_Const(_, TPat_Bool(x)) => Json.boolean(x)
+  | TPat_Const(_, TPat_String(x)) => Json.string(x)
+  | TPat_Const(_, TPat_Int(x)) => jsonInt(x)
+  | TPat_Const(_, TPat_Float(x)) => Json.number(x)
+  | TPat_OptionalVar(_, x) | TPat_Var(_, x) =>
+    switch Js.Dict.get(props, x) {
+    | Some(x) => x
+    | None => assert false
+    }
+  | TPat_Construct(_, _, Some(x)) => fromPattern(x, props)
+  | TPat_Construct(_, _, None) => Json.null
+  | TPat_Tuple(_, x) => Json.array(Array.map(x, x => fromPattern(x, props)))
+  | TPat_Record(_, x)
+  | TPat_Dict(_, x) =>
+    let d = Js.Dict.empty()
+    for i in 0 to Array.size(x) - 1 {
+      let (k, v) = Array.getUnsafe(x, i)
+      Js.Dict.set(d, k, fromPattern(v, props))
+    }
+    Json.object_(d)
+  | TPat_Any(_) => assert false
+  }
+
+let forEachListExn = (l, f) => {
+  let rec aux = (i, l) =>
+    if isNull(l) {
+      ()
+    } else {
+      switch tupleExn(l) {
+      | [hd, tl] =>
+        f(. ~index=jsonInt(i), hd)
+        aux(succ(i), tl)
+      | _ => assert false
+      }
+    }
+  aux(0, l)
+}
+
+let forEachDictExn = (d, f) => {
+  let d = dictExn(d)
+  let keys = Js.Dict.keys(d)
+  for i in 0 to Array.size(keys) - 1 {
+    let k = Array.getUnsafe(keys, i)
+    let v = Js.Dict.unsafeGet(d, k)
+    f(. ~index=Json.string(k), v)
+  }
+}
