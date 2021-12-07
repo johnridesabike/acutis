@@ -7,7 +7,8 @@
 */
 
 open TestFramework
-open TypeChecker
+open Typechecker
+module Array = Belt.Array
 module T = Acutis_Types
 module MapString = Belt.Map.String
 
@@ -26,7 +27,7 @@ type rec debug = [
 ]
 let rec debug = (x): debug =>
   switch x.contents {
-  | TypeChecker.Unknown => #Polymorphic
+  | Source2.TypeScheme.Unknown => #Polymorphic
   | Boolean => #Boolean
   | Int => #Int
   | Float => #Float
@@ -59,9 +60,9 @@ describe("basic", ({test, _}) => {
         ("z", #Int(Loc(1), 1)),
       ],
     )
-    let t1 = Local.fromPattern(pat1, Belt.MutableQueue.make())
-    let t2 = Local.fromPattern(pat2, Belt.MutableQueue.make())
-    unify(t1, t2, Expand, ~loc=Loc(1))
+    let t1 = Local.fromPattern(pat1, Belt.MutableQueue.make(), ~name="")
+    let t2 = Local.fromPattern(pat2, Belt.MutableQueue.make(), ~name="")
+    unify(t1, t2, Expand, ~loc=Loc(1), ~name="")
     expect.value(debug(t1)).toEqual(
       #Record([
         ("a", #Boolean),

@@ -13,27 +13,23 @@ let getError = x =>
   | #errors(x) => x
   }
 
-let render = (~name="", src, json, components) =>
-  Source.string(~name, src)
-  ->Compile.make(components)
-  ->Result.flatMap(f => f(Environment.sync, json, Js.Dict.empty()))
-  ->getError
-
 let dict = Js.Dict.fromArray
 
 let compile = (~name="", src) =>
-  switch Optimize.make(~name, src, []) {
+  switch Compile2.make(~name, src, Compile2.Components.empty()) {
   | #ok(_) => []
   | #errors(e) => e
   }
 
-let render2 = (~name="", ~children=Js.Dict.empty(), src, props, components) => {
+let render = (~name="", ~children=Js.Dict.empty(), src, props, components) => {
   let r =
-    Optimize.make(~name, src, components)->Result.flatMap(f =>
-      f(Environment2.sync, props, children)
-    )
+    Compile2.Components.make(components)
+    ->Result.flatMap(Compile2.make(~name, src))
+    ->Result.flatMap(t => Render2.sync(t, props, children))
   switch r {
-  | #ok(_) => assert false
+  | #ok(_) =>
+    Js.log2("lol", r)
+    assert false
   | #errors(e) => e
   }
 }
@@ -178,11 +174,23 @@ describe("Patterns", ({test, _}) => {
 
   test("Missing bindings", ({expect, _}) => {
     let props = dict([("a", Js.Json.number(1.0)), ("c", Js.Json.null)])
-    let a = Source.func(~name="A", (env, _p, _c) => env.return(. ""))
-    let components = Compile.Components.make([a])->Result.getExn
-    expect.value(render(`{% A b={b} / %}`, props, components)).toMatchSnapshot()
-    expect.value(render(`{% A b=[a, ...b] / %}`, props, components)).toMatchSnapshot()
-    expect.value(render(`{% A b=[a, ...c] / %}`, props, components)).toMatchSnapshot()
+    let a = Source2.function(
+      ~name="A",
+      Source2.TypeScheme.props([
+        ("b", Source2.TypeScheme.record([("b", Source2.TypeScheme.string())])),
+      ]),
+      Source2.TypeScheme.Child.props([]),
+      (type a, module(Env): Source2.env<a>, _p, _c) => Env.return(. ""),
+    )
+    let z = Source2.function(
+      ~name="Z",
+      Source2.TypeScheme.props([("b", Source2.TypeScheme.list(Source2.TypeScheme.int()))]),
+      Source2.TypeScheme.Child.props([]),
+      (type a, module(Env): Source2.env<a>, _p, _c) => Env.return(. ""),
+    )
+    expect.value(render(`{% A b={b} / %}`, props, [a])).toMatchSnapshot()
+    expect.value(render(`{% Z b=[a, ...b] / %}`, props, [z])).toMatchSnapshot()
+    expect.value(render(`{% Z b=[a, ...c] / %}`, props, [z])).toMatchSnapshot()
   })
 
   describe("Type errors", ({test, _}) => {
@@ -301,9 +309,9 @@ describe("Rendering", ({test, _}) => {
       ("b", Js.Json.boolean(true)),
       ("c", Js.Json.stringArray([])),
     ])
-    expect.value(render2("{{ b }}", data, [])).toMatchSnapshot()
-    expect.value(render2("{{ c }}", data, [])).toMatchSnapshot()
-    expect.value(render2("{{ &b }}", data, [])).toMatchSnapshot()
+    expect.value(render("{{ b }}", data, [])).toMatchSnapshot()
+    expect.value(render("{{ c }}", data, [])).toMatchSnapshot()
+    expect.value(render("{{ &b }}", data, [])).toMatchSnapshot()
   })
 
   test("Map type mismatches", ({expect, _}) => {
@@ -312,66 +320,60 @@ describe("Rendering", ({test, _}) => {
       ("b", Js.Json.boolean(true)),
       ("c", Js.Json.stringArray([])),
     ])
-    expect.value(render2("{% map a with {a} %}{{ a }}{% /map %}", data, [])).toMatchSnapshot()
-    expect.value(render2("{% map b with {a} %}{{ a }}{% /map %}", data, [])).toMatchSnapshot()
+    expect.value(render("{% map a with {a} %}{{ a }}{% /map %}", data, [])).toMatchSnapshot()
+    expect.value(render("{% map b with {a} %}{{ a }}{% /map %}", data, [])).toMatchSnapshot()
     expect.value(
-      render2("{% map [1, 2, ...a] with a %}{{ a }}{% /map %}", data, []),
+      render("{% map [1, 2, ...a] with a %}{{ a }}{% /map %}", data, []),
     ).toMatchSnapshot()
     expect.value(
-      render2("{% map [1, 2, ...z] with a %}{{ a }}{% /map %}", data, []),
+      render("{% map [1, 2, ...z] with a %}{{ a }}{% /map %}", data, []),
     ).toMatchSnapshot()
   })
 
   test("Missing bindings", ({expect, _}) => {
-    expect.value(render2("{{ z }}", Js.Dict.empty(), [])).toMatchSnapshot()
-    expect.value(render("{{ Z }}", Js.Dict.empty(), Compile.Components.empty())).toMatchSnapshot()
+    expect.value(render("{{ z }}", Js.Dict.empty(), [])).toMatchSnapshot()
+    expect.value(render("{{ Z }}", Js.Dict.empty(), [])).toMatchSnapshot()
     expect.value(
-      Compile.make(Source.string(~name="", "{% Z / %}"), Compile.Components.empty())->getError,
+      Compile2.make(~name="", "{% Z / %}", Compile2.Components.empty())->getError,
     ).toMatchSnapshot()
-    let a = Source.funcWithString(~name="A", "{{ B }}", (ast, env, props, children) => {
-      env.render(. ast, props, children)
-    })
-    let components = Compile.Components.make([a])->Result.getExn
-    let result = render(`{% A B=C / %}`, Js.Dict.empty(), components)
+    let a = Source2.src(~name="A", "{{ B }}")
+    let result = render(`{% A B=C / %}`, Js.Dict.empty(), [a])
     expect.value(result).toMatchSnapshot()
     // Get some coverage on the map-object error path.
     expect.value(
-      render(
-        "{% map_dict <a: b> with b %} {{ b }} {% /map_dict %}",
-        Js.Dict.empty(),
-        Compile.Components.empty(),
-      ),
+      render("{% map_dict <a: b> with b %} {{ b }} {% /map_dict %}", Js.Dict.empty(), []),
     ).toMatchSnapshot()
   })
 
   test("Error messages display component name correctly", ({expect, _}) => {
-    let a = Source.funcWithString(~name="A", "{{ a }}", (ast, env, props, children) => {
-      env.render(. ast, props, children)
-    })
-    let components = Compile.Components.make([a])->Result.getExn
+    // This test is not relevant for the same reasons it was originally. It
+    // needs to be renamed.
+    let a = Source2.src(~name="A", "{{ a }}")
     let data = Js.Dict.empty()
-    let result = render(`{% A / %}`, data, components)
+    let result = render(`{% A / %}`, data, [a])
     expect.value(result).toMatchSnapshot()
   })
 
-  test("Multiple render errors are all reported", ({expect, _}) => {
-    expect.value(
-      render(
-        "{{ a }} {{ b }} {{ c }}",
-        dict([("a", Js.Json.null), ("b", Js.Json.numberArray([1.0, 2.0]))]),
-        Compile.Components.empty(),
-      ),
-    ).toMatchSnapshot()
-  })
+  // test("Multiple render errors are all reported", ({expect, _}) => {
+  //   expect.value(
+  //     render(
+  //       "{{ a }} {{ b }} {{ c }}",
+  //       dict([("a", Js.Json.null), ("b", Js.Json.numberArray([1.0, 2.0]))]),
+  //       [],
+  //     ),
+  //   ).toMatchSnapshot()
+  // })
 
   test("Exceptions thrown in components are caught correctly", ({expect, _}) => {
     @raises(Failure)
-    let a = Source.func(~name="A", (_env, _props, _children) => {
-      raise(Failure("fail."))
-    })
-    let components = Compile.Components.make([a])->Result.getExn
+    let a = Source2.function(
+      ~name="A",
+      Source2.TypeScheme.props([]),
+      Source2.TypeScheme.Child.props([]),
+      (_, _, _) => raise(Failure("fail.")),
+    )
     let data = Js.Dict.empty()
-    let result = render(~name="ExceptionsTest", `{% A / %}`, data, components)
+    let result = render(~name="ExceptionsTest", `{% A / %}`, data, [a])
     expect.value(result).toMatchSnapshot()
   })
 })
@@ -379,74 +381,28 @@ describe("Rendering", ({test, _}) => {
 describe("Inputs", ({test, _}) => {
   test("Bad source input", ({expect, _}) => {
     expect.value(
-      getError(
-        Compile.make(
-          Source.string(~name="Template", Obj.magic(1)),
-          Compile.Components.empty(),
-        )->Result.flatMap(f => f(Environment.sync, Js.Dict.empty(), Js.Dict.empty())),
-      ),
+      getError(Compile2.make(~name="Template", Obj.magic(1), Compile2.Components.empty())),
     ).toMatchSnapshot()
   })
 })
 
 describe("Stack trace is rendered correctly", ({test, _}) => {
-  test("match", ({expect, _}) => {
-    expect.value(
-      render(
-        ~name="MatchTest",
-        `{% match a with 1.0 %} {% match a with 1.0 %} {{ b }} {% /match %} {% /match %}`,
-        dict([("a", Js.Json.number(1.0))]),
-        Compile.Components.empty(),
-      ),
-    ).toMatchSnapshot()
-  })
-
-  test("map", ({expect, _}) => {
-    expect.value(
-      render(
-        ~name="MapTest",
-        `{% map a with b %} {{ c }} {% /map %}`,
-        dict([("a", Js.Json.numberArray([1.0, 2.0]))]),
-        Compile.Components.empty(),
-      ),
-    ).toMatchSnapshot()
-  })
-
   test("components", ({expect, _}) => {
-    let c = Source.funcWithString(~name="C", "{{ c }}", (ast, env, props, children) => {
-      env.render(. ast, props, children)
-    })
-    let b = Source.funcWithString(~name="B", `{% match x with "x" %} {% C /%} {% /match %}`, (
-      ast,
-      env,
-      props,
-      templates,
-    ) => {
-      env.render(. ast, props, templates)
-    })
-    let components = Compile.Components.make([c, b])->Result.getExn
+    let c = Source2.src(~name="C", "{{ c }}")
+    let b = Source2.src(~name="B", `{% match x with "x" %} {% C /%} {% /match %}`)
+    let components = [c, b]
     let data = dict([("x", Js.Json.string("x"))])
     expect.value(render(~name="A", `{% B x / %}`, data, components)).toMatchSnapshot()
-  })
-
-  test("child templates", ({expect, _}) => {
-    let b = Source.funcWithString(~name="B", "{{ Children }}", (ast, env, props, children) => {
-      env.render(. ast, props, children)
-    })
-    let components = Compile.Components.make([b])->Result.getExn
-    let data = Js.Dict.empty()
-    expect.value(render(~name="A", `{% B %} {{ y }} {% /B %}`, data, components)).toMatchSnapshot()
   })
 })
 
 @raises(Failure)
 describe("Graphs are parsed correctly", ({test, _}) => {
-  let emptyComponents = Compile.Components.make([])->Result.getExn
   test("Cyclic dependencies are reported", ({expect, _}) => {
-    let a = Source.string(~name="A", "{% B /%}")
-    let b = Source.string(~name="B", "{% C /%}")
-    let c = Source.string(~name="C", "{% B /%}")
-    let result = Compile.Components.make([a, b, c])
+    let a = Source2.src(~name="A", "{% B /%}")
+    let b = Source2.src(~name="B", "{% C /%}")
+    let c = Source2.src(~name="C", "{% B /%}")
+    let result = Compile2.Components.make([a, b, c])
     expect.value(result).toEqual(
       #errors([
         {
@@ -465,11 +421,11 @@ describe("Graphs are parsed correctly", ({test, _}) => {
     )
   })
   test("Cyclic dependencies are reported (more complex)", ({expect, _}) => {
-    let a = Source.string(~name="A", "{% B /%}")
-    let b = Source.string(~name="B", "{% C /%}")
-    let c = Source.string(~name="C", "{% B /%}")
-    let d = Source.string(~name="D", "{% A /%}")
-    let result = Compile.Components.make([a, b, c, d])
+    let a = Source2.src(~name="A", "{% B /%}")
+    let b = Source2.src(~name="B", "{% C /%}")
+    let c = Source2.src(~name="C", "{% B /%}")
+    let d = Source2.src(~name="D", "{% A /%}")
+    let result = Compile2.Components.make([a, b, c, d])
     expect.value(result).toEqual(
       #errors([
         {
@@ -484,62 +440,59 @@ describe("Graphs are parsed correctly", ({test, _}) => {
             Js.Json.string("A"),
           ],
         },
-        {
-          exn: None,
-          kind: #Compile,
-          location: Some({character: 4}),
-          message: `Component "A" either does not exist or couldn't be compiled.`,
-          path: [Js.Json.string("D")],
-        },
       ]),
     )
   })
   test("Missing dependencies are reported", ({expect, _}) => {
-    let a = Source.string(~name="A", "{% B /%}")
-    let b = Source.string(~name="B", "{% C /%}")
-    let result = Compile.Components.make([a, b])
+    let a = Source2.src(~name="A", "{% B /%}")
+    let b = Source2.src(~name="B", "{% C /%}")
+    let result = Compile2.Components.make([a, b])
     expect.value(result).toEqual(
       #errors([
         {
           exn: None,
           kind: #Compile,
           location: Some({character: 4}),
-          message: `Component "C" either does not exist or couldn't be compiled.`,
-          path: [Js.Json.string("B"), Js.Json.string("A")],
-        },
-      ]),
-    )
-  })
-  test("Runtime AST errors are reported", ({expect, _}) => {
-    let a = Source.string(~name="A", "{% B /%}")
-
-    @raises(Failure)
-    let b = Source.funcWithString(~name="B", "", _ => failwith("lol"))
-    let result = Compile.Components.make([a, b])
-    let e = try {failwith("lol")} catch {
-    | e => e
-    }
-    expect.value(result).toEqual(
-      #errors([
-        {
-          exn: Some(AnyExn(e)),
-          kind: #Compile,
-          location: None,
-          message: "An exception was thrown while compiling this template. This is probably due to malformed input.",
-          path: [Js.Json.string("A")],
-        },
-      ]),
-    )
-    expect.value(Compile.make(b, emptyComponents)).toEqual(
-      #errors([
-        {
-          exn: Some(AnyExn(e)),
-          kind: #Compile,
-          location: None,
-          message: "An exception was thrown while compiling this template. This is probably due to malformed input.",
+          message: `Template component "C" is missing, which is required by "B."`,
           path: [Js.Json.string("B")],
         },
       ]),
     )
   })
+  // test("Runtime AST errors are reported", ({expect, _}) => {
+  //   let a = Source2.src(~name="A", "{% B /%}")
+  //   @raises(Failure)
+  //   let b = Source2.function(
+  //     ~name="B",
+  //     Source2.TypeScheme.props([]),
+  //     Source2.TypeScheme.Child.props([]),
+  //     _ => failwith("lol"),
+  //   )
+  //   let result = Compile2.Components.make([a, b])
+  //   let e = try {failwith("lol")} catch {
+  //   | e => e
+  //   }
+  //   expect.value(result).toEqual(
+  //     #errors([
+  //       {
+  //         exn: Some(AnyExn(e)),
+  //         kind: #Compile,
+  //         location: None,
+  //         message: "An exception was thrown while compiling this template. This is probably due to malformed input.",
+  //         path: [Js.Json.string("A")],
+  //       },
+  //     ]),
+  //   )
+  // expect.value(Compile2.make(b, emptyComponents)).toEqual(
+  //   #errors([
+  //     {
+  //       exn: Some(AnyExn(e)),
+  //       kind: #Compile,
+  //       location: None,
+  //       message: "An exception was thrown while compiling this template. This is probably due to malformed input.",
+  //       path: [Js.Json.string("B")],
+  //     },
+  //   ]),
+  // )
+  // })
 })

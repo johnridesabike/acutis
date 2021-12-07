@@ -11,17 +11,18 @@ module T = Acutis_Types
 module NE = NonEmpty
 module SI = Belt.Set.Int
 module MS = Belt.Map.String
-module TC = TypeChecker
+module TC = Typechecker
 let ne = NE.fromArrayExn
 
 let makeCases = c => {
   let (_, cases) = TC.makeCases(
     ne(c),
     TC.Context.make(),
-    ~untyped=TC.MutMapString.make(),
-    ~done=TC.MutMapString.make(),
+    ~untyped=Belt.MutableMap.String.make(),
+    ~done=Belt.MutableMap.String.make(),
     ~loc=Loc(0),
     ~name="",
+    ~stack=list{},
   )
   cases
 }

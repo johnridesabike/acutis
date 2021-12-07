@@ -9,7 +9,7 @@ module Array = Belt.Array
 module SetInt = Belt.Set.Int
 module MapString = Belt.Map.String
 module Queue = Belt.MutableQueue
-module TP = TypeChecker.Pattern
+module TP = Typechecker.Pattern
 
 type nest = Tuple | Record | Dict
 
@@ -647,7 +647,7 @@ module ParMatch = {
   }
 }
 
-let make = (~loc, ~name, cases: NonEmpty.t<TypeChecker.Ast.case<_>>) => {
+let make = (~loc, ~name, cases: NonEmpty.t<Typechecker.Ast.case<_>>) => {
   let exitq = Queue.make()
   let hdcase = NonEmpty.hd(cases)
   Queue.add(exitq, hdcase.nodes)

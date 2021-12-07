@@ -930,14 +930,10 @@ exports[`Patterns Missing bindings 1`] = `
 Array [
   Object {
     "exn": undefined,
-    "kind": "Render",
-    "location": Object {
-      "character": 9,
-    },
-    "message": "Binding \\"b\\" does not exist.",
-    "path": Array [
-      "",
-    ],
+    "kind": "Decode",
+    "location": undefined,
+    "message": "Input is missing JSON object key \\"b\\" which is required.",
+    "path": Array [],
   },
 ]
 `;
@@ -946,14 +942,10 @@ exports[`Patterns Missing bindings 2`] = `
 Array [
   Object {
     "exn": undefined,
-    "kind": "Render",
-    "location": Object {
-      "character": 15,
-    },
-    "message": "Binding \\"b\\" does not exist.",
-    "path": Array [
-      "",
-    ],
+    "kind": "Decode",
+    "location": undefined,
+    "message": "Input is missing JSON object key \\"b\\" which is required.",
+    "path": Array [],
   },
 ]
 `;
@@ -962,13 +954,11 @@ exports[`Patterns Missing bindings 3`] = `
 Array [
   Object {
     "exn": undefined,
-    "kind": "Type",
-    "location": Object {
-      "character": 8,
-    },
-    "message": "\\"c\\" is type array but the data is type null.",
+    "kind": "Decode",
+    "location": undefined,
+    "message": "This input is type null, which does not match the template's required type, [int].",
     "path": Array [
-      "",
+      "key: c",
     ],
   },
 ]
@@ -1810,13 +1800,12 @@ exports[`Rendering Error messages display component name correctly 1`] = `
 Array [
   Object {
     "exn": undefined,
-    "kind": "Render",
+    "kind": "Type",
     "location": Object {
       "character": 4,
     },
-    "message": "\\"a\\" is type null. I can only echo strings and numbers.",
+    "message": "This call of component \\"A\\" is missing prop \\"a\\" of type echoable.",
     "path": Array [
-      "A",
       "",
     ],
   },
@@ -1911,14 +1900,10 @@ exports[`Rendering Missing bindings 2`] = `
 Array [
   Object {
     "exn": undefined,
-    "kind": "Render",
-    "location": Object {
-      "character": 4,
-    },
-    "message": "Template child \\"Z\\" does not exist.",
-    "path": Array [
-      "",
-    ],
+    "kind": "Decode",
+    "location": undefined,
+    "message": "Input is missing required template child \\"Z.\\"",
+    "path": Array [],
   },
 ]
 `;
@@ -1931,7 +1916,7 @@ Array [
     "location": Object {
       "character": 4,
     },
-    "message": "Component \\"Z\\" either does not exist or couldn't be compiled.",
+    "message": "Template component \\"Z\\" is missing, which is required by \\"<root>.\\"",
     "path": Array [
       "",
     ],
@@ -1943,14 +1928,10 @@ exports[`Rendering Missing bindings 4`] = `
 Array [
   Object {
     "exn": undefined,
-    "kind": "Render",
-    "location": Object {
-      "character": 4,
-    },
-    "message": "Template child \\"C\\" does not exist.",
-    "path": Array [
-      "",
-    ],
+    "kind": "Decode",
+    "location": undefined,
+    "message": "Input is missing required template child \\"C.\\"",
+    "path": Array [],
   },
 ]
 `;
@@ -1959,52 +1940,10 @@ exports[`Rendering Missing bindings 5`] = `
 Array [
   Object {
     "exn": undefined,
-    "kind": "Render",
-    "location": Object {
-      "character": 17,
-    },
-    "message": "Binding \\"b\\" does not exist.",
-    "path": Array [
-      "",
-    ],
-  },
-]
-`;
-
-exports[`Rendering Multiple render errors are all reported 1`] = `
-Array [
-  Object {
-    "exn": undefined,
-    "kind": "Render",
-    "location": Object {
-      "character": 4,
-    },
-    "message": "\\"a\\" is type null. I can only echo strings and numbers.",
-    "path": Array [
-      "",
-    ],
-  },
-  Object {
-    "exn": undefined,
-    "kind": "Render",
-    "location": Object {
-      "character": 12,
-    },
-    "message": "\\"b\\" is type array. I can only echo strings and numbers.",
-    "path": Array [
-      "",
-    ],
-  },
-  Object {
-    "exn": undefined,
-    "kind": "Render",
-    "location": Object {
-      "character": 20,
-    },
-    "message": "\\"c\\" is type null. I can only echo strings and numbers.",
-    "path": Array [
-      "",
-    ],
+    "kind": "Decode",
+    "location": undefined,
+    "message": "Input is missing JSON object key \\"b\\" which is required.",
+    "path": Array [],
   },
 ]
 `;
@@ -2051,86 +1990,17 @@ Array [
 ]
 `;
 
-exports[`Stack trace is rendered correctly child templates 1`] = `
-Array [
-  Object {
-    "exn": undefined,
-    "kind": "Render",
-    "location": Object {
-      "character": 12,
-    },
-    "message": "\\"y\\" is type null. I can only echo strings and numbers.",
-    "path": Array [
-      "section: B#Children",
-      "A",
-    ],
-  },
-]
-`;
-
 exports[`Stack trace is rendered correctly components 1`] = `
 Array [
   Object {
     "exn": undefined,
-    "kind": "Render",
+    "kind": "Type",
     "location": Object {
-      "character": 4,
+      "character": 27,
     },
-    "message": "\\"c\\" is type null. I can only echo strings and numbers.",
+    "message": "This call of component \\"C\\" is missing prop \\"c\\" of type echoable.",
     "path": Array [
-      "C",
-      "match",
       "B",
-      "A",
-    ],
-  },
-]
-`;
-
-exports[`Stack trace is rendered correctly map 1`] = `
-Array [
-  Object {
-    "exn": undefined,
-    "kind": "Render",
-    "location": Object {
-      "character": 23,
-    },
-    "message": "\\"c\\" is type null. I can only echo strings and numbers.",
-    "path": Array [
-      0,
-      "map",
-      "MapTest",
-    ],
-  },
-  Object {
-    "exn": undefined,
-    "kind": "Render",
-    "location": Object {
-      "character": 23,
-    },
-    "message": "\\"c\\" is type null. I can only echo strings and numbers.",
-    "path": Array [
-      1,
-      "map",
-      "MapTest",
-    ],
-  },
-]
-`;
-
-exports[`Stack trace is rendered correctly match 1`] = `
-Array [
-  Object {
-    "exn": undefined,
-    "kind": "Render",
-    "location": Object {
-      "character": 50,
-    },
-    "message": "\\"b\\" is type null. I can only echo strings and numbers.",
-    "path": Array [
-      "match",
-      "match",
-      "MatchTest",
     ],
   },
 ]

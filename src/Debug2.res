@@ -31,12 +31,34 @@ let childTypeMismatch = (a, b, ~f) => {
   path: [],
 }
 
-let typeMismatch = (a, b, ~f, ~loc) => {
+let missingComponent = (~name, ~loc, a) => {
+  let name' = switch name {
+  | "" => "<root>"
+  | s => s
+  }
+  {
+    message: `Template component "${a}" is missing, which is required by "${name'}."`,
+    kind: #Compile,
+    exn: None,
+    location: Some(location(loc)),
+    path: [Js.Json.string(name)],
+  }
+}
+
+let typeMismatch = (a, b, ~f, ~loc, ~name) => {
   message: `This pattern is type ${f(b)} but expected type ${f(a)}.`,
   kind: #Type,
   exn: None,
   location: Some(location(loc)),
-  path: [],
+  path: [Js.Json.string(name)],
+}
+
+let missingProp = (p, t, ~f, ~loc, ~name, ~comp) => {
+  message: `This call of component "${comp}" is missing prop "${p}" of type ${f(t)}.`,
+  kind: #Type,
+  exn: None,
+  location: Some(location(loc)),
+  path: [Js.Json.string(name)],
 }
 
 let cantNarrowType = (a, b, ~f) => {
@@ -49,20 +71,20 @@ ${f(b)}`,
   path: [],
 }
 
-let tupleSizeMismatch = (a, b) => {
+let tupleSizeMismatch = (a, b, ~name) => {
   message: `This is a ${Int.toString(a)}-tuple but expected a ${Int.toString(b)}-tuple.`,
   kind: #Type,
   exn: None,
   location: None,
-  path: [],
+  path: [Js.Json.string(name)],
 }
 
-let mapPatternSizeMismatch = (~loc) => {
+let mapPatternSizeMismatch = (~loc, ~name) => {
   message: `Map blocks can only have two patterns per "with" clause: the item and the index.`,
   kind: #Type,
   exn: None,
   location: Some(location(loc)),
-  path: [],
+  path: [Js.Json.string(name)],
 }
 
 let nonNullableEchoLiteral = () => {
@@ -135,4 +157,20 @@ let decodeErrorMissingKey = (~stack, k) => {
   exn: None,
   location: None,
   path: Belt.List.toArray(stack),
+}
+
+let decodeErrorMissingChild = k => {
+  message: `Input is missing required template child "${k}."`,
+  kind: #Decode,
+  exn: None,
+  location: None,
+  path: [],
+}
+
+let customError = message => {
+  message: message,
+  location: None,
+  path: [],
+  kind: #Render,
+  exn: None,
 }
