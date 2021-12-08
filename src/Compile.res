@@ -458,8 +458,6 @@ let compileExn = (src: Source.t<_>) =>
   switch src {
   | String({name, src}) =>
     let nodes = makeAstInternalExn(~name, src)
-    // check the types for testing but ignore them for now.
-    Typechecker.Deprecated.check(nodes)->ignore
     Ast({name: name, nodes: nodes})
   | Func({name, f}) => Func({name: name, f: f})
   | StringFunc({name, src, f}) =>

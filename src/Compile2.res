@@ -7,9 +7,7 @@
 */
 
 module T = Acutis_Types
-module List = Belt.List
 module Array = Belt.Array
-module MutMapString = Belt.MutableMap.String
 exception Exit = Debug.Exit
 
 let trimStart = string => {
@@ -160,8 +158,8 @@ module Ast = {
 }
 
 type t<'a> = {
-  prop_types: Source2.TypeScheme.props,
-  child_types: Source2.TypeScheme.Child.props,
+  prop_types: Typescheme.props,
+  child_types: Typescheme.Child.props,
   nodes: Ast.t<'a>,
   name: string,
 }
@@ -175,9 +173,7 @@ let make = (~name, ast) => {
 
 type rec template<'a> =
   | Acutis(Ast.t<template<'a>>)
-  | Function(Source2.TypeScheme.props, Source2.fnU<'a>)
-
-type notlinked<'a> = Source2.t<Ast.t<unit>, Source2.fnU<'a>>
+  | Function(Typescheme.props, Source2.fnU<'a>)
 
 @raises(Exit)
 let compileExn = (~name, src) => {
@@ -188,7 +184,7 @@ let compileExn = (~name, src) => {
 let compile = (~name, src, components) =>
   try {
     let {nodes, _} = compileExn(~name, src)
-    let ast = Typechecker.make(name, nodes, components, ~stack=list{})
+    let ast = Typechecker.make(name, nodes, components)
     #ok(make(~name, ast))
   } catch {
   | Exit(e) => #errors([e])
@@ -196,9 +192,9 @@ let compile = (~name, src, components) =>
   }
 
 module Components = {
-  type t<'a> = MutMapString.t<Source2.t<Typechecker.Ast.t<unit>, Source2.fnU<'a>>>
+  type t<'a> = Utils.Dag.linked<Source2.t<Typechecker.Ast.t<unit>, Source2.fnU<'a>>>
 
-  let empty = () => MutMapString.make()
+  let empty = Utils.Dag.empty
 
   let makeExn = a => {
     let components = Array.mapU(a, (. src) =>
@@ -218,102 +214,61 @@ module Components = {
     | e => #errors([Debug.uncaughtCompileError(e, ~name="")])
     }
 
-  let optimize = m =>
-    MutMapString.mapU(m, (. x) =>
-      switch x {
-      | Source2.Acutis(name, ast) => Source2.src(~name, Ast.make(~name, ast))
-      | Function(name, p, c, f) => Source2.functionU(~name, p, c, f)
+  let optimize = x =>
+    x
+    ->Utils.Dag.toArray
+    ->Array.mapU((. v) =>
+      switch v {
+      | Source2.Acutis(name, ast) => (name, Source2.src(~name, Ast.make(~name, ast)))
+      | Function(name, p, c, f) => (name, Source2.functionU(~name, p, c, f))
       }
     )
 }
 
-module Linker = {
-  let stringEq = (. a: string, b: string) => a == b
+// Recursively map the nodes to link the components.
+@raises(Exit)
+let rec linkNodesExn = (nodes, graph) =>
+  Array.mapU(nodes, (. node) =>
+    switch node {
+    | (Ast.OText(_) | OEcho(_)) as x => x
+    | OMatch(l, b, t) =>
+      let exits = Array.mapU(t.exits, (. n) => linkNodesExn(n, graph))
+      OMatch(l, b, {...t, exits: exits})
+    | OMapList(l, p, t) =>
+      let exits = Array.mapU(t.exits, (. n) => linkNodesExn(n, graph))
+      OMapList(l, p, {...t, exits: exits})
+    | OMapDict(l, p, t) =>
+      let exits = Array.mapU(t.exits, (. n) => linkNodesExn(n, graph))
+      OMapDict(l, p, {...t, exits: exits})
+    | OComponent({loc, name, props, children, f: ()}) =>
+      OComponent({
+        loc: loc,
+        name: name,
+        props: props,
+        children: Array.mapU(children, (. (name, child)) =>
+          switch child {
+          | OChildName(_) as child => (name, child)
+          | OChildBlock(nodes) => (name, OChildBlock(linkNodesExn(nodes, graph)))
+          }
+        ),
+        f: Utils.Dag.getExn(graph, ~name, ~key=name, ~loc, ~f=(. g, src) =>
+          switch src {
+          | Source2.Acutis(_, ast) => Acutis(linkNodesExn(ast, g))
+          | Function(_, props, _, f) => Function(props, f)
+          }
+        ),
+      })
+    }
+  )
 
-  // Mutable structures have the advantage of being able to update even when
-  // the linker exits early via raising an exception.
-  type t<'a> = {
-    linked: MutMapString.t<template<'a>>,
-    notlinked: MutMapString.t<notlinked<'a>>,
-    stack: list<string>,
+let link = (~name, typed, components: Components.t<'a>) =>
+  try {
+    let g = Utils.Dag.make(Components.optimize(components))
+    #ok({...typed, nodes: linkNodesExn(typed.nodes, g)})
+  } catch {
+  | Exit(e) => #errors([e])
+  | e => #errors([Debug.uncaughtCompileError(e, ~name)])
   }
 
-  // When we link components in the tree, ensure that it keeps the
-  // directed-acyclic structure.
-  @raises(Exit)
-  let rec getComponentExn = (g, name, loc) =>
-    switch MutMapString.get(g.linked, name) {
-    | Some(f) => f // It was linked already during a previous search.
-    | None =>
-      switch MutMapString.get(g.notlinked, name) {
-      | Some(ast) =>
-        // Remove it from the unlinked map so a cycle isn't possible.
-        MutMapString.remove(g.notlinked, name)
-        let f = linkComponentsExn(ast, {...g, stack: list{name, ...g.stack}})
-        MutMapString.set(g.linked, name, f)
-        f
-      | None =>
-        // It is either being linked (thus in a cycle) or it doesn't exist.
-        if List.hasU(g.stack, name, stringEq) {
-          raise(Exit(Debug.cyclicDependency(~loc, ~name, ~stack=g.stack)))
-        } else {
-          raise(Exit(Debug.componentDoesNotExist(~loc, ~name, ~stack=g.stack)))
-        }
-      }
-    }
-  // Recursively map the nodes to link the components.
-  @raises(Exit)
-  and mapNodesExn = (nodes, graph) =>
-    Array.mapU(nodes, (. node: Ast.node<_>) =>
-      switch node {
-      | (OText(_) | OEcho(_)) as x => x
-      | OMatch(l, b, t) =>
-        let exits = Array.mapU(t.exits, (. n) => mapNodesExn(n, graph))
-        OMatch(l, b, {...t, exits: exits})
-      | OMapList(l, p, t) =>
-        let exits = Array.mapU(t.exits, (. n) => mapNodesExn(n, graph))
-        OMapList(l, p, {...t, exits: exits})
-      | OMapDict(l, p, t) =>
-        let exits = Array.mapU(t.exits, (. n) => mapNodesExn(n, graph))
-        OMapDict(l, p, {...t, exits: exits})
-      | OComponent({loc, name, props, children, f: ()}) =>
-        OComponent({
-          loc: loc,
-          name: name,
-          props: props,
-          children: Array.mapU(children, (. (name, child)) =>
-            switch child {
-            | OChildName(_) as child => (name, child)
-            | OChildBlock(nodes) => (name, OChildBlock(mapNodesExn(nodes, graph)))
-            }
-          ),
-          f: getComponentExn(graph, name, loc),
-        })
-      }
-    )
-  @raises(Exit)
-  and linkComponentsExn = (src, graph) =>
-    switch src {
-    | Source2.Acutis(_, ast) => Acutis(mapNodesExn(ast, graph))
-    | Function(_, props, _, f) => Function(props, f)
-    }
-
-  let make = (~name, typed, components) =>
-    try {
-      let graph = {
-        linked: Components.empty(),
-        notlinked: Components.optimize(components),
-        stack: list{name},
-      }
-      #ok({
-        ...typed,
-        nodes: mapNodesExn(typed.nodes, graph),
-      })
-    } catch {
-    | Exit(e) => #errors([e])
-    | e => #errors([Debug.uncaughtCompileError(e, ~name)])
-    }
-}
-
 let make = (~name, src, components) =>
-  compile(~name, src, components)->Result.flatMapU((. root) => Linker.make(~name, root, components))
+  compile(~name, src, components)->Result.flatMapU((. root) => link(~name, root, components))

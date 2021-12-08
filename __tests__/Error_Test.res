@@ -176,16 +176,14 @@ describe("Patterns", ({test, _}) => {
     let props = dict([("a", Js.Json.number(1.0)), ("c", Js.Json.null)])
     let a = Source2.function(
       ~name="A",
-      Source2.TypeScheme.props([
-        ("b", Source2.TypeScheme.record([("b", Source2.TypeScheme.string())])),
-      ]),
-      Source2.TypeScheme.Child.props([]),
+      Typescheme.props([("b", Typescheme.record([("b", Typescheme.string())]))]),
+      Typescheme.Child.props([]),
       (type a, module(Env): Source2.env<a>, _p, _c) => Env.return(. ""),
     )
     let z = Source2.function(
       ~name="Z",
-      Source2.TypeScheme.props([("b", Source2.TypeScheme.list(Source2.TypeScheme.int()))]),
-      Source2.TypeScheme.Child.props([]),
+      Typescheme.props([("b", Typescheme.list(Typescheme.int()))]),
+      Typescheme.Child.props([]),
       (type a, module(Env): Source2.env<a>, _p, _c) => Env.return(. ""),
     )
     expect.value(render(`{% A b={b} / %}`, props, [a])).toMatchSnapshot()
@@ -366,12 +364,11 @@ describe("Rendering", ({test, _}) => {
 
   test("Exceptions thrown in components are caught correctly", ({expect, _}) => {
     @raises(Failure)
-    let a = Source2.function(
-      ~name="A",
-      Source2.TypeScheme.props([]),
-      Source2.TypeScheme.Child.props([]),
-      (_, _, _) => raise(Failure("fail.")),
-    )
+    let a = Source2.function(~name="A", Typescheme.props([]), Typescheme.Child.props([]), (
+      _,
+      _,
+      _,
+    ) => raise(Failure("fail.")))
     let data = Js.Dict.empty()
     let result = render(~name="ExceptionsTest", `{% A / %}`, data, [a])
     expect.value(result).toMatchSnapshot()
@@ -410,12 +407,7 @@ describe("Graphs are parsed correctly", ({test, _}) => {
           kind: #Compile,
           location: Some({character: 4}),
           message: "Cyclic dependency detected. I can't compile any components in this path.",
-          path: [
-            Js.Json.string("B"),
-            Js.Json.string("C"),
-            Js.Json.string("B"),
-            Js.Json.string("A"),
-          ],
+          path: [Js.Json.string("C"), Js.Json.string("B"), Js.Json.string("C")],
         },
       ]),
     )
@@ -423,8 +415,8 @@ describe("Graphs are parsed correctly", ({test, _}) => {
   test("Cyclic dependencies are reported (more complex)", ({expect, _}) => {
     let a = Source2.src(~name="A", "{% B /%}")
     let b = Source2.src(~name="B", "{% C /%}")
-    let c = Source2.src(~name="C", "{% B /%}")
-    let d = Source2.src(~name="D", "{% A /%}")
+    let c = Source2.src(~name="C", "{% D /%}")
+    let d = Source2.src(~name="D", "{% B /%}")
     let result = Compile2.Components.make([a, b, c, d])
     expect.value(result).toEqual(
       #errors([
@@ -434,10 +426,10 @@ describe("Graphs are parsed correctly", ({test, _}) => {
           location: Some({character: 4}),
           message: "Cyclic dependency detected. I can't compile any components in this path.",
           path: [
-            Js.Json.string("B"),
             Js.Json.string("C"),
             Js.Json.string("B"),
-            Js.Json.string("A"),
+            Js.Json.string("D"),
+            Js.Json.string("C"),
           ],
         },
       ]),
@@ -464,8 +456,8 @@ describe("Graphs are parsed correctly", ({test, _}) => {
   //   @raises(Failure)
   //   let b = Source2.function(
   //     ~name="B",
-  //     Source2.TypeScheme.props([]),
-  //     Source2.TypeScheme.Child.props([]),
+  //     Typescheme.props([]),
+  //     Typescheme.Child.props([]),
   //     _ => failwith("lol"),
   //   )
   //   let result = Compile2.Components.make([a, b])

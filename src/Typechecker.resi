@@ -14,14 +14,14 @@ module Pattern: {
   type construct = TPat_List | TPat_Nullable
 
   type rec t =
-    | TPat_Const(Acutis_Types.loc, constant)
-    | TPat_Construct(Acutis_Types.loc, construct, option<t>)
-    | TPat_Tuple(Acutis_Types.loc, array<t>)
-    | TPat_Record(Acutis_Types.loc, array<(string, t)>)
-    | TPat_Dict(Acutis_Types.loc, array<(string, t)>)
-    | TPat_Var(Acutis_Types.loc, string) // any binding
-    | TPat_OptionalVar(Acutis_Types.loc, string) // any binding, may not be set
-    | TPat_Any(Acutis_Types.loc) // ignored wildcard _
+    | TPat_Const(Utils.loc, constant)
+    | TPat_Construct(Utils.loc, construct, option<t>)
+    | TPat_Tuple(Utils.loc, array<t>)
+    | TPat_Record(Utils.loc, array<(string, t)>)
+    | TPat_Dict(Utils.loc, array<(string, t)>)
+    | TPat_Var(Utils.loc, string) // any binding
+    | TPat_OptionalVar(Utils.loc, string) // any binding, may not be set
+    | TPat_Any(Utils.loc) // ignored wildcard _
 
   let compareConst: (constant, constant) => int
   let eqConst: (constant, constant) => bool
@@ -33,15 +33,15 @@ module Ast: {
     | TText(string, Acutis_Types.Ast.trim)
     // The first echo item that isn't null will be returned.
     | TEcho({
-        loc: Acutis_Types.loc,
+        loc: Utils.loc,
         nullables: array<Acutis_Types.Ast.Echo.t>,
         default: Acutis_Types.Ast.Echo.t,
       })
-    | TMatch(Acutis_Types.loc, NonEmpty.t<Pattern.t>, NonEmpty.t<case<'a>>)
-    | TMapList(Acutis_Types.loc, Pattern.t, NonEmpty.t<case<'a>>)
-    | TMapDict(Acutis_Types.loc, Pattern.t, NonEmpty.t<case<'a>>)
+    | TMatch(Utils.loc, NonEmpty.t<Pattern.t>, NonEmpty.t<case<'a>>)
+    | TMapList(Utils.loc, Pattern.t, NonEmpty.t<case<'a>>)
+    | TMapDict(Utils.loc, Pattern.t, NonEmpty.t<case<'a>>)
     | TComponent({
-        loc: Acutis_Types.loc,
+        loc: Utils.loc,
         name: string,
         props: array<(string, Pattern.t)>,
         children: array<(string, child<'a>)>,
@@ -52,8 +52,8 @@ module Ast: {
   and child<'a> = TChildName(string) | TChildBlock(nodes<'a>)
   type t<'a> = {
     nodes: nodes<'a>,
-    prop_types: Source2.TypeScheme.props,
-    child_types: Source2.TypeScheme.Child.props,
+    prop_types: Typescheme.props,
+    child_types: Typescheme.Child.props,
   }
 }
 
@@ -62,13 +62,7 @@ module Ast: {
 
 type mode = Expand | Narrow
 
-let unify: (
-  Source2.TypeScheme.t,
-  Source2.TypeScheme.t,
-  mode,
-  ~loc: Acutis_Types.loc,
-  ~name: string,
-) => unit
+let unify: (Typescheme.t, Typescheme.t, mode, ~loc: Utils.loc, ~name: string) => unit
 
 module Context: {
   type t
@@ -78,33 +72,29 @@ module Context: {
 module Local: {
   let fromPattern: (
     Acutis_Types.Ast_Pattern.t,
-    Belt.MutableQueue.t<(string, Source2.TypeScheme.t)>,
+    Belt.MutableQueue.t<(string, Typescheme.t)>,
     ~name: string,
-  ) => Source2.TypeScheme.t
+  ) => Typescheme.t
 }
 
 let makeCases: (
   NonEmpty.t<Acutis_Types.Ast.case<unit>>,
   Context.t,
-  ~untyped: Belt.MutableMap.String.t<Source2.t<Acutis_Types.Ast.nodes<unit>, 'a>>,
-  ~done: Belt.MutableMap.String.t<Source2.t<Ast.t<unit>, 'a>>,
-  ~loc: Acutis_Types.loc,
-  ~name: Belt.MutableMap.String.key,
-  ~stack: list<string>,
-) => (NonEmpty.t<Source2.TypeScheme.t>, NonEmpty.t<Ast.case<unit>>)
+  ~loc: Utils.loc,
+  ~name: string,
+  Utils.Dag.t<Source2.t<Acutis_Types.Ast.nodes<unit>, 'a>, Source2.t<Ast.t<unit>, 'a>>,
+) => (NonEmpty.t<Typescheme.t>, NonEmpty.t<Ast.case<unit>>)
 
-let makeArray: array<(
-  string,
-  Source2.t<Acutis_Types.Ast.nodes<unit>, 'a>,
-)> => Belt.MutableMap.String.t<Source2.t<Ast.t<unit>, 'a>>
+let makeArray: array<(string, Source2.t<Acutis_Types.Ast.nodes<unit>, 'a>)> => Utils.Dag.linked<
+  Source2.t<Ast.t<unit>, 'a>,
+>
 
 let make: (
   string,
   Acutis_Types.Ast.nodes<unit>,
-  Belt.MutableMap.String.t<Source2.t<Ast.t<unit>, 'a>>,
-  ~stack: list<string>,
+  Utils.Dag.linked<Source2.t<Ast.t<unit>, 'a>>,
 ) => Ast.t<unit>
 
 module Deprecated: {
-  let check: Acutis_Types.Ast.nodes<'a> => Belt.Map.String.t<Source2.TypeScheme.t>
+  let check: Acutis_Types.Ast.nodes<'a> => Belt.Map.String.t<Typescheme.t>
 }

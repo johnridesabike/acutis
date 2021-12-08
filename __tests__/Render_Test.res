@@ -171,8 +171,8 @@ describe("Render essentials", ({test, _}) => {
     expect.value(result).toEqual(#ok(` I did not.  Oh hai Mark.`))
     let addOne = Source2.function(
       ~name="AddOne",
-      Source2.TypeScheme.props([("index", Source2.TypeScheme.int())]),
-      Source2.TypeScheme.Child.props([]),
+      Typescheme.props([("index", Typescheme.int())]),
+      Typescheme.Child.props([]),
       (type a, module(Env): Source2.env<a>, props, _children) => {
         let index = props->Js.Dict.get("index")->Belt.Option.flatMap(Js.Json.decodeNumber)
         switch index {
@@ -244,27 +244,27 @@ describe("Template sections", ({test, _}) => {
 
 describe("API helper functions", ({test, _}) => {
   test("env.return", ({expect, _}) => {
-    let x = Source2.function(
-      ~name="X",
-      Source2.TypeScheme.props([]),
-      Source2.TypeScheme.Child.props([]),
-      (type a, module(Env): Source2.env<a>, _props, _children) => {
-        Env.return(. "a")
-      },
-    )
+    let x = Source2.function(~name="X", Typescheme.props([]), Typescheme.Child.props([]), (
+      type a,
+      module(Env): Source2.env<a>,
+      _props,
+      _children,
+    ) => {
+      Env.return(. "a")
+    })
     let result = render(`{% X / %}`, Js.Dict.empty(), [x])
     expect.value(result).toEqual(#ok("a"))
   })
 
   test("env.error", ({expect, _}) => {
-    let x = Source2.function(
-      ~name="X",
-      Source2.TypeScheme.props([]),
-      Source2.TypeScheme.Child.props([]),
-      (type a, module(Env): Source2.env<a>, _props, _children) => {
-        Env.error(. "e")
-      },
-    )
+    let x = Source2.function(~name="X", Typescheme.props([]), Typescheme.Child.props([]), (
+      type a,
+      module(Env): Source2.env<a>,
+      _props,
+      _children,
+    ) => {
+      Env.error(. "e")
+    })
     let result = render(`{% X / %}`, Js.Dict.empty(), [x])
     expect.value(result).toEqual(
       #errors([
@@ -282,8 +282,8 @@ describe("API helper functions", ({test, _}) => {
   test("env.mapChild", ({expect, _}) => {
     let x = Source2.function(
       ~name="X",
-      Source2.TypeScheme.props([]),
-      Source2.TypeScheme.Child.props([("Children", Source2.TypeScheme.Child.child())]),
+      Typescheme.props([]),
+      Typescheme.Child.props([("Children", Typescheme.Child.child())]),
       (type a, module(Env): Source2.env<a>, _props, children) => {
         Env.map(.Js.Dict.unsafeGet(children, "Children"), child => Js.String.toUpperCase(child))
       },
@@ -307,8 +307,8 @@ describe("API helper functions", ({test, _}) => {
   test("env.flatMapChild", ({expect, _}) => {
     let x = Source2.function(
       ~name="X",
-      Source2.TypeScheme.props([]),
-      Source2.TypeScheme.Child.props([("Children", Source2.TypeScheme.Child.child())]),
+      Typescheme.props([]),
+      Typescheme.Child.props([("Children", Typescheme.Child.child())]),
       (type a, module(Env): Source2.env<a>, _props, children) =>
         Env.flatmap(.Js.Dict.unsafeGet(children, "Children"), child =>
           Env.return(. Js.String.toUpperCase(child))

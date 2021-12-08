@@ -46,13 +46,13 @@ and switchcase<'a> = {
 type leaf = {names: Belt.Map.String.t<int>, exit: int}
 
 type t<'a> = {
-  loc: Acutis_Types.loc,
+  loc: Utils.loc,
   tree: tree<leaf>,
   exits: array<'a>,
 }
 
 let make: (
-  ~loc: Acutis_Types.loc,
+  ~loc: Utils.loc,
   ~name: string,
   NonEmpty.t<Typechecker.Ast.case<'a>>,
 ) => result<t<Typechecker.Ast.nodes<'a>>, Debug.t>

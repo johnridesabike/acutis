@@ -51,7 +51,7 @@ and switchcase<'a> = {
 type leaf = {names: MapString.t<int>, exit: int}
 
 type t<'a> = {
-  loc: Acutis_Types.loc,
+  loc: Utils.loc,
   tree: tree<leaf>,
   exits: array<'a>,
 }

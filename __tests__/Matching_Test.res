@@ -15,15 +15,7 @@ module TC = Typechecker
 let ne = NE.fromArrayExn
 
 let makeCases = c => {
-  let (_, cases) = TC.makeCases(
-    ne(c),
-    TC.Context.make(),
-    ~untyped=Belt.MutableMap.String.make(),
-    ~done=Belt.MutableMap.String.make(),
-    ~loc=Loc(0),
-    ~name="",
-    ~stack=list{},
-  )
+  let (_, cases) = TC.makeCases(ne(c), TC.Context.make(), ~loc=Loc(0), ~name="", Utils.Dag.make([]))
   cases
 }
 

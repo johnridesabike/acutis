@@ -12,7 +12,7 @@ module Float = Belt.Float
 module Int = Belt.Int
 module MapString = Belt.Map.String
 module Queue = Belt.MutableQueue
-module Tys = Source2.TypeScheme
+module Tys = Typescheme
 
 type t = Json.t
 

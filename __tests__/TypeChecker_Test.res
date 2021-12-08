@@ -27,7 +27,7 @@ type rec debug = [
 ]
 let rec debug = (x): debug =>
   switch x.contents {
-  | Source2.TypeScheme.Unknown => #Polymorphic
+  | Typescheme.Unknown => #Polymorphic
   | Boolean => #Boolean
   | Int => #Int
   | Float => #Float

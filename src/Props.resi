@@ -8,7 +8,7 @@
 
 type t
 
-let make: (Source2.TypeScheme.props, Js.Dict.t<Js.Json.t>) => Js.Dict.t<t>
+let make: (Typescheme.props, Js.Dict.t<Js.Json.t>) => Js.Dict.t<t>
 
 exception RenderError
 
@@ -36,8 +36,8 @@ let forEachListExn: (t, (. ~index: t, t) => unit) => unit
 
 let forEachDictExn: (t, (. ~index: t, t) => unit) => unit
 
-let toJson: (Js.Dict.t<t>, Source2.TypeScheme.props) => Js.Dict.t<Js.Json.t>
+let toJson: (Js.Dict.t<t>, Typescheme.props) => Js.Dict.t<Js.Json.t>
 
 module Child: {
-  let validate: (Belt.Map.String.t<Source2.TypeScheme.Child.t>, Js.Dict.t<'a>) => unit
+  let validate: (Belt.Map.String.t<Typescheme.Child.t>, Js.Dict.t<'a>) => unit
 }
