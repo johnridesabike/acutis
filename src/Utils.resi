@@ -11,12 +11,9 @@
 type loc = Acutis_Types.loc = Loc(int)
 
 module Dag: {
-  type linked<'a>
-  let toArray: linked<'a> => array<'a>
-  let empty: unit => linked<'a>
   type t<'a, 'b>
-  let make: array<(string, 'a)> => t<'a, 'b>
-  let fromLinked: linked<'b> => t<'a, 'b>
-  let getExn: (t<'a, 'b>, ~name: string, ~loc: loc, ~key: string, ~f: (. t<'a, 'b>, 'a) => 'b) => 'b
-  let link: (t<'a, 'b>, ~f: (. t<'a, 'b>, 'a) => 'b) => linked<'b>
+  let make: (array<(string, 'a)>, ~f: (. t<'a, 'b>, 'a) => 'b) => t<'a, 'b>
+  let makePrelinked: (array<(string, 'b)>, ~f: (. t<'a, 'b>, 'a) => 'b) => t<'a, 'b>
+  let getExn: (t<'a, 'b>, ~name: string, ~loc: loc, ~key: string) => 'b
+  let link: t<'a, 'b> => array<(string, 'b)>
 }

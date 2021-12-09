@@ -19,39 +19,37 @@ module Dag = {
 
   // Mutable structures have the advantage of being able to update even when
   // the linker exits early via raising an exception.
-  type linked<'a> = HashmapString.t<'a>
-
-  let toArray = HashmapString.valuesToArray
-  let empty = () => HashmapString.make(~hintSize=0)
-
   type rec t<'a, 'b> = {
     queue: array<string>,
     notlinked: HashmapString.t<'a>,
-    linked: linked<'b>,
+    linked: HashmapString.t<'b>,
     stack: list<string>,
+    f: (. t<'a, 'b>, 'a) => 'b,
   }
 
-  let make = a => {
+  let make = (a, ~f) => {
     let notlinked = HashmapString.fromArray(a)
     {
       queue: HashmapString.keysToArray(notlinked),
       notlinked: notlinked,
       linked: HashmapString.make(~hintSize=Array.size(a)),
       stack: list{},
+      f: f,
     }
   }
 
-  let fromLinked = linked => {
+  let makePrelinked = (a, ~f) => {
     queue: [],
     notlinked: HashmapString.make(~hintSize=0),
-    linked: linked,
+    linked: HashmapString.fromArray(a),
     stack: list{},
+    f: f,
   }
 
   // When we link components in the tree, ensure that it keeps the
   // directed-acyclic structure.
   @raises(Exit)
-  let getExn = (g, ~name, ~loc, ~key, ~f) =>
+  let getExn = (g, ~name, ~loc, ~key) =>
     switch HashmapString.get(g.linked, key) {
     | Some(x) => x // It was linked already during a previous search.
     | None =>
@@ -59,7 +57,7 @@ module Dag = {
       | Some(x) =>
         // Remove it from the unlinked map so a cycle isn't possible.
         HashmapString.remove(g.notlinked, key)
-        let x = f(. {...g, stack: list{key, ...g.stack}}, x)
+        let x = g.f(. {...g, stack: list{key, ...g.stack}}, x)
         HashmapString.set(g.linked, key, x)
         x
       | None =>
@@ -72,16 +70,16 @@ module Dag = {
       }
     }
 
-  let link = (g, ~f) => {
+  let link = g => {
     Array.forEachU(g.queue, (. key) =>
       switch HashmapString.get(g.notlinked, key) {
       | Some(v) =>
         HashmapString.remove(g.notlinked, key)
-        let v = f(. {...g, stack: list{key, ...g.stack}}, v)
+        let v = g.f(. {...g, stack: list{key, ...g.stack}}, v)
         HashmapString.set(g.linked, key, v)
       | None => () // It was already processed by a dependent.
       }
     )
-    g.linked
+    HashmapString.toArray(g.linked)
   }
 }

@@ -192,9 +192,9 @@ let compile = (~name, src, components) =>
   }
 
 module Components = {
-  type t<'a> = Utils.Dag.linked<Source2.t<Typechecker.Ast.t<unit>, Source2.fnU<'a>>>
+  type t<'a> = array<(string, Source2.t<Typechecker.Ast.t<unit>, Source2.fnU<'a>>)>
 
-  let empty = Utils.Dag.empty
+  let empty = () => []
 
   let makeExn = a => {
     let components = Array.mapU(a, (. src) =>
@@ -215,9 +215,7 @@ module Components = {
     }
 
   let optimize = x =>
-    x
-    ->Utils.Dag.toArray
-    ->Array.mapU((. v) =>
+    Array.mapU(x, (. (_, v)) =>
       switch v {
       | Source2.Acutis(name, ast) => (name, Source2.src(~name, Ast.make(~name, ast)))
       | Function(name, p, c, f) => (name, Source2.functionU(~name, p, c, f))
@@ -251,19 +249,20 @@ let rec linkNodesExn = (nodes, graph) =>
           | OChildBlock(nodes) => (name, OChildBlock(linkNodesExn(nodes, graph)))
           }
         ),
-        f: Utils.Dag.getExn(graph, ~name, ~key=name, ~loc, ~f=(. g, src) =>
-          switch src {
-          | Source2.Acutis(_, ast) => Acutis(linkNodesExn(ast, g))
-          | Function(_, props, _, f) => Function(props, f)
-          }
-        ),
+        f: Utils.Dag.getExn(graph, ~name, ~key=name, ~loc),
       })
     }
   )
 
+let linkSrc = (. g, src) =>
+  switch src {
+  | Source2.Acutis(_, ast) => Acutis(linkNodesExn(ast, g))
+  | Function(_, props, _, f) => Function(props, f)
+  }
+
 let link = (~name, typed, components: Components.t<'a>) =>
   try {
-    let g = Utils.Dag.make(Components.optimize(components))
+    let g = Utils.Dag.make(Components.optimize(components), ~f=linkSrc)
     #ok({...typed, nodes: linkNodesExn(typed.nodes, g)})
   } catch {
   | Exit(e) => #errors([e])

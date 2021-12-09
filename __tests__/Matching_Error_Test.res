@@ -9,12 +9,13 @@ open TestFramework
 // module Array = Belt.Array
 module T = Acutis_Types
 module NE = NonEmpty
-module SetString = Belt.Set.String
 module TC = Typechecker
 let ne = NE.fromArrayExn
 
+let g = Utils.Dag.make([], ~f=(. _, _) => assert false)
+
 let makeCases = c => {
-  let (_, cases) = TC.makeCases(ne(c), TC.Context.make(), ~loc=Loc(0), ~name="", Utils.Dag.make([]))
+  let (_, cases) = TC.makeCases(ne(c), TC.Context.make(), ~loc=Loc(0), ~name="", g)
   cases
 }
 

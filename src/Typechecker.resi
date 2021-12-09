@@ -85,14 +85,15 @@ let makeCases: (
   Utils.Dag.t<Source2.t<Acutis_Types.Ast.nodes<unit>, 'a>, Source2.t<Ast.t<unit>, 'a>>,
 ) => (NonEmpty.t<Typescheme.t>, NonEmpty.t<Ast.case<unit>>)
 
-let makeArray: array<(string, Source2.t<Acutis_Types.Ast.nodes<unit>, 'a>)> => Utils.Dag.linked<
+let makeArray: array<(string, Source2.t<Acutis_Types.Ast.nodes<unit>, 'a>)> => array<(
+  string,
   Source2.t<Ast.t<unit>, 'a>,
->
+)>
 
 let make: (
   string,
   Acutis_Types.Ast.nodes<unit>,
-  Utils.Dag.linked<Source2.t<Ast.t<unit>, 'a>>,
+  array<(string, Source2.t<Ast.t<unit>, 'a>)>,
 ) => Ast.t<unit>
 
 module Deprecated: {

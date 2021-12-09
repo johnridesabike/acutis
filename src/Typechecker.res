@@ -591,14 +591,7 @@ and makeNodes = (nodes, ctx, ~name, g) =>
       unifyEchoes(nullables, default, ctx, ~name)->ignore
       Ast.TEcho({loc: loc, nullables: nullables, default: default})
     | Component({loc, props, children, name: cname, f: ()}) =>
-      let (propTypes, propTypesChildren) = getTypes(
-        Utils.Dag.getExn(g, ~name, ~key=cname, ~loc, ~f=(. g, src) =>
-          switch src {
-          | Source2.Acutis(name, ast) => Source2.src(~name, make(cname, ast, g))
-          | Function(name, p, c, f) => Source2.functionU(~name, p, c, f)
-          }
-        ),
-      )
+      let (propTypes, propTypesChildren) = getTypes(Utils.Dag.getExn(g, ~name, ~key=cname, ~loc))
       let t = Global.fromPattern_record(props, ctx, ~name)
       // The original proptypes should not mutate.
       unifyRecord_exact(t, ref(Typescheme.copy_record(propTypes)), ~loc, ~comp=cname, ~name)
@@ -656,9 +649,8 @@ and makeNodes = (nodes, ctx, ~name, g) =>
     }
   )
 
-and make = (name, ast, g): Ast.t<_> => {
+and make = (name, ast, g) => {
   let ctx = Context.make()
-  // let nodes = makeNodes(ast, ctx, ~untyped, ~done, ~name, ~stack=list{name, ...stack})
   let nodes = makeNodes(ast, ctx, ~name, g)
   let ast = {
     Ast.nodes: nodes,
@@ -668,17 +660,16 @@ and make = (name, ast, g): Ast.t<_> => {
   ast
 }
 
-let makeArray = a => {
-  let g = Utils.Dag.make(a)
-  Utils.Dag.link(g, ~f=(. g, x) =>
-    switch x {
-    | Source2.Acutis(name, ast) => Source2.src(~name, make(name, ast, g))
-    | Function(name, p, c, f) => Source2.functionU(~name, p, c, f)
-    }
-  )
-}
+let makeSrc = (. g, x) =>
+  switch x {
+  | Source2.Acutis(name, ast) => Source2.src(~name, make(name, ast, g))
+  | Function(name, p, c, f) => Source2.functionU(~name, p, c, f)
+  }
 
-let make = (name, ast, components) => make(name, ast, Utils.Dag.fromLinked(components))
+let makeArray = a => a->Utils.Dag.make(~f=makeSrc)->Utils.Dag.link
+
+let make = (name, ast, components) =>
+  make(name, ast, Utils.Dag.makePrelinked(components, ~f=makeSrc))
 
 module Deprecated = {
   @raises(Exit)
