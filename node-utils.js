@@ -31,7 +31,7 @@ async function loadTemplate(fileName) {
     default:
       const name = filenameToComponent(filePath);
       const src = await readFile(filePath, "utf-8");
-      return Acutis.Source.string(name, src);
+      return Acutis.Deprecated_Source.string(name, src);
   }
 }
 

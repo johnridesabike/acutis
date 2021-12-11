@@ -179,9 +179,9 @@ module Match = {
 
 let echoNotNull = (x, ~props, ~children, ~return) =>
   switch x {
-  | Compile2.Ast.Echo.Binding(_, binding, esc) =>
+  | Compile.Ast.Echo.Binding(_, binding, esc) =>
     switch Dict.get(props, binding) {
-    | Some(x) => return(. Compile2.escape(esc, Props.echoExn(x)))
+    | Some(x) => return(. Compile.escape(esc, Props.echoExn(x)))
     | None => assert false
     }
   | Child(_, child) =>
@@ -194,12 +194,12 @@ let echoNotNull = (x, ~props, ~children, ~return) =>
 
 let echoNullable = (x, ~props, ~children, ~return) =>
   switch x {
-  | Compile2.Ast.Echo.Binding(_, binding, esc) =>
+  | Compile.Ast.Echo.Binding(_, binding, esc) =>
     switch Dict.get(props, binding) {
     | Some(x) =>
       switch Props.nullableExn(x) {
       | None => None
-      | Some(x) => Some(return(. Compile2.escape(esc, Props.echoExn(x))))
+      | Some(x) => Some(return(. Compile.escape(esc, Props.echoExn(x))))
       }
     | None => assert false
     }
@@ -231,18 +231,18 @@ let dictMergeMap = (d, m) => {
 
 let rec make:
   type a. (
-    ~nodes: Compile2.Ast.t<Compile2.template<a>>,
+    ~nodes: Compile.Ast.t<Compile.template<a>>,
     ~props: Dict.t<Props.t>,
     ~children: Dict.t<a>,
-    ~env: Source2.env<a>,
+    ~env: Source.env<a>,
     ~stack: Debug.Stack.t,
   ) => Queue.t<a> =
   (~nodes, ~props, ~children, ~env, ~stack) => {
     module Env = unpack(env)
     let queue = Queue.make()
-    Array.forEachU(nodes, (. node: Compile2.Ast.node<_>) =>
+    Array.forEachU(nodes, (. node) =>
       switch node {
-      | OEcho({loc: _, nullables, default}) =>
+      | Compile.Ast.OEcho({loc: _, nullables, default}) =>
         Queue.add(queue, echo(nullables, default, ~props, ~children, ~return=Env.return))
       | OText(str) => Queue.add(queue, Env.return(. str))
       | OMatch(_, args, dectree) =>
@@ -330,8 +330,8 @@ let rec make:
 
 let make = (
   type a,
-  env: Source2.env<a>,
-  {Compile2.nodes: nodes, name, prop_types, child_types},
+  env: Source.env<a>,
+  {Compile.nodes: nodes, name, prop_types, child_types},
   props,
   children,
 ) => {

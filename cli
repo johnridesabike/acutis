@@ -11,7 +11,7 @@ const util = require("util");
 const fs = require("fs");
 const minimist = require("minimist");
 const {
-  Compile,
+  Deprecated_Compile,
   Deprecated_Environment,
   Result,
 } = require("./lib/js/src/AcutisJs");
@@ -86,11 +86,11 @@ Examples:
       const props = json === "" ? {} : JSON.parse(json);
       const firstFile = files.shift();
       const components = Result.getOrElse(
-        Compile.Deprecated_Components.make(files),
+        Deprecated_Compile.Deprecated_Components.make(files),
         onError
       );
       const template = Result.getOrElse(
-        Compile.make(firstFile, components),
+        Deprecated_Compile.make(firstFile, components),
         onError
       );
       const env = args.async

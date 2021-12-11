@@ -1,8 +1,9 @@
-const { Source } = require("../../");
+const { Deprecated_Source } = require("../../");
 
-module.exports = Source.funcWithString(
+module.exports = Deprecated_Source.funcWithString(
   "Bb",
   "B: {{ name }}",
-  (ast) => (env, { name }, children) =>
-    env.render(ast, { name: name.toUpperCase() }, children)
+  (ast) =>
+    (env, { name }, children) =>
+      env.render(ast, { name: name.toUpperCase() }, children)
 );

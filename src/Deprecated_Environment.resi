@@ -6,7 +6,7 @@
   file, You can obtain one at http://mozilla.org/MPL/2.0/.
 */
 
-type t<'a> = Compile.environment<'a>
+type t<'a> = Untyped.environment<'a>
 
 @live
 let sync: t<Result.t<string>>

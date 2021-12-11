@@ -12,7 +12,7 @@ module NE = NonEmpty
 module TC = Typechecker
 let ne = NE.fromArrayExn
 
-let g = Utils.Dagmap.make([], ~f=(. _, _) => assert false)
+let g = Utils.Dagmap.make(Belt.HashMap.String.make(~hintSize=0), ~f=(. _, _) => assert false)
 
 let makeCases = c => {
   let (_, cases) = TC.makeCases(ne(c), TC.Context.make(), ~loc=Loc(0), ~name="", g)

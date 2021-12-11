@@ -17,8 +17,8 @@ let json = x =>
 let dict = Js.Dict.fromArray
 
 let render = (~name="", ~children=Js.Dict.empty(), src, props, components) =>
-  Compile2.make(~name, src, Compile2.Components.makeExn(components))->Result.flatMap(t =>
-    Render2.sync(t, props, children)
+  Compile.make(~name, src, Compile.Components.makeExn(components))->Result.flatMap(t =>
+    Render.sync(t, props, children)
   )
 
 @raises(Not_found)
@@ -100,7 +100,7 @@ describe("Render essentials", ({test, _}) => {
     let data = dict([("a", json(`{"a": {"b": "hi"}}`))])
     let result = render(`{% match a with {a: {b}} %} _ {{~ b ~}} _ {% /match %}`, data, [])
     expect.value(result).toEqual(#ok(` _hi_ `))
-    let ohHai = Source2.src(~name="OhHai", "{{ Children }} Oh hai {{ name }}.")
+    let ohHai = Source.src(~name="OhHai", "{{ Children }} Oh hai {{ name }}.")
     let components = [ohHai]
     let result = render(`{% OhHai name="Mark" ~%} I did not. {%~ /OhHai %}`, dict([]), components)
     expect.value(result).toEqual(#ok(`I did not. Oh hai Mark.`))
@@ -161,7 +161,7 @@ describe("Render essentials", ({test, _}) => {
   })
 
   test("Component", ({expect, _}) => {
-    let ohHai = Source2.src(~name="OhHai", "{{ Children }} Oh hai {{ name }}.")
+    let ohHai = Source.src(~name="OhHai", "{{ Children }} Oh hai {{ name }}.")
     let components = [ohHai]
     let result = render(
       `{% OhHai name="Mark" %} I did not. {% /OhHai %}`,
@@ -169,11 +169,11 @@ describe("Render essentials", ({test, _}) => {
       components,
     )
     expect.value(result).toEqual(#ok(` I did not.  Oh hai Mark.`))
-    let addOne = Source2.function(
+    let addOne = Source.function(
       ~name="AddOne",
       Typescheme.props([("index", Typescheme.int())]),
       Typescheme.Child.props([]),
-      (type a, module(Env): Source2.env<a>, props, _children) => {
+      (type a, module(Env): Source.env<a>, props, _children) => {
         let index = props->Js.Dict.get("index")->Belt.Option.flatMap(Js.Json.decodeNumber)
         switch index {
         | None => Env.error(. "oops")
@@ -220,7 +220,7 @@ describe("Nullish coalescing", ({test, _}) => {
 
 describe("Template sections", ({test, _}) => {
   test("Default `Children` child", ({expect, _}) => {
-    let a = Source2.src(~name="A", "{{ Children }}")
+    let a = Source.src(~name="A", "{{ Children }}")
     let result = render(`{% A %} b {%/ A %}`, Js.Dict.empty(), [a])
     expect.value(result).toEqual(#ok(" b "))
     let result = render(`{% A Children=#%} b {%/# / %}`, Js.Dict.empty(), [a])
@@ -228,15 +228,15 @@ describe("Template sections", ({test, _}) => {
   })
 
   test("Child props are passed correctly", ({expect, _}) => {
-    let x = Source2.src(~name="X", "{{ PassthroughChild }}")
-    let y = Source2.src(~name="Y", "{% X PassthroughChild=A /%}")
+    let x = Source.src(~name="X", "{{ PassthroughChild }}")
+    let y = Source.src(~name="Y", "{% X PassthroughChild=A /%}")
     let result = render(`{% Y A=#%} a {%/# / %}`, Js.Dict.empty(), [x, y])
     expect.value(result).toEqual(#ok(" a "))
   })
 
   test("Child props are passed correctly with punning", ({expect, _}) => {
-    let x = Source2.src(~name="X", "{{ PassthroughChild }}")
-    let y = Source2.src(~name="Y", "{% X PassthroughChild /%}")
+    let x = Source.src(~name="X", "{{ PassthroughChild }}")
+    let y = Source.src(~name="Y", "{% X PassthroughChild /%}")
     let result = render(`{% Y PassthroughChild=#%} a {%/# / %}`, Js.Dict.empty(), [x, y])
     expect.value(result).toEqual(#ok(" a "))
   })
@@ -244,9 +244,9 @@ describe("Template sections", ({test, _}) => {
 
 describe("API helper functions", ({test, _}) => {
   test("env.return", ({expect, _}) => {
-    let x = Source2.function(~name="X", Typescheme.props([]), Typescheme.Child.props([]), (
+    let x = Source.function(~name="X", Typescheme.props([]), Typescheme.Child.props([]), (
       type a,
-      module(Env): Source2.env<a>,
+      module(Env): Source.env<a>,
       _props,
       _children,
     ) => {
@@ -257,9 +257,9 @@ describe("API helper functions", ({test, _}) => {
   })
 
   test("env.error", ({expect, _}) => {
-    let x = Source2.function(~name="X", Typescheme.props([]), Typescheme.Child.props([]), (
+    let x = Source.function(~name="X", Typescheme.props([]), Typescheme.Child.props([]), (
       type a,
-      module(Env): Source2.env<a>,
+      module(Env): Source.env<a>,
       _props,
       _children,
     ) => {
@@ -280,11 +280,11 @@ describe("API helper functions", ({test, _}) => {
   })
 
   test("env.mapChild", ({expect, _}) => {
-    let x = Source2.function(
+    let x = Source.function(
       ~name="X",
       Typescheme.props([]),
       Typescheme.Child.props([("Children", Typescheme.Child.child())]),
-      (type a, module(Env): Source2.env<a>, _props, children) => {
+      (type a, module(Env): Source.env<a>, _props, children) => {
         Env.map(.Js.Dict.unsafeGet(children, "Children"), child => Js.String.toUpperCase(child))
       },
     )
@@ -305,11 +305,11 @@ describe("API helper functions", ({test, _}) => {
   })
 
   test("env.flatMapChild", ({expect, _}) => {
-    let x = Source2.function(
+    let x = Source.function(
       ~name="X",
       Typescheme.props([]),
       Typescheme.Child.props([("Children", Typescheme.Child.child())]),
-      (type a, module(Env): Source2.env<a>, _props, children) =>
+      (type a, module(Env): Source.env<a>, _props, children) =>
         Env.flatmap(.Js.Dict.unsafeGet(children, "Children"), child =>
           Env.return(. Js.String.toUpperCase(child))
         ),

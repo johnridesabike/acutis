@@ -7,9 +7,10 @@
 */
 
 module Dagmap: {
+  type map<'a> = Belt.HashMap.String.t<'a>
   type t<'a, 'b>
-  let make: (array<(string, 'a)>, ~f: (. t<'a, 'b>, 'a) => 'b) => t<'a, 'b>
-  let prelinked: array<(string, 'a)> => t<'a, 'a>
+  let make: (map<'a>, ~f: (. t<'a, 'b>, 'a) => 'b) => t<'a, 'b>
+  let prelinked: map<'a> => t<'a, 'a>
   let getExn: (t<'a, 'b>, ~name: string, ~loc: Debug.loc, ~key: string) => 'b
-  let link: t<'a, 'b> => array<(string, 'b)>
+  let linkAll: t<'a, 'b> => map<'b>
 }

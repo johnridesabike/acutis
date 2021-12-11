@@ -46,7 +46,7 @@ describe("Patterns", ({test, _}) => {
   let parseString = source => {
     let tokens = Lexer.make("{% " ++ source ++ "%}", ~name="")
     Lexer.popExn(tokens)->ignore // Skip the opening string
-    Compile.Pattern.make(tokens)
+    Untyped.Pattern.make(tokens)
   }
 
   test("Enums", ({expect, _}) => {
@@ -241,7 +241,7 @@ describe("Patterns", ({test, _}) => {
 describe("Parser", ({test, _}) => {
   test("Basic syntax", ({expect, _}) => {
     expect.value(
-      Compile.makeAstInternalExn(
+      Untyped.makeAstInternalExn(
         ~name="",
         `
 a
@@ -283,7 +283,7 @@ f`,
   })
   test("Matching", ({expect, _}) => {
     expect.value(
-      Compile.makeAstInternalExn(
+      Untyped.makeAstInternalExn(
         ~name="",
         `
 {% match a
@@ -310,7 +310,7 @@ f`,
   })
   test("Mapping", ({expect, _}) => {
     expect.value(
-      Compile.makeAstInternalExn(
+      Untyped.makeAstInternalExn(
         ~name="",
         `
 {% map a with {b} %}
@@ -331,7 +331,7 @@ f`,
   })
   test("Components", ({expect, _}) => {
     expect.value(
-      Compile.makeAstInternalExn(
+      Untyped.makeAstInternalExn(
         ~name="",
         `
 {% A
@@ -354,11 +354,11 @@ f`,
 
 describe("Components", ({test, _}) => {
   test("Components are only compiled once", ({expect, _}) => {
-    let a = Deprecated_Source.string(~name="A", "{% B /%}")
-    let b = Deprecated_Source.string(~name="B", "{% C /%}")
-    let c = Deprecated_Source.string(~name="C", "c")
-    let d = Deprecated_Source.string(~name="D", "{% C /%}")
-    let result = Compile.Deprecated_Components.make([a, b, c, d])
+    let a = Source.src(~name="A", "{% B /%}")
+    let b = Source.src(~name="B", "{% C /%}")
+    let c = Source.src(~name="C", "c")
+    let d = Source.src(~name="D", "{% C /%}")
+    let result = Compile.Components.make([a, b, c, d])
     // This assertion doesn't really check that the test worked.
     // It exists for code coverage.
     expect.value(Result.map(result, _ => true)).toEqual(#ok(true))

@@ -304,17 +304,6 @@ Object {
         "A",
       ],
     },
-    Object {
-      "exn": undefined,
-      "kind": "Syntax",
-      "location": Object {
-        "character": 3,
-      },
-      "message": "Unexpected end of file.",
-      "path": Array [
-        "B",
-      ],
-    },
   ],
 }
 `;

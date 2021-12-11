@@ -26,7 +26,7 @@ module Pattern: {
 }
 
 let make: (
-  ~nodes: Ast.nodes<Compile.templateU<'a>>,
+  ~nodes: Ast.nodes<Untyped.templateU<'a>>,
   ~props: Js.Dict.t<Js.Json.t>,
   ~children: Js.Dict.t<'a>,
   ~stack: Debug.Stack.t,

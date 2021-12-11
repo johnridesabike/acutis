@@ -155,9 +155,9 @@ module Pattern = {
 
 module Ast = {
   type rec node =
-    | TText(string, Compile.Ast.trim)
+    | TText(string, Untyped.Ast.trim)
     // The first echo item that isn't null will be returned.
-    | TEcho({loc: Debug.loc, nullables: array<Compile.Ast.Echo.t>, default: Compile.Ast.Echo.t})
+    | TEcho({loc: Debug.loc, nullables: array<Untyped.Ast.Echo.t>, default: Untyped.Ast.Echo.t})
     | TMatch(Debug.loc, NonEmpty.t<Pattern.t>, NonEmpty.t<case>)
     | TMapList(Debug.loc, Pattern.t, NonEmpty.t<case>)
     | TMapDict(Debug.loc, Pattern.t, NonEmpty.t<case>)
@@ -541,7 +541,7 @@ let unifyNestedNonEmpty = (cases: NonEmpty.t<NonEmpty.t<(_, _)>>, ~name) => {
 
 let getTypes = x =>
   switch x {
-  | Source2.Acutis(_, {Ast.prop_types: prop_types, child_types, _}) => (prop_types, child_types)
+  | Source.Acutis(_, {Ast.prop_types: prop_types, child_types, _}) => (prop_types, child_types)
   | Function(_, props, children, _) => (props, children)
   }
 
@@ -661,10 +661,10 @@ and make = (name, ast, g) => {
 
 let makeSrc = (. g, x) =>
   switch x {
-  | Source2.Acutis(name, ast) => Source2.src(~name, make(name, ast, g))
-  | Function(name, p, c, f) => Source2.functionU(~name, p, c, f)
+  | Source.Acutis(name, ast) => Source.src(~name, make(name, ast, g))
+  | Function(name, p, c, f) => Source.functionU(~name, p, c, f)
   }
 
-let makeArray = a => a->Utils.Dagmap.make(~f=makeSrc)->Utils.Dagmap.link
+let makeArray = a => a->Utils.Dagmap.make(~f=makeSrc)->Utils.Dagmap.linkAll
 
 let make = (name, ast, components) => make(name, ast, Utils.Dagmap.prelinked(components))

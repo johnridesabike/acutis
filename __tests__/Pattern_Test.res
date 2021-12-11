@@ -12,8 +12,8 @@ module J = Js.Json
 let dict = Js.Dict.fromArray
 
 let render = (~name="", ~children=Js.Dict.empty(), src, props, components) =>
-  Compile2.make(~name, src, Compile2.Components.makeExn(components))->Result.flatMap(t =>
-    Render2.sync(t, props, children)
+  Compile.make(~name, src, Compile.Components.makeExn(components))->Result.flatMap(t =>
+    Render.sync(t, props, children)
   )
 
 describe("Escaped strings work", ({test, _}) => {

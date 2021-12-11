@@ -16,16 +16,16 @@ let getError = x =>
 let dict = Js.Dict.fromArray
 
 let compile = (~name="", src) =>
-  switch Compile2.make(~name, src, Compile2.Components.empty()) {
+  switch Compile.make(~name, src, Compile.Components.empty()) {
   | #ok(_) => []
   | #errors(e) => e
   }
 
 let render = (~name="", ~children=Js.Dict.empty(), src, props, components) => {
   let r =
-    Compile2.Components.make(components)
-    ->Result.flatMap(Compile2.make(~name, src))
-    ->Result.flatMap(t => Render2.sync(t, props, children))
+    Compile.Components.make(components)
+    ->Result.flatMap(Compile.make(~name, src))
+    ->Result.flatMap(t => Render.sync(t, props, children))
   switch r {
   | #ok(_) =>
     Js.log2("lol", r)
@@ -106,17 +106,16 @@ describe("Parser", ({test, _}) => {
   })
 
   test("Components that didn't compile are reported correctly", ({expect, _}) => {
-    let a = Deprecated_Source.string(~name="A", "{{")
-    let b = Deprecated_Source.string(~name="B", "{%")
-    let c = Deprecated_Source.string(~name="c", "ok")
-    let components = Compile.Deprecated_Components.make([a, b, c])
+    let a = Source.src(~name="A", "{{")
+    let c = Source.src(~name="c", "ok")
+    let components = Compile.Components.make([a, c])
     expect.value(components).toMatchSnapshot()
   })
 
   test("Duplicate components are reported correctly", ({expect, _}) => {
-    let a1 = Deprecated_Source.func(~name="A", (env, _, _) => env.return(. ""))
-    let a2 = Deprecated_Source.func(~name="A", (env, _, _) => env.return(. ""))
-    let components = Compile.Deprecated_Components.make([a1, a2])
+    let a1 = Source.src(~name="A", "")
+    let a2 = Source.src(~name="A", "")
+    let components = Compile.Components.make([a1, a2])
     expect.value(components).toMatchSnapshot()
   })
 })
@@ -174,17 +173,17 @@ describe("Patterns", ({test, _}) => {
 
   test("Missing bindings", ({expect, _}) => {
     let props = dict([("a", Js.Json.number(1.0)), ("c", Js.Json.null)])
-    let a = Source2.function(
+    let a = Source.function(
       ~name="A",
       Typescheme.props([("b", Typescheme.record([("b", Typescheme.string())]))]),
       Typescheme.Child.props([]),
-      (type a, module(Env): Source2.env<a>, _p, _c) => Env.return(. ""),
+      (type a, module(Env): Source.env<a>, _p, _c) => Env.return(. ""),
     )
-    let z = Source2.function(
+    let z = Source.function(
       ~name="Z",
       Typescheme.props([("b", Typescheme.list(Typescheme.int()))]),
       Typescheme.Child.props([]),
-      (type a, module(Env): Source2.env<a>, _p, _c) => Env.return(. ""),
+      (type a, module(Env): Source.env<a>, _p, _c) => Env.return(. ""),
     )
     expect.value(render(`{% A b={b} / %}`, props, [a])).toMatchSnapshot()
     expect.value(render(`{% Z b=[a, ...b] / %}`, props, [z])).toMatchSnapshot()
@@ -332,9 +331,9 @@ describe("Rendering", ({test, _}) => {
     expect.value(render("{{ z }}", Js.Dict.empty(), [])).toMatchSnapshot()
     expect.value(render("{{ Z }}", Js.Dict.empty(), [])).toMatchSnapshot()
     expect.value(
-      Compile2.make(~name="", "{% Z / %}", Compile2.Components.empty())->getError,
+      Compile.make(~name="", "{% Z / %}", Compile.Components.empty())->getError,
     ).toMatchSnapshot()
-    let a = Source2.src(~name="A", "{{ B }}")
+    let a = Source.src(~name="A", "{{ B }}")
     let result = render(`{% A B=C / %}`, Js.Dict.empty(), [a])
     expect.value(result).toMatchSnapshot()
     // Get some coverage on the map-object error path.
@@ -346,7 +345,7 @@ describe("Rendering", ({test, _}) => {
   test("Error messages display component name correctly", ({expect, _}) => {
     // This test is not relevant for the same reasons it was originally. It
     // needs to be renamed.
-    let a = Source2.src(~name="A", "{{ a }}")
+    let a = Source.src(~name="A", "{{ a }}")
     let data = Js.Dict.empty()
     let result = render(`{% A / %}`, data, [a])
     expect.value(result).toMatchSnapshot()
@@ -364,7 +363,7 @@ describe("Rendering", ({test, _}) => {
 
   test("Exceptions thrown in components are caught correctly", ({expect, _}) => {
     @raises(Failure)
-    let a = Source2.function(~name="A", Typescheme.props([]), Typescheme.Child.props([]), (
+    let a = Source.function(~name="A", Typescheme.props([]), Typescheme.Child.props([]), (
       _,
       _,
       _,
@@ -378,15 +377,15 @@ describe("Rendering", ({test, _}) => {
 describe("Inputs", ({test, _}) => {
   test("Bad source input", ({expect, _}) => {
     expect.value(
-      getError(Compile2.make(~name="Template", Obj.magic(1), Compile2.Components.empty())),
+      getError(Compile.make(~name="Template", Obj.magic(1), Compile.Components.empty())),
     ).toMatchSnapshot()
   })
 })
 
 describe("Stack trace is rendered correctly", ({test, _}) => {
   test("components", ({expect, _}) => {
-    let c = Source2.src(~name="C", "{{ c }}")
-    let b = Source2.src(~name="B", `{% match x with "x" %} {% C /%} {% /match %}`)
+    let c = Source.src(~name="C", "{{ c }}")
+    let b = Source.src(~name="B", `{% match x with "x" %} {% C /%} {% /match %}`)
     let components = [c, b]
     let data = dict([("x", Js.Json.string("x"))])
     expect.value(render(~name="A", `{% B x / %}`, data, components)).toMatchSnapshot()
@@ -396,10 +395,10 @@ describe("Stack trace is rendered correctly", ({test, _}) => {
 @raises(Failure)
 describe("Graphs are parsed correctly", ({test, _}) => {
   test("Cyclic dependencies are reported", ({expect, _}) => {
-    let a = Source2.src(~name="A", "{% B /%}")
-    let b = Source2.src(~name="B", "{% C /%}")
-    let c = Source2.src(~name="C", "{% B /%}")
-    let result = Compile2.Components.make([a, b, c])
+    let a = Source.src(~name="A", "{% B /%}")
+    let b = Source.src(~name="B", "{% C /%}")
+    let c = Source.src(~name="C", "{% B /%}")
+    let result = Compile.Components.make([a, b, c])
     expect.value(result).toEqual(
       #errors([
         {
@@ -413,11 +412,11 @@ describe("Graphs are parsed correctly", ({test, _}) => {
     )
   })
   test("Cyclic dependencies are reported (more complex)", ({expect, _}) => {
-    let a = Source2.src(~name="A", "{% B /%}")
-    let b = Source2.src(~name="B", "{% C /%}")
-    let c = Source2.src(~name="C", "{% D /%}")
-    let d = Source2.src(~name="D", "{% B /%}")
-    let result = Compile2.Components.make([a, b, c, d])
+    let a = Source.src(~name="A", "{% B /%}")
+    let b = Source.src(~name="B", "{% C /%}")
+    let c = Source.src(~name="C", "{% D /%}")
+    let d = Source.src(~name="D", "{% B /%}")
+    let result = Compile.Components.make([a, b, c, d])
     expect.value(result).toEqual(
       #errors([
         {
@@ -436,9 +435,9 @@ describe("Graphs are parsed correctly", ({test, _}) => {
     )
   })
   test("Missing dependencies are reported", ({expect, _}) => {
-    let a = Source2.src(~name="A", "{% B /%}")
-    let b = Source2.src(~name="B", "{% C /%}")
-    let result = Compile2.Components.make([a, b])
+    let a = Source.src(~name="A", "{% B /%}")
+    let b = Source.src(~name="B", "{% C /%}")
+    let result = Compile.Components.make([a, b])
     expect.value(result).toEqual(
       #errors([
         {
@@ -452,15 +451,15 @@ describe("Graphs are parsed correctly", ({test, _}) => {
     )
   })
   // test("Runtime AST errors are reported", ({expect, _}) => {
-  //   let a = Source2.src(~name="A", "{% B /%}")
+  //   let a = Source.src(~name="A", "{% B /%}")
   //   @raises(Failure)
-  //   let b = Source2.function(
+  //   let b = Source.function(
   //     ~name="B",
   //     Typescheme.props([]),
   //     Typescheme.Child.props([]),
   //     _ => failwith("lol"),
   //   )
-  //   let result = Compile2.Components.make([a, b])
+  //   let result = Compile.Components.make([a, b])
   //   let e = try {failwith("lol")} catch {
   //   | e => e
   //   }
@@ -475,7 +474,7 @@ describe("Graphs are parsed correctly", ({test, _}) => {
   //       },
   //     ]),
   //   )
-  // expect.value(Compile2.make(b, emptyComponents)).toEqual(
+  // expect.value(Compile.make(b, emptyComponents)).toEqual(
   //   #errors([
   //     {
   //       exn: Some(AnyExn(e)),

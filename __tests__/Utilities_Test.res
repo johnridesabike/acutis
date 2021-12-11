@@ -7,19 +7,19 @@
 */
 open TestFramework
 
-let emptyComponents = Compile.Deprecated_Components.make([])->Result.getExn
+let emptyComponents = Compile.Components.empty()
 
 describe("Result", ({test, _}) => {
   test("getOrElse", ({expect, _}) => {
-    let good = Deprecated_Source.string(~name="Good", "{{ x }}")->Compile.make(emptyComponents)
-    let bad = Deprecated_Source.string(~name="Bad", "{{")->Compile.make(emptyComponents)
+    let good = Compile.make(~name="Good", "{{ x }}", emptyComponents)
+    let bad = Compile.make(~name="Bad", "{{", emptyComponents)
     let getOrElse = x => Result.getOrElse(x, _ => #error)
     expect.value(good->Result.map(_ => #noerror)->getOrElse).toEqual(#noerror)
     expect.value(bad->Result.map(_ => #noerror)->getOrElse).toEqual(#error)
   })
 
   test("getExn", ({expect, _}) => {
-    let bad = Deprecated_Source.string(~name="Bad", "{{")->Compile.make(emptyComponents)
+    let bad = Compile.make(~name="Bad", "{{", emptyComponents)
     expect.value(
       switch Result.getExn(bad) {
       | exception Not_found => #error

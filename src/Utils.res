@@ -14,33 +14,34 @@ exception Exit = Debug.Exit
 module Dagmap = {
   let string_equal = (. a: string, b: string) => a == b
 
+  type map<'a> = HashmapString.t<'a>
+
   // Mutable structures have the advantage of being able to update even when
   // the linker exits early via raising an exception.
   type rec t<'a, 'b> = {
     queue: array<string>,
-    notlinked: HashmapString.t<'a>,
-    linked: HashmapString.t<'b>,
+    notlinked: map<'a>,
+    linked: map<'b>,
     stack: list<string>,
     f: (. t<'a, 'b>, 'a) => 'b,
   }
 
   let id = (. _, a) => a
 
-  let make = (a, ~f) => {
-    let notlinked = HashmapString.fromArray(a)
+  let make = (m, ~f) => {
     {
-      queue: HashmapString.keysToArray(notlinked),
-      notlinked: notlinked,
-      linked: HashmapString.make(~hintSize=Array.size(a)),
+      queue: HashmapString.keysToArray(m),
+      notlinked: m,
+      linked: HashmapString.make(~hintSize=HashmapString.size(m)),
       stack: list{},
       f: f,
     }
   }
 
-  let prelinked = a => {
+  let prelinked = m => {
     queue: [],
     notlinked: HashmapString.make(~hintSize=0),
-    linked: HashmapString.fromArray(a),
+    linked: m,
     stack: list{},
     f: id,
   }
@@ -69,7 +70,7 @@ module Dagmap = {
       }
     }
 
-  let link = g => {
+  let linkAll = g => {
     Array.forEachU(g.queue, (. key) =>
       switch HashmapString.get(g.notlinked, key) {
       | Some(v) =>
@@ -79,6 +80,6 @@ module Dagmap = {
       | None => () // It was already processed by a dependent.
       }
     )
-    HashmapString.toArray(g.linked)
+    g.linked
   }
 }

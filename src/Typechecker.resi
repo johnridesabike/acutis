@@ -31,9 +31,9 @@ module Pattern: {
 
 module Ast: {
   type rec node =
-    | TText(string, Compile.Ast.trim)
+    | TText(string, Untyped.Ast.trim)
     // The first echo item that isn't null will be returned.
-    | TEcho({loc: Debug.loc, nullables: array<Compile.Ast.Echo.t>, default: Compile.Ast.Echo.t})
+    | TEcho({loc: Debug.loc, nullables: array<Untyped.Ast.Echo.t>, default: Untyped.Ast.Echo.t})
     | TMatch(Debug.loc, NonEmpty.t<Pattern.t>, NonEmpty.t<case>)
     | TMapList(Debug.loc, Pattern.t, NonEmpty.t<case>)
     | TMapDict(Debug.loc, Pattern.t, NonEmpty.t<case>)
@@ -78,12 +78,11 @@ let makeCases: (
   Context.t,
   ~loc: Debug.loc,
   ~name: string,
-  Utils.Dagmap.t<'a, Source2.t<Ast.t, 'b>>,
+  Utils.Dagmap.t<'a, Source.t<Ast.t, 'b>>,
 ) => (NonEmpty.t<Typescheme.t>, NonEmpty.t<Ast.case>)
 
-let makeArray: array<(string, Source2.t<Acutis_Types.Ast.nodes<unit>, 'a>)> => array<(
-  string,
-  Source2.t<Ast.t, 'a>,
-)>
+let makeArray: Utils.Dagmap.map<
+  Source.t<Acutis_Types.Ast.nodes<unit>, Source.fnU<'a>>,
+> => Utils.Dagmap.map<Source.t<Ast.t, Source.fnU<'a>>>
 
-let make: (string, Acutis_Types.Ast.nodes<unit>, array<(string, Source2.t<Ast.t, 'a>)>) => Ast.t
+let make: (string, Acutis_Types.Ast.nodes<unit>, Utils.Dagmap.map<Source.t<Ast.t, 'a>>) => Ast.t

@@ -7,20 +7,20 @@
 */
 
 let make: (
-  Source2.env<'a>,
-  Compile2.t<Compile2.template<'a>>,
+  Source.env<'a>,
+  Compile.t<Compile.template<'a>>,
   Js.Dict.t<Js.Json.t>,
   Js.Dict.t<'a>,
 ) => 'a
 
-module Sync: Source2.Env with type t = Result.t<string>
+module Sync: Source.Env with type t = Result.t<string>
 
-let sync: (Compile2.t<Compile2.template<Sync.t>>, Js.Dict.t<Js.Json.t>, Js.Dict.t<Sync.t>) => Sync.t
+let sync: (Compile.t<Compile.template<Sync.t>>, Js.Dict.t<Js.Json.t>, Js.Dict.t<Sync.t>) => Sync.t
 
-module Async: Source2.Env with type t = Js.Promise.t<Result.t<string>>
+module Async: Source.Env with type t = Js.Promise.t<Result.t<string>>
 
 let async: (
-  Compile2.t<Compile2.template<Async.t>>,
+  Compile.t<Compile.template<Async.t>>,
   Js.Dict.t<Js.Json.t>,
   Js.Dict.t<Async.t>,
 ) => Async.t

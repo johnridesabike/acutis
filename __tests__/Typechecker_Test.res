@@ -53,8 +53,7 @@ describe("match", ({test, _}) => {
     let src = `
     {% match a with !1 %} {% with null %} {% with !_ %} {% /match %}
     `
-    let {prop_types, _} =
-      Compile2.make(~name="test", src, Compile2.Components.empty())->Result.getExn
+    let {prop_types, _} = Compile.make(~name="test", src, Compile.Components.empty())->Result.getExn
     let bindings = prop_types->MapString.map(debug)->MapString.toArray
     expect.value(bindings).toEqual([("a", #Nullable(#Int))])
   })
@@ -64,8 +63,7 @@ describe("match", ({test, _}) => {
       {% match b with !1 %} {% with null %} {% with !_ %} {% /match %}
     {% /match %}
     `
-    let {prop_types, _} =
-      Compile2.make(~name="test", src, Compile2.Components.empty())->Result.getExn
+    let {prop_types, _} = Compile.make(~name="test", src, Compile.Components.empty())->Result.getExn
     let bindingsGlobal = prop_types->MapString.map(debug)->MapString.toArray
     expect.value(bindingsGlobal).toEqual([("a", #Record([("b", #Nullable(#Int))]))])
     let src = `
@@ -73,8 +71,7 @@ describe("match", ({test, _}) => {
       {% match c with !1 %} {{ d }} {% with null %} {% with !_ %} {% /match %}
     {% /match %}
     `
-    let {prop_types, _} =
-      Compile2.make(~name="test", src, Compile2.Components.empty())->Result.getExn
+    let {prop_types, _} = Compile.make(~name="test", src, Compile.Components.empty())->Result.getExn
     let bindingsGlobal = prop_types->MapString.map(debug)->MapString.toArray
     expect.value(bindingsGlobal).toEqual([
       ("a", #Record([("b", #Record([("c", #Nullable(#Int))])), ("d", #Echo)])),
@@ -88,8 +85,7 @@ describe("match", ({test, _}) => {
     {% with _, _ %}
     {% /match %}
     `
-    let {prop_types, _} =
-      Compile2.make(~name="test", src, Compile2.Components.empty())->Result.getExn
+    let {prop_types, _} = Compile.make(~name="test", src, Compile.Components.empty())->Result.getExn
     let bindingsGlobal = prop_types->MapString.map(debug)->MapString.toArray
     expect.value(bindingsGlobal).toEqual([
       ("a", #Record([("c", #Nullable(#Record([("d", #Int)])))])),
@@ -115,10 +111,10 @@ describe("match", ({test, _}) => {
         {% /match %}
       {% /match %}
     `
-    let {prop_types, _} = Compile2.make(
+    let {prop_types, _} = Compile.make(
       ~name="test",
       src,
-      Compile2.Components.empty(),
+      Compile.Components.empty(),
     )->Result.getOrElse(e => {
       Js.log(e)
       assert false
@@ -134,7 +130,7 @@ describe("match", ({test, _}) => {
 
 describe("component", ({test, _}) => {
   test("basic component", ({expect, _}) => {
-    let a = Source2.src(
+    let a = Source.src(
       ~name="A",
       `{% map a with x %} {{ x }} {% /map %}
        {% map b with x %} {{ x }} {% /map %}`,
@@ -143,7 +139,7 @@ describe("component", ({test, _}) => {
     {% A a=[1, a] b=["b", b] /%}
     `
     let {prop_types, _} =
-      Compile2.make(~name="test", src, Compile2.Components.make([a])->Result.getExn)->Result.getExn
+      Compile.make(~name="test", src, Compile.Components.make([a])->Result.getExn)->Result.getExn
     let bindings = prop_types->MapString.map(debug)->MapString.toArray
     expect.value(bindings).toEqual([("a", #Int), ("b", #String)])
   })
