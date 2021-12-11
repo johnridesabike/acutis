@@ -591,7 +591,7 @@ and makeNodes = (nodes, ctx, ~name, g) =>
       unifyEchoes(nullables, default, ctx, ~name)->ignore
       Ast.TEcho({loc: loc, nullables: nullables, default: default})
     | Component({loc, props, children, name: cname, f: ()}) =>
-      let (propTypes, propTypesChildren) = getTypes(Utils.Dag.getExn(g, ~name, ~key=cname, ~loc))
+      let (propTypes, propTypesChildren) = getTypes(Utils.Dagmap.getExn(g, ~name, ~key=cname, ~loc))
       let t = Global.fromPattern_record(props, ctx, ~name)
       // The original proptypes should not mutate.
       unifyRecord_exact(t, ref(Typescheme.copy_record(propTypes)), ~loc, ~comp=cname, ~name)
@@ -666,115 +666,6 @@ let makeSrc = (. g, x) =>
   | Function(name, p, c, f) => Source2.functionU(~name, p, c, f)
   }
 
-let makeArray = a => a->Utils.Dag.make(~f=makeSrc)->Utils.Dag.link
+let makeArray = a => a->Utils.Dagmap.make(~f=makeSrc)->Utils.Dagmap.link
 
-let make = (name, ast, components) =>
-  make(name, ast, Utils.Dag.makePrelinked(components, ~f=makeSrc))
-
-module Deprecated = {
-  @raises(Exit)
-  let unifyMatchCases = (bindingArray: NonEmpty.t<Ast_Pattern.binding>, cases, ctx) => {
-    NonEmpty.zipUnsafe(bindingArray, cases)->NonEmpty.forEach((. (#Binding(loc, k), t)) =>
-      Context.update(ctx, k, t, ~loc, ~name="")
-    )
-  }
-  @raises(Exit)
-  let unifyMapArrayCases = (id: T.Ast.mapArrayPattern, cases, ctx, ~loc) => {
-    open Typescheme
-    let int = int()
-    let (case_hd, index) = switch cases->NonEmpty.toArray {
-    | [hd] => (hd, int)
-    | [hd, tl] => (hd, tl)
-    | _ => raise(Exit(Debug2.mapPatternSizeMismatch(~loc, ~name="")))
-    }
-    unify(index, int, Expand, ~loc, ~name="")
-    switch id {
-    | #Binding(loc, binding) => Context.update(ctx, binding, ref(List(case_hd)), ~loc, ~name="")
-    | (#Array(loc, _) | #ArrayWithTailBinding(loc, _, _)) as a =>
-      let a_t = Global.fromPattern(~default=Typescheme.unknown(), a, ctx, ~name="")
-      unify(a_t, ref(List(case_hd)), Expand, ~loc, ~name="")
-    }
-  }
-
-  @raises(Exit)
-  let unifyMapDictCases = (id: T.Ast.mapDictPattern, case, ctx, ~loc) => {
-    open Typescheme
-    let int = string()
-    let (case_hd, index) = switch NonEmpty.toArray(case) {
-    | [hd] => (hd, int)
-    | [hd, tl] => (hd, tl)
-    | _ => raise(Exit(Debug2.mapPatternSizeMismatch(~loc, ~name="")))
-    }
-    unify(index, int, Expand, ~loc, ~name="")
-    switch id {
-    | #Binding(loc, binding) => Context.update(ctx, binding, list(case_hd), ~loc, ~name="")
-    | #Dict(loc, _) as d =>
-      let t = Global.fromPattern(~default=Typescheme.unknown(), d, ctx, ~name="")
-      unify(t, ref(Dict(case_hd, ref(SetString.empty))), Expand, ~loc, ~name="")
-    }
-  }
-  @raises(Exit)
-  let rec makeCaseTypes = (cases, ctx, ~loc) => {
-    cases
-    ->NonEmpty.map((. {T.Ast.patterns: pats, nodes}) => {
-      let scopes = Queue.make()
-      let casetypes = NonEmpty.map(pats, (. pattern) => {
-        NonEmpty.map(pattern, (. p) => {
-          let t = Local.fromPattern(p, scopes, ~name="")
-          (T.Ast_Pattern.toLocation(p), t)
-        })
-      })->NonEmpty.reduceHd((. pat1, pat2) => {
-        NonEmpty.zipUnsafe(pat1, pat2)->NonEmpty.map((. ((loc, a), (_, b))) => {
-          unify(a, b, Expand, ~loc, ~name="")
-          (loc, a)
-        })
-      })
-      let ctx = Context.addScope(ctx, scopes, ~loc, ~name="")
-      checkNodes(nodes, ctx)->ignore
-      casetypes
-    })
-    ->unifyNestedNonEmpty
-  }
-
-  @raises(Exit)
-  and checkNodes = (nodes: T.Ast.nodes<_>, ctx: Context.t): Context.t => {
-    Array.reduceU(nodes, ctx, (. ctx, node) =>
-      switch node {
-      | Text(_) => ctx
-      | Echo({loc: _, nullables, default}) =>
-        unifyEchoes(nullables, default, ctx, ~name="")
-        ctx
-      | Component({loc, props, _}) =>
-        let t = Global.fromPattern(
-          ~default=Typescheme.unknown(),
-          #Object(loc, props),
-          ctx,
-          ~name="",
-        )
-        ignore(t) // We need to unify this with the Component's signature
-        ctx
-      | Match(loc, bindingArray, cases) =>
-        // let cases = T.Ast2.makeCase(cases)
-        let casetypes = makeCaseTypes(cases, ctx, ~loc, ~name="")
-        unifyMatchCases(bindingArray, casetypes, ctx)
-        ctx
-      | MapArray(loc, pattern, cases) =>
-        // let cases = T.Ast2.makeCase(cases)
-        let casetypes = makeCaseTypes(cases, ctx, ~loc, ~name="")
-        unifyMapArrayCases(pattern, casetypes, ctx, ~loc)
-        ctx
-      | MapDict(loc, pattern, cases) =>
-        // let cases = T.Ast2.makeCase(cases)
-        let casetypes = makeCaseTypes(cases, ctx, ~loc, ~name="")
-        unifyMapDictCases(pattern, casetypes, ctx, ~loc)
-        ctx
-      }
-    )
-  }
-
-  @raises(Exit)
-  let check = nodes => {
-    let ctx = Context.make()
-    checkNodes(nodes, ctx).global.contents
-  }
-}
+let make = (name, ast, components) => make(name, ast, Utils.Dagmap.prelinked(components))

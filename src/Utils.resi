@@ -10,10 +10,10 @@
 @unboxed
 type loc = Acutis_Types.loc = Loc(int)
 
-module Dag: {
+module Dagmap: {
   type t<'a, 'b>
   let make: (array<(string, 'a)>, ~f: (. t<'a, 'b>, 'a) => 'b) => t<'a, 'b>
-  let makePrelinked: (array<(string, 'b)>, ~f: (. t<'a, 'b>, 'a) => 'b) => t<'a, 'b>
+  let prelinked: array<(string, 'a)> => t<'a, 'a>
   let getExn: (t<'a, 'b>, ~name: string, ~loc: loc, ~key: string) => 'b
   let link: t<'a, 'b> => array<(string, 'b)>
 }

@@ -78,28 +78,31 @@ describe("basic", ({test, _}) => {
 describe("match", ({test, _}) => {
   test("basic 1", ({expect, _}) => {
     let src = `
-    {% match a with !1 %} {% with null %} {% /match %}
+    {% match a with !1 %} {% with null %} {% with !_ %} {% /match %}
     `
-    let nodes = Compile.makeAstInternalExn(~name="test", src)
-    let bindings = Deprecated.check(nodes)->MapString.map(debug)->MapString.toArray
+    let {prop_types, _} =
+      Compile2.make(~name="test", src, Compile2.Components.empty())->Result.getExn
+    let bindings = prop_types->MapString.map(debug)->MapString.toArray
     expect.value(bindings).toEqual([("a", #Nullable(#Int))])
   })
   test("Typechecker nested", ({expect, _}) => {
     let src = `
     {% match a with {b} %}
-      {% match b with !1 %} {% with null %} {% /match %}
+      {% match b with !1 %} {% with null %} {% with !_ %} {% /match %}
     {% /match %}
     `
-    let nodes = Compile.makeAstInternalExn(~name="test", src)
-    let bindingsGlobal = Deprecated.check(nodes)->MapString.map(debug)->MapString.toArray
+    let {prop_types, _} =
+      Compile2.make(~name="test", src, Compile2.Components.empty())->Result.getExn
+    let bindingsGlobal = prop_types->MapString.map(debug)->MapString.toArray
     expect.value(bindingsGlobal).toEqual([("a", #Record([("b", #Nullable(#Int))]))])
     let src = `
     {% match a with {b: {c}, d } %}
-      {% match c with !1 %} {{ d }} {% with null %} {% /match %}
+      {% match c with !1 %} {{ d }} {% with null %} {% with !_ %} {% /match %}
     {% /match %}
     `
-    let nodes = Compile.makeAstInternalExn(~name="test", src)
-    let bindingsGlobal = Deprecated.check(nodes)->MapString.map(debug)->MapString.toArray
+    let {prop_types, _} =
+      Compile2.make(~name="test", src, Compile2.Components.empty())->Result.getExn
+    let bindingsGlobal = prop_types->MapString.map(debug)->MapString.toArray
     expect.value(bindingsGlobal).toEqual([
       ("a", #Record([("b", #Record([("c", #Nullable(#Int))])), ("d", #Echo)])),
     ])
@@ -108,11 +111,13 @@ describe("match", ({test, _}) => {
   test("Typechecker multiple patterns", ({expect, _}) => {
     let src = `
     {% match a, b with {c}, 1 %}
-      {% match c with !{d: 1} %} {% with null %} {% /match %}
+      {% match c with !{d: 1} %} {% with null %} {% with !_ %} {% /match %}
+    {% with _, _ %}
     {% /match %}
     `
-    let nodes = Compile.makeAstInternalExn(~name="test", src)
-    let bindingsGlobal = Deprecated.check(nodes)->MapString.map(debug)->MapString.toArray
+    let {prop_types, _} =
+      Compile2.make(~name="test", src, Compile2.Components.empty())->Result.getExn
+    let bindingsGlobal = prop_types->MapString.map(debug)->MapString.toArray
     expect.value(bindingsGlobal).toEqual([
       ("a", #Record([("c", #Nullable(#Record([("d", #Int)])))])),
       ("b", #Int),
@@ -125,20 +130,27 @@ describe("match", ({test, _}) => {
       {% match c with {d, e} %}
         {{ d }} {{ e }}
       {% /match %}
-      {% match c with {e: 1} %}
+      {% match c with {e: 1} %} {% with _ %}
       {% /match %}
       {% match c with {f} %}
-        {% match f with {g} %}
-          {{ g ? "g" }}
-        {% with {g: !""} %}
+        {% match f with {g: !""} %}
           z
         {% with {g: null} %}
           z
+        {% with {g} %}
+          {{ g ? "g" }}
         {% /match %}
       {% /match %}
     `
-    let nodes = Compile.makeAstInternalExn(~name="test", src)
-    let bindingsGlobal = Deprecated.check(nodes)->MapString.map(debug)->MapString.toArray
+    let {prop_types, _} = Compile2.make(
+      ~name="test",
+      src,
+      Compile2.Components.empty(),
+    )->Result.getOrElse(e => {
+      Js.log(e)
+      assert false
+    })
+    let bindingsGlobal = prop_types->MapString.map(debug)->MapString.toArray
     expect.value(bindingsGlobal).toEqual([
       ("a", #Nullable(#Echo)),
       ("b", #Echo),
@@ -149,46 +161,17 @@ describe("match", ({test, _}) => {
 
 describe("component", ({test, _}) => {
   test("basic component", ({expect, _}) => {
+    let a = Source2.src(
+      ~name="A",
+      `{% map a with x %} {{ x }} {% /map %}
+       {% map b with x %} {{ x }} {% /map %}`,
+    )
     let src = `
     {% A a=[1, a] b=["b", b] /%}
     `
-    let nodes = Compile.makeAstInternalExn(~name="test", src)
-    let bindings = Deprecated.check(nodes)->MapString.map(debug)->MapString.toArray
+    let {prop_types, _} =
+      Compile2.make(~name="test", src, Compile2.Components.make([a])->Result.getExn)->Result.getExn
+    let bindings = prop_types->MapString.map(debug)->MapString.toArray
     expect.value(bindings).toEqual([("a", #Int), ("b", #String)])
   })
 })
-
-/*
-describe("complete vs incomplete", ({test, _}) => {
-  test("nullable - global scope", ({expect, _}) => {
-    let src = `
-    {% match a with !1 %} {% with null %} {% /match %}
-    {% match b with 1 %} {% /match %}
-    {% match b with null %} {% /match %}
-    `
-    let bindings = catch(() => {
-      let nodes = Compile.makeAstInternalExn(~name="test", src)
-      make(nodes)->MapString.map(debug)->MapString.toArray
-    })
-    expect.value(bindings).toEqual(
-      #errors([
-        {
-          exn: None,
-          kind: #Type,
-          location: Some({character: 108}),
-          message: "This is type int but expected type nullable(polymorphic).",
-          path: [],
-        },
-      ]),
-    )
-  })
-  test("nullable - local scope", ({expect, _}) => {
-    let src = `
-    {% match a with !"a" with null %} {{ a ? "default" }} {% /match %}
-    `
-    let nodes = Compile.makeAstInternalExn(~name="test", src)
-    let bindings = make(nodes)->MapString.map(debug)->MapString.toArray
-    expect.value(bindings).toEqual([("a", #Nullable(#String))])
-  })
-})
-*/

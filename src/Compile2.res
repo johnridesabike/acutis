@@ -74,10 +74,9 @@ module Ast = {
     | OMapDict(loc, Typechecker.Pattern.t, Matching.t<t<'a>>)
     | OComponent({
         loc: loc,
-        name: string,
         props: array<(string, Typechecker.Pattern.t)>,
         children: array<(string, child<'a>)>,
-        f: 'a,
+        val: 'a,
       })
   and child<'a> = OChildName(string) | OChildBlock(t<'a>)
   and t<'a> = array<node<'a>>
@@ -146,10 +145,9 @@ module Ast = {
         )
         OComponent({
           loc: loc,
-          name: name,
+          val: name,
           props: props,
           children: children,
-          f: (),
         })
       }
     )
@@ -172,8 +170,8 @@ let make = (~name, ast) => {
 }
 
 type rec template<'a> =
-  | Acutis(Ast.t<template<'a>>)
-  | Function(Typescheme.props, Source2.fnU<'a>)
+  | Acutis(string, Ast.t<template<'a>>)
+  | Function(string, Typescheme.props, Source2.fnU<'a>)
 
 @raises(Exit)
 let compileExn = (~name, src) => {
@@ -238,10 +236,9 @@ let rec linkNodesExn = (nodes, graph) =>
     | OMapDict(l, p, t) =>
       let exits = Array.mapU(t.exits, (. n) => linkNodesExn(n, graph))
       OMapDict(l, p, {...t, exits: exits})
-    | OComponent({loc, name, props, children, f: ()}) =>
+    | OComponent({loc, val, props, children}) =>
       OComponent({
         loc: loc,
-        name: name,
         props: props,
         children: Array.mapU(children, (. (name, child)) =>
           switch child {
@@ -249,20 +246,20 @@ let rec linkNodesExn = (nodes, graph) =>
           | OChildBlock(nodes) => (name, OChildBlock(linkNodesExn(nodes, graph)))
           }
         ),
-        f: Utils.Dag.getExn(graph, ~name, ~key=name, ~loc),
+        val: Utils.Dagmap.getExn(graph, ~name=val, ~key=val, ~loc),
       })
     }
   )
 
 let linkSrc = (. g, src) =>
   switch src {
-  | Source2.Acutis(_, ast) => Acutis(linkNodesExn(ast, g))
-  | Function(_, props, _, f) => Function(props, f)
+  | Source2.Acutis(name, ast) => Acutis(name, linkNodesExn(ast, g))
+  | Function(name, props, _, f) => Function(name, props, f)
   }
 
 let link = (~name, typed, components: Components.t<'a>) =>
   try {
-    let g = Utils.Dag.make(Components.optimize(components), ~f=linkSrc)
+    let g = Utils.Dagmap.make(Components.optimize(components), ~f=linkSrc)
     #ok({...typed, nodes: linkNodesExn(typed.nodes, g)})
   } catch {
   | Exit(e) => #errors([e])

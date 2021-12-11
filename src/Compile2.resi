@@ -26,10 +26,9 @@ module Ast: {
     | OMapDict(Utils.loc, Typechecker.Pattern.t, Matching.t<t<'a>>)
     | OComponent({
         loc: Utils.loc,
-        name: string,
         props: array<(string, Typechecker.Pattern.t)>,
         children: array<(string, child<'a>)>,
-        f: 'a,
+        val: 'a,
       })
   and child<'a> = OChildName(string) | OChildBlock(t<'a>)
   and t<'a> = array<node<'a>>
@@ -43,8 +42,8 @@ type t<'a> = {
 }
 
 type rec template<'a> =
-  | Acutis(Ast.t<template<'a>>)
-  | Function(Typescheme.props, Source2.fnU<'a>)
+  | Acutis(string, Ast.t<template<'a>>)
+  | Function(string, Typescheme.props, Source2.fnU<'a>)
 
 module Components: {
   type t<'a>

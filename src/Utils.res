@@ -14,7 +14,7 @@ exception Exit = Debug.Exit
 @unboxed
 type loc = Acutis_Types.loc = Loc(int)
 
-module Dag = {
+module Dagmap = {
   let string_equal = (. a: string, b: string) => a == b
 
   // Mutable structures have the advantage of being able to update even when
@@ -27,6 +27,8 @@ module Dag = {
     f: (. t<'a, 'b>, 'a) => 'b,
   }
 
+  let id = (. _, a) => a
+
   let make = (a, ~f) => {
     let notlinked = HashmapString.fromArray(a)
     {
@@ -38,12 +40,12 @@ module Dag = {
     }
   }
 
-  let makePrelinked = (a, ~f) => {
+  let prelinked = a => {
     queue: [],
     notlinked: HashmapString.make(~hintSize=0),
     linked: HashmapString.fromArray(a),
     stack: list{},
-    f: f,
+    f: id,
   }
 
   // When we link components in the tree, ensure that it keeps the

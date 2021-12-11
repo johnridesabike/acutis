@@ -282,20 +282,14 @@ let rec make:
             Queue.transfer(result, queue)
           }
         )
-      | OComponent({loc, name, props: compPropsRaw, children: compChildrenRaw, f}) =>
+      | OComponent({loc, props: compPropsRaw, children: compChildrenRaw, val}) =>
         let compProps = Dict.empty()
         let compChildren = Dict.empty()
         let errors = Queue.make()
         Array.forEachU(compChildrenRaw, (. (key, child)) =>
           switch child {
           | OChildBlock(nodes) =>
-            let result = make(
-              ~nodes,
-              ~props,
-              ~children,
-              ~stack=list{Section({component: name, section: key}), ...stack},
-              ~env,
-            )
+            let result = make(~nodes, ~props, ~children, ~stack, ~env)
             Dict.set(compChildren, key, Env.render(. result))
           | OChildName(child) =>
             switch Dict.get(children, child) {
@@ -308,8 +302,8 @@ let rec make:
           Dict.set(compProps, key, Props.fromPattern(data, props))
         )
         if Queue.isEmpty(errors) {
-          let result = switch f {
-          | Acutis(nodes) =>
+          let result = switch val {
+          | Acutis(name, nodes) =>
             Env.render(.
               make(
                 ~nodes,
@@ -319,7 +313,7 @@ let rec make:
                 ~env,
               ),
             )
-          | Function(propTypes, f) =>
+          | Function(_, propTypes, f) =>
             Env.try_(.
               (. ()) => f(. env, Props.toJson(compProps, propTypes), compChildren),
               (. e) => Env.error_internal(. [Debug.uncaughtComponentError(e, ~stack)]),

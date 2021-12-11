@@ -82,7 +82,7 @@ let makeCases: (
   Context.t,
   ~loc: Utils.loc,
   ~name: string,
-  Utils.Dag.t<Source2.t<Acutis_Types.Ast.nodes<unit>, 'a>, Source2.t<Ast.t<unit>, 'a>>,
+  Utils.Dagmap.t<'a, Source2.t<Ast.t<unit>, 'b>>,
 ) => (NonEmpty.t<Typescheme.t>, NonEmpty.t<Ast.case<unit>>)
 
 let makeArray: array<(string, Source2.t<Acutis_Types.Ast.nodes<unit>, 'a>)> => array<(
@@ -95,7 +95,3 @@ let make: (
   Acutis_Types.Ast.nodes<unit>,
   array<(string, Source2.t<Ast.t<unit>, 'a>)>,
 ) => Ast.t<unit>
-
-module Deprecated: {
-  let check: Acutis_Types.Ast.nodes<'a> => Belt.Map.String.t<Typescheme.t>
-}
