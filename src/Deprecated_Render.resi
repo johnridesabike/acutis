@@ -20,13 +20,13 @@ module Pattern: {
   let test: (
     NonEmpty.t<Ast_Pattern.t>,
     NonEmpty.t<Js.Json.t>,
-    ~loc: loc,
+    ~loc: Debug.loc,
     ~stack: Debug.Stack.t,
   ) => testResult<Belt.Map.String.t<Js.Json.t>>
 }
 
 let make: (
-  ~nodes: Ast.nodes<templateU<'a>>,
+  ~nodes: Ast.nodes<Compile.templateU<'a>>,
   ~props: Js.Dict.t<Js.Json.t>,
   ~children: Js.Dict.t<'a>,
   ~stack: Debug.Stack.t,

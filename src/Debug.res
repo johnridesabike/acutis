@@ -6,13 +6,14 @@
   file, You can obtain one at http://mozilla.org/MPL/2.0/.
 */
 
-module T = Acutis_Types
+@unboxed
+type loc = Loc(int)
 
 type kind = [#Type | #Matching | #Render | #Compile | #Pattern | #Parse | #Syntax | #Decode]
 
 type location = {character: int}
 
-let location = (T.Loc(x)) => {character: x + 1}
+let location = (Loc(x)) => {character: x + 1}
 
 @unboxed
 type rec anyExn = AnyExn(_): anyExn
@@ -49,6 +50,14 @@ module Stack = {
 exception Exit(t)
 
 let stackToPath = x => x->Belt.List.toArray->Belt.Array.mapU(Stack.nameToJson)
+
+module type Debuggable = {
+  type t
+  let toString: t => string
+  let toLocation: t => loc
+}
+
+type debuggable<'a> = module(Debuggable with type t = 'a)
 
 /* Lexer errors. */
 
@@ -110,31 +119,31 @@ let unexpectedCharacter = (~loc, ~name, ~character, ~expected) => {
 
 /* Parse errors. */
 
-let unexpectedToken = (t, ~name) => {
-  message: `Unexpected token: "${T.Token.toString(t)}".`,
+let unexpectedToken = (type a, t, module(M): debuggable<a>, ~name) => {
+  message: `Unexpected token: "${M.toString(t)}".`,
   kind: #Parse,
-  location: Some(location(T.Token.toLocation(t))),
+  location: Some(location(M.toLocation(t))),
   path: [Js.Json.string(name)],
   exn: None,
 }
 
-let badMapArrayPattern = (t, ~name) => {
-  let t' = T.Ast_Pattern.toString(t)
+let badMapArrayPattern = (type a, t, module(M): debuggable<a>, ~name) => {
+  let t' = M.toString(t)
   {
     message: `Bad map type: "${t'}". I can only map bindings and arrays. (Tip: Use map_dict for dictionaries.)`,
     kind: #Parse,
-    location: Some(location(T.Ast_Pattern.toLocation(t))),
+    location: Some(location(M.toLocation(t))),
     path: [Js.Json.string(name)],
     exn: None,
   }
 }
 
-let badMapDictPattern = (t, ~name) => {
-  let t' = T.Ast_Pattern.toString(t)
+let badMapDictPattern = (type a, t, module(M): debuggable<a>, ~name) => {
+  let t' = M.toString(t)
   {
     message: `Bad map_dict type: "${t'}". I can only use map_dict for bindings and dictionaries. (Tip: Use map for arrays.)`,
     kind: #Parse,
-    location: Some(location(T.Ast_Pattern.toLocation(t))),
+    location: Some(location(M.toLocation(t))),
     path: [Js.Json.string(name)],
     exn: None,
   }
@@ -149,14 +158,6 @@ let cyclicDependency = (~loc, ~name, ~stack) => {
   kind: #Compile,
   location: Some(location(loc)),
   path: list{name, ...stack}->Belt.List.toArray->Belt.Array.mapU(jsonString),
-  exn: None,
-}
-
-let componentDoesNotExist = (~loc, ~name, ~stack) => {
-  message: `Component "${name}" either does not exist or couldn't be compiled.`,
-  kind: #Compile,
-  location: Some(location(loc)),
-  path: stack->Belt.List.toArray->Belt.Array.mapU(jsonString),
   exn: None,
 }
 
@@ -178,111 +179,12 @@ let uncaughtCompileError = (e, ~name) => {
 
 /* Render errors */
 
-let jsonTaggedTToString = (x: Js.Json.tagged_t) =>
-  switch x {
-  | JSONTrue | JSONFalse => "boolean"
-  | JSONNull => "null"
-  | JSONString(_) => "string"
-  | JSONNumber(_) => "number"
-  | JSONArray(_) => "array"
-  | JSONObject(_) => "object"
-  }
-
-let patternTypeMismatch = (~data, ~pattern, ~stack) => {
-  let data = jsonTaggedTToString(data)
-  let type_ = T.Ast_Pattern.toString(pattern)
-  {
-    message: `This pattern is type ${type_} but the data is type ${data}.`,
-    kind: #Type,
-    location: Some(location(T.Ast_Pattern.toLocation(pattern))),
-    path: stackToPath(stack),
-    exn: None,
-  }
-}
-
-let bindingTypeMismatch = (~data, ~pattern, ~binding, ~stack) => {
-  let data = jsonTaggedTToString(data)
-  let p = T.Ast_Pattern.toString(pattern)
-  {
-    message: `"${binding}" is type ${p} but the data is type ${data}.`,
-    kind: #Type,
-    location: Some(location(T.Ast_Pattern.toLocation(pattern))),
-    path: stackToPath(stack),
-    exn: None,
-  }
-}
-
-let nameBoundMultipleTimes = (~loc, ~binding, ~stack) => {
-  message: `"${binding}" is bound multiple times in this pattern.`,
-  kind: #Pattern,
-  location: Some(location(loc)),
-  path: stackToPath(stack),
-  exn: None,
-}
-
-let noMatchFound = (~loc, ~stack) => {
-  location: Some(location(loc)),
-  path: stackToPath(stack),
-  kind: #Pattern,
-  message: "None of the patterns match the data. Consider a catch-all case to avoid this.",
-  exn: None,
-}
-
-let patternNumberMismatch = (~loc, ~stack) => {
-  location: Some(location(loc)),
-  path: stackToPath(stack),
-  kind: #Pattern,
-  message: "The number of patterns does not match the number of data.",
-  exn: None,
-}
-
-let badEchoType = (~loc, ~binding, ~type_, ~stack) => {
-  let type_ = jsonTaggedTToString(type_)
-  {
-    location: Some(location(loc)),
-    path: stackToPath(stack),
-    kind: #Render,
-    message: `"${binding}" is type ${type_}. I can only echo strings and numbers.`,
-    exn: None,
-  }
-}
-
-let bindingDoesNotExist = (~loc, ~binding, ~stack) => {
-  location: Some(location(loc)),
-  path: stackToPath(stack),
-  kind: #Render,
-  message: `Binding "${binding}" does not exist.`,
-  exn: None,
-}
-
 let childDoesNotExist = (~loc, ~child, ~stack) => {
   location: Some(location(loc)),
   path: stackToPath(stack),
   kind: #Render,
   message: `Template child "${child}" does not exist.`,
   exn: None,
-}
-
-let badMapArrayType = (~loc, ~binding, ~type_, ~stack) => {
-  let type_ = jsonTaggedTToString(type_)
-  {
-    location: Some(location(loc)),
-    path: stackToPath(stack),
-    kind: #Type,
-    message: `"${binding}" is a ${type_}. I can only map arrays.`,
-    exn: None,
-  }
-}
-
-let badMapDictType = (~loc, ~binding, ~type_, ~stack) => {
-  let type_ = jsonTaggedTToString(type_)
-  {
-    location: Some(location(loc)),
-    path: stackToPath(stack),
-    kind: #Type,
-    message: `"${binding}" is a ${type_}. I can only use map_dict on dictionaries.`,
-    exn: None,
-  }
 }
 
 let uncaughtComponentError = (e, ~stack) => {
@@ -293,10 +195,294 @@ let uncaughtComponentError = (e, ~stack) => {
   exn: Some(AnyExn(e)),
 }
 
-let customError = (message, ~stack) => {
+/// NEW STUFF GOES DOWN HERE vvv ///////
+
+module Array = Belt.Array
+module Int = Belt.Int
+module List = Belt.List
+
+let location = (Loc(x)) => {character: x + 1}
+
+let json = j =>
+  switch Js.Json.classify(j) {
+  | JSONFalse | JSONTrue => "JSON boolean"
+  | JSONNull => "JSON null"
+  | JSONString(_) => "JSON string"
+  | JSONNumber(_) => "JSON number"
+  | JSONObject(_) => "JSON object"
+  | JSONArray(_) => "JSON array"
+  }
+
+/* Type errors */
+
+let childTypeMismatch = (a, b, ~loc, f) => {
+  message: `This pattern is type ${f(b)}} but expected type ${f(a)}.`,
+  kind: #Type,
+  exn: None,
+  location: Some(location(loc)),
+  path: [],
+}
+
+let missingComponent = (~name, ~loc, a) => {
+  let name' = switch name {
+  | "" => "<root>"
+  | s => s
+  }
+  {
+    message: `Template component "${a}" is missing, which is required by "${name'}."`,
+    kind: #Compile,
+    exn: None,
+    location: Some(location(loc)),
+    path: [Js.Json.string(name)],
+  }
+}
+
+let typeMismatch = (a, b, ~loc, ~name, f) => {
+  message: `This pattern is type ${f(b)} but expected type ${f(a)}.`,
+  kind: #Type,
+  exn: None,
+  location: Some(location(loc)),
+  path: [Js.Json.string(name)],
+}
+
+let missingProp = (p, t, ~loc, ~name, ~comp, f) => {
+  message: `This call of component "${comp}" is missing prop "${p}" of type ${f(t)}.`,
+  kind: #Type,
+  exn: None,
+  location: Some(location(loc)),
+  path: [Js.Json.string(name)],
+}
+
+let cantNarrowType = (a, b, f) => {
+  message: `These types have no subset:
+${f(a)}
+${f(b)}`,
+  kind: #Type,
+  exn: None,
+  location: None,
+  path: [],
+}
+
+let tupleSizeMismatch = (a, b, ~name) => {
+  message: `This is a ${Int.toString(a)}-tuple but expected a ${Int.toString(b)}-tuple.`,
+  kind: #Type,
+  exn: None,
+  location: None,
+  path: [Js.Json.string(name)],
+}
+
+let mapPatternSizeMismatch = (~loc, ~name) => {
+  message: `Map blocks can only have two patterns per "with" clause: the item and the index.`,
+  kind: #Type,
+  exn: None,
+  location: Some(location(loc)),
+  path: [Js.Json.string(name)],
+}
+
+let nonNullableEchoLiteral = () => {
+  message: `String, int, or float literals are not nullable and therefore allowed before a ? operator.`,
+  kind: #Type,
+  exn: None,
+  location: None,
+  path: [],
+}
+
+/* Matching errors */
+
+let partialMatch = (pat, f, ~loc) => {
+  message: `This pattern-matching is not exhaustive.
+Here is an example of a case that is not matched:
+${f(pat)}`,
+  kind: #Matching,
+  exn: None,
+  location: Some(location(loc)),
+  path: [],
+}
+
+let unusedCase = (pat, f) => {
+  let pat = Array.joinWithU(pat, ", ", (. x) => f(x))
+  {
+    message: `This match case is unused:
+${pat}`,
+    kind: #Matching,
+    exn: None,
+    location: None, // fix this
+    path: [],
+  }
+}
+
+/////////////
+
+let patternNumberMismatch = (~loc, ~name) => {
+  location: Some(location(loc)),
+  path: [Js.Json.string(name)],
+  kind: #Pattern,
+  message: "The number of patterns does not match the number of data.",
+  exn: None,
+}
+
+let nameBoundMultipleTimes = (~loc, ~binding, ~name) => {
+  message: `"${binding}" is bound multiple times in this pattern.`,
+  kind: #Pattern,
+  location: Some(location(loc)),
+  path: [Js.Json.string(name)],
+  exn: None,
+}
+
+/////////
+
+let decodeError = (~stack, a, b, f) => {
+  let a = f(a)
+  let b = json(b)
+  {
+    message: `This input is type "${b}", which does not match the template's required type, ${a}.`,
+    kind: #Decode,
+    exn: None,
+    location: None,
+    path: List.toArray(stack),
+  }
+}
+
+let decodeErrorMissingKey = (~stack, k) => {
+  message: `Input is missing JSON object key "${k}" which is required.`,
+  kind: #Decode,
+  exn: None,
+  location: None,
+  path: List.toArray(stack),
+}
+
+let decodeErrorMissingChild = k => {
+  message: `Input is missing required template child "${k}."`,
+  kind: #Decode,
+  exn: None,
+  location: None,
+  path: [],
+}
+
+let customError = message => {
   message: message,
   location: None,
-  path: stackToPath(stack),
+  path: [],
   kind: #Render,
   exn: None,
+}
+
+module Deprecated = {
+  let componentDoesNotExist = (~loc, ~name, ~stack) => {
+    message: `Component "${name}" either does not exist or couldn't be compiled.`,
+    kind: #Compile,
+    location: Some(location(loc)),
+    path: stack->Belt.List.toArray->Belt.Array.mapU(jsonString),
+    exn: None,
+  }
+  let jsonTaggedTToString = (x: Js.Json.tagged_t) =>
+    switch x {
+    | JSONTrue | JSONFalse => "boolean"
+    | JSONNull => "null"
+    | JSONString(_) => "string"
+    | JSONNumber(_) => "number"
+    | JSONArray(_) => "array"
+    | JSONObject(_) => "object"
+    }
+
+  let patternTypeMismatch = (type a, ~data, ~pattern, ~stack, module(M): debuggable<a>) => {
+    let data = jsonTaggedTToString(data)
+    let type_ = M.toString(pattern)
+    {
+      message: `This pattern is type ${type_} but the data is type ${data}.`,
+      kind: #Type,
+      location: Some(location(M.toLocation(pattern))),
+      path: stackToPath(stack),
+      exn: None,
+    }
+  }
+
+  let bindingTypeMismatch = (
+    type a,
+    ~pattern,
+    ~data,
+    ~binding,
+    ~stack,
+    module(M): debuggable<a>,
+  ) => {
+    let data = jsonTaggedTToString(data)
+    let p = M.toString(pattern)
+    {
+      message: `"${binding}" is type ${p} but the data is type ${data}.`,
+      kind: #Type,
+      location: Some(location(M.toLocation(pattern))),
+      path: stackToPath(stack),
+      exn: None,
+    }
+  }
+
+  let badEchoType = (~loc, ~binding, ~type_, ~stack) => {
+    let type_ = jsonTaggedTToString(type_)
+    {
+      location: Some(location(loc)),
+      path: stackToPath(stack),
+      kind: #Render,
+      message: `"${binding}" is type ${type_}. I can only echo strings and numbers.`,
+      exn: None,
+    }
+  }
+
+  let bindingDoesNotExist = (~loc, ~binding, ~stack) => {
+    location: Some(location(loc)),
+    path: stackToPath(stack),
+    kind: #Render,
+    message: `Binding "${binding}" does not exist.`,
+    exn: None,
+  }
+
+  let badMapArrayType = (~loc, ~binding, ~type_, ~stack) => {
+    let type_ = jsonTaggedTToString(type_)
+    {
+      location: Some(location(loc)),
+      path: stackToPath(stack),
+      kind: #Type,
+      message: `"${binding}" is a ${type_}. I can only map arrays.`,
+      exn: None,
+    }
+  }
+
+  let badMapDictType = (~loc, ~binding, ~type_, ~stack) => {
+    let type_ = jsonTaggedTToString(type_)
+    {
+      location: Some(location(loc)),
+      path: stackToPath(stack),
+      kind: #Type,
+      message: `"${binding}" is a ${type_}. I can only use map_dict on dictionaries.`,
+      exn: None,
+    }
+  }
+  let noMatchFound = (~loc, ~stack) => {
+    location: Some(location(loc)),
+    path: stackToPath(stack),
+    kind: #Pattern,
+    message: "None of the patterns match the data. Consider a catch-all case to avoid this.",
+    exn: None,
+  }
+  let patternNumberMismatch = (~loc, ~stack) => {
+    location: Some(location(loc)),
+    path: stackToPath(stack),
+    kind: #Pattern,
+    message: "The number of patterns does not match the number of data.",
+    exn: None,
+  }
+  let nameBoundMultipleTimes = (~loc, ~binding, ~stack) => {
+    message: `"${binding}" is bound multiple times in this pattern.`,
+    kind: #Pattern,
+    location: Some(location(loc)),
+    path: stackToPath(stack),
+    exn: None,
+  }
+
+  let customError = (message, ~stack) => {
+    message: message,
+    location: None,
+    path: stackToPath(stack),
+    kind: #Render,
+    exn: None,
+  }
 }

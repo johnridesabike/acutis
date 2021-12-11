@@ -23,4 +23,3 @@ let unzip: t<('a, 'b)> => (t<'a>, t<'b>)
 let zipUnsafe: (t<'a>, t<'b>) => t<('a, 'b)>
 let zipExn: (t<'a>, t<'b>) => t<('a, 'b)>
 let zipByExn: (t<'a>, t<'b>, (. 'a, 'b) => 'c) => t<'c>
-let joinWith: (t<'a>, string, (. 'a) => string) => string

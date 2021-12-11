@@ -50,111 +50,132 @@ describe("Patterns", ({test, _}) => {
   }
 
   test("Enums", ({expect, _}) => {
-    expect.value(parseString("null")).toEqual(NonEmpty.one(#Null(T.Loc(3))))
-    expect.value(parseString("!a")).toEqual(NonEmpty.one(#Some(T.Loc(3), #Binding(T.Loc(4), "a"))))
-    expect.value(parseString("false")).toEqual(NonEmpty.one(#False(T.Loc(3))))
-    expect.value(parseString("true")).toEqual(NonEmpty.one(#True(T.Loc(3))))
+    expect.value(parseString("null")).toEqual(NonEmpty.one(#Null(Debug.Loc(3))))
+    expect.value(parseString("!a")).toEqual(
+      NonEmpty.one(#Some(Debug.Loc(3), #Binding(Debug.Loc(4), "a"))),
+    )
+    expect.value(parseString("false")).toEqual(NonEmpty.one(#False(Debug.Loc(3))))
+    expect.value(parseString("true")).toEqual(NonEmpty.one(#True(Debug.Loc(3))))
   })
 
   test("Numbers", ({expect, _}) => {
-    expect.value(parseString("1")).toEqual(NonEmpty.one(#Int(T.Loc(3), 1)))
-    expect.value(parseString("1.")).toEqual(NonEmpty.one(#Float(T.Loc(3), 1.0)))
-    expect.value(parseString("12345")).toEqual(NonEmpty.one(#Int(T.Loc(3), 12345)))
-    expect.value(parseString("1234.5")).toEqual(NonEmpty.one(#Float(T.Loc(3), 1234.5)))
-    expect.value(parseString("-12345")).toEqual(NonEmpty.one(#Int(T.Loc(3), -12345)))
-    expect.value(parseString("1e+1")).toEqual(NonEmpty.one(#Int(T.Loc(3), 10)))
-    expect.value(parseString("-1E+1")).toEqual(NonEmpty.one(#Int(T.Loc(3), -10)))
-    expect.value(parseString("175.0e-2")).toEqual(NonEmpty.one(#Float(T.Loc(3), 1.75)))
-    expect.value(parseString("175e-2")).toEqual(NonEmpty.one(#Int(T.Loc(3), 1)))
+    expect.value(parseString("1")).toEqual(NonEmpty.one(#Int(Debug.Loc(3), 1)))
+    expect.value(parseString("1.")).toEqual(NonEmpty.one(#Float(Debug.Loc(3), 1.0)))
+    expect.value(parseString("12345")).toEqual(NonEmpty.one(#Int(Debug.Loc(3), 12345)))
+    expect.value(parseString("1234.5")).toEqual(NonEmpty.one(#Float(Debug.Loc(3), 1234.5)))
+    expect.value(parseString("-12345")).toEqual(NonEmpty.one(#Int(Debug.Loc(3), -12345)))
+    expect.value(parseString("1e+1")).toEqual(NonEmpty.one(#Int(Debug.Loc(3), 10)))
+    expect.value(parseString("-1E+1")).toEqual(NonEmpty.one(#Int(Debug.Loc(3), -10)))
+    expect.value(parseString("175.0e-2")).toEqual(NonEmpty.one(#Float(Debug.Loc(3), 1.75)))
+    expect.value(parseString("175e-2")).toEqual(NonEmpty.one(#Int(Debug.Loc(3), 1)))
   })
 
   test("Strings", ({expect, _}) => {
-    expect.value(parseString(`"a"`)).toEqual(NonEmpty.one(#String(T.Loc(3), "a")))
-    expect.value(parseString(`"a b c"`)).toEqual(NonEmpty.one(#String(T.Loc(3), "a b c")))
+    expect.value(parseString(`"a"`)).toEqual(NonEmpty.one(#String(Debug.Loc(3), "a")))
+    expect.value(parseString(`"a b c"`)).toEqual(NonEmpty.one(#String(Debug.Loc(3), "a b c")))
     expect.value(parseString("\"a says \\\"b\\\" to c\"")).toEqual(
-      NonEmpty.one(#String(T.Loc(3), `a says "b" to c`)),
+      NonEmpty.one(#String(Debug.Loc(3), `a says "b" to c`)),
     )
   })
 
   test("Bindings", ({expect, _}) => {
-    expect.value(parseString("a")).toEqual(NonEmpty.one(#Binding(T.Loc(3), "a")))
-    expect.value(parseString("_")).toEqual(NonEmpty.one(#Binding(T.Loc(3), "_")))
-    expect.value(parseString("abc123")).toEqual(NonEmpty.one(#Binding(T.Loc(3), "abc123")))
-    expect.value(parseString("a_")).toEqual(NonEmpty.one(#Binding(T.Loc(3), "a_")))
+    expect.value(parseString("a")).toEqual(NonEmpty.one(#Binding(Debug.Loc(3), "a")))
+    expect.value(parseString("_")).toEqual(NonEmpty.one(#Binding(Debug.Loc(3), "_")))
+    expect.value(parseString("abc123")).toEqual(NonEmpty.one(#Binding(Debug.Loc(3), "abc123")))
+    expect.value(parseString("a_")).toEqual(NonEmpty.one(#Binding(Debug.Loc(3), "a_")))
   })
 
   test("Arrays", ({expect, _}) => {
-    expect.value(parseString("[]")).toEqual(NonEmpty.one(#Array(T.Loc(3), [])))
-    expect.value(parseString("[1]")).toEqual(NonEmpty.one(#Array(T.Loc(3), [#Int(T.Loc(4), 1)])))
-    expect.value(parseString("[null]")).toEqual(NonEmpty.one(#Array(T.Loc(3), [#Null(T.Loc(4))])))
+    expect.value(parseString("[]")).toEqual(NonEmpty.one(#Array(Debug.Loc(3), [])))
+    expect.value(parseString("[1]")).toEqual(
+      NonEmpty.one(#Array(Debug.Loc(3), [#Int(Debug.Loc(4), 1)])),
+    )
+    expect.value(parseString("[null]")).toEqual(
+      NonEmpty.one(#Array(Debug.Loc(3), [#Null(Debug.Loc(4))])),
+    )
     expect.value(parseString(`["a"]`)).toEqual(
-      NonEmpty.one(#Array(T.Loc(3), [#String(T.Loc(4), "a")])),
+      NonEmpty.one(#Array(Debug.Loc(3), [#String(Debug.Loc(4), "a")])),
     )
     expect.value(parseString(`[1, "a", null]`)).toEqual(
-      NonEmpty.one(#Array(T.Loc(3), [#Int(T.Loc(4), 1), #String(T.Loc(7), "a"), #Null(T.Loc(12))])),
+      NonEmpty.one(
+        #Array(
+          Debug.Loc(3),
+          [#Int(Debug.Loc(4), 1), #String(Debug.Loc(7), "a"), #Null(Debug.Loc(12))],
+        ),
+      ),
     )
     expect.value(parseString(`["b", x]`)).toEqual(
-      NonEmpty.one(#Array(T.Loc(3), [#String(T.Loc(4), "b"), #Binding(T.Loc(9), "x")])),
+      NonEmpty.one(#Array(Debug.Loc(3), [#String(Debug.Loc(4), "b"), #Binding(Debug.Loc(9), "x")])),
     )
     expect.value(parseString(`["b", ...x]`)).toEqual(
       NonEmpty.one(
-        #ArrayWithTailBinding(T.Loc(3), [#String(T.Loc(4), "b")], #Binding(T.Loc(12), "x")),
+        #ArrayWithTailBinding(
+          Debug.Loc(3),
+          [#String(Debug.Loc(4), "b")],
+          #Binding(Debug.Loc(12), "x"),
+        ),
       ),
     )
     expect.value(parseString(`[["b", 1], x]`)).toEqual(
       NonEmpty.one(
         #Array(
-          T.Loc(3),
+          Debug.Loc(3),
           [
-            #Array(T.Loc(4), [#String(T.Loc(5), "b"), #Int(T.Loc(10), 1)]),
-            #Binding(T.Loc(14), "x"),
+            #Array(Debug.Loc(4), [#String(Debug.Loc(5), "b"), #Int(Debug.Loc(10), 1)]),
+            #Binding(Debug.Loc(14), "x"),
           ],
         ),
       ),
     )
     expect.value(parseString("[[], x]")).toEqual(
-      NonEmpty.one(#Array(T.Loc(3), [#Array(T.Loc(4), []), #Binding(T.Loc(8), "x")])),
+      NonEmpty.one(#Array(Debug.Loc(3), [#Array(Debug.Loc(4), []), #Binding(Debug.Loc(8), "x")])),
     )
   })
 
   test("Objects", ({expect, _}) => {
-    expect.value(parseString("{}")).toEqual(NonEmpty.one(#Object(T.Loc(3), [])))
+    expect.value(parseString("{}")).toEqual(NonEmpty.one(#Object(Debug.Loc(3), [])))
     expect.value(parseString("{pun}")).toEqual(
-      NonEmpty.one(#Object(T.Loc(3), [("pun", #Binding(T.Loc(4), "pun"))])),
+      NonEmpty.one(#Object(Debug.Loc(3), [("pun", #Binding(Debug.Loc(4), "pun"))])),
     )
     expect.value(parseString("{pun1, pun2}")).toEqual(
       NonEmpty.one(
         #Object(
-          T.Loc(3),
-          [("pun1", #Binding(T.Loc(4), "pun1")), ("pun2", #Binding(T.Loc(10), "pun2"))],
+          Debug.Loc(3),
+          [("pun1", #Binding(Debug.Loc(4), "pun1")), ("pun2", #Binding(Debug.Loc(10), "pun2"))],
         ),
       ),
     )
     expect.value(parseString("{a: b}")).toEqual(
-      NonEmpty.one(#Object(T.Loc(3), [("a", #Binding(T.Loc(7), "b"))])),
+      NonEmpty.one(#Object(Debug.Loc(3), [("a", #Binding(Debug.Loc(7), "b"))])),
     )
     expect.value(parseString("{a: b, c: d}")).toEqual(
       NonEmpty.one(
-        #Object(T.Loc(3), [("a", #Binding(T.Loc(7), "b")), ("c", #Binding(T.Loc(13), "d"))]),
+        #Object(
+          Debug.Loc(3),
+          [("a", #Binding(Debug.Loc(7), "b")), ("c", #Binding(Debug.Loc(13), "d"))],
+        ),
       ),
     )
     expect.value(parseString(`{"#illegal": legal, "<%name%>": name}`)).toEqual(
       NonEmpty.one(
         #Object(
-          T.Loc(3),
-          [("#illegal", #Binding(T.Loc(16), "legal")), ("<%name%>", #Binding(T.Loc(35), "name"))],
+          Debug.Loc(3),
+          [
+            ("#illegal", #Binding(Debug.Loc(16), "legal")),
+            ("<%name%>", #Binding(Debug.Loc(35), "name")),
+          ],
         ),
       ),
     )
     expect.value(parseString(`{a: 1.5, b: "b", c: null, d}`)).toEqual(
       NonEmpty.one(
         #Object(
-          T.Loc(3),
+          Debug.Loc(3),
           [
-            ("a", #Float(T.Loc(7), 1.5)),
-            ("b", #String(T.Loc(15), "b")),
-            ("c", #Null(T.Loc(23))),
-            ("d", #Binding(T.Loc(29), "d")),
+            ("a", #Float(Debug.Loc(7), 1.5)),
+            ("b", #String(Debug.Loc(15), "b")),
+            ("c", #Null(Debug.Loc(23))),
+            ("d", #Binding(Debug.Loc(29), "d")),
           ],
         ),
       ),
@@ -177,26 +198,29 @@ describe("Patterns", ({test, _}) => {
     expect.value(result).toEqual(
       NonEmpty.one(
         #Object(
-          T.Loc(4),
+          Debug.Loc(4),
           [
-            ("a", #Binding(T.Loc(11), "bindingA")),
-            ("b", #Float(T.Loc(26), 1.5)),
+            ("a", #Binding(Debug.Loc(11), "bindingA")),
+            ("b", #Float(Debug.Loc(26), 1.5)),
             (
               "c",
               #ArrayWithTailBinding(
-                T.Loc(36),
-                [#String(T.Loc(41), "item1"), #Binding(T.Loc(54), "bindingC")],
-                #Binding(T.Loc(71), "rest"),
+                Debug.Loc(36),
+                [#String(Debug.Loc(41), "item1"), #Binding(Debug.Loc(54), "bindingC")],
+                #Binding(Debug.Loc(71), "rest"),
               ),
             ),
             (
               "d",
               #Object(
-                T.Loc(86),
-                [("<% illegal %>", #Null(T.Loc(109))), ("d", #Binding(T.Loc(122), "bindingD"))],
+                Debug.Loc(86),
+                [
+                  ("<% illegal %>", #Null(Debug.Loc(109))),
+                  ("d", #Binding(Debug.Loc(122), "bindingD")),
+                ],
               ),
             ),
-            ("e", #Binding(T.Loc(141), "e")),
+            ("e", #Binding(Debug.Loc(141), "e")),
           ],
         ),
       ),
@@ -205,7 +229,11 @@ describe("Patterns", ({test, _}) => {
 
   test("Multiple patterns", ({expect, _}) => {
     expect.value(parseString(`true, "a", b`)).toEqual(
-      NonEmpty.fromArrayExn([#True(T.Loc(3)), #String(T.Loc(9), "a"), #Binding(T.Loc(14), "b")]),
+      NonEmpty.fromArrayExn([
+        #True(Debug.Loc(3)),
+        #String(Debug.Loc(9), "a"),
+        #Binding(Debug.Loc(14), "b"),
+      ]),
     )
   })
 })
@@ -227,13 +255,29 @@ f`,
     ).toEqual([
       Text("\na\n", NoTrim),
       Text("\n", NoTrim),
-      Echo({loc: T.Loc(13), nullables: [], default: T.Ast.Echo.Binding(T.Loc(14), "c", Escape)}),
+      Echo({
+        loc: Debug.Loc(13),
+        nullables: [],
+        default: T.Ast.Echo.Binding(Debug.Loc(14), "c", Escape),
+      }),
       Text("\n", NoTrim),
-      Echo({loc: T.Loc(21), nullables: [], default: T.Ast.Echo.String(T.Loc(22), "d", Escape)}),
+      Echo({
+        loc: Debug.Loc(21),
+        nullables: [],
+        default: T.Ast.Echo.String(Debug.Loc(22), "d", Escape),
+      }),
       Text("\n", NoTrim),
-      Echo({loc: T.Loc(31), nullables: [], default: T.Ast.Echo.Float(T.Loc(32), 1.5, Escape)}),
+      Echo({
+        loc: Debug.Loc(31),
+        nullables: [],
+        default: T.Ast.Echo.Float(Debug.Loc(32), 1.5, Escape),
+      }),
       Text("\n", NoTrim),
-      Echo({loc: T.Loc(41), nullables: [], default: T.Ast.Echo.Binding(T.Loc(43), "e", NoEscape)}),
+      Echo({
+        loc: Debug.Loc(41),
+        nullables: [],
+        default: T.Ast.Echo.Binding(Debug.Loc(43), "e", NoEscape),
+      }),
       Text("\nf", NoTrim),
     ])
   })
@@ -310,11 +354,11 @@ f`,
 
 describe("Components", ({test, _}) => {
   test("Components are only compiled once", ({expect, _}) => {
-    let a = Source.string(~name="A", "{% B /%}")
-    let b = Source.string(~name="B", "{% C /%}")
-    let c = Source.string(~name="C", "c")
-    let d = Source.string(~name="D", "{% C /%}")
-    let result = Compile.Components.make([a, b, c, d])
+    let a = Deprecated_Source.string(~name="A", "{% B /%}")
+    let b = Deprecated_Source.string(~name="B", "{% C /%}")
+    let c = Deprecated_Source.string(~name="C", "c")
+    let d = Deprecated_Source.string(~name="D", "{% C /%}")
+    let result = Compile.Deprecated_Components.make([a, b, c, d])
     // This assertion doesn't really check that the test worked.
     // It exists for code coverage.
     expect.value(Result.map(result, _ => true)).toEqual(#ok(true))

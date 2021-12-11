@@ -365,7 +365,7 @@ module Sync = {
   type t = Result.t<string>
   type e = exn
   let return = (. s) => #ok(s)
-  let error = (. s) => #errors([Debug2.customError(s)])
+  let error = (. s) => #errors([Debug.customError(s)])
   let error_internal = (. x) => #errors(x)
   let render = (. q) => render((. q, f) => Queue.forEachU(q, f), q)
   let try_ = (. f, catch) =>
@@ -385,7 +385,7 @@ module Async = {
   type t = Promise.t<Result.t<string>>
   type e = Promise.error
   let return = (. s) => Promise.resolve(#ok(s))
-  let error = (. s) => Promise.resolve(#errors([Debug2.customError(s)]))
+  let error = (. s) => Promise.resolve(#errors([Debug.customError(s)]))
   let error_internal = (. x) => Promise.resolve(#errors(x))
   let render_array = a => Promise.resolve(render((. a, f) => Array.forEachU(a, f), a))
   let render = (. q) => q |> Queue.toArray |> Promise.all |> Promise.then_(render_array)

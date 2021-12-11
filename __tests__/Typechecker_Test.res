@@ -8,37 +8,10 @@
 
 open TestFramework
 open Typechecker
-module Array = Belt.Array
 module T = Acutis_Types
 module MapString = Belt.Map.String
 
-type rec debug = [
-  | #Polymorphic
-  | #Boolean
-  | #Int
-  | #Float
-  | #String
-  | #Echo
-  | #Nullable(debug)
-  | #List(debug)
-  | #Tuple(array<debug>)
-  | #Dict(debug)
-  | #Record(array<(string, debug)>)
-]
-let rec debug = (x): debug =>
-  switch x.contents {
-  | Typescheme.Unknown => #Polymorphic
-  | Boolean => #Boolean
-  | Int => #Int
-  | Float => #Float
-  | String => #String
-  | Echo => #Echo
-  | Nullable(x) => #Nullable(debug(x))
-  | List(x) => #List(debug(x))
-  | Tuple(x) => #Tuple(Array.map(x.contents, debug))
-  | Dict(x, _) => #Dict(debug(x))
-  | Record(x) => #Record(MapString.map(x.contents, debug)->MapString.toArray)
-  }
+let debug = Typescheme.debug
 
 describe("basic", ({test, _}) => {
   test("pattern", ({expect, _}) => {

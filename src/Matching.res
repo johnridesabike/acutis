@@ -51,7 +51,7 @@ and switchcase<'a> = {
 type leaf = {names: MapString.t<int>, exit: int}
 
 type t<'a> = {
-  loc: Utils.loc,
+  loc: Debug.loc,
   tree: tree<leaf>,
   exits: array<'a>,
 }
@@ -424,7 +424,7 @@ let rec fromTPat: 'a. (_, _, _, _, ~name: _, continue<'a>) => tree<'a> = (p, i, 
   | TP.TPat_Any(_) => Wildcard({ids: SetInt.empty, idx: i, key: key, child: k(. b)})
   | TPat_Var(Loc(id), x) | TPat_OptionalVar(Loc(id), x) =>
     if MapString.has(b, x) {
-      raise(Debug.Exit(Debug2.nameBoundMultipleTimes(~binding=x, ~loc=Loc(id), ~name)))
+      raise(Debug.Exit(Debug.nameBoundMultipleTimes(~binding=x, ~loc=Loc(id), ~name)))
     }
     Wildcard({
       ids: SetInt.add(SetInt.empty, id),
@@ -491,7 +491,7 @@ let makeCase = (hd, a, ~exit, ~name) => {
       let b = fromArray(NonEmpty.toArray(ps), ~exit, ~name)
       switch merge(t, b) {
       | Some(t) => aux(t, succ(i))
-      | None => Error(Debug2.unusedCase(ps, ~f=TP.toString))
+      | None => Error(Debug.unusedCase(NonEmpty.toArray(ps), TP.toString))
       }
     }
   aux(hd, 1)
@@ -639,15 +639,15 @@ module ParMatch = {
 
   let toString = l => toArray(l)->Array.joinWith(", ", TP.toString)
 
-  let check = tree => {
+  let check = (tree, ~loc) => {
     switch check(tree) {
     | {flag: Exhaustive, _} => Ok(tree)
-    | {flag: Partial, pats, _} => Error(Debug2.partialMatch(pats, ~f=toString, ~loc=Loc(0)))
+    | {flag: Partial, pats, _} => Error(Debug.partialMatch(pats, toString, ~loc))
     }
   }
 }
 
-let make = (~loc, ~name, cases: NonEmpty.t<Typechecker.Ast.case<_>>) => {
+let make = (~loc, ~name, cases: NonEmpty.t<Typechecker.Ast.case>) => {
   let exitq = Queue.make()
   let hdcase = NonEmpty.hd(cases)
   Queue.add(exitq, hdcase.nodes)
@@ -669,7 +669,7 @@ let make = (~loc, ~name, cases: NonEmpty.t<Typechecker.Ast.case<_>>) => {
           | Ok(tree) => aux(tree, succ(i))
           | Error(_) as e => e
           }
-        | None => Error(Debug2.unusedCase(NonEmpty.hd(pats), ~f=TP.toString))
+        | None => Error(Debug.unusedCase(NonEmpty.hd(pats)->NonEmpty.toArray, TP.toString))
         }
       }
     aux(tree, 1)

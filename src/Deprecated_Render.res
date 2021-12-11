@@ -53,7 +53,7 @@ module Pattern = {
     | #Binding(loc, binding) =>
       switch Js.Dict.get(props, binding) {
       | Some(x) => #ok(x)
-      | None => #errors([Debug.bindingDoesNotExist(~loc, ~binding, ~stack)])
+      | None => #errors([Debug.Deprecated.bindingDoesNotExist(~loc, ~binding, ~stack)])
       }
     | #Tuple(_, a) =>
       a
@@ -78,10 +78,16 @@ module Pattern = {
           ->Result.mapU((. q) => q->Queue.toArray->Array.concat(binding))
         | data =>
           #errors([
-            Debug.bindingTypeMismatch(~data, ~pattern=(pattern :> Ast_Pattern.t), ~binding, ~stack),
+            Debug.Deprecated.bindingTypeMismatch(
+              ~data,
+              ~pattern=(pattern :> Ast_Pattern.t),
+              ~binding,
+              ~stack,
+              module(Ast_Pattern),
+            ),
           ])
         }
-      | None => #errors([Debug.bindingDoesNotExist(~loc=bindLoc, ~binding, ~stack)])
+      | None => #errors([Debug.Deprecated.bindingDoesNotExist(~loc=bindLoc, ~binding, ~stack)])
       }
     }
 
@@ -90,7 +96,7 @@ module Pattern = {
     | "_" => #ok(bindings)
     | identifier =>
       if MapString.has(bindings, identifier) {
-        #errors([Debug.nameBoundMultipleTimes(~loc, ~binding=identifier, ~stack)])
+        #errors([Debug.Deprecated.nameBoundMultipleTimes(~loc, ~binding=identifier, ~stack)])
       } else {
         #ok(MapString.set(bindings, identifier, json))
       }
@@ -143,7 +149,12 @@ module Pattern = {
     | (#Dict(_, patterns), JSONObject(obj)) =>
       testObject(~patterns, ~obj, ~bindings, ~stack)
     | (_, JSONNull) | (#Null(_), _) => NoMatch
-    | (pattern, data) => Result(#errors([Debug.patternTypeMismatch(~pattern, ~data, ~stack)]))
+    | (pattern, data) =>
+      Result(
+        #errors([
+          Debug.Deprecated.patternTypeMismatch(~pattern, ~data, ~stack, module(Ast_Pattern)),
+        ]),
+      )
     }
   and testArray = (~patterns, ~data, ~bindings, ~stack) => {
     let rec aux = (bindings, i) =>
@@ -187,7 +198,7 @@ module Pattern = {
         | (None, None) => Result(#ok(bindings))
         | (Some(pattern), Some(json)) => aux(pattern, json, bindings, succ(i))
         | (None, Some(_)) | (Some(_), None) =>
-          Result(#errors([Debug.patternNumberMismatch(~loc, ~stack)]))
+          Result(#errors([Debug.Deprecated.patternNumberMismatch(~loc, ~stack)]))
         }
       | (Result(#errors(_)) | NoMatch) as e => e
       }
@@ -245,7 +256,7 @@ module Pattern = {
       | NoMatch =>
         switch NonEmpty.get(ne, i) {
         | Some(pattern) => aux(pattern, succ(i))
-        | None => #errors([Debug.noMatchFound(~loc, ~stack)])
+        | None => #errors([Debug.Deprecated.noMatchFound(~loc, ~stack)])
         }
       }
     aux(NonEmpty.hd(ne), 1)
@@ -314,8 +325,8 @@ external dictMerge: (@as(json`{}`) _, ~base: Js.Dict.t<'a>, Js.Dict.t<'a>) => Js
   "assign"
 
 type echoResult<'a> =
-  | ENull(T.loc, string)
-  | ENullChild(T.loc, string)
+  | ENull(Debug.loc, string)
+  | ENullChild(Debug.loc, string)
   | EResult('a)
 
 let echo' = (x, ~props, ~stack, ~children, ~env, ~error) =>
@@ -324,7 +335,8 @@ let echo' = (x, ~props, ~stack, ~children, ~env, ~error) =>
     switch echoBinding(props, binding) {
     | Ok(x) => EResult(env.T.return(. escape(esc, x)))
     | Error(JSONNull) => ENull(loc, binding)
-    | Error(type_) => EResult(error(. [Debug.badEchoType(~binding, ~type_, ~loc, ~stack)]))
+    | Error(type_) =>
+      EResult(error(. [Debug.Deprecated.badEchoType(~binding, ~type_, ~loc, ~stack)]))
     }
   | Child(loc, child) =>
     switch Js.Dict.get(children, child) {
@@ -342,7 +354,8 @@ let echo = (nullables, default, ~props, ~stack, ~children, ~env: T.environment<_
     | None =>
       switch echo'(default, ~props, ~stack, ~children, ~env, ~error) {
       | EResult(x) => x
-      | ENull(loc, binding) => error(. [Debug.badEchoType(~binding, ~type_=JSONNull, ~loc, ~stack)])
+      | ENull(loc, binding) =>
+        error(. [Debug.Deprecated.badEchoType(~binding, ~type_=JSONNull, ~loc, ~stack)])
       | ENullChild(loc, child) => error(. [Debug.childDoesNotExist(~loc, ~child, ~stack)])
       }
     | Some(x) =>
@@ -414,7 +427,10 @@ let rec make = (~nodes, ~props, ~children, ~stack, ~makeEnv, ~error, ~try_, ~red
         switch Json.classify(getBindingOrNull(props, binding)) {
         | JSONArray(a) => Array.forEachWithIndexU(a, f)
         | type_ =>
-          Queue.add(queue, error(. [Debug.badMapArrayType(~binding, ~type_, ~loc=bloc, ~stack)]))
+          Queue.add(
+            queue,
+            error(. [Debug.Deprecated.badMapArrayType(~binding, ~type_, ~loc=bloc, ~stack)]),
+          )
         }
       | #...Ast_Pattern.arr as a =>
         Pattern.toArray(a, ~props, ~stack)
@@ -447,7 +463,10 @@ let rec make = (~nodes, ~props, ~children, ~stack, ~makeEnv, ~error, ~try_, ~red
             )
           }
         | type_ =>
-          Queue.add(queue, error(. [Debug.badMapDictType(~binding, ~type_, ~loc=bloc, ~stack)]))
+          Queue.add(
+            queue,
+            error(. [Debug.Deprecated.badMapDictType(~binding, ~type_, ~loc=bloc, ~stack)]),
+          )
         }
       | #Dict(_, o) =>
         Pattern.arrayToQueueResult(o, ~f=(. (k, v)) =>

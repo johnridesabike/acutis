@@ -45,7 +45,7 @@ let reduceQueue = (. q) => {
 let rec makeEnv = (. stack): t<_> => {
   render: (. {name, nodes}, props, children) =>
     reduceQueue(.
-      Render.make(
+      Deprecated_Render.make(
         ~nodes,
         ~props,
         ~children,
@@ -57,7 +57,7 @@ let rec makeEnv = (. stack): t<_> => {
       ),
     ),
   return: return,
-  error: (. message) => #errors([Debug.customError(message, ~stack)]),
+  error: (. message) => #errors([Debug.Deprecated.customError(message, ~stack)]),
   mapChild: mapChild,
   flatMapChild: flatMapChild,
 }
@@ -102,7 +102,7 @@ let reduceQueue = (. q) => q |> Queue.toArray |> Js.Promise.all |> Js.Promise.th
 let rec makeEnv = (. stack): t<_> => {
   render: (. {name, nodes}, props, children) =>
     reduceQueue(.
-      Render.make(
+      Deprecated_Render.make(
         ~nodes,
         ~props,
         ~children,
@@ -114,7 +114,8 @@ let rec makeEnv = (. stack): t<_> => {
       ),
     ),
   return: returnAsync,
-  error: (. message) => Js.Promise.resolve(#errors([Debug.customError(message, ~stack)])),
+  error: (. message) =>
+    Js.Promise.resolve(#errors([Debug.Deprecated.customError(message, ~stack)])),
   mapChild: mapChildAsync,
   flatMapChild: flatMapChildAsync,
 }

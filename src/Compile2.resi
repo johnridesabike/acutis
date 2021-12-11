@@ -11,21 +11,21 @@ module Ast: {
   module Echo: {
     type escape = Acutis_Types.Ast.Echo.escape = NoEscape | Escape
     type t =
-      | Binding(Utils.loc, string, escape)
-      | Child(Utils.loc, string)
-      | String(Utils.loc, string)
+      | Binding(Debug.loc, string, escape)
+      | Child(Debug.loc, string)
+      | String(Debug.loc, string)
   }
   type rec node<'a> =
     // Trimming is optimized away
     | OText(string)
     // The first echo item that isn't null will be returned.
-    | OEcho({loc: Utils.loc, nullables: array<Echo.t>, default: Echo.t})
+    | OEcho({loc: Debug.loc, nullables: array<Echo.t>, default: Echo.t})
     // Case matrices are optimized into decision trees
-    | OMatch(Utils.loc, NonEmpty.t<Typechecker.Pattern.t>, Matching.t<t<'a>>)
-    | OMapList(Utils.loc, Typechecker.Pattern.t, Matching.t<t<'a>>)
-    | OMapDict(Utils.loc, Typechecker.Pattern.t, Matching.t<t<'a>>)
+    | OMatch(Debug.loc, NonEmpty.t<Typechecker.Pattern.t>, Matching.t<t<'a>>)
+    | OMapList(Debug.loc, Typechecker.Pattern.t, Matching.t<t<'a>>)
+    | OMapDict(Debug.loc, Typechecker.Pattern.t, Matching.t<t<'a>>)
     | OComponent({
-        loc: Utils.loc,
+        loc: Debug.loc,
         props: array<(string, Typechecker.Pattern.t)>,
         children: array<(string, child<'a>)>,
         val: 'a,

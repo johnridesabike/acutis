@@ -11,17 +11,18 @@ module Pattern: {
     | TPat_String(string)
     | TPat_Int(int)
     | TPat_Float(float)
+
   type construct = TPat_List | TPat_Nullable
 
   type rec t =
-    | TPat_Const(Utils.loc, constant)
-    | TPat_Construct(Utils.loc, construct, option<t>)
-    | TPat_Tuple(Utils.loc, array<t>)
-    | TPat_Record(Utils.loc, array<(string, t)>)
-    | TPat_Dict(Utils.loc, array<(string, t)>)
-    | TPat_Var(Utils.loc, string) // any binding
-    | TPat_OptionalVar(Utils.loc, string) // any binding, may not be set
-    | TPat_Any(Utils.loc) // ignored wildcard _
+    | TPat_Const(Debug.loc, constant)
+    | TPat_Construct(Debug.loc, construct, option<t>)
+    | TPat_Tuple(Debug.loc, array<t>)
+    | TPat_Record(Debug.loc, array<(string, t)>)
+    | TPat_Dict(Debug.loc, array<(string, t)>)
+    | TPat_Var(Debug.loc, string) // any binding
+    | TPat_OptionalVar(Debug.loc, string) // any binding, may not be set
+    | TPat_Any(Debug.loc) // ignored wildcard _
 
   let compareConst: (constant, constant) => int
   let eqConst: (constant, constant) => bool
@@ -29,29 +30,24 @@ module Pattern: {
 }
 
 module Ast: {
-  type rec node<'a> =
-    | TText(string, Acutis_Types.Ast.trim)
+  type rec node =
+    | TText(string, Compile.Ast.trim)
     // The first echo item that isn't null will be returned.
-    | TEcho({
-        loc: Utils.loc,
-        nullables: array<Acutis_Types.Ast.Echo.t>,
-        default: Acutis_Types.Ast.Echo.t,
-      })
-    | TMatch(Utils.loc, NonEmpty.t<Pattern.t>, NonEmpty.t<case<'a>>)
-    | TMapList(Utils.loc, Pattern.t, NonEmpty.t<case<'a>>)
-    | TMapDict(Utils.loc, Pattern.t, NonEmpty.t<case<'a>>)
+    | TEcho({loc: Debug.loc, nullables: array<Compile.Ast.Echo.t>, default: Compile.Ast.Echo.t})
+    | TMatch(Debug.loc, NonEmpty.t<Pattern.t>, NonEmpty.t<case>)
+    | TMapList(Debug.loc, Pattern.t, NonEmpty.t<case>)
+    | TMapDict(Debug.loc, Pattern.t, NonEmpty.t<case>)
     | TComponent({
-        loc: Utils.loc,
-        name: string,
+        loc: Debug.loc,
         props: array<(string, Pattern.t)>,
-        children: array<(string, child<'a>)>,
-        f: 'a,
+        children: array<(string, child)>,
+        val: string,
       })
-  and nodes<'a> = array<node<'a>>
-  and case<'a> = {pats: NonEmpty.t<NonEmpty.t<Pattern.t>>, nodes: nodes<'a>}
-  and child<'a> = TChildName(string) | TChildBlock(nodes<'a>)
-  type t<'a> = {
-    nodes: nodes<'a>,
+  and nodes = array<node>
+  and case = {pats: NonEmpty.t<NonEmpty.t<Pattern.t>>, nodes: nodes}
+  and child = TChildName(string) | TChildBlock(nodes)
+  type t = {
+    nodes: nodes,
     prop_types: Typescheme.props,
     child_types: Typescheme.Child.props,
   }
@@ -62,7 +58,7 @@ module Ast: {
 
 type mode = Expand | Narrow
 
-let unify: (Typescheme.t, Typescheme.t, mode, ~loc: Utils.loc, ~name: string) => unit
+let unify: (Typescheme.t, Typescheme.t, mode, ~loc: Debug.loc, ~name: string) => unit
 
 module Context: {
   type t
@@ -80,18 +76,14 @@ module Local: {
 let makeCases: (
   NonEmpty.t<Acutis_Types.Ast.case<unit>>,
   Context.t,
-  ~loc: Utils.loc,
+  ~loc: Debug.loc,
   ~name: string,
-  Utils.Dagmap.t<'a, Source2.t<Ast.t<unit>, 'b>>,
-) => (NonEmpty.t<Typescheme.t>, NonEmpty.t<Ast.case<unit>>)
+  Utils.Dagmap.t<'a, Source2.t<Ast.t, 'b>>,
+) => (NonEmpty.t<Typescheme.t>, NonEmpty.t<Ast.case>)
 
 let makeArray: array<(string, Source2.t<Acutis_Types.Ast.nodes<unit>, 'a>)> => array<(
   string,
-  Source2.t<Ast.t<unit>, 'a>,
+  Source2.t<Ast.t, 'a>,
 )>
 
-let make: (
-  string,
-  Acutis_Types.Ast.nodes<unit>,
-  array<(string, Source2.t<Ast.t<unit>, 'a>)>,
-) => Ast.t<unit>
+let make: (string, Acutis_Types.Ast.nodes<unit>, array<(string, Source2.t<Ast.t, 'a>)>) => Ast.t

@@ -106,17 +106,17 @@ describe("Parser", ({test, _}) => {
   })
 
   test("Components that didn't compile are reported correctly", ({expect, _}) => {
-    let a = Source.string(~name="A", "{{")
-    let b = Source.string(~name="B", "{%")
-    let c = Source.string(~name="c", "ok")
-    let components = Compile.Components.make([a, b, c])
+    let a = Deprecated_Source.string(~name="A", "{{")
+    let b = Deprecated_Source.string(~name="B", "{%")
+    let c = Deprecated_Source.string(~name="c", "ok")
+    let components = Compile.Deprecated_Components.make([a, b, c])
     expect.value(components).toMatchSnapshot()
   })
 
   test("Duplicate components are reported correctly", ({expect, _}) => {
-    let a1 = Source.func(~name="A", (env, _, _) => env.return(. ""))
-    let a2 = Source.func(~name="A", (env, _, _) => env.return(. ""))
-    let components = Compile.Components.make([a1, a2])
+    let a1 = Deprecated_Source.func(~name="A", (env, _, _) => env.return(. ""))
+    let a2 = Deprecated_Source.func(~name="A", (env, _, _) => env.return(. ""))
+    let components = Compile.Deprecated_Components.make([a1, a2])
     expect.value(components).toMatchSnapshot()
   })
 })

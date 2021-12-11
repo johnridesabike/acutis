@@ -11,9 +11,6 @@ module List = Belt.List
 module HashmapString = Belt.HashMap.String
 exception Exit = Debug.Exit
 
-@unboxed
-type loc = Acutis_Types.loc = Loc(int)
-
 module Dagmap = {
   let string_equal = (. a: string, b: string) => a == b
 
@@ -67,7 +64,7 @@ module Dagmap = {
         if List.hasU(g.stack, key, string_equal) {
           raise(Exit(Debug.cyclicDependency(~loc, ~name=key, ~stack=g.stack)))
         } else {
-          raise(Exit(Debug2.missingComponent(~name, ~loc, key)))
+          raise(Exit(Debug.missingComponent(~name, ~loc, key)))
         }
       }
     }

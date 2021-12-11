@@ -52,14 +52,14 @@ module Pattern = {
   type construct = TPat_List | TPat_Nullable
 
   type rec t =
-    | TPat_Const(T.loc, constant)
-    | TPat_Construct(T.loc, construct, option<t>)
-    | TPat_Tuple(T.loc, array<t>)
-    | TPat_Record(T.loc, array<(string, t)>)
-    | TPat_Dict(T.loc, array<(string, t)>)
-    | TPat_Var(T.loc, string) // any binding
-    | TPat_OptionalVar(T.loc, string) // any binding, may not be set
-    | TPat_Any(T.loc) // ignored wildcard _
+    | TPat_Const(Debug.loc, constant)
+    | TPat_Construct(Debug.loc, construct, option<t>)
+    | TPat_Tuple(Debug.loc, array<t>)
+    | TPat_Record(Debug.loc, array<(string, t)>)
+    | TPat_Dict(Debug.loc, array<(string, t)>)
+    | TPat_Var(Debug.loc, string) // any binding
+    | TPat_OptionalVar(Debug.loc, string) // any binding, may not be set
+    | TPat_Any(Debug.loc) // ignored wildcard _
 
   let rec makeList = (a, ty, ~tail) => {
     let r = ref(tail)
@@ -154,25 +154,24 @@ module Pattern = {
 }
 
 module Ast = {
-  type rec node<'a> =
-    | TText(string, T.Ast.trim)
+  type rec node =
+    | TText(string, Compile.Ast.trim)
     // The first echo item that isn't null will be returned.
-    | TEcho({loc: T.loc, nullables: array<T.Ast.Echo.t>, default: T.Ast.Echo.t})
-    | TMatch(T.loc, NonEmpty.t<Pattern.t>, NonEmpty.t<case<'a>>)
-    | TMapList(T.loc, Pattern.t, NonEmpty.t<case<'a>>)
-    | TMapDict(T.loc, Pattern.t, NonEmpty.t<case<'a>>)
+    | TEcho({loc: Debug.loc, nullables: array<Compile.Ast.Echo.t>, default: Compile.Ast.Echo.t})
+    | TMatch(Debug.loc, NonEmpty.t<Pattern.t>, NonEmpty.t<case>)
+    | TMapList(Debug.loc, Pattern.t, NonEmpty.t<case>)
+    | TMapDict(Debug.loc, Pattern.t, NonEmpty.t<case>)
     | TComponent({
-        loc: T.loc,
-        name: string,
+        loc: Debug.loc,
         props: array<(string, Pattern.t)>,
-        children: array<(string, child<'a>)>,
-        f: 'a,
+        children: array<(string, child)>,
+        val: string,
       })
-  and nodes<'a> = array<node<'a>>
-  and case<'a> = {pats: NonEmpty.t<NonEmpty.t<Pattern.t>>, nodes: nodes<'a>}
-  and child<'a> = TChildName(string) | TChildBlock(nodes<'a>)
-  type t<'a> = {
-    nodes: nodes<'a>,
+  and nodes = array<node>
+  and case = {pats: NonEmpty.t<NonEmpty.t<Pattern.t>>, nodes: nodes}
+  and child = TChildName(string) | TChildBlock(nodes)
+  type t = {
+    nodes: nodes,
     prop_types: Typescheme.props,
     child_types: Typescheme.Child.props,
   }
@@ -207,7 +206,7 @@ let rec unify = (tref1, tref2, mode, ~loc, ~name) =>
     | Expand => unifyRecord_expand(t1, t2, ~loc, ~name)
     | Narrow => unifyRecord_narrow(t1, t2, ~loc, ~name)
     }
-  | _ => raise(Exit(Debug2.typeMismatch(tref1, tref2, ~f=Typescheme.toString, ~loc, ~name)))
+  | _ => raise(Exit(Debug.typeMismatch(tref1, tref2, ~loc, ~name, Typescheme.toString)))
   }
 
 @raises(Exit)
@@ -217,7 +216,7 @@ and unifyTuple = (t1, t2, mode, ~loc, ~name) => {
       unify(a, b, mode, ~loc, ~name)
     )
   } else {
-    raise(Exit(Debug2.tupleSizeMismatch(Array.size(t1.contents), Array.size(t2.contents), ~name)))
+    raise(Exit(Debug.tupleSizeMismatch(Array.size(t1.contents), Array.size(t2.contents), ~name)))
   }
 }
 
@@ -248,7 +247,7 @@ and unifyRecord_narrow = (t1, t2, ~loc, ~name) => {
     }
   )
   if MapString.isEmpty(r) {
-    raise(Exit(Debug2.cantNarrowType(t1, t2, ~f=Typescheme.record_toString)))
+    raise(Exit(Debug.cantNarrowType(t1, t2, Typescheme.record_toString)))
   } else {
     t1 := r
     t2 := r
@@ -263,7 +262,7 @@ let unifyRecord_exact = (t1, t2, ~loc, ~comp, ~name) => {
       unify(v1, v2, Expand, ~loc, ~name)
       r
     | (None, Some(v)) =>
-      raise(Exit(Debug2.missingProp(k, v, ~name, ~comp, ~loc, ~f=Typescheme.toString)))
+      raise(Exit(Debug.missingProp(k, v, ~name, ~comp, ~loc, Typescheme.toString)))
     | (Some(_), None) | (None, None) => None
     }
   )
@@ -272,11 +271,11 @@ let unifyRecord_exact = (t1, t2, ~loc, ~comp, ~name) => {
 }
 
 @raises(Exit)
-let unify_child = (a, b) =>
+let unify_child = (a, b, ~loc) =>
   if Typescheme.Child.equal(a, b) {
     ()
   } else {
-    raise(Exit(Debug2.childTypeMismatch(a, b, ~f=Typescheme.Child.toString)))
+    raise(Exit(Debug.childTypeMismatch(a, b, ~loc, Typescheme.Child.toString)))
   }
 
 module Context = {
@@ -309,13 +308,13 @@ module Context = {
     }
 
   @raises(Exit)
-  let updateChild = (ctx, k, v) =>
+  let updateChild = (ctx, k, v, ~loc) =>
     ctx.children :=
       MapString.updateU(ctx.children.contents, k, (. v') =>
         switch v' {
         | None => Some(v)
         | Some(v') as r =>
-          unify_child(v', v)
+          unify_child(v', v, ~loc)
           r
         }
       )
@@ -458,7 +457,7 @@ module Global = {
   let unifyMatchCases2 = (bindingArray: NonEmpty.t<Ast_Pattern.binding>, cases, ctx, ~name) => {
     if NonEmpty.size(bindingArray) != NonEmpty.size(cases) {
       let #Binding(loc, _) = NonEmpty.hd(bindingArray)
-      raise(Exit(Debug2.patternNumberMismatch(~loc, ~name)))
+      raise(Exit(Debug.patternNumberMismatch(~loc, ~name)))
     } else {
       NonEmpty.zipExn(bindingArray, cases)->NonEmpty.map((. (#Binding(loc, k) as b, ty)) => {
         Context.update(ctx, k, ty, ~loc, ~name)
@@ -472,7 +471,7 @@ module Global = {
     let (ty, ty_index) = switch NonEmpty.toArray(tys) {
     | [hd] => (Typescheme.list(hd), int)
     | [hd, tl] => (Typescheme.list(hd), tl)
-    | _ => raise(Exit(Debug2.mapPatternSizeMismatch(~loc, ~name)))
+    | _ => raise(Exit(Debug.mapPatternSizeMismatch(~loc, ~name)))
     }
     unify(ty_index, int, Expand, ~loc, ~name)
     switch pat {
@@ -490,7 +489,7 @@ module Global = {
     let (ty, ty_index) = switch NonEmpty.toArray(tys) {
     | [hd] => (Typescheme.dict(hd), str)
     | [hd, tl] => (Typescheme.dict(hd), tl)
-    | _ => raise(Exit(Debug2.mapPatternSizeMismatch(~loc, ~name)))
+    | _ => raise(Exit(Debug.mapPatternSizeMismatch(~loc, ~name)))
     }
     unify(ty_index, str, Expand, ~loc, ~name)
     switch pat {
@@ -513,16 +512,16 @@ let unifyEchoes = (nullables, default, ctx, ~name) => {
     | None =>
       switch default {
       | T.Ast.Echo.Binding(loc, binding, _) => Context.update(ctx, binding, echo(), ~loc, ~name)
-      | Child(_, child) => Context.updateChild(ctx, child, Child.child())
+      | Child(loc, child) => Context.updateChild(ctx, child, Child.child(), ~loc)
       | String(_, _, _) | Int(_, _, _) | Float(_, _, _) => ()
       }
     | Some(T.Ast.Echo.Binding(loc, binding, _)) =>
       Context.update(ctx, binding, nullable(echo()), ~loc, ~name)
       aux(succ(i))
     | Some(String(_, _, _) | Int(_, _, _) | Float(_, _, _)) =>
-      raise(Exit(Debug2.nonNullableEchoLiteral()))
-    | Some(Child(_, child)) =>
-      Context.updateChild(ctx, child, Child.nullable())
+      raise(Exit(Debug.nonNullableEchoLiteral()))
+    | Some(Child(loc, child)) =>
+      Context.updateChild(ctx, child, Child.nullable(), ~loc)
       aux(succ(i))
     }
   }
@@ -604,7 +603,7 @@ and makeNodes = (nodes, ctx, ~name, g) =>
           | (None, Some({contents: Child})) => assert false // error message goes here
           | (Some(_), None) => assert false // error message goes here
           | (Some(ChildName(c)), Some({contents: ty})) =>
-            Context.updateChild(ctx, c, ref(ty))
+            Context.updateChild(ctx, c, ref(ty), ~loc)
             Some(Ast.TChildName(c))
           | (Some(ChildBlock(nodes)), Some(_)) =>
             Some(TChildBlock(makeNodes(nodes, ctx, ~name=cname, g)))
@@ -612,7 +611,7 @@ and makeNodes = (nodes, ctx, ~name, g) =>
         )
         ->MapString.toArray
       let props = Pattern.make_record(props, t.contents, ~loc)->MapString.toArray
-      TComponent({loc: loc, props: props, children: children, name: cname, f: ()})
+      TComponent({loc: loc, props: props, children: children, val: cname})
     | Match(loc, bindingArray, cases) =>
       // Add a default wildcard for patterns without indices
       let (caseTypes, cases) = makeCases(cases, ctx, ~loc, ~name, g)

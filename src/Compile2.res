@@ -54,7 +54,7 @@ let escape = (esc, str) =>
   }
 
 module Ast = {
-  type loc = T.loc
+  type loc = Debug.loc
   module Echo = {
     type escape = T.Ast.Echo.escape = NoEscape | Escape
     type t =
@@ -106,7 +106,7 @@ module Ast = {
       | TMatch(loc, pats, cases) =>
         switch Matching.make(cases, ~loc, ~name) {
         | Ok(tree) =>
-          switch Matching.ParMatch.check(tree.tree) {
+          switch Matching.ParMatch.check(tree.tree, ~loc) {
           | Ok(_) => ()
           | Error(e) => raise(Exit(e))
           }
@@ -117,7 +117,7 @@ module Ast = {
       | TMapList(loc, pat, cases) =>
         switch Matching.make(cases, ~loc, ~name) {
         | Ok(tree) =>
-          switch Matching.ParMatch.check(tree.tree) {
+          switch Matching.ParMatch.check(tree.tree, ~loc) {
           | Ok(_) => ()
           | Error(e) => raise(Exit(e))
           }
@@ -128,7 +128,7 @@ module Ast = {
       | TMapDict(loc, pat, cases) =>
         switch Matching.make(cases, ~loc, ~name) {
         | Ok(tree) =>
-          switch Matching.ParMatch.check(tree.tree) {
+          switch Matching.ParMatch.check(tree.tree, ~loc) {
           | Ok(_) => ()
           | Error(e) => raise(Exit(e))
           }
@@ -136,23 +136,18 @@ module Ast = {
           OMapDict(loc, pat, tree)
         | Error(e) => raise(Exit(e))
         }
-      | TComponent({loc, name, props, children, f: ()}) =>
+      | TComponent({loc, val, props, children}) =>
         let children = Array.mapU(children, (. (k, v)) =>
           switch v {
           | TChildName(s) => (k, OChildName(s))
           | TChildBlock(n) => (k, OChildBlock(nodes(n, ~name)))
           }
         )
-        OComponent({
-          loc: loc,
-          val: name,
-          props: props,
-          children: children,
-        })
+        OComponent({loc: loc, val: val, props: props, children: children})
       }
     )
 
-  let make = (~name, ast: Typechecker.Ast.t<_>) => nodes(ast.nodes, ~name)
+  let make = (~name, ast: Typechecker.Ast.t) => nodes(ast.nodes, ~name)
 }
 
 type t<'a> = {
@@ -190,7 +185,7 @@ let compile = (~name, src, components) =>
   }
 
 module Components = {
-  type t<'a> = array<(string, Source2.t<Typechecker.Ast.t<unit>, Source2.fnU<'a>>)>
+  type t<'a> = array<(string, Source2.t<Typechecker.Ast.t, Source2.fnU<'a>>)>
 
   let empty = () => []
 

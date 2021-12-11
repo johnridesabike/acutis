@@ -6,14 +6,118 @@
   file, You can obtain one at http://mozilla.org/MPL/2.0/.
 */
 
-module T = Acutis_Types
-
 module Int = Belt.Int
 module Float = Belt.Float
 module Queue = Belt.MutableQueue
-module Token = T.Token
 
 exception Exit = Debug.Exit
+
+module Token = {
+  type t =
+    // Static elements
+    | Text(Debug.loc, string)
+    | Comment(Debug.loc, string)
+    // JSON values
+    | String(Debug.loc, string)
+    | Int(Debug.loc, int)
+    | Float(Debug.loc, float)
+    | True(Debug.loc) // a reserved identifier
+    | False(Debug.loc) // a reserved identifier
+    | Null(Debug.loc) // a reserved identifier
+    // JSON syntax
+    | Comma(Debug.loc)
+    | Colon(Debug.loc)
+    | OpenBracket(Debug.loc)
+    | CloseBracket(Debug.loc)
+    | OpenBrace(Debug.loc)
+    | CloseBrace(Debug.loc)
+    | OpenParen(Debug.loc)
+    | CloseParen(Debug.loc)
+    | OpenPointyBracket(Debug.loc)
+    | ClosePoointyBracket(Debug.loc)
+    | Spread(Debug.loc)
+    // Component syntax
+    | ComponentName(Debug.loc, string)
+    | Slash(Debug.loc)
+    | Block(Debug.loc)
+    | Equals(Debug.loc)
+    // Dynamic content
+    | Identifier(Debug.loc, string)
+    | Tilde(Debug.loc)
+    | Question(Debug.loc)
+    | Ampersand(Debug.loc)
+    | Bang(Debug.loc)
+    | Echo(Debug.loc)
+    | EndOfFile(Debug.loc)
+
+  let toString = x =>
+    switch x {
+    | Text(_, x) => "[text]: " ++ x
+    | String(_, x) => `"${x}"`
+    | Int(_, x) => Belt.Int.toString(x)
+    | Float(_, x) => Belt.Float.toString(x)
+    | True(_) => "true"
+    | False(_) => "false"
+    | Null(_) => "null"
+    | Identifier(_, x) => x
+    | ComponentName(_, x) => x
+    | Comment(_, x) => `{*${x}*}`
+    | Comma(_) => ","
+    | Colon(_) => ":"
+    | Slash(_) => "/"
+    | OpenBracket(_) => "["
+    | CloseBracket(_) => "]"
+    | OpenBrace(_) => "{"
+    | CloseBrace(_) => "}"
+    | OpenParen(_) => "("
+    | CloseParen(_) => ")"
+    | OpenPointyBracket(_) => "<"
+    | ClosePoointyBracket(_) => ">"
+    | Spread(_) => "..."
+    | Block(_) => "#"
+    | Equals(_) => "="
+    | Tilde(_) => "~"
+    | Question(_) => "?"
+    | Ampersand(_) => "&"
+    | Bang(_) => "!"
+    | Echo(_) => "{{"
+    | EndOfFile(_) => "[end of file]"
+    }
+
+  let toLocation = x =>
+    switch x {
+    | Text(x, _)
+    | String(x, _)
+    | Int(x, _)
+    | Float(x, _)
+    | Identifier(x, _)
+    | True(x)
+    | False(x)
+    | Null(x)
+    | ComponentName(x, _)
+    | Comment(x, _)
+    | Comma(x)
+    | Colon(x)
+    | Slash(x)
+    | OpenBracket(x)
+    | CloseBracket(x)
+    | OpenBrace(x)
+    | CloseBrace(x)
+    | OpenParen(x)
+    | CloseParen(x)
+    | OpenPointyBracket(x)
+    | ClosePoointyBracket(x)
+    | Spread(x)
+    | Block(x)
+    | Equals(x)
+    | Tilde(x)
+    | Question(x)
+    | Ampersand(x)
+    | Echo(x)
+    | Bang(x)
+    | EndOfFile(x) => x
+    }
+}
 
 type source = {
   str: string,
@@ -37,7 +141,7 @@ let rec readSubstring = (str, source, ~until) =>
     readSubstring(str ++ readChar(source), source, ~until)
   }
 
-let loc = x => T.Loc(x.position)
+let loc = x => Debug.Loc(x.position)
 
 let endOfInt = (. c) =>
   switch c {
@@ -126,7 +230,7 @@ let readJsonString = (source, ~name) => {
 }
 
 @raises(Exit)
-let readNumber = (c, source, ~loc, ~name): T.Token.t => {
+let readNumber = (c, source, ~loc, ~name): Token.t => {
   let intStr = readSubstring(c, source, ~until=endOfInt)
   switch peekChar(source) {
   | "." =>

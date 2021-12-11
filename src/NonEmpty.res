@@ -65,5 +65,3 @@ let zipByExn = (a, b, f) => {
 }
 
 let reduce = Array.reduceU
-
-let joinWith = Array.joinWithU

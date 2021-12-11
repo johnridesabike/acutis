@@ -6,9 +6,9 @@
   file, You can obtain one at http://mozilla.org/MPL/2.0/.
 */
 
-const { Compile, Environment, Result, Source } = require("../");
+const { Compile, Deprecated_Environment, Result, Source } = require("../");
 
-let emptyComponents = Compile.Components.empty();
+let emptyComponents = Compile.Deprecated_Components.empty();
 
 describe("The JS interface works as expected", () => {
   test("Bad input is reported correctly", () => {
@@ -38,7 +38,7 @@ describe("The JS interface works as expected", () => {
 describe("Async templates", () => {
   test("Async env", async () => {
     const X = Compile.make(Source.string("X", "{{ name }}"), emptyComponents);
-    const env = Environment.async;
+    const env = Deprecated_Environment.async;
     const result = Result.map(X, (X) => X(env, { name: "Carlo" }, {}));
     const x = await Result.getExn(result);
     expect(x).toEqual({ NAME: "ok", VAL: "Carlo" });
@@ -50,8 +50,8 @@ describe("Async templates", () => {
       "{{ name }}",
       (ast) => async (env, props, children) => env.render(ast, props, children)
     );
-    const comps = Result.getExn(Compile.Components.make([Y]));
-    const env = Environment.async;
+    const comps = Result.getExn(Compile.Deprecated_Components.make([Y]));
+    const env = Deprecated_Environment.async;
     const X = Result.getExn(
       Compile.make(Source.string("X", "{% Y name /%}"), comps)
     );
@@ -65,8 +65,8 @@ describe("Async templates", () => {
       "{{ name }}",
       (ast) => async (env, props, children) => env.render(ast, props, children)
     );
-    const comps2 = Result.getExn(Compile.Components.make([A]));
-    const env2 = Environment.async;
+    const comps2 = Result.getExn(Compile.Deprecated_Components.make([A]));
+    const env2 = Deprecated_Environment.async;
     const B = Result.getExn(
       Compile.make(Source.string("B", "{% A /%}"), comps2)
     );
@@ -84,8 +84,8 @@ describe("Async templates", () => {
     const D = Source.func("D", async (_env, _props, _children) => {
       throw new Error("fail.");
     });
-    const comps = Result.getExn(Compile.Components.make([D]));
-    const env4 = Environment.async;
+    const comps = Result.getExn(Compile.Deprecated_Components.make([D]));
+    const env4 = Deprecated_Environment.async;
     const E = Result.getExn(
       Compile.make(Source.string("E", "{% D /%}"), comps)
     );
@@ -106,8 +106,8 @@ describe("Async templates", () => {
 describe("Async helper functions", () => {
   test("env.return", async () => {
     const X = Source.func("X", (env, _props, _children) => env.return("a"));
-    const comps = Result.getExn(Compile.Components.make([X]));
-    const env = Environment.async;
+    const comps = Result.getExn(Compile.Deprecated_Components.make([X]));
+    const env = Deprecated_Environment.async;
     const Template = Result.getExn(
       Compile.make(Source.string("", "{% X / %}"), comps)
     );
@@ -116,8 +116,8 @@ describe("Async helper functions", () => {
 
   test("env.error", async () => {
     const X = Source.func("X", (env, _props, _children) => env.error("e"));
-    const comps = Result.getExn(Compile.Components.make([X]));
-    const env = Environment.async;
+    const comps = Result.getExn(Compile.Deprecated_Components.make([X]));
+    const env = Deprecated_Environment.async;
     const Template = Result.getExn(
       Compile.make(Source.string("Template", "{% X / %}"), comps)
     );
@@ -137,8 +137,8 @@ describe("Async helper functions", () => {
     const X = Source.func("X", (env, _props, { Children }) =>
       env.mapChild(Children, (x) => x.toUpperCase())
     );
-    const comps = Result.getExn(Compile.Components.make([X]));
-    const env = Environment.async;
+    const comps = Result.getExn(Compile.Deprecated_Components.make([X]));
+    const env = Deprecated_Environment.async;
     const Template = Result.getExn(
       Compile.make(Source.string("", "{% X ~%} a {%~ /X %}"), comps)
     );
@@ -169,8 +169,8 @@ describe("Async helper functions", () => {
     const X = Source.func("X", (env, _props, { Children }) =>
       env.flatMapChild(Children, (x) => env.return(x.toUpperCase()))
     );
-    const comps = Result.getExn(Compile.Components.make([X]));
-    const env = Environment.async;
+    const comps = Result.getExn(Compile.Deprecated_Components.make([X]));
+    const env = Deprecated_Environment.async;
     const Template = Result.getExn(
       Compile.make(Source.string("", "{% X %} a {% /X %}"), comps)
     );

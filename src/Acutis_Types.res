@@ -9,136 +9,25 @@
 // These are types shared across modules. Keeping them here avoids cyclic
 // dependency errors.
 
-// This is a placeholder type until we add more sophisticated error reporting.
-@unboxed
-type loc = Loc(int)
-
-module Token = {
-  type t =
-    // Static elements
-    | Text(loc, string)
-    | Comment(loc, string)
-    // JSON values
-    | String(loc, string)
-    | Int(loc, int)
-    | Float(loc, float)
-    | True(loc) // a reserved identifier
-    | False(loc) // a reserved identifier
-    | Null(loc) // a reserved identifier
-    // JSON syntax
-    | Comma(loc)
-    | Colon(loc)
-    | OpenBracket(loc)
-    | CloseBracket(loc)
-    | OpenBrace(loc)
-    | CloseBrace(loc)
-    | OpenParen(loc)
-    | CloseParen(loc)
-    | OpenPointyBracket(loc)
-    | ClosePoointyBracket(loc)
-    | Spread(loc)
-    // Component syntax
-    | ComponentName(loc, string)
-    | Slash(loc)
-    | Block(loc)
-    | Equals(loc)
-    // Dynamic content
-    | Identifier(loc, string)
-    | Tilde(loc)
-    | Question(loc)
-    | Ampersand(loc)
-    | Bang(loc)
-    | Echo(loc)
-    | EndOfFile(loc)
-
-  let toString = x =>
-    switch x {
-    | Text(_, x) => "[text]: " ++ x
-    | String(_, x) => `"${x}"`
-    | Int(_, x) => Belt.Int.toString(x)
-    | Float(_, x) => Belt.Float.toString(x)
-    | True(_) => "true"
-    | False(_) => "false"
-    | Null(_) => "null"
-    | Identifier(_, x) => x
-    | ComponentName(_, x) => x
-    | Comment(_, x) => `{*${x}*}`
-    | Comma(_) => ","
-    | Colon(_) => ":"
-    | Slash(_) => "/"
-    | OpenBracket(_) => "["
-    | CloseBracket(_) => "]"
-    | OpenBrace(_) => "{"
-    | CloseBrace(_) => "}"
-    | OpenParen(_) => "("
-    | CloseParen(_) => ")"
-    | OpenPointyBracket(_) => "<"
-    | ClosePoointyBracket(_) => ">"
-    | Spread(_) => "..."
-    | Block(_) => "#"
-    | Equals(_) => "="
-    | Tilde(_) => "~"
-    | Question(_) => "?"
-    | Ampersand(_) => "&"
-    | Bang(_) => "!"
-    | Echo(_) => "{{"
-    | EndOfFile(_) => "[end of file]"
-    }
-
-  let toLocation = x =>
-    switch x {
-    | Text(x, _)
-    | String(x, _)
-    | Int(x, _)
-    | Float(x, _)
-    | Identifier(x, _)
-    | True(x)
-    | False(x)
-    | Null(x)
-    | ComponentName(x, _)
-    | Comment(x, _)
-    | Comma(x)
-    | Colon(x)
-    | Slash(x)
-    | OpenBracket(x)
-    | CloseBracket(x)
-    | OpenBrace(x)
-    | CloseBrace(x)
-    | OpenParen(x)
-    | CloseParen(x)
-    | OpenPointyBracket(x)
-    | ClosePoointyBracket(x)
-    | Spread(x)
-    | Block(x)
-    | Equals(x)
-    | Tilde(x)
-    | Question(x)
-    | Ampersand(x)
-    | Echo(x)
-    | Bang(x)
-    | EndOfFile(x) => x
-    }
-}
-
 module Ast_Pattern = {
-  type binding = [#Binding(loc, string)]
+  type binding = [#Binding(Debug.loc, string)]
   type arr_<'t> = [
-    | #Array(loc, array<'t>)
-    | #ArrayWithTailBinding(loc, array<'t>, binding)
+    | #Array(Debug.loc, array<'t>)
+    | #ArrayWithTailBinding(Debug.loc, array<'t>, binding)
   ]
-  type dict_<'t> = [#Dict(loc, array<(string, 't)>)]
+  type dict_<'t> = [#Dict(Debug.loc, array<(string, 't)>)]
   type rec t = [
-    | #Null(loc)
-    | #Some(loc, t)
-    | #False(loc)
-    | #True(loc)
-    | #String(loc, string)
-    | #Int(loc, int)
-    | #Float(loc, float)
-    | #Tuple(loc, array<t>)
+    | #Null(Debug.loc)
+    | #Some(Debug.loc, t)
+    | #False(Debug.loc)
+    | #True(Debug.loc)
+    | #String(Debug.loc, string)
+    | #Int(Debug.loc, int)
+    | #Float(Debug.loc, float)
+    | #Tuple(Debug.loc, array<t>)
     | arr_<t>
     | dict_<t>
-    | #Object(loc, array<(string, t)>)
+    | #Object(Debug.loc, array<(string, t)>)
     | binding
   ]
   type arr = arr_<t>
@@ -181,11 +70,11 @@ module Ast = {
   module Echo = {
     type escape = NoEscape | Escape
     type t =
-      | Binding(loc, string, escape)
-      | Child(loc, string)
-      | String(loc, string, escape)
-      | Int(loc, int, escape)
-      | Float(loc, float, escape)
+      | Binding(Debug.loc, string, escape)
+      | Child(Debug.loc, string)
+      | String(Debug.loc, string, escape)
+      | Int(Debug.loc, int, escape)
+      | Float(Debug.loc, float, escape)
   }
   type trim = TrimStart | TrimEnd | TrimBoth | NoTrim
   type mapArrayPattern = [Ast_Pattern.binding | Ast_Pattern.arr]
@@ -193,12 +82,12 @@ module Ast = {
   type rec node<'a> =
     | Text(string, trim)
     // The first echo item that isn't null will be returned.
-    | Echo({loc: loc, nullables: array<Echo.t>, default: Echo.t})
-    | Match(loc, NonEmpty.t<Ast_Pattern.binding>, NonEmpty.t<case<'a>>)
-    | MapArray(loc, mapArrayPattern, NonEmpty.t<case<'a>>)
-    | MapDict(loc, mapDictPattern, NonEmpty.t<case<'a>>)
+    | Echo({loc: Debug.loc, nullables: array<Echo.t>, default: Echo.t})
+    | Match(Debug.loc, NonEmpty.t<Ast_Pattern.binding>, NonEmpty.t<case<'a>>)
+    | MapArray(Debug.loc, mapArrayPattern, NonEmpty.t<case<'a>>)
+    | MapDict(Debug.loc, mapDictPattern, NonEmpty.t<case<'a>>)
     | Component({
-        loc: loc,
+        loc: Debug.loc,
         name: string,
         props: array<(string, Ast_Pattern.t)>,
         children: array<(string, child<'a>)>,

@@ -15,16 +15,63 @@
 module T = Acutis_Types
 
 module Array = Belt.Array
-module Ast = T.Ast
-module Ast_Pattern = T.Ast_Pattern
 module List = Belt.List
 module MutMapString = Belt.MutableMap.String
 module Queue = Belt.MutableQueue
-module Token = T.Token
+module Token = Lexer.Token
 
 exception Exit = Debug.Exit
 
-type t<'a> = T.template<'a>
+module Ast_Pattern = T.Ast_Pattern
+
+module Ast = {
+  module Echo = {
+    type escape = T.Ast.Echo.escape = NoEscape | Escape
+    type t = T.Ast.Echo.t =
+      | Binding(Debug.loc, string, escape)
+      | Child(Debug.loc, string)
+      | String(Debug.loc, string, escape)
+      | Int(Debug.loc, int, escape)
+      | Float(Debug.loc, float, escape)
+  }
+  type trim = T.Ast.trim = TrimStart | TrimEnd | TrimBoth | NoTrim
+  type mapArrayPattern = [Ast_Pattern.binding | Ast_Pattern.arr]
+  type mapDictPattern = [Ast_Pattern.binding | Ast_Pattern.dict]
+  type rec node<'a> = T.Ast.node<'a> =
+    | Text(string, trim)
+    // The first echo item that isn't null will be returned.
+    | Echo({loc: Debug.loc, nullables: array<Echo.t>, default: Echo.t})
+    | Match(Debug.loc, NonEmpty.t<Ast_Pattern.binding>, NonEmpty.t<case<'a>>)
+    | MapArray(Debug.loc, mapArrayPattern, NonEmpty.t<case<'a>>)
+    | MapDict(Debug.loc, mapDictPattern, NonEmpty.t<case<'a>>)
+    | Component({
+        loc: Debug.loc,
+        name: string,
+        props: array<(string, Ast_Pattern.t)>,
+        children: array<(string, child<'a>)>,
+        f: 'a,
+      })
+  and nodes<'a> = array<node<'a>>
+  and case<'a> = T.Ast.case<'a> = {
+    patterns: NonEmpty.t<NonEmpty.t<Ast_Pattern.t>>,
+    nodes: nodes<'a>,
+  }
+  and child<'a> = T.Ast.child<'a> = ChildName(string) | ChildBlock(nodes<'a>)
+  type t<'a> = T.Ast.t<'a> = {nodes: nodes<'a>, name: string}
+}
+
+type rec ast<'a> = Ast.t<templateU<'a>>
+and template<'a> = (environment<'a>, Js.Dict.t<Js.Json.t>, Js.Dict.t<'a>) => 'a
+and templateU<'a> = (. environment<'a>, Js.Dict.t<Js.Json.t>, Js.Dict.t<'a>) => 'a
+and environment<'a> = T.environment<'a> = {
+  render: (. ast<'a>, Js.Dict.t<Js.Json.t>, Js.Dict.t<'a>) => 'a,
+  return: (. string) => 'a,
+  error: (. string) => 'a,
+  mapChild: (. 'a, string => string) => 'a,
+  flatMapChild: (. 'a, string => 'a) => 'a,
+}
+
+type t<'a> = template<'a>
 
 module Pattern = {
   @raises(Exit)
@@ -58,7 +105,7 @@ module Pattern = {
       | t => parseDict(loc, t, tokens)
       }
     | Bang(loc) => #Some(loc, parseNode(Lexer.popExn(tokens), tokens))
-    | t => raise(Exit(Debug.unexpectedToken(t, ~name=Lexer.name(tokens))))
+    | t => raise(Exit(Debug.unexpectedToken(t, module(Token), ~name=Lexer.name(tokens))))
     }
   @raises(Exit)
   and parseArray = (loc, t, tokens) => {
@@ -77,15 +124,15 @@ module Pattern = {
             switch Lexer.popExn(tokens) {
             | CloseBracket(_) =>
               #ArrayWithTailBinding(loc, Queue.toArray(q), #Binding(bindingLoc, tailBinding))
-            | t => raise(Exit(Debug.unexpectedToken(t, ~name=Lexer.name(tokens))))
+            | t => raise(Exit(Debug.unexpectedToken(t, module(Token), ~name=Lexer.name(tokens))))
             }
-          | t => raise(Exit(Debug.unexpectedToken(t, ~name=Lexer.name(tokens))))
+          | t => raise(Exit(Debug.unexpectedToken(t, module(Token), ~name=Lexer.name(tokens))))
           }
         | t =>
           Queue.add(q, parseNode(t, tokens))
           aux()
         }
-      | t => raise(Exit(Debug.unexpectedToken(t, ~name=Lexer.name(tokens))))
+      | t => raise(Exit(Debug.unexpectedToken(t, module(Token), ~name=Lexer.name(tokens))))
       }
     aux()
   }
@@ -101,7 +148,7 @@ module Pattern = {
       | Comma(_) =>
         Queue.add(q, parseNode(Lexer.popExn(tokens), tokens))
         aux()
-      | t => raise(Exit(Debug.unexpectedToken(t, ~name=Lexer.name(tokens))))
+      | t => raise(Exit(Debug.unexpectedToken(t, module(Token), ~name=Lexer.name(tokens))))
       }
     aux()
   }
@@ -117,7 +164,7 @@ module Pattern = {
       | Comma(_) =>
         Queue.add(q, parseObjectKeyValue(Lexer.popExn(tokens), tokens))
         aux()
-      | t => raise(Exit(Debug.unexpectedToken(t, ~name=Lexer.name(tokens))))
+      | t => raise(Exit(Debug.unexpectedToken(t, module(Token), ~name=Lexer.name(tokens))))
       }
     aux()
   }
@@ -133,7 +180,7 @@ module Pattern = {
       | Comma(_) =>
         Queue.add(q, parseObjectKeyValue(Lexer.popExn(tokens), tokens))
         aux()
-      | t => raise(Exit(Debug.unexpectedToken(t, ~name=Lexer.name(tokens))))
+      | t => raise(Exit(Debug.unexpectedToken(t, module(Token), ~name=Lexer.name(tokens))))
       }
     aux()
   }
@@ -143,7 +190,7 @@ module Pattern = {
     | String(_, key) =>
       switch Lexer.popExn(tokens) {
       | Colon(_) => (key, parseNode(Lexer.popExn(tokens), tokens))
-      | t => raise(Exit(Debug.unexpectedToken(t, ~name=Lexer.name(tokens))))
+      | t => raise(Exit(Debug.unexpectedToken(t, module(Token), ~name=Lexer.name(tokens))))
       }
     | Identifier(loc, key) =>
       switch Lexer.peekExn(tokens) {
@@ -152,7 +199,7 @@ module Pattern = {
         (key, parseNode(Lexer.popExn(tokens), tokens))
       | _ => (key, #Binding(loc, key))
       }
-    | t => raise(Exit(Debug.unexpectedToken(t, ~name=Lexer.name(tokens))))
+    | t => raise(Exit(Debug.unexpectedToken(t, module(Token), ~name=Lexer.name(tokens))))
     }
 
   @raises(Exit)
@@ -183,7 +230,7 @@ type parseData<'a> = {
 let parseBindingName = tokens =>
   switch Lexer.popExn(tokens) {
   | Identifier(loc, x) => #Binding(loc, x)
-  | t => raise(Exit(Debug.unexpectedToken(t, ~name=Lexer.name(tokens))))
+  | t => raise(Exit(Debug.unexpectedToken(t, module(Token), ~name=Lexer.name(tokens))))
   }
 
 @raises(Exit)
@@ -210,7 +257,7 @@ let parseEchoAux = (t: Token.t, tokens, esc): Ast.Echo.t =>
   | String(loc, x) => String(loc, x, esc)
   | Int(loc, x) => Int(loc, x, esc)
   | Float(loc, x) => Float(loc, x, esc)
-  | t => raise(Exit(Debug.unexpectedToken(t, ~name=Lexer.name(tokens))))
+  | t => raise(Exit(Debug.unexpectedToken(t, module(Token), ~name=Lexer.name(tokens))))
   }
 
 @raises(Exit)
@@ -233,7 +280,7 @@ let parseEchoes = tokens => {
     | Question(_) =>
       Queue.add(q, last)
       aux(parseEcho(tokens))
-    | t => raise(Exit(Debug.unexpectedToken(t, ~name=Lexer.name(tokens))))
+    | t => raise(Exit(Debug.unexpectedToken(t, module(Token), ~name=Lexer.name(tokens))))
     }
   aux(head)
 }
@@ -284,7 +331,7 @@ let rec parse = (t, tokens, ~until) => {
           Queue.add(q, Text(x, TrimStart))
           aux(t)
         }
-      | t => raise(Exit(Debug.unexpectedToken(t, ~name=Lexer.name(tokens))))
+      | t => raise(Exit(Debug.unexpectedToken(t, module(Token), ~name=Lexer.name(tokens))))
       }
     | Comment(_) => aux(Lexer.popExn(tokens))
     | Identifier(loc, "match") =>
@@ -299,7 +346,8 @@ let rec parse = (t, tokens, ~until) => {
         Queue.add(q, MapArray(loc, pattern, withs))
         aux(Lexer.popExn(tokens))
       // Using #...Ast_Pattern.t is slightly more performant than _
-      | #...Ast_Pattern.t as x => raise(Exit(Debug.badMapArrayPattern(x, ~name=Lexer.name(tokens))))
+      | #...Ast_Pattern.t as x =>
+        raise(Exit(Debug.badMapArrayPattern(x, module(Ast_Pattern), ~name=Lexer.name(tokens))))
       }
     | Identifier(loc, "map_dict") =>
       switch Pattern.parseNode(Lexer.popExn(tokens), tokens) {
@@ -308,7 +356,8 @@ let rec parse = (t, tokens, ~until) => {
         Queue.add(q, MapDict(loc, pattern, withs))
         aux(Lexer.popExn(tokens))
       // Using #...Ast_Pattern.t is slightly more performant than _
-      | #...Ast_Pattern.t as x => raise(Exit(Debug.badMapDictPattern(x, ~name=Lexer.name(tokens))))
+      | #...Ast_Pattern.t as x =>
+        raise(Exit(Debug.badMapDictPattern(x, module(Ast_Pattern), ~name=Lexer.name(tokens))))
       }
     | Echo(loc) =>
       let {nextToken, data: (nullables, default)} = parseEchoes(tokens)
@@ -317,7 +366,7 @@ let rec parse = (t, tokens, ~until) => {
     | ComponentName(loc, name) =>
       Queue.add(q, parseComponent(loc, name, tokens))
       aux(Lexer.popExn(tokens))
-    | t => raise(Exit(Debug.unexpectedToken(t, ~name=Lexer.name(tokens))))
+    | t => raise(Exit(Debug.unexpectedToken(t, module(Token), ~name=Lexer.name(tokens))))
     }
   aux(t)
 }
@@ -351,7 +400,7 @@ and parseWithBlocks = (tokens, ~block) =>
       | Slash(_) =>
         switch Lexer.popExn(tokens) {
         | Identifier(_, x) if x == block => NonEmpty.fromQueue(head, q)
-        | t => raise(Exit(Debug.unexpectedToken(t, ~name=Lexer.name(tokens))))
+        | t => raise(Exit(Debug.unexpectedToken(t, module(Token), ~name=Lexer.name(tokens))))
         }
       /* This is guaranteed to be a "with" clause. */
       | _with =>
@@ -360,7 +409,7 @@ and parseWithBlocks = (tokens, ~block) =>
         aux(nextToken)
       }
     aux(nextToken)
-  | t => raise(Exit(Debug.unexpectedToken(t, ~name=Lexer.name(tokens))))
+  | t => raise(Exit(Debug.unexpectedToken(t, module(Token), ~name=Lexer.name(tokens))))
   }
 @raises(Exit)
 and parseComponent = (loc, name, tokens) => {
@@ -386,7 +435,7 @@ and parseComponent = (loc, name, tokens) => {
         children: Queue.toArray(children),
         f: (),
       })
-    | t => raise(Exit(Debug.unexpectedToken(t, ~name=Lexer.name(tokens))))
+    | t => raise(Exit(Debug.unexpectedToken(t, module(Token), ~name=Lexer.name(tokens))))
     }
   }
 }
@@ -418,12 +467,12 @@ and parseProps = tokens => {
           | Block(_) =>
             Queue.add(children, (name, Ast.ChildBlock(child)))
             aux(Lexer.popExn(tokens))
-          | t => raise(Exit(Debug.unexpectedToken(t, ~name=Lexer.name(tokens))))
+          | t => raise(Exit(Debug.unexpectedToken(t, module(Token), ~name=Lexer.name(tokens))))
           }
         | ComponentName(_, name') =>
           Queue.add(children, (name, ChildName(name')))
           aux(Lexer.popExn(tokens))
-        | t => raise(Exit(Debug.unexpectedToken(t, ~name=Lexer.name(tokens))))
+        | t => raise(Exit(Debug.unexpectedToken(t, module(Token), ~name=Lexer.name(tokens))))
         }
       | t =>
         Queue.add(children, (name, ChildName(name)))
@@ -446,7 +495,7 @@ let makeAstInternalExn = (~name, source) => {
 type notlinked<'a> =
   | Ast({name: string, nodes: Ast.nodes<unit>})
   | Func({name: string, f: T.template<'a>})
-  | AstFunc({name: string, nodes: Ast.nodes<unit>, f: Source.stringFunc<'a>})
+  | AstFunc({name: string, nodes: Ast.nodes<unit>, f: Deprecated_Source.stringFunc<'a>})
 
 let name = x =>
   switch x {
@@ -454,7 +503,7 @@ let name = x =>
   }
 
 @raises(Exit)
-let compileExn = (src: Source.t<_>) =>
+let compileExn = (src: Deprecated_Source.t<_>) =>
   switch src {
   | String({name, src}) =>
     let nodes = makeAstInternalExn(~name, src)
@@ -473,10 +522,10 @@ let compile = src =>
     #ok(compileExn(src))
   } catch {
   | Exit(e) => #errors([e])
-  | e => #errors([Debug.uncaughtCompileError(e, ~name=Source.name(src))])
+  | e => #errors([Debug.uncaughtCompileError(e, ~name=Deprecated_Source.name(src))])
   }
 
-module Components = {
+module Deprecated_Components = {
   let stringEq = (. a: string, b: string) => a == b
 
   // this makes components render faster.
@@ -509,7 +558,7 @@ module Components = {
         if List.hasU(g.stack, name, stringEq) {
           raise(Exit(Debug.cyclicDependency(~loc, ~name, ~stack=g.stack)))
         } else {
-          raise(Exit(Debug.componentDoesNotExist(~loc, ~name, ~stack=g.stack)))
+          raise(Exit(Debug.Deprecated.componentDoesNotExist(~loc, ~name, ~stack=g.stack)))
         }
       }
     }
@@ -590,7 +639,7 @@ module Components = {
     let linked = MutMapString.make()
     let notlinked = MutMapString.make()
     Array.forEachU(a, (. src) => {
-      let name = Source.name(src)
+      let name = Deprecated_Source.name(src)
       MutMapString.updateU(notlinked, name, (. x) =>
         switch x {
         | None =>
@@ -630,12 +679,12 @@ module Components = {
 
 let make = (src, components) =>
   compile(src)->Result.flatMapU((. x) =>
-    Components.linkComponents(
+    Deprecated_Components.linkComponents(
       x,
       {
-        Components.linked: components,
+        Deprecated_Components.linked: components,
         notlinked: MutMapString.make(),
-        stack: list{Source.name(src)},
+        stack: list{Deprecated_Source.name(src)},
       },
     )
   )

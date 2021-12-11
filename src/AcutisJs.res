@@ -10,8 +10,8 @@ module Compile = {
   include Compile
 }
 
-module Environment = {
-  include Environment
+module Deprecated_Environment = {
+  include Deprecated_Environment
 }
 
 module Result = {
@@ -19,5 +19,5 @@ module Result = {
 }
 
 module Source = {
-  include Source
+  include Deprecated_Source
 }

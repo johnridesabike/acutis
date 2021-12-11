@@ -23,7 +23,7 @@ let makeCases = c => {
 
 describe("Basic tree", ({test, _}) => {
   test("blah", ({expect, _}) => {
-    let l = l => T.Loc(l)
+    let l = l => Debug.Loc(l)
     let nodes1 = [T.Ast.Text("", NoTrim)]
     let nodes2 = [T.Ast.Text("", NoTrim)]
     let case1 = {
@@ -64,7 +64,7 @@ describe("Basic tree", ({test, _}) => {
     )
   })
   test("cases are sorted correctly", ({expect, _}) => {
-    let l = l => T.Loc(l)
+    let l = l => Debug.Loc(l)
     let nodes1 = [T.Ast.Text("", NoTrim)]
     let nodes2 = [T.Ast.Text("", NoTrim)]
     let nodes3 = [T.Ast.Text("", NoTrim)]
@@ -124,7 +124,7 @@ describe("Basic tree", ({test, _}) => {
   })
 
   test("Basic dec tree 1", ({expect, _}) => {
-    let l = l => T.Loc(l)
+    let l = l => Debug.Loc(l)
     let nodes1 = [T.Ast.Text("", NoTrim)]
     let case1 = {
       T.Ast.patterns: [
@@ -330,7 +330,7 @@ describe("Basic tree", ({test, _}) => {
   })
 
   test("Basic dec tree 2", ({expect, _}) => {
-    let l = l => T.Loc(l)
+    let l = l => Debug.Loc(l)
     let nodes1 = [T.Ast.Text("", NoTrim)]
     let case1 = {
       T.Ast.patterns: [
@@ -528,7 +528,7 @@ describe("Basic tree", ({test, _}) => {
 
 describe("Nests", ({test, _}) => {
   test("dec tree tuple", ({expect, _}) => {
-    let l = l => T.Loc(l)
+    let l = l => Debug.Loc(l)
     let nodes1 = [T.Ast.Text("", NoTrim)]
     let case1 = {
       T.Ast.patterns: [
@@ -624,7 +624,7 @@ describe("Nests", ({test, _}) => {
   })
 
   test("Nests merge into wildcards correctly 1.", ({expect, _}) => {
-    let l = l => T.Loc(l)
+    let l = l => Debug.Loc(l)
     let nodes1 = [T.Ast.Text("", NoTrim)]
     let nodes2 = [T.Ast.Text("", NoTrim)]
     let nodes3 = [T.Ast.Text("", NoTrim)]
@@ -760,7 +760,7 @@ describe("Nests", ({test, _}) => {
   })
 
   test("Nests merge correctly.", ({expect, _}) => {
-    let l = l => T.Loc(l)
+    let l = l => Debug.Loc(l)
     let n1 = [T.Ast.Text("", NoTrim)]
     let c1 = {
       T.Ast.patterns: [[#Binding(l(0), "_"), #Binding(l(1), "_"), #Int((l(2), 12))]->ne]->ne,
@@ -902,7 +902,7 @@ describe("Nests", ({test, _}) => {
   })
 
   test("Wildcards merge after nests correctly.", ({expect, _}) => {
-    let l = l => T.Loc(l)
+    let l = l => Debug.Loc(l)
     let n1 = [T.Ast.Text("", NoTrim)]
     let n2 = [T.Ast.Text("", NoTrim)]
     let n3 = [T.Ast.Text("", NoTrim)]
@@ -1017,7 +1017,7 @@ describe("Nests", ({test, _}) => {
   })
 
   test("Different-sized lists merge correctly.", ({expect, _}) => {
-    let l = l => T.Loc(l)
+    let l = l => Debug.Loc(l)
     let n1 = [T.Ast.Text("", NoTrim)]
     let n2 = [T.Ast.Text("", NoTrim)]
     let n3 = [T.Ast.Text("", NoTrim)]
@@ -1085,7 +1085,7 @@ describe("Nests", ({test, _}) => {
   })
 
   test("dec tree list", ({expect, _}) => {
-    let l = l => T.Loc(l)
+    let l = l => Debug.Loc(l)
     let nodes1 = [T.Ast.Text("", NoTrim)]
     let nodes2 = [T.Ast.Text("", NoTrim)]
     let nodes3 = [T.Ast.Text("", NoTrim)]
@@ -1302,7 +1302,7 @@ describe("Nests", ({test, _}) => {
   })
 
   test("Records sort fields correctly", ({expect, _}) => {
-    let l = T.Loc(0)
+    let l = Debug.Loc(0)
     let nodes1 = [T.Ast.Text("a", NoTrim)]
     let case1 = {
       T.Ast.patterns: [
@@ -1394,7 +1394,7 @@ describe("Nests", ({test, _}) => {
   })
 
   test("Records: missing fields are automatically wildcards", ({expect, _}) => {
-    let l = T.Loc(0)
+    let l = Debug.Loc(0)
     let nodes1 = [T.Ast.Text("a", NoTrim)]
     let case1 = {
       T.Ast.patterns: [
@@ -1500,7 +1500,7 @@ describe("Nests", ({test, _}) => {
   })
 
   test("Records: new fields expand existing rows", ({expect, _}) => {
-    let l = l => T.Loc(l)
+    let l = l => Debug.Loc(l)
     let nodes1: T.Ast.nodes<_> = [Text("x", NoTrim)]
     let nodes2: T.Ast.nodes<_> = [Text("y", NoTrim)]
     let nodes3: T.Ast.nodes<_> = [Text("z", NoTrim)]

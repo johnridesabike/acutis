@@ -41,19 +41,19 @@ and boolean = (~stack, j) =>
   if Json.test(j, Boolean) {
     j
   } else {
-    raise(Exit(Debug2.decodeError(Tys.boolean(), j, ~f=Tys.toString, ~stack)))
+    raise(Exit(Debug.decodeError(Tys.boolean(), j, Tys.toString, ~stack)))
   }
 
 and string = (~stack, j) =>
   if Json.test(j, String) {
     j
   } else {
-    raise(Exit(Debug2.decodeError(Tys.string(), j, ~f=Tys.toString, ~stack)))
+    raise(Exit(Debug.decodeError(Tys.string(), j, Tys.toString, ~stack)))
   }
 
 and int = (~stack, j) =>
   switch Json.decodeNumber(j) {
-  | None => raise(Exit(Debug2.decodeError(Tys.int(), j, ~f=Tys.toString, ~stack)))
+  | None => raise(Exit(Debug.decodeError(Tys.int(), j, Tys.toString, ~stack)))
   | Some(i) => Json.number(Float.fromInt(Int.fromFloat(i)))
   }
 
@@ -61,13 +61,13 @@ and float = (~stack, j) =>
   if Json.test(j, Number) {
     j
   } else {
-    raise(Exit(Debug2.decodeError(Tys.float(), j, ~f=Tys.toString, ~stack)))
+    raise(Exit(Debug.decodeError(Tys.float(), j, Tys.toString, ~stack)))
   }
 
 and echo = (~stack, j) =>
   switch Json.classify(j) {
   | JSONString(_) | JSONNumber(_) => j
-  | _ => raise(Exit(Debug2.decodeError(Tys.echo(), j, ~f=Tys.toString, ~stack)))
+  | _ => raise(Exit(Debug.decodeError(Tys.echo(), j, Tys.toString, ~stack)))
   }
 
 and list = (~stack, ty, j) =>
@@ -79,7 +79,7 @@ and list = (~stack, ty, j) =>
       l := Json.array([make(~stack, ty, x), l.contents])
     }
     l.contents
-  | None => raise(Exit(Debug2.decodeError(Tys.list(ty), j, ~f=Tys.toString, ~stack)))
+  | None => raise(Exit(Debug.decodeError(Tys.list(ty), j, Tys.toString, ~stack)))
   }
 
 and dict = (~stack, ty, j) =>
@@ -91,7 +91,7 @@ and dict = (~stack, ty, j) =>
       Js.Dict.set(dict, key, make(~stack, ty, Js.Dict.unsafeGet(obj, key)))
     )
     Json.object_(dict)
-  | None => raise(Exit(Debug2.decodeError(Tys.dict(ty), j, ~f=Tys.toString, ~stack)))
+  | None => raise(Exit(Debug.decodeError(Tys.dict(ty), j, Tys.toString, ~stack)))
   }
 
 and tuple = (~stack, tys, j) =>
@@ -100,7 +100,7 @@ and tuple = (~stack, tys, j) =>
     Json.array(
       Array.zipByU(tys, arr, (. ty, json) => make(~stack=list{Stack.array, ...stack}, ty, json)),
     )
-  | None => raise(Exit(Debug2.decodeError(Tys.tuple(tys), j, ~f=Tys.toString, ~stack)))
+  | None => raise(Exit(Debug.decodeError(Tys.tuple(tys), j, Tys.toString, ~stack)))
   }
 
 and recordAux = (~stack, tys, j) => {
@@ -109,7 +109,7 @@ and recordAux = (~stack, tys, j) => {
     switch (ty, Js.Dict.get(j, k)) {
     | ({contents: Tys.Nullable(_) | Unknown}, None) => Js.Dict.set(dict, k, null)
     | (ty, Some(j)) => Js.Dict.set(dict, k, make(~stack=list{Stack.obj_key(k), ...stack}, ty, j))
-    | _ => raise(Exit(Debug2.decodeErrorMissingKey(~stack, k)))
+    | _ => raise(Exit(Debug.decodeErrorMissingKey(~stack, k)))
     }
   )
   dict
@@ -118,7 +118,7 @@ and recordAux = (~stack, tys, j) => {
 and record = (~stack, tys, j) =>
   switch Json.decodeObject(j) {
   | Some(obj) => Json.object_(recordAux(~stack, tys, obj))
-  | _ => raise(Exit(Debug2.decodeError(Tys.record2(tys), j, ~f=Tys.toString, ~stack)))
+  | _ => raise(Exit(Debug.decodeError(Tys.record2(tys), j, Tys.toString, ~stack)))
   }
 
 and make = (~stack, ty, json) =>
@@ -314,7 +314,7 @@ module Child = {
   let validate = (tys, m) =>
     MapString.forEachU(tys, (. k, {contents}) =>
       switch (Dict.get(m, k), contents) {
-      | (None, Tys.Child.Child) => raise(Exit(Debug2.decodeErrorMissingChild(k)))
+      | (None, Tys.Child.Child) => raise(Exit(Debug.decodeErrorMissingChild(k)))
       | (Some(_), Child) | (Some(_) | None, NullableChild) => ()
       }
     )
