@@ -662,7 +662,7 @@ and make = (name, ast, g) => {
 let makeSrc = (. g, x) =>
   switch x {
   | Source.Acutis(name, ast) => Source.src(~name, make(name, ast, g))
-  | Function(name, p, c, f) => Source.functionU(~name, p, c, f)
+  | Function(name, p, c, f) => Source.fnU(~name, p, c, f)
   }
 
 let makeArray = a => a->Utils.Dagmap.make(~f=makeSrc)->Utils.Dagmap.linkAll

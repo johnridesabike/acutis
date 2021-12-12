@@ -173,13 +173,13 @@ describe("Patterns", ({test, _}) => {
 
   test("Missing bindings", ({expect, _}) => {
     let props = dict([("a", Js.Json.number(1.0)), ("c", Js.Json.null)])
-    let a = Source.function(
+    let a = Source.fn(
       ~name="A",
       Typescheme.props([("b", Typescheme.record([("b", Typescheme.string())]))]),
       Typescheme.Child.props([]),
       (type a, module(Env): Source.env<a>, _p, _c) => Env.return(. ""),
     )
-    let z = Source.function(
+    let z = Source.fn(
       ~name="Z",
       Typescheme.props([("b", Typescheme.list(Typescheme.int()))]),
       Typescheme.Child.props([]),
@@ -363,11 +363,9 @@ describe("Rendering", ({test, _}) => {
 
   test("Exceptions thrown in components are caught correctly", ({expect, _}) => {
     @raises(Failure)
-    let a = Source.function(~name="A", Typescheme.props([]), Typescheme.Child.props([]), (
-      _,
-      _,
-      _,
-    ) => raise(Failure("fail.")))
+    let a = Source.fn(~name="A", Typescheme.props([]), Typescheme.Child.props([]), (_, _, _) =>
+      raise(Failure("fail."))
+    )
     let data = Js.Dict.empty()
     let result = render(~name="ExceptionsTest", `{% A / %}`, data, [a])
     expect.value(result).toMatchSnapshot()
@@ -453,7 +451,7 @@ describe("Graphs are parsed correctly", ({test, _}) => {
   // test("Runtime AST errors are reported", ({expect, _}) => {
   //   let a = Source.src(~name="A", "{% B /%}")
   //   @raises(Failure)
-  //   let b = Source.function(
+  //   let b = Source.fn(
   //     ~name="B",
   //     Typescheme.props([]),
   //     Typescheme.Child.props([]),

@@ -10,12 +10,8 @@
 const util = require("util");
 const fs = require("fs");
 const minimist = require("minimist");
-const {
-  Deprecated_Compile,
-  Deprecated_Environment,
-  Result,
-} = require("./lib/js/src/AcutisJs");
-const { loadTemplate } = require("./node-utils");
+const { Compile, Render, Result } = require("./lib/js/src/AcutisJs");
+const { loadTemplate, loadSrc } = require("./node-utils");
 const { version } = require("./package.json");
 const { stdin } = process;
 
@@ -81,22 +77,21 @@ Examples:
 } else {
   (async function () {
     try {
+      const firstFile = args._.shift();
       const files = await Promise.all(args._.map(loadTemplate));
       const json = await (args.data ? readFile(args.data) : getStdin());
       const props = json === "" ? {} : JSON.parse(json);
-      const firstFile = files.shift();
       const components = Result.getOrElse(
-        Deprecated_Compile.Deprecated_Components.make(files),
+        Compile.Components.make(files),
         onError
       );
+      const [name, src] = await loadSrc(firstFile);
       const template = Result.getOrElse(
-        Deprecated_Compile.make(firstFile, components),
+        Compile.make(name, src, components),
         onError
       );
-      const env = args.async
-        ? Deprecated_Environment.async
-        : Deprecated_Environment.sync;
-      const result = await template(env, props, {});
+      const renderFn = args.async ? Render.async : Render.sync;
+      const result = await renderFn(template, props, {});
       const output = Result.getOrElse(result, onError);
       if (args.output) {
         await writeFile(args.output, output, "utf8");

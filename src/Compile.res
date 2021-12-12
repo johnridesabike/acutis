@@ -203,7 +203,7 @@ module Components = {
         if HashmapString.has(m, name) {
           raise(Exit(Debug.duplicateCompName(name)))
         }
-        HashmapString.set(m, name, Source.functionU(~name, p, c, f))
+        HashmapString.set(m, name, Source.fnU(~name, p, c, f))
       }
     )
     Typechecker.makeArray(m)
@@ -223,7 +223,7 @@ module Components = {
       switch v {
       | Source.Acutis(name, ast) =>
         HashmapString.set(m, name, Source.src(~name, Ast.make(~name, ast)))
-      | Function(name, p, c, f) => HashmapString.set(m, name, Source.functionU(~name, p, c, f))
+      | Function(name, p, c, f) => HashmapString.set(m, name, Source.fnU(~name, p, c, f))
       }
     )
     m

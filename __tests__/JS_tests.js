@@ -6,15 +6,7 @@
   file, You can obtain one at http://mozilla.org/MPL/2.0/.
 */
 
-const {
-  Deprecated_Compile,
-  Compile,
-  Deprecated_Environment,
-  Result,
-  Render,
-  Deprecated_Source,
-  Source,
-} = require("../");
+const { Compile, Result, Render, Source, Typescheme } = require("../");
 
 let emptyComponents = Compile.Components.empty();
 
@@ -47,60 +39,30 @@ describe("Async templates", () => {
   });
 
   test("Async template components", async () => {
-    const Y = Deprecated_Source.funcWithString(
+    const Y = Source.fn(
       "Y",
-      "{{ name }}",
-      (ast) => async (env, props, children) => env.render(ast, props, children)
+      Typescheme.props([["name", Typescheme.string()]]),
+      Typescheme.Child.props([]),
+      async (Env, props, _children) => Env.$$return(props.name)
     );
-    const comps = Result.getExn(
-      Deprecated_Compile.Deprecated_Components.make([Y])
-    );
-    const env = Deprecated_Environment.async;
-    const X = Result.getExn(
-      Deprecated_Compile.make(
-        Deprecated_Source.string("X", "{% Y name /%}"),
-        comps
-      )
-    );
-    const x = await X(env, { name: "Carlo" }, {});
+    const comps = Result.getExn(Compile.Components.make([Y]));
+    const X = Result.getExn(Compile.make("X", "{% Y name /%}", comps));
+    const x = await Render.async(X, { name: "Carlo" }, {});
     expect(x).toEqual({ NAME: "ok", VAL: "Carlo" });
   });
 
   test("Async template component errors", async () => {
-    const A = Deprecated_Source.funcWithString(
-      "A",
-      "{{ name }}",
-      (ast) => async (env, props, children) => env.render(ast, props, children)
+    const D = Source.fn(
+      "D",
+      Typescheme.props([]),
+      Typescheme.Child.props([]),
+      async (_env, _props, _children) => {
+        throw new Error("fail.");
+      }
     );
-    const comps2 = Result.getExn(
-      Deprecated_Compile.Deprecated_Components.make([A])
-    );
-    const env2 = Deprecated_Environment.async;
-    const B = Result.getExn(
-      Deprecated_Compile.make(Deprecated_Source.string("B", "{% A /%}"), comps2)
-    );
-    expect(await B(env2, {}, {})).toEqual({
-      NAME: "errors",
-      VAL: [
-        {
-          message: '"name" is type null. I can only echo strings and numbers.',
-          path: ["A", "B"],
-          location: { character: 4 },
-          kind: "Render",
-        },
-      ],
-    });
-    const D = Deprecated_Source.func("D", async (_env, _props, _children) => {
-      throw new Error("fail.");
-    });
-    const comps = Result.getExn(
-      Deprecated_Compile.Deprecated_Components.make([D])
-    );
-    const env4 = Deprecated_Environment.async;
-    const E = Result.getExn(
-      Deprecated_Compile.make(Deprecated_Source.string("E", "{% D /%}"), comps)
-    );
-    expect(await E(env4, {}, {})).toEqual({
+    const comps = Result.getExn(Compile.Components.make([D]));
+    const E = Result.getExn(Compile.make("E", "{% D /%}", comps));
+    expect(await Render.async(E, {}, {})).toEqual({
       NAME: "errors",
       VAL: [
         {
@@ -115,117 +77,70 @@ describe("Async templates", () => {
 });
 
 describe("Async helper functions", () => {
-  test("env.return", async () => {
-    const X = Deprecated_Source.func("X", (env, _props, _children) =>
-      env.return("a")
+  test("Env.return", async () => {
+    const X = Source.fn(
+      "X",
+      Typescheme.props([]),
+      Typescheme.Child.props([]),
+      (Env, _props, _children) => Env.$$return("a")
     );
-    const comps = Result.getExn(
-      Deprecated_Compile.Deprecated_Components.make([X])
-    );
-    const env = Deprecated_Environment.async;
-    const Template = Result.getExn(
-      Deprecated_Compile.make(Deprecated_Source.string("", "{% X / %}"), comps)
-    );
-    expect(await Template(env, {}, {})).toEqual({ NAME: "ok", VAL: "a" });
-  });
-
-  test("env.error", async () => {
-    const X = Deprecated_Source.func("X", (env, _props, _children) =>
-      env.error("e")
-    );
-    const comps = Result.getExn(
-      Deprecated_Compile.Deprecated_Components.make([X])
-    );
-    const env = Deprecated_Environment.async;
-    const Template = Result.getExn(
-      Deprecated_Compile.make(
-        Deprecated_Source.string("Template", "{% X / %}"),
-        comps
-      )
-    );
-    expect(await Template(env, {}, {})).toEqual({
-      NAME: "errors",
-      VAL: [
-        {
-          message: "e",
-          kind: "Render",
-          path: ["Template"],
-        },
-      ],
+    const comps = Result.getExn(Compile.Components.make([X]));
+    const template = Result.getExn(Compile.make("", "{% X / %}", comps));
+    expect(await Render.async(template, {}, {})).toEqual({
+      NAME: "ok",
+      VAL: "a",
     });
   });
 
-  test("env.mapChild", async () => {
-    const X = Deprecated_Source.func("X", (env, _props, { Children }) =>
-      env.mapChild(Children, (x) => x.toUpperCase())
+  test("Env.error", async () => {
+    const X = Source.fn(
+      "X",
+      Typescheme.props([]),
+      Typescheme.Child.props([]),
+      (Env, _props, _children) => Env.error("e")
     );
-    const comps = Result.getExn(
-      Deprecated_Compile.Deprecated_Components.make([X])
+    const comps = Result.getExn(Compile.Components.make([X]));
+    const template = Result.getExn(
+      Compile.make("Template", "{% X / %}", comps)
     );
-    const env = Deprecated_Environment.async;
-    const Template = Result.getExn(
-      Deprecated_Compile.make(
-        Deprecated_Source.string("", "{% X ~%} a {%~ /X %}"),
-        comps
-      )
+    expect(await Render.async(template, {}, {})).toEqual({
+      NAME: "errors",
+      VAL: [{ message: "e", kind: "Render", path: [] }],
+    });
+  });
+
+  test("Env.map", async () => {
+    const X = Source.fn(
+      "X",
+      Typescheme.props([]),
+      Typescheme.Child.props([["Children", Typescheme.Child.child()]]),
+      (Env, _props, { Children }) => Env.map(Children, (x) => x.toUpperCase())
     );
-    expect(await Template(env, {}, {})).toEqual({
+    const comps = Result.getExn(Compile.Components.make([X]));
+    const template = Result.getExn(
+      Compile.make("", "{% X ~%} a {%~ /X %}", comps)
+    );
+    expect(await Render.async(template, {}, {})).toEqual({
       NAME: "ok",
       VAL: "A",
     });
-    const BadTemplate = Result.getExn(
-      Deprecated_Compile.make(
-        Deprecated_Source.string("BadTemplate", "{% X %} {{ e }} {% /X %}"),
-        comps
-      )
-    );
-    expect(await BadTemplate(env, {}, {})).toEqual({
-      NAME: "errors",
-      VAL: [
-        {
-          message: '"e" is type null. I can only echo strings and numbers.',
-          location: { character: 12 },
-          kind: "Render",
-          path: ["section: X#Children", "BadTemplate"],
-        },
-      ],
-    });
   });
 
-  test("env.flatMapChild", async () => {
-    const X = Deprecated_Source.func("X", (env, _props, { Children }) =>
-      env.flatMapChild(Children, (x) => env.return(x.toUpperCase()))
+  test("Env.flatmap", async () => {
+    const X = Source.fn(
+      "X",
+      Typescheme.props([]),
+      Typescheme.Child.props([["Children", Typescheme.Child.child()]]),
+      (Env, _props, { Children }) =>
+        Env.flatmap(Children, (x) => Env.$$return(x.toUpperCase()))
     );
-    const comps = Result.getExn(
-      Deprecated_Compile.Deprecated_Components.make([X])
+    const comps = Result.getExn(Compile.Components.make([X]));
+    const template = Result.getExn(
+      Compile.make("", "{% X %} a {% /X %}", comps)
     );
-    const env = Deprecated_Environment.async;
-    const Template = Result.getExn(
-      Deprecated_Compile.make(
-        Deprecated_Source.string("", "{% X %} a {% /X %}"),
-        comps
-      )
-    );
-    expect(await Template(env, {}, {})).toEqual({
+    expect(await Render.async(template, {}, {})).toEqual({
       NAME: "ok",
       VAL: " A ",
-    });
-    const BadTemplate = Result.getExn(
-      Deprecated_Compile.make(
-        Deprecated_Source.string("BadTemplate", "{% X %} {{ e }} {% /X %}"),
-        comps
-      )
-    );
-    expect(await BadTemplate(env, {}, {})).toEqual({
-      NAME: "errors",
-      VAL: [
-        {
-          message: '"e" is type null. I can only echo strings and numbers.',
-          location: { character: 12 },
-          kind: "Render",
-          path: ["section: X#Children", "BadTemplate"],
-        },
-      ],
     });
   });
 });

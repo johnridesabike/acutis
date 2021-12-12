@@ -9,7 +9,7 @@
 const util = require("util");
 const fs = require("fs");
 const path = require("path");
-const Acutis = require("./lib/js/src/AcutisJs");
+const { Source } = require("./lib/js/src/AcutisJs");
 
 const readFile = util.promisify(fs.readFile);
 
@@ -18,6 +18,12 @@ function filenameToComponent(file) {
   const firstChar = basename.charAt(0).toUpperCase();
   const rest = basename.slice(1);
   return firstChar + rest;
+}
+
+async function loadSrc(filePath) {
+  const name = filenameToComponent(filePath);
+  const src = await readFile(filePath, "utf-8");
+  return [name, src];
 }
 
 async function loadTemplate(fileName) {
@@ -29,10 +35,9 @@ async function loadTemplate(fileName) {
       const jsmodule = await import(filePath);
       return jsmodule.default;
     default:
-      const name = filenameToComponent(filePath);
-      const src = await readFile(filePath, "utf-8");
-      return Acutis.Deprecated_Source.string(name, src);
+      const [name, src] = await loadSrc(filePath);
+      return Source.src(name, src);
   }
 }
 
-module.exports = { loadTemplate, filenameToComponent };
+module.exports = { loadTemplate, loadSrc, filenameToComponent };

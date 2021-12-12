@@ -31,5 +31,6 @@ type t<'a, 'b> =
 let name: t<_, _> => string
 
 let src: (~name: string, 'a) => t<'a, 'b>
-let functionU: (~name: string, Typescheme.props, Typescheme.Child.props, fnU<'b>) => t<'a, fnU<'b>>
-let function: (~name: string, Typescheme.props, Typescheme.Child.props, fn<'b>) => t<'a, fnU<'b>>
+let fnU: (~name: string, Typescheme.props, Typescheme.Child.props, fnU<'b>) => t<'a, fnU<'b>>
+// fn is not a reserved word in JavaScript, ReScript, or OCaml.
+let fn: (~name: string, Typescheme.props, Typescheme.Child.props, fn<'b>) => t<'a, fnU<'b>>

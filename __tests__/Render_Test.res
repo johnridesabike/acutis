@@ -169,7 +169,7 @@ describe("Render essentials", ({test, _}) => {
       components,
     )
     expect.value(result).toEqual(#ok(` I did not.  Oh hai Mark.`))
-    let addOne = Source.function(
+    let addOne = Source.fn(
       ~name="AddOne",
       Typescheme.props([("index", Typescheme.int())]),
       Typescheme.Child.props([]),
@@ -244,7 +244,7 @@ describe("Template sections", ({test, _}) => {
 
 describe("API helper functions", ({test, _}) => {
   test("env.return", ({expect, _}) => {
-    let x = Source.function(~name="X", Typescheme.props([]), Typescheme.Child.props([]), (
+    let x = Source.fn(~name="X", Typescheme.props([]), Typescheme.Child.props([]), (
       type a,
       module(Env): Source.env<a>,
       _props,
@@ -257,7 +257,7 @@ describe("API helper functions", ({test, _}) => {
   })
 
   test("env.error", ({expect, _}) => {
-    let x = Source.function(~name="X", Typescheme.props([]), Typescheme.Child.props([]), (
+    let x = Source.fn(~name="X", Typescheme.props([]), Typescheme.Child.props([]), (
       type a,
       module(Env): Source.env<a>,
       _props,
@@ -280,7 +280,7 @@ describe("API helper functions", ({test, _}) => {
   })
 
   test("env.mapChild", ({expect, _}) => {
-    let x = Source.function(
+    let x = Source.fn(
       ~name="X",
       Typescheme.props([]),
       Typescheme.Child.props([("Children", Typescheme.Child.child())]),
@@ -305,7 +305,7 @@ describe("API helper functions", ({test, _}) => {
   })
 
   test("env.flatMapChild", ({expect, _}) => {
-    let x = Source.function(
+    let x = Source.fn(
       ~name="X",
       Typescheme.props([]),
       Typescheme.Child.props([("Children", Typescheme.Child.child())]),

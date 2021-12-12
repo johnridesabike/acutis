@@ -1,9 +1,8 @@
-const { Deprecated_Source } = require("../../lib/js/src/AcutisJs");
+const { Source, Typescheme } = require("../../");
 
-module.exports = Deprecated_Source.funcWithString(
+module.exports = Source.fn(
   "Bb_async",
-  "B: {{ name }}",
-  (ast) =>
-    async (env, { name }, children) =>
-      env.render(ast, { name: name.toUpperCase() }, children)
+  Typescheme.props([["name", Typescheme.string()]]),
+  Typescheme.Child.props([]),
+  async (Env, { name }, _children) => Env.$$return("B: " + name.toUpperCase())
 );

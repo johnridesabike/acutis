@@ -1,9 +1,8 @@
-import { Deprecated_Source } from "../../lib/es6/src/AcutisJs.mjs";
+import { Source, Typescheme } from "../../lib/es6/src/AcutisJs.mjs";
 
-export default Deprecated_Source.funcWithString(
+export default Source.fn(
   "D_async",
-  "D: {{ name }}",
-  (ast) =>
-    async (env, { name }, children) =>
-      env.render(ast, { name: name.toUpperCase() }, children)
+  Typescheme.props([["name", Typescheme.string()]]),
+  Typescheme.Child.props([]),
+  async (Env, { name }, _children) => Env.$$return("D: " + name.toUpperCase())
 );

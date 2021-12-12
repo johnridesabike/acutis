@@ -32,8 +32,8 @@ let src = (~name, src) => Acutis(name, src)
 // this makes components render faster.
 let uncurry = (f, . a, b, c) => f(a, b, c)
 
-let functionU = (~name, props, children, f) => Function(name, props, children, f)
+let fnU = (~name, props, children, f) => Function(name, props, children, f)
 
-let function = (~name, props, children, f) => Function(name, props, children, uncurry(f))
+let fn = (~name, props, children, f) => Function(name, props, children, uncurry(f))
 
 let name = (Acutis(n, _) | Function(n, _, _, _)) => n

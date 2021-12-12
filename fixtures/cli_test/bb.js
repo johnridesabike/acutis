@@ -1,9 +1,8 @@
-const { Deprecated_Source } = require("../../");
+const { Source, Typescheme } = require("../../");
 
-module.exports = Deprecated_Source.funcWithString(
+module.exports = Source.fn(
   "Bb",
-  "B: {{ name }}",
-  (ast) =>
-    (env, { name }, children) =>
-      env.render(ast, { name: name.toUpperCase() }, children)
+  Typescheme.props([["name", Typescheme.string()]]),
+  Typescheme.Child.props([]),
+  (Env, { name }, _children) => Env.$$return("B: " + name.toUpperCase())
 );
