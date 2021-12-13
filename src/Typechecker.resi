@@ -67,14 +67,14 @@ module Context: {
 
 module Local: {
   let fromPattern: (
-    Acutis_Types.Ast_Pattern.t,
+    Untyped.Ast_Pattern.t,
     Belt.MutableQueue.t<(string, Typescheme.t)>,
     ~name: string,
   ) => Typescheme.t
 }
 
 let makeCases: (
-  NonEmpty.t<Acutis_Types.Ast.case<unit>>,
+  NonEmpty.t<Untyped.Ast.case<unit>>,
   Context.t,
   ~loc: Debug.loc,
   ~name: string,
@@ -82,7 +82,7 @@ let makeCases: (
 ) => (NonEmpty.t<Typescheme.t>, NonEmpty.t<Ast.case>)
 
 let makeArray: Utils.Dagmap.map<
-  Source.t<Acutis_Types.Ast.nodes<unit>, Source.fnU<'a>>,
+  Source.t<Untyped.Ast.nodes<unit>, Source.fnU<'a>>,
 > => Utils.Dagmap.map<Source.t<Ast.t, Source.fnU<'a>>>
 
-let make: (string, Acutis_Types.Ast.nodes<unit>, Utils.Dagmap.map<Source.t<Ast.t, 'a>>) => Ast.t
+let make: (string, Untyped.Ast.nodes<unit>, Utils.Dagmap.map<Source.t<Ast.t, 'a>>) => Ast.t

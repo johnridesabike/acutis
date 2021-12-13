@@ -7,7 +7,6 @@
 */
 open TestFramework
 // module Array = Belt.Array
-module T = Acutis_Types
 module NE = NonEmpty
 module TC = Typechecker
 let ne = NE.fromArrayExn
@@ -22,9 +21,9 @@ let makeCases = c => {
 describe("Unused patterns", ({test, _}) => {
   test("Basic dec tree 2", ({expect, _}) => {
     let l = l => Debug.Loc(l)
-    let nodes1 = [T.Ast.Text("", NoTrim)]
+    let nodes1 = [Untyped.Ast.Text("", NoTrim)]
     let case1 = {
-      T.Ast.patterns: [
+      Untyped.Ast.patterns: [
         [#Int(l(0), 10), #Int(l(1), 11), #Int(l(2), 12)]->ne,
         [#Binding(l(3), "x"), #Int(l(4), 21), #Int(l(5), 22)]->ne,
         [#Int(l(6), 10), #Int(l(7), 11), #Int(l(8), 12)]->ne, // unused
@@ -44,7 +43,7 @@ describe("Unused patterns", ({test, _}) => {
       }),
     )
     let case1 = {
-      T.Ast.patterns: [
+      Untyped.Ast.patterns: [
         [#Int(l(0), 10), #Int(l(1), 11), #Int(l(2), 12)]->ne,
         [#Binding(l(3), "x"), #Int(l(4), 21), #Int(l(5), 22)]->ne,
         [#Int(l(9), 30), #Int(l(10), 31), #Int(l(11), 32)]->ne,
@@ -67,14 +66,14 @@ describe("Unused patterns", ({test, _}) => {
   })
   test("Nests merge into wildcards correctly 2", ({expect, _}) => {
     let l = l => Debug.Loc(l)
-    let n1 = [T.Ast.Text("", NoTrim)]
-    let n2 = [T.Ast.Text("", NoTrim)]
+    let n1 = [Untyped.Ast.Text("", NoTrim)]
+    let n2 = [Untyped.Ast.Text("", NoTrim)]
     let c1 = {
-      T.Ast.patterns: [[#Binding(l(3), "x"), #Binding(l(4), "y")]->ne]->ne,
+      Untyped.Ast.patterns: [[#Binding(l(3), "x"), #Binding(l(4), "y")]->ne]->ne,
       nodes: n1,
     }
     let c2 = {
-      T.Ast.patterns: [
+      Untyped.Ast.patterns: [
         [#Tuple(l(0), [#Binding(l(0), "_"), #Binding(l(1), "_")]), #Int(l(2), 40)]->ne,
       ]->ne,
       nodes: n2,
@@ -93,21 +92,21 @@ describe("Unused patterns", ({test, _}) => {
   })
   test("Unused nest patterns are reported correctly.", ({expect, _}) => {
     let l = l => Debug.Loc(l)
-    let nodes1 = [T.Ast.Text("", NoTrim)]
-    let nodes2 = [T.Ast.Text("", NoTrim)]
-    let nodes3 = [T.Ast.Text("", NoTrim)]
+    let nodes1 = [Untyped.Ast.Text("", NoTrim)]
+    let nodes2 = [Untyped.Ast.Text("", NoTrim)]
+    let nodes3 = [Untyped.Ast.Text("", NoTrim)]
     let case1 = {
-      T.Ast.patterns: [[#Binding(l(0), "x"), #Int(l(1), 1)]->ne]->ne,
+      Untyped.Ast.patterns: [[#Binding(l(0), "x"), #Int(l(1), 1)]->ne]->ne,
       nodes: nodes1,
     }
     let case2 = {
-      T.Ast.patterns: [
+      Untyped.Ast.patterns: [
         [#Tuple(l(2), [#String(l(3), "a"), #String(l(4), "b")]), #Int(l(5), 10)]->ne,
       ]->ne,
       nodes: nodes2,
     }
     let case3 = {
-      T.Ast.patterns: [
+      Untyped.Ast.patterns: [
         [#Tuple(l(6), [#String(l(7), "a"), #String(l(8), "b")]), #Int(l(9), 1)]->ne,
       ]->ne,
       nodes: nodes3,
@@ -134,10 +133,10 @@ describe("Partial matching", ({test, _}) => {
     }
   test("Partial match test 1", ({expect, _}) => {
     let l = l => Debug.Loc(l)
-    let nodes1 = [T.Ast.Text("", NoTrim)]
-    let nodes2 = [T.Ast.Text("", NoTrim)]
+    let nodes1 = [Untyped.Ast.Text("", NoTrim)]
+    let nodes2 = [Untyped.Ast.Text("", NoTrim)]
     let case1 = {
-      T.Ast.patterns: [
+      Untyped.Ast.patterns: [
         [#Int(l(0), 0)]->ne,
         [#Int(l(3), 10)]->ne,
         [#Int(l(3), 20)]->ne,
@@ -146,7 +145,7 @@ describe("Partial matching", ({test, _}) => {
       nodes: nodes1,
     }
     let case2 = {
-      T.Ast.patterns: [[#Int(l(0), 15)]->ne]->ne,
+      Untyped.Ast.patterns: [[#Int(l(0), 15)]->ne]->ne,
       nodes: nodes2,
     }
     let result =
@@ -161,7 +160,7 @@ Here is an example of a case that is not matched:
 1`),
     )
     let case1 = {
-      T.Ast.patterns: [[#Array(l(0), [])]->ne, [#Array(l(0), [#Binding(l(1), "_")])]->ne]->ne,
+      Untyped.Ast.patterns: [[#Array(l(0), [])]->ne, [#Array(l(0), [#Binding(l(1), "_")])]->ne]->ne,
       nodes: nodes1,
     }
     let result =
@@ -176,7 +175,7 @@ Here is an example of a case that is not matched:
 [_, ..._]`),
     )
     let case1 = {
-      T.Ast.patterns: [[#Array(l(0), [#Binding(l(1), "_")])]->ne]->ne,
+      Untyped.Ast.patterns: [[#Array(l(0), [#Binding(l(1), "_")])]->ne]->ne,
       nodes: nodes1,
     }
     let result =
@@ -191,11 +190,11 @@ Here is an example of a case that is not matched:
 []`),
     )
     let case1 = {
-      T.Ast.patterns: [[#Object(l(0), [("b", #Int(l(1), 10))])]->ne]->ne,
+      Untyped.Ast.patterns: [[#Object(l(0), [("b", #Int(l(1), 10))])]->ne]->ne,
       nodes: nodes1,
     }
     let case2 = {
-      T.Ast.patterns: [[#Object(l(2), [("a", #Int(l(3), 20))])]->ne]->ne,
+      Untyped.Ast.patterns: [[#Object(l(2), [("a", #Int(l(3), 20))])]->ne]->ne,
       nodes: nodes2,
     }
     let result =

@@ -5,11 +5,11 @@
   License, v. 2.0. If a copy of the MPL was not distributed with this
   file, You can obtain one at http://mozilla.org/MPL/2.0/.
 */
-let escape: (Acutis_Types.Ast.Echo.escape, string) => string
+let escape: (Untyped.Ast.Echo.escape, string) => string
 
 module Ast: {
   module Echo: {
-    type escape = Acutis_Types.Ast.Echo.escape = NoEscape | Escape
+    type escape = Untyped.Ast.Echo.escape = NoEscape | Escape
     type t =
       | Binding(Debug.loc, string, escape)
       | Child(Debug.loc, string)

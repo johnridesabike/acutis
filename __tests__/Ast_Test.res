@@ -7,7 +7,6 @@
 */
 
 open TestFramework
-module T = Acutis_Types
 
 describe("Lexer", ({test, _}) => {
   test("Tokens are generated correctly", ({expect, _}) => {
@@ -241,7 +240,7 @@ describe("Patterns", ({test, _}) => {
 describe("Parser", ({test, _}) => {
   test("Basic syntax", ({expect, _}) => {
     expect.value(
-      Untyped.makeAstInternalExn(
+      Untyped.makeExn(
         ~name="",
         `
 a
@@ -258,32 +257,32 @@ f`,
       Echo({
         loc: Debug.Loc(13),
         nullables: [],
-        default: T.Ast.Echo.Binding(Debug.Loc(14), "c", Escape),
+        default: Untyped.Ast.Echo.Binding(Debug.Loc(14), "c", Escape),
       }),
       Text("\n", NoTrim),
       Echo({
         loc: Debug.Loc(21),
         nullables: [],
-        default: T.Ast.Echo.String(Debug.Loc(22), "d", Escape),
+        default: Untyped.Ast.Echo.String(Debug.Loc(22), "d", Escape),
       }),
       Text("\n", NoTrim),
       Echo({
         loc: Debug.Loc(31),
         nullables: [],
-        default: T.Ast.Echo.Float(Debug.Loc(32), 1.5, Escape),
+        default: Untyped.Ast.Echo.Float(Debug.Loc(32), 1.5, Escape),
       }),
       Text("\n", NoTrim),
       Echo({
         loc: Debug.Loc(41),
         nullables: [],
-        default: T.Ast.Echo.Binding(Debug.Loc(43), "e", NoEscape),
+        default: Untyped.Ast.Echo.Binding(Debug.Loc(43), "e", NoEscape),
       }),
       Text("\nf", NoTrim),
     ])
   })
   test("Matching", ({expect, _}) => {
     expect.value(
-      Untyped.makeAstInternalExn(
+      Untyped.makeExn(
         ~name="",
         `
 {% match a
@@ -310,7 +309,7 @@ f`,
   })
   test("Mapping", ({expect, _}) => {
     expect.value(
-      Untyped.makeAstInternalExn(
+      Untyped.makeExn(
         ~name="",
         `
 {% map a with {b} %}
@@ -331,7 +330,7 @@ f`,
   })
   test("Components", ({expect, _}) => {
     expect.value(
-      Untyped.makeAstInternalExn(
+      Untyped.makeExn(
         ~name="",
         `
 {% A

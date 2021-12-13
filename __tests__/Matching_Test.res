@@ -7,7 +7,6 @@
 */
 open TestFramework
 // module Array = Belt.Array
-module T = Acutis_Types
 module NE = NonEmpty
 module SI = Belt.Set.Int
 module MS = Belt.Map.String
@@ -24,14 +23,14 @@ let makeCases = c => {
 describe("Basic tree", ({test, _}) => {
   test("blah", ({expect, _}) => {
     let l = l => Debug.Loc(l)
-    let nodes1 = [T.Ast.Text("", NoTrim)]
-    let nodes2 = [T.Ast.Text("", NoTrim)]
+    let nodes1 = [Untyped.Ast.Text("", NoTrim)]
+    let nodes2 = [Untyped.Ast.Text("", NoTrim)]
     let case1 = {
-      T.Ast.patterns: [[#Some(l(0), #Binding(l(1), "a"))]->ne]->ne,
+      Untyped.Ast.patterns: [[#Some(l(0), #Binding(l(1), "a"))]->ne]->ne,
       nodes: nodes1,
     }
     let case2 = {
-      T.Ast.patterns: [[#Null(l(3))]->ne]->ne,
+      Untyped.Ast.patterns: [[#Null(l(3))]->ne]->ne,
       nodes: nodes2,
     }
     let result =
@@ -65,11 +64,11 @@ describe("Basic tree", ({test, _}) => {
   })
   test("cases are sorted correctly", ({expect, _}) => {
     let l = l => Debug.Loc(l)
-    let nodes1 = [T.Ast.Text("", NoTrim)]
-    let nodes2 = [T.Ast.Text("", NoTrim)]
-    let nodes3 = [T.Ast.Text("", NoTrim)]
+    let nodes1 = [Untyped.Ast.Text("", NoTrim)]
+    let nodes2 = [Untyped.Ast.Text("", NoTrim)]
+    let nodes3 = [Untyped.Ast.Text("", NoTrim)]
     let case1 = {
-      T.Ast.patterns: [
+      Untyped.Ast.patterns: [
         [#Int(l(0), 0)]->ne,
         [#Int(l(3), 10)]->ne,
         [#Int(l(3), 20)]->ne,
@@ -78,11 +77,11 @@ describe("Basic tree", ({test, _}) => {
       nodes: nodes1,
     }
     let case2 = {
-      T.Ast.patterns: [[#Int(l(0), 15)]->ne]->ne,
+      Untyped.Ast.patterns: [[#Int(l(0), 15)]->ne]->ne,
       nodes: nodes2,
     }
     let case3 = {
-      T.Ast.patterns: [[#Binding(l(0), "_")]->ne]->ne,
+      Untyped.Ast.patterns: [[#Binding(l(0), "_")]->ne]->ne,
       nodes: nodes3,
     }
     let result =
@@ -125,9 +124,9 @@ describe("Basic tree", ({test, _}) => {
 
   test("Basic dec tree 1", ({expect, _}) => {
     let l = l => Debug.Loc(l)
-    let nodes1 = [T.Ast.Text("", NoTrim)]
+    let nodes1 = [Untyped.Ast.Text("", NoTrim)]
     let case1 = {
-      T.Ast.patterns: [
+      Untyped.Ast.patterns: [
         [#Int(l(0), 1), #Int(l(1), 2), #Int(l(2), 3)]->ne,
         [#Int(l(3), 1), #Int(l(4), 4), #Int(l(5), 5)]->ne,
         [#Int(l(6), 10), #Int(l(7), 20), #Int(l(8), 30)]->ne,
@@ -135,17 +134,17 @@ describe("Basic tree", ({test, _}) => {
       ]->ne,
       nodes: nodes1,
     }
-    let nodes2 = [T.Ast.Text("", NoTrim)]
+    let nodes2 = [Untyped.Ast.Text("", NoTrim)]
     let case2 = {
-      T.Ast.patterns: [
+      Untyped.Ast.patterns: [
         [#Int(l(12), 100), #Int(l(13), 102), #Int(l(14), 103)]->ne,
         [#Int(l(15), 100), #Int(l(16), 104), #Int(l(17), 105)]->ne,
       ]->ne,
       nodes: nodes2,
     }
-    let nodes3 = [T.Ast.Text("", NoTrim)]
+    let nodes3 = [Untyped.Ast.Text("", NoTrim)]
     let case3 = {
-      T.Ast.patterns: [
+      Untyped.Ast.patterns: [
         [#Int(l(18), 10), #Int(l(19), 20), #Int(l(20), 50)]->ne,
         [#Int(l(21), 1), #Int(l(22), 2), #Int(l(23), 100)]->ne,
         [#Int(l(24), 1), #Int(l(25), 2), #Int(l(26), 101)]->ne,
@@ -153,9 +152,11 @@ describe("Basic tree", ({test, _}) => {
       ]->ne,
       nodes: nodes3,
     }
-    let nodes4 = [T.Ast.Text("", NoTrim)]
+    let nodes4 = [Untyped.Ast.Text("", NoTrim)]
     let case4 = {
-      T.Ast.patterns: [[#Binding(l(30), "_"), #Binding(l(31), "_"), #Binding(l(32), "_")]->ne]->ne,
+      Untyped.Ast.patterns: [
+        [#Binding(l(30), "_"), #Binding(l(31), "_"), #Binding(l(32), "_")]->ne,
+      ]->ne,
       nodes: nodes4,
     }
     let result =
@@ -331,9 +332,9 @@ describe("Basic tree", ({test, _}) => {
 
   test("Basic dec tree 2", ({expect, _}) => {
     let l = l => Debug.Loc(l)
-    let nodes1 = [T.Ast.Text("", NoTrim)]
+    let nodes1 = [Untyped.Ast.Text("", NoTrim)]
     let case1 = {
-      T.Ast.patterns: [
+      Untyped.Ast.patterns: [
         [#Int(l(0), 10), #Int(l(1), 11), #Int(l(2), 12)]->ne,
         [#Binding(l(3), "x"), #Int(l(4), 21), #Int(l(5), 22)]->ne,
         [#Int(l(9), 30), #Int(l(10), 31), #Int(l(11), 32)]->ne,
@@ -529,9 +530,9 @@ describe("Basic tree", ({test, _}) => {
 describe("Nests", ({test, _}) => {
   test("dec tree tuple", ({expect, _}) => {
     let l = l => Debug.Loc(l)
-    let nodes1 = [T.Ast.Text("", NoTrim)]
+    let nodes1 = [Untyped.Ast.Text("", NoTrim)]
     let case1 = {
-      T.Ast.patterns: [
+      Untyped.Ast.patterns: [
         [#Tuple(l(0), [#Int(l(1), 10), #Int(l(2), 12)]), #Int(l(3), 13)]->ne,
         [#Tuple(l(4), [#Int(l(5), 10), #Int(l(6), 22)]), #Int(l(7), 23)]->ne,
         [#Binding(l(8), "_"), #Int(l(9), 33)]->ne,
@@ -625,21 +626,21 @@ describe("Nests", ({test, _}) => {
 
   test("Nests merge into wildcards correctly 1.", ({expect, _}) => {
     let l = l => Debug.Loc(l)
-    let nodes1 = [T.Ast.Text("", NoTrim)]
-    let nodes2 = [T.Ast.Text("", NoTrim)]
-    let nodes3 = [T.Ast.Text("", NoTrim)]
+    let nodes1 = [Untyped.Ast.Text("", NoTrim)]
+    let nodes2 = [Untyped.Ast.Text("", NoTrim)]
+    let nodes3 = [Untyped.Ast.Text("", NoTrim)]
     let case1 = {
-      T.Ast.patterns: [[#Binding(l(0), "x"), #Int(l(1), 1)]->ne]->ne,
+      Untyped.Ast.patterns: [[#Binding(l(0), "x"), #Int(l(1), 1)]->ne]->ne,
       nodes: nodes1,
     }
     let case2 = {
-      T.Ast.patterns: [
+      Untyped.Ast.patterns: [
         [#Tuple(l(2), [#String(l(3), "a"), #String(l(4), "b")]), #Int(l(5), 10)]->ne,
       ]->ne,
       nodes: nodes2,
     }
     let case3 = {
-      T.Ast.patterns: [
+      Untyped.Ast.patterns: [
         [#Tuple(l(10), [#Binding(l(11), "_"), #Binding(l(12), "y")]), #Binding(l(13), "z")]->ne,
       ]->ne,
       nodes: nodes3,
@@ -761,19 +762,19 @@ describe("Nests", ({test, _}) => {
 
   test("Nests merge correctly.", ({expect, _}) => {
     let l = l => Debug.Loc(l)
-    let n1 = [T.Ast.Text("", NoTrim)]
+    let n1 = [Untyped.Ast.Text("", NoTrim)]
     let c1 = {
-      T.Ast.patterns: [[#Binding(l(0), "_"), #Binding(l(1), "_"), #Int((l(2), 12))]->ne]->ne,
+      Untyped.Ast.patterns: [[#Binding(l(0), "_"), #Binding(l(1), "_"), #Int((l(2), 12))]->ne]->ne,
       nodes: n1,
     }
     let c2 = {
-      T.Ast.patterns: [
+      Untyped.Ast.patterns: [
         [#Binding(l(3), "_"), #Tuple(l(4), [#Int(l(5), 20), #Int(l(6), 21)]), #Int(l(7), 22)]->ne,
       ]->ne,
       nodes: n1,
     }
     let c3 = {
-      T.Ast.patterns: [
+      Untyped.Ast.patterns: [
         [
           #Binding(l(8), "_"),
           #Tuple(l(9), [#Int(l(10), 20), #Int(l(11), 21)]),
@@ -783,7 +784,7 @@ describe("Nests", ({test, _}) => {
       nodes: n1,
     }
     let c4 = {
-      T.Ast.patterns: [
+      Untyped.Ast.patterns: [
         [
           #Binding(l(13), "_"),
           #Tuple(l(14), [#Binding(l(15), "_"), #Binding(l(16), "_")]),
@@ -903,15 +904,15 @@ describe("Nests", ({test, _}) => {
 
   test("Wildcards merge after nests correctly.", ({expect, _}) => {
     let l = l => Debug.Loc(l)
-    let n1 = [T.Ast.Text("", NoTrim)]
-    let n2 = [T.Ast.Text("", NoTrim)]
-    let n3 = [T.Ast.Text("", NoTrim)]
+    let n1 = [Untyped.Ast.Text("", NoTrim)]
+    let n2 = [Untyped.Ast.Text("", NoTrim)]
+    let n3 = [Untyped.Ast.Text("", NoTrim)]
     let c1 = {
-      T.Ast.patterns: [[#Binding(l(3), "x"), #Int(l(4), 41)]->ne]->ne,
+      Untyped.Ast.patterns: [[#Binding(l(3), "x"), #Int(l(4), 41)]->ne]->ne,
       nodes: n1,
     }
     let c2 = {
-      T.Ast.patterns: [
+      Untyped.Ast.patterns: [
         [
           #Tuple(l(0), [#Tuple(l(0), [#Int(l(1), 10), #Int(l(1), 20)]), #Int(l(1), 30)]),
           #Int(l(2), 40),
@@ -920,7 +921,7 @@ describe("Nests", ({test, _}) => {
       nodes: n2,
     }
     let c3 = {
-      T.Ast.patterns: [[#Binding(l(5), "y"), #Binding(l(6), "z")]->ne]->ne,
+      Untyped.Ast.patterns: [[#Binding(l(5), "y"), #Binding(l(6), "z")]->ne]->ne,
       nodes: n3,
     }
     let result =
@@ -1018,19 +1019,19 @@ describe("Nests", ({test, _}) => {
 
   test("Different-sized lists merge correctly.", ({expect, _}) => {
     let l = l => Debug.Loc(l)
-    let n1 = [T.Ast.Text("", NoTrim)]
-    let n2 = [T.Ast.Text("", NoTrim)]
-    let n3 = [T.Ast.Text("", NoTrim)]
+    let n1 = [Untyped.Ast.Text("", NoTrim)]
+    let n2 = [Untyped.Ast.Text("", NoTrim)]
+    let n3 = [Untyped.Ast.Text("", NoTrim)]
     let c1 = {
-      T.Ast.patterns: [[#Array(l(0), [])]->ne]->ne,
+      Untyped.Ast.patterns: [[#Array(l(0), [])]->ne]->ne,
       nodes: n1,
     }
     let c2 = {
-      T.Ast.patterns: [[#Array(l(0), [#Binding(l(2), "x")])]->ne]->ne,
+      Untyped.Ast.patterns: [[#Array(l(0), [#Binding(l(2), "x")])]->ne]->ne,
       nodes: n2,
     }
     let c3 = {
-      T.Ast.patterns: [
+      Untyped.Ast.patterns: [
         [#ArrayWithTailBinding(l(0), [#Binding(l(2), "x")], #Binding(l(5), "y"))]->ne,
       ]->ne,
       nodes: n3,
@@ -1086,17 +1087,19 @@ describe("Nests", ({test, _}) => {
 
   test("dec tree list", ({expect, _}) => {
     let l = l => Debug.Loc(l)
-    let nodes1 = [T.Ast.Text("", NoTrim)]
-    let nodes2 = [T.Ast.Text("", NoTrim)]
-    let nodes3 = [T.Ast.Text("", NoTrim)]
-    let nodes4 = [T.Ast.Text("", NoTrim)]
-    let nodes5 = [T.Ast.Text("", NoTrim)]
+    let nodes1 = [Untyped.Ast.Text("", NoTrim)]
+    let nodes2 = [Untyped.Ast.Text("", NoTrim)]
+    let nodes3 = [Untyped.Ast.Text("", NoTrim)]
+    let nodes4 = [Untyped.Ast.Text("", NoTrim)]
+    let nodes5 = [Untyped.Ast.Text("", NoTrim)]
     let case1 = {
-      T.Ast.patterns: [[#Array(l(0), [#Int(l(2), 10), #Int(l(3), 11)]), #Int(l(4), 12)]->ne]->ne,
+      Untyped.Ast.patterns: [
+        [#Array(l(0), [#Int(l(2), 10), #Int(l(3), 11)]), #Int(l(4), 12)]->ne,
+      ]->ne,
       nodes: nodes1,
     }
     let case2 = {
-      T.Ast.patterns: [
+      Untyped.Ast.patterns: [
         [
           #ArrayWithTailBinding(l(5), [#Int(l(6), 10), #Int(l(7), 11)], #Binding(l(8), "x")),
           #Int(l(9), 22),
@@ -1105,15 +1108,15 @@ describe("Nests", ({test, _}) => {
       nodes: nodes2,
     }
     let case3 = {
-      T.Ast.patterns: [[#Array(l(10), [#Int(l(11), 30)]), #Int(l(12), 32)]->ne]->ne,
+      Untyped.Ast.patterns: [[#Array(l(10), [#Int(l(11), 30)]), #Int(l(12), 32)]->ne]->ne,
       nodes: nodes3,
     }
     let case4 = {
-      T.Ast.patterns: [[#Binding(l(13), "y"), #Int(l(14), 42)]->ne]->ne,
+      Untyped.Ast.patterns: [[#Binding(l(13), "y"), #Int(l(14), 42)]->ne]->ne,
       nodes: nodes4,
     }
     let case5 = {
-      T.Ast.patterns: [[#Binding(l(15), "_"), #Binding(l(16), "_")]->ne]->ne,
+      Untyped.Ast.patterns: [[#Binding(l(15), "_"), #Binding(l(16), "_")]->ne]->ne,
       nodes: nodes5,
     }
     let result =
@@ -1303,9 +1306,9 @@ describe("Nests", ({test, _}) => {
 
   test("Records sort fields correctly", ({expect, _}) => {
     let l = Debug.Loc(0)
-    let nodes1 = [T.Ast.Text("a", NoTrim)]
+    let nodes1 = [Untyped.Ast.Text("a", NoTrim)]
     let case1 = {
-      T.Ast.patterns: [
+      Untyped.Ast.patterns: [
         [#Object(l, [("a", #Int(l, 10)), ("b", #Int(l, 11))]), #Int(l, 12)]->ne,
         [#Object(l, [("b", #Int(l, 21)), ("a", #Int(l, 20))]), #Int(l, 22)]->ne,
         [#Binding(l, "_"), #Binding(l, "_")]->ne,
@@ -1395,9 +1398,9 @@ describe("Nests", ({test, _}) => {
 
   test("Records: missing fields are automatically wildcards", ({expect, _}) => {
     let l = Debug.Loc(0)
-    let nodes1 = [T.Ast.Text("a", NoTrim)]
+    let nodes1 = [Untyped.Ast.Text("a", NoTrim)]
     let case1 = {
-      T.Ast.patterns: [
+      Untyped.Ast.patterns: [
         [#Object(l, [("a", #Int(l, 10)), ("b", #Int(l, 11))]), #Int(l, 12)]->ne,
         [#Object(l, [("b", #Int(l, 21))]), #Int(l, 22)]->ne,
         [#Binding(l, "_"), #Binding(l, "_")]->ne,
@@ -1501,24 +1504,24 @@ describe("Nests", ({test, _}) => {
 
   test("Records: new fields expand existing rows", ({expect, _}) => {
     let l = l => Debug.Loc(l)
-    let nodes1: T.Ast.nodes<_> = [Text("x", NoTrim)]
-    let nodes2: T.Ast.nodes<_> = [Text("y", NoTrim)]
-    let nodes3: T.Ast.nodes<_> = [Text("z", NoTrim)]
-    let nodes4: T.Ast.nodes<_> = [Text("zz", NoTrim)]
+    let nodes1: Untyped.Ast.nodes<_> = [Text("x", NoTrim)]
+    let nodes2: Untyped.Ast.nodes<_> = [Text("y", NoTrim)]
+    let nodes3: Untyped.Ast.nodes<_> = [Text("z", NoTrim)]
+    let nodes4: Untyped.Ast.nodes<_> = [Text("zz", NoTrim)]
     let case1 = {
-      T.Ast.patterns: [[#Object(l(0), [("b", #Int(l(1), 10))])]->ne]->ne,
+      Untyped.Ast.patterns: [[#Object(l(0), [("b", #Int(l(1), 10))])]->ne]->ne,
       nodes: nodes1,
     }
     let case2 = {
-      T.Ast.patterns: [[#Object(l(2), [("a", #Int(l(3), 20))])]->ne]->ne,
+      Untyped.Ast.patterns: [[#Object(l(2), [("a", #Int(l(3), 20))])]->ne]->ne,
       nodes: nodes2,
     }
     let case3 = {
-      T.Ast.patterns: [[#Object(l(4), [("c", #Int(l(5), 30))])]->ne]->ne,
+      Untyped.Ast.patterns: [[#Object(l(4), [("c", #Int(l(5), 30))])]->ne]->ne,
       nodes: nodes3,
     }
     let case4 = {
-      T.Ast.patterns: [[#Binding(l(6), "x")]->ne]->ne,
+      Untyped.Ast.patterns: [[#Binding(l(6), "x")]->ne]->ne,
       nodes: nodes4,
     }
     let result =

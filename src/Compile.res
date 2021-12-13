@@ -6,7 +6,6 @@
   file, You can obtain one at http://mozilla.org/MPL/2.0/.
 */
 
-module T = Acutis_Types
 module Array = Belt.Array
 module HashmapString = Belt.HashMap.String
 exception Exit = Debug.Exit
@@ -50,14 +49,14 @@ let rec escapeAux = (str, pos, result) =>
 
 let escape = (esc, str) =>
   switch esc {
-  | T.Ast.Echo.Escape => escapeAux(str, 0, "")
+  | Untyped.Ast.Echo.Escape => escapeAux(str, 0, "")
   | NoEscape => str
   }
 
 module Ast = {
   type loc = Debug.loc
   module Echo = {
-    type escape = T.Ast.Echo.escape = NoEscape | Escape
+    type escape = Untyped.Ast.Echo.escape = NoEscape | Escape
     type t =
       | Binding(loc, string, escape)
       | Child(loc, string)
@@ -84,7 +83,7 @@ module Ast = {
 
   let echo = (. x) =>
     switch x {
-    | T.Ast.Echo.Binding(l, s, e) => Echo.Binding(l, s, e)
+    | Untyped.Ast.Echo.Binding(l, s, e) => Echo.Binding(l, s, e)
     | Child(l, s) => Child(l, s)
     | String(l, s, e) => String(l, escape(e, s))
     | Int(l, i, e) => String(l, escape(e, Belt.Int.toString(i)))
@@ -171,8 +170,8 @@ type rec template<'a> =
 
 @raises(Exit)
 let compileExn = (~name, src) => {
-  let nodes = Untyped.makeAstInternalExn(~name, src)
-  {T.Ast.name: name, nodes: nodes}
+  let nodes = Untyped.makeExn(~name, src)
+  {Untyped.Ast.name: name, nodes: nodes}
 }
 
 let compile = (~name, src, components) =>

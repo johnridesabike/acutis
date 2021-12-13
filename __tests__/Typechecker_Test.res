@@ -8,14 +8,13 @@
 
 open TestFramework
 open Typechecker
-module T = Acutis_Types
 module MapString = Belt.Map.String
 
 let debug = Typescheme.debug
 
 describe("basic", ({test, _}) => {
   test("pattern", ({expect, _}) => {
-    let pat1: T.Ast_Pattern.t = #Object(
+    let pat1: Untyped.Ast_Pattern.t = #Object(
       Loc(1),
       [
         ("a", #True(Loc(1))),
@@ -24,7 +23,7 @@ describe("basic", ({test, _}) => {
         ("d", #Array(Loc(1), [#True(Loc(1)), #False(Loc(1))])),
       ],
     )
-    let pat2: T.Ast_Pattern.t = #Object(
+    let pat2: Untyped.Ast_Pattern.t = #Object(
       Loc(1),
       [
         ("a", #False(Loc(1))),

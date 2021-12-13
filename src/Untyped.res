@@ -12,32 +12,82 @@
   "peek" operations needed to switch code paths.
 */
 
-module T = Acutis_Types
-
-module Array = Belt.Array
-module List = Belt.List
-module MutMapString = Belt.MutableMap.String
 module Queue = Belt.MutableQueue
 module Token = Lexer.Token
 
 exception Exit = Debug.Exit
 
-module Ast_Pattern = T.Ast_Pattern
+module Ast_Pattern = {
+  type binding = [#Binding(Debug.loc, string)]
+  type arr_<'t> = [
+    | #Array(Debug.loc, array<'t>)
+    | #ArrayWithTailBinding(Debug.loc, array<'t>, binding)
+  ]
+  type dict_<'t> = [#Dict(Debug.loc, array<(string, 't)>)]
+  type rec t = [
+    | #Null(Debug.loc)
+    | #Some(Debug.loc, t)
+    | #False(Debug.loc)
+    | #True(Debug.loc)
+    | #String(Debug.loc, string)
+    | #Int(Debug.loc, int)
+    | #Float(Debug.loc, float)
+    | #Tuple(Debug.loc, array<t>)
+    | arr_<t>
+    | dict_<t>
+    | #Object(Debug.loc, array<(string, t)>)
+    | binding
+  ]
+  type arr = arr_<t>
+  type dict = dict_<t>
+
+  let rec toString = (x: t) =>
+    switch x {
+    | #True(_) | #False(_) => "boolean"
+    | #Null(_) => "null"
+    | #Some(_, x) => toString(x)
+    | #String(_) => "string"
+    | #Int(_) => "int"
+    | #Float(_) => "float"
+    | #Tuple(_) => "tuple"
+    | #Array(_) | #ArrayWithTailBinding(_) => "array"
+    | #Object(_) => "object"
+    | #Dict(_) => "dictionary"
+    | #Binding(_, x) => `binding: \`${x}\``
+    }
+
+  let toLocation = (x: t) =>
+    switch x {
+    | #True(x)
+    | #False(x)
+    | #Null(x)
+    | #Some(x, _)
+    | #String(x, _)
+    | #Int(x, _)
+    | #Float(x, _)
+    | #Tuple(x, _)
+    | #Array(x, _)
+    | #ArrayWithTailBinding(x, _, _)
+    | #Object(x, _)
+    | #Dict(x, _)
+    | #Binding(x, _) => x
+    }
+}
 
 module Ast = {
   module Echo = {
-    type escape = T.Ast.Echo.escape = NoEscape | Escape
-    type t = T.Ast.Echo.t =
+    type escape = NoEscape | Escape
+    type t =
       | Binding(Debug.loc, string, escape)
       | Child(Debug.loc, string)
       | String(Debug.loc, string, escape)
       | Int(Debug.loc, int, escape)
       | Float(Debug.loc, float, escape)
   }
-  type trim = T.Ast.trim = TrimStart | TrimEnd | TrimBoth | NoTrim
+  type trim = TrimStart | TrimEnd | TrimBoth | NoTrim
   type mapArrayPattern = [Ast_Pattern.binding | Ast_Pattern.arr]
   type mapDictPattern = [Ast_Pattern.binding | Ast_Pattern.dict]
-  type rec node<'a> = T.Ast.node<'a> =
+  type rec node<'a> =
     | Text(string, trim)
     // The first echo item that isn't null will be returned.
     | Echo({loc: Debug.loc, nullables: array<Echo.t>, default: Echo.t})
@@ -52,26 +102,13 @@ module Ast = {
         f: 'a,
       })
   and nodes<'a> = array<node<'a>>
-  and case<'a> = T.Ast.case<'a> = {
+  and case<'a> = {
     patterns: NonEmpty.t<NonEmpty.t<Ast_Pattern.t>>,
     nodes: nodes<'a>,
   }
-  and child<'a> = T.Ast.child<'a> = ChildName(string) | ChildBlock(nodes<'a>)
-  type t<'a> = T.Ast.t<'a> = {nodes: nodes<'a>, name: string}
+  and child<'a> = ChildName(string) | ChildBlock(nodes<'a>)
+  type t<'a> = {nodes: nodes<'a>, name: string}
 }
-
-type rec ast<'a> = Ast.t<templateU<'a>>
-and template<'a> = (environment<'a>, Js.Dict.t<Js.Json.t>, Js.Dict.t<'a>) => 'a
-and templateU<'a> = (. environment<'a>, Js.Dict.t<Js.Json.t>, Js.Dict.t<'a>) => 'a
-and environment<'a> = T.environment<'a> = {
-  render: (. ast<'a>, Js.Dict.t<Js.Json.t>, Js.Dict.t<'a>) => 'a,
-  return: (. string) => 'a,
-  error: (. string) => 'a,
-  mapChild: (. 'a, string => string) => 'a,
-  flatMapChild: (. 'a, string => 'a) => 'a,
-}
-
-type t<'a> = template<'a>
 
 module Pattern = {
   @raises(Exit)
@@ -484,207 +521,8 @@ and parseProps = tokens => {
 }
 
 @raises(Exit)
-let makeAstInternalExn = (~name, source) => {
+let makeExn = (~name, source) => {
   let tokens = Lexer.make(source, ~name)
   let {data, _} = parse(Lexer.popExn(tokens), tokens, ~until=endOfFile)
   data
 }
-
-// This is an intermediary structure that stores the ASTs before they're
-// fully linked and turned into template functions.
-type notlinked<'a> =
-  | Ast({name: string, nodes: Ast.nodes<unit>})
-  | Func({name: string, f: T.template<'a>})
-  | AstFunc({name: string, nodes: Ast.nodes<unit>, f: Deprecated_Source.stringFunc<'a>})
-
-let name = x =>
-  switch x {
-  | Ast({name, _}) | Func({name, _}) | AstFunc({name, _}) => name
-  }
-
-@raises(Exit)
-let compileExn = (src: Deprecated_Source.t<_>) =>
-  switch src {
-  | String({name, src}) =>
-    let nodes = makeAstInternalExn(~name, src)
-    Ast({name: name, nodes: nodes})
-  | Func({name, f}) => Func({name: name, f: f})
-  | StringFunc({name, src, f}) =>
-    AstFunc({
-      name: name,
-      nodes: makeAstInternalExn(~name, src),
-      f: f,
-    })
-  }
-
-let compile = src =>
-  try {
-    #ok(compileExn(src))
-  } catch {
-  | Exit(e) => #errors([e])
-  | e => #errors([Debug.uncaughtCompileError(e, ~name=Deprecated_Source.name(src))])
-  }
-
-module Deprecated_Components = {
-  let stringEq = (. a: string, b: string) => a == b
-
-  // this makes components render faster.
-  let uncurry = (f, . a, b, c) => f(a, b, c)
-
-  // Mutable structures have the advantage of being able to update even when
-  // the linker exits early via raising an exception.
-  type graph<'a> = {
-    linked: MutMapString.t<T.templateU<'a>>,
-    notlinked: MutMapString.t<notlinked<'a>>,
-    stack: list<string>,
-  }
-
-  // When we link components in the tree, ensure that it keeps the
-  // directed-acyclic structure.
-  @raises(Exit)
-  let rec getComponentExn = (g, name, loc) =>
-    switch MutMapString.get(g.linked, name) {
-    | Some(f) => f // It was linked already during a previous search.
-    | None =>
-      switch MutMapString.get(g.notlinked, name) {
-      | Some(ast) =>
-        // Remove it from the unlinked map so a cycle isn't possible.
-        MutMapString.remove(g.notlinked, name)
-        let f = uncurry(linkComponentsExn(ast, {...g, stack: list{name, ...g.stack}}))
-        MutMapString.set(g.linked, name, f)
-        f
-      | None =>
-        // It is either being linked (thus in a cycle) or it doesn't exist.
-        if List.hasU(g.stack, name, stringEq) {
-          raise(Exit(Debug.cyclicDependency(~loc, ~name, ~stack=g.stack)))
-        } else {
-          raise(Exit(Debug.Deprecated.componentDoesNotExist(~loc, ~name, ~stack=g.stack)))
-        }
-      }
-    }
-  // Recursively map the nodes to link the components.
-  @raises(Exit)
-  and mapNodesExn = (nodes, graph) =>
-    Array.mapU(nodes, (. node: Ast.node<_>) =>
-      switch node {
-      | (Text(_) | Echo(_)) as x => x
-      | Match(l, b, cases) =>
-        Match(
-          l,
-          b,
-          NonEmpty.map(cases, (. {patterns, nodes}): T.Ast.case<_> => {
-            patterns: patterns,
-            nodes: mapNodesExn(nodes, graph),
-          }),
-        )
-      | MapArray(l, p, cases) =>
-        MapArray(
-          l,
-          p,
-          NonEmpty.map(cases, (. {patterns, nodes}): T.Ast.case<_> => {
-            patterns: patterns,
-            nodes: mapNodesExn(nodes, graph),
-          }),
-        )
-      | MapDict(l, p, cases) =>
-        MapDict(
-          l,
-          p,
-          NonEmpty.map(cases, (. {patterns, nodes}): T.Ast.case<_> => {
-            patterns: patterns,
-            nodes: mapNodesExn(nodes, graph),
-          }),
-        )
-      | Component({loc, name, props, children, f: ()}) =>
-        Component({
-          loc: loc,
-          name: name,
-          props: props,
-          children: Array.mapU(children, (. (name, child)) =>
-            switch child {
-            | ChildName(_) as child => (name, child)
-            | ChildBlock(nodes) => (name, ChildBlock(mapNodesExn(nodes, graph)))
-            }
-          ),
-          f: getComponentExn(graph, name, loc),
-        })
-      }
-    )
-  @raises(Exit)
-  and linkComponentsExn = (src, graph) =>
-    switch src {
-    | Ast({name, nodes}) =>
-      let ast: Ast.t<_> = {name: name, nodes: mapNodesExn(nodes, graph)}
-      (env: T.environment<_>, props, children) => env.render(. ast, props, children)
-    | AstFunc({name, nodes, f}) =>
-      let ast: Ast.t<_> = {name: name, nodes: mapNodesExn(nodes, graph)}
-      f(ast)
-    | Func({f, _}) => f
-    }
-
-  let linkComponents = (src, graph) =>
-    try {
-      #ok(linkComponentsExn(src, graph))
-    } catch {
-    | Exit(e) => #errors([e])
-    | e => #errors([Debug.uncaughtCompileError(e, ~name=name(src))])
-    }
-
-  type t<'a> = MutMapString.t<T.templateU<'a>>
-
-  let empty = () => MutMapString.make()
-
-  let make = a => {
-    let errors = Queue.make()
-    let linked = MutMapString.make()
-    let notlinked = MutMapString.make()
-    Array.forEachU(a, (. src) => {
-      let name = Deprecated_Source.name(src)
-      MutMapString.updateU(notlinked, name, (. x) =>
-        switch x {
-        | None =>
-          switch compile(src) {
-          | #ok(x) => Some(x)
-          | #errors(e) =>
-            e->Queue.fromArray->Queue.transfer(errors)
-            None
-          }
-        | Some(_) as x =>
-          Queue.add(errors, Debug.duplicateCompName(name))
-          x
-        }
-      )
-    })
-    // Link each AST in a way that ensures the output graph has no cycles.
-    let rec aux = () =>
-      switch MutMapString.minimum(notlinked) {
-      | Some((name, ast)) =>
-        MutMapString.remove(notlinked, name)
-        let g = {linked: linked, notlinked: notlinked, stack: list{name}}
-        switch linkComponents(ast, g) {
-        | #ok(f) => MutMapString.set(linked, name, uncurry(f))
-        | #errors(e) => e->Queue.fromArray->Queue.transfer(errors)
-        }
-        aux()
-      | None =>
-        if Queue.isEmpty(errors) {
-          #ok(linked)
-        } else {
-          #errors(Queue.toArray(errors))
-        }
-      }
-    aux()
-  }
-}
-
-let make = (src, components) =>
-  compile(src)->Result.flatMapU((. x) =>
-    Deprecated_Components.linkComponents(
-      x,
-      {
-        Deprecated_Components.linked: components,
-        notlinked: MutMapString.make(),
-        stack: list{Deprecated_Source.name(src)},
-      },
-    )
-  )

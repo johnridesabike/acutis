@@ -5,9 +5,8 @@
   License, v. 2.0. If a copy of the MPL was not distributed with this
   file, You can obtain one at http://mozilla.org/MPL/2.0/.
 */
-module T = Acutis_Types
 module Array = Belt.Array
-module Ast_Pattern = T.Ast_Pattern
+module Ast_Pattern = Untyped.Ast_Pattern
 module MapString = Belt.Map.String
 module Queue = Belt.MutableQueue
 module SetString = Belt.Set.String
@@ -466,7 +465,7 @@ module Global = {
     }
   }
   @raises(Exit)
-  let unifyMapArrayCases2 = (pat: T.Ast.mapArrayPattern, tys, ctx, ~loc, ~name) => {
+  let unifyMapArrayCases2 = (pat: Untyped.Ast.mapArrayPattern, tys, ctx, ~loc, ~name) => {
     let int = Typescheme.int()
     let (ty, ty_index) = switch NonEmpty.toArray(tys) {
     | [hd] => (Typescheme.list(hd), int)
@@ -480,11 +479,11 @@ module Global = {
       let a_t = fromPattern(~default=Typescheme.unknown(), a, ctx, ~name)
       unify(a_t, ty, Expand, ~loc, ~name)
     }
-    Pattern.make((pat :> T.Ast_Pattern.t), ty.contents)
+    Pattern.make((pat :> Untyped.Ast_Pattern.t), ty.contents)
   }
 
   @raises(Exit)
-  let unifyMapDictCases2 = (pat: T.Ast.mapDictPattern, tys, ctx, ~loc, ~name) => {
+  let unifyMapDictCases2 = (pat: Untyped.Ast.mapDictPattern, tys, ctx, ~loc, ~name) => {
     let str = Typescheme.string()
     let (ty, ty_index) = switch NonEmpty.toArray(tys) {
     | [hd] => (Typescheme.dict(hd), str)
@@ -498,7 +497,7 @@ module Global = {
       let t = fromPattern(~default=Typescheme.unknown(), d, ctx, ~name)
       unify(t, ty, Expand, ~loc, ~name)
     }
-    Pattern.make((pat :> T.Ast_Pattern.t), ty.contents)
+    Pattern.make((pat :> Untyped.Ast_Pattern.t), ty.contents)
   }
 }
 
@@ -511,11 +510,12 @@ let unifyEchoes = (nullables, default, ctx, ~name) => {
     switch nullables[i] {
     | None =>
       switch default {
-      | T.Ast.Echo.Binding(loc, binding, _) => Context.update(ctx, binding, echo(), ~loc, ~name)
+      | Untyped.Ast.Echo.Binding(loc, binding, _) =>
+        Context.update(ctx, binding, echo(), ~loc, ~name)
       | Child(loc, child) => Context.updateChild(ctx, child, Child.child(), ~loc)
       | String(_, _, _) | Int(_, _, _) | Float(_, _, _) => ()
       }
-    | Some(T.Ast.Echo.Binding(loc, binding, _)) =>
+    | Some(Untyped.Ast.Echo.Binding(loc, binding, _)) =>
       Context.update(ctx, binding, nullable(echo()), ~loc, ~name)
       aux(succ(i))
     | Some(String(_, _, _) | Int(_, _, _) | Float(_, _, _)) =>
@@ -549,13 +549,13 @@ let getTypes = x =>
 let rec makeCases = (cases, ctx, ~loc, ~name, g) => {
   let (casetypes, cases) =
     cases
-    ->NonEmpty.map((. {T.Ast.patterns: pats, nodes}) => {
+    ->NonEmpty.map((. {Untyped.Ast.patterns: pats, nodes}) => {
       let bindings = Queue.make()
       let casetypes =
         pats
         ->NonEmpty.map((. pattern) =>
           NonEmpty.map(pattern, (. p) => (
-            T.Ast_Pattern.toLocation(p),
+            Untyped.Ast_Pattern.toLocation(p),
             Local.fromPattern(p, bindings, ~name),
           ))
         )
@@ -585,7 +585,7 @@ let rec makeCases = (cases, ctx, ~loc, ~name, g) => {
 and makeNodes = (nodes, ctx, ~name, g) =>
   Array.mapU(nodes, (. node) =>
     switch node {
-    | T.Ast.Text(s, t) => Ast.TText(s, t)
+    | Untyped.Ast.Text(s, t) => Ast.TText(s, t)
     | Echo({loc, nullables, default}) =>
       unifyEchoes(nullables, default, ctx, ~name)->ignore
       Ast.TEcho({loc: loc, nullables: nullables, default: default})

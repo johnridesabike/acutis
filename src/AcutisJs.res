@@ -6,16 +6,8 @@
   file, You can obtain one at http://mozilla.org/MPL/2.0/.
 */
 
-module Deprecated_Compile = {
-  include Untyped
-}
-
 module Compile = {
   include Compile
-}
-
-module Deprecated_Environment = {
-  include Deprecated_Environment
 }
 
 module Render = {
@@ -24,10 +16,6 @@ module Render = {
 
 module Result = {
   include Result
-}
-
-module Deprecated_Source = {
-  include Deprecated_Source
 }
 
 module Source = {
