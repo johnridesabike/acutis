@@ -1073,7 +1073,7 @@ Array [
     "location": Object {
       "character": 40,
     },
-    "message": "This pattern is type boolean but expected type {\\"a\\": unknown}.",
+    "message": "This pattern is type boolean but expected type {\\"a\\": _}.",
     "path": Array [
       "",
     ],
@@ -1137,7 +1137,7 @@ Array [
     "location": Object {
       "character": 34,
     },
-    "message": "This pattern is type [unknown] but expected type boolean.",
+    "message": "This pattern is type [_] but expected type boolean.",
     "path": Array [
       "",
     ],
@@ -1153,7 +1153,7 @@ Array [
     "location": Object {
       "character": 30,
     },
-    "message": "This pattern is type [unknown] but expected type int.",
+    "message": "This pattern is type [_] but expected type int.",
     "path": Array [
       "",
     ],
@@ -1169,7 +1169,7 @@ Array [
     "location": Object {
       "character": 40,
     },
-    "message": "This pattern is type [unknown] but expected type {\\"a\\": unknown}.",
+    "message": "This pattern is type [_] but expected type {\\"a\\": _}.",
     "path": Array [
       "",
     ],
@@ -1201,7 +1201,7 @@ Array [
     "location": Object {
       "character": 33,
     },
-    "message": "This pattern is type {\\"a\\": unknown} but expected type string.",
+    "message": "This pattern is type {\\"a\\": _} but expected type string.",
     "path": Array [
       "",
     ],
@@ -1217,7 +1217,7 @@ Array [
     "location": Object {
       "character": 34,
     },
-    "message": "This pattern is type {\\"a\\": unknown} but expected type boolean.",
+    "message": "This pattern is type {\\"a\\": _} but expected type boolean.",
     "path": Array [
       "",
     ],
@@ -1233,7 +1233,7 @@ Array [
     "location": Object {
       "character": 35,
     },
-    "message": "This pattern is type {\\"a\\": unknown} but expected type boolean.",
+    "message": "This pattern is type {\\"a\\": _} but expected type boolean.",
     "path": Array [
       "",
     ],
@@ -1249,7 +1249,7 @@ Array [
     "location": Object {
       "character": 32,
     },
-    "message": "This pattern is type {\\"a\\": unknown} but expected type [unknown].",
+    "message": "This pattern is type {\\"a\\": _} but expected type [_].",
     "path": Array [
       "",
     ],
@@ -1265,7 +1265,7 @@ Array [
     "location": Object {
       "character": 31,
     },
-    "message": "This pattern is type {\\"a\\": unknown} but expected type int.",
+    "message": "This pattern is type {\\"a\\": _} but expected type int.",
     "path": Array [
       "",
     ],
@@ -1345,7 +1345,7 @@ Array [
     "location": Object {
       "character": 33,
     },
-    "message": "This pattern is type int but expected type [unknown].",
+    "message": "This pattern is type int but expected type [_].",
     "path": Array [
       "",
     ],
@@ -1361,7 +1361,7 @@ Array [
     "location": Object {
       "character": 40,
     },
-    "message": "This pattern is type int but expected type {\\"a\\": unknown}.",
+    "message": "This pattern is type int but expected type {\\"a\\": _}.",
     "path": Array [
       "",
     ],
@@ -1441,7 +1441,7 @@ Array [
     "location": Object {
       "character": 40,
     },
-    "message": "This pattern is type string but expected type {\\"a\\": unknown}.",
+    "message": "This pattern is type string but expected type {\\"a\\": _}.",
     "path": Array [
       "",
     ],

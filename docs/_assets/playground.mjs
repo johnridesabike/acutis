@@ -6,12 +6,7 @@
   file, You can obtain one at http://mozilla.org/MPL/2.0/.
 */
 
-import {
-  Compile,
-  Environment,
-  Source,
-  Result,
-} from "./../../lib/es6/src/AcutisJs.mjs";
+import { Compile, Render, Result } from "./../../lib/es6/src/AcutisJs.mjs";
 
 window.onload = function playground(_event) {
   var propsText = document.getElementById("props");
@@ -49,7 +44,7 @@ window.onload = function playground(_event) {
   );
   sourceText.value = `Hello {{ name ? "dear user" }},
 
-{% map objects with {name, color} ~%}
+{% map objects with {name, color: !color} ~%}
   Have you noticed the {{ name }} is {{ color }} today?
 {% match name, color
    with "sky", "blue"
@@ -68,10 +63,13 @@ window.onload = function playground(_event) {
   function render(_event) {
     try {
       var props = JSON.parse(propsText.value);
-      var src = Source.string("Playground", sourceText.value);
-      var template = Compile.make(src, Compile.Components.empty());
+      var template = Compile.make(
+        "Playground",
+        sourceText.value,
+        Compile.Components.empty()
+      );
       var result = Result.flatMap(template, (template) =>
-        template(Environment.sync, props, {})
+        Render.sync(template, props, {})
       );
       resultText.value = Result.getOrElse(
         result,

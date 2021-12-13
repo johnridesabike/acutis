@@ -7,10 +7,12 @@
 *}
 {%~ Layout
    title="Acutis language playground"
-   description="A playground for experimenting with the Acutis template language."
+   description=!"A playground for experimenting with the Acutis template language."
    showTitle=true
    site
    page
+   content=null
+   next=null
   %}
 <div class="font-monospace">
   <label for="props" class="playground__header">

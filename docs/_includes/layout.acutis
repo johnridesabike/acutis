@@ -11,7 +11,7 @@
   <head>
     <title>{{ title }}</title>
     {% match description with null %} <!-- no description -->
-    {% with description %}
+    {% with !description %}
       <meta name="description" content="{{ description }}" />
     {% /match %}
     <meta
@@ -76,10 +76,10 @@
             <h1>{{ title }}</h1>
           </header>
         {%~ /match ~%}
-        {{ &content ? Children }}
+        {{ &content ? Children ? "" }}
         {%~ match next
            with null ~%} {* nothing! *}
-        {%~ with {text, url} ~%}
+        {%~ with !{text, url} ~%}
           <nav class="next">
             <h2 class="next__header">Next:</h2>
             <a href="{{ siteUrl }}{{ url }}" class="next__url">{{ text }}</a>
@@ -87,7 +87,12 @@
         {%~ /match %}
       </article>
     </main>
-    {%~ Footer name="John Jackson" link="https://johnridesa.bike" siteUrl /~%}
+    {%~ Footer
+        name="John Jackson"
+        link=!"https://johnridesa.bike"
+        siteUrl
+        year=null
+    /~%}
   </body>
 </html>
 {%~ /match ~%}

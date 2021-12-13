@@ -38,7 +38,7 @@ type props = MapString.t<t>
 
 let rec toString = x =>
   switch x.contents {
-  | Unknown => "unknown"
+  | Unknown => "_"
   | Boolean => "boolean"
   | Int => "int"
   | Float => "float"

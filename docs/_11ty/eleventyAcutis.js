@@ -10,7 +10,7 @@ const path = require("path");
 const fs = require("fs");
 const util = require("util");
 const fastGlob = require("fast-glob");
-const { Compile, Environment, Result, Source } = require("../../");
+const { Compile, Render, Result, Source } = require("../../");
 const { filenameToComponent } = require("../../node-utils");
 
 const readFile = util.promisify(fs.readFile);
@@ -23,7 +23,6 @@ function onComponentsError(e) {
 }
 
 module.exports = function (eleventyConfig, config) {
-  const env = Environment.async;
   let components = Compile.Components.empty();
   eleventyConfig.addTemplateFormats("acutis");
   eleventyConfig.addExtension("acutis", {
@@ -40,7 +39,7 @@ module.exports = function (eleventyConfig, config) {
         files.map(async (fileName) => {
           const str = await readFile(fileName, "utf-8");
           const name = filenameToComponent(fileName);
-          return Source.string(name, str);
+          return Source.src(name, str);
         })
       );
       const componentsResult = Compile.Components.make([
@@ -56,13 +55,12 @@ module.exports = function (eleventyConfig, config) {
           `I couldn't render ${inputPath} due to the previous errors.`
         );
       }
+      const template = Result.getOrElse(
+        Compile.make(inputPath, str, components),
+        onError
+      );
       return async function (data) {
-        const src = Source.string(inputPath, str);
-        const template = Result.getOrElse(
-          Compile.make(src, components),
-          onError
-        );
-        const result = await template(env, data, {});
+        const result = await Render.async(template, data, {});
         return Result.getOrElse(result, onError);
       };
     },
