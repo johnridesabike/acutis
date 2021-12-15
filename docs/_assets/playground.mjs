@@ -69,7 +69,7 @@ window.onload = function playground(_event) {
         Compile.Components.empty()
       );
       var result = Result.flatMap(template, (template) =>
-        Render.sync(template, props, {})
+        Render.sync(template, props)
       );
       resultText.value = Result.getOrElse(
         result,

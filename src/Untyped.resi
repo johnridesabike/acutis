@@ -6,73 +6,59 @@
   file, You can obtain one at http://mozilla.org/MPL/2.0/.
 */
 
-module Ast_Pattern: {
-  type binding = [#Binding(Debug.loc, string)]
-  type arr_<'t> = [
-    | #Array(Debug.loc, array<'t>)
-    | #ArrayWithTailBinding(Debug.loc, array<'t>, binding)
-  ]
-  type dict_<'t> = [#Dict(Debug.loc, array<(string, 't)>)]
-  type rec t = [
-    | #Null(Debug.loc)
-    | #Some(Debug.loc, t)
-    | #False(Debug.loc)
-    | #True(Debug.loc)
-    | #String(Debug.loc, string)
-    | #Int(Debug.loc, int)
-    | #Float(Debug.loc, float)
-    | #Tuple(Debug.loc, array<t>)
-    | arr_<t>
-    | dict_<t>
-    | #Object(Debug.loc, array<(string, t)>)
-    | binding
-  ]
-  type arr = arr_<t>
-  type dict = dict_<t>
+module Pattern: {
+  type rec t =
+    | UNull(Debug.loc)
+    | USome(Debug.loc, t)
+    | UFalse(Debug.loc)
+    | UTrue(Debug.loc)
+    | UString(Debug.loc, string)
+    | UInt(Debug.loc, int)
+    | UFloat(Debug.loc, float)
+    | UTuple(Debug.loc, array<t>)
+    | UList(Debug.loc, array<t>)
+    | UListWithTailBinding(Debug.loc, array<t>, t)
+    | UDict(Debug.loc, array<(string, t)>)
+    | URecord(Debug.loc, array<(string, t)>)
+    | UBinding(Debug.loc, string)
 
   let toString: t => string
 
   let toLocation: t => Debug.loc
+
+  let make: Lexer.t => NonEmpty.t<t>
 }
 
-module Ast: {
-  module Echo: {
-    type escape = NoEscape | Escape
-    type t =
-      | Binding(Debug.loc, string, escape)
-      | Child(Debug.loc, string)
-      | String(Debug.loc, string, escape)
-      | Int(Debug.loc, int, escape)
-      | Float(Debug.loc, float, escape)
-  }
-  type trim = TrimStart | TrimEnd | TrimBoth | NoTrim
-  type mapArrayPattern = [Ast_Pattern.binding | Ast_Pattern.arr]
-  type mapDictPattern = [Ast_Pattern.binding | Ast_Pattern.dict]
-  type rec node<'a> =
-    | Text(string, trim)
-    // The first echo item that isn't null will be returned.
-    | Echo({loc: Debug.loc, nullables: array<Echo.t>, default: Echo.t})
-    | Match(Debug.loc, NonEmpty.t<Ast_Pattern.binding>, NonEmpty.t<case<'a>>)
-    | MapArray(Debug.loc, mapArrayPattern, NonEmpty.t<case<'a>>)
-    | MapDict(Debug.loc, mapDictPattern, NonEmpty.t<case<'a>>)
-    | Component({
-        loc: Debug.loc,
-        name: string,
-        props: array<(string, Ast_Pattern.t)>,
-        children: array<(string, child<'a>)>,
-        f: 'a,
-      })
-  and nodes<'a> = array<node<'a>>
-  and case<'a> = {
-    patterns: NonEmpty.t<NonEmpty.t<Ast_Pattern.t>>,
-    nodes: nodes<'a>,
-  }
-  and child<'a> = ChildName(string) | ChildBlock(nodes<'a>)
-  type t<'a> = {nodes: nodes<'a>, name: string}
+type echo =
+  | EBinding(Debug.loc, string, Utils.escape)
+  | EChild(Debug.loc, string)
+  | EString(Debug.loc, string, Utils.escape)
+  | EInt(Debug.loc, int, Utils.escape)
+  | EFloat(Debug.loc, float, Utils.escape)
+
+type trim = TrimStart | TrimEnd | TrimBoth | NoTrim
+
+type rec node =
+  | UText(string, trim)
+  // The first echo item that isn't null will be returned.
+  | UEcho({loc: Debug.loc, nullables: array<echo>, default: echo})
+  | UMatch(Debug.loc, NonEmpty.t<(Debug.loc, string)>, NonEmpty.t<case>)
+  | UMapList(Debug.loc, Pattern.t, NonEmpty.t<case>)
+  | UMapDict(Debug.loc, Pattern.t, NonEmpty.t<case>)
+  | UComponent({
+      loc: Debug.loc,
+      name: string,
+      props: array<(string, Pattern.t)>,
+      children: array<(string, child)>,
+    })
+
+and case = {
+  patterns: NonEmpty.t<NonEmpty.t<Pattern.t>>,
+  nodes: t,
 }
 
-module Pattern: {
-  let make: Lexer.t => NonEmpty.t<Ast_Pattern.t>
-}
+and child = UChildName(Debug.loc, string) | UChildBlock(Debug.loc, t)
 
-let makeExn: (~name: string, string) => Ast.nodes<unit>
+and t = array<node>
+
+let makeExn: (~name: string, string) => t

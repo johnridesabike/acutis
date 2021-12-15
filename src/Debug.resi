@@ -65,9 +65,10 @@ let unterminatedString: (~loc: loc, ~name: string) => t
 let unknownEscapeSequence: (~loc: loc, ~name: string, ~char: string) => t
 
 /* Parse errors. */
-let badMapArrayPattern: ('a, debuggable<'a>, ~name: string) => t
+let badMapListPattern: ('a, debuggable<'a>, ~name: string) => t
 let badMapDictPattern: ('a, debuggable<'a>, ~name: string) => t
 let unexpectedToken: ('a, debuggable<'a>, ~name: string) => t
+let childNotAllowedInRoot: loc => t
 
 /* Compile errors. */
 let cyclicDependency: (~loc: loc, ~name: string, ~stack: list<string>) => t
@@ -93,31 +94,4 @@ let patternNumberMismatch: (~loc: loc, ~name: string) => t
 let nameBoundMultipleTimes: (~loc: loc, ~binding: string, ~name: string) => t
 let decodeError: (~stack: list<Js.Json.t>, 'a, Js.Json.t, 'a => string) => t
 let decodeErrorMissingKey: (~stack: list<Js.Json.t>, string) => t
-let decodeErrorMissingChild: string => t
 let customError: string => t
-
-module Deprecated: {
-  let componentDoesNotExist: (~loc: loc, ~name: string, ~stack: list<string>) => t
-  /* Render errors */
-  let patternTypeMismatch: (
-    ~data: Js.Json.tagged_t,
-    ~pattern: 'a,
-    ~stack: Stack.t,
-    debuggable<'a>,
-  ) => t
-  let badEchoType: (~loc: loc, ~binding: string, ~type_: Js.Json.tagged_t, ~stack: Stack.t) => t
-  let badMapArrayType: (~loc: loc, ~binding: string, ~type_: Js.Json.tagged_t, ~stack: Stack.t) => t
-  let badMapDictType: (~loc: loc, ~binding: string, ~type_: Js.Json.tagged_t, ~stack: Stack.t) => t
-  let bindingDoesNotExist: (~loc: loc, ~binding: string, ~stack: Stack.t) => t
-  let bindingTypeMismatch: (
-    ~pattern: 'a,
-    ~data: Js.Json.tagged_t,
-    ~binding: string,
-    ~stack: Stack.t,
-    debuggable<'a>,
-  ) => t
-  let noMatchFound: (~loc: loc, ~stack: Stack.t) => t
-  let patternNumberMismatch: (~loc: loc, ~stack: Stack.t) => t
-  let nameBoundMultipleTimes: (~loc: loc, ~binding: string, ~stack: Stack.t) => t
-  let customError: (string, ~stack: Stack.t) => t
-}

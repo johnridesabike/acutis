@@ -21,11 +21,11 @@ let compile = (~name="", src) =>
   | #errors(e) => e
   }
 
-let render = (~name="", ~children=Js.Dict.empty(), src, props, components) => {
+let render = (~name="", src, props, components) => {
   let r =
     Compile.Components.make(components)
     ->Result.flatMap(Compile.make(~name, src))
-    ->Result.flatMap(t => Render.sync(t, props, children))
+    ->Result.flatMap(t => Render.sync(t, props))
   switch r {
   | #ok(_) =>
     Js.log2("lol", r)

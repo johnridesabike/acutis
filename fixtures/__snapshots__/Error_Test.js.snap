@@ -1889,9 +1889,11 @@ exports[`Rendering Missing bindings 2`] = `
 Array [
   Object {
     "exn": undefined,
-    "kind": "Decode",
-    "location": undefined,
-    "message": "Input is missing required template child \\"Z.\\"",
+    "kind": "Parse",
+    "location": Object {
+      "character": 4,
+    },
+    "message": "Children are not allowed in root templates, only in components.",
     "path": Array [],
   },
 ]
@@ -1917,9 +1919,11 @@ exports[`Rendering Missing bindings 4`] = `
 Array [
   Object {
     "exn": undefined,
-    "kind": "Decode",
-    "location": undefined,
-    "message": "Input is missing required template child \\"C.\\"",
+    "kind": "Parse",
+    "location": Object {
+      "character": 8,
+    },
+    "message": "Children are not allowed in root templates, only in components.",
     "path": Array [],
   },
 ]

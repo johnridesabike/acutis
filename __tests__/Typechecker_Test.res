@@ -9,27 +9,28 @@
 open TestFramework
 open Typechecker
 module MapString = Belt.Map.String
+module P = Untyped.Pattern
 
 let debug = Typescheme.debug
 
 describe("basic", ({test, _}) => {
   test("pattern", ({expect, _}) => {
-    let pat1: Untyped.Ast_Pattern.t = #Object(
+    let pat1 = P.URecord(
       Loc(1),
       [
-        ("a", #True(Loc(1))),
-        ("b", #Some(Loc(1), #String(Loc(1), "lol"))),
-        ("c", #Null(Loc(1))),
-        ("d", #Array(Loc(1), [#True(Loc(1)), #False(Loc(1))])),
+        ("a", P.UTrue(Loc(1))),
+        ("b", P.USome(Loc(1), P.UString(Loc(1), "lol"))),
+        ("c", P.UNull(Loc(1))),
+        ("d", P.UList(Loc(1), [P.UTrue(Loc(1)), P.UFalse(Loc(1))])),
       ],
     )
-    let pat2: Untyped.Ast_Pattern.t = #Object(
+    let pat2 = P.URecord(
       Loc(1),
       [
-        ("a", #False(Loc(1))),
-        ("b", #Null(Loc(1))),
-        ("c", #Some(Loc(1), #Float(Loc(1), 1.0))),
-        ("z", #Int(Loc(1), 1)),
+        ("a", P.UFalse(Loc(1))),
+        ("b", P.UNull(Loc(1))),
+        ("c", P.USome(Loc(1), P.UFloat(Loc(1), 1.0))),
+        ("z", P.UInt(Loc(1), 1)),
       ],
     )
     let t1 = Local.fromPattern(pat1, Belt.MutableQueue.make(), ~name="")

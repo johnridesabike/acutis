@@ -28,176 +28,139 @@ let trimEnd = string => {
   aux(Js.String2.length(string))
 }
 
-let escape = c =>
-  switch c {
-  | "&" => "&amp;"
-  | "\"" => "&quot;"
-  | "'" => "&apos;"
-  | ">" => "&gt;"
-  | "<" => "&lt;"
-  | "/" => "&#x2F;"
-  | "`" => "&#x60;"
-  | "=" => "&#x3D;"
-  | c => c
+type loc = Debug.loc
+
+type echo =
+  | OEBinding(loc, string, Utils.escape)
+  | OEChild(loc, string)
+  // All constants are pre-compiled into strings.
+  | OEString(loc, string)
+
+type rec node<'a> =
+  // Trimming is optimized away
+  | OText(string)
+  // The first echo item that isn't null will be returned.
+  | OEcho({loc: loc, nullables: array<echo>, default: echo})
+  // Case matrices are optimized into decision trees
+  | OMatch(loc, NonEmpty.t<Typechecker.Pattern.t>, Matching.t<nodes<'a>>)
+  | OMapList(loc, Typechecker.Pattern.t, Matching.t<nodes<'a>>)
+  | OMapDict(loc, Typechecker.Pattern.t, Matching.t<nodes<'a>>)
+  | OComponent({
+      loc: loc,
+      props: array<(string, Typechecker.Pattern.t)>,
+      children: array<(string, child<'a>)>,
+      val: 'a,
+    })
+and child<'a> = OChildName(string) | OChildBlock(nodes<'a>)
+and nodes<'a> = array<node<'a>>
+
+let echo = (. x) =>
+  switch x {
+  | Untyped.EBinding(l, s, e) => OEBinding(l, s, e)
+  | EChild(l, s) => OEChild(l, s)
+  | EString(l, s, e) => OEString(l, Utils.escape(e, s))
+  | EInt(l, i, e) => OEString(l, Utils.escape(e, Belt.Int.toString(i)))
+  | EFloat(l, i, e) => OEString(l, Utils.escape(e, Belt.Float.toString(i)))
   }
 
-let rec escapeAux = (str, pos, result) =>
-  switch Js.String2.charAt(str, pos) {
-  | "" => result
-  | c => escapeAux(str, succ(pos), result ++ escape(c))
-  }
-
-let escape = (esc, str) =>
-  switch esc {
-  | Untyped.Ast.Echo.Escape => escapeAux(str, 0, "")
-  | NoEscape => str
-  }
-
-module Ast = {
-  type loc = Debug.loc
-  module Echo = {
-    type escape = Untyped.Ast.Echo.escape = NoEscape | Escape
-    type t =
-      | Binding(loc, string, escape)
-      | Child(loc, string)
-      // All constants are pre-compiled into strings.
-      | String(loc, string)
-  }
-  type rec node<'a> =
-    // Trimming is optimized away
-    | OText(string)
-    // The first echo item that isn't null will be returned.
-    | OEcho({loc: loc, nullables: array<Echo.t>, default: Echo.t})
-    // Case matrices are optimized into decision trees
-    | OMatch(loc, NonEmpty.t<Typechecker.Pattern.t>, Matching.t<t<'a>>)
-    | OMapList(loc, Typechecker.Pattern.t, Matching.t<t<'a>>)
-    | OMapDict(loc, Typechecker.Pattern.t, Matching.t<t<'a>>)
-    | OComponent({
-        loc: loc,
-        props: array<(string, Typechecker.Pattern.t)>,
-        children: array<(string, child<'a>)>,
-        val: 'a,
-      })
-  and child<'a> = OChildName(string) | OChildBlock(t<'a>)
-  and t<'a> = array<node<'a>>
-
-  let echo = (. x) =>
+let rec nodes = (~name, a) =>
+  Array.mapU(a, (. x) =>
     switch x {
-    | Untyped.Ast.Echo.Binding(l, s, e) => Echo.Binding(l, s, e)
-    | Child(l, s) => Child(l, s)
-    | String(l, s, e) => String(l, escape(e, s))
-    | Int(l, i, e) => String(l, escape(e, Belt.Int.toString(i)))
-    | Float(l, i, e) => String(l, escape(e, Belt.Float.toString(i)))
-    }
-
-  let rec nodes = (~name, a) =>
-    Array.mapU(a, (. x) =>
-      switch x {
-      | Typechecker.Ast.TText(s, NoTrim) => OText(s)
-      | TText(s, TrimStart) => OText(trimStart(s))
-      | TText(s, TrimEnd) => OText(trimEnd(s))
-      | TText(s, TrimBoth) => OText(trimStart(trimEnd(s)))
-      | TEcho({loc, nullables, default}) =>
-        OEcho({
-          loc: loc,
-          nullables: Array.mapU(nullables, echo),
-          default: echo(. default),
-        })
-      | TMatch(loc, pats, cases) =>
-        switch Matching.make(cases, ~loc, ~name) {
-        | Ok(tree) =>
-          switch Matching.ParMatch.check(tree.tree, ~loc) {
-          | Ok(_) => ()
-          | Error(e) => raise(Exit(e))
-          }
-          let tree = {...tree, exits: Array.map(tree.exits, nodes(~name))}
-          OMatch(loc, pats, tree)
+    | Typechecker.TText(s, NoTrim) => OText(s)
+    | TText(s, TrimStart) => OText(trimStart(s))
+    | TText(s, TrimEnd) => OText(trimEnd(s))
+    | TText(s, TrimBoth) => OText(trimStart(trimEnd(s)))
+    | TEcho({loc, nullables, default}) =>
+      OEcho({
+        loc: loc,
+        nullables: Array.mapU(nullables, echo),
+        default: echo(. default),
+      })
+    | TMatch(loc, pats, cases) =>
+      switch Matching.make(cases, ~loc, ~name) {
+      | Ok(tree) =>
+        switch Matching.ParMatch.check(tree.tree, ~loc) {
+        | Ok(_) => ()
         | Error(e) => raise(Exit(e))
         }
-      | TMapList(loc, pat, cases) =>
-        switch Matching.make(cases, ~loc, ~name) {
-        | Ok(tree) =>
-          switch Matching.ParMatch.check(tree.tree, ~loc) {
-          | Ok(_) => ()
-          | Error(e) => raise(Exit(e))
-          }
-          let tree = {...tree, exits: Array.map(tree.exits, nodes(~name))}
-          OMapList(loc, pat, tree)
-        | Error(e) => raise(Exit(e))
-        }
-      | TMapDict(loc, pat, cases) =>
-        switch Matching.make(cases, ~loc, ~name) {
-        | Ok(tree) =>
-          switch Matching.ParMatch.check(tree.tree, ~loc) {
-          | Ok(_) => ()
-          | Error(e) => raise(Exit(e))
-          }
-          let tree = {...tree, exits: Array.map(tree.exits, nodes(~name))}
-          OMapDict(loc, pat, tree)
-        | Error(e) => raise(Exit(e))
-        }
-      | TComponent({loc, val, props, children}) =>
-        let children = Array.mapU(children, (. (k, v)) =>
-          switch v {
-          | TChildName(s) => (k, OChildName(s))
-          | TChildBlock(n) => (k, OChildBlock(nodes(n, ~name)))
-          }
-        )
-        OComponent({loc: loc, val: val, props: props, children: children})
+        let tree = {...tree, exits: Array.map(tree.exits, nodes(~name))}
+        OMatch(loc, pats, tree)
+      | Error(e) => raise(Exit(e))
       }
-    )
+    | TMapList(loc, pat, cases) =>
+      switch Matching.make(cases, ~loc, ~name) {
+      | Ok(tree) =>
+        switch Matching.ParMatch.check(tree.tree, ~loc) {
+        | Ok(_) => ()
+        | Error(e) => raise(Exit(e))
+        }
+        let tree = {...tree, exits: Array.map(tree.exits, nodes(~name))}
+        OMapList(loc, pat, tree)
+      | Error(e) => raise(Exit(e))
+      }
+    | TMapDict(loc, pat, cases) =>
+      switch Matching.make(cases, ~loc, ~name) {
+      | Ok(tree) =>
+        switch Matching.ParMatch.check(tree.tree, ~loc) {
+        | Ok(_) => ()
+        | Error(e) => raise(Exit(e))
+        }
+        let tree = {...tree, exits: Array.map(tree.exits, nodes(~name))}
+        OMapDict(loc, pat, tree)
+      | Error(e) => raise(Exit(e))
+      }
+    | TComponent({loc, val, props, children}) =>
+      let children = Array.mapU(children, (. (k, v)) =>
+        switch v {
+        | TChildName(s) => (k, OChildName(s))
+        | TChildBlock(n) => (k, OChildBlock(nodes(n, ~name)))
+        }
+      )
+      OComponent({loc: loc, val: val, props: props, children: children})
+    }
+  )
 
-  let make = (~name, ast: Typechecker.Ast.t) => nodes(ast.nodes, ~name)
-}
+let makeNodes = (~name, ast: Typechecker.t) => nodes(ast.nodes, ~name)
 
 type t<'a> = {
   prop_types: Typescheme.props,
   child_types: Typescheme.Child.props,
-  nodes: Ast.t<'a>,
+  nodes: nodes<'a>,
   name: string,
 }
 
 let make = (~name, ast) => {
-  prop_types: ast.Typechecker.Ast.prop_types,
+  prop_types: ast.Typechecker.prop_types,
   child_types: ast.child_types,
-  nodes: Ast.make(~name, ast),
+  nodes: makeNodes(~name, ast),
   name: name,
 }
 
 type rec template<'a> =
-  | Acutis(string, Ast.t<template<'a>>)
+  | Acutis(string, nodes<template<'a>>)
   | Function(string, Typescheme.props, Source.fnU<'a>)
 
-@raises(Exit)
-let compileExn = (~name, src) => {
-  let nodes = Untyped.makeExn(~name, src)
-  {Untyped.Ast.name: name, nodes: nodes}
-}
-
-let compile = (~name, src, components) =>
-  try {
-    let {nodes, _} = compileExn(~name, src)
-    let ast = Typechecker.make(name, nodes, components)
-    #ok(make(~name, ast))
-  } catch {
-  | Exit(e) => #errors([e])
-  | e => #errors([Debug.uncaughtCompileError(e, ~name)])
+module Components = {
+  type t<'a> = {
+    typed: Utils.Dagmap.map<Source.t<Typechecker.t, Source.fnU<'a>>>,
+    optimized: Utils.Dagmap.map<Source.t<nodes<string>, Source.fnU<'a>>>,
   }
 
-module Components = {
-  type t<'a> = Utils.Dagmap.map<Source.t<Typechecker.Ast.t, Source.fnU<'a>>>
-
-  let empty = () => HashmapString.make(~hintSize=0)
+  let empty = () => {
+    typed: HashmapString.make(~hintSize=0),
+    optimized: HashmapString.make(~hintSize=0),
+  }
 
   let makeExn = a => {
-    let m = HashmapString.make(~hintSize=Array.size(a))
+    let size = Array.size(a)
+    let m = HashmapString.make(~hintSize=size)
     Array.forEachU(a, (. src) =>
       switch src {
       | Source.Acutis(name, src) =>
         if HashmapString.has(m, name) {
           raise(Exit(Debug.duplicateCompName(name)))
         }
-        HashmapString.set(m, name, Source.src(~name, compileExn(~name, src).nodes))
+        HashmapString.set(m, name, Source.src(~name, Untyped.makeExn(~name, src)))
       | Function(name, p, c, f) =>
         if HashmapString.has(m, name) {
           raise(Exit(Debug.duplicateCompName(name)))
@@ -205,7 +168,16 @@ module Components = {
         HashmapString.set(m, name, Source.fnU(~name, p, c, f))
       }
     )
-    Typechecker.makeArray(m)
+    let typed = Typechecker.makeComponents(m)
+    let optimized = HashmapString.make(~hintSize=size)
+    HashmapString.forEachU(typed, (. _, v) =>
+      switch v {
+      | Source.Acutis(name, src) =>
+        HashmapString.set(optimized, name, Source.src(~name, makeNodes(~name, src)))
+      | Function(name, p, c, f) => HashmapString.set(optimized, name, Source.fnU(~name, p, c, f))
+      }
+    )
+    {typed: typed, optimized: optimized}
   }
 
   let make = a =>
@@ -215,18 +187,6 @@ module Components = {
     | Exit(e) => #errors([e])
     | e => #errors([Debug.uncaughtCompileError(e, ~name="")])
     }
-
-  let optimize = x => {
-    let m = HashmapString.make(~hintSize=HashmapString.size(x))
-    HashmapString.forEachU(x, (. _, v) =>
-      switch v {
-      | Source.Acutis(name, ast) =>
-        HashmapString.set(m, name, Source.src(~name, Ast.make(~name, ast)))
-      | Function(name, p, c, f) => HashmapString.set(m, name, Source.fnU(~name, p, c, f))
-      }
-    )
-    m
-  }
 }
 
 // Recursively map the nodes to link the components.
@@ -234,7 +194,7 @@ module Components = {
 let rec linkNodesExn = (nodes, graph) =>
   Array.mapU(nodes, (. node) =>
     switch node {
-    | (Ast.OText(_) | OEcho(_)) as x => x
+    | (OText(_) | OEcho(_)) as x => x
     | OMatch(l, b, t) =>
       let exits = Array.mapU(t.exits, (. n) => linkNodesExn(n, graph))
       OMatch(l, b, {...t, exits: exits})
@@ -265,14 +225,14 @@ let linkSrc = (. g, src) =>
   | Function(name, props, _, f) => Function(name, props, f)
   }
 
-let link = (~name, typed, components: Components.t<'a>) =>
+let make = (~name, src, components: Components.t<_>) =>
   try {
-    let g = Utils.Dagmap.make(Components.optimize(components), ~f=linkSrc)
-    #ok({...typed, nodes: linkNodesExn(typed.nodes, g)})
+    let nodes = Untyped.makeExn(~name, src)
+    let ast = Typechecker.make(name, nodes, components.typed)
+    let g = Utils.Dagmap.make(components.optimized, ~f=linkSrc)
+    let root = make(~name, ast)
+    #ok({...root, nodes: linkNodesExn(root.nodes, g)})
   } catch {
   | Exit(e) => #errors([e])
   | e => #errors([Debug.uncaughtCompileError(e, ~name)])
   }
-
-let make = (~name, src, components) =>
-  compile(~name, src, components)->Result.flatMapU((. root) => link(~name, root, components))

@@ -9,40 +9,40 @@
 module Token: {
   type t =
     // Static elements
-    | Text(Debug.loc, string)
-    | Comment(Debug.loc, string)
+    | Tkn_Text(Debug.loc, string)
+    | Tkn_Comment(Debug.loc, string)
     // JSON values
-    | String(Debug.loc, string)
-    | Int(Debug.loc, int)
-    | Float(Debug.loc, float)
-    | True(Debug.loc) // a reserved identifier
-    | False(Debug.loc) // a reserved identifier
-    | Null(Debug.loc) // a reserved identifier
+    | Tkn_String(Debug.loc, string)
+    | Tkn_Int(Debug.loc, int)
+    | Tkn_Float(Debug.loc, float)
+    | Tkn_True(Debug.loc) // a reserved identifier
+    | Tkn_False(Debug.loc) // a reserved identifier
+    | Tkn_Null(Debug.loc) // a reserved identifier
     // JSON syntax
-    | Comma(Debug.loc)
-    | Colon(Debug.loc)
-    | OpenBracket(Debug.loc)
-    | CloseBracket(Debug.loc)
-    | OpenBrace(Debug.loc)
-    | CloseBrace(Debug.loc)
-    | OpenParen(Debug.loc)
-    | CloseParen(Debug.loc)
-    | OpenPointyBracket(Debug.loc)
-    | ClosePoointyBracket(Debug.loc)
-    | Spread(Debug.loc)
+    | Tkn_Comma(Debug.loc)
+    | Tkn_Colon(Debug.loc)
+    | Tkn_OpenBracket(Debug.loc)
+    | Tkn_CloseBracket(Debug.loc)
+    | Tkn_OpenBrace(Debug.loc)
+    | Tkn_CloseBrace(Debug.loc)
+    | Tkn_OpenParen(Debug.loc)
+    | Tkn_CloseParen(Debug.loc)
+    | Tkn_OpenPointyBracket(Debug.loc)
+    | Tkn_ClosePointyBracket(Debug.loc)
+    | Tkn_Spread(Debug.loc)
     // Component syntax
-    | ComponentName(Debug.loc, string)
-    | Slash(Debug.loc)
-    | Block(Debug.loc)
-    | Equals(Debug.loc)
+    | Tkn_ComponentName(Debug.loc, string)
+    | Tkn_Slash(Debug.loc)
+    | Tkn_Block(Debug.loc)
+    | Tkn_Equals(Debug.loc)
     // Dynamic content
-    | Identifier(Debug.loc, string)
-    | Tilde(Debug.loc)
-    | Question(Debug.loc)
-    | Ampersand(Debug.loc)
-    | Bang(Debug.loc)
-    | Echo(Debug.loc)
-    | EndOfFile(Debug.loc)
+    | Tkn_Identifier(Debug.loc, string)
+    | Tkn_Tilde(Debug.loc)
+    | Tkn_Question(Debug.loc)
+    | Tkn_Ampersand(Debug.loc)
+    | Tkn_Bang(Debug.loc)
+    | Tkn_Echo(Debug.loc)
+    | Tkn_EndOfFile(Debug.loc)
 
   let toString: t => string
 

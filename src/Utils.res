@@ -11,6 +11,33 @@ module List = Belt.List
 module HashmapString = Belt.HashMap.String
 exception Exit = Debug.Exit
 
+type escape = NoEscape | Escape
+
+let escape = c =>
+  switch c {
+  | "&" => "&amp;"
+  | "\"" => "&quot;"
+  | "'" => "&apos;"
+  | ">" => "&gt;"
+  | "<" => "&lt;"
+  | "/" => "&#x2F;"
+  | "`" => "&#x60;"
+  | "=" => "&#x3D;"
+  | c => c
+  }
+
+let rec escapeAux = (str, pos, result) =>
+  switch Js.String2.charAt(str, pos) {
+  | "" => result
+  | c => escapeAux(str, succ(pos), result ++ escape(c))
+  }
+
+let escape = (esc, str) =>
+  switch esc {
+  | Escape => escapeAux(str, 0, "")
+  | NoEscape => str
+  }
+
 module Dagmap = {
   let string_equal = (. a: string, b: string) => a == b
 

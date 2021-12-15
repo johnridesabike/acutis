@@ -16,9 +16,9 @@ let json = x =>
 
 let dict = Js.Dict.fromArray
 
-let render = (~name="", ~children=Js.Dict.empty(), src, props, components) =>
+let render = (~name="", src, props, components) =>
   Compile.make(~name, src, Compile.Components.makeExn(components))->Result.flatMap(t =>
-    Render.sync(t, props, children)
+    Render.sync(t, props)
   )
 
 @raises(Not_found)
@@ -29,15 +29,13 @@ describe("Render essentials", ({test, _}) => {
       ("b", Js.Json.string("World")),
       ("c", Js.Json.string("&\"'></`=")),
     ])
-    let children = dict([("Z", render(`Z`, props, []))])
     let result = render(
-      `{{ a }} {{ b }}! {{ c }} {{ &c }} {{ &"<" }} {{ "d" }} {{ 1.5 }} {{ Z }}`,
+      `{{ a }} {{ b }}! {{ c }} {{ &c }} {{ &"<" }} {{ "d" }} {{ 1.5 }}`,
       props,
-      ~children,
       [],
     )
     expect.value(result).toEqual(
-      #ok("Hello World! &amp;&quot;&apos;&gt;&lt;&#x2F;&#x60;&#x3D; &\"'></`= < d 1.5 Z"),
+      #ok("Hello World! &amp;&quot;&apos;&gt;&lt;&#x2F;&#x60;&#x3D; &\"'></`= < d 1.5"),
     )
   })
 
@@ -199,21 +197,34 @@ describe("Render essentials", ({test, _}) => {
 
 describe("Nullish coalescing", ({test, _}) => {
   test("Nullish coalescing", ({expect, _}) => {
-    let children = Js.Dict.fromArray([
-      ("Z", render("z", Js.Dict.empty(), [], ~children=Js.Dict.empty())),
-    ])
     let props = Js.Dict.fromArray([("b", Js.Json.string("b")), ("c", Js.Json.string("c"))])
-    let result = render(`{{ a ? b ? c }}`, props, [], ~children=Js.Dict.empty())
+    let result = render(`{{ a ? b ? c }}`, props, [])
     expect.value(result).toEqual(#ok("b"))
-    let result = render(`{{ a ? d ? c }}`, props, [], ~children=Js.Dict.empty())
+    let result = render(`{{ a ? d ? c }}`, props, [])
     expect.value(result).toEqual(#ok("c"))
-    let result = render(`{{ a ? B ? Z }}`, Js.Dict.empty(), [], ~children)
+    let result = render(
+      `{% Comp a=null Z=#%}z{%/# /%}`,
+      Js.Dict.empty(),
+      [Source.src(~name="Comp", `{{ a ? B ? Z }}`)],
+    )
     expect.value(result).toEqual(#ok("z"))
-    let result = render(`{{ a ? B ? X ? "y" }}`, Js.Dict.empty(), [], ~children)
+    let result = render(
+      `{% Comp a=null /%}`,
+      Js.Dict.empty(),
+      [Source.src(~name="Comp", `{{ a ? B ? X ? "y" }}`)],
+    )
     expect.value(result).toEqual(#ok("y"))
-    let result = render(` {{~ &a ? B ? X ? 1 ~}} `, Js.Dict.empty(), [], ~children)
+    let result = render(
+      `{% Comp a=null /%}`,
+      Js.Dict.empty(),
+      [Source.src(~name="Comp", ` {{~ &a ? B ? X ? 1 ~}} `)],
+    )
     expect.value(result).toEqual(#ok("1"))
-    let result = render(`{{ &x ? Y ? Z ? "x" }}`, Js.Dict.empty(), [], ~children)
+    let result = render(
+      `{% Comp x=null Z=#%}z{%/# /%}`,
+      Js.Dict.empty(),
+      [Source.src(~name="Comp", `{{ &x ? Y ? Z ? "x" }}`)],
+    )
     expect.value(result).toEqual(#ok("z"))
   })
 })

@@ -15,10 +15,10 @@ module SetInt = Belt.Set.Int
 module Match = {
   let propsEq = (j, p) =>
     switch p {
-    | Typechecker.Pattern.TPat_Bool(b) => Props.booleanExn(j) == b
-    | TPat_String(s) => Props.stringExn(j) == s
-    | TPat_Int(i) => Props.intExn(j) == i
-    | TPat_Float(f) => Props.floatExn(j) == f
+    | Typechecker.Pattern.TBool(b) => Props.booleanExn(j) == b
+    | TString(s) => Props.stringExn(j) == s
+    | TInt(i) => Props.intExn(j) == i
+    | TFloat(f) => Props.floatExn(j) == f
     }
 
   let rec testCase = (val, case, ~wildcard) =>
@@ -179,32 +179,32 @@ module Match = {
 
 let echoNotNull = (x, ~props, ~children, ~return) =>
   switch x {
-  | Compile.Ast.Echo.Binding(_, binding, esc) =>
+  | Compile.OEBinding(_, binding, esc) =>
     switch Dict.get(props, binding) {
-    | Some(x) => return(. Compile.escape(esc, Props.echoExn(x)))
+    | Some(x) => return(. Utils.escape(esc, Props.echoExn(x)))
     | None => assert false
     }
-  | Child(_, child) =>
+  | OEChild(_, child) =>
     switch Dict.get(children, child) {
     | None => assert false
     | Some(x) => x
     }
-  | String(_, x) => return(. x)
+  | OEString(_, x) => return(. x)
   }
 
 let echoNullable = (x, ~props, ~children, ~return) =>
   switch x {
-  | Compile.Ast.Echo.Binding(_, binding, esc) =>
+  | Compile.OEBinding(_, binding, esc) =>
     switch Dict.get(props, binding) {
     | Some(x) =>
       switch Props.nullableExn(x) {
       | None => None
-      | Some(x) => Some(return(. Compile.escape(esc, Props.echoExn(x))))
+      | Some(x) => Some(return(. Utils.escape(esc, Props.echoExn(x))))
       }
     | None => assert false
     }
-  | Child(_, child) => Dict.get(children, child)
-  | String(_, x) => Some(return(. x))
+  | OEChild(_, child) => Dict.get(children, child)
+  | OEString(_, x) => Some(return(. x))
   }
 
 let echo = (nullables, default, ~props, ~children, ~return) => {
@@ -231,7 +231,7 @@ let dictMergeMap = (d, m) => {
 
 let rec make:
   type a. (
-    ~nodes: Compile.Ast.t<Compile.template<a>>,
+    ~nodes: Compile.nodes<Compile.template<a>>,
     ~props: Dict.t<Props.t>,
     ~children: Dict.t<a>,
     ~env: Source.env<a>,
@@ -242,7 +242,7 @@ let rec make:
     let queue = Queue.make()
     Array.forEachU(nodes, (. node) =>
       switch node {
-      | Compile.Ast.OEcho({loc: _, nullables, default}) =>
+      | Compile.OEcho({loc: _, nullables, default}) =>
         Queue.add(queue, echo(nullables, default, ~props, ~children, ~return=Env.return))
       | OText(str) => Queue.add(queue, Env.return(. str))
       | OMatch(_, args, dectree) =>
@@ -328,18 +328,11 @@ let rec make:
     queue
   }
 
-let make = (
-  type a,
-  env: Source.env<a>,
-  {Compile.nodes: nodes, name, prop_types, child_types},
-  props,
-  children,
-) => {
+let make = (type a, env: Source.env<a>, {Compile.nodes: nodes, name, prop_types, _}, props) => {
   module Env = unpack(env)
   try {
-    Props.Child.validate(child_types, children)
     let props = Props.make(prop_types, props)
-    Env.render(. make(~nodes, ~props, ~children, ~env, ~stack=list{Component(name)}))
+    Env.render(. make(~nodes, ~props, ~children=Dict.empty(), ~env, ~stack=list{Component(name)}))
   } catch {
   | Debug.Exit(e) => Env.error_internal(. [e])
   }

@@ -37,7 +37,3 @@ let forEachListExn: (t, (. ~index: t, t) => unit) => unit
 let forEachDictExn: (t, (. ~index: t, t) => unit) => unit
 
 let toJson: (Js.Dict.t<t>, Typescheme.props) => Js.Dict.t<Js.Json.t>
-
-module Child: {
-  let validate: (Belt.Map.String.t<Typescheme.Child.t>, Js.Dict.t<'a>) => unit
-}

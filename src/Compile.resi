@@ -5,44 +5,41 @@
   License, v. 2.0. If a copy of the MPL was not distributed with this
   file, You can obtain one at http://mozilla.org/MPL/2.0/.
 */
-let escape: (Untyped.Ast.Echo.escape, string) => string
 
-module Ast: {
-  module Echo: {
-    type escape = Untyped.Ast.Echo.escape = NoEscape | Escape
-    type t =
-      | Binding(Debug.loc, string, escape)
-      | Child(Debug.loc, string)
-      | String(Debug.loc, string)
-  }
-  type rec node<'a> =
-    // Trimming is optimized away
-    | OText(string)
-    // The first echo item that isn't null will be returned.
-    | OEcho({loc: Debug.loc, nullables: array<Echo.t>, default: Echo.t})
-    // Case matrices are optimized into decision trees
-    | OMatch(Debug.loc, NonEmpty.t<Typechecker.Pattern.t>, Matching.t<t<'a>>)
-    | OMapList(Debug.loc, Typechecker.Pattern.t, Matching.t<t<'a>>)
-    | OMapDict(Debug.loc, Typechecker.Pattern.t, Matching.t<t<'a>>)
-    | OComponent({
-        loc: Debug.loc,
-        props: array<(string, Typechecker.Pattern.t)>,
-        children: array<(string, child<'a>)>,
-        val: 'a,
-      })
-  and child<'a> = OChildName(string) | OChildBlock(t<'a>)
-  and t<'a> = array<node<'a>>
-}
+type echo =
+  | OEBinding(Debug.loc, string, Utils.escape)
+  | OEChild(Debug.loc, string)
+  | OEString(Debug.loc, string)
+
+type rec node<'a> =
+  // Trimming is optimized away
+  | OText(string)
+  // The first echo item that isn't null will be returned.
+  | OEcho({loc: Debug.loc, nullables: array<echo>, default: echo})
+  // Case matrices are optimized into decision trees
+  | OMatch(Debug.loc, NonEmpty.t<Typechecker.Pattern.t>, Matching.t<nodes<'a>>)
+  | OMapList(Debug.loc, Typechecker.Pattern.t, Matching.t<nodes<'a>>)
+  | OMapDict(Debug.loc, Typechecker.Pattern.t, Matching.t<nodes<'a>>)
+  | OComponent({
+      loc: Debug.loc,
+      props: array<(string, Typechecker.Pattern.t)>,
+      children: array<(string, child<'a>)>,
+      val: 'a,
+    })
+
+and child<'a> = OChildName(string) | OChildBlock(nodes<'a>)
+
+and nodes<'a> = array<node<'a>>
 
 type t<'a> = {
   prop_types: Typescheme.props,
   child_types: Typescheme.Child.props,
-  nodes: Ast.t<'a>,
+  nodes: nodes<'a>,
   name: string,
 }
 
 type rec template<'a> =
-  | Acutis(string, Ast.t<template<'a>>)
+  | Acutis(string, nodes<template<'a>>)
   | Function(string, Typescheme.props, Source.fnU<'a>)
 
 module Components: {

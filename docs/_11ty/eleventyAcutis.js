@@ -60,7 +60,7 @@ module.exports = function (eleventyConfig, config) {
         onError
       );
       return async function (data) {
-        const result = await Render.async(template, data, {});
+        const result = await Render.async(template, data);
         return Result.getOrElse(result, onError);
       };
     },

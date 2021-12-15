@@ -421,8 +421,8 @@ type continue<'a> = (. MapString.t<int>) => tree<'a>
 
 let rec fromTPat: 'a. (_, _, _, _, ~name: _, continue<'a>) => tree<'a> = (p, i, key, b, ~name, k) =>
   switch p {
-  | TP.TPat_Any(_) => Wildcard({ids: SetInt.empty, idx: i, key: key, child: k(. b)})
-  | TPat_Var(Loc(id), x) | TPat_OptionalVar(Loc(id), x) =>
+  | TP.TAny(_) => Wildcard({ids: SetInt.empty, idx: i, key: key, child: k(. b)})
+  | TVar(Loc(id), x) | TOptionalVar(Loc(id), x) =>
     if MapString.has(b, x) {
       raise(Debug.Exit(Debug.nameBoundMultipleTimes(~binding=x, ~loc=Loc(id), ~name)))
     }
@@ -432,7 +432,7 @@ let rec fromTPat: 'a. (_, _, _, _, ~name: _, continue<'a>) => tree<'a> = (p, i, 
       key: key,
       child: k(. MapString.set(b, x, id)),
     })
-  | TPat_Construct(_, kind, Some(cons)) =>
+  | TConstruct(_, kind, Some(cons)) =>
     Construct({
       idx: i,
       key: key,
@@ -441,9 +441,9 @@ let rec fromTPat: 'a. (_, _, _, _, ~name: _, continue<'a>) => tree<'a> = (p, i, 
       nil: None,
       cons: Some(fromTPat(cons, i, key, b, k, ~name)),
     })
-  | TPat_Construct(_, kind, None) =>
+  | TConstruct(_, kind, None) =>
     Construct({idx: i, key: key, ids: SetInt.empty, kind: kind, nil: Some(k(. b)), cons: None})
-  | TPat_Const(_, val) =>
+  | TConst(_, val) =>
     Switch({
       idx: i,
       key: key,
@@ -451,13 +451,13 @@ let rec fromTPat: 'a. (_, _, _, _, ~name: _, continue<'a>) => tree<'a> = (p, i, 
       cases: {val: val, ifMatch: k(. b), nextCase: None},
       wildcard: None,
     })
-  | TPat_Tuple(_, a) =>
+  | TTuple(_, a) =>
     let child = fromArray(a, b, 0, ~name, (. b) => End(k(. b)))
     Nest({idx: i, key: key, ids: SetInt.empty, kind: Tuple, child: child, wildcard: None})
-  | TPat_Record(_, a) =>
+  | TRecord(_, a) =>
     let child = fromKeyValues(a, b, 0, ~name, (. b) => End(k(. b)))
     Nest({idx: i, key: key, ids: SetInt.empty, kind: Record, child: child, wildcard: None})
-  | TPat_Dict(_, a) =>
+  | TDict(_, a) =>
     let child = fromKeyValues(a, b, 0, ~name, (. b) => End(k(. b)))
     Nest({idx: i, key: key, ids: SetInt.empty, kind: Dict, child: child, wildcard: None})
   }
@@ -500,19 +500,19 @@ let makeCase = (hd, a, ~exit, ~name) => {
 module ParMatch = {
   let makeRefutation = x =>
     switch x {
-    | TP.TPat_Bool(_) => TP.TPat_Bool(false)
-    | TPat_Int(_) => TPat_Int(0)
-    | TPat_String(_) => TPat_String("a")
-    | TPat_Float(_) => TPat_Float(0.0)
+    | TP.TBool(_) => TP.TBool(false)
+    | TInt(_) => TInt(0)
+    | TString(_) => TString("a")
+    | TFloat(_) => TFloat(0.0)
     }
 
   let succ = x =>
     switch x {
-    | TP.TPat_Bool(false) => Some(TP.TPat_Bool(true))
-    | TPat_Bool(true) => None
-    | TPat_Int(i) => Some(TPat_Int(succ(i)))
-    | TPat_String(s) => Some(TPat_String(s ++ "a"))
-    | TPat_Float(f) => Some(TPat_Float(f +. 1.0))
+    | TP.TBool(false) => Some(TP.TBool(true))
+    | TBool(true) => None
+    | TInt(i) => Some(TInt(succ(i)))
+    | TString(s) => Some(TString(s ++ "a"))
+    | TFloat(f) => Some(TFloat(f +. 1.0))
     }
 
   type flag = Partial | Exhaustive
@@ -528,8 +528,8 @@ module ParMatch = {
 
   let exhaustive = (key, {pats, flag, next}) => {
     let pat = switch key {
-    | "" => TP.TPat_Any(Loc(0))
-    | k => TPat_Var(Loc(0), k)
+    | "" => TP.TAny(Loc(0))
+    | k => TVar(Loc(0), k)
     }
     {flag: flag, pats: list{(key, pat), ...pats}, next: next}
   }
@@ -549,9 +549,9 @@ module ParMatch = {
         | Some(wildcard) => exhaustive(key, check(wildcard))
         | None =>
           let nest = switch kind {
-          | Tuple => TP.TPat_Tuple(Loc(0), toArray(pats))
-          | Record => TPat_Record(Loc(0), toKeyValues(pats))
-          | Dict => TPat_Dict(Loc(0), toKeyValues(pats))
+          | Tuple => TP.TTuple(Loc(0), toArray(pats))
+          | Record => TRecord(Loc(0), toKeyValues(pats))
+          | Dict => TDict(Loc(0), toKeyValues(pats))
           }
           let {pats, next, _} = check(next)
           {flag: Partial, pats: list{(key, nest), ...pats}, next: next}
@@ -564,7 +564,7 @@ module ParMatch = {
         {
           flag: Partial,
           pats: switch pats {
-          | list{_, ...pats} => list{(key, TPat_Construct(Loc(0), kind, None)), ...pats}
+          | list{_, ...pats} => list{(key, TConstruct(Loc(0), kind, None)), ...pats}
           | _ => assert false
           },
           next: next,
@@ -573,7 +573,7 @@ module ParMatch = {
         let {pats, next, _} = check(nil)
         {
           flag: Partial,
-          pats: list{(key, TPat_Construct(Loc(0), kind, Some(TPat_Any(Loc(0))))), ...pats},
+          pats: list{(key, TConstruct(Loc(0), kind, Some(TAny(Loc(0))))), ...pats},
           next: next,
         }
       | (Some(nil), Some(cons)) =>
@@ -584,7 +584,7 @@ module ParMatch = {
           | {flag: Partial, pats, next} =>
             let pats = switch pats {
             | list{(key, cons), ...pats} => list{
-                (key, TP.TPat_Construct(Loc(0), kind, Some(cons))),
+                (key, TP.TConstruct(Loc(0), kind, Some(cons))),
                 ...pats,
               }
             | _ => assert false
@@ -593,7 +593,7 @@ module ParMatch = {
           }
         | {flag: Partial, pats, next} => {
             flag: Partial,
-            pats: list{(key, TP.TPat_Construct(Loc(0), kind, None)), ...pats},
+            pats: list{(key, TP.TConstruct(Loc(0), kind, None)), ...pats},
             next: next,
           }
         }
@@ -608,7 +608,7 @@ module ParMatch = {
           switch check(ifMatch) {
           | {flag: Partial, pats, next} => {
               flag: Partial,
-              pats: list{(key, TPat_Const(Loc(0), val)), ...pats},
+              pats: list{(key, TConst(Loc(0), val)), ...pats},
               next: next,
             }
           | {flag: Exhaustive, pats, next} =>
@@ -619,7 +619,7 @@ module ParMatch = {
                 switch nextCase {
                 | None => {
                     flag: Partial,
-                    pats: list{(key, TPat_Const(Loc(0), refute)), ...pats},
+                    pats: list{(key, TConst(Loc(0), refute)), ...pats},
                     next: next,
                   }
                 | Some(case) => aux(refute, case)
@@ -628,7 +628,7 @@ module ParMatch = {
             } else {
               {
                 flag: Partial,
-                pats: list{(key, TPat_Const(Loc(0), refute)), ...pats},
+                pats: list{(key, TConst(Loc(0), refute)), ...pats},
                 next: next,
               }
             }
@@ -647,7 +647,7 @@ module ParMatch = {
   }
 }
 
-let make = (~loc, ~name, cases: NonEmpty.t<Typechecker.Ast.case>) => {
+let make = (~loc, ~name, cases: NonEmpty.t<Typechecker.case>) => {
   let exitq = Queue.make()
   let hdcase = NonEmpty.hd(cases)
   Queue.add(exitq, hdcase.nodes)

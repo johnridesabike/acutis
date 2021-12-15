@@ -91,7 +91,7 @@ Examples:
         onError
       );
       const renderFn = args.async ? Render.async : Render.sync;
-      const result = await renderFn(template, props, {});
+      const result = await renderFn(template, props);
       const output = Result.getOrElse(result, onError);
       if (args.output) {
         await writeFile(args.output, output, "utf8");

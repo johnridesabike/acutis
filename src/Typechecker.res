@@ -6,7 +6,7 @@
   file, You can obtain one at http://mozilla.org/MPL/2.0/.
 */
 module Array = Belt.Array
-module Ast_Pattern = Untyped.Ast_Pattern
+module UPat = Untyped.Pattern
 module MapString = Belt.Map.String
 module Queue = Belt.MutableQueue
 module SetString = Belt.Set.String
@@ -16,77 +16,76 @@ exception Exit2(option<string>, option<string>)
 
 module Pattern = {
   type constant =
-    | TPat_Bool(bool)
-    | TPat_String(string)
-    | TPat_Int(int)
-    | TPat_Float(float)
+    | TBool(bool)
+    | TString(string)
+    | TInt(int)
+    | TFloat(float)
 
   let compareConst = (a, b) =>
     switch (a, b) {
-    | (TPat_String(a), TPat_String(b)) => compare(a, b)
-    | (TPat_Float(a), TPat_Float(b)) => compare(a, b)
-    | (TPat_Int(a), TPat_Int(b)) => compare(a, b)
-    | (TPat_Bool(a), TPat_Bool(b)) => compare(a, b)
+    | (TString(a), TString(b)) => compare(a, b)
+    | (TFloat(a), TFloat(b)) => compare(a, b)
+    | (TInt(a), TInt(b)) => compare(a, b)
+    | (TBool(a), TBool(b)) => compare(a, b)
     | _ => assert false
     }
 
   let eqConst = (a, b) =>
     switch (a, b) {
-    | (TPat_String(a), TPat_String(b)) => a == b
-    | (TPat_Float(a), TPat_Float(b)) => a == b
-    | (TPat_Int(a), TPat_Int(b)) => a == b
-    | (TPat_Bool(a), TPat_Bool(b)) => a == b
+    | (TString(a), TString(b)) => a == b
+    | (TFloat(a), TFloat(b)) => a == b
+    | (TInt(a), TInt(b)) => a == b
+    | (TBool(a), TBool(b)) => a == b
     | _ => assert false
     }
 
   let toStringConst = x =>
     switch x {
-    | TPat_Bool(true) => "true"
-    | TPat_Bool(false) => "false"
-    | TPat_String(s) => `"${s}"`
-    | TPat_Int(i) => Belt.Int.toString(i)
-    | TPat_Float(f) => Belt.Float.toString(f)
+    | TBool(true) => "true"
+    | TBool(false) => "false"
+    | TString(s) => `"${s}"`
+    | TInt(i) => Belt.Int.toString(i)
+    | TFloat(f) => Belt.Float.toString(f)
     }
 
-  type construct = TPat_List | TPat_Nullable
+  type construct = TList | TNullable
 
   type rec t =
-    | TPat_Const(Debug.loc, constant)
-    | TPat_Construct(Debug.loc, construct, option<t>)
-    | TPat_Tuple(Debug.loc, array<t>)
-    | TPat_Record(Debug.loc, array<(string, t)>)
-    | TPat_Dict(Debug.loc, array<(string, t)>)
-    | TPat_Var(Debug.loc, string) // any binding
-    | TPat_OptionalVar(Debug.loc, string) // any binding, may not be set
-    | TPat_Any(Debug.loc) // ignored wildcard _
+    | TConst(Debug.loc, constant)
+    | TConstruct(Debug.loc, construct, option<t>)
+    | TTuple(Debug.loc, array<t>)
+    | TRecord(Debug.loc, array<(string, t)>)
+    | TDict(Debug.loc, array<(string, t)>)
+    | TVar(Debug.loc, string) // any binding
+    | TOptionalVar(Debug.loc, string) // any binding, may not be set
+    | TAny(Debug.loc) // ignored wildcard _
 
   let rec makeList = (a, ty, ~tail) => {
     let r = ref(tail)
     for i in Array.size(a) - 1 downto 0 {
       let p = Array.getUnsafe(a, i)
-      let loc = Ast_Pattern.toLocation(p)
-      r := TPat_Construct(loc, TPat_List, Some(TPat_Tuple(loc, [make(p, ty), r.contents])))
+      let loc = UPat.toLocation(p)
+      r := TConstruct(loc, TList, Some(TTuple(loc, [make(p, ty), r.contents])))
     }
     r.contents
   }
 
-  and make = (p: Ast_Pattern.t, ty) =>
+  and make = (p: UPat.t, ty) =>
     switch (p, ty) {
-    | (#Null(l), Typescheme.Nullable(_)) => TPat_Construct(l, TPat_Nullable, None)
-    | (#Some(l, p), Nullable({contents})) =>
-      TPat_Construct(l, TPat_Nullable, Some(TPat_Tuple(l, [make(p, contents)])))
-    | (#False(l), _) => TPat_Const(l, TPat_Bool(false))
-    | (#True(l), _) => TPat_Const(l, TPat_Bool(true))
-    | (#String(l, s), _) => TPat_Const(l, TPat_String(s))
-    | (#Int(l, i), _) => TPat_Const(l, TPat_Int(i))
-    | (#Float(l, f), _) => TPat_Const(l, TPat_Float(f))
-    | (#Tuple(l, t), Tuple({contents})) =>
-      TPat_Tuple(l, Array.zipByU(t, contents, (. p, ty) => make(p, ty.contents)))
-    | (#Array(l, a), List({contents})) =>
-      makeList(a, contents, ~tail=TPat_Construct(l, TPat_List, None))
-    | (#ArrayWithTailBinding(_, l, tail), List({contents})) =>
-      makeList(l, contents, ~tail=make((tail :> Ast_Pattern.t), contents))
-    | (#Dict(l, d), Dict(tys, {contents: ks})) =>
+    | (UNull(l), Typescheme.Nullable(_)) => TConstruct(l, TNullable, None)
+    | (USome(l, p), Nullable({contents})) =>
+      TConstruct(l, TNullable, Some(TTuple(l, [make(p, contents)])))
+    | (UFalse(l), _) => TConst(l, TBool(false))
+    | (UTrue(l), _) => TConst(l, TBool(true))
+    | (UString(l, s), _) => TConst(l, TString(s))
+    | (UInt(l, i), _) => TConst(l, TInt(i))
+    | (UFloat(l, f), _) => TConst(l, TFloat(f))
+    | (UTuple(l, t), Tuple({contents})) =>
+      TTuple(l, Array.zipByU(t, contents, (. p, ty) => make(p, ty.contents)))
+    | (UList(l, a), List({contents})) => makeList(a, contents, ~tail=TConstruct(l, TList, None))
+    | (UListWithTailBinding(_, l, tail), List({contents})) =>
+      makeList(l, contents, ~tail=make(tail, contents))
+    | (UDict(l, d), Dict(tys, {contents: ks})) =>
       let ks = ks->SetString.toArray->Array.mapU((. k) => (k, tys))->MapString.fromArray
       let d =
         d
@@ -95,16 +94,16 @@ module Pattern = {
           switch (p, ty) {
           | (None, None) | (Some(_), None) => None
           | (Some(p), Some({contents})) => Some(make(p, contents))
-          | (None, Some(_)) => Some(TPat_Any(l))
+          | (None, Some(_)) => Some(TAny(l))
           }
         )
-      TPat_Dict(l, MapString.toArray(d))
-    | (#Object(l, o), Record({contents})) =>
+      TDict(l, MapString.toArray(d))
+    | (URecord(l, o), Record({contents})) =>
       let r = make_record(o, contents, ~loc=l)
-      TPat_Record(l, MapString.toArray(r))
-    | (#Binding(l, "_"), _) => TPat_Any(l)
-    | (#Binding(l, b), Nullable(_)) => TPat_OptionalVar(l, b)
-    | (#Binding(l, b), _) => TPat_Var(l, b)
+      TRecord(l, MapString.toArray(r))
+    | (UBinding(l, "_"), _) => TAny(l)
+    | (UBinding(l, b), Nullable(_)) => TOptionalVar(l, b)
+    | (UBinding(l, b), _) => TVar(l, b)
     | _ => raise(Exit2(Js.Json.stringifyAny(p), Js.Json.stringifyAny(Typescheme.debug(ref(ty)))))
     }
 
@@ -114,7 +113,7 @@ module Pattern = {
       switch (p, ty) {
       | (None, None) | (Some(_), None) => None
       | (Some(p), Some({contents})) => Some(make(p, contents))
-      | (None, Some(_)) => Some(TPat_Any(loc))
+      | (None, Some(_)) => Some(TAny(loc))
       }
     )
   }
@@ -128,52 +127,54 @@ module Pattern = {
 
   let rec toString = x =>
     switch x {
-    | TPat_Const(_, x) => toStringConst(x)
-    | TPat_Tuple(_, t) => "(" ++ Array.joinWith(t, ", ", toString) ++ ")"
-    | TPat_Record(_, r) =>
+    | TConst(_, x) => toStringConst(x)
+    | TTuple(_, t) => "(" ++ Array.joinWith(t, ", ", toString) ++ ")"
+    | TRecord(_, r) =>
       "{" ++ Array.joinWith(r, ", ", ((k, v)) => keyValuesToString(k, toString(v))) ++ "}"
-    | TPat_Dict(_, r) =>
+    | TDict(_, r) =>
       "<" ++ Array.joinWith(r, ", ", ((k, v)) => keyValuesToString(k, toString(v))) ++ ">"
-    | TPat_Var(_, v) | TPat_OptionalVar(_, v) => v
-    | TPat_Construct(_, TPat_Nullable, None) => "null"
-    | TPat_Construct(_, TPat_Nullable, Some(x)) => toString(x)
-    | TPat_Construct(_, TPat_List, None) => "[]"
-    | TPat_Construct(_, TPat_List, Some(l)) =>
+    | TVar(_, v) | TOptionalVar(_, v) => v
+    | TConstruct(_, TNullable, None) => "null"
+    | TConstruct(_, TNullable, Some(x)) => toString(x)
+    | TConstruct(_, TList, None) => "[]"
+    | TConstruct(_, TList, Some(l)) =>
       let rec aux = (s, ~sep, l) =>
         switch l {
-        | TPat_Tuple(_, [hd, TPat_Construct(_, _, Some(tl))]) =>
+        | TTuple(_, [hd, TConstruct(_, _, Some(tl))]) =>
           aux(s ++ sep ++ toString(hd), ~sep=", ", tl)
-        | TPat_Tuple(_, [hd, TPat_Construct(_, _, None)]) => `${s}${sep}${toString(hd)}]`
-        | TPat_Tuple(_, [hd, tl]) => `${s}${sep}${toString(hd)},...${toString(tl)}]`
+        | TTuple(_, [hd, TConstruct(_, _, None)]) => `${s}${sep}${toString(hd)}]`
+        | TTuple(_, [hd, tl]) => `${s}${sep}${toString(hd)},...${toString(tl)}]`
         | l => `${s}${sep}...${toString(l)}]`
         }
       aux("[", ~sep="", l)
-    | TPat_Any(_) => "_"
+    | TAny(_) => "_"
     }
 }
 
-module Ast = {
-  type rec node =
-    | TText(string, Untyped.Ast.trim)
-    // The first echo item that isn't null will be returned.
-    | TEcho({loc: Debug.loc, nullables: array<Untyped.Ast.Echo.t>, default: Untyped.Ast.Echo.t})
-    | TMatch(Debug.loc, NonEmpty.t<Pattern.t>, NonEmpty.t<case>)
-    | TMapList(Debug.loc, Pattern.t, NonEmpty.t<case>)
-    | TMapDict(Debug.loc, Pattern.t, NonEmpty.t<case>)
-    | TComponent({
-        loc: Debug.loc,
-        props: array<(string, Pattern.t)>,
-        children: array<(string, child)>,
-        val: string,
-      })
-  and nodes = array<node>
-  and case = {pats: NonEmpty.t<NonEmpty.t<Pattern.t>>, nodes: nodes}
-  and child = TChildName(string) | TChildBlock(nodes)
-  type t = {
-    nodes: nodes,
-    prop_types: Typescheme.props,
-    child_types: Typescheme.Child.props,
-  }
+type rec node =
+  | TText(string, Untyped.trim)
+  // The first echo item that isn't null will be returned.
+  | TEcho({loc: Debug.loc, nullables: array<Untyped.echo>, default: Untyped.echo})
+  | TMatch(Debug.loc, NonEmpty.t<Pattern.t>, NonEmpty.t<case>)
+  | TMapList(Debug.loc, Pattern.t, NonEmpty.t<case>)
+  | TMapDict(Debug.loc, Pattern.t, NonEmpty.t<case>)
+  | TComponent({
+      loc: Debug.loc,
+      props: array<(string, Pattern.t)>,
+      children: array<(string, child)>,
+      val: string,
+    })
+
+and nodes = array<node>
+
+and case = {pats: NonEmpty.t<NonEmpty.t<Pattern.t>>, nodes: nodes}
+
+and child = TChildName(string) | TChildBlock(nodes)
+
+type t = {
+  nodes: nodes,
+  prop_types: Typescheme.props,
+  child_types: Typescheme.Child.props,
 }
 
 // If a type is incomplete, then it can be unified more liberally. (Unused).
@@ -277,6 +278,8 @@ let unify_child = (a, b, ~loc) =>
     raise(Exit(Debug.childTypeMismatch(a, b, ~loc, Typescheme.Child.toString)))
   }
 
+type root = Root | Component
+
 module Context = {
   type t = {
     global: ref<MapString.t<Typescheme.t>>,
@@ -307,16 +310,20 @@ module Context = {
     }
 
   @raises(Exit)
-  let updateChild = (ctx, k, v, ~loc) =>
-    ctx.children :=
-      MapString.updateU(ctx.children.contents, k, (. v') =>
-        switch v' {
-        | None => Some(v)
-        | Some(v') as r =>
-          unify_child(v', v, ~loc)
-          r
-        }
-      )
+  let updateChild = (ctx, k, v, ~loc, root) =>
+    switch root {
+    | Root => raise(Exit(Debug.childNotAllowedInRoot(loc)))
+    | Component =>
+      ctx.children :=
+        MapString.updateU(ctx.children.contents, k, (. v') =>
+          switch v' {
+          | None => Some(v)
+          | Some(v') as r =>
+            unify_child(v', v, ~loc)
+            r
+          }
+        )
+    }
 
   @raises(Exit)
   let addScope = (ctx, q, ~loc, ~name) => {
@@ -344,42 +351,43 @@ module Context = {
 
 module Local = {
   @raises(Exit)
-  let rec fromPattern = (pattern: Ast_Pattern.t, q, ~name) => {
+  let rec fromPattern = (pattern: UPat.t, q, ~name) => {
     open Typescheme
     switch pattern {
-    | #Null(_) => ref(Nullable(ref(Unknown)))
-    | #Some(_, x) => ref(Nullable(fromPattern(x, q, ~name)))
-    | #False(_) | #True(_) => ref(Boolean)
-    | #String(_) => ref(String)
-    | #Int(_) => ref(Int)
-    | #Float(_) => ref(Float)
-    | #Tuple(_, t) =>
+    | UNull(_) => ref(Nullable(ref(Unknown)))
+    | USome(_, x) => ref(Nullable(fromPattern(x, q, ~name)))
+    | UFalse(_) | UTrue(_) => ref(Boolean)
+    | UString(_) => ref(String)
+    | UInt(_) => ref(Int)
+    | UFloat(_) => ref(Float)
+    | UTuple(_, t) =>
       let types = Array.mapU(t, (. x) => fromPattern(x, q, ~name))
       ref(Tuple(ref(types)))
-    | #Array(loc, a) =>
+    | UList(loc, a) =>
       let t = ref(Unknown)
       Array.forEachU(a, (. x) => unify(t, fromPattern(x, q, ~name), Expand, ~loc, ~name))
       ref(List(t))
-    | #ArrayWithTailBinding(loc, a, #Binding(_, b)) =>
+    | UListWithTailBinding(loc, a, UBinding(_, b)) =>
       let t = ref(Unknown)
       Array.forEachU(a, (. x) => unify(t, fromPattern(x, q, ~name), Expand, ~loc, ~name))
       let t = ref(List(t))
       Queue.add(q, (b, t))
       t
-    | #Dict(loc, d) =>
+    | UListWithTailBinding(_, _, _) => assert false // error goes here
+    | UDict(loc, d) =>
       let t = ref(Unknown)
       Array.forEachU(d, (. (_, x)) => unify(t, fromPattern(x, q, ~name), Expand, ~loc, ~name))
       let ks = d->Array.mapU((. (k, _)) => k)->SetString.fromArray
       ref(Dict(t, ref(ks)))
-    | #Object(_, o) =>
+    | URecord(_, o) =>
       let types = o->Array.mapU((. (k, x)) => {
         let types = fromPattern(x, q, ~name)
         (k, types)
       })
       let types = MapString.fromArray(types)
       ref(Record(ref(types)))
-    | #Binding(_, "_") => ref(Unknown)
-    | #Binding(_, b) =>
+    | UBinding(_, "_") => ref(Unknown)
+    | UBinding(_, b) =>
       let t = ref(Unknown)
       Queue.add(q, (b, t))
       t
@@ -405,42 +413,43 @@ module Global = {
     }
 
   @raises(Exit)
-  let rec fromPattern = (~default, ~name, pattern: Ast_Pattern.t, ctx) => {
+  let rec fromPattern = (~default, ~name, pattern: UPat.t, ctx) => {
     open Typescheme
     let unknown = Typescheme.unknown
     switch pattern {
-    | #Null(_) => ref(Nullable(ref(Unknown)))
-    | #Some(_, x) => ref(Nullable(fromPattern(~default=unknown(), x, ctx, ~name)))
-    | #False(_) | #True(_) => ref(Boolean)
-    | #String(_) => ref(String)
-    | #Int(_) => ref(Int)
-    | #Float(_) => ref(Float)
-    | #Tuple(_, t) =>
+    | UNull(_) => ref(Nullable(ref(Unknown)))
+    | USome(_, x) => ref(Nullable(fromPattern(~default=unknown(), x, ctx, ~name)))
+    | UFalse(_) | UTrue(_) => ref(Boolean)
+    | UString(_) => ref(String)
+    | UInt(_) => ref(Int)
+    | UFloat(_) => ref(Float)
+    | UTuple(_, t) =>
       let types = Array.mapU(t, (. x) => fromPattern(~default=unknown(), x, ctx, ~name))
       ref(Tuple(ref(types)))
-    | #Array(loc, a) =>
+    | UList(loc, a) =>
       let t = ref(Unknown)
       Array.forEachU(a, (. x) =>
         unify(t, fromPattern(~default=t, x, ctx, ~name), Narrow, ~loc, ~name)
       )
       ref(List(t))
-    | #ArrayWithTailBinding(loc, a, #Binding(bloc, b)) =>
+    | UListWithTailBinding(loc, a, UBinding(bloc, b)) =>
       let t = ref(Unknown)
       Array.forEachU(a, (. x) =>
         unify(t, fromPattern(~default=t, x, ctx, ~name), Narrow, ~loc, ~name)
       )
       let t = ref(List(t))
       updateContext(ctx, b, t, ~loc=bloc, ~name)
-    | #Dict(loc, d) =>
+    | UListWithTailBinding(_, _, _) => assert false // error goes here
+    | UDict(loc, d) =>
       let t = ref(Unknown)
       Array.forEachU(d, (. (_, x)) =>
         unify(t, fromPattern(~default=t, x, ctx, ~name), Narrow, ~loc, ~name)
       )
       let ks = d->Array.mapU((. (k, _)) => k)->SetString.fromArray
       ref(Dict(t, ref(ks)))
-    | #Object(_, o) => ref(Record(fromPattern_record(o, ctx, ~name)))
-    | #Binding(_, "_") => default
-    | #Binding(loc, b) => updateContext(ctx, b, default, ~loc, ~name)
+    | URecord(_, o) => ref(Record(fromPattern_record(o, ctx, ~name)))
+    | UBinding(_, "_") => default
+    | UBinding(loc, b) => updateContext(ctx, b, default, ~loc, ~name)
     }
   }
 
@@ -453,19 +462,19 @@ module Global = {
   }
 
   @raises(Exit)
-  let unifyMatchCases2 = (bindingArray: NonEmpty.t<Ast_Pattern.binding>, cases, ctx, ~name) => {
+  let unifyMatchCases = (bindingArray, cases, ctx, ~name) => {
     if NonEmpty.size(bindingArray) != NonEmpty.size(cases) {
-      let #Binding(loc, _) = NonEmpty.hd(bindingArray)
+      let (loc, _) = NonEmpty.hd(bindingArray)
       raise(Exit(Debug.patternNumberMismatch(~loc, ~name)))
     } else {
-      NonEmpty.zipExn(bindingArray, cases)->NonEmpty.map((. (#Binding(loc, k) as b, ty)) => {
+      NonEmpty.zipExn(bindingArray, cases)->NonEmpty.map((. ((loc, k), ty)) => {
         Context.update(ctx, k, ty, ~loc, ~name)
-        Pattern.make(b, ty.contents)
+        Pattern.make(UBinding(loc, k), ty.contents)
       })
     }
   }
   @raises(Exit)
-  let unifyMapArrayCases2 = (pat: Untyped.Ast.mapArrayPattern, tys, ctx, ~loc, ~name) => {
+  let unifyMapListCases = (pat, tys, ctx, ~loc, ~name) => {
     let int = Typescheme.int()
     let (ty, ty_index) = switch NonEmpty.toArray(tys) {
     | [hd] => (Typescheme.list(hd), int)
@@ -474,16 +483,17 @@ module Global = {
     }
     unify(ty_index, int, Expand, ~loc, ~name)
     switch pat {
-    | #Binding(loc, binding) => Context.update(ctx, binding, ty, ~loc, ~name)
-    | (#Array(loc, _) | #ArrayWithTailBinding(loc, _, _)) as a =>
+    | UPat.UBinding(loc, binding) => Context.update(ctx, binding, ty, ~loc, ~name)
+    | (UList(loc, _) | UListWithTailBinding(loc, _, _)) as a =>
       let a_t = fromPattern(~default=Typescheme.unknown(), a, ctx, ~name)
       unify(a_t, ty, Expand, ~loc, ~name)
+    | p => raise(Exit(Debug.badMapListPattern(~name, p, module(UPat))))
     }
-    Pattern.make((pat :> Untyped.Ast_Pattern.t), ty.contents)
+    Pattern.make(pat, ty.contents)
   }
 
   @raises(Exit)
-  let unifyMapDictCases2 = (pat: Untyped.Ast.mapDictPattern, tys, ctx, ~loc, ~name) => {
+  let unifyMapDictCases = (pat, tys, ctx, ~loc, ~name) => {
     let str = Typescheme.string()
     let (ty, ty_index) = switch NonEmpty.toArray(tys) {
     | [hd] => (Typescheme.dict(hd), str)
@@ -492,17 +502,18 @@ module Global = {
     }
     unify(ty_index, str, Expand, ~loc, ~name)
     switch pat {
-    | #Binding(loc, binding) => Context.update(ctx, binding, ty, ~loc, ~name)
-    | #Dict(loc, _) as d =>
+    | UPat.UBinding(loc, binding) => Context.update(ctx, binding, ty, ~loc, ~name)
+    | UDict(loc, _) as d =>
       let t = fromPattern(~default=Typescheme.unknown(), d, ctx, ~name)
       unify(t, ty, Expand, ~loc, ~name)
+    | p => raise(Exit(Debug.badMapDictPattern(~name, p, module(UPat))))
     }
-    Pattern.make((pat :> Untyped.Ast_Pattern.t), ty.contents)
+    Pattern.make(pat, ty.contents)
   }
 }
 
 @raises(Exit)
-let unifyEchoes = (nullables, default, ctx, ~name) => {
+let unifyEchoes = (nullables, default, ctx, ~name, root) => {
   open Typescheme
 
   @raises(Exit)
@@ -510,18 +521,17 @@ let unifyEchoes = (nullables, default, ctx, ~name) => {
     switch nullables[i] {
     | None =>
       switch default {
-      | Untyped.Ast.Echo.Binding(loc, binding, _) =>
-        Context.update(ctx, binding, echo(), ~loc, ~name)
-      | Child(loc, child) => Context.updateChild(ctx, child, Child.child(), ~loc)
-      | String(_, _, _) | Int(_, _, _) | Float(_, _, _) => ()
+      | Untyped.EBinding(loc, binding, _) => Context.update(ctx, binding, echo(), ~loc, ~name)
+      | EChild(loc, child) => Context.updateChild(ctx, child, Child.child(), ~loc, root)
+      | EString(_, _, _) | EInt(_, _, _) | EFloat(_, _, _) => ()
       }
-    | Some(Untyped.Ast.Echo.Binding(loc, binding, _)) =>
+    | Some(Untyped.EBinding(loc, binding, _)) =>
       Context.update(ctx, binding, nullable(echo()), ~loc, ~name)
       aux(succ(i))
-    | Some(String(_, _, _) | Int(_, _, _) | Float(_, _, _)) =>
+    | Some(EString(_, _, _) | EInt(_, _, _) | EFloat(_, _, _)) =>
       raise(Exit(Debug.nonNullableEchoLiteral()))
-    | Some(Child(loc, child)) =>
-      Context.updateChild(ctx, child, Child.nullable(), ~loc)
+    | Some(EChild(loc, child)) =>
+      Context.updateChild(ctx, child, Child.nullable(), ~loc, root)
       aux(succ(i))
     }
   }
@@ -541,21 +551,21 @@ let unifyNestedNonEmpty = (cases: NonEmpty.t<NonEmpty.t<(_, _)>>, ~name) => {
 
 let getTypes = x =>
   switch x {
-  | Source.Acutis(_, {Ast.prop_types: prop_types, child_types, _}) => (prop_types, child_types)
+  | Source.Acutis(_, {prop_types, child_types, _}) => (prop_types, child_types)
   | Function(_, props, children, _) => (props, children)
   }
 
 @raises(Exit)
-let rec makeCases = (cases, ctx, ~loc, ~name, g) => {
+let rec makeCases = (cases, ctx, ~loc, ~name, g, root) => {
   let (casetypes, cases) =
     cases
-    ->NonEmpty.map((. {Untyped.Ast.patterns: pats, nodes}) => {
+    ->NonEmpty.map((. {Untyped.patterns: pats, nodes}) => {
       let bindings = Queue.make()
       let casetypes =
         pats
         ->NonEmpty.map((. pattern) =>
           NonEmpty.map(pattern, (. p) => (
-            Untyped.Ast_Pattern.toLocation(p),
+            UPat.toLocation(p),
             Local.fromPattern(p, bindings, ~name),
           ))
         )
@@ -573,23 +583,23 @@ let rec makeCases = (cases, ctx, ~loc, ~name, g) => {
   // type-checked so records and dictionary fields expand correctly.
   let casetypes = unifyNestedNonEmpty(casetypes, ~name)
   let cases = NonEmpty.map(cases, (. (pats, nodes, ctx)) => {
-    Ast.pats: NonEmpty.map(pats, (. pats) =>
+    pats: NonEmpty.map(pats, (. pats) =>
       NonEmpty.zipByExn(pats, casetypes, (. p, ty) => Pattern.make(p, ty.contents))
     ),
-    nodes: makeNodes(nodes, ctx, ~name, g),
+    nodes: makeNodes(nodes, ctx, ~name, g, root),
   })
   (casetypes, cases)
 }
 
 @raises(Exit)
-and makeNodes = (nodes, ctx, ~name, g) =>
+and makeNodes = (nodes, ctx, ~name, g, root) =>
   Array.mapU(nodes, (. node) =>
     switch node {
-    | Untyped.Ast.Text(s, t) => Ast.TText(s, t)
-    | Echo({loc, nullables, default}) =>
-      unifyEchoes(nullables, default, ctx, ~name)->ignore
-      Ast.TEcho({loc: loc, nullables: nullables, default: default})
-    | Component({loc, props, children, name: cname, f: ()}) =>
+    | Untyped.UText(s, t) => TText(s, t)
+    | UEcho({loc, nullables, default}) =>
+      unifyEchoes(nullables, default, ctx, ~name, root)->ignore
+      TEcho({loc: loc, nullables: nullables, default: default})
+    | UComponent({loc, props, children, name: cname}) =>
       let (propTypes, propTypesChildren) = getTypes(Utils.Dagmap.getExn(g, ~name, ~key=cname, ~loc))
       let t = Global.fromPattern_record(props, ctx, ~name)
       // The original proptypes should not mutate.
@@ -602,57 +612,57 @@ and makeNodes = (nodes, ctx, ~name, g) =>
           | (None, None) | (None, Some({contents: NullableChild})) => None
           | (None, Some({contents: Child})) => assert false // error message goes here
           | (Some(_), None) => assert false // error message goes here
-          | (Some(ChildName(c)), Some({contents: ty})) =>
-            Context.updateChild(ctx, c, ref(ty), ~loc)
-            Some(Ast.TChildName(c))
-          | (Some(ChildBlock(nodes)), Some(_)) =>
-            Some(TChildBlock(makeNodes(nodes, ctx, ~name=cname, g)))
+          | (Some(UChildName(loc, c)), Some({contents: ty})) =>
+            Context.updateChild(ctx, c, ref(ty), ~loc, root)
+            Some(TChildName(c))
+          | (Some(UChildBlock(_, nodes)), Some(_)) =>
+            Some(TChildBlock(makeNodes(nodes, ctx, ~name=cname, g, root)))
           }
         )
         ->MapString.toArray
       let props = Pattern.make_record(props, t.contents, ~loc)->MapString.toArray
       TComponent({loc: loc, props: props, children: children, val: cname})
-    | Match(loc, bindingArray, cases) =>
+    | UMatch(loc, bindingArray, cases) =>
       // Add a default wildcard for patterns without indices
-      let (caseTypes, cases) = makeCases(cases, ctx, ~loc, ~name, g)
-      let patterns = Global.unifyMatchCases2(bindingArray, caseTypes, ctx, ~name)
+      let (caseTypes, cases) = makeCases(cases, ctx, ~loc, ~name, g, root)
+      let patterns = Global.unifyMatchCases(bindingArray, caseTypes, ctx, ~name)
       TMatch(loc, patterns, cases)
-    | MapArray(loc, pattern, cases) =>
+    | UMapList(loc, pattern, cases) =>
       // Add a default wildcard for patterns without indices
       let cases = NonEmpty.map(cases, (. case) => {
         ...case,
         patterns: NonEmpty.map(case.patterns, (. pattern) =>
           switch NonEmpty.toArray(pattern) {
-          | [hd] => NonEmpty.two(hd, #Binding(loc, "_"))
+          | [hd] => NonEmpty.two(hd, UBinding(loc, "_"))
           | _ => pattern
           }
         ),
       })
-      let (casetypes, cases) = makeCases(cases, ctx, ~loc, ~name, g)
-      let pattern = Global.unifyMapArrayCases2(pattern, casetypes, ctx, ~loc, ~name)
+      let (casetypes, cases) = makeCases(cases, ctx, ~loc, ~name, g, root)
+      let pattern = Global.unifyMapListCases(pattern, casetypes, ctx, ~loc, ~name)
       TMapList(loc, pattern, cases)
-    | MapDict(loc, pattern, cases) =>
+    | UMapDict(loc, pattern, cases) =>
       // Add a default wildcard for patterns without indices
       let cases = NonEmpty.map(cases, (. case) => {
         ...case,
         patterns: NonEmpty.map(case.patterns, (. pattern) =>
           switch NonEmpty.toArray(pattern) {
-          | [hd] => NonEmpty.two(hd, #Binding(loc, "_"))
+          | [hd] => NonEmpty.two(hd, UBinding(loc, "_"))
           | _ => pattern
           }
         ),
       })
-      let (casetypes, cases) = makeCases(cases, ctx, ~loc, ~name, g)
-      let pattern = Global.unifyMapDictCases2(pattern, casetypes, ctx, ~loc, ~name)
+      let (casetypes, cases) = makeCases(cases, ctx, ~loc, ~name, g, root)
+      let pattern = Global.unifyMapDictCases(pattern, casetypes, ctx, ~loc, ~name)
       TMapDict(loc, pattern, cases)
     }
   )
 
-and make = (name, ast, g) => {
+and make = (name, ast, g, root) => {
   let ctx = Context.make()
-  let nodes = makeNodes(ast, ctx, ~name, g)
+  let nodes = makeNodes(ast, ctx, ~name, g, root)
   let ast = {
-    Ast.nodes: nodes,
+    nodes: nodes,
     prop_types: ctx.global.contents,
     child_types: ctx.children.contents,
   }
@@ -661,10 +671,10 @@ and make = (name, ast, g) => {
 
 let makeSrc = (. g, x) =>
   switch x {
-  | Source.Acutis(name, ast) => Source.src(~name, make(name, ast, g))
+  | Source.Acutis(name, ast) => Source.src(~name, make(name, ast, g, Component))
   | Function(name, p, c, f) => Source.fnU(~name, p, c, f)
   }
 
-let makeArray = a => a->Utils.Dagmap.make(~f=makeSrc)->Utils.Dagmap.linkAll
+let makeComponents = a => a->Utils.Dagmap.make(~f=makeSrc)->Utils.Dagmap.linkAll
 
-let make = (name, ast, components) => make(name, ast, Utils.Dagmap.prelinked(components))
+let make = (name, ast, components) => make(name, ast, Utils.Dagmap.prelinked(components), Root)

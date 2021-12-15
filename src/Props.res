@@ -215,27 +215,27 @@ let nullableExn = t =>
 
 let rec fromPattern = (x, props) =>
   switch x {
-  | Typechecker.Pattern.TPat_Const(_, TPat_Bool(x)) => Json.boolean(x)
-  | TPat_Const(_, TPat_String(x)) => Json.string(x)
-  | TPat_Const(_, TPat_Int(x)) => jsonInt(x)
-  | TPat_Const(_, TPat_Float(x)) => Json.number(x)
-  | TPat_OptionalVar(_, x) | TPat_Var(_, x) =>
+  | Typechecker.Pattern.TConst(_, TBool(x)) => Json.boolean(x)
+  | TConst(_, TString(x)) => Json.string(x)
+  | TConst(_, TInt(x)) => jsonInt(x)
+  | TConst(_, TFloat(x)) => Json.number(x)
+  | TOptionalVar(_, x) | TVar(_, x) =>
     switch Js.Dict.get(props, x) {
     | Some(x) => x
     | None => assert false
     }
-  | TPat_Construct(_, _, Some(x)) => fromPattern(x, props)
-  | TPat_Construct(_, _, None) => Json.null
-  | TPat_Tuple(_, x) => Json.array(Array.map(x, x => fromPattern(x, props)))
-  | TPat_Record(_, x)
-  | TPat_Dict(_, x) =>
+  | TConstruct(_, _, Some(x)) => fromPattern(x, props)
+  | TConstruct(_, _, None) => Json.null
+  | TTuple(_, x) => Json.array(Array.map(x, x => fromPattern(x, props)))
+  | TRecord(_, x)
+  | TDict(_, x) =>
     let d = Js.Dict.empty()
     for i in 0 to Array.size(x) - 1 {
       let (k, v) = Array.getUnsafe(x, i)
       Js.Dict.set(d, k, fromPattern(v, props))
     }
     Json.object_(d)
-  | TPat_Any(_) => assert false
+  | TAny(_) => assert false
   }
 
 let forEachListExn = (l, f) => {
@@ -309,13 +309,3 @@ and toJson = (t, ty) =>
   }
 
 let toJson = toJson_record
-
-module Child = {
-  let validate = (tys, m) =>
-    MapString.forEachU(tys, (. k, {contents}) =>
-      switch (Dict.get(m, k), contents) {
-      | (None, Tys.Child.Child) => raise(Exit(Debug.decodeErrorMissingChild(k)))
-      | (Some(_), Child) | (Some(_) | None, NullableChild) => ()
-      }
-    )
-}

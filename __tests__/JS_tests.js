@@ -33,7 +33,7 @@ describe("The JS interface works as expected", () => {
 describe("Async templates", () => {
   test("Async env", async () => {
     const X = Compile.make("X", "{{ name }}", emptyComponents);
-    const result = Result.map(X, (X) => Render.async(X, { name: "Carlo" }, {}));
+    const result = Result.map(X, (X) => Render.async(X, { name: "Carlo" }));
     const x = await Result.getExn(result);
     expect(x).toEqual({ NAME: "ok", VAL: "Carlo" });
   });
@@ -47,7 +47,7 @@ describe("Async templates", () => {
     );
     const comps = Result.getExn(Compile.Components.make([Y]));
     const X = Result.getExn(Compile.make("X", "{% Y name /%}", comps));
-    const x = await Render.async(X, { name: "Carlo" }, {});
+    const x = await Render.async(X, { name: "Carlo" });
     expect(x).toEqual({ NAME: "ok", VAL: "Carlo" });
   });
 
@@ -62,7 +62,7 @@ describe("Async templates", () => {
     );
     const comps = Result.getExn(Compile.Components.make([D]));
     const E = Result.getExn(Compile.make("E", "{% D /%}", comps));
-    expect(await Render.async(E, {}, {})).toEqual({
+    expect(await Render.async(E, {})).toEqual({
       NAME: "errors",
       VAL: [
         {
@@ -86,7 +86,7 @@ describe("Async helper functions", () => {
     );
     const comps = Result.getExn(Compile.Components.make([X]));
     const template = Result.getExn(Compile.make("", "{% X / %}", comps));
-    expect(await Render.async(template, {}, {})).toEqual({
+    expect(await Render.async(template, {})).toEqual({
       NAME: "ok",
       VAL: "a",
     });
@@ -103,7 +103,7 @@ describe("Async helper functions", () => {
     const template = Result.getExn(
       Compile.make("Template", "{% X / %}", comps)
     );
-    expect(await Render.async(template, {}, {})).toEqual({
+    expect(await Render.async(template, {})).toEqual({
       NAME: "errors",
       VAL: [{ message: "e", kind: "Render", path: [] }],
     });
@@ -120,7 +120,7 @@ describe("Async helper functions", () => {
     const template = Result.getExn(
       Compile.make("", "{% X ~%} a {%~ /X %}", comps)
     );
-    expect(await Render.async(template, {}, {})).toEqual({
+    expect(await Render.async(template, {})).toEqual({
       NAME: "ok",
       VAL: "A",
     });
@@ -138,7 +138,7 @@ describe("Async helper functions", () => {
     const template = Result.getExn(
       Compile.make("", "{% X %} a {% /X %}", comps)
     );
-    expect(await Render.async(template, {}, {})).toEqual({
+    expect(await Render.async(template, {})).toEqual({
       NAME: "ok",
       VAL: " A ",
     });

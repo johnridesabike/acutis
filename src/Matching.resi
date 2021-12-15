@@ -54,8 +54,8 @@ type t<'a> = {
 let make: (
   ~loc: Debug.loc,
   ~name: string,
-  NonEmpty.t<Typechecker.Ast.case>,
-) => result<t<Typechecker.Ast.nodes>, Debug.t>
+  NonEmpty.t<Typechecker.case>,
+) => result<t<Typechecker.nodes>, Debug.t>
 
 module ParMatch: {
   let check: (tree<'a>, ~loc: Debug.loc) => result<tree<'a>, Debug.t>
