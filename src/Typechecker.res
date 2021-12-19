@@ -467,17 +467,17 @@ module Global = {
   }
 
   @raises(Exit)
-  let unifyMatchCases = (bindingArray, cases, ctx, ~name) => {
+  let unifyMatchCases = (bindingArray, cases, ctx, ~name) =>
     if NonEmpty.size(bindingArray) != NonEmpty.size(cases) {
-      let (loc, _) = NonEmpty.hd(bindingArray)
+      let loc = NonEmpty.hd(bindingArray)->UPat.toLocation
       raise(Exit(Debug.patternNumberMismatch(~loc, ~name)))
     } else {
-      NonEmpty.zipExn(bindingArray, cases)->NonEmpty.map((. ((loc, k), ty)) => {
-        Context.update(ctx, k, ty, ~loc, ~name)
-        Pattern.make(UBinding(loc, k), ty.contents)
+      NonEmpty.zipExn(bindingArray, cases)->NonEmpty.map((. (pat, ty)) => {
+        let t = fromPattern(pat, ctx, ~default=Typescheme.unknown(), ~name)
+        unify(ty, t, Expand, ~loc=UPat.toLocation(pat), ~name)
+        Pattern.make(pat, t.contents)
       })
     }
-  }
 
   @raises(Exit)
   let unifyMapListCases = (pat, tys, ctx, ~loc, ~name) => {

@@ -73,10 +73,6 @@ describe("Parser", ({test, _}) => {
     expect.value(compile(`a {% : %}`)).toMatchSnapshot()
     expect.value(compile(`a {% "a" %}`)).toMatchSnapshot()
     expect.value(compile(`a {% 1 %}`)).toMatchSnapshot()
-    expect.value(compile(`{% match [ %}`)).toMatchSnapshot()
-    expect.value(compile(`{% match 1 %}`)).toMatchSnapshot()
-    expect.value(compile(`{% match a, [ %}`)).toMatchSnapshot()
-    expect.value(compile(`{% match a, 1 %}`)).toMatchSnapshot()
     expect.value(compile(`a {% match x with true %} b`)).toMatchSnapshot()
     expect.value(compile(`a {% map x with {y} %} {{ y }}`)).toMatchSnapshot()
     expect.value(compile(`a {% / %}`)).toMatchSnapshot()
@@ -91,8 +87,6 @@ describe("Parser", ({test, _}) => {
   })
 
   test("Illegal binding name", ({expect, _}) => {
-    expect.value(compile(~name="BadBinding", `{% match null %}`)).toMatchSnapshot()
-    expect.value(compile(`{% match a, null %}`)).toMatchSnapshot()
     expect.value(compile(`{% match a with [x, ...null] %}`)).toMatchSnapshot()
     expect.value(compile(`{% A null=1 /%}`)).toMatchSnapshot()
   })

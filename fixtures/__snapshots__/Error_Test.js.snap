@@ -329,38 +329,6 @@ Array [
     "exn": undefined,
     "kind": "Parse",
     "location": Object {
-      "character": 10,
-    },
-    "message": "Unexpected token: \\"null\\".",
-    "path": Array [
-      "BadBinding",
-    ],
-  },
-]
-`;
-
-exports[`Parser Illegal binding name 2`] = `
-Array [
-  Object {
-    "exn": undefined,
-    "kind": "Parse",
-    "location": Object {
-      "character": 13,
-    },
-    "message": "Unexpected token: \\"null\\".",
-    "path": Array [
-      "",
-    ],
-  },
-]
-`;
-
-exports[`Parser Illegal binding name 3`] = `
-Array [
-  Object {
-    "exn": undefined,
-    "kind": "Parse",
-    "location": Object {
       "character": 24,
     },
     "message": "Unexpected token: \\"null\\".",
@@ -371,7 +339,7 @@ Array [
 ]
 `;
 
-exports[`Parser Illegal binding name 4`] = `
+exports[`Parser Illegal binding name 2`] = `
 Array [
   Object {
     "exn": undefined,
@@ -553,70 +521,6 @@ Array [
     "exn": undefined,
     "kind": "Parse",
     "location": Object {
-      "character": 10,
-    },
-    "message": "Unexpected token: \\"[\\".",
-    "path": Array [
-      "",
-    ],
-  },
-]
-`;
-
-exports[`Parser Unexpected tokens 11`] = `
-Array [
-  Object {
-    "exn": undefined,
-    "kind": "Parse",
-    "location": Object {
-      "character": 10,
-    },
-    "message": "Unexpected token: \\"1\\".",
-    "path": Array [
-      "",
-    ],
-  },
-]
-`;
-
-exports[`Parser Unexpected tokens 12`] = `
-Array [
-  Object {
-    "exn": undefined,
-    "kind": "Parse",
-    "location": Object {
-      "character": 13,
-    },
-    "message": "Unexpected token: \\"[\\".",
-    "path": Array [
-      "",
-    ],
-  },
-]
-`;
-
-exports[`Parser Unexpected tokens 13`] = `
-Array [
-  Object {
-    "exn": undefined,
-    "kind": "Parse",
-    "location": Object {
-      "character": 13,
-    },
-    "message": "Unexpected token: \\"1\\".",
-    "path": Array [
-      "",
-    ],
-  },
-]
-`;
-
-exports[`Parser Unexpected tokens 14`] = `
-Array [
-  Object {
-    "exn": undefined,
-    "kind": "Parse",
-    "location": Object {
       "character": 28,
     },
     "message": "Unexpected token: \\"[end of file]\\".",
@@ -627,7 +531,7 @@ Array [
 ]
 `;
 
-exports[`Parser Unexpected tokens 15`] = `
+exports[`Parser Unexpected tokens 11`] = `
 Array [
   Object {
     "exn": undefined,
@@ -643,7 +547,7 @@ Array [
 ]
 `;
 
-exports[`Parser Unexpected tokens 16`] = `
+exports[`Parser Unexpected tokens 12`] = `
 Array [
   Object {
     "exn": undefined,
@@ -659,7 +563,7 @@ Array [
 ]
 `;
 
-exports[`Parser Unexpected tokens 17`] = `
+exports[`Parser Unexpected tokens 13`] = `
 Array [
   Object {
     "exn": undefined,
@@ -675,7 +579,7 @@ Array [
 ]
 `;
 
-exports[`Parser Unexpected tokens 18`] = `
+exports[`Parser Unexpected tokens 14`] = `
 Array [
   Object {
     "exn": undefined,
@@ -691,7 +595,7 @@ Array [
 ]
 `;
 
-exports[`Parser Unexpected tokens 19`] = `
+exports[`Parser Unexpected tokens 15`] = `
 Array [
   Object {
     "exn": undefined,
@@ -707,7 +611,7 @@ Array [
 ]
 `;
 
-exports[`Parser Unexpected tokens 20`] = `
+exports[`Parser Unexpected tokens 16`] = `
 Array [
   Object {
     "exn": undefined,
@@ -723,7 +627,7 @@ Array [
 ]
 `;
 
-exports[`Parser Unexpected tokens 21`] = `
+exports[`Parser Unexpected tokens 17`] = `
 Array [
   Object {
     "exn": undefined,
@@ -739,7 +643,7 @@ Array [
 ]
 `;
 
-exports[`Parser Unexpected tokens 22`] = `
+exports[`Parser Unexpected tokens 18`] = `
 Array [
   Object {
     "exn": undefined,
@@ -755,7 +659,7 @@ Array [
 ]
 `;
 
-exports[`Parser Unexpected tokens 23`] = `
+exports[`Parser Unexpected tokens 19`] = `
 Array [
   Object {
     "exn": undefined,
@@ -771,7 +675,7 @@ Array [
 ]
 `;
 
-exports[`Parser Unexpected tokens 24`] = `
+exports[`Parser Unexpected tokens 20`] = `
 Array [
   Object {
     "exn": undefined,

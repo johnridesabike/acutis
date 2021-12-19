@@ -210,7 +210,7 @@ type rec node =
   | UText(string, trim)
   // The first echo item that isn't null will be returned.
   | UEcho({loc: Debug.loc, nullables: array<echo>, default: echo})
-  | UMatch(Debug.loc, NonEmpty.t<(Debug.loc, string)>, NonEmpty.t<case>)
+  | UMatch(Debug.loc, NonEmpty.t<Pattern.t>, NonEmpty.t<case>)
   | UMapList(Debug.loc, Pattern.t, NonEmpty.t<case>)
   | UMapDict(Debug.loc, Pattern.t, NonEmpty.t<case>)
   | UComponent({
@@ -229,30 +229,6 @@ and t = array<node>
 type parseData<'a> = {
   nextToken: Token.t,
   data: 'a,
-}
-
-@raises(Exit)
-let parseBindingName = tokens =>
-  switch Lexer.popExn(tokens) {
-  | Tkn_Identifier(loc, x) => (loc, x)
-  | t => raise(Exit(Debug.unexpectedToken(t, module(Token), ~name=Lexer.name(tokens))))
-  }
-
-@raises(Exit)
-let parseCommaSequence = tokens => {
-  let head = parseBindingName(tokens)
-  let q = Queue.make()
-
-  @raises(Exit)
-  let rec aux = () =>
-    switch Lexer.peekExn(tokens) {
-    | Tkn_Comma(_) =>
-      Lexer.popExn(tokens)->ignore
-      Queue.add(q, parseBindingName(tokens))
-      aux()
-    | _ => NonEmpty.fromQueue(head, q)
-    }
-  aux()
 }
 
 @raises(Exit)
@@ -340,7 +316,7 @@ let rec parse = (t, tokens, ~until) => {
       }
     | Tkn_Comment(_) => aux(Lexer.popExn(tokens))
     | Tkn_Identifier(loc, "match") =>
-      let identifiers = parseCommaSequence(tokens)
+      let identifiers = Pattern.make(tokens)
       let withs = parseWithBlocks(tokens, ~block="match")
       Queue.add(q, UMatch(loc, identifiers, withs))
       aux(Lexer.popExn(tokens))

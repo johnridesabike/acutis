@@ -357,3 +357,14 @@ describe("Multiple patterns and data", ({test, _}) => {
     expect.value(r).toEqual(#ok("pass"))
   })
 })
+
+describe("Constructing patterns to match", ({test, _}) => {
+  test("Constructing null patterns", ({expect, _}) => {
+    let src = `
+      {%~ match null with null ~%} pass {%~ with !_ %} fail {% /match ~%}
+      {%~ match !1 with null %} fail {% with !1 %} pass {%~ with _ %} fail {% /match ~%}
+    `
+    let r = render(src, Js.Dict.empty(), [])
+    expect.value(r).toEqual(#ok("pass pass"))
+  })
+})

@@ -1076,10 +1076,11 @@ Array [
     "TAG": 2,
     "_0": 4,
     "_1": Array [
-      Array [
-        10,
-        "a",
-      ],
+      Object {
+        "TAG": 12,
+        "_0": 10,
+        "_1": "a",
+      },
     ],
     "_2": Array [
       Object {
@@ -1161,14 +1162,16 @@ Array [
     "TAG": 2,
     "_0": 89,
     "_1": Array [
-      Array [
-        95,
-        "e",
-      ],
-      Array [
-        98,
-        "f",
-      ],
+      Object {
+        "TAG": 12,
+        "_0": 95,
+        "_1": "e",
+      },
+      Object {
+        "TAG": 12,
+        "_0": 98,
+        "_1": "f",
+      },
     ],
     "_2": Array [
       Object {
@@ -1256,14 +1259,16 @@ Array [
     "TAG": 2,
     "_0": 171,
     "_1": Array [
-      Array [
-        177,
-        "tuple",
-      ],
-      Array [
-        184,
-        "dict",
-      ],
+      Object {
+        "TAG": 12,
+        "_0": 177,
+        "_1": "tuple",
+      },
+      Object {
+        "TAG": 12,
+        "_0": 184,
+        "_1": "dict",
+      },
     ],
     "_2": Array [
       Object {

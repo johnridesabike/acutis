@@ -40,7 +40,7 @@ type rec node =
   | UText(string, trim)
   // The first echo item that isn't null will be returned.
   | UEcho({loc: Debug.loc, nullables: array<echo>, default: echo})
-  | UMatch(Debug.loc, NonEmpty.t<(Debug.loc, string)>, NonEmpty.t<case>)
+  | UMatch(Debug.loc, NonEmpty.t<Pattern.t>, NonEmpty.t<case>)
   | UMapList(Debug.loc, Pattern.t, NonEmpty.t<case>)
   | UMapDict(Debug.loc, Pattern.t, NonEmpty.t<case>)
   | UComponent({
