@@ -1873,6 +1873,70 @@ Array [
 ]
 `;
 
+exports[`Rendering Map type mismatches 5`] = `
+Array [
+  Object {
+    "exn": undefined,
+    "kind": "Type",
+    "location": Object {
+      "character": 4,
+    },
+    "message": "This pattern is type {\\"a\\": int} but expected type [echoable].",
+    "path": Array [
+      "",
+    ],
+  },
+]
+`;
+
+exports[`Rendering Map type mismatches 6`] = `
+Array [
+  Object {
+    "exn": undefined,
+    "kind": "Type",
+    "location": Object {
+      "character": 4,
+    },
+    "message": "This pattern is type string but expected type int.",
+    "path": Array [
+      "",
+    ],
+  },
+]
+`;
+
+exports[`Rendering Map type mismatches 7`] = `
+Array [
+  Object {
+    "exn": undefined,
+    "kind": "Type",
+    "location": Object {
+      "character": 4,
+    },
+    "message": "This pattern is type {\\"a\\": int} but expected type <echoable>.",
+    "path": Array [
+      "",
+    ],
+  },
+]
+`;
+
+exports[`Rendering Map type mismatches 8`] = `
+Array [
+  Object {
+    "exn": undefined,
+    "kind": "Type",
+    "location": Object {
+      "character": 4,
+    },
+    "message": "This pattern is type int but expected type string.",
+    "path": Array [
+      "",
+    ],
+  },
+]
+`;
+
 exports[`Rendering Missing bindings 1`] = `
 Array [
   Object {

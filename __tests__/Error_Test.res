@@ -325,6 +325,16 @@ describe("Rendering", ({test, _}) => {
     expect.value(
       render("{% map [1, 2, ...z] with a %}{{ a }}{% /map %}", data, []),
     ).toMatchSnapshot()
+    expect.value(render("{% map {a: 1} with a %} {{ a }} {% /map %}", data, [])).toMatchSnapshot()
+    expect.value(
+      render(`{% map [1] with a, "b" %} {{ a }} {% with _ %} {% /map %}`, data, []),
+    ).toMatchSnapshot()
+    expect.value(
+      render("{% map_dict {a: 1} with a %} {{ a }} {% /map_dict %}", data, []),
+    ).toMatchSnapshot()
+    expect.value(
+      render(`{% map_dict <"a": 1> with a, 1 %} {{ a }} {% with _ %} {% /map_dict %}`, data, []),
+    ).toMatchSnapshot()
   })
 
   test("Missing bindings", ({expect, _}) => {

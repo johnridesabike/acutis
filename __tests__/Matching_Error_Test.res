@@ -15,7 +15,7 @@ let ne = NE.fromArrayExn
 let g = Utils.Dagmap.make(Belt.HashMap.String.make(~hintSize=0), ~f=(. _, _) => assert false)
 
 let makeCases = c => {
-  let (_, cases) = TC.makeCases(ne(c), TC.Context.make(), ~loc=Loc(0), ~name="", g, Component)
+  let (_, cases) = TC.makeCases(ne(c), TC.Context.make(#Component), ~loc=Loc(0), ~name="", g)
   cases
 }
 
@@ -124,10 +124,16 @@ describe("Unused patterns", ({test, _}) => {
 })
 
 describe("Partial matching", ({test, _}) => {
-  let getError = x =>
+  let getError = (x, f) =>
     switch x {
-    | Error(e) => Some(e.Debug.message)
-    | Ok(_) => None
+    | Ok(x) =>
+      try {
+        f(x)
+        None
+      } catch {
+      | Debug.Exit(e) => Some(e.message)
+      }
+    | Error(_) => None
     }
   test("Partial match test 1", ({expect, _}) => {
     let nodes1 = [Untyped.UText("", NoTrim)]
@@ -149,8 +155,7 @@ describe("Partial matching", ({test, _}) => {
       [case1, case2]
       ->makeCases
       ->Matching.make(~loc=Loc(0), ~name="")
-      ->Belt.Result.flatMap(x => Matching.ParMatch.check(x.tree, ~loc=Loc(0)))
-      ->getError
+      ->getError(x => Matching.ParMatch.check(x.tree, ~loc=Loc(0)))
     expect.value(result).toEqual(
       Some(`This pattern-matching is not exhaustive.
 Here is an example of a case that is not matched:
@@ -167,8 +172,7 @@ Here is an example of a case that is not matched:
       [case1]
       ->makeCases
       ->Matching.make(~loc=Loc(0), ~name="")
-      ->Belt.Result.flatMap(x => Matching.ParMatch.check(x.tree, ~loc=Loc(0)))
-      ->getError
+      ->getError(x => Matching.ParMatch.check(x.tree, ~loc=Loc(0)))
     expect.value(result).toEqual(
       Some(`This pattern-matching is not exhaustive.
 Here is an example of a case that is not matched:
@@ -182,8 +186,7 @@ Here is an example of a case that is not matched:
       [case1]
       ->makeCases
       ->Matching.make(~loc=Loc(0), ~name="")
-      ->Belt.Result.flatMap(x => Matching.ParMatch.check(x.tree, ~loc=Loc(0)))
-      ->getError
+      ->getError(x => Matching.ParMatch.check(x.tree, ~loc=Loc(0)))
     expect.value(result).toEqual(
       Some(`This pattern-matching is not exhaustive.
 Here is an example of a case that is not matched:
@@ -201,8 +204,7 @@ Here is an example of a case that is not matched:
       [case1, case2]
       ->makeCases
       ->Matching.make(~loc=Loc(0), ~name="")
-      ->Belt.Result.flatMap(x => Matching.ParMatch.check(x.tree, ~loc=Loc(0)))
-      ->getError
+      ->getError(x => Matching.ParMatch.check(x.tree, ~loc=Loc(0)))
     expect.value(result).toEqual(
       Some(`This pattern-matching is not exhaustive.
 Here is an example of a case that is not matched:

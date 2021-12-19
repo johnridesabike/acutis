@@ -58,5 +58,5 @@ let make: (
 ) => result<t<Typechecker.nodes>, Debug.t>
 
 module ParMatch: {
-  let check: (tree<'a>, ~loc: Debug.loc) => result<tree<'a>, Debug.t>
+  let check: (tree<'a>, ~loc: Debug.loc) => unit
 }

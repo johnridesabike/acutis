@@ -33,8 +33,18 @@ describe("basic", ({test, _}) => {
         ("z", P.UInt(Loc(1), 1)),
       ],
     )
-    let t1 = Local.fromPattern(pat1, Belt.MutableQueue.make(), ~name="")
-    let t2 = Local.fromPattern(pat2, Belt.MutableQueue.make(), ~name="")
+    let t1 = Local.fromPattern(
+      pat1,
+      Belt.MutableQueue.make(),
+      ~default=Typescheme.unknown(),
+      ~name="",
+    )
+    let t2 = Local.fromPattern(
+      pat2,
+      Belt.MutableQueue.make(),
+      ~default=Typescheme.unknown(),
+      ~name="",
+    )
     unify(t1, t2, Expand, ~loc=Loc(1), ~name="")
     expect.value(debug(t1)).toEqual(
       #Record([

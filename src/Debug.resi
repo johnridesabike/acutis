@@ -34,17 +34,6 @@ type t = {
   @live exn: option<anyExn>,
 }
 
-module Stack: {
-  type name =
-    | Component(string)
-    | Section({component: string, section: string})
-    | Match
-    | Map
-    | MapDict
-    | Index(Js.Json.t)
-  type t = list<name>
-}
-
 exception Exit(t)
 
 module type Debuggable = {
@@ -65,8 +54,6 @@ let unterminatedString: (~loc: loc, ~name: string) => t
 let unknownEscapeSequence: (~loc: loc, ~name: string, ~char: string) => t
 
 /* Parse errors. */
-let badMapListPattern: ('a, debuggable<'a>, ~name: string) => t
-let badMapDictPattern: ('a, debuggable<'a>, ~name: string) => t
 let unexpectedToken: ('a, debuggable<'a>, ~name: string) => t
 let childNotAllowedInRoot: loc => t
 
@@ -75,9 +62,7 @@ let cyclicDependency: (~loc: loc, ~name: string, ~stack: list<string>) => t
 let duplicateCompName: string => t
 let uncaughtCompileError: ('e, ~name: string) => t
 
-let childDoesNotExist: (~loc: loc, ~child: string, ~stack: Stack.t) => t
-
-let uncaughtComponentError: ('e, ~stack: Stack.t) => t
+let uncaughtComponentError: ('e, ~stack: list<string>) => t
 
 /// NEW STUFF
 let childTypeMismatch: ('a, 'a, ~loc: loc, 'a => string) => t

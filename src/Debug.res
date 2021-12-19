@@ -26,30 +26,7 @@ type t = {
   exn: option<anyExn>,
 }
 
-module Stack = {
-  type name =
-    | Component(string)
-    | Section({component: string, section: string})
-    | Match
-    | Map
-    | MapDict
-    | Index(Js.Json.t)
-  type t = list<name>
-
-  let nameToJson = (. x) =>
-    switch x {
-    | Component(x) => Js.Json.string(x)
-    | Section({component, section}) => Js.Json.string(`section: ${component}#${section}`)
-    | Match => Js.Json.string("match")
-    | Map => Js.Json.string("map")
-    | MapDict => Js.Json.string("map_dict")
-    | Index(x) => x
-    }
-}
-
 exception Exit(t)
-
-let stackToPath = x => x->Belt.List.toArray->Belt.Array.mapU(Stack.nameToJson)
 
 module type Debuggable = {
   type t
@@ -127,28 +104,6 @@ let unexpectedToken = (type a, t, module(M): debuggable<a>, ~name) => {
   exn: None,
 }
 
-let badMapListPattern = (type a, t, module(M): debuggable<a>, ~name) => {
-  let t' = M.toString(t)
-  {
-    message: `Bad map type: "${t'}". I can only map bindings and arrays. (Tip: Use map_dict for dictionaries.)`,
-    kind: #Parse,
-    location: Some(location(M.toLocation(t))),
-    path: [Js.Json.string(name)],
-    exn: None,
-  }
-}
-
-let badMapDictPattern = (type a, t, module(M): debuggable<a>, ~name) => {
-  let t' = M.toString(t)
-  {
-    message: `Bad map_dict type: "${t'}". I can only use map_dict for bindings and dictionaries. (Tip: Use map for arrays.)`,
-    kind: #Parse,
-    location: Some(location(M.toLocation(t))),
-    path: [Js.Json.string(name)],
-    exn: None,
-  }
-}
-
 let childNotAllowedInRoot = loc => {
   message: `Children are not allowed in root templates, only in components.`,
   kind: #Parse,
@@ -187,18 +142,10 @@ let uncaughtCompileError = (e, ~name) => {
 
 /* Render errors */
 
-let childDoesNotExist = (~loc, ~child, ~stack) => {
-  location: Some(location(loc)),
-  path: stackToPath(stack),
-  kind: #Render,
-  message: `Template child "${child}" does not exist.`,
-  exn: None,
-}
-
 let uncaughtComponentError = (e, ~stack) => {
   message: `An exception was thrown while rendering a template component.`,
   location: None,
-  path: stackToPath(stack),
+  path: stack->Belt.List.toArray->Belt.Array.map(Js.Json.string),
   kind: #Render,
   exn: Some(AnyExn(e)),
 }
@@ -208,8 +155,6 @@ let uncaughtComponentError = (e, ~stack) => {
 module Array = Belt.Array
 module Int = Belt.Int
 module List = Belt.List
-
-let location = (Loc(x)) => {character: x + 1}
 
 let json = j =>
   switch Js.Json.classify(j) {

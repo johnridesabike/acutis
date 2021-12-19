@@ -33,7 +33,6 @@ and nodes<'a> = array<node<'a>>
 
 type t<'a> = {
   prop_types: Typescheme.props,
-  child_types: Typescheme.Child.props,
   nodes: nodes<'a>,
   name: string,
 }

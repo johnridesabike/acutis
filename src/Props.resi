@@ -8,9 +8,7 @@
 
 type t
 
-let make: (Typescheme.props, Js.Dict.t<Js.Json.t>) => Js.Dict.t<t>
-
-exception RenderError
+let make: (Typescheme.props, Js.Dict.t<Js.Json.t>) => Belt.Map.String.t<t>
 
 let booleanExn: t => bool
 
@@ -24,16 +22,16 @@ let floatExn: t => float
 
 let tupleExn: t => array<t>
 
-let dictExn: t => Js.Dict.t<t>
+let dictExn: t => Belt.Map.String.t<t>
 
 let isNull: t => bool
 
 let nullableExn: t => option<t>
 
-let fromPattern: (Typechecker.Pattern.t, Js.Dict.t<t>) => t
+let fromPattern: (Typechecker.Pattern.t, Belt.Map.String.t<t>) => t
 
 let forEachListExn: (t, (. ~index: t, t) => unit) => unit
 
 let forEachDictExn: (t, (. ~index: t, t) => unit) => unit
 
-let toJson: (Js.Dict.t<t>, Typescheme.props) => Js.Dict.t<Js.Json.t>
+let toJson: (Belt.Map.String.t<t>, Typescheme.props) => Js.Dict.t<Js.Json.t>

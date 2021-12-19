@@ -33,21 +33,6 @@ module Pattern = {
     | URecord(Debug.loc, array<(string, t)>)
     | UBinding(Debug.loc, string)
 
-  let rec toString = x =>
-    switch x {
-    | UTrue(_) | UFalse(_) => "boolean"
-    | UNull(_) => "null"
-    | USome(_, x) => toString(x)
-    | UString(_) => "string"
-    | UInt(_) => "int"
-    | UFloat(_) => "float"
-    | UTuple(_) => "tuple"
-    | UList(_) | UListWithTailBinding(_) => "array"
-    | URecord(_) => "object"
-    | UDict(_) => "dictionary"
-    | UBinding(_, x) => `binding: \`${x}\``
-    }
-
   let toLocation = x =>
     switch x {
     | UTrue(x)

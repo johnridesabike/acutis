@@ -22,8 +22,6 @@ module Pattern: {
     | URecord(Debug.loc, array<(string, t)>)
     | UBinding(Debug.loc, string)
 
-  let toString: t => string
-
   let toLocation: t => Debug.loc
 
   let make: Lexer.t => NonEmpty.t<t>

@@ -11,6 +11,8 @@ module MapString = Belt.Map.String
 module Queue = Belt.MutableQueue
 module TP = Typechecker.Pattern
 
+exception Exit = Debug.Exit
+
 type nest = Tuple | Record | Dict
 
 type rec tree<'a> =
@@ -639,12 +641,11 @@ module ParMatch = {
 
   let toString = l => toArray(l)->Array.joinWith(", ", TP.toString)
 
-  let check = (tree, ~loc) => {
+  let check = (tree, ~loc) =>
     switch check(tree) {
-    | {flag: Exhaustive, _} => Ok(tree)
-    | {flag: Partial, pats, _} => Error(Debug.partialMatch(pats, toString, ~loc))
+    | {flag: Exhaustive, _} => ()
+    | {flag: Partial, pats, _} => raise(Exit(Debug.partialMatch(pats, toString, ~loc)))
     }
-  }
 }
 
 let make = (~loc, ~name, cases: NonEmpty.t<Typechecker.case>) => {

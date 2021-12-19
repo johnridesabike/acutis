@@ -79,10 +79,7 @@ let rec nodes = (~name, a) =>
     | TMatch(loc, pats, cases) =>
       switch Matching.make(cases, ~loc, ~name) {
       | Ok(tree) =>
-        switch Matching.ParMatch.check(tree.tree, ~loc) {
-        | Ok(_) => ()
-        | Error(e) => raise(Exit(e))
-        }
+        Matching.ParMatch.check(tree.tree, ~loc)
         let tree = {...tree, exits: Array.map(tree.exits, nodes(~name))}
         OMatch(loc, pats, tree)
       | Error(e) => raise(Exit(e))
@@ -90,10 +87,7 @@ let rec nodes = (~name, a) =>
     | TMapList(loc, pat, cases) =>
       switch Matching.make(cases, ~loc, ~name) {
       | Ok(tree) =>
-        switch Matching.ParMatch.check(tree.tree, ~loc) {
-        | Ok(_) => ()
-        | Error(e) => raise(Exit(e))
-        }
+        Matching.ParMatch.check(tree.tree, ~loc)
         let tree = {...tree, exits: Array.map(tree.exits, nodes(~name))}
         OMapList(loc, pat, tree)
       | Error(e) => raise(Exit(e))
@@ -101,10 +95,7 @@ let rec nodes = (~name, a) =>
     | TMapDict(loc, pat, cases) =>
       switch Matching.make(cases, ~loc, ~name) {
       | Ok(tree) =>
-        switch Matching.ParMatch.check(tree.tree, ~loc) {
-        | Ok(_) => ()
-        | Error(e) => raise(Exit(e))
-        }
+        Matching.ParMatch.check(tree.tree, ~loc)
         let tree = {...tree, exits: Array.map(tree.exits, nodes(~name))}
         OMapDict(loc, pat, tree)
       | Error(e) => raise(Exit(e))
@@ -124,14 +115,12 @@ let makeNodes = (~name, ast: Typechecker.t) => nodes(ast.nodes, ~name)
 
 type t<'a> = {
   prop_types: Typescheme.props,
-  child_types: Typescheme.Child.props,
   nodes: nodes<'a>,
   name: string,
 }
 
 let make = (~name, ast) => {
   prop_types: ast.Typechecker.prop_types,
-  child_types: ast.child_types,
   nodes: makeNodes(~name, ast),
   name: name,
 }

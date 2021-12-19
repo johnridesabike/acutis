@@ -59,15 +59,16 @@ type mode = Expand | Narrow
 
 let unify: (Typescheme.t, Typescheme.t, mode, ~loc: Debug.loc, ~name: string) => unit
 
-type root = Root | Component
+type root = [#Root | #Component]
 
 module Context: {
   type t
-  let make: unit => t
+  let make: root => t
 }
 
 module Local: {
   let fromPattern: (
+    ~default: Typescheme.t,
     Untyped.Pattern.t,
     Belt.MutableQueue.t<(string, Typescheme.t)>,
     ~name: string,
@@ -80,7 +81,6 @@ let makeCases: (
   ~loc: Debug.loc,
   ~name: string,
   Utils.Dagmap.t<'a, Source.t<t, 'b>>,
-  root,
 ) => (NonEmpty.t<Typescheme.t>, NonEmpty.t<case>)
 
 let makeComponents: Utils.Dagmap.map<Source.t<Untyped.t, Source.fnU<'a>>> => Utils.Dagmap.map<

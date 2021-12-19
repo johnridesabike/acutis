@@ -6,7 +6,6 @@
   file, You can obtain one at http://mozilla.org/MPL/2.0/.
 */
 module Array = Belt.Array
-module Dict = Js.Dict
 module MapString = Belt.Map.String
 module MapInt = Belt.Map.Int
 module Queue = Belt.MutableQueue
@@ -41,7 +40,7 @@ module Match = {
     | None => Js.Exn.raiseError("arrayGet")
     }
   let recordGet: getter<_> = (. d, _, k) =>
-    switch Dict.get(d, k) {
+    switch MapString.get(d, k) {
     | Some(x) => x
     | None => Js.Exn.raiseError("recordGet")
     }
@@ -110,7 +109,7 @@ module Match = {
     switch tree {
     | End(x) => Some((vars, x))
     | Switch({idx: _, key, cases, wildcard, ids}) =>
-      switch Dict.get(args, key) {
+      switch MapString.get(args, key) {
       | Some(val) =>
         let vars = bindNames(vars, ids, val)
         switch testCase(val, cases, ~wildcard) {
@@ -120,14 +119,14 @@ module Match = {
       | None => None
       }
     | Wildcard({idx: _, key, ids, child}) =>
-      switch Dict.get(args, key) {
+      switch MapString.get(args, key) {
       | Some(val) =>
         let vars = bindNames(vars, ids, val)
         makeDict(child, args, vars)
       | None => None
       }
     | Construct({idx: _, key, ids, nil, cons, kind: _}) =>
-      switch Dict.get(args, key) {
+      switch MapString.get(args, key) {
       | Some(val) =>
         let vars = bindNames(vars, ids, val)
         let child = if Props.isNull(val) {
@@ -142,7 +141,7 @@ module Match = {
       | None => None
       }
     | Nest({idx: _, key, kind, ids, child, wildcard}) =>
-      switch Dict.get(args, key) {
+      switch MapString.get(args, key) {
       | Some(val) =>
         let vars = bindNames(vars, ids, val)
         let result = switch kind {
@@ -180,12 +179,12 @@ module Match = {
 let echoNotNull = (x, ~props, ~children, ~return) =>
   switch x {
   | Compile.OEBinding(_, binding, esc) =>
-    switch Dict.get(props, binding) {
+    switch MapString.get(props, binding) {
     | Some(x) => return(. Utils.escape(esc, Props.echoExn(x)))
     | None => assert false
     }
   | OEChild(_, child) =>
-    switch Dict.get(children, child) {
+    switch MapString.get(children, child) {
     | None => assert false
     | Some(x) => x
     }
@@ -195,7 +194,7 @@ let echoNotNull = (x, ~props, ~children, ~return) =>
 let echoNullable = (x, ~props, ~children, ~return) =>
   switch x {
   | Compile.OEBinding(_, binding, esc) =>
-    switch Dict.get(props, binding) {
+    switch MapString.get(props, binding) {
     | Some(x) =>
       switch Props.nullableExn(x) {
       | None => None
@@ -203,7 +202,7 @@ let echoNullable = (x, ~props, ~children, ~return) =>
       }
     | None => assert false
     }
-  | OEChild(_, child) => Dict.get(children, child)
+  | OEChild(_, child) => MapString.get(children, child)
   | OEString(_, x) => Some(return(. x))
   }
 
@@ -220,22 +219,27 @@ let echo = (nullables, default, ~props, ~children, ~return) => {
   aux(0)
 }
 
-@val @scope("Object")
-external dictCopy: (@as(json`{}`) _, Dict.t<'a>) => Dict.t<'a> = "assign"
+let mapMerge = (d1, d2) =>
+  MapString.mergeU(d1, d2, (. _, v1, v2) =>
+    switch (v1, v2) {
+    | (None, None) => None
+    | (_, Some(_) as x) | (Some(_) as x, None) => x
+    }
+  )
 
-let dictMergeMap = (d, m) => {
-  let d = dictCopy(d)
-  MapString.forEachU(m, (. k, v) => Dict.set(d, k, v))
+let mapToDict = m => {
+  let d = Js.Dict.empty()
+  MapString.forEachU(m, (. k, v) => Js.Dict.set(d, k, v))
   d
 }
 
 let rec make:
   type a. (
     ~nodes: Compile.nodes<Compile.template<a>>,
-    ~props: Dict.t<Props.t>,
-    ~children: Dict.t<a>,
+    ~props: MapString.t<Props.t>,
+    ~children: MapString.t<a>,
     ~env: Source.env<a>,
-    ~stack: Debug.Stack.t,
+    ~stack: list<string>,
   ) => Queue.t<a> =
   (~nodes, ~props, ~children, ~env, ~stack) => {
     module Env = unpack(env)
@@ -250,14 +254,8 @@ let rec make:
         switch Match.make(dectree, args) {
         | None => assert false
         | Some(props', nodes) =>
-          let props = dictMergeMap(props, props')
-          let result = make(
-            ~nodes,
-            ~props,
-            ~children,
-            ~stack=list{Debug.Stack.Match, ...stack},
-            ~env,
-          )
+          let props = mapMerge(props, props')
+          let result = make(~nodes, ~props, ~children, ~stack, ~env)
           Queue.transfer(result, queue)
         }
       | OMapList(_, pattern, dectree) =>
@@ -266,8 +264,8 @@ let rec make:
           switch Match.make(dectree, NonEmpty.two(args, index)) {
           | None => assert false
           | Some(props', nodes) =>
-            let props = dictMergeMap(props, props')
-            let result = make(~nodes, ~props, ~children, ~stack=list{Map, ...stack}, ~env)
+            let props = mapMerge(props, props')
+            let result = make(~nodes, ~props, ~children, ~stack, ~env)
             Queue.transfer(result, queue)
           }
         )
@@ -277,62 +275,53 @@ let rec make:
           switch Match.make(dectree, NonEmpty.two(args, index)) {
           | None => assert false
           | Some(props', nodes) =>
-            let props = dictMergeMap(props, props')
-            let result = make(~nodes, ~props, ~children, ~stack=list{Map, ...stack}, ~env)
+            let props = mapMerge(props, props')
+            let result = make(~nodes, ~props, ~children, ~stack, ~env)
             Queue.transfer(result, queue)
           }
         )
-      | OComponent({loc, props: compPropsRaw, children: compChildrenRaw, val}) =>
-        let compProps = Dict.empty()
-        let compChildren = Dict.empty()
-        let errors = Queue.make()
-        Array.forEachU(compChildrenRaw, (. (key, child)) =>
+      | OComponent({loc: _, props: compPropsRaw, children: compChildrenRaw, val}) =>
+        let compChildren = Array.mapU(compChildrenRaw, (. (key, child)) =>
           switch child {
           | OChildBlock(nodes) =>
             let result = make(~nodes, ~props, ~children, ~stack, ~env)
-            Dict.set(compChildren, key, Env.render(. result))
-          | OChildName(child) =>
-            switch Dict.get(children, child) {
-            | Some(data) => Dict.set(compChildren, key, data)
-            | None => Queue.add(errors, Debug.childDoesNotExist(~loc, ~child, ~stack))
-            }
+            (key, Env.render(. result))
+          | OChildName(child) => (key, MapString.getExn(children, child))
           }
-        )
-        Array.forEachU(compPropsRaw, (. (key, data)) =>
-          Dict.set(compProps, key, Props.fromPattern(data, props))
-        )
-        if Queue.isEmpty(errors) {
-          let result = switch val {
-          | Acutis(name, nodes) =>
-            Env.render(.
-              make(
-                ~nodes,
-                ~props=compProps,
-                ~children=compChildren,
-                ~stack=list{Component(name), ...stack},
-                ~env,
-              ),
-            )
-          | Function(_, propTypes, f) =>
-            Env.try_(.
-              (. ()) => f(. env, Props.toJson(compProps, propTypes), compChildren),
-              (. e) => Env.error_internal(. [Debug.uncaughtComponentError(e, ~stack)]),
-            )
-          }
-          Queue.add(queue, result)
-        } else {
-          Queue.add(queue, Env.error_internal(. Queue.toArray(errors)))
+        )->MapString.fromArray
+        let compProps =
+          Array.mapU(compPropsRaw, (. (key, data)) => (
+            key,
+            Props.fromPattern(data, props),
+          ))->MapString.fromArray
+        let result = switch val {
+        | Acutis(name, nodes) =>
+          Env.render(.
+            make(
+              ~nodes,
+              ~props=compProps,
+              ~children=compChildren,
+              ~stack=list{name, ...stack},
+              ~env,
+            ),
+          )
+        | Function(_, propTypes, f) =>
+          Env.try_(.
+            (. ()) => f(. env, Props.toJson(compProps, propTypes), mapToDict(compChildren)),
+            (. e) => Env.error_internal(. [Debug.uncaughtComponentError(e, ~stack)]),
+          )
         }
+        Queue.add(queue, result)
       }
     )
     queue
   }
 
-let make = (type a, env: Source.env<a>, {Compile.nodes: nodes, name, prop_types, _}, props) => {
+let make = (type a, env: Source.env<a>, {Compile.nodes: nodes, name, prop_types}, props) => {
   module Env = unpack(env)
   try {
     let props = Props.make(prop_types, props)
-    Env.render(. make(~nodes, ~props, ~children=Dict.empty(), ~env, ~stack=list{Component(name)}))
+    Env.render(. make(~nodes, ~props, ~children=MapString.empty, ~env, ~stack=list{name}))
   } catch {
   | Debug.Exit(e) => Env.error_internal(. [e])
   }
