@@ -6,7 +6,7 @@
   file, You can obtain one at http://mozilla.org/MPL/2.0/.
 */
 module Array = Belt.Array
-module UPat = Untyped.Pattern
+module UPat = Parser.Pattern
 module MapString = Belt.Map.String
 module Queue = Belt.MutableQueue
 module SetString = Belt.Set.String
@@ -152,9 +152,9 @@ module Pattern = {
 }
 
 type rec node =
-  | TText(string, Untyped.trim)
+  | TText(string, Parser.trim)
   // The first echo item that isn't null will be returned.
-  | TEcho({loc: Debug.loc, nullables: array<Untyped.echo>, default: Untyped.echo})
+  | TEcho({loc: Debug.loc, nullables: array<Parser.echo>, default: Parser.echo})
   | TMatch(Debug.loc, NonEmpty.t<Pattern.t>, NonEmpty.t<case>)
   | TMapList(Debug.loc, Pattern.t, NonEmpty.t<case>)
   | TMapDict(Debug.loc, Pattern.t, NonEmpty.t<case>)
@@ -517,11 +517,11 @@ let unifyEchoes = (nullables, default, ctx, ~name) => {
     switch nullables[i] {
     | None =>
       switch default {
-      | Untyped.EBinding(loc, binding, _) => Context.update(ctx, binding, echo(), ~loc, ~name)
+      | Parser.EBinding(loc, binding, _) => Context.update(ctx, binding, echo(), ~loc, ~name)
       | EChild(loc, child) => Context.updateChild(ctx, child, Child.child(), ~loc)
       | EString(_, _, _) | EInt(_, _, _) | EFloat(_, _, _) => ()
       }
-    | Some(Untyped.EBinding(loc, binding, _)) =>
+    | Some(Parser.EBinding(loc, binding, _)) =>
       Context.update(ctx, binding, nullable(echo()), ~loc, ~name)
       aux(succ(i))
     | Some(EString(_, _, _) | EInt(_, _, _) | EFloat(_, _, _)) =>
@@ -555,7 +555,7 @@ let getTypes = x =>
 let rec makeCases = (cases, ctx, ~loc, ~name, g) => {
   let (casetypes, cases) =
     cases
-    ->NonEmpty.map((. {Untyped.patterns: pats, nodes}) => {
+    ->NonEmpty.map((. {Parser.patterns: pats, nodes}) => {
       let bindings = Queue.make()
       let casetypes =
         pats
@@ -591,7 +591,7 @@ let rec makeCases = (cases, ctx, ~loc, ~name, g) => {
 and makeNodes = (nodes, ctx, ~name, g) =>
   Array.mapU(nodes, (. node) =>
     switch node {
-    | Untyped.UText(s, t) => TText(s, t)
+    | Parser.UText(s, t) => TText(s, t)
     | UEcho({loc, nullables, default}) =>
       unifyEchoes(nullables, default, ctx, ~name)->ignore
       TEcho({loc: loc, nullables: nullables, default: default})

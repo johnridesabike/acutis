@@ -56,7 +56,7 @@ and nodes<'a> = array<node<'a>>
 
 let echo = (. x) =>
   switch x {
-  | Untyped.EBinding(l, s, e) => OEBinding(l, s, e)
+  | Parser.EBinding(l, s, e) => OEBinding(l, s, e)
   | EChild(l, s) => OEChild(l, s)
   | EString(l, s, e) => OEString(l, Utils.escape(e, s))
   | EInt(l, i, e) => OEString(l, Utils.escape(e, Belt.Int.toString(i)))
@@ -149,7 +149,7 @@ module Components = {
         if HashmapString.has(m, name) {
           raise(Exit(Debug.duplicateCompName(name)))
         }
-        HashmapString.set(m, name, Source.src(~name, Untyped.makeExn(~name, src)))
+        HashmapString.set(m, name, Source.src(~name, Parser.makeExn(~name, src)))
       | Function(name, p, c, f) =>
         if HashmapString.has(m, name) {
           raise(Exit(Debug.duplicateCompName(name)))
@@ -216,7 +216,7 @@ let linkSrc = (. g, src) =>
 
 let make = (~name, src, components: Components.t<_>) =>
   try {
-    let nodes = Untyped.makeExn(~name, src)
+    let nodes = Parser.makeExn(~name, src)
     let ast = Typechecker.make(name, nodes, components.typed)
     let g = Utils.Dagmap.make(components.optimized, ~f=linkSrc)
     let root = make(~name, ast)

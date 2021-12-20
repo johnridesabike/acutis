@@ -6,6 +6,8 @@
   file, You can obtain one at http://mozilla.org/MPL/2.0/.
 */
 
+/* This creates the untyped AST. */
+
 module Pattern: {
   type rec t =
     | UNull(Debug.loc)
@@ -34,7 +36,7 @@ type echo =
   | EInt(Debug.loc, int, Utils.escape)
   | EFloat(Debug.loc, float, Utils.escape)
 
-type trim = TrimStart | TrimEnd | TrimBoth | NoTrim
+type trim = NoTrim | TrimStart | TrimEnd | TrimBoth
 
 type rec node =
   | UText(string, trim)

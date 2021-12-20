@@ -30,9 +30,9 @@ module Pattern: {
 }
 
 type rec node =
-  | TText(string, Untyped.trim)
+  | TText(string, Parser.trim)
   // The first echo item that isn't null will be returned.
-  | TEcho({loc: Debug.loc, nullables: array<Untyped.echo>, default: Untyped.echo})
+  | TEcho({loc: Debug.loc, nullables: array<Parser.echo>, default: Parser.echo})
   | TMatch(Debug.loc, NonEmpty.t<Pattern.t>, NonEmpty.t<case>)
   | TMapList(Debug.loc, Pattern.t, NonEmpty.t<case>)
   | TMapDict(Debug.loc, Pattern.t, NonEmpty.t<case>)
@@ -69,22 +69,22 @@ module Context: {
 module Local: {
   let fromPattern: (
     ~default: Typescheme.t,
-    Untyped.Pattern.t,
+    Parser.Pattern.t,
     Belt.MutableQueue.t<(string, Typescheme.t)>,
     ~name: string,
   ) => Typescheme.t
 }
 
 let makeCases: (
-  NonEmpty.t<Untyped.case>,
+  NonEmpty.t<Parser.case>,
   Context.t,
   ~loc: Debug.loc,
   ~name: string,
   Utils.Dagmap.t<'a, Source.t<t, 'b>>,
 ) => (NonEmpty.t<Typescheme.t>, NonEmpty.t<case>)
 
-let makeComponents: Utils.Dagmap.map<Source.t<Untyped.t, Source.fnU<'a>>> => Utils.Dagmap.map<
+let makeComponents: Utils.Dagmap.map<Source.t<Parser.t, Source.fnU<'a>>> => Utils.Dagmap.map<
   Source.t<t, Source.fnU<'a>>,
 >
 
-let make: (string, Untyped.t, Utils.Dagmap.map<Source.t<t, 'a>>) => t
+let make: (string, Parser.t, Utils.Dagmap.map<Source.t<t, 'a>>) => t

@@ -9,7 +9,7 @@
 open TestFramework
 open Typechecker
 module MapString = Belt.Map.String
-module P = Untyped.Pattern
+module P = Parser.Pattern
 
 let debug = Typescheme.debug
 

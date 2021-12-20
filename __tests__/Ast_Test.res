@@ -8,7 +8,7 @@
 
 open TestFramework
 
-module P = Untyped.Pattern
+module P = Parser.Pattern
 
 describe("Lexer", ({test, _}) => {
   test("Tokens are generated correctly", ({expect, _}) => {
@@ -47,7 +47,7 @@ describe("Patterns", ({test, _}) => {
   let parseString = source => {
     let tokens = Lexer.make("{% " ++ source ++ "%}", ~name="")
     Lexer.popExn(tokens)->ignore // Skip the opening string
-    Untyped.Pattern.make(tokens)
+    Parser.Pattern.make(tokens)
   }
 
   test("Enums", ({expect, _}) => {
@@ -211,7 +211,7 @@ describe("Patterns", ({test, _}) => {
 describe("Parser", ({test, _}) => {
   test("Basic syntax", ({expect, _}) => {
     expect.value(
-      Untyped.makeExn(
+      Parser.makeExn(
         ~name="",
         `
 a
@@ -253,7 +253,7 @@ f`,
   })
   test("Matching", ({expect, _}) => {
     expect.value(
-      Untyped.makeExn(
+      Parser.makeExn(
         ~name="",
         `
 {% match a
@@ -280,7 +280,7 @@ f`,
   })
   test("Mapping", ({expect, _}) => {
     expect.value(
-      Untyped.makeExn(
+      Parser.makeExn(
         ~name="",
         `
 {% map a with {b} %}
@@ -301,7 +301,7 @@ f`,
   })
   test("Components", ({expect, _}) => {
     expect.value(
-      Untyped.makeExn(
+      Parser.makeExn(
         ~name="",
         `
 {% A
