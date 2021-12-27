@@ -12,16 +12,8 @@ module Queue = Belt.MutableQueue
 module SetInt = Belt.Set.Int
 
 module Match = {
-  let propsEq = (j, p) =>
-    switch p {
-    | Typechecker.Pattern.TBool(b) => Props.booleanExn(j) == b
-    | TString(s) => Props.stringExn(j) == s
-    | TInt(i) => Props.intExn(j) == i
-    | TFloat(f) => Props.floatExn(j) == f
-    }
-
   let rec testCase = (val, case, ~wildcard) =>
-    if propsEq(val, case.Matching.val) {
+    if Data.Const.equal(val, case.Matching.val) {
       Some(case.ifMatch)
     } else {
       switch case.nextCase {
@@ -33,17 +25,20 @@ module Match = {
   let bindNames = (map, ids, val) =>
     SetInt.reduceU(ids, map, (. map, id) => MapInt.set(map, id, val))
 
-  type getter<'a> = (. 'a, int, string) => Props.t
+  type getter<'a> = (. 'a, int, string) => Data.t
+
   let arrayGet: getter<_> = (. a, i, _) =>
     switch a[i] {
     | Some(x) => x
     | None => Js.Exn.raiseError("arrayGet")
     }
+
   let recordGet: getter<_> = (. d, _, k) =>
     switch MapString.get(d, k) {
     | Some(x) => x
     | None => Js.Exn.raiseError("recordGet")
     }
+
   let nonemptyGet: getter<_> = (. a, i, _) =>
     switch NonEmpty.get(a, i) {
     | Some(x) => x
@@ -61,6 +56,7 @@ module Match = {
     | Switch({idx, key, cases, wildcard, ids}) =>
       let val = get(. args, idx, key)
       let vars = bindNames(vars, ids, val)
+      let val = Data.constantExn(val)
       switch testCase(val, cases, ~wildcard) {
       | Some(tree) => make(tree, args, get, vars)
       | None => None
@@ -72,7 +68,7 @@ module Match = {
     | Construct({idx, key, ids, nil, cons, kind: _}) =>
       let val = get(. args, idx, key)
       let vars = bindNames(vars, ids, val)
-      let child = if Props.isNull(val) {
+      let child = if Data.isNull(val) {
         nil
       } else {
         cons
@@ -86,13 +82,13 @@ module Match = {
       let vars = bindNames(vars, ids, val)
       let result = switch kind {
       | Tuple =>
-        let tuple = Props.tupleExn(val)
+        let tuple = Data.tupleExn(val)
         make(child, tuple, arrayGet, vars)
       | Record =>
-        let dict = Props.dictExn(val)
+        let dict = Data.dictExn(val)
         make(child, dict, recordGet, vars)
       | Dict =>
-        let dict = Props.dictExn(val)
+        let dict = Data.dictExn(val)
         makeDict(child, dict, vars)
       }
       switch result {
@@ -112,6 +108,7 @@ module Match = {
       switch MapString.get(args, key) {
       | Some(val) =>
         let vars = bindNames(vars, ids, val)
+        let val = Data.constantExn(val)
         switch testCase(val, cases, ~wildcard) {
         | Some(tree) => makeDict(tree, args, vars)
         | None => None
@@ -129,7 +126,7 @@ module Match = {
       switch MapString.get(args, key) {
       | Some(val) =>
         let vars = bindNames(vars, ids, val)
-        let child = if Props.isNull(val) {
+        let child = if Data.isNull(val) {
           nil
         } else {
           cons
@@ -146,13 +143,13 @@ module Match = {
         let vars = bindNames(vars, ids, val)
         let result = switch kind {
         | Tuple =>
-          let tuple = Props.tupleExn(val)
+          let tuple = Data.tupleExn(val)
           make(child, tuple, arrayGet, vars)
         | Record =>
-          let dict = Props.dictExn(val)
+          let dict = Data.dictExn(val)
           make(child, dict, recordGet, vars)
         | Dict =>
-          let dict = Props.dictExn(val)
+          let dict = Data.dictExn(val)
           makeDict(child, dict, vars)
         }
         switch result {
@@ -180,7 +177,7 @@ let echoNotNull = (x, ~props, ~children, ~return) =>
   switch x {
   | Compile.OEBinding(_, binding, esc) =>
     switch MapString.get(props, binding) {
-    | Some(x) => return(. Utils.escape(esc, Props.echoExn(x)))
+    | Some(x) => return(. Utils.escape(esc, x->Data.constantExn->Data.Const.toString))
     | None => assert false
     }
   | OEChild(_, child) =>
@@ -196,9 +193,9 @@ let echoNullable = (x, ~props, ~children, ~return) =>
   | Compile.OEBinding(_, binding, esc) =>
     switch MapString.get(props, binding) {
     | Some(x) =>
-      switch Props.nullableExn(x) {
+      switch Data.nullableExn(x) {
       | None => None
-      | Some(x) => Some(return(. Utils.escape(esc, Props.echoExn(x))))
+      | Some(x) => Some(return(. Utils.escape(esc, x->Data.constantExn->Data.Const.toString)))
       }
     | None => assert false
     }
@@ -236,7 +233,7 @@ let mapToDict = m => {
 let rec make:
   type a. (
     ~nodes: Compile.nodes<Compile.template<a>>,
-    ~props: MapString.t<Props.t>,
+    ~props: MapString.t<Data.t>,
     ~children: MapString.t<a>,
     ~env: Source.env<a>,
     ~stack: list<string>,
@@ -250,7 +247,7 @@ let rec make:
         Queue.add(queue, echo(nullables, default, ~props, ~children, ~return=Env.return))
       | OText(str) => Queue.add(queue, Env.return(. str))
       | OMatch(_, args, dectree) =>
-        let args = NonEmpty.map(args, (. x) => Props.fromPattern(x, props))
+        let args = NonEmpty.map(args, (. x) => Data.fromPattern(x, props))
         switch Match.make(dectree, args) {
         | None => assert false
         | Some(props', nodes) =>
@@ -259,8 +256,8 @@ let rec make:
           Queue.transfer(result, queue)
         }
       | OMapList(_, pattern, dectree) =>
-        let l = Props.fromPattern(pattern, props)
-        Props.forEachListExn(l, (. ~index, args) =>
+        let l = Data.fromPattern(pattern, props)
+        Data.forEachListExn(l, (. ~index, args) =>
           switch Match.make(dectree, NonEmpty.two(args, index)) {
           | None => assert false
           | Some(props', nodes) =>
@@ -270,8 +267,8 @@ let rec make:
           }
         )
       | OMapDict(_, pattern, dectree) =>
-        let l = Props.fromPattern(pattern, props)
-        Props.forEachDictExn(l, (. ~index, args) =>
+        let l = Data.fromPattern(pattern, props)
+        Data.forEachDictExn(l, (. ~index, args) =>
           switch Match.make(dectree, NonEmpty.two(args, index)) {
           | None => assert false
           | Some(props', nodes) =>
@@ -292,7 +289,7 @@ let rec make:
         let compProps =
           Array.mapU(compPropsRaw, (. (key, data)) => (
             key,
-            Props.fromPattern(data, props),
+            Data.fromPattern(data, props),
           ))->MapString.fromArray
         let result = switch val {
         | Acutis(name, nodes) =>
@@ -307,7 +304,7 @@ let rec make:
           )
         | Function(_, propTypes, f) =>
           Env.try_(.
-            (. ()) => f(. env, Props.toJson(compProps, propTypes), mapToDict(compChildren)),
+            (. ()) => f(. env, Data.toJson(compProps, propTypes), mapToDict(compChildren)),
             (. e) => Env.error_internal(. [Debug.uncaughtComponentError(e, ~stack)]),
           )
         }
@@ -320,7 +317,7 @@ let rec make:
 let make = (type a, env: Source.env<a>, {Compile.nodes: nodes, name, prop_types}, props) => {
   module Env = unpack(env)
   try {
-    let props = Props.make(prop_types, props)
+    let props = Data.make(props, prop_types)
     Env.render(. make(~nodes, ~props, ~children=MapString.empty, ~env, ~stack=list{name}))
   } catch {
   | Debug.Exit(e) => Env.error_internal(. [e])

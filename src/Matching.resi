@@ -38,7 +38,7 @@ type rec tree<'a> =
   | End('a)
 
 and switchcase<'a> = {
-  val: Typechecker.Pattern.constant,
+  val: Data.Const.t,
   ifMatch: tree<'a>,
   nextCase: option<switchcase<'a>>,
 }

@@ -24,8 +24,6 @@ module Pattern: {
     | TOptionalVar(Debug.loc, string) // any binding, may not be set
     | TAny(Debug.loc) // ignored wildcard _
 
-  let compareConst: (constant, constant) => int
-  let eqConst: (constant, constant) => bool
   let toString: t => string
 }
 

@@ -45,7 +45,7 @@ type rec tree<'a> =
   | End('a)
 
 and switchcase<'a> = {
-  val: TP.constant,
+  val: Data.Const.t,
   ifMatch: tree<'a>,
   nextCase: option<switchcase<'a>>,
 }
@@ -77,12 +77,12 @@ let rec mergeTestCasesAux:
   type a. (
     ~init: switchcase<a>=?,
     switchcase<a>,
-    TP.constant,
+    Data.Const.t,
     tree<a>,
     nat<a, leaf>,
   ) => switchcase<a> =
   (~init=?, original, val, ifMatch, n) => {
-    let cmp = TP.compareConst(val, original.val)
+    let cmp = Data.Const.compare(val, original.val)
     if cmp < 0 {
       let tail = {val: val, ifMatch: ifMatch, nextCase: Some(original)}
       switch init {
@@ -450,7 +450,7 @@ let rec fromTPat: 'a. (_, _, _, _, ~name: _, continue<'a>) => tree<'a> = (p, i, 
       idx: i,
       key: key,
       ids: SetInt.empty,
-      cases: {val: val, ifMatch: k(. b), nextCase: None},
+      cases: {val: Data.Const.fromTPat(val), ifMatch: k(. b), nextCase: None},
       wildcard: None,
     })
   | TTuple(_, a) =>
@@ -502,19 +502,19 @@ let makeCase = (hd, a, ~exit, ~name) => {
 module ParMatch = {
   let makeRefutation = x =>
     switch x {
-    | TP.TBool(_) => TP.TBool(false)
-    | TInt(_) => TInt(0)
-    | TString(_) => TString("a")
-    | TFloat(_) => TFloat(0.0)
+    | Data.Const.PBool(_) => Data.Const.PBool(false)
+    | PInt(_) => PInt(0)
+    | PString(_) => PString("a")
+    | PFloat(_) => PFloat(0.0)
     }
 
   let succ = x =>
     switch x {
-    | TP.TBool(false) => Some(TP.TBool(true))
-    | TBool(true) => None
-    | TInt(i) => Some(TInt(succ(i)))
-    | TString(s) => Some(TString(s ++ "a"))
-    | TFloat(f) => Some(TFloat(f +. 1.0))
+    | Data.Const.PBool(false) => Some(Data.Const.PBool(true))
+    | PBool(true) => None
+    | PInt(i) => Some(PInt(succ(i)))
+    | PString(s) => Some(PString(s ++ "a"))
+    | PFloat(f) => Some(PFloat(f +. 1.0))
     }
 
   type flag = Partial | Exhaustive
@@ -610,18 +610,18 @@ module ParMatch = {
           switch check(ifMatch) {
           | {flag: Partial, pats, next} => {
               flag: Partial,
-              pats: list{(key, TConst(Loc(0), val)), ...pats},
+              pats: list{(key, TConst(Loc(0), Data.Const.toTPat(val))), ...pats},
               next: next,
             }
           | {flag: Exhaustive, pats, next} =>
-            if TP.eqConst(refute, val) {
+            if Data.Const.equal(refute, val) {
               switch succ(refute) {
               | None => exhaustive(key, check(ifMatch))
               | Some(refute) =>
                 switch nextCase {
                 | None => {
                     flag: Partial,
-                    pats: list{(key, TConst(Loc(0), refute)), ...pats},
+                    pats: list{(key, TConst(Loc(0), Data.Const.toTPat(refute))), ...pats},
                     next: next,
                   }
                 | Some(case) => aux(refute, case)
@@ -630,7 +630,7 @@ module ParMatch = {
             } else {
               {
                 flag: Partial,
-                pats: list{(key, TConst(Loc(0), refute)), ...pats},
+                pats: list{(key, TConst(Loc(0), Data.Const.toTPat(refute))), ...pats},
                 next: next,
               }
             }

@@ -21,24 +21,6 @@ module Pattern = {
     | TInt(int)
     | TFloat(float)
 
-  let compareConst = (a, b) =>
-    switch (a, b) {
-    | (TString(a), TString(b)) => compare(a, b)
-    | (TFloat(a), TFloat(b)) => compare(a, b)
-    | (TInt(a), TInt(b)) => compare(a, b)
-    | (TBool(a), TBool(b)) => compare(a, b)
-    | _ => assert false
-    }
-
-  let eqConst = (a, b) =>
-    switch (a, b) {
-    | (TString(a), TString(b)) => a == b
-    | (TFloat(a), TFloat(b)) => a == b
-    | (TInt(a), TInt(b)) => a == b
-    | (TBool(a), TBool(b)) => a == b
-    | _ => assert false
-    }
-
   let toStringConst = x =>
     switch x {
     | TBool(true) => "true"

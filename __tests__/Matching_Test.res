@@ -95,19 +95,19 @@ describe("Basic tree", ({test, _}) => {
           key: "",
           ids: SI.empty,
           cases: {
-            val: TInt(0),
+            val: PInt(0),
             ifMatch: End({names: MS.empty, exit: 0}),
             nextCase: Some({
-              val: TInt(10),
+              val: PInt(10),
               ifMatch: End({names: MS.empty, exit: 0}),
               nextCase: Some({
-                val: TInt(15),
+                val: PInt(15),
                 ifMatch: End({names: MS.empty, exit: 1}),
                 nextCase: Some({
-                  val: TInt(20),
+                  val: PInt(20),
                   ifMatch: End({names: MS.empty, exit: 0}),
                   nextCase: Some({
-                    val: TInt(30),
+                    val: PInt(30),
                     ifMatch: End({names: MS.empty, exit: 0}),
                     nextCase: None,
                   }),
@@ -169,25 +169,25 @@ describe("Basic tree", ({test, _}) => {
           key: "",
           ids: SI.empty,
           cases: {
-            val: TInt(1),
+            val: PInt(1),
             ifMatch: Switch({
               idx: 1,
               key: "",
               ids: SI.empty,
               cases: {
-                val: TInt(2),
+                val: PInt(2),
                 ifMatch: Switch({
                   idx: 2,
                   key: "",
                   ids: SI.empty,
                   cases: {
-                    val: TInt(3),
+                    val: PInt(3),
                     ifMatch: End({names: MS.empty, exit: 0}),
                     nextCase: Some({
-                      val: TInt(100),
+                      val: PInt(100),
                       ifMatch: End({names: MS.empty, exit: 2}),
                       nextCase: Some({
-                        val: TInt(101),
+                        val: PInt(101),
                         ifMatch: End({names: MS.empty, exit: 2}),
                         nextCase: None,
                       }),
@@ -196,13 +196,13 @@ describe("Basic tree", ({test, _}) => {
                   wildcard: Some(End({names: MS.empty, exit: 3})),
                 }),
                 nextCase: Some({
-                  val: TInt(4),
+                  val: PInt(4),
                   ifMatch: Switch({
                     idx: 2,
                     key: "",
                     ids: SI.empty,
                     cases: {
-                      val: TInt(5),
+                      val: PInt(5),
                       ifMatch: End({names: MS.empty, exit: 0}),
                       nextCase: None,
                     },
@@ -221,25 +221,25 @@ describe("Basic tree", ({test, _}) => {
               ),
             }),
             nextCase: Some({
-              val: TInt(10),
+              val: PInt(10),
               ifMatch: Switch({
                 idx: 1,
                 key: "",
                 ids: SI.empty,
                 cases: {
-                  val: TInt(20),
+                  val: PInt(20),
                   ifMatch: Switch({
                     idx: 2,
                     key: "",
                     ids: SI.empty,
                     cases: {
-                      val: TInt(30),
+                      val: PInt(30),
                       ifMatch: End({names: MS.empty, exit: 0}),
                       nextCase: Some({
-                        val: TInt(40),
+                        val: PInt(40),
                         ifMatch: End({names: MS.empty, exit: 0}),
                         nextCase: Some({
-                          val: TInt(50),
+                          val: PInt(50),
                           ifMatch: End({names: MS.empty, exit: 2}),
                           nextCase: None,
                         }),
@@ -259,22 +259,22 @@ describe("Basic tree", ({test, _}) => {
                 ),
               }),
               nextCase: Some({
-                val: TInt(100),
+                val: PInt(100),
                 ifMatch: Switch({
                   idx: 1,
                   key: "",
                   ids: SI.empty,
                   cases: {
-                    val: TInt(102),
+                    val: PInt(102),
                     ifMatch: Switch({
                       idx: 2,
                       key: "",
                       ids: SI.empty,
                       cases: {
-                        val: TInt(103),
+                        val: PInt(103),
                         ifMatch: End({names: MS.empty, exit: 1}),
                         nextCase: Some({
-                          val: TInt(106),
+                          val: PInt(106),
                           ifMatch: End({names: MS.empty, exit: 2}),
                           nextCase: None,
                         }),
@@ -282,13 +282,13 @@ describe("Basic tree", ({test, _}) => {
                       wildcard: Some(End({names: MS.empty, exit: 3})),
                     }),
                     nextCase: Some({
-                      val: TInt(104),
+                      val: PInt(104),
                       ifMatch: Switch({
                         idx: 2,
                         key: "",
                         ids: SI.empty,
                         cases: {
-                          val: TInt(105),
+                          val: PInt(105),
                           ifMatch: End({names: MS.empty, exit: 1}),
                           nextCase: None,
                         },
@@ -349,19 +349,19 @@ describe("Basic tree", ({test, _}) => {
           key: "",
           ids: SI.empty->SI.add(3)->SI.add(18),
           cases: {
-            val: TInt(10),
+            val: PInt(10),
             ifMatch: Switch({
               idx: 1,
               key: "",
               ids: SI.fromArray([19]),
               cases: {
-                val: TInt(11),
+                val: PInt(11),
                 ifMatch: Switch({
                   idx: 2,
                   key: "",
                   ids: SI.fromArray([20]),
                   cases: {
-                    val: TInt(12),
+                    val: PInt(12),
                     ifMatch: End({names: MS.empty, exit: 0}),
                     nextCase: None,
                   },
@@ -373,13 +373,13 @@ describe("Basic tree", ({test, _}) => {
                   ),
                 }),
                 nextCase: Some({
-                  val: TInt(21),
+                  val: PInt(21),
                   ifMatch: Switch({
                     idx: 2,
                     key: "",
                     ids: SI.fromArray([20]),
                     cases: {
-                      val: TInt(22),
+                      val: PInt(22),
                       ifMatch: End({names: MS.fromArray([("x", 3)]), exit: 0}),
                       nextCase: None,
                     },
@@ -406,22 +406,22 @@ describe("Basic tree", ({test, _}) => {
               ),
             }),
             nextCase: Some({
-              val: TInt(30),
+              val: PInt(30),
               ifMatch: Switch({
                 idx: 1,
                 key: "",
                 ids: SI.empty->SI.add(13)->SI.add(19),
                 cases: {
-                  val: TInt(21),
+                  val: PInt(21),
                   ifMatch: Switch({
                     idx: 2,
                     key: "",
                     ids: SI.fromArray([20]),
                     cases: {
-                      val: TInt(22),
+                      val: PInt(22),
                       ifMatch: End({names: MS.fromArray([("x", 3)]), exit: 0}),
                       nextCase: Some({
-                        val: TInt(42),
+                        val: PInt(42),
                         ifMatch: End({names: MS.fromArray([("y", 13)]), exit: 0}),
                         nextCase: None,
                       }),
@@ -434,16 +434,16 @@ describe("Basic tree", ({test, _}) => {
                     ),
                   }),
                   nextCase: Some({
-                    val: TInt(31),
+                    val: PInt(31),
                     ifMatch: Switch({
                       idx: 2,
                       key: "",
                       ids: SI.fromArray([20]),
                       cases: {
-                        val: TInt(32),
+                        val: PInt(32),
                         ifMatch: End({names: MS.empty, exit: 0}),
                         nextCase: Some({
-                          val: TInt(42),
+                          val: PInt(42),
                           ifMatch: End({names: MS.fromArray([("y", 13)]), exit: 0}),
                           nextCase: None,
                         }),
@@ -464,7 +464,7 @@ describe("Basic tree", ({test, _}) => {
                     key: "",
                     ids: SI.fromArray([20]),
                     cases: {
-                      val: TInt(42),
+                      val: PInt(42),
                       ifMatch: End({names: MS.fromArray([("y", 13)]), exit: 0}),
                       nextCase: None,
                     },
@@ -486,13 +486,13 @@ describe("Basic tree", ({test, _}) => {
               key: "",
               ids: SI.fromArray([19]),
               cases: {
-                val: TInt(21),
+                val: PInt(21),
                 ifMatch: Switch({
                   idx: 2,
                   key: "",
                   ids: SI.fromArray([20]),
                   cases: {
-                    val: TInt(22),
+                    val: PInt(22),
                     ifMatch: End({names: MS.fromArray([("x", 3)]), exit: 0}),
                     nextCase: None,
                   },
@@ -550,23 +550,23 @@ describe("Nests", ({test, _}) => {
             key: "",
             ids: SI.empty,
             cases: {
-              val: TInt(10),
+              val: PInt(10),
               ifMatch: Switch({
                 idx: 1,
                 key: "",
                 ids: SI.empty,
                 cases: {
-                  val: TInt(12),
+                  val: PInt(12),
                   ifMatch: End(
                     Switch({
                       idx: 1,
                       key: "",
                       ids: SI.empty,
                       cases: {
-                        val: TInt(13),
+                        val: PInt(13),
                         ifMatch: End({names: MS.empty, exit: 0}),
                         nextCase: Some({
-                          val: TInt(33),
+                          val: PInt(33),
                           ifMatch: End({names: MS.empty, exit: 0}),
                           nextCase: None,
                         }),
@@ -575,17 +575,17 @@ describe("Nests", ({test, _}) => {
                     }),
                   ),
                   nextCase: Some({
-                    val: TInt(22),
+                    val: PInt(22),
                     ifMatch: End(
                       Switch({
                         idx: 1,
                         key: "",
                         ids: SI.empty,
                         cases: {
-                          val: TInt(23),
+                          val: PInt(23),
                           ifMatch: End({names: MS.empty, exit: 0}),
                           nextCase: Some({
-                            val: TInt(33),
+                            val: PInt(33),
                             ifMatch: End({names: MS.empty, exit: 0}),
                             nextCase: None,
                           }),
@@ -608,7 +608,7 @@ describe("Nests", ({test, _}) => {
               key: "",
               ids: SI.empty,
               cases: {
-                val: TInt(33),
+                val: PInt(33),
                 ifMatch: End({names: MS.empty, exit: 0}),
                 nextCase: None,
               },
@@ -660,23 +660,23 @@ describe("Nests", ({test, _}) => {
             key: "",
             ids: SI.empty,
             cases: {
-              val: TString("a"),
+              val: PString("a"),
               ifMatch: Switch({
                 idx: 1,
                 key: "",
                 ids: SI.fromArray([12]),
                 cases: {
-                  val: TString("b"),
+                  val: PString("b"),
                   ifMatch: End(
                     Switch({
                       idx: 1,
                       key: "",
                       ids: SI.fromArray([13]),
                       cases: {
-                        val: TInt(1),
+                        val: PInt(1),
                         ifMatch: End({names: MS.fromArray([("x", 0)]), exit: 0}),
                         nextCase: Some({
-                          val: TInt(10),
+                          val: PInt(10),
                           ifMatch: End({names: MS.empty, exit: 1}),
                           nextCase: None,
                         }),
@@ -698,7 +698,7 @@ describe("Nests", ({test, _}) => {
                       key: "",
                       ids: SI.fromArray([13]),
                       cases: {
-                        val: TInt(1),
+                        val: PInt(1),
                         ifMatch: End({names: MS.fromArray([("x", 0)]), exit: 0}),
                         nextCase: None,
                       },
@@ -725,7 +725,7 @@ describe("Nests", ({test, _}) => {
                     key: "",
                     ids: SI.fromArray([13]),
                     cases: {
-                      val: TInt(1),
+                      val: PInt(1),
                       ifMatch: End({names: MS.fromArray([("x", 0)]), exit: 0}),
                       nextCase: None,
                     },
@@ -746,7 +746,7 @@ describe("Nests", ({test, _}) => {
               key: "",
               ids: SI.empty,
               cases: {
-                val: TInt(1),
+                val: PInt(1),
                 ifMatch: End({names: MS.fromArray([("x", 0)]), exit: 0}),
                 nextCase: None,
               },
@@ -817,26 +817,26 @@ describe("Nests", ({test, _}) => {
               key: "",
               ids: SI.empty,
               cases: {
-                val: TInt(20),
+                val: PInt(20),
                 ifMatch: Switch({
                   idx: 1,
                   key: "",
                   ids: SI.empty,
                   cases: {
-                    val: TInt(21),
+                    val: PInt(21),
                     ifMatch: End(
                       Switch({
                         idx: 2,
                         key: "",
                         ids: SI.empty,
                         cases: {
-                          val: TInt(12),
+                          val: PInt(12),
                           ifMatch: End({names: MS.empty, exit: 0}),
                           nextCase: Some({
-                            val: TInt(22),
+                            val: PInt(22),
                             ifMatch: End({names: MS.empty, exit: 1}),
                             nextCase: Some({
-                              val: TInt(32),
+                              val: PInt(32),
                               ifMatch: End({names: MS.empty, exit: 2}),
                               nextCase: None,
                             }),
@@ -854,7 +854,7 @@ describe("Nests", ({test, _}) => {
                         key: "",
                         ids: SI.empty,
                         cases: {
-                          val: TInt(12),
+                          val: PInt(12),
                           ifMatch: End({names: MS.empty, exit: 0}),
                           nextCase: None,
                         },
@@ -876,7 +876,7 @@ describe("Nests", ({test, _}) => {
                       key: "",
                       ids: SI.empty,
                       cases: {
-                        val: TInt(12),
+                        val: PInt(12),
                         ifMatch: End({names: MS.empty, exit: 0}),
                         nextCase: None,
                       },
@@ -892,7 +892,7 @@ describe("Nests", ({test, _}) => {
                 key: "",
                 ids: SI.empty,
                 cases: {
-                  val: TInt(12),
+                  val: PInt(12),
                   ifMatch: End({names: MS.empty, exit: 0}),
                   nextCase: None,
                 },
@@ -948,30 +948,30 @@ describe("Nests", ({test, _}) => {
               key: "",
               ids: SI.empty,
               cases: {
-                val: TInt(10),
+                val: PInt(10),
                 ifMatch: Switch({
                   idx: 1,
                   key: "",
                   ids: SI.empty,
                   cases: {
-                    val: TInt(20),
+                    val: PInt(20),
                     ifMatch: End(
                       Switch({
                         idx: 1,
                         key: "",
                         ids: SI.empty,
                         cases: {
-                          val: TInt(30),
+                          val: PInt(30),
                           ifMatch: End(
                             Switch({
                               idx: 1,
                               key: "",
                               ids: SI.fromArray([6]),
                               cases: {
-                                val: TInt(40),
+                                val: PInt(40),
                                 ifMatch: End({names: MS.empty, exit: 1}),
                                 nextCase: Some({
-                                  val: TInt(41),
+                                  val: PInt(41),
                                   ifMatch: End({names: MS.fromArray([("x", 3)]), exit: 0}),
                                   nextCase: None,
                                 }),
@@ -1005,7 +1005,7 @@ describe("Nests", ({test, _}) => {
               key: "",
               ids: SI.fromArray([6]),
               cases: {
-                val: TInt(41),
+                val: PInt(41),
                 ifMatch: End({names: MS.fromArray([("x", 3)]), exit: 0}),
                 nextCase: None,
               },
@@ -1149,7 +1149,7 @@ describe("Nests", ({test, _}) => {
                 key: "",
                 ids: SI.empty,
                 cases: {
-                  val: TInt(10),
+                  val: PInt(10),
                   ifMatch: Construct({
                     idx: 1,
                     key: "",
@@ -1166,7 +1166,7 @@ describe("Nests", ({test, _}) => {
                           key: "",
                           ids: SI.empty,
                           cases: {
-                            val: TInt(11),
+                            val: PInt(11),
                             ifMatch: Construct({
                               idx: 1,
                               key: "",
@@ -1180,16 +1180,16 @@ describe("Nests", ({test, _}) => {
                                       key: "",
                                       ids: SI.empty,
                                       cases: {
-                                        val: TInt(12),
+                                        val: PInt(12),
                                         ifMatch: End({names: MS.empty, exit: 0}),
                                         nextCase: Some({
-                                          val: TInt(22),
+                                          val: PInt(22),
                                           ifMatch: End({
                                             names: MS.fromArray([("x", 8)]),
                                             exit: 1,
                                           }),
                                           nextCase: Some({
-                                            val: TInt(42),
+                                            val: PInt(42),
                                             ifMatch: End({
                                               names: MS.fromArray([("y", 13)]),
                                               exit: 3,
@@ -1215,13 +1215,13 @@ describe("Nests", ({test, _}) => {
                                         key: "",
                                         ids: SI.empty,
                                         cases: {
-                                          val: TInt(22),
+                                          val: PInt(22),
                                           ifMatch: End({
                                             names: MS.fromArray([("x", 8)]),
                                             exit: 1,
                                           }),
                                           nextCase: Some({
-                                            val: TInt(42),
+                                            val: PInt(42),
                                             ifMatch: End({
                                               names: MS.fromArray([("y", 13)]),
                                               exit: 3,
@@ -1246,7 +1246,7 @@ describe("Nests", ({test, _}) => {
                     nil: None,
                   }),
                   nextCase: Some({
-                    val: TInt(30),
+                    val: PInt(30),
                     ifMatch: Construct({
                       idx: 1,
                       key: "",
@@ -1259,10 +1259,10 @@ describe("Nests", ({test, _}) => {
                             key: "",
                             ids: SI.empty,
                             cases: {
-                              val: TInt(32),
+                              val: PInt(32),
                               ifMatch: End({names: MS.empty, exit: 2}),
                               nextCase: Some({
-                                val: TInt(42),
+                                val: PInt(42),
                                 ifMatch: End({names: MS.fromArray([("y", 13)]), exit: 3}),
                                 nextCase: None,
                               }),
@@ -1284,7 +1284,7 @@ describe("Nests", ({test, _}) => {
                   key: "",
                   ids: SI.empty,
                   cases: {
-                    val: TInt(42),
+                    val: PInt(42),
                     ifMatch: End({names: MS.fromArray([("y", 13)]), exit: 3}),
                     nextCase: None,
                   },
@@ -1299,7 +1299,7 @@ describe("Nests", ({test, _}) => {
               key: "",
               ids: SI.empty,
               cases: {
-                val: TInt(42),
+                val: PInt(42),
                 ifMatch: End({names: MS.fromArray([("y", 13)]), exit: 3}),
                 nextCase: None,
               },
@@ -1336,20 +1336,20 @@ describe("Nests", ({test, _}) => {
             key: "a",
             ids: SI.empty,
             cases: {
-              val: TInt(10),
+              val: PInt(10),
               ifMatch: Switch({
                 idx: 1,
                 key: "b",
                 ids: SI.empty,
                 cases: {
-                  val: TInt(11),
+                  val: PInt(11),
                   ifMatch: End(
                     Switch({
                       idx: 1,
                       key: "",
                       ids: SI.empty,
                       cases: {
-                        val: TInt(12),
+                        val: PInt(12),
                         ifMatch: End({names: MS.empty, exit: 0}),
                         nextCase: None,
                       },
@@ -1361,20 +1361,20 @@ describe("Nests", ({test, _}) => {
                 wildcard: None,
               }),
               nextCase: Some({
-                val: TInt(20),
+                val: PInt(20),
                 ifMatch: Switch({
                   idx: 1,
                   key: "b",
                   ids: SI.empty,
                   cases: {
-                    val: TInt(21),
+                    val: PInt(21),
                     ifMatch: End(
                       Switch({
                         idx: 1,
                         key: "",
                         ids: SI.empty,
                         cases: {
-                          val: TInt(22),
+                          val: PInt(22),
                           ifMatch: End({names: MS.empty, exit: 0}),
                           nextCase: None,
                         },
@@ -1428,20 +1428,20 @@ describe("Nests", ({test, _}) => {
             key: "a",
             ids: SI.empty,
             cases: {
-              val: TInt(10),
+              val: PInt(10),
               ifMatch: Switch({
                 idx: 1,
                 key: "b",
                 ids: SI.empty,
                 cases: {
-                  val: TInt(11),
+                  val: PInt(11),
                   ifMatch: End(
                     Switch({
                       idx: 1,
                       key: "",
                       ids: SI.empty,
                       cases: {
-                        val: TInt(12),
+                        val: PInt(12),
                         ifMatch: End({names: MS.empty, exit: 0}),
                         nextCase: None,
                       },
@@ -1449,14 +1449,14 @@ describe("Nests", ({test, _}) => {
                     }),
                   ),
                   nextCase: Some({
-                    val: TInt(21),
+                    val: PInt(21),
                     ifMatch: End(
                       Switch({
                         idx: 1,
                         key: "",
                         ids: SI.empty,
                         cases: {
-                          val: TInt(22),
+                          val: PInt(22),
                           ifMatch: End({names: MS.empty, exit: 0}),
                           nextCase: None,
                         },
@@ -1476,14 +1476,14 @@ describe("Nests", ({test, _}) => {
                 key: "b",
                 ids: SI.empty,
                 cases: {
-                  val: TInt(21),
+                  val: PInt(21),
                   ifMatch: End(
                     Switch({
                       idx: 1,
                       key: "",
                       ids: SI.empty,
                       cases: {
-                        val: TInt(22),
+                        val: PInt(22),
                         ifMatch: End({names: MS.empty, exit: 0}),
                         nextCase: None,
                       },
@@ -1547,13 +1547,13 @@ describe("Nests", ({test, _}) => {
             key: "a",
             ids: SI.empty,
             cases: {
-              val: TInt(20),
+              val: PInt(20),
               ifMatch: Switch({
                 idx: 1,
                 key: "b",
                 ids: SI.empty,
                 cases: {
-                  val: TInt(10),
+                  val: PInt(10),
                   ifMatch: Wildcard({
                     idx: 2,
                     key: "c",
@@ -1579,7 +1579,7 @@ describe("Nests", ({test, _}) => {
                 key: "b",
                 ids: SI.empty,
                 cases: {
-                  val: TInt(10),
+                  val: PInt(10),
                   ifMatch: Wildcard({
                     idx: 2,
                     key: "c",
@@ -1594,7 +1594,7 @@ describe("Nests", ({test, _}) => {
                     key: "c",
                     ids: SI.empty,
                     cases: {
-                      val: TInt(30),
+                      val: PInt(30),
                       ifMatch: End(End({names: MS.empty, exit: 2})),
                       nextCase: None,
                     },

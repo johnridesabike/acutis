@@ -6,19 +6,24 @@
   file, You can obtain one at http://mozilla.org/MPL/2.0/.
 */
 
+module Const: {
+  type t =
+    | PBool(bool)
+    | PInt(int)
+    | PString(string)
+    | PFloat(float)
+  let fromTPat: Typechecker.Pattern.constant => t
+  let toTPat: t => Typechecker.Pattern.constant
+  let equal: (t, t) => bool
+  let compare: (t, t) => int
+  let toString: t => string
+}
+
 type t
 
-let make: (Typescheme.props, Js.Dict.t<Js.Json.t>) => Belt.Map.String.t<t>
+let make: (Js.Dict.t<Js.Json.t>, Typescheme.props) => Belt.Map.String.t<t>
 
-let booleanExn: t => bool
-
-let echoExn: t => string
-
-let stringExn: t => string
-
-let intExn: t => int
-
-let floatExn: t => float
+let constantExn: t => Const.t
 
 let tupleExn: t => array<t>
 
