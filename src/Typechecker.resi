@@ -25,6 +25,7 @@ module Pattern: {
     | TAny(Debug.loc) // ignored wildcard _
 
   let toString: t => string
+  let toLocation: t => Debug.loc
 }
 
 type rec node =

@@ -46,16 +46,11 @@ and switchcase<'a> = {
 type leaf = {names: Belt.Map.String.t<int>, exit: int}
 
 type t<'a> = {
-  loc: Debug.loc,
   tree: tree<leaf>,
   exits: array<'a>,
 }
 
-let make: (
-  ~loc: Debug.loc,
-  ~name: string,
-  NonEmpty.t<Typechecker.case>,
-) => result<t<Typechecker.nodes>, Debug.t>
+let make: (~name: string, NonEmpty.t<Typechecker.case>) => t<Typechecker.nodes>
 
 module ParMatch: {
   let check: (tree<'a>, ~loc: Debug.loc) => unit

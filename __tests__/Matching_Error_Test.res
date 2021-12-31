@@ -19,6 +19,14 @@ let makeCases = c => {
   cases
 }
 
+let getExn = f =>
+  try {
+    f()->ignore
+    assert false
+  } catch {
+  | Debug.Exit(e) => e
+  }
+
 describe("Unused patterns", ({test, _}) => {
   test("Basic dec tree 2", ({expect, _}) => {
     let nodes1 = [Parser.UText("", NoTrim)]
@@ -30,18 +38,15 @@ describe("Unused patterns", ({test, _}) => {
       ]->ne,
       nodes: nodes1,
     }
-    let result =
-      [case1]->makeCases->Matching.make(~loc=Loc(0), ~name="")->Belt.Result.map(x => x.tree)
-    expect.value(result).toEqual(
-      Error({
-        message: `This match case is unused:
+    let result = getExn(() => [case1]->makeCases->Matching.make(~name=""))
+    expect.value(result).toEqual({
+      message: `This match case is unused:
 10, 11, 12`,
-        kind: #Matching,
-        location: None,
-        exn: None,
-        path: [],
-      }),
-    )
+      kind: #Matching,
+      location: Some({character: 7}),
+      exn: None,
+      path: [],
+    })
     let case1 = {
       Parser.patterns: [
         [P.UInt(Loc(0), 10), UInt(Loc(1), 11), UInt(Loc(2), 12)]->ne,
@@ -52,17 +57,15 @@ describe("Unused patterns", ({test, _}) => {
       ]->ne,
       nodes: nodes1,
     }
-    let result = [case1]->makeCases->Matching.make(~loc=Loc(0), ~name="")
-    expect.value(result).toEqual(
-      Error({
-        message: `This match case is unused:
+    let result = getExn(() => [case1]->makeCases->Matching.make(~name=""))
+    expect.value(result).toEqual({
+      message: `This match case is unused:
 30, 31, 42`,
-        kind: #Matching,
-        location: None,
-        exn: None,
-        path: [],
-      }),
-    )
+      kind: #Matching,
+      location: Some({character: 16}),
+      exn: None,
+      path: [],
+    })
   })
   test("Nests merge into wildcards correctly 2", ({expect, _}) => {
     let n1 = [Parser.UText("", NoTrim)]
@@ -77,17 +80,15 @@ describe("Unused patterns", ({test, _}) => {
       ]->ne,
       nodes: n2,
     }
-    let result = [c1, c2]->makeCases->Matching.make(~loc=Loc(0), ~name="")
-    expect.value(result).toEqual(
-      Error({
-        message: `This match case is unused:
+    let result = getExn(() => [c1, c2]->makeCases->Matching.make(~name=""))
+    expect.value(result).toEqual({
+      message: `This match case is unused:
 (_, _), 40`,
-        kind: #Matching,
-        location: None,
-        exn: None,
-        path: [],
-      }),
-    )
+      kind: #Matching,
+      location: Some({character: 1}),
+      exn: None,
+      path: [],
+    })
   })
   test("Unused nest patterns are reported correctly.", ({expect, _}) => {
     let nodes1 = [Parser.UText("", NoTrim)]
@@ -109,31 +110,25 @@ describe("Unused patterns", ({test, _}) => {
       ]->ne,
       nodes: nodes3,
     }
-    let result = [case1, case2, case3]->makeCases->Matching.make(~loc=Loc(0), ~name="")
-    expect.value(result).toEqual(
-      Error({
-        message: `This match case is unused:
+    let result = getExn(() => [case1, case2, case3]->makeCases->Matching.make(~name=""))
+    expect.value(result).toEqual({
+      message: `This match case is unused:
 ("a", "b"), 1`,
-        kind: #Matching,
-        location: None,
-        exn: None,
-        path: [],
-      }),
-    )
+      kind: #Matching,
+      location: Some({character: 7}),
+      exn: None,
+      path: [],
+    })
   })
 })
 
 describe("Partial matching", ({test, _}) => {
   let getError = (x, f) =>
-    switch x {
-    | Ok(x) =>
-      try {
-        f(x)
-        None
-      } catch {
-      | Debug.Exit(e) => Some(e.message)
-      }
-    | Error(_) => None
+    try {
+      f(x)
+      None
+    } catch {
+    | Debug.Exit(e) => Some(e.message)
     }
   test("Partial match test 1", ({expect, _}) => {
     let nodes1 = [Parser.UText("", NoTrim)]
@@ -154,7 +149,7 @@ describe("Partial matching", ({test, _}) => {
     let result =
       [case1, case2]
       ->makeCases
-      ->Matching.make(~loc=Loc(0), ~name="")
+      ->Matching.make(~name="")
       ->getError(x => Matching.ParMatch.check(x.tree, ~loc=Loc(0)))
     expect.value(result).toEqual(
       Some(`This pattern-matching is not exhaustive.
@@ -171,7 +166,7 @@ Here is an example of a case that is not matched:
     let result =
       [case1]
       ->makeCases
-      ->Matching.make(~loc=Loc(0), ~name="")
+      ->Matching.make(~name="")
       ->getError(x => Matching.ParMatch.check(x.tree, ~loc=Loc(0)))
     expect.value(result).toEqual(
       Some(`This pattern-matching is not exhaustive.
@@ -185,7 +180,7 @@ Here is an example of a case that is not matched:
     let result =
       [case1]
       ->makeCases
-      ->Matching.make(~loc=Loc(0), ~name="")
+      ->Matching.make(~name="")
       ->getError(x => Matching.ParMatch.check(x.tree, ~loc=Loc(0)))
     expect.value(result).toEqual(
       Some(`This pattern-matching is not exhaustive.
@@ -203,7 +198,7 @@ Here is an example of a case that is not matched:
     let result =
       [case1, case2]
       ->makeCases
-      ->Matching.make(~loc=Loc(0), ~name="")
+      ->Matching.make(~name="")
       ->getError(x => Matching.ParMatch.check(x.tree, ~loc=Loc(0)))
     expect.value(result).toEqual(
       Some(`This pattern-matching is not exhaustive.

@@ -164,7 +164,7 @@ module Match = {
       }
     }
 
-  let make = ({Matching.tree: tree, exits, loc: _}, args) =>
+  let make = ({Matching.tree: tree, exits}, args) =>
     switch make(tree, args, nonemptyGet, MapInt.empty) {
     | Some((vars, {names, exit})) =>
       let bindings = MapString.mapU(names, (. id) => MapInt.getExn(vars, id))

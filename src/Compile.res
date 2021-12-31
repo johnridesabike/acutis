@@ -77,29 +77,20 @@ let rec nodes = (~name, a) =>
         default: echo(. default),
       })
     | TMatch(loc, pats, cases) =>
-      switch Matching.make(cases, ~loc, ~name) {
-      | Ok(tree) =>
-        Matching.ParMatch.check(tree.tree, ~loc)
-        let tree = {...tree, exits: Array.map(tree.exits, nodes(~name))}
-        OMatch(loc, pats, tree)
-      | Error(e) => raise(Exit(e))
-      }
+      let tree = Matching.make(cases, ~name)
+      Matching.ParMatch.check(tree.tree, ~loc)
+      let tree = {...tree, exits: Array.map(tree.exits, nodes(~name))}
+      OMatch(loc, pats, tree)
     | TMapList(loc, pat, cases) =>
-      switch Matching.make(cases, ~loc, ~name) {
-      | Ok(tree) =>
-        Matching.ParMatch.check(tree.tree, ~loc)
-        let tree = {...tree, exits: Array.map(tree.exits, nodes(~name))}
-        OMapList(loc, pat, tree)
-      | Error(e) => raise(Exit(e))
-      }
+      let tree = Matching.make(cases, ~name)
+      Matching.ParMatch.check(tree.tree, ~loc)
+      let tree = {...tree, exits: Array.map(tree.exits, nodes(~name))}
+      OMapList(loc, pat, tree)
     | TMapDict(loc, pat, cases) =>
-      switch Matching.make(cases, ~loc, ~name) {
-      | Ok(tree) =>
-        Matching.ParMatch.check(tree.tree, ~loc)
-        let tree = {...tree, exits: Array.map(tree.exits, nodes(~name))}
-        OMapDict(loc, pat, tree)
-      | Error(e) => raise(Exit(e))
-      }
+      let tree = Matching.make(cases, ~name)
+      Matching.ParMatch.check(tree.tree, ~loc)
+      let tree = {...tree, exits: Array.map(tree.exits, nodes(~name))}
+      OMapDict(loc, pat, tree)
     | TComponent({loc, val, props, children}) =>
       let children = Array.mapU(children, (. (k, v)) =>
         switch v {
@@ -140,6 +131,7 @@ module Components = {
     optimized: HashmapString.make(~hintSize=0),
   }
 
+  @raises(Exit)
   let makeExn = a => {
     let size = Array.size(a)
     let m = HashmapString.make(~hintSize=size)
@@ -208,6 +200,7 @@ let rec linkNodesExn = (nodes, graph) =>
     }
   )
 
+@raises(Exit)
 let linkSrc = (. g, src) =>
   switch src {
   | Source.Acutis(name, ast) => Acutis(name, linkNodesExn(ast, g))

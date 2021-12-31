@@ -394,7 +394,6 @@ describe("Stack trace is rendered correctly", ({test, _}) => {
   })
 })
 
-@raises(Failure)
 describe("Graphs are parsed correctly", ({test, _}) => {
   test("Cyclic dependencies are reported", ({expect, _}) => {
     let a = Source.src(~name="A", "{% B /%}")
@@ -408,7 +407,7 @@ describe("Graphs are parsed correctly", ({test, _}) => {
           kind: #Compile,
           location: Some({character: 4}),
           message: "Cyclic dependency detected. I can't compile any components in this path.",
-          path: [Js.Json.string("C"), Js.Json.string("B"), Js.Json.string("C")],
+          path: ["C", "B", "C"],
         },
       ]),
     )
@@ -426,12 +425,7 @@ describe("Graphs are parsed correctly", ({test, _}) => {
           kind: #Compile,
           location: Some({character: 4}),
           message: "Cyclic dependency detected. I can't compile any components in this path.",
-          path: [
-            Js.Json.string("C"),
-            Js.Json.string("B"),
-            Js.Json.string("D"),
-            Js.Json.string("C"),
-          ],
+          path: ["C", "B", "D", "C"],
         },
       ]),
     )
@@ -447,7 +441,7 @@ describe("Graphs are parsed correctly", ({test, _}) => {
           kind: #Compile,
           location: Some({character: 4}),
           message: `Template component "C" is missing, which is required by "B."`,
-          path: [Js.Json.string("B")],
+          path: ["B"],
         },
       ]),
     )

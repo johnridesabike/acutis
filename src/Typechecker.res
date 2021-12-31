@@ -42,6 +42,7 @@ module Pattern = {
     | TOptionalVar(Debug.loc, string) // any binding, may not be set
     | TAny(Debug.loc) // ignored wildcard _
 
+  @raises(Exit2)
   let rec makeList = (a, ty, ~tail) => {
     let r = ref(tail)
     for i in Array.size(a) - 1 downto 0 {
@@ -52,6 +53,7 @@ module Pattern = {
     r.contents
   }
 
+  @raises(Exit2)
   and make = (p: UPat.t, ty) =>
     switch (p, ty) {
     | (UNull(l), Typescheme.Nullable(_)) => TConstruct(l, TNullable, None)
@@ -89,6 +91,7 @@ module Pattern = {
     | _ => raise(Exit2(Js.Json.stringifyAny(p), Js.Json.stringifyAny(Typescheme.debug(ref(ty)))))
     }
 
+  @raises(Exit2)
   and make_record = (x, ty, ~loc) => {
     let r = MapString.fromArray(x)
     MapString.mergeU(r, ty, (. _, p, ty) =>
@@ -130,6 +133,18 @@ module Pattern = {
         }
       aux("[", ~sep="", l)
     | TAny(_) => "_"
+    }
+
+  let toLocation = t =>
+    switch t {
+    | TConst(l, _)
+    | TConstruct(l, _, _)
+    | TTuple(l, _)
+    | TRecord(l, _)
+    | TDict(l, _)
+    | TVar(l, _)
+    | TOptionalVar(l, _)
+    | TAny(l) => l
     }
 }
 
@@ -198,7 +213,9 @@ and unifyTuple = (t1, t2, mode, ~loc, ~name) => {
       unify(a, b, mode, ~loc, ~name)
     )
   } else {
-    raise(Exit(Debug.tupleSizeMismatch(Array.size(t1.contents), Array.size(t2.contents), ~name)))
+    raise(
+      Exit(Debug.tupleSizeMismatch(Array.size(t1.contents), Array.size(t2.contents), ~loc, ~name)),
+    )
   }
 }
 
@@ -229,7 +246,7 @@ and unifyRecord_narrow = (t1, t2, ~loc, ~name) => {
     }
   )
   if MapString.isEmpty(r) {
-    raise(Exit(Debug.cantNarrowType(t1, t2, Typescheme.record_toString)))
+    raise(Exit(Debug.cantNarrowType(t1, t2, Typescheme.record_toString, ~loc)))
   } else {
     t1 := r
     t2 := r
@@ -384,6 +401,7 @@ module Local = {
 }
 
 module Global = {
+  @raise(Exit)
   let updateContext = (ctx, k, v, ~loc, ~name) =>
     switch MapString.get(ctx.Context.scope, k) {
     | None =>
@@ -440,6 +458,7 @@ module Global = {
     }
   }
 
+  @raises(Exit)
   and fromPattern_record = (x, ctx, ~name) => {
     let types = Array.mapU(x, (. (k, x)) => (
       k,
@@ -448,7 +467,7 @@ module Global = {
     MapString.fromArray(types)
   }
 
-  @raises(Exit)
+  @raises((Exit, Exit2))
   let unifyMatchCases = (bindingArray, cases, ctx, ~name) =>
     if NonEmpty.size(bindingArray) != NonEmpty.size(cases) {
       let loc = NonEmpty.hd(bindingArray)->UPat.toLocation
@@ -461,7 +480,7 @@ module Global = {
       })
     }
 
-  @raises(Exit)
+  @raises((Exit, Exit2))
   let unifyMapListCases = (pat, tys, ctx, ~loc, ~name) => {
     let ty = switch NonEmpty.toArray(tys) {
     | [hd] => Typescheme.list(hd)
@@ -475,7 +494,7 @@ module Global = {
     Pattern.make(pat, ty.contents)
   }
 
-  @raises(Exit)
+  @raises((Exit, Exit2))
   let unifyMapDictCases = (pat, tys, ctx, ~loc, ~name) => {
     let ty = switch NonEmpty.toArray(tys) {
     | [hd] => Typescheme.dict(hd)
@@ -506,8 +525,8 @@ let unifyEchoes = (nullables, default, ctx, ~name) => {
     | Some(Parser.EBinding(loc, binding, _)) =>
       Context.update(ctx, binding, nullable(echo()), ~loc, ~name)
       aux(succ(i))
-    | Some(EString(_, _, _) | EInt(_, _, _) | EFloat(_, _, _)) =>
-      raise(Exit(Debug.nonNullableEchoLiteral()))
+    | Some(EString(loc, _, _) | EInt(loc, _, _) | EFloat(loc, _, _)) =>
+      raise(Exit(Debug.nonNullableEchoLiteral(loc)))
     | Some(EChild(loc, child)) =>
       Context.updateChild(ctx, child, Child.nullable(), ~loc)
       aux(succ(i))
@@ -533,7 +552,7 @@ let getTypes = x =>
   | Function(_, props, children, _) => (props, children)
   }
 
-@raises(Exit)
+@raises((Exit, Exit2))
 let rec makeCases = (cases, ctx, ~loc, ~name, g) => {
   let (casetypes, cases) =
     cases
@@ -569,7 +588,7 @@ let rec makeCases = (cases, ctx, ~loc, ~name, g) => {
   (casetypes, cases)
 }
 
-@raises(Exit)
+@raises((Exit, Exit2))
 and makeNodes = (nodes, ctx, ~name, g) =>
   Array.mapU(nodes, (. node) =>
     switch node {
@@ -636,6 +655,7 @@ and makeNodes = (nodes, ctx, ~name, g) =>
     }
   )
 
+@raises((Exit, Exit2))
 and make = (name, ast, g, root) => {
   let ctx = Context.make(root)
   let nodes = makeNodes(ast, ctx, ~name, g)

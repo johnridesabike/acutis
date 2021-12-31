@@ -62,7 +62,8 @@ module Const = {
     | PString(s) => s
     | PFloat(n) => Float.toString(n)
     | PInt(i) => Int.toString(i)
-    | _ => assert false
+    | PBool(true) => "true"
+    | PBool(false) => "false"
     }
 }
 
@@ -74,35 +75,40 @@ type rec t =
   | PConst(Const.t)
 
 module Stack = {
-  let nullable = Json.string("nullable")
-  let array = Json.string("array") // add index
-  let obj_key = s => Json.string("key: " ++ s)
+  let nullable = "nullable"
+  let array = "array" // add index later?
+  let obj_key = s => "key: " ++ s
 }
 
+@raises(Exit)
 let boolean = (~stack, j) =>
   switch Json.decodeBoolean(j) {
   | Some(b) => PConst(PBool(b))
   | None => raise(Exit(Debug.decodeError(Tys.boolean(), j, Tys.toString, ~stack)))
   }
 
+@raises(Exit)
 let string = (~stack, j) =>
   switch Json.decodeString(j) {
   | Some(s) => PConst(PString(s))
   | None => raise(Exit(Debug.decodeError(Tys.string(), j, Tys.toString, ~stack)))
   }
 
+@raises(Exit)
 let int = (~stack, j) =>
   switch Json.decodeNumber(j) {
   | Some(i) => PConst(PInt(Int.fromFloat(i)))
   | None => raise(Exit(Debug.decodeError(Tys.int(), j, Tys.toString, ~stack)))
   }
 
+@raises(Exit)
 let float = (~stack, j) =>
   switch Json.decodeNumber(j) {
   | Some(f) => PConst(PFloat(f))
   | None => raise(Exit(Debug.decodeError(Tys.float(), j, Tys.toString, ~stack)))
   }
 
+@raises(Exit)
 let echo = (~stack, j) =>
   switch Json.classify(j) {
   | JSONString(s) => PConst(PString(s))
@@ -112,6 +118,7 @@ let echo = (~stack, j) =>
 
 let some = x => PArray([x])
 
+@raises(Exit)
 let rec nullable = (~stack, j, ty) =>
   if Js.Types.test(j, Null) || Js.Types.test(j, Undefined) {
     PNull
@@ -119,6 +126,7 @@ let rec nullable = (~stack, j, ty) =>
     some(make(j, ty, ~stack=list{Stack.nullable, ...stack}))
   }
 
+@raises(Exit)
 and list = (~stack, j, ty) =>
   switch Json.decodeArray(j) {
   | Some(a) =>
@@ -131,6 +139,7 @@ and list = (~stack, j, ty) =>
   | None => raise(Exit(Debug.decodeError(Tys.list(ty), j, Tys.toString, ~stack)))
   }
 
+@raises(Exit)
 and dict = (~stack, j, ty) =>
   switch Json.decodeObject(j) {
   | Some(obj) =>
@@ -140,6 +149,7 @@ and dict = (~stack, j, ty) =>
   | None => raise(Exit(Debug.decodeError(Tys.dict(ty), j, Tys.toString, ~stack)))
   }
 
+@raises(Exit)
 and tuple = (~stack, j, tys) =>
   switch Json.decodeArray(j) {
   | Some(arr) =>
@@ -147,6 +157,7 @@ and tuple = (~stack, j, tys) =>
   | None => raise(Exit(Debug.decodeError(Tys.tuple(tys), j, Tys.toString, ~stack)))
   }
 
+@raises(Exit)
 and recordAux = (~stack, j, tys) => {
   MapString.mapWithKeyU(tys, (. k, ty) =>
     switch (ty, Dict.get(j, k)) {
@@ -157,12 +168,14 @@ and recordAux = (~stack, j, tys) => {
   )
 }
 
+@raises(Exit)
 and record = (~stack, j, tys) =>
   switch Json.decodeObject(j) {
   | Some(obj) => PDict(recordAux(obj, tys, ~stack))
   | _ => raise(Exit(Debug.decodeError(Tys.record2(tys), j, Tys.toString, ~stack)))
   }
 
+@raises(Exit)
 and make = (~stack, j, ty) =>
   switch ty.contents {
   | Tys.Unknown => PUnknown(j)
@@ -178,6 +191,7 @@ and make = (~stack, j, ty) =>
   | Record(ty) => record(~stack, j, ty.contents)
   }
 
+@raises(Exit)
 let make = (j, ty) => recordAux(j, ty, ~stack=list{})
 
 let constantExn = t =>

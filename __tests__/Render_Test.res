@@ -21,7 +21,6 @@ let render = (~name="", src, props, components) =>
     Render.sync(t, props)
   )
 
-@raises(Not_found)
 describe("Render essentials", ({test, _}) => {
   test("Basic", ({expect, _}) => {
     let props = dict([

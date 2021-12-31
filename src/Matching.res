@@ -15,7 +15,47 @@ exception Exit = Debug.Exit
 
 type nest = Tuple | Record | Dict
 
+/*
+  Every pattern represents a one-dimensional path across a multi-dimensional
+  data structure. A list of patterns is a two-dimensional matrix of paths. In
+  order to transverse these paths efficiently, we need to combine them into
+  a tree.
+
+  We take advantage of a few properties that can make our tree simpler. We
+  only test discrete static values, integers, strings, etc. We sort record
+  fields and replace ommited fields with wildcards, so every pattern "lines up"
+  with the others. We also sort the tested values (the integers, strings, etc.).
+
+  Every node has a set of integer "IDs." These keep track of bindings. If a
+  pattern has a binding, then we store that binding's ID in its node. Due to
+  merging and expanding trees, nodes can have multiple IDs. Each leaf contains
+  a map of binding names to their IDs. This is necessary because multiple
+  patterns may merge that use different or overlapping binding names.
+
+  The most complicated part of this tree is how we handle wildcards. When we
+  merge trees, each wildcard "expands" into its joining node. All of the nodes
+  that come after the wildcard will also expand into all of the nodes after the
+  other node. This has tradeoffs. One advantage is that we can guarantee that
+  every node is only visited once at runtime. One disadvantage is that some
+  patterns may produce extremely large trees. 
+
+  One feature that this structure gives us is that redundant patterns are
+  automatically detected because merging them with an existing tree fails. 
+
+  The tree type is a polymorphic "nested" type. Each tree can use itself as its
+  own type variable, i.e. tree<tree<'a>>. This allows the end nodes to be
+  fully polymorphic. They can either lead to a leaf or back to their containing
+  tree. This nesting corresponds to the nesting of patterns.
+
+  Nested types are simple to create, but complicated to manipulate. Functions
+  cannot consume these types under normal polymorphism rules. We need to 
+  use explicitly polymorphic type annotations and GADTs.
+*/
 type rec tree<'a> =
+  /*
+    A Switch represents a list of discreet values to test (1, "a", etc.). If
+    none of the values match the input, then the wildcard is used.
+ */
   | Switch({
       idx: int,
       key: string,
@@ -23,6 +63,9 @@ type rec tree<'a> =
       cases: switchcase<'a>,
       wildcard: option<tree<'a>>,
     })
+  /*
+    A Nest represents a structure such as tuple or a record.
+ */
   | Nest({
       idx: int,
       key: string,
@@ -31,37 +74,63 @@ type rec tree<'a> =
       child: tree<tree<'a>>,
       wildcard: option<tree<'a>>,
     })
+  /*
+    A Construct represents one of the built-in variant types: lists and
+    nullables.
+    nil represents an empty list or a null value. It is like a wildcard in that
+    it always points to the *next* node, whatever that may be.
+    cons always either points to a wildcard node or a Nest + Tuple node.
+ */
   | Construct({
       idx: int,
       key: string,
       ids: SetInt.t,
       kind: TP.construct,
-      // nil is like a wildcard. It always points to the *next* node.
       nil: option<tree<'a>>,
-      // cons is always either a Wildcard node or a Nest-Tuple node.
       cons: option<tree<'a>>,
     })
+  /*
+    Wildcards simply point to the next node in the tree.
+ */
   | Wildcard({idx: int, key: string, ids: SetInt.t, child: tree<'a>})
   | End('a)
 
+/*
+  The switch cases work like linked lists of values. If an input matches a
+  value, then we follow its associated tree. If not, we try the next case.
+*/
 and switchcase<'a> = {
   val: Data.Const.t,
   ifMatch: tree<'a>,
   nextCase: option<switchcase<'a>>,
 }
 
+/*
+  Each "exit" is given an integer ID which we can use to look up the AST nodes
+  to follow after the tree. We do this because exits can be duplicated when
+  trees expand, and we don't want to duplicate entire ASTs.
+*/
 type leaf = {names: MapString.t<int>, exit: int}
 
 type t<'a> = {
-  loc: Debug.loc,
   tree: tree<leaf>,
   exits: array<'a>,
 }
+
+/*
+  One challenge when merging the trees is that we need to keep track of "where
+  we are" in the tree on the type level. This natural-number GADT does that for
+  us.
+*/
 
 type rec nat<_, _> =
   | Z: nat<'z, 'z>
   | S(nat<'a, 'z>): nat<tree<'a>, 'z>
 
+/*
+  Whenever we iterate through cases, we do it tail-recursively which creates
+  a reversed accumulator. We need to reverse it again back to normal.
+*/
 let rec reverseCases = (~tail=?, t) => {
   let tail = {...t, nextCase: tail}
   switch t.nextCase {
@@ -70,9 +139,12 @@ let rec reverseCases = (~tail=?, t) => {
   }
 }
 
+/*
+  If a tree cannot merge with another tree, then we throw that tree away.
+  If an entire tree failed to merge, then we know its pattern was redundant.
+*/
 exception MergeFail
 
-@raises(MergeFail)
 let rec mergeTestCasesAux:
   type a. (
     ~init: switchcase<a>=?,
@@ -80,73 +152,111 @@ let rec mergeTestCasesAux:
     Data.Const.t,
     tree<a>,
     nat<a, leaf>,
-  ) => switchcase<a> =
+  ) => option<switchcase<a>> =
   (~init=?, original, val, ifMatch, n) => {
+    /* We sort the data for easier analysis. */
     let cmp = Data.Const.compare(val, original.val)
     if cmp < 0 {
+      /* If the new value is lower than the original, then append it to the
+       beginning. */
       let tail = {val: val, ifMatch: ifMatch, nextCase: Some(original)}
       switch init {
-      | None => tail
-      | Some(init) => reverseCases(init, ~tail)
+      | None => Some(tail)
+      | Some(init) => Some(reverseCases(init, ~tail))
       }
     } else if cmp == 0 {
-      let ifMatch = merge(original.ifMatch, ifMatch, n)
-      let tail = {...original, ifMatch: ifMatch}
-      switch init {
-      | None => tail
-      | Some(init) => reverseCases(init, ~tail)
+      /* If the new value equals the original, then merge them. */
+      try {
+        let tail = {...original, ifMatch: merge(original.ifMatch, ifMatch, n)}
+        switch init {
+        | None => Some(tail)
+        | Some(init) => Some(reverseCases(init, ~tail))
+        }
+      } catch {
+      | MergeFail => None
       }
     } else {
+      /* If the new value is greater than the original, then check if we're
+      at the end of the list. If we are, then add this new case. If not, then
+      keep searching. */
       let init = {...original, nextCase: init}
       switch original.nextCase {
-      | None => reverseCases(init, ~tail={val: val, ifMatch: ifMatch, nextCase: None})
+      | None => Some(reverseCases(init, ~tail={val: val, ifMatch: ifMatch, nextCase: None}))
       | Some(original) => mergeTestCasesAux(original, val, ifMatch, ~init, n)
       }
     }
   }
 
-/* At least one merge must succeed. */
-@raises(MergeFail)
+/*
+  When merging a and b, we take each value from b and try to merge it with the
+  items in a. At least one value must merge in order to be considered a success.
+*/
 and mergeTestCases:
-  type a. (~init: switchcase<a>=?, switchcase<a>, switchcase<a>, nat<a, leaf>) => switchcase<a> =
-  (~init=?, original, {val, ifMatch, nextCase}, n) => {
-    let init = try {
-      switch init {
-      | None => Some(mergeTestCasesAux(original, val, ifMatch, n))
-      | Some(init) => Some(mergeTestCasesAux(init, val, ifMatch, n))
+  type a. (switchcase<a>, switchcase<a>, nat<a, leaf>, bool) => option<switchcase<a>> =
+  (original, {val, ifMatch, nextCase}, n, success) =>
+    switch mergeTestCasesAux(original, val, ifMatch, n) {
+    | Some(result) =>
+      switch nextCase {
+      | None => Some(result)
+      | Some(b) => mergeTestCases(result, b, n, true)
       }
-    } catch {
-    | MergeFail => init
+    | None =>
+      switch (nextCase, success) {
+      | (None, false) => None
+      | (None, true) => Some(original)
+      | (Some(b), success) => mergeTestCases(original, b, n, success)
+      }
     }
-    switch (nextCase, init) {
-    | (None, None) => raise(MergeFail)
-    | (None, Some(x)) => x
-    | (Some(b), init) => mergeTestCases(original, b, ~init?, n)
-    }
-  }
 
-/* This only keeps successful mergers. */
-@raises(MergeFail)
-and mergeAndKeepTestCasesIntoWildcard:
-  type a. (
-    ~init: switchcase<a>=?,
-    ~wildcard: tree<a>,
-    switchcase<a>,
-    nat<a, leaf>,
-  ) => switchcase<a> =
-  (~init=?, ~wildcard, t, n) => {
+/*
+  When we merge a list of values with a wildcard, some of them may not merge
+  successfully. As long as at least one merges, then this function succeeds.
+  We filter out any unsuccessful mergers, since their paths are covered by the
+  wildcard case.
+*/
+and mergeTestCasesIntoWildcard:
+  type a. (~init: switchcase<a>=?, tree<a>, switchcase<a>, nat<a, leaf>) => option<switchcase<a>> =
+  (~init=?, wildcard, t, n) => {
     let init = try {
       Some({...t, ifMatch: merge(wildcard, t.ifMatch, n), nextCase: init})
     } catch {
     | MergeFail => init
     }
     switch (t.nextCase, init) {
-    | (None, None) => raise(MergeFail)
-    | (None, Some(init)) => reverseCases(init)
-    | (Some(t), init) => mergeAndKeepTestCasesIntoWildcard(~wildcard, t, ~init?, n)
+    | (None, None) => None
+    | (None, Some(init)) => Some(reverseCases(init))
+    | (Some(t), init) => mergeTestCasesIntoWildcard(~init?, wildcard, t, n)
     }
   }
 
+/*
+  When we expand a wildcard into a list of test values, we merge it with each
+  child and ignore any errors. Merge failures are replaced by their unmerged
+  originals.
+*/
+and expandWildcardIntoTestCases:
+  type a. (~init: switchcase<a>=?, switchcase<a>, tree<a>, nat<a, leaf>) => switchcase<a> =
+  (~init=?, {val, ifMatch, nextCase}, wildcard, n) => {
+    let init = try {
+      {val: val, ifMatch: merge(ifMatch, wildcard, n), nextCase: init}
+    } catch {
+    | MergeFail => {val: val, ifMatch: ifMatch, nextCase: init}
+    }
+    switch nextCase {
+    | None => reverseCases(init)
+    | Some(a) => expandWildcardIntoTestCases(~init, a, wildcard, n)
+    }
+  }
+
+/*
+  When we expand a wildcard into a nest, we need to expand all of the wildcard's
+  child nodes after the nest's child nodes. This maps through the nest to do
+  so.
+  We need a second nat value to track "where we are" relative to the beginning
+  of the nest. Z (zero) represents the depth where the nest began.
+  It doesn't matter if the expansion succeeds or not. If it fails, we just keep
+  the original tree.
+*/
 and expandWildcardAfterNest:
   type a b. (tree<a>, nat<a, leaf>, ~wildcard: tree<b>, nat<a, tree<b>>) => tree<a> =
   (a, na, ~wildcard, nb) =>
@@ -178,58 +288,70 @@ and expandWildcardAfterNest:
       | None => None
       | Some(a) => Some(expandWildcardAfterNest(a, na, ~wildcard, nb))
       }
-      let rec aux = (~init=?, case) => {
+      let rec aux = (init, case) => {
         let ifMatch = expandWildcardAfterNest(case.ifMatch, na, ~wildcard, nb)
         let init = {...case, ifMatch: ifMatch, nextCase: init}
         switch case.nextCase {
         | None => Switch({...a, cases: reverseCases(init), wildcard: wildcard'})
-        | Some(a) => aux(a, ~init)
+        | Some(a) => aux(Some(init), a)
         }
       }
-      aux(a.cases)
+      aux(None, a.cases)
     }
 
-/* This only keeps successful mergers. */
+/*
+  When we merge a wildcard after a nest, we can only keep successful mergers.
+  For constructs and switch nodes, then at least one path must merge
+  succesfully. Unsuccesful paths are filtered out.
+*/
 @raises(MergeFail)
 and mergeWildcardAfterNest:
   type a b. (~wildcard: tree<a>, nat<b, tree<a>>, tree<b>, nat<b, leaf>) => tree<b> =
   (~wildcard, na, b, nb) =>
-    switch (na, b, nb) {
-    | (Z, End(b), S(n)) => End(merge(wildcard, b, n))
-    | (S(na), End(b), S(nb)) => End(mergeWildcardAfterNest(~wildcard, na, b, nb))
-    | (na, Nest(b), nb) =>
+    switch (b, na, nb) {
+    | (End(b), Z, S(n)) => End(merge(wildcard, b, n))
+    | (End(b), S(na), S(nb)) => End(mergeWildcardAfterNest(~wildcard, na, b, nb))
+    | (Nest(b), na, nb) =>
       Nest({...b, child: mergeWildcardAfterNest(~wildcard, S(na), b.child, S(nb))})
-    | (na, Construct(b), nb) =>
+    | (Construct(b), na, nb) =>
       let nil = switch b.nil {
       | None => Ok(None)
       | Some(child) =>
-        try {Ok(Some(mergeWildcardAfterNest(~wildcard, na, child, nb)))} catch {
-        | MergeFail => Error(MergeFail)
+        try {
+          Ok(Some(mergeWildcardAfterNest(~wildcard, na, child, nb)))
+        } catch {
+        | MergeFail => Error(None)
         }
       }
       let cons = switch b.cons {
       | None => Ok(None)
       | Some(child) =>
-        try {Ok(Some(mergeWildcardAfterNest(~wildcard, na, child, nb)))} catch {
-        | MergeFail => Error(MergeFail)
+        try {
+          Ok(Some(mergeWildcardAfterNest(~wildcard, na, child, nb)))
+        } catch {
+        | MergeFail => Error(None)
         }
       }
       switch (nil, cons) {
-      | (Ok(nil), Ok(cons)) => Construct({...b, nil: nil, cons: cons})
-      | (Ok(nil), Error(_)) => Construct({...b, nil: nil})
-      | (Error(_), Ok(cons)) => Construct({...b, cons: cons})
-      | (Error(_), Error(_)) => raise(MergeFail)
+      | (Error(_), Error(_)) | (Ok(None), Error(None)) | (Error(None), Ok(None)) => raise(MergeFail)
+      | (Ok(nil), Ok(cons)) | (Ok(nil), Error(cons)) | (Error(nil), Ok(cons)) =>
+        Construct({...b, nil: nil, cons: cons})
       }
-    | (na, Wildcard(b), nb) =>
+    | (Wildcard(b), na, nb) =>
       Wildcard({...b, child: mergeWildcardAfterNest(~wildcard, na, b.child, nb)})
-    | (na, Switch(b), nb) =>
+    | (Switch(b), na, nb) =>
       let wildcard' = switch b.wildcard {
       | None => None
-      | Some(b) => Some(mergeWildcardAfterNest(~wildcard, na, b, nb))
+      | Some(b) =>
+        try {
+          Some(mergeWildcardAfterNest(~wildcard, na, b, nb))
+        } catch {
+        | MergeFail => None
+        }
       }
 
       @raises(MergeFail)
-      let rec aux = (~init=?, case) => {
+      let rec aux = (init, case) => {
         let init = try {
           let ifMatch = mergeWildcardAfterNest(~wildcard, na, case.ifMatch, nb)
           Some({...case, ifMatch: ifMatch, nextCase: init})
@@ -239,43 +361,25 @@ and mergeWildcardAfterNest:
         switch (case.nextCase, init) {
         | (None, None) => raise(MergeFail)
         | (None, Some(init)) => Switch({...b, cases: reverseCases(init), wildcard: wildcard'})
-        | (Some(a), init) => aux(a, ~init?)
+        | (Some(a), init) => aux(init, a)
         }
       }
-      aux(b.cases)
+      aux(None, b.cases)
     }
-
-and expandWildcardIntoTestCases:
-  type a. (
-    ~init: switchcase<a>=?,
-    switchcase<a>,
-    ~wildcard: tree<a>,
-    nat<a, leaf>,
-  ) => switchcase<a> =
-  (~init=?, c, ~wildcard, n) => {
-    let ifMatch = try {merge(c.ifMatch, wildcard, n)} catch {
-    | MergeFail => c.ifMatch
-    }
-    let init = {...c, ifMatch: ifMatch, nextCase: init}
-    switch c.nextCase {
-    | None => reverseCases(init)
-    | Some(c) => expandWildcardIntoTestCases(~init, c, ~wildcard, n)
-    }
-  }
 
 @raises(MergeFail)
 and merge:
   type a. (tree<a>, tree<a>, nat<a, leaf>) => tree<a> =
   (a, b, n) =>
-    switch (a, b, n) {
-    /* Ends */
-    // Root-level End nodes cannot merge.
-    | (End(_), End(_), Z) => raise(MergeFail)
-    | (End(a), End(b), S(n)) => End(merge(a, b, n))
-    /* Wildcards */
-    | (Wildcard(a), Wildcard(b), n) =>
+    switch (a, b) {
+    | (End(a), End(b)) =>
+      switch n {
+      | Z => raise(MergeFail)
+      | S(n) => End(merge(a, b, n))
+      }
+    | (Wildcard(a), Wildcard(b)) =>
       Wildcard({...a, ids: SetInt.union(a.ids, b.ids), child: merge(a.child, b.child, n)})
-    | (Wildcard(a), Nest(b), n) =>
+    | (Wildcard(a), Nest(b)) =>
       let wildcard = switch b.wildcard {
       | None => a.child
       | Some(b) => merge(a.child, b, n)
@@ -283,38 +387,39 @@ and merge:
       let child = mergeWildcardAfterNest(~wildcard=a.child, Z, b.child, S(n))
       let ids = SetInt.union(a.ids, b.ids)
       Nest({...b, ids: ids, child: child, wildcard: Some(wildcard)})
-    | (Wildcard(a) as a', Construct(b), n) =>
+    | (Wildcard(a) as a', Construct(b)) =>
       let nil = switch b.nil {
-      | None => Ok(a.child)
+      | None => Ok(Some(a.child))
       | Some(b) =>
-        try {Ok(merge(a.child, b, n))} catch {
-        | MergeFail => Error(MergeFail)
+        try {Ok(Some(merge(a.child, b, n)))} catch {
+        | MergeFail => Error(None)
         }
       }
       let cons = switch b.cons {
-      | None => Ok(a')
+      | None => Ok(Some(a'))
       | Some(b) =>
-        try {Ok(merge(a', b, n))} catch {
-        | MergeFail => Error(MergeFail)
+        try {Ok(Some(merge(a', b, n)))} catch {
+        | MergeFail => Error(None)
         }
       }
       let ids = SetInt.union(a.ids, b.ids)
       switch (nil, cons) {
-      | (Ok(nil), Ok(cons)) => Construct({...b, ids: ids, nil: Some(nil), cons: Some(cons)})
-      | (Ok(nil), Error(_)) => Construct({...b, ids: ids, nil: Some(nil)})
-      | (Error(_), Ok(cons)) => Construct({...b, ids: ids, cons: Some(cons)})
-      | (Error(_), Error(_)) => raise(MergeFail)
+      | (Error(_), Error(_)) | (Ok(None), Error(None)) | (Error(None), Ok(None)) => raise(MergeFail)
+      | (Ok(nil), Ok(cons)) | (Error(nil), Ok(cons)) | (Ok(nil), Error(cons)) =>
+        Construct({...b, ids: ids, nil: nil, cons: cons})
       }
-    | (Wildcard(a), Switch(b), n) =>
-      let cases = mergeAndKeepTestCasesIntoWildcard(~wildcard=a.child, b.cases, n)
+    | (Wildcard(a), Switch(b)) =>
+      let cases = switch mergeTestCasesIntoWildcard(a.child, b.cases, n) {
+      | None => raise(MergeFail)
+      | Some(cases) => cases
+      }
       let wildcard = switch b.wildcard {
       | None => a.child
       | Some(b) => merge(a.child, b, n)
       }
       let ids = SetInt.union(a.ids, b.ids)
       Switch({...b, ids: ids, cases: cases, wildcard: Some(wildcard)})
-    /* Nests */
-    | (Nest(a), Nest(b), n) =>
+    | (Nest(a), Nest(b)) =>
       assert (a.kind == b.kind)
       let wildcard = switch (a.wildcard, b.wildcard) {
       | (None, None) => None
@@ -330,7 +435,7 @@ and merge:
       }
       let ids = SetInt.union(a.ids, b.ids)
       Nest({...a, ids: ids, child: child, wildcard: wildcard})
-    | (Nest(a), Wildcard(b), n) =>
+    | (Nest(a), Wildcard(b)) =>
       let child = expandWildcardAfterNest(a.child, S(n), ~wildcard=b.child, Z)
       let wildcard = switch a.wildcard {
       | None => b.child
@@ -338,30 +443,28 @@ and merge:
       }
       let ids = SetInt.union(a.ids, b.ids)
       Nest({...a, ids: ids, child: child, wildcard: Some(wildcard)})
-    /* Variants */
-    | (Construct(a), Wildcard(b) as b', n) =>
+    | (Construct(a), Wildcard(b) as b') =>
       let nil = switch a.nil {
       | None => Ok(b.child)
       | Some(a) =>
         try {Ok(merge(a, b.child, n))} catch {
-        | MergeFail => Error(MergeFail)
+        | MergeFail => Error(a)
         }
       }
       let cons = switch a.cons {
       | None => Ok(b')
       | Some(a) =>
         try {Ok(merge(a, b', n))} catch {
-        | MergeFail => Error(MergeFail)
+        | MergeFail => Error(a)
         }
       }
       let ids = SetInt.union(a.ids, b.ids)
       switch (nil, cons) {
-      | (Ok(nil), Ok(cons)) => Construct({...a, ids: ids, nil: Some(nil), cons: Some(cons)})
-      | (Ok(nil), Error(_)) => Construct({...a, ids: ids, nil: Some(nil)})
-      | (Error(_), Ok(cons)) => Construct({...a, ids: ids, cons: Some(cons)})
       | (Error(_), Error(_)) => raise(MergeFail)
+      | (Ok(nil), Ok(cons)) | (Ok(nil), Error(cons)) | (Error(nil), Ok(cons)) =>
+        Construct({...a, ids: ids, nil: Some(nil), cons: Some(cons)})
       }
-    | (Construct(a), Construct(b), n) =>
+    | (Construct(a), Construct(b)) =>
       assert (a.kind == b.kind)
       let nil = switch (a.nil, b.nil) {
       | (None, None) => None
@@ -375,58 +478,56 @@ and merge:
       }
       let ids = SetInt.union(a.ids, b.ids)
       Construct({...a, ids: ids, nil: nil, cons: cons})
-    /* Tests */
-    | (Switch(a), Wildcard(b), n) =>
+    | (Switch(a), Wildcard(b)) =>
       let wildcard = switch a.wildcard {
       | None => b.child
       | Some(a) => merge(a, b.child, n)
       }
-      let cases = expandWildcardIntoTestCases(a.cases, ~wildcard=b.child, n)
+      let cases = expandWildcardIntoTestCases(a.cases, b.child, n)
       // let cases = expandWildcardIntoTestCases(a.cases, ~wildcard, n)
       let ids = SetInt.union(a.ids, b.ids)
       Switch({...a, ids: ids, cases: cases, wildcard: Some(wildcard)})
-    | (Switch(a), Switch(b), n) =>
+    | (Switch(a), Switch(b)) =>
       let wildcard = switch (a.wildcard, b.wildcard) {
-      | (None, None) => Ok(None)
-      | (Some(x), None) | (None, Some(x)) => Ok(Some(x))
-      | (Some(a), Some(b)) =>
-        try {Ok(Some(merge(a, b, n)))} catch {
-        | MergeFail => Error(MergeFail)
-        }
+      | (None, None) => None
+      | (Some(x), None) | (None, Some(x)) => Some(x)
+      | (Some(a), Some(b)) => Some(merge(a, b, n))
       }
-      let cases = {
-        let bcases = switch a.wildcard {
-        | Some(wildcard) => mergeAndKeepTestCasesIntoWildcard(~wildcard, b.cases, n)
-        | None => b.cases
+      let bcases = switch a.wildcard {
+      | Some(wildcard) =>
+        switch mergeTestCasesIntoWildcard(wildcard, b.cases, n) {
+        | Some(cases) => cases
+        | None => raise(MergeFail)
         }
-        mergeTestCases(a.cases, bcases, n)
+      | None => b.cases
+      }
+      let cases = switch mergeTestCases(a.cases, bcases, n, false) {
+      | None => raise(MergeFail)
+      | Some(cases) => cases
       }
       let cases = switch b.wildcard {
       | None => cases
-      | Some(wildcard) => expandWildcardIntoTestCases(cases, ~wildcard, n)
+      | Some(wildcard) => expandWildcardIntoTestCases(cases, wildcard, n)
       }
       let ids = SetInt.union(a.ids, b.ids)
-      switch wildcard {
-      | Ok(wildcard) => Switch({...a, ids: ids, cases: cases, wildcard: wildcard})
-      | Error(_) => Switch({...a, ids: ids, cases: cases})
-      }
-    /* Failure cases */
-    | (Switch(_), Nest(_) | Construct(_) | End(_), _)
-    | (Construct(_), Switch(_) | Nest(_) | End(_), _)
-    | (Nest(_), Switch(_) | Construct(_) | End(_), _)
-    | (Wildcard(_), End(_), _)
-    | (End(_), Switch(_) | Nest(_) | Construct(_) | Wildcard(_), _) =>
+      Switch({...a, ids: ids, cases: cases, wildcard: wildcard})
+    | (Switch(_), Nest(_) | Construct(_))
+    | (Construct(_), Switch(_) | Nest(_))
+    | (Nest(_), Switch(_) | Construct(_))
+    | (Switch(_) | Nest(_) | Construct(_) | Wildcard(_), End(_))
+    | (End(_), Switch(_) | Nest(_) | Construct(_) | Wildcard(_)) =>
       assert false
     }
 
 type continue<'a> = (. MapString.t<int>) => tree<'a>
 
+@raises(Exit)
 let rec fromTPat: 'a. (_, _, _, _, ~name: _, continue<'a>) => tree<'a> = (p, i, key, b, ~name, k) =>
   switch p {
   | TP.TAny(_) => Wildcard({ids: SetInt.empty, idx: i, key: key, child: k(. b)})
   | TVar(Loc(id), x) | TOptionalVar(Loc(id), x) =>
     if MapString.has(b, x) {
-      raise(Debug.Exit(Debug.nameBoundMultipleTimes(~binding=x, ~loc=Loc(id), ~name)))
+      raise(Exit(Debug.nameBoundMultipleTimes(~binding=x, ~loc=Loc(id), ~name)))
     }
     Wildcard({
       ids: SetInt.add(SetInt.empty, id),
@@ -464,36 +565,35 @@ let rec fromTPat: 'a. (_, _, _, _, ~name: _, continue<'a>) => tree<'a> = (p, i, 
     Nest({idx: i, key: key, ids: SetInt.empty, kind: Dict, child: child, wildcard: None})
   }
 
+@raises(Exit)
 and fromArray: 'a. (_, _, _, ~name: _, continue<'a>) => tree<'a> = (a, b, i, ~name, k) =>
   switch a[i] {
   | None => k(. b)
   | Some(p) => fromTPat(p, i, "", b, ~name, (. b) => fromArray(a, b, succ(i), ~name, k))
   }
 
+@raises(Exit)
 and fromKeyValues: 'a. (_, _, _, ~name: _, continue<'a>) => tree<'a> = (a, b, i, ~name, k) =>
   switch a[i] {
   | None => k(. b)
   | Some((key, v)) => fromTPat(v, i, key, b, ~name, (. b) => fromKeyValues(a, b, succ(i), ~name, k))
   }
 
+@raises(Exit)
 let fromArray = (~exit, ~name, a) =>
   fromArray(a, MapString.empty, 0, ~name, (. names) => End({names: names, exit: exit}))
 
-let merge = (a, b) =>
-  switch merge(a, b, Z) {
-  | t => Some(t)
-  | exception MergeFail => None
-  }
-
+@raises(Exit)
 let makeCase = (hd, a, ~exit, ~name) => {
+  @raises(Exit)
   let rec aux = (t, i) =>
     switch NonEmpty.get(a, i) {
-    | None => Ok(t)
+    | None => t
     | Some(ps) =>
       let b = fromArray(NonEmpty.toArray(ps), ~exit, ~name)
-      switch merge(t, b) {
-      | Some(t) => aux(t, succ(i))
-      | None => Error(Debug.unusedCase(NonEmpty.toArray(ps), TP.toString))
+      switch merge(t, b, Z) {
+      | t => aux(t, succ(i))
+      | exception MergeFail => raise(Exit(Debug.unusedCase(ps, module(TP))))
       }
     }
   aux(hd, 1)
@@ -536,6 +636,7 @@ module ParMatch = {
     {flag: flag, pats: list{(key, pat), ...pats}, next: next}
   }
 
+  @raises(Exit)
   let rec check: 'a. tree<'a> => t<'a> = tree =>
     switch tree {
     | End(next) => {flag: Exhaustive, pats: list{}, next: next}
@@ -606,6 +707,8 @@ module ParMatch = {
       | Some(wildcard) => exhaustive(key, check(wildcard))
       | None =>
         let refute = makeRefutation(cases.val)
+
+        @raises(Exit)
         let rec aux = (refute, {val, ifMatch, nextCase}) =>
           switch check(ifMatch) {
           | {flag: Partial, pats, next} => {
@@ -641,6 +744,7 @@ module ParMatch = {
 
   let toString = l => toArray(l)->Array.joinWith(", ", TP.toString)
 
+  @raises(Exit)
   let check = (tree, ~loc) =>
     switch check(tree) {
     | {flag: Exhaustive, _} => ()
@@ -648,31 +752,29 @@ module ParMatch = {
     }
 }
 
-let make = (~loc, ~name, cases: NonEmpty.t<Typechecker.case>) => {
+@raises(Exit)
+let make = (~name, cases: NonEmpty.t<Typechecker.case>) => {
   let exitq = Queue.make()
   let hdcase = NonEmpty.hd(cases)
   Queue.add(exitq, hdcase.nodes)
   let exit = Queue.size(exitq) - 1
   let hdTree = NonEmpty.hd(hdcase.pats)->NonEmpty.toArray->fromArray(~exit, ~name)
-  switch makeCase(hdTree, hdcase.pats, ~name, ~exit) {
-  | Error(_) as e => e
-  | Ok(tree) =>
-    let rec aux = (tree, i) =>
-      switch NonEmpty.get(cases, i) {
-      | None => Ok({loc: loc, tree: tree, exits: Queue.toArray(exitq)})
-      | Some({pats, nodes}) =>
-        Queue.add(exitq, nodes)
-        let exit = Queue.size(exitq) - 1
-        let hdTree = NonEmpty.hd(pats)->NonEmpty.toArray->fromArray(~exit, ~name)
-        switch merge(tree, hdTree) {
-        | Some(tree) =>
-          switch makeCase(tree, pats, ~exit, ~name) {
-          | Ok(tree) => aux(tree, succ(i))
-          | Error(_) as e => e
-          }
-        | None => Error(Debug.unusedCase(NonEmpty.hd(pats)->NonEmpty.toArray, TP.toString))
-        }
+  let tree = makeCase(hdTree, hdcase.pats, ~name, ~exit)
+
+  @raises(Exit)
+  let rec aux = (tree, i) =>
+    switch NonEmpty.get(cases, i) {
+    | None => {tree: tree, exits: Queue.toArray(exitq)}
+    | Some({pats, nodes}) =>
+      Queue.add(exitq, nodes)
+      let exit = Queue.size(exitq) - 1
+      let hdTree = NonEmpty.hd(pats)->NonEmpty.toArray->fromArray(~exit, ~name)
+      switch merge(tree, hdTree, Z) {
+      | tree =>
+        let tree = makeCase(tree, pats, ~exit, ~name)
+        aux(tree, succ(i))
+      | exception MergeFail => raise(Exit(Debug.unusedCase(NonEmpty.hd(pats), module(TP))))
       }
-    aux(tree, 1)
-  }
+    }
+  aux(tree, 1)
 }
