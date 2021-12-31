@@ -168,7 +168,7 @@ module Match = {
     switch make(tree, args, nonemptyGet, MapInt.empty) {
     | Some((vars, {names, exit})) =>
       let bindings = MapString.mapU(names, (. id) => MapInt.getExn(vars, id))
-      Some((bindings, Array.getExn(exits, exit)))
+      Some((bindings, Matching.Exit.get(exits, exit)))
     | None => None
     }
 }

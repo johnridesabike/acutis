@@ -44,15 +44,9 @@ let reduceHd = (a, f) => {
 
 let get = Array.get
 
-let getExn = Array.getExn
-
-let forEach = Array.forEachU
-
 let map = Array.mapU
 
 let unzip = Array.unzip
-
-let zipUnsafe = Array.zip
 
 let zipExn = (a, b) => {
   assert (Array.size(a) == Array.size(b))
@@ -63,5 +57,3 @@ let zipByExn = (a, b, f) => {
   assert (Array.size(a) == Array.size(b))
   Array.zipByU(a, b, f)
 }
-
-let reduce = Array.reduceU

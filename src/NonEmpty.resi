@@ -14,12 +14,8 @@ let two: ('a, 'a) => t<'a>
 let fromArrayExn: array<'a> => t<'a>
 let hd: t<'a> => 'a
 let get: (t<'a>, int) => option<'a>
-let getExn: (t<'a>, int) => 'a
-let forEach: (t<'a>, (. 'a) => unit) => unit
 let reduceHd: (t<'a>, (. 'a, 'a) => 'a) => 'a
-let reduce: (t<'a>, 'b, (. 'b, 'a) => 'b) => 'b
 let map: (t<'a>, (. 'a) => 'b) => t<'b>
 let unzip: t<('a, 'b)> => (t<'a>, t<'b>)
-let zipUnsafe: (t<'a>, t<'b>) => t<('a, 'b)>
 let zipExn: (t<'a>, t<'b>) => t<('a, 'b)>
 let zipByExn: (t<'a>, t<'b>, (. 'a, 'b) => 'c) => t<'c>

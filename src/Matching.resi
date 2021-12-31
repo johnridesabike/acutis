@@ -29,9 +29,7 @@ type rec tree<'a> =
       key: string,
       ids: Belt.Set.Int.t,
       kind: Typechecker.Pattern.construct,
-      // nil is like a wildcard. It always points to the *next* node.
       nil: option<tree<'a>>,
-      // cons is always either a Wildcard node or a Nest-Tuple node.
       cons: option<tree<'a>>,
     })
   | Wildcard({idx: int, key: string, ids: Belt.Set.Int.t, child: tree<'a>})
@@ -43,11 +41,19 @@ and switchcase<'a> = {
   nextCase: option<switchcase<'a>>,
 }
 
-type leaf = {names: Belt.Map.String.t<int>, exit: int}
+module Exit: {
+  type key
+  type t<'a>
+  let get: (t<'a>, key) => 'a
+  let map: (t<'a>, 'a => 'b) => t<'b>
+  let unsafe_key: int => key
+}
+
+type leaf = {names: Belt.Map.String.t<int>, exit: Exit.key}
 
 type t<'a> = {
   tree: tree<leaf>,
-  exits: array<'a>,
+  exits: Exit.t<'a>,
 }
 
 let make: (~name: string, NonEmpty.t<Typechecker.case>) => t<Typechecker.nodes>

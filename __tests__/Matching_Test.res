@@ -13,6 +13,7 @@ module MS = Belt.Map.String
 module TC = Typechecker
 module P = Parser.Pattern
 let ne = NE.fromArrayExn
+let e = Matching.Exit.unsafe_key
 
 let g = Utils.Dagmap.make(Belt.HashMap.String.make(~hintSize=0), ~f=(. _, _) => assert false)
 
@@ -40,7 +41,7 @@ describe("Basic tree", ({test, _}) => {
         key: "",
         ids: SI.empty,
         kind: TNullable,
-        nil: Some(End({names: MS.empty, exit: 1})),
+        nil: Some(End({names: MS.empty, exit: e(1)})),
         cons: Some(
           Nest({
             idx: 0,
@@ -51,7 +52,7 @@ describe("Basic tree", ({test, _}) => {
               idx: 0,
               key: "",
               ids: SI.fromArray([1]),
-              child: End(End({names: MS.fromArray([("a", 1)]), exit: 0})),
+              child: End(End({names: MS.fromArray([("a", 1)]), exit: e(0)})),
             }),
             wildcard: None,
           }),
@@ -88,26 +89,26 @@ describe("Basic tree", ({test, _}) => {
         ids: SI.empty,
         cases: {
           val: PInt(0),
-          ifMatch: End({names: MS.empty, exit: 0}),
+          ifMatch: End({names: MS.empty, exit: e(0)}),
           nextCase: Some({
             val: PInt(10),
-            ifMatch: End({names: MS.empty, exit: 0}),
+            ifMatch: End({names: MS.empty, exit: e(0)}),
             nextCase: Some({
               val: PInt(15),
-              ifMatch: End({names: MS.empty, exit: 1}),
+              ifMatch: End({names: MS.empty, exit: e(1)}),
               nextCase: Some({
                 val: PInt(20),
-                ifMatch: End({names: MS.empty, exit: 0}),
+                ifMatch: End({names: MS.empty, exit: e(0)}),
                 nextCase: Some({
                   val: PInt(30),
-                  ifMatch: End({names: MS.empty, exit: 0}),
+                  ifMatch: End({names: MS.empty, exit: e(0)}),
                   nextCase: None,
                 }),
               }),
             }),
           }),
         },
-        wildcard: Some(End({names: MS.empty, exit: 2})),
+        wildcard: Some(End({names: MS.empty, exit: e(2)})),
       }),
     )
   })
@@ -168,18 +169,18 @@ describe("Basic tree", ({test, _}) => {
                 ids: SI.empty,
                 cases: {
                   val: PInt(3),
-                  ifMatch: End({names: MS.empty, exit: 0}),
+                  ifMatch: End({names: MS.empty, exit: e(0)}),
                   nextCase: Some({
                     val: PInt(100),
-                    ifMatch: End({names: MS.empty, exit: 2}),
+                    ifMatch: End({names: MS.empty, exit: e(2)}),
                     nextCase: Some({
                       val: PInt(101),
-                      ifMatch: End({names: MS.empty, exit: 2}),
+                      ifMatch: End({names: MS.empty, exit: e(2)}),
                       nextCase: None,
                     }),
                   }),
                 },
-                wildcard: Some(End({names: MS.empty, exit: 3})),
+                wildcard: Some(End({names: MS.empty, exit: e(3)})),
               }),
               nextCase: Some({
                 val: PInt(4),
@@ -189,10 +190,10 @@ describe("Basic tree", ({test, _}) => {
                   ids: SI.empty,
                   cases: {
                     val: PInt(5),
-                    ifMatch: End({names: MS.empty, exit: 0}),
+                    ifMatch: End({names: MS.empty, exit: e(0)}),
                     nextCase: None,
                   },
-                  wildcard: Some(End({names: MS.empty, exit: 3})),
+                  wildcard: Some(End({names: MS.empty, exit: e(3)})),
                 }),
                 nextCase: None,
               }),
@@ -202,7 +203,7 @@ describe("Basic tree", ({test, _}) => {
                 idx: 2,
                 key: "",
                 ids: SI.empty,
-                child: End({names: MS.empty, exit: 3}),
+                child: End({names: MS.empty, exit: e(3)}),
               }),
             ),
           }),
@@ -220,18 +221,18 @@ describe("Basic tree", ({test, _}) => {
                   ids: SI.empty,
                   cases: {
                     val: PInt(30),
-                    ifMatch: End({names: MS.empty, exit: 0}),
+                    ifMatch: End({names: MS.empty, exit: e(0)}),
                     nextCase: Some({
                       val: PInt(40),
-                      ifMatch: End({names: MS.empty, exit: 0}),
+                      ifMatch: End({names: MS.empty, exit: e(0)}),
                       nextCase: Some({
                         val: PInt(50),
-                        ifMatch: End({names: MS.empty, exit: 2}),
+                        ifMatch: End({names: MS.empty, exit: e(2)}),
                         nextCase: None,
                       }),
                     }),
                   },
-                  wildcard: Some(End({names: MS.empty, exit: 3})),
+                  wildcard: Some(End({names: MS.empty, exit: e(3)})),
                 }),
                 nextCase: None,
               },
@@ -240,7 +241,7 @@ describe("Basic tree", ({test, _}) => {
                   idx: 2,
                   key: "",
                   ids: SI.empty,
-                  child: End({names: MS.empty, exit: 3}),
+                  child: End({names: MS.empty, exit: e(3)}),
                 }),
               ),
             }),
@@ -258,14 +259,14 @@ describe("Basic tree", ({test, _}) => {
                     ids: SI.empty,
                     cases: {
                       val: PInt(103),
-                      ifMatch: End({names: MS.empty, exit: 1}),
+                      ifMatch: End({names: MS.empty, exit: e(1)}),
                       nextCase: Some({
                         val: PInt(106),
-                        ifMatch: End({names: MS.empty, exit: 2}),
+                        ifMatch: End({names: MS.empty, exit: e(2)}),
                         nextCase: None,
                       }),
                     },
-                    wildcard: Some(End({names: MS.empty, exit: 3})),
+                    wildcard: Some(End({names: MS.empty, exit: e(3)})),
                   }),
                   nextCase: Some({
                     val: PInt(104),
@@ -275,10 +276,10 @@ describe("Basic tree", ({test, _}) => {
                       ids: SI.empty,
                       cases: {
                         val: PInt(105),
-                        ifMatch: End({names: MS.empty, exit: 1}),
+                        ifMatch: End({names: MS.empty, exit: e(1)}),
                         nextCase: None,
                       },
-                      wildcard: Some(End({names: MS.empty, exit: 3})),
+                      wildcard: Some(End({names: MS.empty, exit: e(3)})),
                     }),
                     nextCase: None,
                   }),
@@ -288,7 +289,7 @@ describe("Basic tree", ({test, _}) => {
                     idx: 2,
                     key: "",
                     ids: SI.empty,
-                    child: End({names: MS.empty, exit: 3}),
+                    child: End({names: MS.empty, exit: e(3)}),
                   }),
                 ),
               }),
@@ -305,7 +306,7 @@ describe("Basic tree", ({test, _}) => {
               idx: 2,
               key: "",
               ids: SI.empty,
-              child: End({names: MS.empty, exit: 3}),
+              child: End({names: MS.empty, exit: e(3)}),
             }),
           }),
         ),
@@ -345,12 +346,12 @@ describe("Basic tree", ({test, _}) => {
                 ids: SI.fromArray([20]),
                 cases: {
                   val: PInt(12),
-                  ifMatch: End({names: MS.empty, exit: 0}),
+                  ifMatch: End({names: MS.empty, exit: e(0)}),
                   nextCase: None,
                 },
                 wildcard: Some(
                   End({
-                    exit: 0,
+                    exit: e(0),
                     names: MS.empty->MS.set("a", 18)->MS.set("b", 19)->MS.set("c", 20),
                   }),
                 ),
@@ -363,12 +364,12 @@ describe("Basic tree", ({test, _}) => {
                   ids: SI.fromArray([20]),
                   cases: {
                     val: PInt(22),
-                    ifMatch: End({names: MS.fromArray([("x", 3)]), exit: 0}),
+                    ifMatch: End({names: MS.fromArray([("x", 3)]), exit: e(0)}),
                     nextCase: None,
                   },
                   wildcard: Some(
                     End({
-                      exit: 0,
+                      exit: e(0),
                       names: MS.empty->MS.set("a", 18)->MS.set("b", 19)->MS.set("c", 20),
                     }),
                   ),
@@ -382,7 +383,7 @@ describe("Basic tree", ({test, _}) => {
                 key: "",
                 ids: SI.fromArray([20]),
                 child: End({
-                  exit: 0,
+                  exit: e(0),
                   names: MS.empty->MS.set("a", 18)->MS.set("b", 19)->MS.set("c", 20),
                 }),
               }),
@@ -402,16 +403,16 @@ describe("Basic tree", ({test, _}) => {
                   ids: SI.fromArray([20]),
                   cases: {
                     val: PInt(22),
-                    ifMatch: End({names: MS.fromArray([("x", 3)]), exit: 0}),
+                    ifMatch: End({names: MS.fromArray([("x", 3)]), exit: e(0)}),
                     nextCase: Some({
                       val: PInt(42),
-                      ifMatch: End({names: MS.fromArray([("y", 13)]), exit: 0}),
+                      ifMatch: End({names: MS.fromArray([("y", 13)]), exit: e(0)}),
                       nextCase: None,
                     }),
                   },
                   wildcard: Some(
                     End({
-                      exit: 0,
+                      exit: e(0),
                       names: MS.empty->MS.set("a", 18)->MS.set("b", 19)->MS.set("c", 20),
                     }),
                   ),
@@ -424,16 +425,16 @@ describe("Basic tree", ({test, _}) => {
                     ids: SI.fromArray([20]),
                     cases: {
                       val: PInt(32),
-                      ifMatch: End({names: MS.empty, exit: 0}),
+                      ifMatch: End({names: MS.empty, exit: e(0)}),
                       nextCase: Some({
                         val: PInt(42),
-                        ifMatch: End({names: MS.fromArray([("y", 13)]), exit: 0}),
+                        ifMatch: End({names: MS.fromArray([("y", 13)]), exit: e(0)}),
                         nextCase: None,
                       }),
                     },
                     wildcard: Some(
                       End({
-                        exit: 0,
+                        exit: e(0),
                         names: MS.empty->MS.set("a", 18)->MS.set("b", 19)->MS.set("c", 20),
                       }),
                     ),
@@ -448,12 +449,12 @@ describe("Basic tree", ({test, _}) => {
                   ids: SI.fromArray([20]),
                   cases: {
                     val: PInt(42),
-                    ifMatch: End({names: MS.fromArray([("y", 13)]), exit: 0}),
+                    ifMatch: End({names: MS.fromArray([("y", 13)]), exit: e(0)}),
                     nextCase: None,
                   },
                   wildcard: Some(
                     End({
-                      exit: 0,
+                      exit: e(0),
                       names: MS.empty->MS.set("a", 18)->MS.set("b", 19)->MS.set("c", 20),
                     }),
                   ),
@@ -476,12 +477,12 @@ describe("Basic tree", ({test, _}) => {
                 ids: SI.fromArray([20]),
                 cases: {
                   val: PInt(22),
-                  ifMatch: End({names: MS.fromArray([("x", 3)]), exit: 0}),
+                  ifMatch: End({names: MS.fromArray([("x", 3)]), exit: e(0)}),
                   nextCase: None,
                 },
                 wildcard: Some(
                   End({
-                    exit: 0,
+                    exit: e(0),
                     names: MS.empty->MS.set("a", 18)->MS.set("b", 19)->MS.set("c", 20),
                   }),
                 ),
@@ -494,7 +495,7 @@ describe("Basic tree", ({test, _}) => {
                 key: "",
                 ids: SI.fromArray([20]),
                 child: End({
-                  exit: 0,
+                  exit: e(0),
                   names: MS.empty->MS.set("a", 18)->MS.set("b", 19)->MS.set("c", 20),
                 }),
               }),
@@ -544,14 +545,14 @@ describe("Nests", ({test, _}) => {
                     ids: SI.empty,
                     cases: {
                       val: PInt(13),
-                      ifMatch: End({names: MS.empty, exit: 0}),
+                      ifMatch: End({names: MS.empty, exit: e(0)}),
                       nextCase: Some({
                         val: PInt(33),
-                        ifMatch: End({names: MS.empty, exit: 0}),
+                        ifMatch: End({names: MS.empty, exit: e(0)}),
                         nextCase: None,
                       }),
                     },
-                    wildcard: Some(End({names: MS.empty, exit: 0})),
+                    wildcard: Some(End({names: MS.empty, exit: e(0)})),
                   }),
                 ),
                 nextCase: Some({
@@ -563,14 +564,14 @@ describe("Nests", ({test, _}) => {
                       ids: SI.empty,
                       cases: {
                         val: PInt(23),
-                        ifMatch: End({names: MS.empty, exit: 0}),
+                        ifMatch: End({names: MS.empty, exit: e(0)}),
                         nextCase: Some({
                           val: PInt(33),
-                          ifMatch: End({names: MS.empty, exit: 0}),
+                          ifMatch: End({names: MS.empty, exit: e(0)}),
                           nextCase: None,
                         }),
                       },
-                      wildcard: Some(End({names: MS.empty, exit: 0})),
+                      wildcard: Some(End({names: MS.empty, exit: e(0)})),
                     }),
                   ),
                   nextCase: None,
@@ -589,10 +590,10 @@ describe("Nests", ({test, _}) => {
             ids: SI.empty,
             cases: {
               val: PInt(33),
-              ifMatch: End({names: MS.empty, exit: 0}),
+              ifMatch: End({names: MS.empty, exit: e(0)}),
               nextCase: None,
             },
-            wildcard: Some(End({names: MS.empty, exit: 0})),
+            wildcard: Some(End({names: MS.empty, exit: e(0)})),
           }),
         ),
       }),
@@ -648,17 +649,17 @@ describe("Nests", ({test, _}) => {
                     ids: SI.fromArray([13]),
                     cases: {
                       val: PInt(1),
-                      ifMatch: End({names: MS.fromArray([("x", 0)]), exit: 0}),
+                      ifMatch: End({names: MS.fromArray([("x", 0)]), exit: e(0)}),
                       nextCase: Some({
                         val: PInt(10),
-                        ifMatch: End({names: MS.empty, exit: 1}),
+                        ifMatch: End({names: MS.empty, exit: e(1)}),
                         nextCase: None,
                       }),
                     },
                     wildcard: Some(
                       End({
                         names: MS.empty->MS.set("y", 12)->MS.set("z", 13),
-                        exit: 2,
+                        exit: e(2),
                       }),
                     ),
                   }),
@@ -673,13 +674,13 @@ describe("Nests", ({test, _}) => {
                     ids: SI.fromArray([13]),
                     cases: {
                       val: PInt(1),
-                      ifMatch: End({names: MS.fromArray([("x", 0)]), exit: 0}),
+                      ifMatch: End({names: MS.fromArray([("x", 0)]), exit: e(0)}),
                       nextCase: None,
                     },
                     wildcard: Some(
                       End({
                         names: MS.empty->MS.set("y", 12)->MS.set("z", 13),
-                        exit: 2,
+                        exit: e(2),
                       }),
                     ),
                   }),
@@ -700,13 +701,13 @@ describe("Nests", ({test, _}) => {
                   ids: SI.fromArray([13]),
                   cases: {
                     val: PInt(1),
-                    ifMatch: End({names: MS.fromArray([("x", 0)]), exit: 0}),
+                    ifMatch: End({names: MS.fromArray([("x", 0)]), exit: e(0)}),
                     nextCase: None,
                   },
                   wildcard: Some(
                     End({
                       names: MS.empty->MS.set("y", 12)->MS.set("z", 13),
-                      exit: 2,
+                      exit: e(2),
                     }),
                   ),
                 }),
@@ -721,7 +722,7 @@ describe("Nests", ({test, _}) => {
             ids: SI.empty,
             cases: {
               val: PInt(1),
-              ifMatch: End({names: MS.fromArray([("x", 0)]), exit: 0}),
+              ifMatch: End({names: MS.fromArray([("x", 0)]), exit: e(0)}),
               nextCase: None,
             },
             wildcard: None,
@@ -799,18 +800,18 @@ describe("Nests", ({test, _}) => {
                       ids: SI.empty,
                       cases: {
                         val: PInt(12),
-                        ifMatch: End({names: MS.empty, exit: 0}),
+                        ifMatch: End({names: MS.empty, exit: e(0)}),
                         nextCase: Some({
                           val: PInt(22),
-                          ifMatch: End({names: MS.empty, exit: 1}),
+                          ifMatch: End({names: MS.empty, exit: e(1)}),
                           nextCase: Some({
                             val: PInt(32),
-                            ifMatch: End({names: MS.empty, exit: 2}),
+                            ifMatch: End({names: MS.empty, exit: e(2)}),
                             nextCase: None,
                           }),
                         }),
                       },
-                      wildcard: Some(End({names: MS.empty, exit: 3})),
+                      wildcard: Some(End({names: MS.empty, exit: e(3)})),
                     }),
                   ),
                   nextCase: None,
@@ -823,10 +824,10 @@ describe("Nests", ({test, _}) => {
                       ids: SI.empty,
                       cases: {
                         val: PInt(12),
-                        ifMatch: End({names: MS.empty, exit: 0}),
+                        ifMatch: End({names: MS.empty, exit: e(0)}),
                         nextCase: None,
                       },
-                      wildcard: Some(End({names: MS.empty, exit: 3})),
+                      wildcard: Some(End({names: MS.empty, exit: e(3)})),
                     }),
                   ),
                 ),
@@ -845,10 +846,10 @@ describe("Nests", ({test, _}) => {
                     ids: SI.empty,
                     cases: {
                       val: PInt(12),
-                      ifMatch: End({names: MS.empty, exit: 0}),
+                      ifMatch: End({names: MS.empty, exit: e(0)}),
                       nextCase: None,
                     },
-                    wildcard: Some(End({names: MS.empty, exit: 3})),
+                    wildcard: Some(End({names: MS.empty, exit: e(3)})),
                   }),
                 ),
               }),
@@ -861,7 +862,7 @@ describe("Nests", ({test, _}) => {
               ids: SI.empty,
               cases: {
                 val: PInt(12),
-                ifMatch: End({names: MS.empty, exit: 0}),
+                ifMatch: End({names: MS.empty, exit: e(0)}),
                 nextCase: None,
               },
               wildcard: None,
@@ -934,17 +935,17 @@ describe("Nests", ({test, _}) => {
                             ids: SI.fromArray([6]),
                             cases: {
                               val: PInt(40),
-                              ifMatch: End({names: MS.empty, exit: 1}),
+                              ifMatch: End({names: MS.empty, exit: e(1)}),
                               nextCase: Some({
                                 val: PInt(41),
-                                ifMatch: End({names: MS.fromArray([("x", 3)]), exit: 0}),
+                                ifMatch: End({names: MS.fromArray([("x", 3)]), exit: e(0)}),
                                 nextCase: None,
                               }),
                             },
                             wildcard: Some(
                               End({
                                 names: MS.empty->MS.set("y", 5)->MS.set("z", 6),
-                                exit: 2,
+                                exit: e(2),
                               }),
                             ),
                           }),
@@ -971,13 +972,13 @@ describe("Nests", ({test, _}) => {
             ids: SI.fromArray([6]),
             cases: {
               val: PInt(41),
-              ifMatch: End({names: MS.fromArray([("x", 3)]), exit: 0}),
+              ifMatch: End({names: MS.fromArray([("x", 3)]), exit: e(0)}),
               nextCase: None,
             },
             wildcard: Some(
               End({
                 names: MS.empty->MS.set("y", 5)->MS.set("z", 6),
-                exit: 2,
+                exit: e(2),
               }),
             ),
           }),
@@ -1011,7 +1012,7 @@ describe("Nests", ({test, _}) => {
         key: "",
         ids: SI.empty,
         kind: TList,
-        nil: Some(End({names: MS.empty, exit: 0})),
+        nil: Some(End({names: MS.empty, exit: e(0)})),
         cons: Some(
           Nest({
             idx: 0,
@@ -1027,7 +1028,7 @@ describe("Nests", ({test, _}) => {
                 key: "",
                 ids: SI.fromArray([5]),
                 kind: TList,
-                nil: Some(End(End({names: MS.fromArray([("x", 2)]), exit: 1}))),
+                nil: Some(End(End({names: MS.fromArray([("x", 2)]), exit: e(1)}))),
                 cons: Some(
                   Wildcard({
                     idx: 1,
@@ -1036,7 +1037,7 @@ describe("Nests", ({test, _}) => {
                     child: End(
                       End({
                         names: MS.empty->MS.set("x", 2)->MS.set("y", 5),
-                        exit: 2,
+                        exit: e(2),
                       }),
                     ),
                   }),
@@ -1137,24 +1138,24 @@ describe("Nests", ({test, _}) => {
                                     ids: SI.empty,
                                     cases: {
                                       val: PInt(12),
-                                      ifMatch: End({names: MS.empty, exit: 0}),
+                                      ifMatch: End({names: MS.empty, exit: e(0)}),
                                       nextCase: Some({
                                         val: PInt(22),
                                         ifMatch: End({
                                           names: MS.fromArray([("x", 8)]),
-                                          exit: 1,
+                                          exit: e(1),
                                         }),
                                         nextCase: Some({
                                           val: PInt(42),
                                           ifMatch: End({
                                             names: MS.fromArray([("y", 13)]),
-                                            exit: 3,
+                                            exit: e(3),
                                           }),
                                           nextCase: None,
                                         }),
                                       }),
                                     },
-                                    wildcard: Some(End({names: MS.empty, exit: 4})),
+                                    wildcard: Some(End({names: MS.empty, exit: e(4)})),
                                   }),
                                 ),
                               ),
@@ -1174,18 +1175,18 @@ describe("Nests", ({test, _}) => {
                                         val: PInt(22),
                                         ifMatch: End({
                                           names: MS.fromArray([("x", 8)]),
-                                          exit: 1,
+                                          exit: e(1),
                                         }),
                                         nextCase: Some({
                                           val: PInt(42),
                                           ifMatch: End({
                                             names: MS.fromArray([("y", 13)]),
-                                            exit: 3,
+                                            exit: e(3),
                                           }),
                                           nextCase: None,
                                         }),
                                       },
-                                      wildcard: Some(End({names: MS.empty, exit: 4})),
+                                      wildcard: Some(End({names: MS.empty, exit: e(4)})),
                                     }),
                                   ),
                                 ),
@@ -1216,14 +1217,14 @@ describe("Nests", ({test, _}) => {
                           ids: SI.empty,
                           cases: {
                             val: PInt(32),
-                            ifMatch: End({names: MS.empty, exit: 2}),
+                            ifMatch: End({names: MS.empty, exit: e(2)}),
                             nextCase: Some({
                               val: PInt(42),
-                              ifMatch: End({names: MS.fromArray([("y", 13)]), exit: 3}),
+                              ifMatch: End({names: MS.fromArray([("y", 13)]), exit: e(3)}),
                               nextCase: None,
                             }),
                           },
-                          wildcard: Some(End({names: MS.empty, exit: 4})),
+                          wildcard: Some(End({names: MS.empty, exit: e(4)})),
                         }),
                       ),
                     ),
@@ -1241,10 +1242,10 @@ describe("Nests", ({test, _}) => {
                 ids: SI.empty,
                 cases: {
                   val: PInt(42),
-                  ifMatch: End({names: MS.fromArray([("y", 13)]), exit: 3}),
+                  ifMatch: End({names: MS.fromArray([("y", 13)]), exit: e(3)}),
                   nextCase: None,
                 },
-                wildcard: Some(End({names: MS.empty, exit: 4})),
+                wildcard: Some(End({names: MS.empty, exit: e(4)})),
               }),
             ),
           }),
@@ -1256,10 +1257,10 @@ describe("Nests", ({test, _}) => {
             ids: SI.empty,
             cases: {
               val: PInt(42),
-              ifMatch: End({names: MS.fromArray([("y", 13)]), exit: 3}),
+              ifMatch: End({names: MS.fromArray([("y", 13)]), exit: e(3)}),
               nextCase: None,
             },
-            wildcard: Some(End({names: MS.empty, exit: 4})),
+            wildcard: Some(End({names: MS.empty, exit: e(4)})),
           }),
         ),
       }),
@@ -1303,10 +1304,10 @@ describe("Nests", ({test, _}) => {
                     ids: SI.empty,
                     cases: {
                       val: PInt(12),
-                      ifMatch: End({names: MS.empty, exit: 0}),
+                      ifMatch: End({names: MS.empty, exit: e(0)}),
                       nextCase: None,
                     },
-                    wildcard: Some(End({names: MS.empty, exit: 0})),
+                    wildcard: Some(End({names: MS.empty, exit: e(0)})),
                   }),
                 ),
                 nextCase: None,
@@ -1328,10 +1329,10 @@ describe("Nests", ({test, _}) => {
                       ids: SI.empty,
                       cases: {
                         val: PInt(22),
-                        ifMatch: End({names: MS.empty, exit: 0}),
+                        ifMatch: End({names: MS.empty, exit: e(0)}),
                         nextCase: None,
                       },
-                      wildcard: Some(End({names: MS.empty, exit: 0})),
+                      wildcard: Some(End({names: MS.empty, exit: e(0)})),
                     }),
                   ),
                   nextCase: None,
@@ -1348,7 +1349,7 @@ describe("Nests", ({test, _}) => {
             idx: 1,
             key: "",
             ids: SI.empty,
-            child: End({names: MS.empty, exit: 0}),
+            child: End({names: MS.empty, exit: e(0)}),
           }),
         ),
       }),
@@ -1392,10 +1393,10 @@ describe("Nests", ({test, _}) => {
                     ids: SI.empty,
                     cases: {
                       val: PInt(12),
-                      ifMatch: End({names: MS.empty, exit: 0}),
+                      ifMatch: End({names: MS.empty, exit: e(0)}),
                       nextCase: None,
                     },
-                    wildcard: Some(End({names: MS.empty, exit: 0})),
+                    wildcard: Some(End({names: MS.empty, exit: e(0)})),
                   }),
                 ),
                 nextCase: Some({
@@ -1407,10 +1408,10 @@ describe("Nests", ({test, _}) => {
                       ids: SI.empty,
                       cases: {
                         val: PInt(22),
-                        ifMatch: End({names: MS.empty, exit: 0}),
+                        ifMatch: End({names: MS.empty, exit: e(0)}),
                         nextCase: None,
                       },
-                      wildcard: Some(End({names: MS.empty, exit: 0})),
+                      wildcard: Some(End({names: MS.empty, exit: e(0)})),
                     }),
                   ),
                   nextCase: None,
@@ -1434,10 +1435,10 @@ describe("Nests", ({test, _}) => {
                     ids: SI.empty,
                     cases: {
                       val: PInt(22),
-                      ifMatch: End({names: MS.empty, exit: 0}),
+                      ifMatch: End({names: MS.empty, exit: e(0)}),
                       nextCase: None,
                     },
-                    wildcard: Some(End({names: MS.empty, exit: 0})),
+                    wildcard: Some(End({names: MS.empty, exit: e(0)})),
                   }),
                 ),
                 nextCase: None,
@@ -1451,7 +1452,7 @@ describe("Nests", ({test, _}) => {
             idx: 1,
             key: "",
             ids: SI.empty,
-            child: End({names: MS.empty, exit: 0}),
+            child: End({names: MS.empty, exit: e(0)}),
           }),
         ),
       }),
@@ -1502,7 +1503,7 @@ describe("Nests", ({test, _}) => {
                   idx: 2,
                   key: "c",
                   ids: SI.empty,
-                  child: End(End({names: MS.empty, exit: 0})),
+                  child: End(End({names: MS.empty, exit: e(0)})),
                 }),
                 nextCase: None,
               },
@@ -1511,7 +1512,7 @@ describe("Nests", ({test, _}) => {
                   idx: 2,
                   key: "c",
                   ids: SI.empty,
-                  child: End(End({names: MS.empty, exit: 1})),
+                  child: End(End({names: MS.empty, exit: e(1)})),
                 }),
               ),
             }),
@@ -1528,7 +1529,7 @@ describe("Nests", ({test, _}) => {
                   idx: 2,
                   key: "c",
                   ids: SI.empty,
-                  child: End(End({names: MS.empty, exit: 0})),
+                  child: End(End({names: MS.empty, exit: e(0)})),
                 }),
                 nextCase: None,
               },
@@ -1539,7 +1540,7 @@ describe("Nests", ({test, _}) => {
                   ids: SI.empty,
                   cases: {
                     val: PInt(30),
-                    ifMatch: End(End({names: MS.empty, exit: 2})),
+                    ifMatch: End(End({names: MS.empty, exit: e(2)})),
                     nextCase: None,
                   },
                   wildcard: None,
@@ -1548,7 +1549,7 @@ describe("Nests", ({test, _}) => {
             }),
           ),
         }),
-        wildcard: Some(End({names: MS.fromArray([("x", 6)]), exit: 3})),
+        wildcard: Some(End({names: MS.fromArray([("x", 6)]), exit: e(3)})),
       }),
     )
   })

@@ -36,8 +36,6 @@ let toString: t => string
 
 let record_toString: ref<props> => string
 
-let copy: typescheme => typescheme
-
 let copy_record: props => props
 
 let unknown: unit => t

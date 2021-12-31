@@ -28,8 +28,6 @@ type t<'a, 'b> =
   | Acutis(string, 'a)
   | Function(string, Typescheme.props, Typescheme.Child.props, 'b)
 
-let name: t<_, _> => string
-
 let src: (~name: string, 'a) => t<'a, 'b>
 let fnU: (~name: string, Typescheme.props, Typescheme.Child.props, fnU<'b>) => t<'a, fnU<'b>>
 // fn is not a reserved word in JavaScript, ReScript, or OCaml.

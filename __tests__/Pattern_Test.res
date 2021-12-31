@@ -11,8 +11,8 @@ module J = Js.Json
 
 let dict = Js.Dict.fromArray
 
-let render = (~name="", src, props, components) =>
-  Compile.make(~name, src, Compile.Components.makeExn(components))->Result.flatMap(t =>
+let render = (src, props, components) =>
+  Compile.make(~name="", src, Compile.Components.makeExn(components))->Result.flatMap(t =>
     Render.sync(t, props)
   )
 

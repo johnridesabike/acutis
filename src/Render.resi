@@ -10,8 +10,10 @@ let make: (Source.env<'a>, Compile.t<Compile.template<'a>>, Js.Dict.t<Js.Json.t>
 
 module Sync: Source.Env with type t = Result.t<string>
 
+@live
 let sync: (Compile.t<Compile.template<Sync.t>>, Js.Dict.t<Js.Json.t>) => Sync.t
 
 module Async: Source.Env with type t = Js.Promise.t<Result.t<string>>
 
+@live
 let async: (Compile.t<Compile.template<Async.t>>, Js.Dict.t<Js.Json.t>) => Async.t

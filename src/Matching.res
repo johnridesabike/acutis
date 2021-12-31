@@ -110,11 +110,20 @@ and switchcase<'a> = {
   to follow after the tree. We do this because exits can be duplicated when
   trees expand, and we don't want to duplicate entire ASTs.
 */
-type leaf = {names: MapString.t<int>, exit: int}
+
+module Exit = {
+  type key = int
+  type t<'a> = array<'a>
+  let get = Array.getExn
+  let map = Array.map
+  let unsafe_key = i => i
+}
+
+type leaf = {names: MapString.t<int>, exit: Exit.key}
 
 type t<'a> = {
   tree: tree<leaf>,
-  exits: array<'a>,
+  exits: Exit.t<'a>,
 }
 
 /*
