@@ -6,58 +6,58 @@
   file, You can obtain one at http://mozilla.org/MPL/2.0/.
 */
 
-type nest = Tuple | Record | Dict
+/* This is extra information for debugging. */
+type extra_nest_info = Tuple | Dict | Record
 
-type rec tree<'a> =
+type rec tree<'leaf, 'key> =
   | Switch({
-      idx: int,
-      key: string,
+      key: 'key,
       ids: Belt.Set.Int.t,
-      cases: switchcase<'a>,
-      wildcard: option<tree<'a>>,
+      cases: switchcase<'leaf, 'key>,
+      wildcard: option<tree<'leaf, 'key>>,
     })
   | Nest({
-      idx: int,
-      key: string,
+      key: 'key,
       ids: Belt.Set.Int.t,
-      kind: nest,
-      child: tree<tree<'a>>,
-      wildcard: option<tree<'a>>,
+      child: nest<'leaf, 'key>,
+      wildcard: option<tree<'leaf, 'key>>,
+      extra: extra_nest_info,
     })
   | Construct({
-      idx: int,
-      key: string,
+      key: 'key,
       ids: Belt.Set.Int.t,
-      kind: Typechecker.Pattern.construct,
-      nil: option<tree<'a>>,
-      cons: option<tree<'a>>,
+      nil: option<tree<'leaf, 'key>>,
+      cons: option<tree<'leaf, 'key>>,
+      extra: Typechecker.Pattern.construct,
     })
-  | Wildcard({idx: int, key: string, ids: Belt.Set.Int.t, child: tree<'a>})
-  | End('a)
+  | Wildcard({key: 'key, ids: Belt.Set.Int.t, child: tree<'leaf, 'key>})
+  | End('leaf)
 
-and switchcase<'a> = {
+and nest<'leaf, 'key> =
+  | IntKeys(tree<tree<'leaf, 'key>, int>)
+  | StringKeys(tree<tree<'leaf, 'key>, string>)
+
+and switchcase<'leaf, 'key> = {
   val: Data.Const.t,
-  ifMatch: tree<'a>,
-  nextCase: option<switchcase<'a>>,
+  ifMatch: tree<'leaf, 'key>,
+  nextCase: option<switchcase<'leaf, 'key>>,
 }
 
 module Exit: {
   type key
   type t<'a>
   let get: (t<'a>, key) => 'a
-  let map: (t<'a>, 'a => 'b) => t<'b>
-  let unsafe_key: int => key
+  let map: (t<'a>, ~f: (. 'a) => 'b) => t<'b>
+  let unsafe_key: int => key // for debugging
 }
 
 type leaf = {names: Belt.Map.String.t<int>, exit: Exit.key}
 
 type t<'a> = {
-  tree: tree<leaf>,
+  tree: tree<leaf, int>,
   exits: Exit.t<'a>,
 }
 
 let make: (~name: string, NonEmpty.t<Typechecker.case>) => t<Typechecker.nodes>
 
-module ParMatch: {
-  let check: (tree<'a>, ~loc: Debug.loc) => unit
-}
+let partial_match_check: (~loc: Debug.loc, tree<'a, int>) => unit

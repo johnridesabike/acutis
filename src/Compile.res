@@ -78,18 +78,18 @@ let rec nodes = (~name, a) =>
       })
     | TMatch(loc, pats, cases) =>
       let tree = Matching.make(cases, ~name)
-      Matching.ParMatch.check(tree.tree, ~loc)
-      let tree = {...tree, exits: Matching.Exit.map(tree.exits, nodes(~name))}
+      Matching.partial_match_check(tree.tree, ~loc)
+      let tree = {...tree, exits: Matching.Exit.map(tree.exits, ~f=(. x) => nodes(x, ~name))}
       OMatch(loc, pats, tree)
     | TMapList(loc, pat, cases) =>
       let tree = Matching.make(cases, ~name)
-      Matching.ParMatch.check(tree.tree, ~loc)
-      let tree = {...tree, exits: Matching.Exit.map(tree.exits, nodes(~name))}
+      Matching.partial_match_check(tree.tree, ~loc)
+      let tree = {...tree, exits: Matching.Exit.map(tree.exits, ~f=(. x) => nodes(x, ~name))}
       OMapList(loc, pat, tree)
     | TMapDict(loc, pat, cases) =>
       let tree = Matching.make(cases, ~name)
-      Matching.ParMatch.check(tree.tree, ~loc)
-      let tree = {...tree, exits: Matching.Exit.map(tree.exits, nodes(~name))}
+      Matching.partial_match_check(tree.tree, ~loc)
+      let tree = {...tree, exits: Matching.Exit.map(tree.exits, ~f=(. x) => nodes(x, ~name))}
       OMapDict(loc, pat, tree)
     | TComponent({loc, val, props, children}) =>
       let children = Array.mapU(children, (. (k, v)) =>
@@ -177,13 +177,13 @@ let rec linkNodesExn = (nodes, graph) =>
     switch node {
     | (OText(_) | OEcho(_)) as x => x
     | OMatch(l, b, t) =>
-      let exits = Matching.Exit.map(t.exits, n => linkNodesExn(n, graph))
+      let exits = Matching.Exit.map(t.exits, ~f=(. n) => linkNodesExn(n, graph))
       OMatch(l, b, {...t, exits: exits})
     | OMapList(l, p, t) =>
-      let exits = Matching.Exit.map(t.exits, n => linkNodesExn(n, graph))
+      let exits = Matching.Exit.map(t.exits, ~f=(. n) => linkNodesExn(n, graph))
       OMapList(l, p, {...t, exits: exits})
     | OMapDict(l, p, t) =>
-      let exits = Matching.Exit.map(t.exits, n => linkNodesExn(n, graph))
+      let exits = Matching.Exit.map(t.exits, ~f=(. n) => linkNodesExn(n, graph))
       OMapDict(l, p, {...t, exits: exits})
     | OComponent({loc, val, props, children}) =>
       OComponent({

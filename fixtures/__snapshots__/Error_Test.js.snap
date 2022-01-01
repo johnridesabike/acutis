@@ -289,6 +289,146 @@ Array [
 ]
 `;
 
+exports[`Matching: partial matching Dictionary partial matches 1`] = `
+Array [
+  Object {
+    "exn": undefined,
+    "kind": "Matching",
+    "location": Object {
+      "character": 4,
+    },
+    "message": "This pattern-matching is not exhaustive.
+Here is an example of a case that is not matched:
+_",
+    "path": Array [],
+  },
+]
+`;
+
+exports[`Matching: partial matching Integers 1`] = `
+Array [
+  Object {
+    "exn": undefined,
+    "kind": "Matching",
+    "location": Object {
+      "character": 4,
+    },
+    "message": "This pattern-matching is not exhaustive.
+Here is an example of a case that is not matched:
+1",
+    "path": Array [],
+  },
+]
+`;
+
+exports[`Matching: partial matching Lists 1`] = `
+Array [
+  Object {
+    "exn": undefined,
+    "kind": "Matching",
+    "location": Object {
+      "character": 4,
+    },
+    "message": "This pattern-matching is not exhaustive.
+Here is an example of a case that is not matched:
+[_, ..._]",
+    "path": Array [],
+  },
+]
+`;
+
+exports[`Matching: partial matching Lists 2`] = `
+Array [
+  Object {
+    "exn": undefined,
+    "kind": "Matching",
+    "location": Object {
+      "character": 4,
+    },
+    "message": "This pattern-matching is not exhaustive.
+Here is an example of a case that is not matched:
+[]",
+    "path": Array [],
+  },
+]
+`;
+
+exports[`Matching: partial matching Records 1`] = `
+Array [
+  Object {
+    "exn": undefined,
+    "kind": "Matching",
+    "location": Object {
+      "character": 4,
+    },
+    "message": "This pattern-matching is not exhaustive.
+Here is an example of a case that is not matched:
+{a, b: 0}",
+    "path": Array [],
+  },
+]
+`;
+
+exports[`Matching: unused patterns Basic patterns 1`] = `
+Array [
+  Object {
+    "exn": undefined,
+    "kind": "Matching",
+    "location": Object {
+      "character": 77,
+    },
+    "message": "This match case is unused:
+10, 11, 12",
+    "path": Array [],
+  },
+]
+`;
+
+exports[`Matching: unused patterns Basic patterns 2`] = `
+Array [
+  Object {
+    "exn": undefined,
+    "kind": "Matching",
+    "location": Object {
+      "character": 121,
+    },
+    "message": "This match case is unused:
+30, 31, 42",
+    "path": Array [],
+  },
+]
+`;
+
+exports[`Matching: unused patterns Nests merge into wildcards correctly 1`] = `
+Array [
+  Object {
+    "exn": undefined,
+    "kind": "Matching",
+    "location": Object {
+      "character": 52,
+    },
+    "message": "This match case is unused:
+(_, _), 40",
+    "path": Array [],
+  },
+]
+`;
+
+exports[`Matching: unused patterns Unused nest patterns are reported correctly. 1`] = `
+Array [
+  Object {
+    "exn": undefined,
+    "kind": "Matching",
+    "location": Object {
+      "character": 83,
+    },
+    "message": "This match case is unused:
+(\\"a\\", \\"b\\"), 1",
+    "path": Array [],
+  },
+]
+`;
+
 exports[`Parser Components that didn't compile are reported correctly 1`] = `
 Object {
   "NAME": "errors",

@@ -6,14 +6,13 @@
   file, You can obtain one at http://mozilla.org/MPL/2.0/.
 */
 module Array = Belt.Array
-module SetInt = Belt.Set.Int
+module Const = Data.Const
 module MapString = Belt.Map.String
 module Queue = Belt.MutableQueue
-module TP = Typechecker.Pattern
+module SetInt = Belt.Set.Int
+module Tpat = Typechecker.Pattern
 
 exception Exit = Debug.Exit
-
-type nest = Tuple | Record | Dict
 
 /*
   Every pattern represents a one-dimensional path across a multi-dimensional
@@ -51,28 +50,28 @@ type nest = Tuple | Record | Dict
   cannot consume these types under normal polymorphism rules. We need to 
   use explicitly polymorphic type annotations and GADTs.
 */
-type rec tree<'a> =
+type extra_nest_info = Tuple | Dict | Record
+
+type rec tree<'leaf, 'key> =
   /*
     A Switch represents a list of discreet values to test (1, "a", etc.). If
     none of the values match the input, then the wildcard is used.
  */
   | Switch({
-      idx: int,
-      key: string,
+      key: 'key,
       ids: SetInt.t,
-      cases: switchcase<'a>,
-      wildcard: option<tree<'a>>,
+      cases: switchcase<'leaf, 'key>,
+      wildcard: option<tree<'leaf, 'key>>,
     })
   /*
     A Nest represents a structure such as tuple or a record.
  */
   | Nest({
-      idx: int,
-      key: string,
+      key: 'key,
       ids: SetInt.t,
-      kind: nest,
-      child: tree<tree<'a>>,
-      wildcard: option<tree<'a>>,
+      child: nest<'leaf, 'key>,
+      wildcard: option<tree<'leaf, 'key>>,
+      extra: extra_nest_info,
     })
   /*
     A Construct represents one of the built-in variant types: lists and
@@ -82,27 +81,30 @@ type rec tree<'a> =
     cons always either points to a wildcard node or a Nest + Tuple node.
  */
   | Construct({
-      idx: int,
-      key: string,
+      key: 'key,
       ids: SetInt.t,
-      kind: TP.construct,
-      nil: option<tree<'a>>,
-      cons: option<tree<'a>>,
+      nil: option<tree<'leaf, 'key>>,
+      cons: option<tree<'leaf, 'key>>,
+      extra: Tpat.construct,
     })
   /*
     Wildcards simply point to the next node in the tree.
  */
-  | Wildcard({idx: int, key: string, ids: SetInt.t, child: tree<'a>})
-  | End('a)
+  | Wildcard({key: 'key, ids: SetInt.t, child: tree<'leaf, 'key>})
+  | End('leaf)
+
+and nest<'leaf, 'key> =
+  | IntKeys(tree<tree<'leaf, 'key>, int>)
+  | StringKeys(tree<tree<'leaf, 'key>, string>)
 
 /*
   The switch cases work like linked lists of values. If an input matches a
   value, then we follow its associated tree. If not, we try the next case.
 */
-and switchcase<'a> = {
-  val: Data.Const.t,
-  ifMatch: tree<'a>,
-  nextCase: option<switchcase<'a>>,
+and switchcase<'leaf, 'key> = {
+  val: Const.t,
+  ifMatch: tree<'leaf, 'key>,
+  nextCase: option<switchcase<'leaf, 'key>>,
 }
 
 /*
@@ -114,15 +116,16 @@ and switchcase<'a> = {
 module Exit = {
   type key = int
   type t<'a> = array<'a>
-  let get = Array.getExn
-  let map = Array.map
+  /* Redefining these functions prevents runtime currying. */
+  let get = (a, i) => Array.getExn(a, i)
+  let map = (a, ~f) => Array.mapU(a, f)
   let unsafe_key = i => i
 }
 
 type leaf = {names: MapString.t<int>, exit: Exit.key}
 
 type t<'a> = {
-  tree: tree<leaf>,
+  tree: tree<leaf, int>,
   exits: Exit.t<'a>,
 }
 
@@ -134,7 +137,7 @@ type t<'a> = {
 
 type rec nat<_, _> =
   | Z: nat<'z, 'z>
-  | S(nat<'a, 'z>): nat<tree<'a>, 'z>
+  | S(nat<'a, 'z>): nat<tree<'a, 'key>, 'z>
 
 /*
   Whenever we iterate through cases, we do it tail-recursively which creates
@@ -154,27 +157,29 @@ let rec reverseCases = (~tail=?, t) => {
 */
 exception MergeFail
 
+/* We sort the data for easier analysis.
+  If the new value is lower than the original, then append it to the beginning.
+  If the new value equals the original, then merge them.
+  If the new value is greater than the original, then check if we're at the end
+  of the list. If we are, then add this new case. If not, then keep searching.
+*/
 let rec mergeTestCasesAux:
-  type a. (
-    ~init: switchcase<a>=?,
-    switchcase<a>,
-    Data.Const.t,
-    tree<a>,
+  type a k. (
+    ~init: switchcase<a, k>=?,
+    switchcase<a, k>,
+    Const.t,
+    tree<a, k>,
     nat<a, leaf>,
-  ) => option<switchcase<a>> =
+  ) => option<switchcase<a, k>> =
   (~init=?, original, val, ifMatch, n) => {
-    /* We sort the data for easier analysis. */
-    let cmp = Data.Const.compare(val, original.val)
+    let cmp = Const.compare(val, original.val)
     if cmp < 0 {
-      /* If the new value is lower than the original, then append it to the
-       beginning. */
       let tail = {val: val, ifMatch: ifMatch, nextCase: Some(original)}
       switch init {
       | None => Some(tail)
       | Some(init) => Some(reverseCases(init, ~tail))
       }
     } else if cmp == 0 {
-      /* If the new value equals the original, then merge them. */
       try {
         let tail = {...original, ifMatch: merge(original.ifMatch, ifMatch, n)}
         switch init {
@@ -185,9 +190,6 @@ let rec mergeTestCasesAux:
       | MergeFail => None
       }
     } else {
-      /* If the new value is greater than the original, then check if we're
-      at the end of the list. If we are, then add this new case. If not, then
-      keep searching. */
       let init = {...original, nextCase: init}
       switch original.nextCase {
       | None => Some(reverseCases(init, ~tail={val: val, ifMatch: ifMatch, nextCase: None}))
@@ -201,7 +203,7 @@ let rec mergeTestCasesAux:
   items in a. At least one value must merge in order to be considered a success.
 */
 and mergeTestCases:
-  type a. (switchcase<a>, switchcase<a>, nat<a, leaf>, bool) => option<switchcase<a>> =
+  type a k. (switchcase<a, k>, switchcase<a, k>, nat<a, leaf>, bool) => option<switchcase<a, k>> =
   (original, {val, ifMatch, nextCase}, n, success) =>
     switch mergeTestCasesAux(original, val, ifMatch, n) {
     | Some(result) =>
@@ -224,7 +226,12 @@ and mergeTestCases:
   wildcard case.
 */
 and mergeTestCasesIntoWildcard:
-  type a. (~init: switchcase<a>=?, tree<a>, switchcase<a>, nat<a, leaf>) => option<switchcase<a>> =
+  type a k. (
+    ~init: switchcase<a, k>=?,
+    tree<a, k>,
+    switchcase<a, k>,
+    nat<a, leaf>,
+  ) => option<switchcase<a, k>> =
   (~init=?, wildcard, t, n) => {
     let init = try {
       Some({...t, ifMatch: merge(wildcard, t.ifMatch, n), nextCase: init})
@@ -244,7 +251,12 @@ and mergeTestCasesIntoWildcard:
   originals.
 */
 and expandWildcardIntoTestCases:
-  type a. (~init: switchcase<a>=?, switchcase<a>, tree<a>, nat<a, leaf>) => switchcase<a> =
+  type a k. (
+    ~init: switchcase<a, k>=?,
+    switchcase<a, k>,
+    tree<a, k>,
+    nat<a, leaf>,
+  ) => switchcase<a, k> =
   (~init=?, {val, ifMatch, nextCase}, wildcard, n) => {
     let init = try {
       {val: val, ifMatch: merge(ifMatch, wildcard, n), nextCase: init}
@@ -267,7 +279,12 @@ and expandWildcardIntoTestCases:
   the original tree.
 */
 and expandWildcardAfterNest:
-  type a b. (tree<a>, nat<a, leaf>, ~wildcard: tree<b>, nat<a, tree<b>>) => tree<a> =
+  type a b ka kb. (
+    tree<a, ka>,
+    nat<a, leaf>,
+    ~wildcard: tree<b, kb>,
+    nat<a, tree<b, kb>>,
+  ) => tree<a, ka> =
   (a, na, ~wildcard, nb) =>
     switch (a, na, nb) {
     | (End(_), Z, _) => assert false
@@ -277,7 +294,11 @@ and expandWildcardAfterNest:
       }
     | (End(a), S(na), S(nb)) => End(expandWildcardAfterNest(a, na, ~wildcard, nb))
     | (Nest(a), na, nb) =>
-      Nest({...a, child: expandWildcardAfterNest(a.child, S(na), ~wildcard, S(nb))})
+      let child = switch a.child {
+      | IntKeys(child) => IntKeys(expandWildcardAfterNest(child, S(na), ~wildcard, S(nb)))
+      | StringKeys(child) => StringKeys(expandWildcardAfterNest(child, S(na), ~wildcard, S(nb)))
+      }
+      Nest({...a, child: child})
     | (Construct(a), na, nb) =>
       Construct({
         ...a,
@@ -315,13 +336,22 @@ and expandWildcardAfterNest:
 */
 @raises(MergeFail)
 and mergeWildcardAfterNest:
-  type a b. (~wildcard: tree<a>, nat<b, tree<a>>, tree<b>, nat<b, leaf>) => tree<b> =
+  type a b ka kb. (
+    ~wildcard: tree<a, ka>,
+    nat<b, tree<a, ka>>,
+    tree<b, kb>,
+    nat<b, leaf>,
+  ) => tree<b, kb> =
   (~wildcard, na, b, nb) =>
     switch (b, na, nb) {
     | (End(b), Z, S(n)) => End(merge(wildcard, b, n))
     | (End(b), S(na), S(nb)) => End(mergeWildcardAfterNest(~wildcard, na, b, nb))
     | (Nest(b), na, nb) =>
-      Nest({...b, child: mergeWildcardAfterNest(~wildcard, S(na), b.child, S(nb))})
+      let child = switch b.child {
+      | IntKeys(child) => IntKeys(mergeWildcardAfterNest(~wildcard, S(na), child, S(nb)))
+      | StringKeys(child) => StringKeys(mergeWildcardAfterNest(~wildcard, S(na), child, S(nb)))
+      }
+      Nest({...b, child: child})
     | (Construct(b), na, nb) =>
       let nil = switch b.nil {
       | None => Ok(None)
@@ -378,7 +408,7 @@ and mergeWildcardAfterNest:
 
 @raises(MergeFail)
 and merge:
-  type a. (tree<a>, tree<a>, nat<a, leaf>) => tree<a> =
+  type a k. (tree<a, k>, tree<a, k>, nat<a, leaf>) => tree<a, k> =
   (a, b, n) =>
     switch (a, b) {
     | (End(a), End(b)) =>
@@ -393,7 +423,10 @@ and merge:
       | None => a.child
       | Some(b) => merge(a.child, b, n)
       }
-      let child = mergeWildcardAfterNest(~wildcard=a.child, Z, b.child, S(n))
+      let child = switch b.child {
+      | IntKeys(child) => IntKeys(mergeWildcardAfterNest(~wildcard=a.child, Z, child, S(n)))
+      | StringKeys(child) => StringKeys(mergeWildcardAfterNest(~wildcard=a.child, Z, child, S(n)))
+      }
       let ids = SetInt.union(a.ids, b.ids)
       Nest({...b, ids: ids, child: child, wildcard: Some(wildcard)})
     | (Wildcard(a) as a', Construct(b)) =>
@@ -429,23 +462,33 @@ and merge:
       let ids = SetInt.union(a.ids, b.ids)
       Switch({...b, ids: ids, cases: cases, wildcard: Some(wildcard)})
     | (Nest(a), Nest(b)) =>
-      assert (a.kind == b.kind)
       let wildcard = switch (a.wildcard, b.wildcard) {
       | (None, None) => None
       | (Some(x), None) | (None, Some(x)) => Some(x)
       | (Some(a), Some(b)) => Some(merge(a, b, n))
       }
-      let child = {
-        let child = merge(a.child, b.child, S(n))
+      let child = switch (a.child, b.child) {
+      | (IntKeys(a), IntKeys(b)) =>
+        let child = merge(a, b, S(n))
         switch wildcard {
-        | None => child
-        | Some(wildcard) => mergeWildcardAfterNest(~wildcard, Z, child, S(n))
+        | None => IntKeys(child)
+        | Some(wildcard) => IntKeys(mergeWildcardAfterNest(~wildcard, Z, child, S(n)))
         }
+      | (StringKeys(a), StringKeys(b)) =>
+        let child = merge(a, b, S(n))
+        switch wildcard {
+        | None => StringKeys(child)
+        | Some(wildcard) => StringKeys(mergeWildcardAfterNest(~wildcard, Z, child, S(n)))
+        }
+      | _ => assert false
       }
       let ids = SetInt.union(a.ids, b.ids)
       Nest({...a, ids: ids, child: child, wildcard: wildcard})
     | (Nest(a), Wildcard(b)) =>
-      let child = expandWildcardAfterNest(a.child, S(n), ~wildcard=b.child, Z)
+      let child = switch a.child {
+      | StringKeys(child) => StringKeys(expandWildcardAfterNest(child, S(n), ~wildcard=b.child, Z))
+      | IntKeys(child) => IntKeys(expandWildcardAfterNest(child, S(n), ~wildcard=b.child, Z))
+      }
       let wildcard = switch a.wildcard {
       | None => b.child
       | Some(a) => merge(a, b.child, n)
@@ -474,7 +517,6 @@ and merge:
         Construct({...a, ids: ids, nil: Some(nil), cons: Some(cons)})
       }
     | (Construct(a), Construct(b)) =>
-      assert (a.kind == b.kind)
       let nil = switch (a.nil, b.nil) {
       | (None, None) => None
       | (Some(x), None) | (None, Some(x)) => Some(x)
@@ -493,7 +535,6 @@ and merge:
       | Some(a) => merge(a, b.child, n)
       }
       let cases = expandWildcardIntoTestCases(a.cases, b.child, n)
-      // let cases = expandWildcardIntoTestCases(a.cases, ~wildcard, n)
       let ids = SetInt.union(a.ids, b.ids)
       Switch({...a, ids: ids, cases: cases, wildcard: Some(wildcard)})
     | (Switch(a), Switch(b)) =>
@@ -528,64 +569,77 @@ and merge:
       assert false
     }
 
-type continue<'a> = (. MapString.t<int>) => tree<'a>
+/*
+  To turn a typed pattern into a tree (albiet a single-branch of tree), we use
+  CPS as an easy way to keep type safety.
+*/
+type continue<'a, 'k> = (. MapString.t<int>) => tree<'a, 'k>
 
 @raises(Exit)
-let rec fromTPat: 'a. (_, _, _, _, ~name: _, continue<'a>) => tree<'a> = (p, i, key, b, ~name, k) =>
+let rec fromTPat: 'a 'k. (_, 'k, _, ~name: _, continue<'a, 'k>) => tree<'a, 'k> = (
+  p,
+  key,
+  b,
+  ~name,
+  k,
+) =>
   switch p {
-  | TP.TAny(_) => Wildcard({ids: SetInt.empty, idx: i, key: key, child: k(. b)})
+  | Tpat.TAny(_) => Wildcard({ids: SetInt.empty, key: key, child: k(. b)})
   | TVar(Loc(id), x) | TOptionalVar(Loc(id), x) =>
     if MapString.has(b, x) {
       raise(Exit(Debug.nameBoundMultipleTimes(~binding=x, ~loc=Loc(id), ~name)))
     }
     Wildcard({
       ids: SetInt.add(SetInt.empty, id),
-      idx: i,
       key: key,
       child: k(. MapString.set(b, x, id)),
     })
   | TConstruct(_, kind, Some(cons)) =>
     Construct({
-      idx: i,
       key: key,
       ids: SetInt.empty,
-      kind: kind,
+      extra: kind,
       nil: None,
-      cons: Some(fromTPat(cons, i, key, b, k, ~name)),
+      cons: Some(fromTPat(cons, key, b, k, ~name)),
     })
   | TConstruct(_, kind, None) =>
-    Construct({idx: i, key: key, ids: SetInt.empty, kind: kind, nil: Some(k(. b)), cons: None})
+    Construct({key: key, ids: SetInt.empty, extra: kind, nil: Some(k(. b)), cons: None})
   | TConst(_, val) =>
     Switch({
-      idx: i,
       key: key,
       ids: SetInt.empty,
-      cases: {val: Data.Const.fromTPat(val), ifMatch: k(. b), nextCase: None},
+      cases: {val: Const.fromTPat(val), ifMatch: k(. b), nextCase: None},
       wildcard: None,
     })
   | TTuple(_, a) =>
     let child = fromArray(a, b, 0, ~name, (. b) => End(k(. b)))
-    Nest({idx: i, key: key, ids: SetInt.empty, kind: Tuple, child: child, wildcard: None})
+    Nest({key: key, ids: SetInt.empty, child: IntKeys(child), wildcard: None, extra: Tuple})
   | TRecord(_, a) =>
     let child = fromKeyValues(a, b, 0, ~name, (. b) => End(k(. b)))
-    Nest({idx: i, key: key, ids: SetInt.empty, kind: Record, child: child, wildcard: None})
+    Nest({key: key, ids: SetInt.empty, child: StringKeys(child), wildcard: None, extra: Record})
   | TDict(_, a) =>
     let child = fromKeyValues(a, b, 0, ~name, (. b) => End(k(. b)))
-    Nest({idx: i, key: key, ids: SetInt.empty, kind: Dict, child: child, wildcard: None})
+    Nest({key: key, ids: SetInt.empty, child: StringKeys(child), wildcard: None, extra: Dict})
   }
 
 @raises(Exit)
-and fromArray: 'a. (_, _, _, ~name: _, continue<'a>) => tree<'a> = (a, b, i, ~name, k) =>
+and fromArray: 'a. (_, _, _, ~name: _, continue<'a, int>) => tree<'a, int> = (a, b, i, ~name, k) =>
   switch a[i] {
   | None => k(. b)
-  | Some(p) => fromTPat(p, i, "", b, ~name, (. b) => fromArray(a, b, succ(i), ~name, k))
+  | Some(p) => fromTPat(p, i, b, ~name, (. b) => fromArray(a, b, succ(i), ~name, k))
   }
 
 @raises(Exit)
-and fromKeyValues: 'a. (_, _, _, ~name: _, continue<'a>) => tree<'a> = (a, b, i, ~name, k) =>
+and fromKeyValues: 'a. (_, _, _, ~name: _, continue<'a, string>) => tree<'a, string> = (
+  a,
+  b,
+  i,
+  ~name,
+  k,
+) =>
   switch a[i] {
   | None => k(. b)
-  | Some((key, v)) => fromTPat(v, i, key, b, ~name, (. b) => fromKeyValues(a, b, succ(i), ~name, k))
+  | Some((key, v)) => fromTPat(v, key, b, ~name, (. b) => fromKeyValues(a, b, succ(i), ~name, k))
   }
 
 @raises(Exit)
@@ -602,163 +656,10 @@ let makeCase = (hd, a, ~exit, ~name) => {
       let b = fromArray(NonEmpty.toArray(ps), ~exit, ~name)
       switch merge(t, b, Z) {
       | t => aux(t, succ(i))
-      | exception MergeFail => raise(Exit(Debug.unusedCase(ps, module(TP))))
+      | exception MergeFail => raise(Exit(Debug.unusedCase(ps, module(Tpat))))
       }
     }
   aux(hd, 1)
-}
-
-module ParMatch = {
-  let makeRefutation = x =>
-    switch x {
-    | Data.Const.PBool(_) => Data.Const.PBool(false)
-    | PInt(_) => PInt(0)
-    | PString(_) => PString("a")
-    | PFloat(_) => PFloat(0.0)
-    }
-
-  let succ = x =>
-    switch x {
-    | Data.Const.PBool(false) => Some(Data.Const.PBool(true))
-    | PBool(true) => None
-    | PInt(i) => Some(PInt(succ(i)))
-    | PString(s) => Some(PString(s ++ "a"))
-    | PFloat(f) => Some(PFloat(f +. 1.0))
-    }
-
-  type flag = Partial | Exhaustive
-
-  type t<'a> = {
-    flag: flag,
-    pats: list<(string, TP.t)>,
-    next: 'a,
-  }
-
-  let toArray = l => Belt.List.toArray(l)->Array.mapU((. (_k, v)) => v)
-  let toKeyValues = l => Belt.List.toArray(l)
-
-  let exhaustive = (key, {pats, flag, next}) => {
-    let pat = switch key {
-    | "" => TP.TAny(Loc(0))
-    | k => TVar(Loc(0), k)
-    }
-    {flag: flag, pats: list{(key, pat), ...pats}, next: next}
-  }
-
-  @raises(Exit)
-  let rec check: 'a. tree<'a> => t<'a> = tree =>
-    switch tree {
-    | End(next) => {flag: Exhaustive, pats: list{}, next: next}
-    | Wildcard({key, child, _}) => exhaustive(key, check(child))
-    | Nest({key, kind, child, wildcard, _}) =>
-      // Either the child _or_ the wildcard can be exhaustive.
-      // A nest filled with exhaustive patterns e.g. tuple (_, _, _) can lead to
-      // an exhaustive path even if it's paired with a wildcard _ that doesn't.
-      switch check(child) {
-      | {flag: Exhaustive, next, _} => exhaustive(key, check(next))
-      | {flag: Partial, pats, next} =>
-        switch wildcard {
-        | Some(wildcard) => exhaustive(key, check(wildcard))
-        | None =>
-          let nest = switch kind {
-          | Tuple => TP.TTuple(Loc(0), toArray(pats))
-          | Record => TRecord(Loc(0), toKeyValues(pats))
-          | Dict => TDict(Loc(0), toKeyValues(pats))
-          }
-          let {pats, next, _} = check(next)
-          {flag: Partial, pats: list{(key, nest), ...pats}, next: next}
-        }
-      }
-    | Construct({key, kind, nil, cons, _}) =>
-      switch (nil, cons) {
-      | (None, Some(cons)) =>
-        let {pats, next, _} = check(cons)
-        {
-          flag: Partial,
-          pats: switch pats {
-          | list{_, ...pats} => list{(key, TConstruct(Loc(0), kind, None)), ...pats}
-          | _ => assert false
-          },
-          next: next,
-        }
-      | (Some(nil), None) =>
-        let {pats, next, _} = check(nil)
-        {
-          flag: Partial,
-          pats: list{(key, TConstruct(Loc(0), kind, Some(TAny(Loc(0))))), ...pats},
-          next: next,
-        }
-      | (Some(nil), Some(cons)) =>
-        switch check(nil) {
-        | {flag: Exhaustive, _} =>
-          switch check(cons) {
-          | {flag: Exhaustive, _} as x => x
-          | {flag: Partial, pats, next} =>
-            let pats = switch pats {
-            | list{(key, cons), ...pats} => list{
-                (key, TP.TConstruct(Loc(0), kind, Some(cons))),
-                ...pats,
-              }
-            | _ => assert false
-            }
-            {flag: Partial, pats: pats, next: next}
-          }
-        | {flag: Partial, pats, next} => {
-            flag: Partial,
-            pats: list{(key, TP.TConstruct(Loc(0), kind, None)), ...pats},
-            next: next,
-          }
-        }
-      | (None, None) => assert false
-      }
-    | Switch({key, cases, wildcard, _}) =>
-      switch wildcard {
-      | Some(wildcard) => exhaustive(key, check(wildcard))
-      | None =>
-        let refute = makeRefutation(cases.val)
-
-        @raises(Exit)
-        let rec aux = (refute, {val, ifMatch, nextCase}) =>
-          switch check(ifMatch) {
-          | {flag: Partial, pats, next} => {
-              flag: Partial,
-              pats: list{(key, TConst(Loc(0), Data.Const.toTPat(val))), ...pats},
-              next: next,
-            }
-          | {flag: Exhaustive, pats, next} =>
-            if Data.Const.equal(refute, val) {
-              switch succ(refute) {
-              | None => exhaustive(key, check(ifMatch))
-              | Some(refute) =>
-                switch nextCase {
-                | None => {
-                    flag: Partial,
-                    pats: list{(key, TConst(Loc(0), Data.Const.toTPat(refute))), ...pats},
-                    next: next,
-                  }
-                | Some(case) => aux(refute, case)
-                }
-              }
-            } else {
-              {
-                flag: Partial,
-                pats: list{(key, TConst(Loc(0), Data.Const.toTPat(refute))), ...pats},
-                next: next,
-              }
-            }
-          }
-        aux(refute, cases)
-      }
-    }
-
-  let toString = l => toArray(l)->Array.joinWith(", ", TP.toString)
-
-  @raises(Exit)
-  let check = (tree, ~loc) =>
-    switch check(tree) {
-    | {flag: Exhaustive, _} => ()
-    | {flag: Partial, pats, _} => raise(Exit(Debug.partialMatch(pats, toString, ~loc)))
-    }
 }
 
 @raises(Exit)
@@ -782,8 +683,176 @@ let make = (~name, cases: NonEmpty.t<Typechecker.case>) => {
       | tree =>
         let tree = makeCase(tree, pats, ~exit, ~name)
         aux(tree, succ(i))
-      | exception MergeFail => raise(Exit(Debug.unusedCase(NonEmpty.hd(pats), module(TP))))
+      | exception MergeFail => raise(Exit(Debug.unusedCase(NonEmpty.hd(pats), module(Tpat))))
       }
     }
   aux(tree, 1)
 }
+
+module ParMatch = {
+  module List = Belt.List
+
+  let makeRefutation = x =>
+    switch x {
+    | Const.PBool(_) => Const.PBool(false)
+    | PInt(_) => PInt(0)
+    | PString(_) => PString("a")
+    | PFloat(_) => PFloat(0.0)
+    }
+
+  let succ = x =>
+    switch x {
+    | Const.PBool(false) => Some(Const.PBool(true))
+    | PBool(true) => None
+    | PInt(i) => Some(PInt(succ(i)))
+    | PString(s) => Some(PString(s ++ "a"))
+    | PFloat(f) => Some(PFloat(f +. 1.0))
+    }
+
+  type flag = Partial | Exhaustive
+
+  type t<'a> = {
+    flag: flag,
+    pats: list<(string, Tpat.t)>,
+    next: 'a,
+  }
+
+  let toArray = l => List.toArray(l)->Array.mapU((. (_k, v)) => v)
+  let toKeyValues = l => List.toArray(l)
+  let toString = l => toArray(l)->Array.joinWith(", ", Tpat.toString)
+
+  let key_str = (. s) => s
+  let key_int = (. _) => ""
+
+  let exhaustive = (key, {pats, flag, next}) => {
+    let pat = switch key {
+    | "" => Tpat.TAny(Loc(0))
+    | k => TVar(Loc(0), k)
+    }
+    {flag: flag, pats: list{(key, pat), ...pats}, next: next}
+  }
+
+  let rec check: 'a 'k. (tree<'a, 'k>, (. 'k) => string) => t<'a> = (tree, kf) =>
+    switch tree {
+    | End(next) => {flag: Exhaustive, pats: list{}, next: next}
+    | Wildcard({key, child, _}) => exhaustive(kf(. key), check(child, kf))
+    | Nest({key, child, wildcard, extra, _}) =>
+      // Either the child _or_ the wildcard can be exhaustive.
+      // A nest filled with exhaustive patterns e.g. tuple (_, _, _) can lead to
+      // an exhaustive path even if it's paired with a wildcard _ that doesn't.
+      let result = switch child {
+      | IntKeys(child) => check(child, key_int)
+      | StringKeys(child) => check(child, key_str)
+      }
+      switch result {
+      | {flag: Exhaustive, next, _} =>
+        switch extra {
+        | Tuple | Record => exhaustive(kf(. key), check(next, kf))
+        | Dict =>
+          switch wildcard {
+          | Some(wildcard) => exhaustive(kf(. key), check(wildcard, kf))
+          | None =>
+            let {pats, next, _} = check(next, kf)
+            {flag: Partial, pats: list{(kf(. key), TAny(Loc(0))), ...pats}, next: next}
+          }
+        }
+      | {flag: Partial, pats, next} =>
+        switch wildcard {
+        | Some(wildcard) => exhaustive(kf(. key), check(wildcard, kf))
+        | None =>
+          let nest = switch extra {
+          | Tuple => Tpat.TTuple(Loc(0), toArray(pats))
+          | Record => TRecord(Loc(0), toKeyValues(pats))
+          | Dict => TDict(Loc(0), toKeyValues(pats))
+          }
+          let {pats, next, _} = check(next, kf)
+          {flag: Partial, pats: list{(kf(. key), nest), ...pats}, next: next}
+        }
+      }
+    | Construct({key, extra, nil, cons, _}) =>
+      switch (nil, cons) {
+      | (None, Some(cons)) =>
+        let {pats, next, _} = check(cons, kf)
+        {
+          flag: Partial,
+          pats: switch pats {
+          | list{_, ...pats} => list{(kf(. key), TConstruct(Loc(0), extra, None)), ...pats}
+          | _ => assert false
+          },
+          next: next,
+        }
+      | (Some(nil), None) =>
+        let {pats, next, _} = check(nil, kf)
+        {
+          flag: Partial,
+          pats: list{(kf(. key), TConstruct(Loc(0), extra, Some(TAny(Loc(0))))), ...pats},
+          next: next,
+        }
+      | (Some(nil), Some(cons)) =>
+        switch check(nil, kf) {
+        | {flag: Exhaustive, _} =>
+          switch check(cons, kf) {
+          | {flag: Exhaustive, _} as x => x
+          | {flag: Partial, pats, next} =>
+            let pats = switch pats {
+            | list{(key, cons), ...pats} => list{
+                (key, Tpat.TConstruct(Loc(0), extra, Some(cons))),
+                ...pats,
+              }
+            | _ => assert false
+            }
+            {flag: Partial, pats: pats, next: next}
+          }
+        | {flag: Partial, pats, next} => {
+            flag: Partial,
+            pats: list{(kf(. key), Tpat.TConstruct(Loc(0), extra, None)), ...pats},
+            next: next,
+          }
+        }
+      | (None, None) => assert false
+      }
+    | Switch({key, cases, wildcard, _}) =>
+      switch wildcard {
+      | Some(wildcard) => exhaustive(kf(. key), check(wildcard, kf))
+      | None =>
+        let refute = makeRefutation(cases.val)
+        let rec aux = (refute, {val, ifMatch, nextCase}) =>
+          switch check(ifMatch, kf) {
+          | {flag: Partial, pats, next} => {
+              flag: Partial,
+              pats: list{(kf(. key), TConst(Loc(0), Const.toTPat(val))), ...pats},
+              next: next,
+            }
+          | {flag: Exhaustive, pats, next} =>
+            if Const.equal(refute, val) {
+              switch succ(refute) {
+              | None => exhaustive(kf(. key), check(ifMatch, kf))
+              | Some(refute) =>
+                switch nextCase {
+                | None => {
+                    flag: Partial,
+                    pats: list{(kf(. key), TConst(Loc(0), Const.toTPat(refute))), ...pats},
+                    next: next,
+                  }
+                | Some(case) => aux(refute, case)
+                }
+              }
+            } else {
+              {
+                flag: Partial,
+                pats: list{(kf(. key), TConst(Loc(0), Const.toTPat(refute))), ...pats},
+                next: next,
+              }
+            }
+          }
+        aux(refute, cases)
+      }
+    }
+}
+
+@raises(Exit)
+let partial_match_check = (~loc, tree) =>
+  switch ParMatch.check(tree, ParMatch.key_int) {
+  | {flag: Exhaustive, _} => ()
+  | {flag: Partial, pats, _} => raise(Exit(Debug.partialMatch(pats, ParMatch.toString, ~loc)))
+  }

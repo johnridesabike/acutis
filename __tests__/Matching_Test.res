@@ -6,7 +6,6 @@
   file, You can obtain one at http://mozilla.org/MPL/2.0/.
 */
 open TestFramework
-// module Array = Belt.Array
 module NE = NonEmpty
 module SI = Belt.Set.Int
 module MS = Belt.Map.String
@@ -15,7 +14,7 @@ module P = Parser.Pattern
 let ne = NE.fromArrayExn
 let e = Matching.Exit.unsafe_key
 
-let g = Utils.Dagmap.make(Belt.HashMap.String.make(~hintSize=0), ~f=(. _, _) => assert false)
+let g = Utils.Dagmap.prelinked(Belt.HashMap.String.make(~hintSize=0))
 
 let makeCases = c => {
   let (_, cases) = TC.makeCases(ne(c), TC.Context.make(#Component), ~loc=Loc(0), ~name="", g)
@@ -37,23 +36,22 @@ describe("Basic tree", ({test, _}) => {
     let result = [case1, case2]->makeCases->Matching.make(~name="")
     expect.value(result.tree).toEqual(
       Construct({
-        idx: 0,
-        key: "",
+        key: 0,
         ids: SI.empty,
-        kind: TNullable,
+        extra: TNullable,
         nil: Some(End({names: MS.empty, exit: e(1)})),
         cons: Some(
           Nest({
-            idx: 0,
-            key: "",
+            key: 0,
             ids: SI.empty,
-            kind: Tuple,
-            child: Wildcard({
-              idx: 0,
-              key: "",
-              ids: SI.fromArray([1]),
-              child: End(End({names: MS.fromArray([("a", 1)]), exit: e(0)})),
-            }),
+            extra: Tuple,
+            child: IntKeys(
+              Wildcard({
+                key: 0,
+                ids: SI.fromArray([1]),
+                child: End(End({names: MS.fromArray([("a", 1)]), exit: e(0)})),
+              }),
+            ),
             wildcard: None,
           }),
         ),
@@ -84,8 +82,7 @@ describe("Basic tree", ({test, _}) => {
     let result = [case1, case2, case3]->makeCases->Matching.make(~name="")
     expect.value(result.tree).toEqual(
       Switch({
-        idx: 0,
-        key: "",
+        key: 0,
         ids: SI.empty,
         cases: {
           val: PInt(0),
@@ -152,20 +149,17 @@ describe("Basic tree", ({test, _}) => {
     let result = [case1, case2, case3, case4]->makeCases->Matching.make(~name="")
     expect.value(result.tree).toEqual(
       Switch({
-        idx: 0,
-        key: "",
+        key: 0,
         ids: SI.empty,
         cases: {
           val: PInt(1),
           ifMatch: Switch({
-            idx: 1,
-            key: "",
+            key: 1,
             ids: SI.empty,
             cases: {
               val: PInt(2),
               ifMatch: Switch({
-                idx: 2,
-                key: "",
+                key: 2,
                 ids: SI.empty,
                 cases: {
                   val: PInt(3),
@@ -185,8 +179,7 @@ describe("Basic tree", ({test, _}) => {
               nextCase: Some({
                 val: PInt(4),
                 ifMatch: Switch({
-                  idx: 2,
-                  key: "",
+                  key: 2,
                   ids: SI.empty,
                   cases: {
                     val: PInt(5),
@@ -200,8 +193,7 @@ describe("Basic tree", ({test, _}) => {
             },
             wildcard: Some(
               Wildcard({
-                idx: 2,
-                key: "",
+                key: 2,
                 ids: SI.empty,
                 child: End({names: MS.empty, exit: e(3)}),
               }),
@@ -210,14 +202,12 @@ describe("Basic tree", ({test, _}) => {
           nextCase: Some({
             val: PInt(10),
             ifMatch: Switch({
-              idx: 1,
-              key: "",
+              key: 1,
               ids: SI.empty,
               cases: {
                 val: PInt(20),
                 ifMatch: Switch({
-                  idx: 2,
-                  key: "",
+                  key: 2,
                   ids: SI.empty,
                   cases: {
                     val: PInt(30),
@@ -238,8 +228,7 @@ describe("Basic tree", ({test, _}) => {
               },
               wildcard: Some(
                 Wildcard({
-                  idx: 2,
-                  key: "",
+                  key: 2,
                   ids: SI.empty,
                   child: End({names: MS.empty, exit: e(3)}),
                 }),
@@ -248,14 +237,12 @@ describe("Basic tree", ({test, _}) => {
             nextCase: Some({
               val: PInt(100),
               ifMatch: Switch({
-                idx: 1,
-                key: "",
+                key: 1,
                 ids: SI.empty,
                 cases: {
                   val: PInt(102),
                   ifMatch: Switch({
-                    idx: 2,
-                    key: "",
+                    key: 2,
                     ids: SI.empty,
                     cases: {
                       val: PInt(103),
@@ -271,8 +258,7 @@ describe("Basic tree", ({test, _}) => {
                   nextCase: Some({
                     val: PInt(104),
                     ifMatch: Switch({
-                      idx: 2,
-                      key: "",
+                      key: 2,
                       ids: SI.empty,
                       cases: {
                         val: PInt(105),
@@ -286,8 +272,7 @@ describe("Basic tree", ({test, _}) => {
                 },
                 wildcard: Some(
                   Wildcard({
-                    idx: 2,
-                    key: "",
+                    key: 2,
                     ids: SI.empty,
                     child: End({names: MS.empty, exit: e(3)}),
                   }),
@@ -299,12 +284,10 @@ describe("Basic tree", ({test, _}) => {
         },
         wildcard: Some(
           Wildcard({
-            idx: 1,
-            key: "",
+            key: 1,
             ids: SI.empty,
             child: Wildcard({
-              idx: 2,
-              key: "",
+              key: 2,
               ids: SI.empty,
               child: End({names: MS.empty, exit: e(3)}),
             }),
@@ -329,20 +312,17 @@ describe("Basic tree", ({test, _}) => {
     let result = [case1]->makeCases->Matching.make(~name="")
     expect.value(result.tree).toEqual(
       Switch({
-        idx: 0,
-        key: "",
+        key: 0,
         ids: SI.empty->SI.add(3)->SI.add(18),
         cases: {
           val: PInt(10),
           ifMatch: Switch({
-            idx: 1,
-            key: "",
+            key: 1,
             ids: SI.fromArray([19]),
             cases: {
               val: PInt(11),
               ifMatch: Switch({
-                idx: 2,
-                key: "",
+                key: 2,
                 ids: SI.fromArray([20]),
                 cases: {
                   val: PInt(12),
@@ -359,8 +339,7 @@ describe("Basic tree", ({test, _}) => {
               nextCase: Some({
                 val: PInt(21),
                 ifMatch: Switch({
-                  idx: 2,
-                  key: "",
+                  key: 2,
                   ids: SI.fromArray([20]),
                   cases: {
                     val: PInt(22),
@@ -379,8 +358,7 @@ describe("Basic tree", ({test, _}) => {
             },
             wildcard: Some(
               Wildcard({
-                idx: 2,
-                key: "",
+                key: 2,
                 ids: SI.fromArray([20]),
                 child: End({
                   exit: e(0),
@@ -392,14 +370,12 @@ describe("Basic tree", ({test, _}) => {
           nextCase: Some({
             val: PInt(30),
             ifMatch: Switch({
-              idx: 1,
-              key: "",
+              key: 1,
               ids: SI.empty->SI.add(13)->SI.add(19),
               cases: {
                 val: PInt(21),
                 ifMatch: Switch({
-                  idx: 2,
-                  key: "",
+                  key: 2,
                   ids: SI.fromArray([20]),
                   cases: {
                     val: PInt(22),
@@ -420,8 +396,7 @@ describe("Basic tree", ({test, _}) => {
                 nextCase: Some({
                   val: PInt(31),
                   ifMatch: Switch({
-                    idx: 2,
-                    key: "",
+                    key: 2,
                     ids: SI.fromArray([20]),
                     cases: {
                       val: PInt(32),
@@ -444,8 +419,7 @@ describe("Basic tree", ({test, _}) => {
               },
               wildcard: Some(
                 Switch({
-                  idx: 2,
-                  key: "",
+                  key: 2,
                   ids: SI.fromArray([20]),
                   cases: {
                     val: PInt(42),
@@ -466,14 +440,12 @@ describe("Basic tree", ({test, _}) => {
         },
         wildcard: Some(
           Switch({
-            idx: 1,
-            key: "",
+            key: 1,
             ids: SI.fromArray([19]),
             cases: {
               val: PInt(21),
               ifMatch: Switch({
-                idx: 2,
-                key: "",
+                key: 2,
                 ids: SI.fromArray([20]),
                 cases: {
                   val: PInt(22),
@@ -491,8 +463,7 @@ describe("Basic tree", ({test, _}) => {
             },
             wildcard: Some(
               Wildcard({
-                idx: 2,
-                key: "",
+                key: 2,
                 ids: SI.fromArray([20]),
                 child: End({
                   exit: e(0),
@@ -522,48 +493,26 @@ describe("Nests", ({test, _}) => {
     let result = [case1]->makeCases->Matching.make(~name="")
     expect.value(result.tree).toEqual(
       Nest({
-        idx: 0,
-        key: "",
+        key: 0,
         ids: SI.empty,
-        kind: Tuple,
-        child: Switch({
-          idx: 0,
-          key: "",
-          ids: SI.empty,
-          cases: {
-            val: PInt(10),
-            ifMatch: Switch({
-              idx: 1,
-              key: "",
-              ids: SI.empty,
-              cases: {
-                val: PInt(12),
-                ifMatch: End(
-                  Switch({
-                    idx: 1,
-                    key: "",
-                    ids: SI.empty,
-                    cases: {
-                      val: PInt(13),
-                      ifMatch: End({names: MS.empty, exit: e(0)}),
-                      nextCase: Some({
-                        val: PInt(33),
-                        ifMatch: End({names: MS.empty, exit: e(0)}),
-                        nextCase: None,
-                      }),
-                    },
-                    wildcard: Some(End({names: MS.empty, exit: e(0)})),
-                  }),
-                ),
-                nextCase: Some({
-                  val: PInt(22),
+        extra: Tuple,
+        child: IntKeys(
+          Switch({
+            key: 0,
+            ids: SI.empty,
+            cases: {
+              val: PInt(10),
+              ifMatch: Switch({
+                key: 1,
+                ids: SI.empty,
+                cases: {
+                  val: PInt(12),
                   ifMatch: End(
                     Switch({
-                      idx: 1,
-                      key: "",
+                      key: 1,
                       ids: SI.empty,
                       cases: {
-                        val: PInt(23),
+                        val: PInt(13),
                         ifMatch: End({names: MS.empty, exit: e(0)}),
                         nextCase: Some({
                           val: PInt(33),
@@ -574,19 +523,37 @@ describe("Nests", ({test, _}) => {
                       wildcard: Some(End({names: MS.empty, exit: e(0)})),
                     }),
                   ),
-                  nextCase: None,
-                }),
-              },
-              wildcard: None,
-            }),
-            nextCase: None,
-          },
-          wildcard: None,
-        }),
+                  nextCase: Some({
+                    val: PInt(22),
+                    ifMatch: End(
+                      Switch({
+                        key: 1,
+                        ids: SI.empty,
+                        cases: {
+                          val: PInt(23),
+                          ifMatch: End({names: MS.empty, exit: e(0)}),
+                          nextCase: Some({
+                            val: PInt(33),
+                            ifMatch: End({names: MS.empty, exit: e(0)}),
+                            nextCase: None,
+                          }),
+                        },
+                        wildcard: Some(End({names: MS.empty, exit: e(0)})),
+                      }),
+                    ),
+                    nextCase: None,
+                  }),
+                },
+                wildcard: None,
+              }),
+              nextCase: None,
+            },
+            wildcard: None,
+          }),
+        ),
         wildcard: Some(
           Switch({
-            idx: 1,
-            key: "",
+            key: 1,
             ids: SI.empty,
             cases: {
               val: PInt(33),
@@ -626,51 +593,72 @@ describe("Nests", ({test, _}) => {
     let result = [case1, case2, case3]->makeCases->Matching.make(~name="")
     expect.value(result.tree).toEqual(
       Nest({
-        idx: 0,
-        key: "",
+        key: 0,
         ids: SI.fromArray([0]),
-        kind: Tuple,
-        child: Switch({
-          idx: 0,
-          key: "",
-          ids: SI.empty,
-          cases: {
-            val: PString("a"),
-            ifMatch: Switch({
-              idx: 1,
-              key: "",
-              ids: SI.fromArray([12]),
-              cases: {
-                val: PString("b"),
-                ifMatch: End(
-                  Switch({
-                    idx: 1,
-                    key: "",
-                    ids: SI.fromArray([13]),
-                    cases: {
-                      val: PInt(1),
-                      ifMatch: End({names: MS.fromArray([("x", 0)]), exit: e(0)}),
-                      nextCase: Some({
-                        val: PInt(10),
-                        ifMatch: End({names: MS.empty, exit: e(1)}),
+        extra: Tuple,
+        child: IntKeys(
+          Switch({
+            key: 0,
+            ids: SI.empty,
+            cases: {
+              val: PString("a"),
+              ifMatch: Switch({
+                key: 1,
+                ids: SI.fromArray([12]),
+                cases: {
+                  val: PString("b"),
+                  ifMatch: End(
+                    Switch({
+                      key: 1,
+                      ids: SI.fromArray([13]),
+                      cases: {
+                        val: PInt(1),
+                        ifMatch: End({names: MS.fromArray([("x", 0)]), exit: e(0)}),
+                        nextCase: Some({
+                          val: PInt(10),
+                          ifMatch: End({names: MS.empty, exit: e(1)}),
+                          nextCase: None,
+                        }),
+                      },
+                      wildcard: Some(
+                        End({
+                          names: MS.empty->MS.set("y", 12)->MS.set("z", 13),
+                          exit: e(2),
+                        }),
+                      ),
+                    }),
+                  ),
+                  nextCase: None,
+                },
+                wildcard: Some(
+                  End(
+                    Switch({
+                      key: 1,
+                      ids: SI.fromArray([13]),
+                      cases: {
+                        val: PInt(1),
+                        ifMatch: End({names: MS.fromArray([("x", 0)]), exit: e(0)}),
                         nextCase: None,
-                      }),
-                    },
-                    wildcard: Some(
-                      End({
-                        names: MS.empty->MS.set("y", 12)->MS.set("z", 13),
-                        exit: e(2),
-                      }),
-                    ),
-                  }),
+                      },
+                      wildcard: Some(
+                        End({
+                          names: MS.empty->MS.set("y", 12)->MS.set("z", 13),
+                          exit: e(2),
+                        }),
+                      ),
+                    }),
+                  ),
                 ),
-                nextCase: None,
-              },
-              wildcard: Some(
-                End(
+              }),
+              nextCase: None,
+            },
+            wildcard: Some(
+              Wildcard({
+                key: 1,
+                ids: SI.fromArray([12]),
+                child: End(
                   Switch({
-                    idx: 1,
-                    key: "",
+                    key: 1,
                     ids: SI.fromArray([13]),
                     cases: {
                       val: PInt(1),
@@ -685,40 +673,13 @@ describe("Nests", ({test, _}) => {
                     ),
                   }),
                 ),
-              ),
-            }),
-            nextCase: None,
-          },
-          wildcard: Some(
-            Wildcard({
-              idx: 1,
-              key: "",
-              ids: SI.fromArray([12]),
-              child: End(
-                Switch({
-                  idx: 1,
-                  key: "",
-                  ids: SI.fromArray([13]),
-                  cases: {
-                    val: PInt(1),
-                    ifMatch: End({names: MS.fromArray([("x", 0)]), exit: e(0)}),
-                    nextCase: None,
-                  },
-                  wildcard: Some(
-                    End({
-                      names: MS.empty->MS.set("y", 12)->MS.set("z", 13),
-                      exit: e(2),
-                    }),
-                  ),
-                }),
-              ),
-            }),
-          ),
-        }),
+              }),
+            ),
+          }),
+        ),
         wildcard: Some(
           Switch({
-            idx: 1,
-            key: "",
+            key: 1,
             ids: SI.empty,
             cases: {
               val: PInt(1),
@@ -773,54 +734,69 @@ describe("Nests", ({test, _}) => {
     let result = [c1, c2, c3, c4]->makeCases->Matching.make(~name="")
     expect.value(result.tree).toEqual(
       Wildcard({
-        idx: 0,
-        key: "",
+        key: 0,
         ids: SI.empty,
         child: Nest({
-          idx: 1,
-          key: "",
+          key: 1,
           ids: SI.empty,
-          kind: Tuple,
-          child: Switch({
-            idx: 0,
-            key: "",
-            ids: SI.empty,
-            cases: {
-              val: PInt(20),
-              ifMatch: Switch({
-                idx: 1,
-                key: "",
-                ids: SI.empty,
-                cases: {
-                  val: PInt(21),
-                  ifMatch: End(
-                    Switch({
-                      idx: 2,
-                      key: "",
-                      ids: SI.empty,
-                      cases: {
-                        val: PInt(12),
-                        ifMatch: End({names: MS.empty, exit: e(0)}),
-                        nextCase: Some({
-                          val: PInt(22),
-                          ifMatch: End({names: MS.empty, exit: e(1)}),
+          extra: Tuple,
+          child: IntKeys(
+            Switch({
+              key: 0,
+              ids: SI.empty,
+              cases: {
+                val: PInt(20),
+                ifMatch: Switch({
+                  key: 1,
+                  ids: SI.empty,
+                  cases: {
+                    val: PInt(21),
+                    ifMatch: End(
+                      Switch({
+                        key: 2,
+                        ids: SI.empty,
+                        cases: {
+                          val: PInt(12),
+                          ifMatch: End({names: MS.empty, exit: e(0)}),
                           nextCase: Some({
-                            val: PInt(32),
-                            ifMatch: End({names: MS.empty, exit: e(2)}),
-                            nextCase: None,
+                            val: PInt(22),
+                            ifMatch: End({names: MS.empty, exit: e(1)}),
+                            nextCase: Some({
+                              val: PInt(32),
+                              ifMatch: End({names: MS.empty, exit: e(2)}),
+                              nextCase: None,
+                            }),
                           }),
-                        }),
-                      },
-                      wildcard: Some(End({names: MS.empty, exit: e(3)})),
-                    }),
+                        },
+                        wildcard: Some(End({names: MS.empty, exit: e(3)})),
+                      }),
+                    ),
+                    nextCase: None,
+                  },
+                  wildcard: Some(
+                    End(
+                      Switch({
+                        key: 2,
+                        ids: SI.empty,
+                        cases: {
+                          val: PInt(12),
+                          ifMatch: End({names: MS.empty, exit: e(0)}),
+                          nextCase: None,
+                        },
+                        wildcard: Some(End({names: MS.empty, exit: e(3)})),
+                      }),
+                    ),
                   ),
-                  nextCase: None,
-                },
-                wildcard: Some(
-                  End(
+                }),
+                nextCase: None,
+              },
+              wildcard: Some(
+                Wildcard({
+                  key: 1,
+                  ids: SI.empty,
+                  child: End(
                     Switch({
-                      idx: 2,
-                      key: "",
+                      key: 2,
                       ids: SI.empty,
                       cases: {
                         val: PInt(12),
@@ -830,35 +806,13 @@ describe("Nests", ({test, _}) => {
                       wildcard: Some(End({names: MS.empty, exit: e(3)})),
                     }),
                   ),
-                ),
-              }),
-              nextCase: None,
-            },
-            wildcard: Some(
-              Wildcard({
-                idx: 1,
-                key: "",
-                ids: SI.empty,
-                child: End(
-                  Switch({
-                    idx: 2,
-                    key: "",
-                    ids: SI.empty,
-                    cases: {
-                      val: PInt(12),
-                      ifMatch: End({names: MS.empty, exit: e(0)}),
-                      nextCase: None,
-                    },
-                    wildcard: Some(End({names: MS.empty, exit: e(3)})),
-                  }),
-                ),
-              }),
-            ),
-          }),
+                }),
+              ),
+            }),
+          ),
           wildcard: Some(
             Switch({
-              idx: 2,
-              key: "",
+              key: 2,
               ids: SI.empty,
               cases: {
                 val: PInt(12),
@@ -900,75 +854,72 @@ describe("Nests", ({test, _}) => {
     let result = [c1, c2, c3]->makeCases->Matching.make(~name="")
     expect.value(result.tree).toEqual(
       Nest({
-        idx: 0,
-        key: "",
+        key: 0,
         ids: SI.empty->SI.add(3)->SI.add(5),
-        kind: Tuple,
-        child: Nest({
-          idx: 0,
-          key: "",
-          ids: SI.empty,
-          kind: Tuple,
-          child: Switch({
-            idx: 0,
-            key: "",
+        extra: Tuple,
+        child: IntKeys(
+          Nest({
+            key: 0,
             ids: SI.empty,
-            cases: {
-              val: PInt(10),
-              ifMatch: Switch({
-                idx: 1,
-                key: "",
+            extra: Tuple,
+            child: IntKeys(
+              Switch({
+                key: 0,
                 ids: SI.empty,
                 cases: {
-                  val: PInt(20),
-                  ifMatch: End(
-                    Switch({
-                      idx: 1,
-                      key: "",
-                      ids: SI.empty,
-                      cases: {
-                        val: PInt(30),
-                        ifMatch: End(
-                          Switch({
-                            idx: 1,
-                            key: "",
-                            ids: SI.fromArray([6]),
-                            cases: {
-                              val: PInt(40),
-                              ifMatch: End({names: MS.empty, exit: e(1)}),
-                              nextCase: Some({
-                                val: PInt(41),
-                                ifMatch: End({names: MS.fromArray([("x", 3)]), exit: e(0)}),
-                                nextCase: None,
-                              }),
-                            },
-                            wildcard: Some(
-                              End({
-                                names: MS.empty->MS.set("y", 5)->MS.set("z", 6),
-                                exit: e(2),
+                  val: PInt(10),
+                  ifMatch: Switch({
+                    key: 1,
+                    ids: SI.empty,
+                    cases: {
+                      val: PInt(20),
+                      ifMatch: End(
+                        Switch({
+                          key: 1,
+                          ids: SI.empty,
+                          cases: {
+                            val: PInt(30),
+                            ifMatch: End(
+                              Switch({
+                                key: 1,
+                                ids: SI.fromArray([6]),
+                                cases: {
+                                  val: PInt(40),
+                                  ifMatch: End({names: MS.empty, exit: e(1)}),
+                                  nextCase: Some({
+                                    val: PInt(41),
+                                    ifMatch: End({names: MS.fromArray([("x", 3)]), exit: e(0)}),
+                                    nextCase: None,
+                                  }),
+                                },
+                                wildcard: Some(
+                                  End({
+                                    names: MS.empty->MS.set("y", 5)->MS.set("z", 6),
+                                    exit: e(2),
+                                  }),
+                                ),
                               }),
                             ),
-                          }),
-                        ),
-                        nextCase: None,
-                      },
-                      wildcard: None,
-                    }),
-                  ),
+                            nextCase: None,
+                          },
+                          wildcard: None,
+                        }),
+                      ),
+                      nextCase: None,
+                    },
+                    wildcard: None,
+                  }),
                   nextCase: None,
                 },
                 wildcard: None,
               }),
-              nextCase: None,
-            },
+            ),
             wildcard: None,
           }),
-          wildcard: None,
-        }),
+        ),
         wildcard: Some(
           Switch({
-            idx: 1,
-            key: "",
+            key: 1,
             ids: SI.fromArray([6]),
             cases: {
               val: PInt(41),
@@ -1008,42 +959,39 @@ describe("Nests", ({test, _}) => {
     let result = [c1, c2, c3]->makeCases->Matching.make(~name="")
     expect.value(result.tree).toEqual(
       Construct({
-        idx: 0,
-        key: "",
+        key: 0,
         ids: SI.empty,
-        kind: TList,
+        extra: TList,
         nil: Some(End({names: MS.empty, exit: e(0)})),
         cons: Some(
           Nest({
-            idx: 0,
-            key: "",
+            key: 0,
             ids: SI.empty,
-            kind: Tuple,
-            child: Wildcard({
-              idx: 0,
-              key: "",
-              ids: SI.fromArray([2]),
-              child: Construct({
-                idx: 1,
-                key: "",
-                ids: SI.fromArray([5]),
-                kind: TList,
-                nil: Some(End(End({names: MS.fromArray([("x", 2)]), exit: e(1)}))),
-                cons: Some(
-                  Wildcard({
-                    idx: 1,
-                    key: "",
-                    ids: SI.fromArray([5]),
-                    child: End(
-                      End({
-                        names: MS.empty->MS.set("x", 2)->MS.set("y", 5),
-                        exit: e(2),
-                      }),
-                    ),
-                  }),
-                ),
+            extra: Tuple,
+            child: IntKeys(
+              Wildcard({
+                key: 0,
+                ids: SI.fromArray([2]),
+                child: Construct({
+                  key: 1,
+                  ids: SI.fromArray([5]),
+                  extra: TList,
+                  nil: Some(End(End({names: MS.fromArray([("x", 2)]), exit: e(1)}))),
+                  cons: Some(
+                    Wildcard({
+                      key: 1,
+                      ids: SI.fromArray([5]),
+                      child: End(
+                        End({
+                          names: MS.empty->MS.set("x", 2)->MS.set("y", 5),
+                          exit: e(2),
+                        }),
+                      ),
+                    }),
+                  ),
+                }),
               }),
-            }),
+            ),
             wildcard: None,
           }),
         ),
@@ -1091,154 +1039,145 @@ describe("Nests", ({test, _}) => {
     let result = [case1, case2, case3, case4, case5]->makeCases->Matching.make(~name="")
     expect.value(result.tree).toEqual(
       Construct({
-        idx: 0,
-        key: "",
+        key: 0,
         ids: SI.fromArray([13]),
-        kind: TList,
+        extra: TList,
         cons: Some(
           Nest({
-            idx: 0,
-            key: "",
+            key: 0,
             ids: SI.fromArray([13]),
-            kind: Tuple,
-            child: Switch({
-              idx: 0,
-              key: "",
-              ids: SI.empty,
-              cases: {
-                val: PInt(10),
-                ifMatch: Construct({
-                  idx: 1,
-                  key: "",
-                  ids: SI.empty,
-                  kind: TList,
-                  cons: Some(
-                    Nest({
-                      idx: 1,
-                      key: "",
-                      ids: SI.empty,
-                      kind: Tuple,
-                      child: Switch({
-                        idx: 0,
-                        key: "",
+            extra: Tuple,
+            child: IntKeys(
+              Switch({
+                key: 0,
+                ids: SI.empty,
+                cases: {
+                  val: PInt(10),
+                  ifMatch: Construct({
+                    key: 1,
+                    ids: SI.empty,
+                    extra: TList,
+                    cons: Some(
+                      Nest({
+                        key: 1,
                         ids: SI.empty,
-                        cases: {
-                          val: PInt(11),
-                          ifMatch: Construct({
-                            idx: 1,
-                            key: "",
-                            ids: SI.fromArray([8]),
-                            kind: TList,
-                            nil: Some(
-                              End(
-                                End(
-                                  Switch({
-                                    idx: 1,
-                                    key: "",
-                                    ids: SI.empty,
-                                    cases: {
-                                      val: PInt(12),
-                                      ifMatch: End({names: MS.empty, exit: e(0)}),
-                                      nextCase: Some({
-                                        val: PInt(22),
-                                        ifMatch: End({
-                                          names: MS.fromArray([("x", 8)]),
-                                          exit: e(1),
-                                        }),
-                                        nextCase: Some({
-                                          val: PInt(42),
-                                          ifMatch: End({
-                                            names: MS.fromArray([("y", 13)]),
-                                            exit: e(3),
-                                          }),
-                                          nextCase: None,
-                                        }),
-                                      }),
-                                    },
-                                    wildcard: Some(End({names: MS.empty, exit: e(4)})),
-                                  }),
-                                ),
-                              ),
-                            ),
-                            cons: Some(
-                              Wildcard({
-                                idx: 1,
-                                key: "",
+                        extra: Tuple,
+                        child: IntKeys(
+                          Switch({
+                            key: 0,
+                            ids: SI.empty,
+                            cases: {
+                              val: PInt(11),
+                              ifMatch: Construct({
+                                key: 1,
                                 ids: SI.fromArray([8]),
-                                child: End(
+                                extra: TList,
+                                nil: Some(
                                   End(
-                                    Switch({
-                                      idx: 1,
-                                      key: "",
-                                      ids: SI.empty,
-                                      cases: {
-                                        val: PInt(22),
-                                        ifMatch: End({
-                                          names: MS.fromArray([("x", 8)]),
-                                          exit: e(1),
-                                        }),
-                                        nextCase: Some({
-                                          val: PInt(42),
-                                          ifMatch: End({
-                                            names: MS.fromArray([("y", 13)]),
-                                            exit: e(3),
+                                    End(
+                                      Switch({
+                                        key: 1,
+                                        ids: SI.empty,
+                                        cases: {
+                                          val: PInt(12),
+                                          ifMatch: End({names: MS.empty, exit: e(0)}),
+                                          nextCase: Some({
+                                            val: PInt(22),
+                                            ifMatch: End({
+                                              names: MS.fromArray([("x", 8)]),
+                                              exit: e(1),
+                                            }),
+                                            nextCase: Some({
+                                              val: PInt(42),
+                                              ifMatch: End({
+                                                names: MS.fromArray([("y", 13)]),
+                                                exit: e(3),
+                                              }),
+                                              nextCase: None,
+                                            }),
                                           }),
-                                          nextCase: None,
-                                        }),
-                                      },
-                                      wildcard: Some(End({names: MS.empty, exit: e(4)})),
-                                    }),
+                                        },
+                                        wildcard: Some(End({names: MS.empty, exit: e(4)})),
+                                      }),
+                                    ),
                                   ),
                                 ),
+                                cons: Some(
+                                  Wildcard({
+                                    key: 1,
+                                    ids: SI.fromArray([8]),
+                                    child: End(
+                                      End(
+                                        Switch({
+                                          key: 1,
+                                          ids: SI.empty,
+                                          cases: {
+                                            val: PInt(22),
+                                            ifMatch: End({
+                                              names: MS.fromArray([("x", 8)]),
+                                              exit: e(1),
+                                            }),
+                                            nextCase: Some({
+                                              val: PInt(42),
+                                              ifMatch: End({
+                                                names: MS.fromArray([("y", 13)]),
+                                                exit: e(3),
+                                              }),
+                                              nextCase: None,
+                                            }),
+                                          },
+                                          wildcard: Some(End({names: MS.empty, exit: e(4)})),
+                                        }),
+                                      ),
+                                    ),
+                                  }),
+                                ),
                               }),
-                            ),
+                              nextCase: None,
+                            },
+                            wildcard: None,
                           }),
-                          nextCase: None,
-                        },
+                        ),
                         wildcard: None,
                       }),
-                      wildcard: None,
-                    }),
-                  ),
-                  nil: None,
-                }),
-                nextCase: Some({
-                  val: PInt(30),
-                  ifMatch: Construct({
-                    idx: 1,
-                    key: "",
-                    ids: SI.empty,
-                    kind: TList,
-                    nil: Some(
-                      End(
-                        Switch({
-                          idx: 1,
-                          key: "",
-                          ids: SI.empty,
-                          cases: {
-                            val: PInt(32),
-                            ifMatch: End({names: MS.empty, exit: e(2)}),
-                            nextCase: Some({
-                              val: PInt(42),
-                              ifMatch: End({names: MS.fromArray([("y", 13)]), exit: e(3)}),
-                              nextCase: None,
-                            }),
-                          },
-                          wildcard: Some(End({names: MS.empty, exit: e(4)})),
-                        }),
-                      ),
                     ),
-                    cons: None,
+                    nil: None,
                   }),
-                  nextCase: None,
-                }),
-              },
-              wildcard: None,
-            }),
+                  nextCase: Some({
+                    val: PInt(30),
+                    ifMatch: Construct({
+                      key: 1,
+                      ids: SI.empty,
+                      extra: TList,
+                      nil: Some(
+                        End(
+                          Switch({
+                            key: 1,
+                            ids: SI.empty,
+                            cases: {
+                              val: PInt(32),
+                              ifMatch: End({names: MS.empty, exit: e(2)}),
+                              nextCase: Some({
+                                val: PInt(42),
+                                ifMatch: End({names: MS.fromArray([("y", 13)]), exit: e(3)}),
+                                nextCase: None,
+                              }),
+                            },
+                            wildcard: Some(End({names: MS.empty, exit: e(4)})),
+                          }),
+                        ),
+                      ),
+                      cons: None,
+                    }),
+                    nextCase: None,
+                  }),
+                },
+                wildcard: None,
+              }),
+            ),
             wildcard: Some(
               Switch({
-                idx: 1,
-                key: "",
+                key: 1,
                 ids: SI.empty,
                 cases: {
                   val: PInt(42),
@@ -1252,8 +1191,7 @@ describe("Nests", ({test, _}) => {
         ),
         nil: Some(
           Switch({
-            idx: 1,
-            key: "",
+            key: 1,
             ids: SI.empty,
             cases: {
               val: PInt(42),
@@ -1281,54 +1219,26 @@ describe("Nests", ({test, _}) => {
     let result = [case1]->makeCases->Matching.make(~name="")
     expect.value(result.tree).toEqual(
       Nest({
-        idx: 0,
-        key: "",
+        key: 0,
         ids: SI.empty,
-        kind: Record,
-        child: Switch({
-          idx: 0,
-          key: "a",
-          ids: SI.empty,
-          cases: {
-            val: PInt(10),
-            ifMatch: Switch({
-              idx: 1,
-              key: "b",
-              ids: SI.empty,
-              cases: {
-                val: PInt(11),
-                ifMatch: End(
-                  Switch({
-                    idx: 1,
-                    key: "",
-                    ids: SI.empty,
-                    cases: {
-                      val: PInt(12),
-                      ifMatch: End({names: MS.empty, exit: e(0)}),
-                      nextCase: None,
-                    },
-                    wildcard: Some(End({names: MS.empty, exit: e(0)})),
-                  }),
-                ),
-                nextCase: None,
-              },
-              wildcard: None,
-            }),
-            nextCase: Some({
-              val: PInt(20),
+        extra: Record,
+        child: StringKeys(
+          Switch({
+            key: "a",
+            ids: SI.empty,
+            cases: {
+              val: PInt(10),
               ifMatch: Switch({
-                idx: 1,
                 key: "b",
                 ids: SI.empty,
                 cases: {
-                  val: PInt(21),
+                  val: PInt(11),
                   ifMatch: End(
                     Switch({
-                      idx: 1,
-                      key: "",
+                      key: 1,
                       ids: SI.empty,
                       cases: {
-                        val: PInt(22),
+                        val: PInt(12),
                         ifMatch: End({names: MS.empty, exit: e(0)}),
                         nextCase: None,
                       },
@@ -1339,15 +1249,38 @@ describe("Nests", ({test, _}) => {
                 },
                 wildcard: None,
               }),
-              nextCase: None,
-            }),
-          },
-          wildcard: None,
-        }),
+              nextCase: Some({
+                val: PInt(20),
+                ifMatch: Switch({
+                  key: "b",
+                  ids: SI.empty,
+                  cases: {
+                    val: PInt(21),
+                    ifMatch: End(
+                      Switch({
+                        key: 1,
+                        ids: SI.empty,
+                        cases: {
+                          val: PInt(22),
+                          ifMatch: End({names: MS.empty, exit: e(0)}),
+                          nextCase: None,
+                        },
+                        wildcard: Some(End({names: MS.empty, exit: e(0)})),
+                      }),
+                    ),
+                    nextCase: None,
+                  },
+                  wildcard: None,
+                }),
+                nextCase: None,
+              }),
+            },
+            wildcard: None,
+          }),
+        ),
         wildcard: Some(
           Wildcard({
-            idx: 1,
-            key: "",
+            key: 1,
             ids: SI.empty,
             child: End({names: MS.empty, exit: e(0)}),
           }),
@@ -1370,41 +1303,62 @@ describe("Nests", ({test, _}) => {
     let result = [case1]->makeCases->Matching.make(~name="")
     expect.value(result.tree).toEqual(
       Nest({
-        idx: 0,
-        key: "",
+        key: 0,
         ids: SI.empty,
-        kind: Record,
-        child: Switch({
-          idx: 0,
-          key: "a",
-          ids: SI.empty,
-          cases: {
-            val: PInt(10),
-            ifMatch: Switch({
-              idx: 1,
-              key: "b",
-              ids: SI.empty,
-              cases: {
-                val: PInt(11),
-                ifMatch: End(
-                  Switch({
-                    idx: 1,
-                    key: "",
-                    ids: SI.empty,
-                    cases: {
-                      val: PInt(12),
-                      ifMatch: End({names: MS.empty, exit: e(0)}),
-                      nextCase: None,
-                    },
-                    wildcard: Some(End({names: MS.empty, exit: e(0)})),
+        extra: Record,
+        child: StringKeys(
+          Switch({
+            key: "a",
+            ids: SI.empty,
+            cases: {
+              val: PInt(10),
+              ifMatch: Switch({
+                key: "b",
+                ids: SI.empty,
+                cases: {
+                  val: PInt(11),
+                  ifMatch: End(
+                    Switch({
+                      key: 1,
+                      ids: SI.empty,
+                      cases: {
+                        val: PInt(12),
+                        ifMatch: End({names: MS.empty, exit: e(0)}),
+                        nextCase: None,
+                      },
+                      wildcard: Some(End({names: MS.empty, exit: e(0)})),
+                    }),
+                  ),
+                  nextCase: Some({
+                    val: PInt(21),
+                    ifMatch: End(
+                      Switch({
+                        key: 1,
+                        ids: SI.empty,
+                        cases: {
+                          val: PInt(22),
+                          ifMatch: End({names: MS.empty, exit: e(0)}),
+                          nextCase: None,
+                        },
+                        wildcard: Some(End({names: MS.empty, exit: e(0)})),
+                      }),
+                    ),
+                    nextCase: None,
                   }),
-                ),
-                nextCase: Some({
+                },
+                wildcard: None,
+              }),
+              nextCase: None,
+            },
+            wildcard: Some(
+              Switch({
+                key: "b",
+                ids: SI.empty,
+                cases: {
                   val: PInt(21),
                   ifMatch: End(
                     Switch({
-                      idx: 1,
-                      key: "",
+                      key: 1,
                       ids: SI.empty,
                       cases: {
                         val: PInt(22),
@@ -1415,42 +1369,15 @@ describe("Nests", ({test, _}) => {
                     }),
                   ),
                   nextCase: None,
-                }),
-              },
-              wildcard: None,
-            }),
-            nextCase: None,
-          },
-          wildcard: Some(
-            Switch({
-              idx: 1,
-              key: "b",
-              ids: SI.empty,
-              cases: {
-                val: PInt(21),
-                ifMatch: End(
-                  Switch({
-                    idx: 1,
-                    key: "",
-                    ids: SI.empty,
-                    cases: {
-                      val: PInt(22),
-                      ifMatch: End({names: MS.empty, exit: e(0)}),
-                      nextCase: None,
-                    },
-                    wildcard: Some(End({names: MS.empty, exit: e(0)})),
-                  }),
-                ),
-                nextCase: None,
-              },
-              wildcard: None,
-            }),
-          ),
-        }),
+                },
+                wildcard: None,
+              }),
+            ),
+          }),
+        ),
         wildcard: Some(
           Wildcard({
-            idx: 1,
-            key: "",
+            key: 1,
             ids: SI.empty,
             child: End({names: MS.empty, exit: e(0)}),
           }),
@@ -1483,72 +1410,66 @@ describe("Nests", ({test, _}) => {
     let result = [case1, case2, case3, case4]->makeCases->Matching.make(~name="")
     expect.value(result.tree).toEqual(
       Nest({
-        idx: 0,
-        key: "",
+        key: 0,
         ids: SI.fromArray([6]),
-        kind: Record,
-        child: Switch({
-          idx: 0,
-          key: "a",
-          ids: SI.empty,
-          cases: {
-            val: PInt(20),
-            ifMatch: Switch({
-              idx: 1,
-              key: "b",
-              ids: SI.empty,
-              cases: {
-                val: PInt(10),
-                ifMatch: Wildcard({
-                  idx: 2,
-                  key: "c",
-                  ids: SI.empty,
-                  child: End(End({names: MS.empty, exit: e(0)})),
-                }),
-                nextCase: None,
-              },
-              wildcard: Some(
-                Wildcard({
-                  idx: 2,
-                  key: "c",
-                  ids: SI.empty,
-                  child: End(End({names: MS.empty, exit: e(1)})),
-                }),
-              ),
-            }),
-            nextCase: None,
-          },
-          wildcard: Some(
-            Switch({
-              idx: 1,
-              key: "b",
-              ids: SI.empty,
-              cases: {
-                val: PInt(10),
-                ifMatch: Wildcard({
-                  idx: 2,
-                  key: "c",
-                  ids: SI.empty,
-                  child: End(End({names: MS.empty, exit: e(0)})),
-                }),
-                nextCase: None,
-              },
-              wildcard: Some(
-                Switch({
-                  idx: 2,
-                  key: "c",
-                  ids: SI.empty,
-                  cases: {
-                    val: PInt(30),
-                    ifMatch: End(End({names: MS.empty, exit: e(2)})),
-                    nextCase: None,
-                  },
-                  wildcard: None,
-                }),
-              ),
-            }),
-          ),
-        }),
+        extra: Record,
+        child: StringKeys(
+          Switch({
+            key: "a",
+            ids: SI.empty,
+            cases: {
+              val: PInt(20),
+              ifMatch: Switch({
+                key: "b",
+                ids: SI.empty,
+                cases: {
+                  val: PInt(10),
+                  ifMatch: Wildcard({
+                    key: "c",
+                    ids: SI.empty,
+                    child: End(End({names: MS.empty, exit: e(0)})),
+                  }),
+                  nextCase: None,
+                },
+                wildcard: Some(
+                  Wildcard({
+                    key: "c",
+                    ids: SI.empty,
+                    child: End(End({names: MS.empty, exit: e(1)})),
+                  }),
+                ),
+              }),
+              nextCase: None,
+            },
+            wildcard: Some(
+              Switch({
+                key: "b",
+                ids: SI.empty,
+                cases: {
+                  val: PInt(10),
+                  ifMatch: Wildcard({
+                    key: "c",
+                    ids: SI.empty,
+                    child: End(End({names: MS.empty, exit: e(0)})),
+                  }),
+                  nextCase: None,
+                },
+                wildcard: Some(
+                  Switch({
+                    key: "c",
+                    ids: SI.empty,
+                    cases: {
+                      val: PInt(30),
+                      ifMatch: End(End({names: MS.empty, exit: e(2)})),
+                      nextCase: None,
+                    },
+                    wildcard: None,
+                  }),
+                ),
+              }),
+            ),
+          }),
+        ),
         wildcard: Some(End({names: MS.fromArray([("x", 6)]), exit: e(3)})),
       }),
     )

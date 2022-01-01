@@ -355,16 +355,6 @@ describe("Rendering", ({test, _}) => {
     expect.value(result).toMatchSnapshot()
   })
 
-  // test("Multiple render errors are all reported", ({expect, _}) => {
-  //   expect.value(
-  //     render(
-  //       "{{ a }} {{ b }} {{ c }}",
-  //       dict([("a", Js.Json.null), ("b", Js.Json.numberArray([1.0, 2.0]))]),
-  //       [],
-  //     ),
-  //   ).toMatchSnapshot()
-  // })
-
   test("Exceptions thrown in components are caught correctly", ({expect, _}) => {
     @raises(Failure)
     let a = Source.fn(~name="A", Typescheme.props([]), Typescheme.Child.props([]), (_, _, _) =>
@@ -446,40 +436,81 @@ describe("Graphs are parsed correctly", ({test, _}) => {
       ]),
     )
   })
-  // test("Runtime AST errors are reported", ({expect, _}) => {
-  //   let a = Source.src(~name="A", "{% B /%}")
-  //   @raises(Failure)
-  //   let b = Source.fn(
-  //     ~name="B",
-  //     Typescheme.props([]),
-  //     Typescheme.Child.props([]),
-  //     _ => failwith("lol"),
-  //   )
-  //   let result = Compile.Components.make([a, b])
-  //   let e = try {failwith("lol")} catch {
-  //   | e => e
-  //   }
-  //   expect.value(result).toEqual(
-  //     #errors([
-  //       {
-  //         exn: Some(AnyExn(e)),
-  //         kind: #Compile,
-  //         location: None,
-  //         message: "An exception was thrown while compiling this template. This is probably due to malformed input.",
-  //         path: [Js.Json.string("A")],
-  //       },
-  //     ]),
-  //   )
-  // expect.value(Compile.make(b, emptyComponents)).toEqual(
-  //   #errors([
-  //     {
-  //       exn: Some(AnyExn(e)),
-  //       kind: #Compile,
-  //       location: None,
-  //       message: "An exception was thrown while compiling this template. This is probably due to malformed input.",
-  //       path: [Js.Json.string("B")],
-  //     },
-  //   ]),
-  // )
-  // })
+})
+
+describe("Matching: unused patterns", ({test, _}) => {
+  test("Basic patterns", ({expect, _}) => {
+    let src = `
+    {% match a, b, c
+      with 10, 11, 12
+      with x, 21, 22
+      with 10, 11, 12 %} 
+    {% /match %}`
+    let result = compile(src)
+    expect.value(result).toMatchSnapshot()
+    let src = `
+    {% match a, b, c 
+      with 10, 11, 12
+      with x, 21, 22
+      with 30, 31, 32
+      with 30, y, 42
+      with 30, 31, 42%}
+    {% /match %}`
+    let result = compile(src)
+    expect.value(result).toMatchSnapshot()
+  })
+  test("Nests merge into wildcards correctly", ({expect, _}) => {
+    let src = `
+    {% match a, b
+       with x, y %}
+    {% with (_, _), 40 %}
+    {% /match %}`
+    let result = compile(src)
+    expect.value(result).toMatchSnapshot()
+  })
+})
+
+describe("Matching: unused patterns", ({test, _}) => {
+  test("Unused nest patterns are reported correctly.", ({expect, _}) => {
+    let src = `
+    {% match a, b 
+       with x, 1 %}
+    {% with ("a", "b"), 10 %}
+    {% with ("a", "b"), 1 %}
+    {% /match %}`
+    let result = compile(src)
+    expect.value(result).toMatchSnapshot()
+  })
+})
+
+describe("Matching: partial matching", ({test, _}) => {
+  test("Integers", ({expect, _}) => {
+    let src = `{% match a with 0 with 10 with 20 with 30 %} {% /match %}`
+    let result = compile(src)
+    expect.value(result).toMatchSnapshot()
+  })
+
+  test("Lists", ({expect, _}) => {
+    let src = `{% match a with [] with [_] %} {% /match %}`
+    let result = compile(src)
+    expect.value(result).toMatchSnapshot()
+    let src = `{% match a with [_] %} {% /match %}`
+    let result = compile(src)
+    expect.value(result).toMatchSnapshot()
+  })
+
+  test("Records", ({expect, _}) => {
+    let src = `{% match a with {b: 10} %} {% with {a: 20} %} {% /match %}`
+    let result = compile(src)
+    expect.value(result).toMatchSnapshot()
+  })
+
+  test("Dictionary partial matches", ({expect, _}) => {
+    let src = `{% match a with <a: true> %} {% with <a: false> %} {% /match %}`
+    let result = compile(src)
+    expect.value(result).toMatchSnapshot()
+    let src = `{% match a with <a: true> %} {% with <a: false> %} {% with _ %} {% /match %}`
+    let result = compile(src)
+    expect.value(result).toEqual([])
+  })
 })

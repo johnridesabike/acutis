@@ -11,62 +11,53 @@ module MapInt = Belt.Map.Int
 module Queue = Belt.MutableQueue
 module SetInt = Belt.Set.Int
 
-module Match = {
-  let rec testCase = (val, case, ~wildcard) =>
-    if Data.Const.equal(val, case.Matching.val) {
-      Some(case.ifMatch)
-    } else {
-      switch case.nextCase {
-      | Some(case) => testCase(val, case, ~wildcard)
-      | None => wildcard
-      }
+let rec testCase = (~wildcard, val, case) =>
+  if Data.Const.equal(val, case.Matching.val) {
+    Some(case.ifMatch)
+  } else {
+    switch case.nextCase {
+    | Some(case) => testCase(val, case, ~wildcard)
+    | None => wildcard
     }
+  }
 
-  let bindNames = (map, ids, val) =>
-    SetInt.reduceU(ids, map, (. map, id) => MapInt.set(map, id, val))
+let bindNames = (map, ids, val) => SetInt.reduceU(ids, map, (. map, id) => MapInt.set(map, id, val))
 
-  type getter<'a> = (. 'a, int, string) => Data.t
+let arrayGet = (. a, i) => a[i]
 
-  let arrayGet: getter<_> = (. a, i, _) =>
-    switch a[i] {
-    | Some(x) => x
-    | None => Js.Exn.raiseError("arrayGet")
-    }
+let mapStringGet = (. d, k) => MapString.get(d, k)
 
-  let recordGet: getter<_> = (. d, _, k) =>
-    switch MapString.get(d, k) {
-    | Some(x) => x
-    | None => Js.Exn.raiseError("recordGet")
-    }
+let nonemptyGet = (. a, i) => NonEmpty.get(a, i)
 
-  let nonemptyGet: getter<_> = (. a, i, _) =>
-    switch NonEmpty.get(a, i) {
-    | Some(x) => x
-    | None => Js.Exn.raiseError(`nonemptyGet: ${Belt.Int.toString(i)}`)
-    }
-
-  let rec make: 'a 'b. (Matching.tree<'a>, 'b, getter<'b>, _) => option<(_, 'a)> = (
-    tree,
-    args,
-    get,
-    vars,
-  ) =>
-    switch tree {
-    | End(x) => Some((vars, x))
-    | Switch({idx, key, cases, wildcard, ids}) =>
-      let val = get(. args, idx, key)
+let rec make_match: 'a 'args 'key. (
+  Matching.tree<'a, 'key>,
+  'args,
+  (. 'args, 'key) => option<Data.t>,
+  MapInt.t<Data.t>,
+) => option<(MapInt.t<Data.t>, 'a)> = (tree, args, get, vars) =>
+  switch tree {
+  | End(x) => Some((vars, x))
+  | Switch({key, cases, wildcard, ids}) =>
+    switch get(. args, key) {
+    | Some(val) =>
       let vars = bindNames(vars, ids, val)
       let val = Data.constantExn(val)
       switch testCase(val, cases, ~wildcard) {
-      | Some(tree) => make(tree, args, get, vars)
+      | Some(tree) => make_match(tree, args, get, vars)
       | None => None
       }
-    | Wildcard({idx, key, ids, child}) =>
-      let val = get(. args, idx, key)
+    | None => None
+    }
+  | Wildcard({key, ids, child}) =>
+    switch get(. args, key) {
+    | Some(val) =>
       let vars = bindNames(vars, ids, val)
-      make(child, args, get, vars)
-    | Construct({idx, key, ids, nil, cons, kind: _}) =>
-      let val = get(. args, idx, key)
+      make_match(child, args, get, vars)
+    | None => None
+    }
+  | Construct({key, ids, nil, cons, _}) =>
+    switch get(. args, key) {
+    | Some(val) =>
       let vars = bindNames(vars, ids, val)
       let child = if Data.isNull(val) {
         nil
@@ -74,106 +65,44 @@ module Match = {
         cons
       }
       switch child {
-      | Some(tree) => make(tree, args, get, vars)
+      | Some(tree) => make_match(tree, args, get, vars)
       | None => None
       }
-    | Nest({idx, key, kind, ids, child, wildcard}) =>
-      let val = get(. args, idx, key)
-      let vars = bindNames(vars, ids, val)
-      let result = switch kind {
-      | Tuple =>
-        let tuple = Data.tupleExn(val)
-        make(child, tuple, arrayGet, vars)
-      | Record =>
-        let dict = Data.dictExn(val)
-        make(child, dict, recordGet, vars)
-      | Dict =>
-        let dict = Data.dictExn(val)
-        makeDict(child, dict, vars)
-      }
-      switch result {
-      | Some((vars, tree)) => make(tree, args, get, vars)
-      | None =>
-        switch wildcard {
-        | Some(tree) => make(tree, args, get, vars)
-        | None => None
-        }
-      }
-    }
-
-  and makeDict: 'a. (Matching.tree<'a>, _, _) => option<(_, 'a)> = (tree, args, vars) =>
-    switch tree {
-    | End(x) => Some((vars, x))
-    | Switch({idx: _, key, cases, wildcard, ids}) =>
-      switch MapString.get(args, key) {
-      | Some(val) =>
-        let vars = bindNames(vars, ids, val)
-        let val = Data.constantExn(val)
-        switch testCase(val, cases, ~wildcard) {
-        | Some(tree) => makeDict(tree, args, vars)
-        | None => None
-        }
-      | None => None
-      }
-    | Wildcard({idx: _, key, ids, child}) =>
-      switch MapString.get(args, key) {
-      | Some(val) =>
-        let vars = bindNames(vars, ids, val)
-        makeDict(child, args, vars)
-      | None => None
-      }
-    | Construct({idx: _, key, ids, nil, cons, kind: _}) =>
-      switch MapString.get(args, key) {
-      | Some(val) =>
-        let vars = bindNames(vars, ids, val)
-        let child = if Data.isNull(val) {
-          nil
-        } else {
-          cons
-        }
-        switch child {
-        | Some(tree) => makeDict(tree, args, vars)
-        | None => None
-        }
-      | None => None
-      }
-    | Nest({idx: _, key, kind, ids, child, wildcard}) =>
-      switch MapString.get(args, key) {
-      | Some(val) =>
-        let vars = bindNames(vars, ids, val)
-        let result = switch kind {
-        | Tuple =>
-          let tuple = Data.tupleExn(val)
-          make(child, tuple, arrayGet, vars)
-        | Record =>
-          let dict = Data.dictExn(val)
-          make(child, dict, recordGet, vars)
-        | Dict =>
-          let dict = Data.dictExn(val)
-          makeDict(child, dict, vars)
-        }
-        switch result {
-        | Some((vars, tree)) => makeDict(tree, args, vars)
-        | None =>
-          switch wildcard {
-          | Some(tree) => makeDict(tree, args, vars)
-          | None => None
-          }
-        }
-      | None => None
-      }
-    }
-
-  let make = ({Matching.tree: tree, exits}, args) =>
-    switch make(tree, args, nonemptyGet, MapInt.empty) {
-    | Some((vars, {names, exit})) =>
-      let bindings = MapString.mapU(names, (. id) => MapInt.getExn(vars, id))
-      Some((bindings, Matching.Exit.get(exits, exit)))
     | None => None
     }
-}
+  | Nest({key, ids, child, wildcard, _}) =>
+    switch get(. args, key) {
+    | Some(val) =>
+      let vars = bindNames(vars, ids, val)
+      let result = switch child {
+      | IntKeys(child) =>
+        let tuple = Data.tupleExn(val)
+        make_match(child, tuple, arrayGet, vars)
+      | StringKeys(child) =>
+        let dict = Data.dictExn(val)
+        make_match(child, dict, mapStringGet, vars)
+      }
+      switch result {
+      | Some((vars, tree)) => make_match(tree, args, get, vars)
+      | None =>
+        switch wildcard {
+        | Some(tree) => make_match(tree, args, get, vars)
+        | None => None
+        }
+      }
+    | None => None
+    }
+  }
 
-let echoNotNull = (x, ~props, ~children, ~return) =>
+let make_match = ({Matching.tree: tree, exits}, args) =>
+  switch make_match(tree, args, nonemptyGet, MapInt.empty) {
+  | Some((vars, {names, exit})) =>
+    let bindings = MapString.mapU(names, (. id) => MapInt.getExn(vars, id))
+    Some((bindings, Matching.Exit.get(exits, exit)))
+  | None => None
+  }
+
+let echoNotNull = (x, props, children, return) =>
   switch x {
   | Compile.OEBinding(_, binding, esc) =>
     switch MapString.get(props, binding) {
@@ -188,7 +117,7 @@ let echoNotNull = (x, ~props, ~children, ~return) =>
   | OEString(_, x) => return(. x)
   }
 
-let echoNullable = (x, ~props, ~children, ~return) =>
+let echoNullable = (x, props, children, return) =>
   switch x {
   | Compile.OEBinding(_, binding, esc) =>
     switch MapString.get(props, binding) {
@@ -203,12 +132,12 @@ let echoNullable = (x, ~props, ~children, ~return) =>
   | OEString(_, x) => Some(return(. x))
   }
 
-let echo = (nullables, default, ~props, ~children, ~return) => {
+let echo = (nullables, default, props, children, return) => {
   let rec aux = i =>
     switch nullables[i] {
-    | None => echoNotNull(default, ~props, ~children, ~return)
+    | None => echoNotNull(default, props, children, return)
     | Some(x) =>
-      switch echoNullable(x, ~props, ~children, ~return) {
+      switch echoNullable(x, props, children, return) {
       | Some(x) => x
       | None => aux(succ(i))
       }
@@ -244,11 +173,11 @@ let rec make:
     Array.forEachU(nodes, (. node) =>
       switch node {
       | Compile.OEcho({loc: _, nullables, default}) =>
-        Queue.add(queue, echo(nullables, default, ~props, ~children, ~return=Env.return))
+        Queue.add(queue, echo(nullables, default, props, children, Env.return))
       | OText(str) => Queue.add(queue, Env.return(. str))
       | OMatch(_, args, dectree) =>
         let args = NonEmpty.map(args, (. x) => Data.fromPattern(x, props))
-        switch Match.make(dectree, args) {
+        switch make_match(dectree, args) {
         | None => assert false
         | Some(props', nodes) =>
           let props = mapMerge(props, props')
@@ -258,7 +187,7 @@ let rec make:
       | OMapList(_, pattern, dectree) =>
         let l = Data.fromPattern(pattern, props)
         Data.forEachListExn(l, (. ~index, args) =>
-          switch Match.make(dectree, NonEmpty.two(args, index)) {
+          switch make_match(dectree, NonEmpty.two(args, index)) {
           | None => assert false
           | Some(props', nodes) =>
             let props = mapMerge(props, props')
@@ -269,7 +198,7 @@ let rec make:
       | OMapDict(_, pattern, dectree) =>
         let l = Data.fromPattern(pattern, props)
         Data.forEachDictExn(l, (. ~index, args) =>
-          switch Match.make(dectree, NonEmpty.two(args, index)) {
+          switch make_match(dectree, NonEmpty.two(args, index)) {
           | None => assert false
           | Some(props', nodes) =>
             let props = mapMerge(props, props')
