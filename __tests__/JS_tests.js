@@ -66,10 +66,11 @@ describe("Async templates", () => {
       NAME: "errors",
       VAL: [
         {
-          message: `An exception was thrown while rendering a template component.`,
+          message: `Template component "D" threw an exception.`,
           kind: "Render",
           path: ["E"],
           exn: new Error("fail."),
+          location: { char: 3 },
         },
       ],
     });

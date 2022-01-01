@@ -23,7 +23,7 @@ Array [
     "exn": undefined,
     "kind": "Parse",
     "location": Object {
-      "character": 6,
+      "char": 5,
     },
     "message": "Unexpected token: \\"null\\".",
     "path": Array [
@@ -39,7 +39,7 @@ Array [
     "exn": undefined,
     "kind": "Parse",
     "location": Object {
-      "character": 6,
+      "char": 5,
     },
     "message": "Unexpected token: \\"false\\".",
     "path": Array [
@@ -55,7 +55,7 @@ Array [
     "exn": undefined,
     "kind": "Syntax",
     "location": Object {
-      "character": 11,
+      "char": 10,
     },
     "message": "Invalid character: \\"*\\".",
     "path": Array [
@@ -71,7 +71,7 @@ Array [
     "exn": undefined,
     "kind": "Syntax",
     "location": Object {
-      "character": 6,
+      "char": 5,
     },
     "message": "Unexpected character: \\"a\\". Expected: \\".\\".",
     "path": Array [
@@ -87,7 +87,7 @@ Array [
     "exn": undefined,
     "kind": "Syntax",
     "location": Object {
-      "character": 6,
+      "char": 5,
     },
     "message": "Unexpected character: \\"b\\". Expected: \\".\\".",
     "path": Array [
@@ -103,7 +103,7 @@ Array [
     "exn": undefined,
     "kind": "Syntax",
     "location": Object {
-      "character": 16,
+      "char": 15,
     },
     "message": "Unexpected character: \\"%\\". Expected: \\"}\\".",
     "path": Array [
@@ -119,7 +119,7 @@ Array [
     "exn": undefined,
     "kind": "Syntax",
     "location": Object {
-      "character": 8,
+      "char": 7,
     },
     "message": "Invalid character: \\"%\\".",
     "path": Array [
@@ -135,7 +135,7 @@ Array [
     "exn": undefined,
     "kind": "Parse",
     "location": Object {
-      "character": 8,
+      "char": 7,
     },
     "message": "Unexpected token: \\"b\\".",
     "path": Array [
@@ -151,7 +151,7 @@ Array [
     "exn": undefined,
     "kind": "Parse",
     "location": Object {
-      "character": 6,
+      "char": 5,
     },
     "message": "Unexpected token: \\"?\\".",
     "path": Array [
@@ -167,7 +167,7 @@ Array [
     "exn": undefined,
     "kind": "Syntax",
     "location": Object {
-      "character": 10,
+      "char": 9,
     },
     "message": "Unexpected character: \\"%\\". Expected: \\"}\\".",
     "path": Array [
@@ -183,7 +183,7 @@ Array [
     "exn": undefined,
     "kind": "Syntax",
     "location": Object {
-      "character": 8,
+      "char": 7,
     },
     "message": "Unterminated string.",
     "path": Array [
@@ -199,7 +199,7 @@ Array [
     "exn": undefined,
     "kind": "Syntax",
     "location": Object {
-      "character": 9,
+      "char": 8,
     },
     "message": "Unterminated string.",
     "path": Array [
@@ -215,7 +215,7 @@ Array [
     "exn": undefined,
     "kind": "Syntax",
     "location": Object {
-      "character": 5,
+      "char": 4,
     },
     "message": "Unterminated comment.",
     "path": Array [
@@ -231,7 +231,7 @@ Array [
     "exn": undefined,
     "kind": "Syntax",
     "location": Object {
-      "character": 5,
+      "char": 4,
     },
     "message": "Unterminated comment.",
     "path": Array [
@@ -247,7 +247,7 @@ Array [
     "exn": undefined,
     "kind": "Syntax",
     "location": Object {
-      "character": 7,
+      "char": 6,
     },
     "message": "Unexpected end of file.",
     "path": Array [
@@ -263,7 +263,7 @@ Array [
     "exn": undefined,
     "kind": "Syntax",
     "location": Object {
-      "character": 6,
+      "char": 5,
     },
     "message": "\\"--1\\" is an illegal identifier name.",
     "path": Array [
@@ -279,7 +279,7 @@ Array [
     "exn": undefined,
     "kind": "Syntax",
     "location": Object {
-      "character": 7,
+      "char": 6,
     },
     "message": "Unknown escape sequence: a.",
     "path": Array [
@@ -295,7 +295,7 @@ Array [
     "exn": undefined,
     "kind": "Matching",
     "location": Object {
-      "character": 4,
+      "char": 3,
     },
     "message": "This pattern-matching is not exhaustive.
 Here is an example of a case that is not matched:
@@ -311,7 +311,7 @@ Array [
     "exn": undefined,
     "kind": "Matching",
     "location": Object {
-      "character": 4,
+      "char": 3,
     },
     "message": "This pattern-matching is not exhaustive.
 Here is an example of a case that is not matched:
@@ -327,7 +327,7 @@ Array [
     "exn": undefined,
     "kind": "Matching",
     "location": Object {
-      "character": 4,
+      "char": 3,
     },
     "message": "This pattern-matching is not exhaustive.
 Here is an example of a case that is not matched:
@@ -343,7 +343,7 @@ Array [
     "exn": undefined,
     "kind": "Matching",
     "location": Object {
-      "character": 4,
+      "char": 3,
     },
     "message": "This pattern-matching is not exhaustive.
 Here is an example of a case that is not matched:
@@ -359,7 +359,7 @@ Array [
     "exn": undefined,
     "kind": "Matching",
     "location": Object {
-      "character": 4,
+      "char": 3,
     },
     "message": "This pattern-matching is not exhaustive.
 Here is an example of a case that is not matched:
@@ -375,7 +375,7 @@ Array [
     "exn": undefined,
     "kind": "Matching",
     "location": Object {
-      "character": 77,
+      "char": 76,
     },
     "message": "This match case is unused:
 10, 11, 12",
@@ -390,7 +390,7 @@ Array [
     "exn": undefined,
     "kind": "Matching",
     "location": Object {
-      "character": 121,
+      "char": 120,
     },
     "message": "This match case is unused:
 30, 31, 42",
@@ -405,7 +405,7 @@ Array [
     "exn": undefined,
     "kind": "Matching",
     "location": Object {
-      "character": 52,
+      "char": 51,
     },
     "message": "This match case is unused:
 (_, _), 40",
@@ -420,7 +420,7 @@ Array [
     "exn": undefined,
     "kind": "Matching",
     "location": Object {
-      "character": 83,
+      "char": 82,
     },
     "message": "This match case is unused:
 (\\"a\\", \\"b\\"), 1",
@@ -437,7 +437,7 @@ Object {
       "exn": undefined,
       "kind": "Syntax",
       "location": Object {
-        "character": 3,
+        "char": 2,
       },
       "message": "Unexpected end of file.",
       "path": Array [
@@ -469,7 +469,7 @@ Array [
     "exn": undefined,
     "kind": "Parse",
     "location": Object {
-      "character": 24,
+      "char": 23,
     },
     "message": "Unexpected token: \\"null\\".",
     "path": Array [
@@ -485,7 +485,7 @@ Array [
     "exn": undefined,
     "kind": "Parse",
     "location": Object {
-      "character": 6,
+      "char": 5,
     },
     "message": "Unexpected token: \\"null\\".",
     "path": Array [
@@ -501,7 +501,7 @@ Array [
     "exn": undefined,
     "kind": "Parse",
     "location": Object {
-      "character": 6,
+      "char": 5,
     },
     "message": "Unexpected token: \\"c\\".",
     "path": Array [
@@ -517,7 +517,7 @@ Array [
     "exn": undefined,
     "kind": "Parse",
     "location": Object {
-      "character": 6,
+      "char": 5,
     },
     "message": "Unexpected token: \\"{\\".",
     "path": Array [
@@ -533,7 +533,7 @@ Array [
     "exn": undefined,
     "kind": "Parse",
     "location": Object {
-      "character": 6,
+      "char": 5,
     },
     "message": "Unexpected token: \\"[\\".",
     "path": Array [
@@ -549,7 +549,7 @@ Array [
     "exn": undefined,
     "kind": "Parse",
     "location": Object {
-      "character": 6,
+      "char": 5,
     },
     "message": "Unexpected token: \\"}\\".",
     "path": Array [
@@ -565,7 +565,7 @@ Array [
     "exn": undefined,
     "kind": "Parse",
     "location": Object {
-      "character": 6,
+      "char": 5,
     },
     "message": "Unexpected token: \\"]\\".",
     "path": Array [
@@ -581,7 +581,7 @@ Array [
     "exn": undefined,
     "kind": "Parse",
     "location": Object {
-      "character": 6,
+      "char": 5,
     },
     "message": "Unexpected token: \\",\\".",
     "path": Array [
@@ -597,7 +597,7 @@ Array [
     "exn": undefined,
     "kind": "Parse",
     "location": Object {
-      "character": 10,
+      "char": 9,
     },
     "message": "Unexpected token: \\"/\\".",
     "path": Array [
@@ -613,7 +613,7 @@ Array [
     "exn": undefined,
     "kind": "Parse",
     "location": Object {
-      "character": 6,
+      "char": 5,
     },
     "message": "Unexpected token: \\":\\".",
     "path": Array [
@@ -629,7 +629,7 @@ Array [
     "exn": undefined,
     "kind": "Parse",
     "location": Object {
-      "character": 6,
+      "char": 5,
     },
     "message": "Unexpected token: \\"\\"a\\"\\".",
     "path": Array [
@@ -645,7 +645,7 @@ Array [
     "exn": undefined,
     "kind": "Parse",
     "location": Object {
-      "character": 6,
+      "char": 5,
     },
     "message": "Unexpected token: \\"1\\".",
     "path": Array [
@@ -661,7 +661,7 @@ Array [
     "exn": undefined,
     "kind": "Parse",
     "location": Object {
-      "character": 28,
+      "char": 27,
     },
     "message": "Unexpected token: \\"[end of file]\\".",
     "path": Array [
@@ -677,7 +677,7 @@ Array [
     "exn": undefined,
     "kind": "Parse",
     "location": Object {
-      "character": 31,
+      "char": 30,
     },
     "message": "Unexpected token: \\"[end of file]\\".",
     "path": Array [
@@ -693,7 +693,7 @@ Array [
     "exn": undefined,
     "kind": "Parse",
     "location": Object {
-      "character": 6,
+      "char": 5,
     },
     "message": "Unexpected token: \\"/\\".",
     "path": Array [
@@ -709,7 +709,7 @@ Array [
     "exn": undefined,
     "kind": "Parse",
     "location": Object {
-      "character": 8,
+      "char": 7,
     },
     "message": "Unexpected token: \\"#\\".",
     "path": Array [
@@ -725,7 +725,7 @@ Array [
     "exn": undefined,
     "kind": "Parse",
     "location": Object {
-      "character": 21,
+      "char": 20,
     },
     "message": "Unexpected token: \\"[text]:  d\\".",
     "path": Array [
@@ -741,7 +741,7 @@ Array [
     "exn": undefined,
     "kind": "Parse",
     "location": Object {
-      "character": 8,
+      "char": 7,
     },
     "message": "Unexpected token: \\"1\\".",
     "path": Array [
@@ -757,7 +757,7 @@ Array [
     "exn": undefined,
     "kind": "Parse",
     "location": Object {
-      "character": 4,
+      "char": 3,
     },
     "message": "Unexpected token: \\"...\\".",
     "path": Array [
@@ -773,7 +773,7 @@ Array [
     "exn": undefined,
     "kind": "Parse",
     "location": Object {
-      "character": 4,
+      "char": 3,
     },
     "message": "Unexpected token: \\"=\\".",
     "path": Array [
@@ -789,7 +789,7 @@ Array [
     "exn": undefined,
     "kind": "Parse",
     "location": Object {
-      "character": 10,
+      "char": 9,
     },
     "message": "Unexpected token: \\"~\\".",
     "path": Array [
@@ -805,7 +805,7 @@ Array [
     "exn": undefined,
     "kind": "Parse",
     "location": Object {
-      "character": 8,
+      "char": 7,
     },
     "message": "Unexpected token: \\"match\\".",
     "path": Array [
@@ -821,7 +821,7 @@ Array [
     "exn": undefined,
     "kind": "Parse",
     "location": Object {
-      "character": 6,
+      "char": 5,
     },
     "message": "Unexpected token: \\"&\\".",
     "path": Array [
@@ -837,7 +837,7 @@ Array [
     "exn": undefined,
     "kind": "Parse",
     "location": Object {
-      "character": 5,
+      "char": 4,
     },
     "message": "Unexpected token: \\"A\\".",
     "path": Array [
@@ -851,9 +851,9 @@ exports[`Patterns Count mismatch failure 1`] = `
 Array [
   Object {
     "exn": undefined,
-    "kind": "Pattern",
+    "kind": "Type",
     "location": Object {
-      "character": 10,
+      "char": 9,
     },
     "message": "The number of patterns does not match the number of data.",
     "path": Array [
@@ -869,7 +869,7 @@ Array [
     "exn": undefined,
     "kind": "Type",
     "location": Object {
-      "character": 4,
+      "char": 3,
     },
     "message": "Map blocks can only have two patterns per \\"with\\" clause: the item and the index.",
     "path": Array [
@@ -885,7 +885,7 @@ Array [
     "exn": undefined,
     "kind": "Parse",
     "location": Object {
-      "character": 25,
+      "char": 24,
     },
     "message": "Unexpected token: \\"Abc\\".",
     "path": Array [
@@ -901,7 +901,7 @@ Array [
     "exn": undefined,
     "kind": "Parse",
     "location": Object {
-      "character": 24,
+      "char": 23,
     },
     "message": "Unexpected token: \\"null\\".",
     "path": Array [
@@ -917,7 +917,7 @@ Array [
     "exn": undefined,
     "kind": "Parse",
     "location": Object {
-      "character": 24,
+      "char": 23,
     },
     "message": "Unexpected token: \\"true\\".",
     "path": Array [
@@ -933,7 +933,7 @@ Array [
     "exn": undefined,
     "kind": "Parse",
     "location": Object {
-      "character": 25,
+      "char": 24,
     },
     "message": "Unexpected token: \\"false\\".",
     "path": Array [
@@ -949,7 +949,7 @@ Array [
     "exn": undefined,
     "kind": "Parse",
     "location": Object {
-      "character": 5,
+      "char": 4,
     },
     "message": "Unexpected token: \\"null\\".",
     "path": Array [
@@ -963,7 +963,7 @@ exports[`Patterns Missing bindings 1`] = `
 Array [
   Object {
     "exn": undefined,
-    "kind": "Decode",
+    "kind": "Render",
     "location": undefined,
     "message": "Input is missing JSON object key \\"b\\" which is required.",
     "path": Array [],
@@ -975,7 +975,7 @@ exports[`Patterns Missing bindings 2`] = `
 Array [
   Object {
     "exn": undefined,
-    "kind": "Decode",
+    "kind": "Render",
     "location": undefined,
     "message": "Input is missing JSON object key \\"b\\" which is required.",
     "path": Array [],
@@ -987,7 +987,7 @@ exports[`Patterns Missing bindings 3`] = `
 Array [
   Object {
     "exn": undefined,
-    "kind": "Decode",
+    "kind": "Render",
     "location": undefined,
     "message": "This input is type \\"JSON null\\", which does not match the template's required type, [int].",
     "path": Array [
@@ -1003,7 +1003,7 @@ Array [
     "exn": undefined,
     "kind": "Matching",
     "location": Object {
-      "character": 11,
+      "char": 10,
     },
     "message": "This pattern-matching is not exhaustive.
 Here is an example of a case that is not matched:
@@ -1019,7 +1019,7 @@ Array [
     "exn": undefined,
     "kind": "Type",
     "location": Object {
-      "character": 34,
+      "char": 33,
     },
     "message": "This pattern is type boolean but expected type string.",
     "path": Array [
@@ -1035,7 +1035,7 @@ Array [
     "exn": undefined,
     "kind": "Type",
     "location": Object {
-      "character": 34,
+      "char": 33,
     },
     "message": "This pattern is type boolean but expected type string.",
     "path": Array [
@@ -1051,7 +1051,7 @@ Array [
     "exn": undefined,
     "kind": "Type",
     "location": Object {
-      "character": 32,
+      "char": 31,
     },
     "message": "This pattern is type boolean but expected type int.",
     "path": Array [
@@ -1067,7 +1067,7 @@ Array [
     "exn": undefined,
     "kind": "Type",
     "location": Object {
-      "character": 32,
+      "char": 31,
     },
     "message": "This pattern is type boolean but expected type int.",
     "path": Array [
@@ -1083,7 +1083,7 @@ Array [
     "exn": undefined,
     "kind": "Type",
     "location": Object {
-      "character": 34,
+      "char": 33,
     },
     "message": "This pattern is type boolean but expected type [int].",
     "path": Array [
@@ -1099,7 +1099,7 @@ Array [
     "exn": undefined,
     "kind": "Type",
     "location": Object {
-      "character": 34,
+      "char": 33,
     },
     "message": "This pattern is type boolean but expected type [int].",
     "path": Array [
@@ -1115,7 +1115,7 @@ Array [
     "exn": undefined,
     "kind": "Type",
     "location": Object {
-      "character": 40,
+      "char": 39,
     },
     "message": "This pattern is type boolean but expected type {\\"a\\": _}.",
     "path": Array [
@@ -1131,7 +1131,7 @@ Array [
     "exn": undefined,
     "kind": "Type",
     "location": Object {
-      "character": 32,
+      "char": 31,
     },
     "message": "This pattern is type [int] but expected type string.",
     "path": Array [
@@ -1147,7 +1147,7 @@ Array [
     "exn": undefined,
     "kind": "Type",
     "location": Object {
-      "character": 32,
+      "char": 31,
     },
     "message": "This pattern is type [int] but expected type string.",
     "path": Array [
@@ -1163,7 +1163,7 @@ Array [
     "exn": undefined,
     "kind": "Type",
     "location": Object {
-      "character": 33,
+      "char": 32,
     },
     "message": "This pattern is type [int] but expected type boolean.",
     "path": Array [
@@ -1179,7 +1179,7 @@ Array [
     "exn": undefined,
     "kind": "Type",
     "location": Object {
-      "character": 34,
+      "char": 33,
     },
     "message": "This pattern is type [_] but expected type boolean.",
     "path": Array [
@@ -1195,7 +1195,7 @@ Array [
     "exn": undefined,
     "kind": "Type",
     "location": Object {
-      "character": 30,
+      "char": 29,
     },
     "message": "This pattern is type [_] but expected type int.",
     "path": Array [
@@ -1211,7 +1211,7 @@ Array [
     "exn": undefined,
     "kind": "Type",
     "location": Object {
-      "character": 40,
+      "char": 39,
     },
     "message": "This pattern is type [_] but expected type {\\"a\\": _}.",
     "path": Array [
@@ -1227,7 +1227,7 @@ Array [
     "exn": undefined,
     "kind": "Type",
     "location": Object {
-      "character": 40,
+      "char": 39,
     },
     "message": "This pattern is type int but expected type string.",
     "path": Array [
@@ -1243,7 +1243,7 @@ Array [
     "exn": undefined,
     "kind": "Type",
     "location": Object {
-      "character": 33,
+      "char": 32,
     },
     "message": "This pattern is type {\\"a\\": _} but expected type string.",
     "path": Array [
@@ -1259,7 +1259,7 @@ Array [
     "exn": undefined,
     "kind": "Type",
     "location": Object {
-      "character": 34,
+      "char": 33,
     },
     "message": "This pattern is type {\\"a\\": _} but expected type boolean.",
     "path": Array [
@@ -1275,7 +1275,7 @@ Array [
     "exn": undefined,
     "kind": "Type",
     "location": Object {
-      "character": 35,
+      "char": 34,
     },
     "message": "This pattern is type {\\"a\\": _} but expected type boolean.",
     "path": Array [
@@ -1291,7 +1291,7 @@ Array [
     "exn": undefined,
     "kind": "Type",
     "location": Object {
-      "character": 32,
+      "char": 31,
     },
     "message": "This pattern is type {\\"a\\": _} but expected type [_].",
     "path": Array [
@@ -1307,7 +1307,7 @@ Array [
     "exn": undefined,
     "kind": "Type",
     "location": Object {
-      "character": 31,
+      "char": 30,
     },
     "message": "This pattern is type {\\"a\\": _} but expected type int.",
     "path": Array [
@@ -1323,7 +1323,7 @@ Array [
     "exn": undefined,
     "kind": "Type",
     "location": Object {
-      "character": 37,
+      "char": 36,
     },
     "message": "This pattern is type int but expected type string.",
     "path": Array [
@@ -1339,7 +1339,7 @@ Array [
     "exn": undefined,
     "kind": "Type",
     "location": Object {
-      "character": 34,
+      "char": 33,
     },
     "message": "This pattern is type int but expected type string.",
     "path": Array [
@@ -1355,7 +1355,7 @@ Array [
     "exn": undefined,
     "kind": "Type",
     "location": Object {
-      "character": 35,
+      "char": 34,
     },
     "message": "This pattern is type int but expected type boolean.",
     "path": Array [
@@ -1371,7 +1371,7 @@ Array [
     "exn": undefined,
     "kind": "Type",
     "location": Object {
-      "character": 36,
+      "char": 35,
     },
     "message": "This pattern is type int but expected type boolean.",
     "path": Array [
@@ -1387,7 +1387,7 @@ Array [
     "exn": undefined,
     "kind": "Type",
     "location": Object {
-      "character": 33,
+      "char": 32,
     },
     "message": "This pattern is type int but expected type [_].",
     "path": Array [
@@ -1403,7 +1403,7 @@ Array [
     "exn": undefined,
     "kind": "Type",
     "location": Object {
-      "character": 40,
+      "char": 39,
     },
     "message": "This pattern is type int but expected type {\\"a\\": _}.",
     "path": Array [
@@ -1419,7 +1419,7 @@ Array [
     "exn": undefined,
     "kind": "Type",
     "location": Object {
-      "character": 32,
+      "char": 31,
     },
     "message": "This pattern is type string but expected type int.",
     "path": Array [
@@ -1435,7 +1435,7 @@ Array [
     "exn": undefined,
     "kind": "Type",
     "location": Object {
-      "character": 35,
+      "char": 34,
     },
     "message": "This pattern is type string but expected type boolean.",
     "path": Array [
@@ -1451,7 +1451,7 @@ Array [
     "exn": undefined,
     "kind": "Type",
     "location": Object {
-      "character": 36,
+      "char": 35,
     },
     "message": "This pattern is type string but expected type boolean.",
     "path": Array [
@@ -1467,7 +1467,7 @@ Array [
     "exn": undefined,
     "kind": "Type",
     "location": Object {
-      "character": 34,
+      "char": 33,
     },
     "message": "This pattern is type string but expected type [int].",
     "path": Array [
@@ -1483,7 +1483,7 @@ Array [
     "exn": undefined,
     "kind": "Type",
     "location": Object {
-      "character": 40,
+      "char": 39,
     },
     "message": "This pattern is type string but expected type {\\"a\\": _}.",
     "path": Array [
@@ -1499,7 +1499,7 @@ Array [
     "exn": undefined,
     "kind": "Parse",
     "location": Object {
-      "character": 17,
+      "char": 16,
     },
     "message": "Unexpected token: \\"}\\".",
     "path": Array [
@@ -1515,7 +1515,7 @@ Array [
     "exn": undefined,
     "kind": "Parse",
     "location": Object {
-      "character": 18,
+      "char": 17,
     },
     "message": "Unexpected token: \\",\\".",
     "path": Array [
@@ -1531,7 +1531,7 @@ Array [
     "exn": undefined,
     "kind": "Parse",
     "location": Object {
-      "character": 18,
+      "char": 17,
     },
     "message": "Unexpected token: \\"1\\".",
     "path": Array [
@@ -1547,7 +1547,7 @@ Array [
     "exn": undefined,
     "kind": "Parse",
     "location": Object {
-      "character": 22,
+      "char": 21,
     },
     "message": "Unexpected token: \\"[\\".",
     "path": Array [
@@ -1563,7 +1563,7 @@ Array [
     "exn": undefined,
     "kind": "Parse",
     "location": Object {
-      "character": 20,
+      "char": 19,
     },
     "message": "Unexpected token: \\"\\"a\\"\\".",
     "path": Array [
@@ -1579,7 +1579,7 @@ Array [
     "exn": undefined,
     "kind": "Parse",
     "location": Object {
-      "character": 21,
+      "char": 20,
     },
     "message": "Unexpected token: \\",\\".",
     "path": Array [
@@ -1595,7 +1595,7 @@ Array [
     "exn": undefined,
     "kind": "Parse",
     "location": Object {
-      "character": 24,
+      "char": 23,
     },
     "message": "Unexpected token: \\"\\"a\\"\\".",
     "path": Array [
@@ -1611,7 +1611,7 @@ Array [
     "exn": undefined,
     "kind": "Parse",
     "location": Object {
-      "character": 24,
+      "char": 23,
     },
     "message": "Unexpected token: \\"{\\".",
     "path": Array [
@@ -1627,7 +1627,7 @@ Array [
     "exn": undefined,
     "kind": "Parse",
     "location": Object {
-      "character": 26,
+      "char": 25,
     },
     "message": "Unexpected token: \\"[\\".",
     "path": Array [
@@ -1643,7 +1643,7 @@ Array [
     "exn": undefined,
     "kind": "Parse",
     "location": Object {
-      "character": 26,
+      "char": 25,
     },
     "message": "Unexpected token: \\"b\\".",
     "path": Array [
@@ -1659,7 +1659,7 @@ Array [
     "exn": undefined,
     "kind": "Parse",
     "location": Object {
-      "character": 20,
+      "char": 19,
     },
     "message": "Unexpected token: \\"b\\".",
     "path": Array [
@@ -1675,7 +1675,7 @@ Array [
     "exn": undefined,
     "kind": "Parse",
     "location": Object {
-      "character": 20,
+      "char": 19,
     },
     "message": "Unexpected token: \\"]\\".",
     "path": Array [
@@ -1691,7 +1691,7 @@ Array [
     "exn": undefined,
     "kind": "Parse",
     "location": Object {
-      "character": 12,
+      "char": 11,
     },
     "message": "Unexpected token: \\"}\\".",
     "path": Array [
@@ -1707,7 +1707,7 @@ Array [
     "exn": undefined,
     "kind": "Parse",
     "location": Object {
-      "character": 12,
+      "char": 11,
     },
     "message": "Unexpected token: \\"match\\".",
     "path": Array [
@@ -1723,7 +1723,7 @@ Array [
     "exn": undefined,
     "kind": "Parse",
     "location": Object {
-      "character": 19,
+      "char": 18,
     },
     "message": "Unexpected token: \\"a\\".",
     "path": Array [
@@ -1739,7 +1739,7 @@ Array [
     "exn": undefined,
     "kind": "Parse",
     "location": Object {
-      "character": 27,
+      "char": 26,
     },
     "message": "Unexpected token: \\"map\\".",
     "path": Array [
@@ -1755,7 +1755,7 @@ Array [
     "exn": undefined,
     "kind": "Parse",
     "location": Object {
-      "character": 27,
+      "char": 26,
     },
     "message": "Unexpected token: \\"1\\".",
     "path": Array [
@@ -1771,7 +1771,7 @@ Array [
     "exn": undefined,
     "kind": "Parse",
     "location": Object {
-      "character": 14,
+      "char": 13,
     },
     "message": "Unexpected token: \\"B\\".",
     "path": Array [
@@ -1787,7 +1787,7 @@ Array [
     "exn": undefined,
     "kind": "Parse",
     "location": Object {
-      "character": 14,
+      "char": 13,
     },
     "message": "Unexpected token: \\"1\\".",
     "path": Array [
@@ -1803,7 +1803,7 @@ Array [
     "exn": undefined,
     "kind": "Parse",
     "location": Object {
-      "character": 6,
+      "char": 5,
     },
     "message": "Unexpected token: \\"1\\".",
     "path": Array [
@@ -1817,9 +1817,9 @@ exports[`Patterns You can't bind a value more than once. 1`] = `
 Array [
   Object {
     "exn": undefined,
-    "kind": "Pattern",
+    "kind": "Matching",
     "location": Object {
-      "character": 21,
+      "char": 20,
     },
     "message": "\\"x\\" is bound multiple times in this pattern.",
     "path": Array [
@@ -1835,7 +1835,7 @@ Array [
     "exn": undefined,
     "kind": "Type",
     "location": Object {
-      "character": 4,
+      "char": 3,
     },
     "message": "This call of component \\"A\\" is missing prop \\"a\\" of type echoable.",
     "path": Array [
@@ -1854,8 +1854,10 @@ Array [
       "_1": "fail.",
     },
     "kind": "Render",
-    "location": undefined,
-    "message": "An exception was thrown while rendering a template component.",
+    "location": Object {
+      "char": 3,
+    },
+    "message": "Template component \\"A\\" threw an exception.",
     "path": Array [
       "ExceptionsTest",
     ],
@@ -1867,7 +1869,7 @@ exports[`Rendering Map type mismatches 1`] = `
 Array [
   Object {
     "exn": undefined,
-    "kind": "Decode",
+    "kind": "Render",
     "location": undefined,
     "message": "This input is type \\"JSON string\\", which does not match the template's required type, [{\\"a\\": echoable}].",
     "path": Array [
@@ -1881,7 +1883,7 @@ exports[`Rendering Map type mismatches 2`] = `
 Array [
   Object {
     "exn": undefined,
-    "kind": "Decode",
+    "kind": "Render",
     "location": undefined,
     "message": "This input is type \\"JSON boolean\\", which does not match the template's required type, [{\\"a\\": echoable}].",
     "path": Array [
@@ -1895,7 +1897,7 @@ exports[`Rendering Map type mismatches 3`] = `
 Array [
   Object {
     "exn": undefined,
-    "kind": "Decode",
+    "kind": "Render",
     "location": undefined,
     "message": "This input is type \\"JSON string\\", which does not match the template's required type, [int].",
     "path": Array [
@@ -1909,7 +1911,7 @@ exports[`Rendering Map type mismatches 4`] = `
 Array [
   Object {
     "exn": undefined,
-    "kind": "Decode",
+    "kind": "Render",
     "location": undefined,
     "message": "Input is missing JSON object key \\"z\\" which is required.",
     "path": Array [],
@@ -1923,7 +1925,7 @@ Array [
     "exn": undefined,
     "kind": "Type",
     "location": Object {
-      "character": 4,
+      "char": 3,
     },
     "message": "This pattern is type {\\"a\\": int} but expected type [echoable].",
     "path": Array [
@@ -1939,7 +1941,7 @@ Array [
     "exn": undefined,
     "kind": "Type",
     "location": Object {
-      "character": 4,
+      "char": 3,
     },
     "message": "This pattern is type string but expected type int.",
     "path": Array [
@@ -1955,7 +1957,7 @@ Array [
     "exn": undefined,
     "kind": "Type",
     "location": Object {
-      "character": 4,
+      "char": 3,
     },
     "message": "This pattern is type {\\"a\\": int} but expected type <echoable>.",
     "path": Array [
@@ -1971,7 +1973,7 @@ Array [
     "exn": undefined,
     "kind": "Type",
     "location": Object {
-      "character": 4,
+      "char": 3,
     },
     "message": "This pattern is type int but expected type string.",
     "path": Array [
@@ -1985,7 +1987,7 @@ exports[`Rendering Missing bindings 1`] = `
 Array [
   Object {
     "exn": undefined,
-    "kind": "Decode",
+    "kind": "Render",
     "location": undefined,
     "message": "Input is missing JSON object key \\"z\\" which is required.",
     "path": Array [],
@@ -1997,9 +1999,9 @@ exports[`Rendering Missing bindings 2`] = `
 Array [
   Object {
     "exn": undefined,
-    "kind": "Parse",
+    "kind": "Type",
     "location": Object {
-      "character": 4,
+      "char": 3,
     },
     "message": "Children are not allowed in root templates, only in components.",
     "path": Array [],
@@ -2013,7 +2015,7 @@ Array [
     "exn": undefined,
     "kind": "Compile",
     "location": Object {
-      "character": 4,
+      "char": 3,
     },
     "message": "Template component \\"Z\\" is missing, which is required by \\"<root>.\\"",
     "path": Array [
@@ -2027,9 +2029,9 @@ exports[`Rendering Missing bindings 4`] = `
 Array [
   Object {
     "exn": undefined,
-    "kind": "Parse",
+    "kind": "Type",
     "location": Object {
-      "character": 8,
+      "char": 7,
     },
     "message": "Children are not allowed in root templates, only in components.",
     "path": Array [],
@@ -2041,7 +2043,7 @@ exports[`Rendering Missing bindings 5`] = `
 Array [
   Object {
     "exn": undefined,
-    "kind": "Decode",
+    "kind": "Render",
     "location": undefined,
     "message": "Input is missing JSON object key \\"b\\" which is required.",
     "path": Array [],
@@ -2053,7 +2055,7 @@ exports[`Rendering Type mismatches 1`] = `
 Array [
   Object {
     "exn": undefined,
-    "kind": "Decode",
+    "kind": "Render",
     "location": undefined,
     "message": "This input is type \\"JSON boolean\\", which does not match the template's required type, echoable.",
     "path": Array [
@@ -2067,7 +2069,7 @@ exports[`Rendering Type mismatches 2`] = `
 Array [
   Object {
     "exn": undefined,
-    "kind": "Decode",
+    "kind": "Render",
     "location": undefined,
     "message": "This input is type \\"JSON array\\", which does not match the template's required type, echoable.",
     "path": Array [
@@ -2081,7 +2083,7 @@ exports[`Rendering Type mismatches 3`] = `
 Array [
   Object {
     "exn": undefined,
-    "kind": "Decode",
+    "kind": "Render",
     "location": undefined,
     "message": "This input is type \\"JSON boolean\\", which does not match the template's required type, echoable.",
     "path": Array [
@@ -2097,7 +2099,7 @@ Array [
     "exn": undefined,
     "kind": "Type",
     "location": Object {
-      "character": 27,
+      "char": 26,
     },
     "message": "This call of component \\"C\\" is missing prop \\"c\\" of type echoable.",
     "path": Array [

@@ -4,622 +4,884 @@ exports[`Lexer Tokens are generated correctly 1`] = `
 Array [
   Object {
     "TAG": 0,
-    "_0": 0,
+    "_0": Object {
+      "char": 0,
+    },
     "_1": "
 ",
   },
   Object {
     "TAG": 19,
-    "_0": 4,
+    "_0": Object {
+      "char": 4,
+    },
     "_1": "Abc",
   },
   Object {
     "TAG": 23,
-    "_0": 8,
+    "_0": Object {
+      "char": 8,
+    },
     "_1": "d",
   },
   Object {
     "TAG": 23,
-    "_0": 10,
+    "_0": Object {
+      "char": 10,
+    },
     "_1": "e",
   },
   Object {
     "TAG": 22,
-    "_0": 11,
+    "_0": Object {
+      "char": 11,
+    },
   },
   Object {
     "TAG": 21,
-    "_0": 12,
+    "_0": Object {
+      "char": 12,
+    },
   },
   Object {
     "TAG": 0,
-    "_0": 15,
+    "_0": Object {
+      "char": 15,
+    },
     "_1": " ",
   },
   Object {
     "TAG": 28,
-    "_0": 18,
+    "_0": Object {
+      "char": 18,
+    },
   },
   Object {
     "TAG": 2,
-    "_0": 19,
+    "_0": Object {
+      "char": 19,
+    },
     "_1": "f",
   },
   Object {
     "TAG": 0,
-    "_0": 25,
+    "_0": Object {
+      "char": 25,
+    },
     "_1": " ",
   },
   Object {
     "TAG": 20,
-    "_0": 28,
+    "_0": Object {
+      "char": 28,
+    },
   },
   Object {
     "TAG": 21,
-    "_0": 29,
+    "_0": Object {
+      "char": 29,
+    },
   },
   Object {
     "TAG": 20,
-    "_0": 31,
+    "_0": Object {
+      "char": 31,
+    },
   },
   Object {
     "TAG": 0,
-    "_0": 34,
+    "_0": Object {
+      "char": 34,
+    },
     "_1": "
 ",
   },
   Object {
     "TAG": 23,
-    "_0": 38,
+    "_0": Object {
+      "char": 38,
+    },
     "_1": "match",
   },
   Object {
     "TAG": 23,
-    "_0": 44,
+    "_0": Object {
+      "char": 44,
+    },
     "_1": "g",
   },
   Object {
     "TAG": 23,
-    "_0": 46,
+    "_0": Object {
+      "char": 46,
+    },
     "_1": "with",
   },
   Object {
     "TAG": 12,
-    "_0": 51,
+    "_0": Object {
+      "char": 51,
+    },
   },
   Object {
     "TAG": 23,
-    "_0": 52,
+    "_0": Object {
+      "char": 52,
+    },
     "_1": "h",
   },
   Object {
     "TAG": 9,
-    "_0": 53,
+    "_0": Object {
+      "char": 53,
+    },
   },
   Object {
     "TAG": 5,
-    "_0": 55,
+    "_0": Object {
+      "char": 55,
+    },
   },
   Object {
     "TAG": 8,
-    "_0": 59,
+    "_0": Object {
+      "char": 59,
+    },
   },
   Object {
     "TAG": 23,
-    "_0": 61,
+    "_0": Object {
+      "char": 61,
+    },
     "_1": "i",
   },
   Object {
     "TAG": 9,
-    "_0": 62,
+    "_0": Object {
+      "char": 62,
+    },
   },
   Object {
     "TAG": 10,
-    "_0": 64,
+    "_0": Object {
+      "char": 64,
+    },
   },
   Object {
     "TAG": 2,
-    "_0": 65,
+    "_0": Object {
+      "char": 65,
+    },
     "_1": "j",
   },
   Object {
     "TAG": 11,
-    "_0": 68,
+    "_0": Object {
+      "char": 68,
+    },
   },
   Object {
     "TAG": 8,
-    "_0": 69,
+    "_0": Object {
+      "char": 69,
+    },
   },
   Object {
     "TAG": 23,
-    "_0": 71,
+    "_0": Object {
+      "char": 71,
+    },
     "_1": "k",
   },
   Object {
     "TAG": 13,
-    "_0": 72,
+    "_0": Object {
+      "char": 72,
+    },
   },
   Object {
     "TAG": 0,
-    "_0": 76,
+    "_0": Object {
+      "char": 76,
+    },
     "_1": "
   ",
   },
   Object {
     "TAG": 28,
-    "_0": 81,
+    "_0": Object {
+      "char": 81,
+    },
   },
   Object {
     "TAG": 23,
-    "_0": 82,
+    "_0": Object {
+      "char": 82,
+    },
     "_1": "k",
   },
   Object {
     "TAG": 0,
-    "_0": 86,
+    "_0": Object {
+      "char": 86,
+    },
     "_1": "
 ",
   },
   Object {
     "TAG": 23,
-    "_0": 90,
+    "_0": Object {
+      "char": 90,
+    },
     "_1": "with",
   },
   Object {
     "TAG": 12,
-    "_0": 95,
+    "_0": Object {
+      "char": 95,
+    },
   },
   Object {
     "TAG": 23,
-    "_0": 96,
+    "_0": Object {
+      "char": 96,
+    },
     "_1": "h",
   },
   Object {
     "TAG": 9,
-    "_0": 97,
+    "_0": Object {
+      "char": 97,
+    },
   },
   Object {
     "TAG": 6,
-    "_0": 99,
+    "_0": Object {
+      "char": 99,
+    },
   },
   Object {
     "TAG": 8,
-    "_0": 104,
+    "_0": Object {
+      "char": 104,
+    },
   },
   Object {
     "TAG": 23,
-    "_0": 106,
+    "_0": Object {
+      "char": 106,
+    },
     "_1": "l",
   },
   Object {
     "TAG": 9,
-    "_0": 107,
+    "_0": Object {
+      "char": 107,
+    },
   },
   Object {
     "TAG": 10,
-    "_0": 109,
+    "_0": Object {
+      "char": 109,
+    },
   },
   Object {
     "TAG": 2,
-    "_0": 110,
+    "_0": Object {
+      "char": 110,
+    },
     "_1": "m",
   },
   Object {
     "TAG": 8,
-    "_0": 113,
+    "_0": Object {
+      "char": 113,
+    },
   },
   Object {
     "TAG": 18,
-    "_0": 115,
+    "_0": Object {
+      "char": 115,
+    },
   },
   Object {
     "TAG": 23,
-    "_0": 118,
+    "_0": Object {
+      "char": 118,
+    },
     "_1": "rest",
   },
   Object {
     "TAG": 11,
-    "_0": 122,
+    "_0": Object {
+      "char": 122,
+    },
   },
   Object {
     "TAG": 13,
-    "_0": 123,
+    "_0": Object {
+      "char": 123,
+    },
   },
   Object {
     "TAG": 0,
-    "_0": 127,
+    "_0": Object {
+      "char": 127,
+    },
     "_1": "
   ",
   },
   Object {
     "TAG": 24,
-    "_0": 132,
+    "_0": Object {
+      "char": 132,
+    },
   },
   Object {
     "TAG": 23,
-    "_0": 134,
+    "_0": Object {
+      "char": 134,
+    },
     "_1": "map",
   },
   Object {
     "TAG": 23,
-    "_0": 138,
+    "_0": Object {
+      "char": 138,
+    },
     "_1": "rest",
   },
   Object {
     "TAG": 23,
-    "_0": 149,
+    "_0": Object {
+      "char": 149,
+    },
     "_1": "with",
   },
   Object {
     "TAG": 12,
-    "_0": 154,
+    "_0": Object {
+      "char": 154,
+    },
   },
   Object {
     "TAG": 23,
-    "_0": 155,
+    "_0": Object {
+      "char": 155,
+    },
     "_1": "n",
   },
   Object {
     "TAG": 8,
-    "_0": 156,
+    "_0": Object {
+      "char": 156,
+    },
   },
   Object {
     "TAG": 23,
-    "_0": 158,
+    "_0": Object {
+      "char": 158,
+    },
     "_1": "o",
   },
   Object {
     "TAG": 13,
-    "_0": 159,
+    "_0": Object {
+      "char": 159,
+    },
   },
   Object {
     "TAG": 8,
-    "_0": 160,
+    "_0": Object {
+      "char": 160,
+    },
   },
   Object {
     "TAG": 3,
-    "_0": 162,
+    "_0": Object {
+      "char": 162,
+    },
     "_1": 0,
   },
   Object {
     "TAG": 24,
-    "_0": 164,
+    "_0": Object {
+      "char": 164,
+    },
   },
   Object {
     "TAG": 0,
-    "_0": 167,
+    "_0": Object {
+      "char": 167,
+    },
     "_1": "
     First ",
   },
   Object {
     "TAG": 28,
-    "_0": 180,
+    "_0": Object {
+      "char": 180,
+    },
   },
   Object {
     "TAG": 23,
-    "_0": 181,
+    "_0": Object {
+      "char": 181,
+    },
     "_1": "n",
   },
   Object {
     "TAG": 0,
-    "_0": 185,
+    "_0": Object {
+      "char": 185,
+    },
     "_1": " ",
   },
   Object {
     "TAG": 28,
-    "_0": 188,
+    "_0": Object {
+      "char": 188,
+    },
   },
   Object {
     "TAG": 23,
-    "_0": 189,
+    "_0": Object {
+      "char": 189,
+    },
     "_1": "o",
   },
   Object {
     "TAG": 0,
-    "_0": 193,
+    "_0": Object {
+      "char": 193,
+    },
     "_1": "
     ",
   },
   Object {
     "TAG": 23,
-    "_0": 201,
+    "_0": Object {
+      "char": 201,
+    },
     "_1": "with",
   },
   Object {
     "TAG": 12,
-    "_0": 206,
+    "_0": Object {
+      "char": 206,
+    },
   },
   Object {
     "TAG": 23,
-    "_0": 207,
+    "_0": Object {
+      "char": 207,
+    },
     "_1": "n",
   },
   Object {
     "TAG": 8,
-    "_0": 208,
+    "_0": Object {
+      "char": 208,
+    },
   },
   Object {
     "TAG": 23,
-    "_0": 210,
+    "_0": Object {
+      "char": 210,
+    },
     "_1": "o",
   },
   Object {
     "TAG": 13,
-    "_0": 211,
+    "_0": Object {
+      "char": 211,
+    },
   },
   Object {
     "TAG": 8,
-    "_0": 212,
+    "_0": Object {
+      "char": 212,
+    },
   },
   Object {
     "TAG": 23,
-    "_0": 214,
+    "_0": Object {
+      "char": 214,
+    },
     "_1": "index",
   },
   Object {
     "TAG": 0,
-    "_0": 222,
+    "_0": Object {
+      "char": 222,
+    },
     "_1": "
     ",
   },
   Object {
     "TAG": 28,
-    "_0": 229,
+    "_0": Object {
+      "char": 229,
+    },
   },
   Object {
     "TAG": 23,
-    "_0": 230,
+    "_0": Object {
+      "char": 230,
+    },
     "_1": "index",
   },
   Object {
     "TAG": 0,
-    "_0": 238,
+    "_0": Object {
+      "char": 238,
+    },
     "_1": " ",
   },
   Object {
     "TAG": 28,
-    "_0": 241,
+    "_0": Object {
+      "char": 241,
+    },
   },
   Object {
     "TAG": 23,
-    "_0": 242,
+    "_0": Object {
+      "char": 242,
+    },
     "_1": "n",
   },
   Object {
     "TAG": 0,
-    "_0": 246,
+    "_0": Object {
+      "char": 246,
+    },
     "_1": " ",
   },
   Object {
     "TAG": 28,
-    "_0": 249,
+    "_0": Object {
+      "char": 249,
+    },
   },
   Object {
     "TAG": 23,
-    "_0": 250,
+    "_0": Object {
+      "char": 250,
+    },
     "_1": "o",
   },
   Object {
     "TAG": 0,
-    "_0": 254,
+    "_0": Object {
+      "char": 254,
+    },
     "_1": "
   ",
   },
   Object {
     "TAG": 24,
-    "_0": 259,
+    "_0": Object {
+      "char": 259,
+    },
   },
   Object {
     "TAG": 20,
-    "_0": 261,
+    "_0": Object {
+      "char": 261,
+    },
   },
   Object {
     "TAG": 23,
-    "_0": 262,
+    "_0": Object {
+      "char": 262,
+    },
     "_1": "map",
   },
   Object {
     "TAG": 24,
-    "_0": 266,
+    "_0": Object {
+      "char": 266,
+    },
   },
   Object {
     "TAG": 0,
-    "_0": 269,
+    "_0": Object {
+      "char": 269,
+    },
     "_1": "
 ",
   },
   Object {
     "TAG": 20,
-    "_0": 273,
+    "_0": Object {
+      "char": 273,
+    },
   },
   Object {
     "TAG": 23,
-    "_0": 274,
+    "_0": Object {
+      "char": 274,
+    },
     "_1": "match",
   },
   Object {
     "TAG": 0,
-    "_0": 282,
+    "_0": Object {
+      "char": 282,
+    },
     "_1": "
 ",
   },
   Object {
     "TAG": 24,
-    "_0": 285,
+    "_0": Object {
+      "char": 285,
+    },
   },
   Object {
     "TAG": 28,
-    "_0": 285,
+    "_0": Object {
+      "char": 285,
+    },
   },
   Object {
     "TAG": 4,
-    "_0": 287,
+    "_0": Object {
+      "char": 287,
+    },
     "_1": -1.5,
   },
   Object {
     "TAG": 24,
-    "_0": 292,
+    "_0": Object {
+      "char": 292,
+    },
   },
   Object {
     "TAG": 0,
-    "_0": 295,
+    "_0": Object {
+      "char": 295,
+    },
     "_1": "
 { p %
 ",
   },
   Object {
     "TAG": 1,
-    "_0": 304,
+    "_0": Object {
+      "char": 304,
+    },
     "_1": " \\" \\\\ ",
   },
   Object {
     "TAG": 0,
-    "_0": 311,
+    "_0": Object {
+      "char": 311,
+    },
     "_1": "
 ",
   },
   Object {
     "TAG": 1,
-    "_0": 314,
+    "_0": Object {
+      "char": 314,
+    },
     "_1": " nested {* comment *} ",
   },
   Object {
     "TAG": 0,
-    "_0": 338,
+    "_0": Object {
+      "char": 338,
+    },
     "_1": "
 ",
   },
   Object {
     "TAG": 28,
-    "_0": 341,
+    "_0": Object {
+      "char": 341,
+    },
   },
   Object {
     "TAG": 2,
-    "_0": 342,
+    "_0": Object {
+      "char": 342,
+    },
     "_1": " \\\\ ",
   },
   Object {
     "TAG": 0,
-    "_0": 351,
+    "_0": Object {
+      "char": 351,
+    },
     "_1": "
 ",
   },
   Object {
     "TAG": 28,
-    "_0": 354,
+    "_0": Object {
+      "char": 354,
+    },
   },
   Object {
     "TAG": 2,
-    "_0": 355,
+    "_0": Object {
+      "char": 355,
+    },
     "_1": " \\" ",
   },
   Object {
     "TAG": 0,
-    "_0": 364,
+    "_0": Object {
+      "char": 364,
+    },
     "_1": "
 ",
   },
   Object {
     "TAG": 28,
-    "_0": 367,
+    "_0": Object {
+      "char": 367,
+    },
   },
   Object {
     "TAG": 23,
-    "_0": 370,
+    "_0": Object {
+      "char": 370,
+    },
     "_1": "a",
   },
   Object {
     "TAG": 0,
-    "_0": 374,
+    "_0": Object {
+      "char": 374,
+    },
     "_1": "
 ",
   },
   Object {
     "TAG": 1,
-    "_0": 377,
+    "_0": Object {
+      "char": 377,
+    },
     "_1": " {q*r ",
   },
   Object {
     "TAG": 0,
-    "_0": 385,
+    "_0": Object {
+      "char": 385,
+    },
     "_1": "
 ",
   },
   Object {
     "TAG": 23,
-    "_0": 389,
+    "_0": Object {
+      "char": 389,
+    },
     "_1": "match",
   },
   Object {
     "TAG": 23,
-    "_0": 395,
+    "_0": Object {
+      "char": 395,
+    },
     "_1": "t",
   },
   Object {
     "TAG": 23,
-    "_0": 397,
+    "_0": Object {
+      "char": 397,
+    },
     "_1": "with",
   },
   Object {
     "TAG": 14,
-    "_0": 402,
+    "_0": Object {
+      "char": 402,
+    },
   },
   Object {
     "TAG": 4,
-    "_0": 403,
+    "_0": Object {
+      "char": 403,
+    },
     "_1": 1.5,
   },
   Object {
     "TAG": 8,
-    "_0": 406,
+    "_0": Object {
+      "char": 406,
+    },
   },
   Object {
     "TAG": 2,
-    "_0": 408,
+    "_0": Object {
+      "char": 408,
+    },
     "_1": "2",
   },
   Object {
     "TAG": 15,
-    "_0": 411,
+    "_0": Object {
+      "char": 411,
+    },
   },
   Object {
     "TAG": 0,
-    "_0": 415,
+    "_0": Object {
+      "char": 415,
+    },
     "_1": "
   ",
   },
   Object {
     "TAG": 28,
-    "_0": 420,
+    "_0": Object {
+      "char": 420,
+    },
   },
   Object {
     "TAG": 19,
-    "_0": 421,
+    "_0": Object {
+      "char": 421,
+    },
     "_1": "S",
   },
   Object {
     "TAG": 0,
-    "_0": 425,
+    "_0": Object {
+      "char": 425,
+    },
     "_1": "
 ",
   },
   Object {
     "TAG": 20,
-    "_0": 429,
+    "_0": Object {
+      "char": 429,
+    },
   },
   Object {
     "TAG": 23,
-    "_0": 430,
+    "_0": Object {
+      "char": 430,
+    },
     "_1": "match",
   },
   Object {
     "TAG": 0,
-    "_0": 438,
+    "_0": Object {
+      "char": 438,
+    },
     "_1": "",
   },
   Object {
     "TAG": 29,
-    "_0": 438,
+    "_0": Object {
+      "char": 438,
+    },
   },
 ]
 `;
@@ -639,7 +901,9 @@ Array [
         "G",
         Object {
           "TAG": 1,
-          "_0": 75,
+          "_0": Object {
+            "char": 75,
+          },
           "_1": Array [
             Object {
               "TAG": 0,
@@ -651,11 +915,15 @@ Array [
               "TAG": 1,
               "default": Object {
                 "TAG": 0,
-                "_0": 56,
+                "_0": Object {
+                  "char": 56,
+                },
                 "_1": "i",
                 "_2": 1,
               },
-              "loc": 55,
+              "loc": Object {
+                "char": 55,
+              },
               "nullables": Array [],
             },
             Object {
@@ -676,7 +944,9 @@ Array [
         "Children",
         Object {
           "TAG": 1,
-          "_0": 125,
+          "_0": Object {
+            "char": 125,
+          },
           "_1": Array [
             Object {
               "TAG": 0,
@@ -688,20 +958,26 @@ Array [
             Object {
               "TAG": 5,
               "children": Array [],
-              "loc": 94,
+              "loc": Object {
+                "char": 94,
+              },
               "name": "L",
               "props": Array [
                 Array [
                   "m",
                   Object {
                     "TAG": 11,
-                    "_0": 98,
+                    "_0": Object {
+                      "char": 98,
+                    },
                     "_1": Array [
                       Array [
                         "n",
                         Object {
                           "TAG": 12,
-                          "_0": 102,
+                          "_0": Object {
+                            "char": 102,
+                          },
                           "_1": "o",
                         },
                       ],
@@ -709,11 +985,15 @@ Array [
                         "p",
                         Object {
                           "TAG": 8,
-                          "_0": 108,
+                          "_0": Object {
+                            "char": 108,
+                          },
                           "_1": Array [
                             Object {
                               "TAG": 12,
-                              "_0": 109,
+                              "_0": Object {
+                                "char": 109,
+                              },
                               "_1": "q",
                             },
                           ],
@@ -723,7 +1003,9 @@ Array [
                         "r",
                         Object {
                           "TAG": 12,
-                          "_0": 113,
+                          "_0": Object {
+                            "char": 113,
+                          },
                           "_1": "r",
                         },
                       ],
@@ -742,14 +1024,18 @@ Array [
         },
       ],
     ],
-    "loc": 4,
+    "loc": Object {
+      "char": 4,
+    },
     "name": "A",
     "props": Array [
       Array [
         "b",
         Object {
           "TAG": 12,
-          "_0": 9,
+          "_0": Object {
+            "char": 9,
+          },
           "_1": "b",
         },
       ],
@@ -757,7 +1043,9 @@ Array [
         "c",
         Object {
           "TAG": 5,
-          "_0": 16,
+          "_0": Object {
+            "char": 16,
+          },
           "_1": 1,
         },
       ],
@@ -765,7 +1053,9 @@ Array [
         "d",
         Object {
           "TAG": 4,
-          "_0": 23,
+          "_0": Object {
+            "char": 23,
+          },
           "_1": "e",
         },
       ],
@@ -773,7 +1063,9 @@ Array [
         "f",
         Object {
           "TAG": 3,
-          "_0": 32,
+          "_0": Object {
+            "char": 32,
+          },
         },
       ],
     ],
@@ -797,10 +1089,14 @@ Array [
   },
   Object {
     "TAG": 3,
-    "_0": 4,
+    "_0": Object {
+      "char": 4,
+    },
     "_1": Object {
       "TAG": 12,
-      "_0": 8,
+      "_0": Object {
+        "char": 8,
+      },
       "_1": "a",
     },
     "_2": Array [
@@ -816,11 +1112,15 @@ Array [
             "TAG": 1,
             "default": Object {
               "TAG": 0,
-              "_0": 27,
+              "_0": Object {
+                "char": 27,
+              },
               "_1": "b",
               "_2": 1,
             },
-            "loc": 26,
+            "loc": Object {
+              "char": 26,
+            },
             "nullables": Array [],
           },
           Object {
@@ -834,13 +1134,17 @@ Array [
           Array [
             Object {
               "TAG": 11,
-              "_0": 15,
+              "_0": Object {
+                "char": 15,
+              },
               "_1": Array [
                 Array [
                   "b",
                   Object {
                     "TAG": 12,
-                    "_0": 16,
+                    "_0": Object {
+                      "char": 16,
+                    },
                     "_1": "b",
                   },
                 ],
@@ -859,10 +1163,14 @@ Array [
   },
   Object {
     "TAG": 3,
-    "_0": 46,
+    "_0": Object {
+      "char": 46,
+    },
     "_1": Object {
       "TAG": 12,
-      "_0": 50,
+      "_0": Object {
+        "char": 50,
+      },
       "_1": "c",
     },
     "_2": Array [
@@ -878,11 +1186,15 @@ Array [
             "TAG": 1,
             "default": Object {
               "TAG": 0,
-              "_0": 81,
+              "_0": Object {
+                "char": 81,
+              },
               "_1": "e",
               "_2": 1,
             },
-            "loc": 80,
+            "loc": Object {
+              "char": 80,
+            },
             "nullables": Array [],
           },
           Object {
@@ -896,20 +1208,26 @@ Array [
           Array [
             Object {
               "TAG": 11,
-              "_0": 60,
+              "_0": Object {
+                "char": 60,
+              },
               "_1": Array [
                 Array [
                   "d",
                   Object {
                     "TAG": 3,
-                    "_0": 64,
+                    "_0": Object {
+                      "char": 64,
+                    },
                   },
                 ],
                 Array [
                   "e",
                   Object {
                     "TAG": 12,
-                    "_0": 70,
+                    "_0": Object {
+                      "char": 70,
+                    },
                     "_1": "e",
                   },
                 ],
@@ -930,11 +1248,15 @@ Array [
             "TAG": 1,
             "default": Object {
               "TAG": 0,
-              "_0": 116,
+              "_0": Object {
+                "char": 116,
+              },
               "_1": "f",
               "_2": 1,
             },
-            "loc": 115,
+            "loc": Object {
+              "char": 115,
+            },
             "nullables": Array [],
           },
           Object {
@@ -948,20 +1270,26 @@ Array [
           Array [
             Object {
               "TAG": 11,
-              "_0": 94,
+              "_0": Object {
+                "char": 94,
+              },
               "_1": Array [
                 Array [
                   "d",
                   Object {
                     "TAG": 2,
-                    "_0": 98,
+                    "_0": Object {
+                      "char": 98,
+                    },
                   },
                 ],
                 Array [
                   "f",
                   Object {
                     "TAG": 12,
-                    "_0": 105,
+                    "_0": Object {
+                      "char": 105,
+                    },
                     "_1": "f",
                   },
                 ],
@@ -980,10 +1308,14 @@ Array [
   },
   Object {
     "TAG": 3,
-    "_0": 135,
+    "_0": Object {
+      "char": 135,
+    },
     "_1": Object {
       "TAG": 12,
-      "_0": 139,
+      "_0": Object {
+        "char": 139,
+      },
       "_1": "g",
     },
     "_2": Array [
@@ -999,11 +1331,15 @@ Array [
             "TAG": 1,
             "default": Object {
               "TAG": 0,
-              "_0": 161,
+              "_0": Object {
+                "char": 161,
+              },
               "_1": "i",
               "_2": 1,
             },
-            "loc": 160,
+            "loc": Object {
+              "char": 160,
+            },
             "nullables": Array [],
           },
           Object {
@@ -1015,11 +1351,15 @@ Array [
             "TAG": 1,
             "default": Object {
               "TAG": 0,
-              "_0": 169,
+              "_0": Object {
+                "char": 169,
+              },
               "_1": "j",
               "_2": 1,
             },
-            "loc": 168,
+            "loc": Object {
+              "char": 168,
+            },
             "nullables": Array [],
           },
           Object {
@@ -1033,13 +1373,17 @@ Array [
           Array [
             Object {
               "TAG": 11,
-              "_0": 146,
+              "_0": Object {
+                "char": 146,
+              },
               "_1": Array [
                 Array [
                   "h",
                   Object {
                     "TAG": 12,
-                    "_0": 147,
+                    "_0": Object {
+                      "char": 147,
+                    },
                     "_1": "h",
                   },
                 ],
@@ -1047,7 +1391,9 @@ Array [
             },
             Object {
               "TAG": 12,
-              "_0": 151,
+              "_0": Object {
+                "char": 151,
+              },
               "_1": "i",
             },
           ],
@@ -1074,11 +1420,15 @@ Array [
   },
   Object {
     "TAG": 2,
-    "_0": 4,
+    "_0": Object {
+      "char": 4,
+    },
     "_1": Array [
       Object {
         "TAG": 12,
-        "_0": 10,
+        "_0": Object {
+          "char": 10,
+        },
         "_1": "a",
       },
     ],
@@ -1097,7 +1447,9 @@ Array [
           Array [
             Object {
               "TAG": 5,
-              "_0": 20,
+              "_0": Object {
+                "char": 20,
+              },
               "_1": 1,
             },
           ],
@@ -1117,14 +1469,18 @@ Array [
           Array [
             Object {
               "TAG": 5,
-              "_0": 37,
+              "_0": Object {
+                "char": 37,
+              },
               "_1": 2,
             },
           ],
           Array [
             Object {
               "TAG": 5,
-              "_0": 47,
+              "_0": Object {
+                "char": 47,
+              },
               "_1": 3,
             },
           ],
@@ -1144,7 +1500,9 @@ Array [
           Array [
             Object {
               "TAG": 5,
-              "_0": 64,
+              "_0": Object {
+                "char": 64,
+              },
               "_1": 4,
             },
           ],
@@ -1160,16 +1518,22 @@ Array [
   },
   Object {
     "TAG": 2,
-    "_0": 89,
+    "_0": Object {
+      "char": 89,
+    },
     "_1": Array [
       Object {
         "TAG": 12,
-        "_0": 95,
+        "_0": Object {
+          "char": 95,
+        },
         "_1": "e",
       },
       Object {
         "TAG": 12,
-        "_0": 98,
+        "_0": Object {
+          "char": 98,
+        },
         "_1": "f",
       },
     ],
@@ -1186,11 +1550,15 @@ Array [
             "TAG": 1,
             "default": Object {
               "TAG": 0,
-              "_0": 126,
+              "_0": Object {
+                "char": 126,
+              },
               "_1": "g",
               "_2": 1,
             },
-            "loc": 125,
+            "loc": Object {
+              "char": 125,
+            },
             "nullables": Array [],
           },
           Object {
@@ -1204,17 +1572,23 @@ Array [
           Array [
             Object {
               "TAG": 3,
-              "_0": 108,
+              "_0": Object {
+                "char": 108,
+              },
             },
             Object {
               "TAG": 11,
-              "_0": 114,
+              "_0": Object {
+                "char": 114,
+              },
               "_1": Array [
                 Array [
                   "g",
                   Object {
                     "TAG": 12,
-                    "_0": 115,
+                    "_0": Object {
+                      "char": 115,
+                    },
                     "_1": "g",
                   },
                 ],
@@ -1237,11 +1611,15 @@ Array [
           Array [
             Object {
               "TAG": 2,
-              "_0": 139,
+              "_0": Object {
+                "char": 139,
+              },
             },
             Object {
               "TAG": 12,
-              "_0": 146,
+              "_0": Object {
+                "char": 146,
+              },
               "_1": "_",
             },
           ],
@@ -1257,16 +1635,22 @@ Array [
   },
   Object {
     "TAG": 2,
-    "_0": 171,
+    "_0": Object {
+      "char": 171,
+    },
     "_1": Array [
       Object {
         "TAG": 12,
-        "_0": 177,
+        "_0": Object {
+          "char": 177,
+        },
         "_1": "tuple",
       },
       Object {
         "TAG": 12,
-        "_0": 184,
+        "_0": Object {
+          "char": 184,
+        },
         "_1": "dict",
       },
     ],
@@ -1285,29 +1669,39 @@ Array [
           Array [
             Object {
               "TAG": 7,
-              "_0": 194,
+              "_0": Object {
+                "char": 194,
+              },
               "_1": Array [
                 Object {
                   "TAG": 12,
-                  "_0": 195,
+                  "_0": Object {
+                    "char": 195,
+                  },
                   "_1": "i",
                 },
                 Object {
                   "TAG": 4,
-                  "_0": 198,
+                  "_0": Object {
+                    "char": 198,
+                  },
                   "_1": "j",
                 },
               ],
             },
             Object {
               "TAG": 10,
-              "_0": 204,
+              "_0": Object {
+                "char": 204,
+              },
               "_1": Array [
                 Array [
                   "k",
                   Object {
                     "TAG": 12,
-                    "_0": 208,
+                    "_0": Object {
+                      "char": 208,
+                    },
                     "_1": "l",
                   },
                 ],

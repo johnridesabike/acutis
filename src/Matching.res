@@ -585,10 +585,11 @@ let rec fromTPat: 'a 'k. (_, 'k, _, ~name: _, continue<'a, 'k>) => tree<'a, 'k> 
 ) =>
   switch p {
   | Tpat.TAny(_) => Wildcard({ids: SetInt.empty, key: key, child: k(. b)})
-  | TVar(Loc(id), x) | TOptionalVar(Loc(id), x) =>
+  | TVar(loc, x) | TOptionalVar(loc, x) =>
     if MapString.has(b, x) {
-      raise(Exit(Debug.nameBoundMultipleTimes(~binding=x, ~loc=Loc(id), ~name)))
+      raise(Exit(Debug.nameBoundMultipleTimes(~binding=x, ~loc, ~name)))
     }
+    let id = Debug.Loc.char(loc)
     Wildcard({
       ids: SetInt.add(SetInt.empty, id),
       key: key,
@@ -726,8 +727,8 @@ module ParMatch = {
 
   let exhaustive = (key, {pats, flag, next}) => {
     let pat = switch key {
-    | "" => Tpat.TAny(Loc(0))
-    | k => TVar(Loc(0), k)
+    | "" => Tpat.TAny(Debug.Loc.empty)
+    | k => TVar(Debug.Loc.empty, k)
     }
     {flag: flag, pats: list{(key, pat), ...pats}, next: next}
   }
@@ -753,7 +754,7 @@ module ParMatch = {
           | Some(wildcard) => exhaustive(kf(. key), check(wildcard, kf))
           | None =>
             let {pats, next, _} = check(next, kf)
-            {flag: Partial, pats: list{(kf(. key), TAny(Loc(0))), ...pats}, next: next}
+            {flag: Partial, pats: list{(kf(. key), TAny(Debug.Loc.empty)), ...pats}, next: next}
           }
         }
       | {flag: Partial, pats, next} =>
@@ -761,9 +762,9 @@ module ParMatch = {
         | Some(wildcard) => exhaustive(kf(. key), check(wildcard, kf))
         | None =>
           let nest = switch extra {
-          | Tuple => Tpat.TTuple(Loc(0), toArray(pats))
-          | Record => TRecord(Loc(0), toKeyValues(pats))
-          | Dict => TDict(Loc(0), toKeyValues(pats))
+          | Tuple => Tpat.TTuple(Debug.Loc.empty, toArray(pats))
+          | Record => TRecord(Debug.Loc.empty, toKeyValues(pats))
+          | Dict => TDict(Debug.Loc.empty, toKeyValues(pats))
           }
           let {pats, next, _} = check(next, kf)
           {flag: Partial, pats: list{(kf(. key), nest), ...pats}, next: next}
@@ -776,7 +777,7 @@ module ParMatch = {
         {
           flag: Partial,
           pats: switch pats {
-          | list{_, ...pats} => list{(kf(. key), TConstruct(Loc(0), extra, None)), ...pats}
+          | list{_, ...pats} => list{(kf(. key), TConstruct(Debug.Loc.empty, extra, None)), ...pats}
           | _ => assert false
           },
           next: next,
@@ -785,7 +786,10 @@ module ParMatch = {
         let {pats, next, _} = check(nil, kf)
         {
           flag: Partial,
-          pats: list{(kf(. key), TConstruct(Loc(0), extra, Some(TAny(Loc(0))))), ...pats},
+          pats: list{
+            (kf(. key), TConstruct(Debug.Loc.empty, extra, Some(TAny(Debug.Loc.empty)))),
+            ...pats,
+          },
           next: next,
         }
       | (Some(nil), Some(cons)) =>
@@ -796,7 +800,7 @@ module ParMatch = {
           | {flag: Partial, pats, next} =>
             let pats = switch pats {
             | list{(key, cons), ...pats} => list{
-                (key, Tpat.TConstruct(Loc(0), extra, Some(cons))),
+                (key, Tpat.TConstruct(Debug.Loc.empty, extra, Some(cons))),
                 ...pats,
               }
             | _ => assert false
@@ -805,7 +809,7 @@ module ParMatch = {
           }
         | {flag: Partial, pats, next} => {
             flag: Partial,
-            pats: list{(kf(. key), Tpat.TConstruct(Loc(0), extra, None)), ...pats},
+            pats: list{(kf(. key), Tpat.TConstruct(Debug.Loc.empty, extra, None)), ...pats},
             next: next,
           }
         }
@@ -820,7 +824,7 @@ module ParMatch = {
           switch check(ifMatch, kf) {
           | {flag: Partial, pats, next} => {
               flag: Partial,
-              pats: list{(kf(. key), TConst(Loc(0), Const.toTPat(val))), ...pats},
+              pats: list{(kf(. key), TConst(Debug.Loc.empty, Const.toTPat(val))), ...pats},
               next: next,
             }
           | {flag: Exhaustive, pats, next} =>
@@ -831,7 +835,7 @@ module ParMatch = {
                 switch nextCase {
                 | None => {
                     flag: Partial,
-                    pats: list{(kf(. key), TConst(Loc(0), Const.toTPat(refute))), ...pats},
+                    pats: list{(kf(. key), TConst(Debug.Loc.empty, Const.toTPat(refute))), ...pats},
                     next: next,
                   }
                 | Some(case) => aux(refute, case)
@@ -840,7 +844,7 @@ module ParMatch = {
             } else {
               {
                 flag: Partial,
-                pats: list{(kf(. key), TConst(Loc(0), Const.toTPat(refute))), ...pats},
+                pats: list{(kf(. key), TConst(Debug.Loc.empty, Const.toTPat(refute))), ...pats},
                 next: next,
               }
             }

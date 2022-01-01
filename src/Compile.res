@@ -28,25 +28,23 @@ let trimEnd = string => {
   aux(Js.String2.length(string))
 }
 
-type loc = Debug.loc
-
 type echo =
-  | OEBinding(loc, string, Utils.escape)
-  | OEChild(loc, string)
+  | OEBinding(string, Utils.escape)
+  | OEChild(string)
   // All constants are pre-compiled into strings.
-  | OEString(loc, string)
+  | OEString(string)
 
 type rec node<'a> =
   // Trimming is optimized away
   | OText(string)
   // The first echo item that isn't null will be returned.
-  | OEcho({loc: loc, nullables: array<echo>, default: echo})
+  | OEcho(array<echo>, echo)
   // Case matrices are optimized into decision trees
-  | OMatch(loc, NonEmpty.t<Typechecker.Pattern.t>, Matching.t<nodes<'a>>)
-  | OMapList(loc, Typechecker.Pattern.t, Matching.t<nodes<'a>>)
-  | OMapDict(loc, Typechecker.Pattern.t, Matching.t<nodes<'a>>)
+  | OMatch(NonEmpty.t<Typechecker.Pattern.t>, Matching.t<nodes<'a>>)
+  | OMapList(Typechecker.Pattern.t, Matching.t<nodes<'a>>)
+  | OMapDict(Typechecker.Pattern.t, Matching.t<nodes<'a>>)
   | OComponent({
-      loc: loc,
+      loc: Debug.Loc.t,
       props: array<(string, Typechecker.Pattern.t)>,
       children: array<(string, child<'a>)>,
       val: 'a,
@@ -56,11 +54,11 @@ and nodes<'a> = array<node<'a>>
 
 let echo = (. x) =>
   switch x {
-  | Parser.EBinding(l, s, e) => OEBinding(l, s, e)
-  | EChild(l, s) => OEChild(l, s)
-  | EString(l, s, e) => OEString(l, Utils.escape(e, s))
-  | EInt(l, i, e) => OEString(l, Utils.escape(e, Belt.Int.toString(i)))
-  | EFloat(l, i, e) => OEString(l, Utils.escape(e, Belt.Float.toString(i)))
+  | Parser.EBinding(_, s, e) => OEBinding(s, e)
+  | EChild(_, s) => OEChild(s)
+  | EString(_, s, e) => OEString(Utils.escape(e, s))
+  | EInt(_, i, e) => OEString(Utils.escape(e, Belt.Int.toString(i)))
+  | EFloat(_, i, e) => OEString(Utils.escape(e, Belt.Float.toString(i)))
   }
 
 let rec nodes = (~name, a) =>
@@ -70,27 +68,22 @@ let rec nodes = (~name, a) =>
     | TText(s, TrimStart) => OText(trimStart(s))
     | TText(s, TrimEnd) => OText(trimEnd(s))
     | TText(s, TrimBoth) => OText(trimStart(trimEnd(s)))
-    | TEcho({loc, nullables, default}) =>
-      OEcho({
-        loc: loc,
-        nullables: Array.mapU(nullables, echo),
-        default: echo(. default),
-      })
+    | TEcho({loc: _, nullables, default}) => OEcho(Array.mapU(nullables, echo), echo(. default))
     | TMatch(loc, pats, cases) =>
       let tree = Matching.make(cases, ~name)
       Matching.partial_match_check(tree.tree, ~loc)
       let tree = {...tree, exits: Matching.Exit.map(tree.exits, ~f=(. x) => nodes(x, ~name))}
-      OMatch(loc, pats, tree)
+      OMatch(pats, tree)
     | TMapList(loc, pat, cases) =>
       let tree = Matching.make(cases, ~name)
       Matching.partial_match_check(tree.tree, ~loc)
       let tree = {...tree, exits: Matching.Exit.map(tree.exits, ~f=(. x) => nodes(x, ~name))}
-      OMapList(loc, pat, tree)
+      OMapList(pat, tree)
     | TMapDict(loc, pat, cases) =>
       let tree = Matching.make(cases, ~name)
       Matching.partial_match_check(tree.tree, ~loc)
       let tree = {...tree, exits: Matching.Exit.map(tree.exits, ~f=(. x) => nodes(x, ~name))}
-      OMapDict(loc, pat, tree)
+      OMapDict(pat, tree)
     | TComponent({loc, val, props, children}) =>
       let children = Array.mapU(children, (. (k, v)) =>
         switch v {
@@ -176,15 +169,15 @@ let rec linkNodesExn = (nodes, graph) =>
   Array.mapU(nodes, (. node) =>
     switch node {
     | (OText(_) | OEcho(_)) as x => x
-    | OMatch(l, b, t) =>
+    | OMatch(b, t) =>
       let exits = Matching.Exit.map(t.exits, ~f=(. n) => linkNodesExn(n, graph))
-      OMatch(l, b, {...t, exits: exits})
-    | OMapList(l, p, t) =>
+      OMatch(b, {...t, exits: exits})
+    | OMapList(p, t) =>
       let exits = Matching.Exit.map(t.exits, ~f=(. n) => linkNodesExn(n, graph))
-      OMapList(l, p, {...t, exits: exits})
-    | OMapDict(l, p, t) =>
+      OMapList(p, {...t, exits: exits})
+    | OMapDict(p, t) =>
       let exits = Matching.Exit.map(t.exits, ~f=(. n) => linkNodesExn(n, graph))
-      OMapDict(l, p, {...t, exits: exits})
+      OMapDict(p, {...t, exits: exits})
     | OComponent({loc, val, props, children}) =>
       OComponent({
         loc: loc,

@@ -33,14 +33,14 @@ module Pattern = {
   type construct = TList | TNullable
 
   type rec t =
-    | TConst(Debug.loc, constant)
-    | TConstruct(Debug.loc, construct, option<t>)
-    | TTuple(Debug.loc, array<t>)
-    | TRecord(Debug.loc, array<(string, t)>)
-    | TDict(Debug.loc, array<(string, t)>)
-    | TVar(Debug.loc, string) // any binding
-    | TOptionalVar(Debug.loc, string) // any binding, may not be set
-    | TAny(Debug.loc) // ignored wildcard _
+    | TConst(Debug.Loc.t, constant)
+    | TConstruct(Debug.Loc.t, construct, option<t>)
+    | TTuple(Debug.Loc.t, array<t>)
+    | TRecord(Debug.Loc.t, array<(string, t)>)
+    | TDict(Debug.Loc.t, array<(string, t)>)
+    | TVar(Debug.Loc.t, string) // any binding
+    | TOptionalVar(Debug.Loc.t, string) // any binding, may not be set
+    | TAny(Debug.Loc.t) // ignored wildcard _
 
   @raises(Exit2)
   let rec makeList = (a, ty, ~tail) => {
@@ -151,12 +151,12 @@ module Pattern = {
 type rec node =
   | TText(string, Parser.trim)
   // The first echo item that isn't null will be returned.
-  | TEcho({loc: Debug.loc, nullables: array<Parser.echo>, default: Parser.echo})
-  | TMatch(Debug.loc, NonEmpty.t<Pattern.t>, NonEmpty.t<case>)
-  | TMapList(Debug.loc, Pattern.t, NonEmpty.t<case>)
-  | TMapDict(Debug.loc, Pattern.t, NonEmpty.t<case>)
+  | TEcho({loc: Debug.Loc.t, nullables: array<Parser.echo>, default: Parser.echo})
+  | TMatch(Debug.Loc.t, NonEmpty.t<Pattern.t>, NonEmpty.t<case>)
+  | TMapList(Debug.Loc.t, Pattern.t, NonEmpty.t<case>)
+  | TMapDict(Debug.Loc.t, Pattern.t, NonEmpty.t<case>)
   | TComponent({
-      loc: Debug.loc,
+      loc: Debug.Loc.t,
       props: array<(string, Pattern.t)>,
       children: array<(string, child)>,
       val: string,

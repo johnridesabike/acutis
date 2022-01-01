@@ -16,21 +16,21 @@ let debug = Typescheme.debug
 describe("basic", ({test, _}) => {
   test("pattern", ({expect, _}) => {
     let pat1 = P.URecord(
-      Loc(1),
+      Debug.Loc.empty,
       [
-        ("a", P.UTrue(Loc(1))),
-        ("b", P.USome(Loc(1), P.UString(Loc(1), "lol"))),
-        ("c", P.UNull(Loc(1))),
-        ("d", P.UList(Loc(1), [P.UTrue(Loc(1)), P.UFalse(Loc(1))])),
+        ("a", P.UTrue(Debug.Loc.empty)),
+        ("b", P.USome(Debug.Loc.empty, P.UString(Debug.Loc.empty, "lol"))),
+        ("c", P.UNull(Debug.Loc.empty)),
+        ("d", P.UList(Debug.Loc.empty, [P.UTrue(Debug.Loc.empty), P.UFalse(Debug.Loc.empty)])),
       ],
     )
     let pat2 = P.URecord(
-      Loc(1),
+      Debug.Loc.empty,
       [
-        ("a", P.UFalse(Loc(1))),
-        ("b", P.UNull(Loc(1))),
-        ("c", P.USome(Loc(1), P.UFloat(Loc(1), 1.0))),
-        ("z", P.UInt(Loc(1), 1)),
+        ("a", P.UFalse(Debug.Loc.empty)),
+        ("b", P.UNull(Debug.Loc.empty)),
+        ("c", P.USome(Debug.Loc.empty, P.UFloat(Debug.Loc.empty, 1.0))),
+        ("z", P.UInt(Debug.Loc.empty, 1)),
       ],
     )
     let t1 = Local.fromPattern(
@@ -45,7 +45,7 @@ describe("basic", ({test, _}) => {
       ~default=Typescheme.unknown(),
       ~name="",
     )
-    unify(t1, t2, Expand, ~loc=Loc(1), ~name="")
+    unify(t1, t2, Expand, ~loc=Debug.Loc.empty, ~name="")
     expect.value(debug(t1)).toEqual(
       #Record([
         ("a", #Boolean),

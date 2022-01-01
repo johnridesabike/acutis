@@ -6,22 +6,21 @@
   file, You can obtain one at http://mozilla.org/MPL/2.0/.
 */
 
-// This is a placeholder type until we add more sophisticated error reporting.
-@unboxed
-type loc = Loc(int)
+module Loc: {
+  type t = {@live char: int}
+  let empty: t
+  let make: int => t
+  let char: t => int
+}
 
 type kind = [
   | #Type
   | #Matching
   | #Render
   | #Compile
-  | #Pattern
   | #Parse
   | #Syntax
-  | #Decode
 ]
-
-type location = {@live character: int}
 
 @unboxed
 type rec anyExn = AnyExn(_): anyExn
@@ -29,7 +28,7 @@ type rec anyExn = AnyExn(_): anyExn
 type t = {
   @live message: string,
   @live kind: kind,
-  @live location: option<location>,
+  @live location: option<Loc.t>,
   @live path: array<string>,
   @live exn: option<anyExn>,
 }
@@ -39,37 +38,37 @@ exception Exit(t)
 module type Debuggable = {
   type t
   let toString: t => string
-  let toLocation: t => loc
+  let toLocation: t => Loc.t
 }
 
 type debuggable<'a> = module(Debuggable with type t = 'a)
 
 /* Lexer errors */
-let illegalIdentifier: (~loc: loc, ~name: string, ~identifier: string) => t
-let invalidCharacter: (~loc: loc, ~name: string, ~character: string) => t
-let unexpectedCharacter: (~loc: loc, ~name: string, ~character: string, ~expected: string) => t
-let unexpectedEof: (~loc: loc, ~name: string) => t
-let unknownEscapeSequence: (~loc: loc, ~name: string, ~char: string) => t
-let unterminatedComment: (~loc: loc, ~name: string) => t
-let unterminatedString: (~loc: loc, ~name: string) => t
+let illegalIdentifier: (~loc: Loc.t, ~name: string, ~identifier: string) => t
+let invalidCharacter: (~loc: Loc.t, ~name: string, ~character: string) => t
+let unexpectedCharacter: (~loc: Loc.t, ~name: string, ~character: string, ~expected: string) => t
+let unexpectedEof: (~loc: Loc.t, ~name: string) => t
+let unknownEscapeSequence: (~loc: Loc.t, ~name: string, ~char: string) => t
+let unterminatedComment: (~loc: Loc.t, ~name: string) => t
+let unterminatedString: (~loc: Loc.t, ~name: string) => t
 
 /* Parse errors */
 let unexpectedToken: ('a, debuggable<'a>, ~name: string) => t
 
 /* Type errors */
-let cantNarrowType: (~loc: loc, 'a, 'a, 'a => string) => t
-let childNotAllowedInRoot: loc => t
-let childTypeMismatch: ('a, 'a, ~loc: loc, 'a => string) => t
-let mapPatternSizeMismatch: (~loc: loc, ~name: string) => t
-let missingProp: (string, 'a, ~loc: loc, ~name: string, ~comp: string, 'a => string) => t
-let nonNullableEchoLiteral: loc => t
-let patternNumberMismatch: (~loc: loc, ~name: string) => t
-let tupleSizeMismatch: (~loc: loc, ~name: string, int, int) => t
-let typeMismatch: ('a, 'a, ~loc: loc, ~name: string, 'a => string) => t
+let cantNarrowType: (~loc: Loc.t, 'a, 'a, 'a => string) => t
+let childNotAllowedInRoot: Loc.t => t
+let childTypeMismatch: ('a, 'a, ~loc: Loc.t, 'a => string) => t
+let mapPatternSizeMismatch: (~loc: Loc.t, ~name: string) => t
+let missingProp: (string, 'a, ~loc: Loc.t, ~name: string, ~comp: string, 'a => string) => t
+let nonNullableEchoLiteral: Loc.t => t
+let patternNumberMismatch: (~loc: Loc.t, ~name: string) => t
+let tupleSizeMismatch: (~loc: Loc.t, ~name: string, int, int) => t
+let typeMismatch: ('a, 'a, ~loc: Loc.t, ~name: string, 'a => string) => t
 
 /* Matching errors */
-let nameBoundMultipleTimes: (~loc: loc, ~binding: string, ~name: string) => t
-let partialMatch: ('a, 'a => string, ~loc: loc) => t
+let nameBoundMultipleTimes: (~loc: Loc.t, ~binding: string, ~name: string) => t
+let partialMatch: ('a, 'a => string, ~loc: Loc.t) => t
 let unusedCase: (NonEmpty.t<'a>, debuggable<'a>) => t
 
 /* Compile errors */
@@ -80,8 +79,8 @@ let uncaughtCompileError: ('e, ~name: string) => t
 let customError: string => t
 let decodeError: (~stack: list<string>, 'a, Js.Json.t, 'a => string) => t
 let decodeErrorMissingKey: (~stack: list<string>, string) => t
-let uncaughtComponentError: ('e, ~stack: list<string>) => t
+let uncaughtComponentError: (~loc: Loc.t, ~name: string, ~stack: list<string>, 'e) => t
 
 /* Other errors */
-let cyclicDependency: (~loc: loc, ~name: string, ~stack: list<string>) => t
-let missingComponent: (~name: string, ~loc: loc, string) => t
+let cyclicDependency: (~loc: Loc.t, ~stack: list<string>) => t
+let missingComponent: (~name: string, ~loc: Loc.t, string) => t

@@ -7,21 +7,21 @@
 */
 
 type echo =
-  | OEBinding(Debug.loc, string, Utils.escape)
-  | OEChild(Debug.loc, string)
-  | OEString(Debug.loc, string)
+  | OEBinding(string, Utils.escape)
+  | OEChild(string)
+  | OEString(string)
 
 type rec node<'a> =
   // Trimming is optimized away
   | OText(string)
   // The first echo item that isn't null will be returned.
-  | OEcho({loc: Debug.loc, nullables: array<echo>, default: echo})
+  | OEcho(array<echo>, echo)
   // Case matrices are optimized into decision trees
-  | OMatch(Debug.loc, NonEmpty.t<Typechecker.Pattern.t>, Matching.t<nodes<'a>>)
-  | OMapList(Debug.loc, Typechecker.Pattern.t, Matching.t<nodes<'a>>)
-  | OMapDict(Debug.loc, Typechecker.Pattern.t, Matching.t<nodes<'a>>)
+  | OMatch(NonEmpty.t<Typechecker.Pattern.t>, Matching.t<nodes<'a>>)
+  | OMapList(Typechecker.Pattern.t, Matching.t<nodes<'a>>)
+  | OMapDict(Typechecker.Pattern.t, Matching.t<nodes<'a>>)
   | OComponent({
-      loc: Debug.loc,
+      loc: Debug.Loc.t,
       props: array<(string, Typechecker.Pattern.t)>,
       children: array<(string, child<'a>)>,
       val: 'a,

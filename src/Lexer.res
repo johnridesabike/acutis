@@ -15,40 +15,40 @@ exception Exit = Debug.Exit
 module Token = {
   type t =
     // Static elements
-    | Tkn_Text(Debug.loc, string)
-    | Tkn_Comment(Debug.loc, string)
+    | Tkn_Text(Debug.Loc.t, string)
+    | Tkn_Comment(Debug.Loc.t, string)
     // JSON values
-    | Tkn_String(Debug.loc, string)
-    | Tkn_Int(Debug.loc, int)
-    | Tkn_Float(Debug.loc, float)
-    | Tkn_True(Debug.loc) // a reserved identifier
-    | Tkn_False(Debug.loc) // a reserved identifier
-    | Tkn_Null(Debug.loc) // a reserved identifier
+    | Tkn_String(Debug.Loc.t, string)
+    | Tkn_Int(Debug.Loc.t, int)
+    | Tkn_Float(Debug.Loc.t, float)
+    | Tkn_True(Debug.Loc.t) // a reserved identifier
+    | Tkn_False(Debug.Loc.t) // a reserved identifier
+    | Tkn_Null(Debug.Loc.t) // a reserved identifier
     // JSON syntax
-    | Tkn_Comma(Debug.loc)
-    | Tkn_Colon(Debug.loc)
-    | Tkn_OpenBracket(Debug.loc)
-    | Tkn_CloseBracket(Debug.loc)
-    | Tkn_OpenBrace(Debug.loc)
-    | Tkn_CloseBrace(Debug.loc)
-    | Tkn_OpenParen(Debug.loc)
-    | Tkn_CloseParen(Debug.loc)
-    | Tkn_OpenPointyBracket(Debug.loc)
-    | Tkn_ClosePointyBracket(Debug.loc)
-    | Tkn_Spread(Debug.loc)
+    | Tkn_Comma(Debug.Loc.t)
+    | Tkn_Colon(Debug.Loc.t)
+    | Tkn_OpenBracket(Debug.Loc.t)
+    | Tkn_CloseBracket(Debug.Loc.t)
+    | Tkn_OpenBrace(Debug.Loc.t)
+    | Tkn_CloseBrace(Debug.Loc.t)
+    | Tkn_OpenParen(Debug.Loc.t)
+    | Tkn_CloseParen(Debug.Loc.t)
+    | Tkn_OpenPointyBracket(Debug.Loc.t)
+    | Tkn_ClosePointyBracket(Debug.Loc.t)
+    | Tkn_Spread(Debug.Loc.t)
     // Component syntax
-    | Tkn_ComponentName(Debug.loc, string)
-    | Tkn_Slash(Debug.loc)
-    | Tkn_Block(Debug.loc)
-    | Tkn_Equals(Debug.loc)
+    | Tkn_ComponentName(Debug.Loc.t, string)
+    | Tkn_Slash(Debug.Loc.t)
+    | Tkn_Block(Debug.Loc.t)
+    | Tkn_Equals(Debug.Loc.t)
     // Dynamic content
-    | Tkn_Identifier(Debug.loc, string)
-    | Tkn_Tilde(Debug.loc)
-    | Tkn_Question(Debug.loc)
-    | Tkn_Ampersand(Debug.loc)
-    | Tkn_Bang(Debug.loc)
-    | Tkn_Echo(Debug.loc)
-    | Tkn_EndOfFile(Debug.loc)
+    | Tkn_Identifier(Debug.Loc.t, string)
+    | Tkn_Tilde(Debug.Loc.t)
+    | Tkn_Question(Debug.Loc.t)
+    | Tkn_Ampersand(Debug.Loc.t)
+    | Tkn_Bang(Debug.Loc.t)
+    | Tkn_Echo(Debug.Loc.t)
+    | Tkn_EndOfFile(Debug.Loc.t)
 
   let toString = x =>
     switch x {
@@ -141,8 +141,6 @@ let rec readSubstring = (str, source, ~until) =>
     readSubstring(str ++ readChar(source), source, ~until)
   }
 
-let loc = x => Debug.Loc(x.position)
-
 let endOfInt = (. c) =>
   switch c {
   | "-" | "+" | "0" | "1" | "2" | "3" | "4" | "5" | "6" | "7" | "8" | "9" | "e" | "E" => false
@@ -157,7 +155,7 @@ type mode = EchoMode | ExpressionMode | CommentMode | EndMode
 // than consuming each character at a time.
 @raises(Exit)
 let readText = (source, tokens: Queue.t<Token.t>) => {
-  let loc = loc(source)
+  let loc = Debug.Loc.make(source.position)
 
   @raises(Exit)
   let rec aux = pos =>
@@ -218,7 +216,7 @@ let readComment = (source, ~name) => {
       | "}" => aux(pos + 2, ~nested=nested - 1)
       | _ => aux(pos + 2, ~nested)
       }
-    | "" => raise(Exit(Debug.unterminatedComment(~loc=loc(source), ~name)))
+    | "" => raise(Exit(Debug.unterminatedComment(~loc=Debug.Loc.make(source.position), ~name)))
     | _ => aux(pos + 1, ~nested)
     }
   aux(source.position, ~nested=0)
@@ -232,10 +230,13 @@ let readJsonString = (source, ~name) => {
     | "\\" =>
       switch readChar(source) {
       | ("\"" | "\\") as c => aux(str ++ c)
-      | c => raise(Exit(Debug.unknownEscapeSequence(~loc=loc(source), ~name, ~char=c)))
+      | c =>
+        raise(
+          Exit(Debug.unknownEscapeSequence(~loc=Debug.Loc.make(source.position), ~name, ~char=c)),
+        )
       }
     | "\"" => str
-    | "" => raise(Exit(Debug.unterminatedString(~loc=loc(source), ~name)))
+    | "" => raise(Exit(Debug.unterminatedString(~loc=Debug.Loc.make(source.position), ~name)))
     | c => aux(str ++ c)
     }
   aux("")
@@ -281,7 +282,7 @@ let readIdentifier = (c, source, loc): Token.t =>
 let makeExpression = (source, tokens: Queue.t<Token.t>, ~name, ~until) => {
   let loop = ref(true)
   while loop.contents {
-    let loc = loc(source)
+    let loc = Debug.Loc.make(source.position)
     switch readChar(source) {
     | c if c == until => loop := false
     | "" => raise(Exit(Debug.unexpectedEof(~loc, ~name)))
@@ -329,10 +330,10 @@ let make = (~name, str) => {
   let rec aux = mode =>
     switch mode {
     | EndMode =>
-      Queue.add(tokens, Tkn_EndOfFile(loc(source)))
+      Queue.add(tokens, Tkn_EndOfFile(Debug.Loc.make(source.position)))
       {tokens: tokens, name: name}
     | CommentMode =>
-      let loc = loc(source)
+      let loc = Debug.Loc.make(source.position)
       Queue.add(tokens, Tkn_Comment(loc, readComment(source, ~name)))
       aux(readText(source, tokens))
     | ExpressionMode =>
@@ -340,13 +341,22 @@ let make = (~name, str) => {
       switch readChar(source) {
       | "}" => aux(readText(source, tokens))
       | c =>
-        raise(Exit(Debug.unexpectedCharacter(~loc=loc(source), ~expected="}", ~character=c, ~name)))
+        raise(
+          Exit(
+            Debug.unexpectedCharacter(
+              ~loc=Debug.Loc.make(source.position),
+              ~expected="}",
+              ~character=c,
+              ~name,
+            ),
+          ),
+        )
       }
     | EchoMode =>
       // The tilde must come *before* the echo token.
-      let echoLoc = loc(source)
+      let echoLoc = Debug.Loc.make(source.position)
       if peekChar(source) == "~" {
-        Queue.add(tokens, Tkn_Tilde(loc(source)))
+        Queue.add(tokens, Tkn_Tilde(Debug.Loc.make(source.position)))
         skipChar(source)
       }
       Queue.add(tokens, Tkn_Echo(echoLoc))
@@ -354,7 +364,16 @@ let make = (~name, str) => {
       switch readChar(source) {
       | "}" => aux(readText(source, tokens))
       | c =>
-        raise(Exit(Debug.unexpectedCharacter(~loc=loc(source), ~expected="}", ~character=c, ~name)))
+        raise(
+          Exit(
+            Debug.unexpectedCharacter(
+              ~loc=Debug.Loc.make(source.position),
+              ~expected="}",
+              ~character=c,
+              ~name,
+            ),
+          ),
+        )
       }
     }
   // All sources begin as text

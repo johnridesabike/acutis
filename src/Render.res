@@ -104,22 +104,22 @@ let make_match = ({Matching.tree: tree, exits}, args) =>
 
 let echoNotNull = (x, props, children, return) =>
   switch x {
-  | Compile.OEBinding(_, binding, esc) =>
+  | Compile.OEBinding(binding, esc) =>
     switch MapString.get(props, binding) {
     | Some(x) => return(. Utils.escape(esc, x->Data.constantExn->Data.Const.toString))
     | None => assert false
     }
-  | OEChild(_, child) =>
+  | OEChild(child) =>
     switch MapString.get(children, child) {
     | None => assert false
     | Some(x) => x
     }
-  | OEString(_, x) => return(. x)
+  | OEString(x) => return(. x)
   }
 
 let echoNullable = (x, props, children, return) =>
   switch x {
-  | Compile.OEBinding(_, binding, esc) =>
+  | Compile.OEBinding(binding, esc) =>
     switch MapString.get(props, binding) {
     | Some(x) =>
       switch Data.nullableExn(x) {
@@ -128,8 +128,8 @@ let echoNullable = (x, props, children, return) =>
       }
     | None => assert false
     }
-  | OEChild(_, child) => MapString.get(children, child)
-  | OEString(_, x) => Some(return(. x))
+  | OEChild(child) => MapString.get(children, child)
+  | OEString(x) => Some(return(. x))
   }
 
 let echo = (nullables, default, props, children, return) => {
@@ -172,10 +172,10 @@ let rec make:
     let queue = Queue.make()
     Array.forEachU(nodes, (. node) =>
       switch node {
-      | Compile.OEcho({loc: _, nullables, default}) =>
+      | Compile.OEcho(nullables, default) =>
         Queue.add(queue, echo(nullables, default, props, children, Env.return))
       | OText(str) => Queue.add(queue, Env.return(. str))
-      | OMatch(_, args, dectree) =>
+      | OMatch(args, dectree) =>
         let args = NonEmpty.map(args, (. x) => Data.fromPattern(x, props))
         switch make_match(dectree, args) {
         | None => assert false
@@ -184,7 +184,7 @@ let rec make:
           let result = make(~nodes, ~props, ~children, ~stack, ~env)
           Queue.transfer(result, queue)
         }
-      | OMapList(_, pattern, dectree) =>
+      | OMapList(pattern, dectree) =>
         let l = Data.fromPattern(pattern, props)
         Data.forEachListExn(l, (. ~index, args) =>
           switch make_match(dectree, NonEmpty.two(args, index)) {
@@ -195,7 +195,7 @@ let rec make:
             Queue.transfer(result, queue)
           }
         )
-      | OMapDict(_, pattern, dectree) =>
+      | OMapDict(pattern, dectree) =>
         let l = Data.fromPattern(pattern, props)
         Data.forEachDictExn(l, (. ~index, args) =>
           switch make_match(dectree, NonEmpty.two(args, index)) {
@@ -206,7 +206,7 @@ let rec make:
             Queue.transfer(result, queue)
           }
         )
-      | OComponent({loc: _, props: compPropsRaw, children: compChildrenRaw, val}) =>
+      | OComponent({loc, props: compPropsRaw, children: compChildrenRaw, val}) =>
         let compChildren = Array.mapU(compChildrenRaw, (. (key, child)) =>
           switch child {
           | OChildBlock(nodes) =>
@@ -231,10 +231,10 @@ let rec make:
               ~env,
             ),
           )
-        | Function(_, propTypes, f) =>
+        | Function(name, propTypes, f) =>
           Env.try_(.
             (. ()) => f(. env, Data.toJson(compProps, propTypes), mapToDict(compChildren)),
-            (. e) => Env.error_internal(. [Debug.uncaughtComponentError(e, ~stack)]),
+            (. e) => Env.error_internal(. [Debug.uncaughtComponentError(~loc, ~name, ~stack, e)]),
           )
         }
         Queue.add(queue, result)

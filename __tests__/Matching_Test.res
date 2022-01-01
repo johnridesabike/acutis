@@ -17,7 +17,13 @@ let e = Matching.Exit.unsafe_key
 let g = Utils.Dagmap.prelinked(Belt.HashMap.String.make(~hintSize=0))
 
 let makeCases = c => {
-  let (_, cases) = TC.makeCases(ne(c), TC.Context.make(#Component), ~loc=Loc(0), ~name="", g)
+  let (_, cases) = TC.makeCases(
+    ne(c),
+    TC.Context.make(#Component),
+    ~loc=Debug.Loc.empty,
+    ~name="",
+    g,
+  )
   cases
 }
 
@@ -26,11 +32,11 @@ describe("Basic tree", ({test, _}) => {
     let nodes1 = [Parser.UText("", NoTrim)]
     let nodes2 = [Parser.UText("", NoTrim)]
     let case1 = {
-      Parser.patterns: [[P.USome(Loc(0), UBinding(Loc(1), "a"))]->ne]->ne,
+      Parser.patterns: [[P.USome({char: 0}, UBinding({char: 1}, "a"))]->ne]->ne,
       nodes: nodes1,
     }
     let case2 = {
-      Parser.patterns: [[P.UNull(Loc(3))]->ne]->ne,
+      Parser.patterns: [[P.UNull({char: 3})]->ne]->ne,
       nodes: nodes2,
     }
     let result = [case1, case2]->makeCases->Matching.make(~name="")
@@ -64,19 +70,19 @@ describe("Basic tree", ({test, _}) => {
     let nodes3 = [Parser.UText("", NoTrim)]
     let case1 = {
       Parser.patterns: [
-        [P.UInt(Loc(0), 0)]->ne,
-        [P.UInt(Loc(3), 10)]->ne,
-        [P.UInt(Loc(3), 20)]->ne,
-        [P.UInt(Loc(3), 30)]->ne,
+        [P.UInt({char: 0}, 0)]->ne,
+        [P.UInt({char: 3}, 10)]->ne,
+        [P.UInt({char: 3}, 20)]->ne,
+        [P.UInt({char: 3}, 30)]->ne,
       ]->ne,
       nodes: nodes1,
     }
     let case2 = {
-      Parser.patterns: [[P.UInt(Loc(0), 15)]->ne]->ne,
+      Parser.patterns: [[P.UInt({char: 0}, 15)]->ne]->ne,
       nodes: nodes2,
     }
     let case3 = {
-      Parser.patterns: [[P.UBinding(Loc(0), "_")]->ne]->ne,
+      Parser.patterns: [[P.UBinding({char: 0}, "_")]->ne]->ne,
       nodes: nodes3,
     }
     let result = [case1, case2, case3]->makeCases->Matching.make(~name="")
@@ -114,35 +120,35 @@ describe("Basic tree", ({test, _}) => {
     let nodes1 = [Parser.UText("", NoTrim)]
     let case1 = {
       Parser.patterns: [
-        [P.UInt(Loc(0), 1), UInt(Loc(1), 2), UInt(Loc(2), 3)]->ne,
-        [P.UInt(Loc(3), 1), UInt(Loc(4), 4), UInt(Loc(5), 5)]->ne,
-        [P.UInt(Loc(6), 10), UInt(Loc(7), 20), UInt(Loc(8), 30)]->ne,
-        [P.UInt(Loc(9), 10), UInt(Loc(10), 20), UInt(Loc(11), 40)]->ne,
+        [P.UInt({char: 0}, 1), UInt({char: 1}, 2), UInt({char: 2}, 3)]->ne,
+        [P.UInt({char: 3}, 1), UInt({char: 4}, 4), UInt({char: 5}, 5)]->ne,
+        [P.UInt({char: 6}, 10), UInt({char: 7}, 20), UInt({char: 8}, 30)]->ne,
+        [P.UInt({char: 9}, 10), UInt({char: 10}, 20), UInt({char: 11}, 40)]->ne,
       ]->ne,
       nodes: nodes1,
     }
     let nodes2 = [Parser.UText("", NoTrim)]
     let case2 = {
       Parser.patterns: [
-        [P.UInt(Loc(12), 100), UInt(Loc(13), 102), UInt(Loc(14), 103)]->ne,
-        [P.UInt(Loc(15), 100), UInt(Loc(16), 104), UInt(Loc(17), 105)]->ne,
+        [P.UInt({char: 12}, 100), UInt({char: 13}, 102), UInt({char: 14}, 103)]->ne,
+        [P.UInt({char: 15}, 100), UInt({char: 16}, 104), UInt({char: 17}, 105)]->ne,
       ]->ne,
       nodes: nodes2,
     }
     let nodes3 = [Parser.UText("", NoTrim)]
     let case3 = {
       Parser.patterns: [
-        [P.UInt(Loc(18), 10), UInt(Loc(19), 20), UInt(Loc(20), 50)]->ne,
-        [P.UInt(Loc(21), 1), UInt(Loc(22), 2), UInt(Loc(23), 100)]->ne,
-        [P.UInt(Loc(24), 1), UInt(Loc(25), 2), UInt(Loc(26), 101)]->ne,
-        [P.UInt(Loc(27), 100), UInt(Loc(28), 102), UInt(Loc(29), 106)]->ne,
+        [P.UInt({char: 18}, 10), UInt({char: 19}, 20), UInt({char: 20}, 50)]->ne,
+        [P.UInt({char: 21}, 1), UInt({char: 22}, 2), UInt({char: 23}, 100)]->ne,
+        [P.UInt({char: 24}, 1), UInt({char: 25}, 2), UInt({char: 26}, 101)]->ne,
+        [P.UInt({char: 27}, 100), UInt({char: 28}, 102), UInt({char: 29}, 106)]->ne,
       ]->ne,
       nodes: nodes3,
     }
     let nodes4 = [Parser.UText("", NoTrim)]
     let case4 = {
       Parser.patterns: [
-        [P.UBinding(Loc(30), "_"), UBinding(Loc(31), "_"), UBinding(Loc(32), "_")]->ne,
+        [P.UBinding({char: 30}, "_"), UBinding({char: 31}, "_"), UBinding({char: 32}, "_")]->ne,
       ]->ne,
       nodes: nodes4,
     }
@@ -301,11 +307,11 @@ describe("Basic tree", ({test, _}) => {
     let nodes1 = [Parser.UText("", NoTrim)]
     let case1 = {
       Parser.patterns: [
-        [P.UInt(Loc(0), 10), UInt(Loc(1), 11), UInt(Loc(2), 12)]->ne,
-        [P.UBinding(Loc(3), "x"), UInt(Loc(4), 21), UInt(Loc(5), 22)]->ne,
-        [P.UInt(Loc(9), 30), UInt(Loc(10), 31), UInt(Loc(11), 32)]->ne,
-        [P.UInt(Loc(12), 30), UBinding(Loc(13), "y"), UInt(Loc(14), 42)]->ne,
-        [P.UBinding(Loc(18), "a"), UBinding(Loc(19), "b"), UBinding(Loc(20), "c")]->ne,
+        [P.UInt({char: 0}, 10), UInt({char: 1}, 11), UInt({char: 2}, 12)]->ne,
+        [P.UBinding({char: 3}, "x"), UInt({char: 4}, 21), UInt({char: 5}, 22)]->ne,
+        [P.UInt({char: 9}, 30), UInt({char: 10}, 31), UInt({char: 11}, 32)]->ne,
+        [P.UInt({char: 12}, 30), UBinding({char: 13}, "y"), UInt({char: 14}, 42)]->ne,
+        [P.UBinding({char: 18}, "a"), UBinding({char: 19}, "b"), UBinding({char: 20}, "c")]->ne,
       ]->ne,
       nodes: nodes1,
     }
@@ -483,10 +489,10 @@ describe("Nests", ({test, _}) => {
     let nodes1 = [Parser.UText("", NoTrim)]
     let case1 = {
       Parser.patterns: [
-        [P.UTuple(Loc(0), [UInt(Loc(1), 10), UInt(Loc(2), 12)]), UInt(Loc(3), 13)]->ne,
-        [P.UTuple(Loc(4), [UInt(Loc(5), 10), UInt(Loc(6), 22)]), UInt(Loc(7), 23)]->ne,
-        [P.UBinding(Loc(8), "_"), UInt(Loc(9), 33)]->ne,
-        [P.UBinding(Loc(10), "_"), UBinding(Loc(11), "_")]->ne,
+        [P.UTuple({char: 0}, [UInt({char: 1}, 10), UInt({char: 2}, 12)]), UInt({char: 3}, 13)]->ne,
+        [P.UTuple({char: 4}, [UInt({char: 5}, 10), UInt({char: 6}, 22)]), UInt({char: 7}, 23)]->ne,
+        [P.UBinding({char: 8}, "_"), UInt({char: 9}, 33)]->ne,
+        [P.UBinding({char: 10}, "_"), UBinding({char: 11}, "_")]->ne,
       ]->ne,
       nodes: nodes1,
     }
@@ -572,20 +578,23 @@ describe("Nests", ({test, _}) => {
     let nodes2 = [Parser.UText("", NoTrim)]
     let nodes3 = [Parser.UText("", NoTrim)]
     let case1 = {
-      Parser.patterns: [[P.UBinding(Loc(0), "x"), UInt(Loc(1), 1)]->ne]->ne,
+      Parser.patterns: [[P.UBinding({char: 0}, "x"), UInt({char: 1}, 1)]->ne]->ne,
       nodes: nodes1,
     }
     let case2 = {
       Parser.patterns: [
-        [P.UTuple(Loc(2), [UString(Loc(3), "a"), UString(Loc(4), "b")]), UInt(Loc(5), 10)]->ne,
+        [
+          P.UTuple({char: 2}, [UString({char: 3}, "a"), UString({char: 4}, "b")]),
+          UInt({char: 5}, 10),
+        ]->ne,
       ]->ne,
       nodes: nodes2,
     }
     let case3 = {
       Parser.patterns: [
         [
-          P.UTuple(Loc(10), [UBinding(Loc(11), "_"), UBinding(Loc(12), "y")]),
-          UBinding(Loc(13), "z"),
+          P.UTuple({char: 10}, [UBinding({char: 11}, "_"), UBinding({char: 12}, "y")]),
+          UBinding({char: 13}, "z"),
         ]->ne,
       ]->ne,
       nodes: nodes3,
@@ -697,16 +706,16 @@ describe("Nests", ({test, _}) => {
     let n1 = [Parser.UText("", NoTrim)]
     let c1 = {
       Parser.patterns: [
-        [P.UBinding(Loc(0), "_"), UBinding(Loc(1), "_"), UInt((Loc(2), 12))]->ne,
+        [P.UBinding({char: 0}, "_"), UBinding({char: 1}, "_"), UInt(({char: 2}, 12))]->ne,
       ]->ne,
       nodes: n1,
     }
     let c2 = {
       Parser.patterns: [
         [
-          P.UBinding(Loc(3), "_"),
-          UTuple(Loc(4), [UInt(Loc(5), 20), UInt(Loc(6), 21)]),
-          UInt(Loc(7), 22),
+          P.UBinding({char: 3}, "_"),
+          UTuple({char: 4}, [UInt({char: 5}, 20), UInt({char: 6}, 21)]),
+          UInt({char: 7}, 22),
         ]->ne,
       ]->ne,
       nodes: n1,
@@ -714,9 +723,9 @@ describe("Nests", ({test, _}) => {
     let c3 = {
       Parser.patterns: [
         [
-          P.UBinding(Loc(8), "_"),
-          UTuple(Loc(9), [UInt(Loc(10), 20), UInt(Loc(11), 21)]),
-          UInt(Loc(12), 32),
+          P.UBinding({char: 8}, "_"),
+          UTuple({char: 9}, [UInt({char: 10}, 20), UInt({char: 11}, 21)]),
+          UInt({char: 12}, 32),
         ]->ne,
       ]->ne,
       nodes: n1,
@@ -724,9 +733,9 @@ describe("Nests", ({test, _}) => {
     let c4 = {
       Parser.patterns: [
         [
-          P.UBinding(Loc(13), "_"),
-          UTuple(Loc(14), [UBinding(Loc(15), "_"), UBinding(Loc(16), "_")]),
-          UBinding(Loc(17), "_"),
+          P.UBinding({char: 13}, "_"),
+          UTuple({char: 14}, [UBinding({char: 15}, "_"), UBinding({char: 16}, "_")]),
+          UBinding({char: 17}, "_"),
         ]->ne,
       ]->ne,
       nodes: n1,
@@ -832,23 +841,23 @@ describe("Nests", ({test, _}) => {
     let n2 = [Parser.UText("", NoTrim)]
     let n3 = [Parser.UText("", NoTrim)]
     let c1 = {
-      Parser.patterns: [[P.UBinding(Loc(3), "x"), UInt(Loc(4), 41)]->ne]->ne,
+      Parser.patterns: [[P.UBinding({char: 3}, "x"), UInt({char: 4}, 41)]->ne]->ne,
       nodes: n1,
     }
     let c2 = {
       Parser.patterns: [
         [
           P.UTuple(
-            Loc(0),
-            [UTuple(Loc(0), [UInt(Loc(1), 10), UInt(Loc(1), 20)]), UInt(Loc(1), 30)],
+            {char: 0},
+            [UTuple({char: 0}, [UInt({char: 1}, 10), UInt({char: 1}, 20)]), UInt({char: 1}, 30)],
           ),
-          UInt(Loc(2), 40),
+          UInt({char: 2}, 40),
         ]->ne,
       ]->ne,
       nodes: n2,
     }
     let c3 = {
-      Parser.patterns: [[P.UBinding(Loc(5), "y"), UBinding(Loc(6), "z")]->ne]->ne,
+      Parser.patterns: [[P.UBinding({char: 5}, "y"), UBinding({char: 6}, "z")]->ne]->ne,
       nodes: n3,
     }
     let result = [c1, c2, c3]->makeCases->Matching.make(~name="")
@@ -943,16 +952,18 @@ describe("Nests", ({test, _}) => {
     let n2 = [Parser.UText("", NoTrim)]
     let n3 = [Parser.UText("", NoTrim)]
     let c1 = {
-      Parser.patterns: [[P.UList(Loc(0), [])]->ne]->ne,
+      Parser.patterns: [[P.UList({char: 0}, [])]->ne]->ne,
       nodes: n1,
     }
     let c2 = {
-      Parser.patterns: [[P.UList(Loc(0), [UBinding(Loc(2), "x")])]->ne]->ne,
+      Parser.patterns: [[P.UList({char: 0}, [UBinding({char: 2}, "x")])]->ne]->ne,
       nodes: n2,
     }
     let c3 = {
       Parser.patterns: [
-        [P.UListWithTailBinding(Loc(0), [UBinding(Loc(2), "x")], UBinding(Loc(5), "y"))]->ne,
+        [
+          P.UListWithTailBinding({char: 0}, [UBinding({char: 2}, "x")], UBinding({char: 5}, "y")),
+        ]->ne,
       ]->ne,
       nodes: n3,
     }
@@ -1007,7 +1018,7 @@ describe("Nests", ({test, _}) => {
     let nodes5 = [Parser.UText("", NoTrim)]
     let case1 = {
       Parser.patterns: [
-        [P.UList(Loc(0), [UInt(Loc(2), 10), UInt(Loc(3), 11)]), UInt(Loc(4), 12)]->ne,
+        [P.UList({char: 0}, [UInt({char: 2}, 10), UInt({char: 3}, 11)]), UInt({char: 4}, 12)]->ne,
       ]->ne,
       nodes: nodes1,
     }
@@ -1015,25 +1026,27 @@ describe("Nests", ({test, _}) => {
       Parser.patterns: [
         [
           P.UListWithTailBinding(
-            Loc(5),
-            [UInt(Loc(6), 10), UInt(Loc(7), 11)],
-            UBinding(Loc(8), "x"),
+            {char: 5},
+            [UInt({char: 6}, 10), UInt({char: 7}, 11)],
+            UBinding({char: 8}, "x"),
           ),
-          UInt(Loc(9), 22),
+          UInt({char: 9}, 22),
         ]->ne,
       ]->ne,
       nodes: nodes2,
     }
     let case3 = {
-      Parser.patterns: [[P.UList(Loc(10), [UInt(Loc(11), 30)]), UInt(Loc(12), 32)]->ne]->ne,
+      Parser.patterns: [
+        [P.UList({char: 10}, [UInt({char: 11}, 30)]), UInt({char: 12}, 32)]->ne,
+      ]->ne,
       nodes: nodes3,
     }
     let case4 = {
-      Parser.patterns: [[P.UBinding(Loc(13), "y"), UInt(Loc(14), 42)]->ne]->ne,
+      Parser.patterns: [[P.UBinding({char: 13}, "y"), UInt({char: 14}, 42)]->ne]->ne,
       nodes: nodes4,
     }
     let case5 = {
-      Parser.patterns: [[P.UBinding(Loc(15), "_"), UBinding(Loc(16), "_")]->ne]->ne,
+      Parser.patterns: [[P.UBinding({char: 15}, "_"), UBinding({char: 16}, "_")]->ne]->ne,
       nodes: nodes5,
     }
     let result = [case1, case2, case3, case4, case5]->makeCases->Matching.make(~name="")
@@ -1206,7 +1219,7 @@ describe("Nests", ({test, _}) => {
   })
 
   test("Records sort fields correctly", ({expect, _}) => {
-    let l = Debug.Loc(0)
+    let l = Debug.Loc.empty
     let nodes1 = [Parser.UText("a", NoTrim)]
     let case1 = {
       Parser.patterns: [
@@ -1290,7 +1303,7 @@ describe("Nests", ({test, _}) => {
   })
 
   test("Records: missing fields are automatically wildcards", ({expect, _}) => {
-    let l = Debug.Loc(0)
+    let l = Debug.Loc.empty
     let nodes1 = [Parser.UText("a", NoTrim)]
     let case1 = {
       Parser.patterns: [
@@ -1392,19 +1405,19 @@ describe("Nests", ({test, _}) => {
     let nodes3 = [Parser.UText("z", NoTrim)]
     let nodes4 = [Parser.UText("zz", NoTrim)]
     let case1 = {
-      Parser.patterns: [[P.URecord(Loc(0), [("b", UInt(Loc(1), 10))])]->ne]->ne,
+      Parser.patterns: [[P.URecord({char: 0}, [("b", UInt({char: 1}, 10))])]->ne]->ne,
       nodes: nodes1,
     }
     let case2 = {
-      Parser.patterns: [[P.URecord(Loc(2), [("a", UInt(Loc(3), 20))])]->ne]->ne,
+      Parser.patterns: [[P.URecord({char: 2}, [("a", UInt({char: 3}, 20))])]->ne]->ne,
       nodes: nodes2,
     }
     let case3 = {
-      Parser.patterns: [[P.URecord(Loc(4), [("c", UInt(Loc(5), 30))])]->ne]->ne,
+      Parser.patterns: [[P.URecord({char: 4}, [("c", UInt({char: 5}, 30))])]->ne]->ne,
       nodes: nodes3,
     }
     let case4 = {
-      Parser.patterns: [[P.UBinding(Loc(6), "x")]->ne]->ne,
+      Parser.patterns: [[P.UBinding({char: 6}, "x")]->ne]->ne,
       nodes: nodes4,
     }
     let result = [case1, case2, case3, case4]->makeCases->Matching.make(~name="")

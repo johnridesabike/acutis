@@ -80,17 +80,18 @@ module Dagmap = {
     switch HashmapString.get(g.linked, key) {
     | Some(x) => x // It was linked already during a previous search.
     | None =>
+      let stack = list{key, ...g.stack}
       switch HashmapString.get(g.notlinked, key) {
       | Some(x) =>
         // Remove it from the unlinked map so a cycle isn't possible.
         HashmapString.remove(g.notlinked, key)
-        let x = g.f(. {...g, stack: list{key, ...g.stack}}, x)
+        let x = g.f(. {...g, stack: stack}, x)
         HashmapString.set(g.linked, key, x)
         x
       | None =>
         // It is either being linked (thus in a cycle) or it doesn't exist.
         if List.hasU(g.stack, key, string_equal) {
-          raise(Exit(Debug.cyclicDependency(~loc, ~name=key, ~stack=g.stack)))
+          raise(Exit(Debug.cyclicDependency(~loc, ~stack)))
         } else {
           raise(Exit(Debug.missingComponent(~name, ~loc, key)))
         }
