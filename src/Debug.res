@@ -142,8 +142,24 @@ let childTypeMismatch = (a, b, ~loc, f) => {
   path: [],
 }
 
+let extraChild = (~loc, ~name, ~comp, child) => {
+  message: `This call of component "${comp}" includes unexpected child "${child}."`,
+  kind: #Type,
+  exn: None,
+  location: Some(loc),
+  path: [name],
+}
+
 let mapPatternSizeMismatch = (~loc, ~name) => {
   message: `Map blocks can only have two patterns per "with" clause: the item and the index.`,
+  kind: #Type,
+  exn: None,
+  location: Some(loc),
+  path: [name],
+}
+
+let missingChild = (~loc, ~name, ~comp, child) => {
+  message: `This call of component "${comp}" is missing child "${child}."`,
   kind: #Type,
   exn: None,
   location: Some(loc),
@@ -172,6 +188,14 @@ let patternNumberMismatch = (~loc, ~name) => {
   kind: #Type,
   message: "The number of patterns does not match the number of data.",
   exn: None,
+}
+
+let tailBindingClash = (~loc, ~name) => {
+  message: `Only bindings are allowed as list tails.`,
+  kind: #Type,
+  exn: None,
+  location: Some(loc),
+  path: [name],
 }
 
 let tupleSizeMismatch = (~loc, ~name, a, b) => {

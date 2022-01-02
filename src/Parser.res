@@ -95,13 +95,9 @@ module Pattern = {
       | Tkn_Comma(_) =>
         switch Lexer.popExn(tokens) {
         | Tkn_Spread(_) =>
+          let tail = parseNode(Lexer.popExn(tokens), tokens)
           switch Lexer.popExn(tokens) {
-          | Tkn_Identifier(bindingLoc, tailBinding) =>
-            switch Lexer.popExn(tokens) {
-            | Tkn_CloseBracket(_) =>
-              UListWithTailBinding(loc, Queue.toArray(q), UBinding(bindingLoc, tailBinding))
-            | t => raise(Exit(Debug.unexpectedToken(t, module(T), ~name=Lexer.name(tokens))))
-            }
+          | Tkn_CloseBracket(_) => UListWithTailBinding(loc, Queue.toArray(q), tail)
           | t => raise(Exit(Debug.unexpectedToken(t, module(T), ~name=Lexer.name(tokens))))
           }
         | t =>

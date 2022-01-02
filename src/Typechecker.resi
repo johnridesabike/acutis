@@ -65,23 +65,6 @@ module Context: {
   let make: root => t
 }
 
-module Local: {
-  let fromPattern: (
-    ~default: Typescheme.t,
-    Parser.Pattern.t,
-    Belt.MutableQueue.t<(string, Typescheme.t)>,
-    ~name: string,
-  ) => Typescheme.t
-}
-
-let makeCases: (
-  NonEmpty.t<Parser.case>,
-  Context.t,
-  ~loc: Debug.Loc.t,
-  ~name: string,
-  Utils.Dagmap.t<'a, Source.t<t, 'b>>,
-) => (NonEmpty.t<Typescheme.t>, NonEmpty.t<case>)
-
 let makeComponents: Utils.Dagmap.map<Source.t<Parser.t, Source.fnU<'a>>> => Utils.Dagmap.map<
   Source.t<t, Source.fnU<'a>>,
 >

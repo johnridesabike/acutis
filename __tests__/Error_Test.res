@@ -15,8 +15,8 @@ let getError = x =>
 
 let dict = Js.Dict.fromArray
 
-let compile = (~name="", src) =>
-  switch Compile.make(~name, src, Compile.Components.empty()) {
+let compile = (~name="", ~components=Compile.Components.empty(), src) =>
+  switch Compile.make(~name, src, components) {
   | #ok(_) => []
   | #errors(e) => e
   }
@@ -87,7 +87,9 @@ describe("Parser", ({test, _}) => {
   })
 
   test("Illegal binding name", ({expect, _}) => {
-    expect.value(compile(`{% match a with [x, ...null] %}`)).toMatchSnapshot()
+    expect.value(
+      compile(`{% match a with [x, ...null] %} {% with _ %} {% /match %}`),
+    ).toMatchSnapshot()
     expect.value(compile(`{% A null=1 /%}`)).toMatchSnapshot()
   })
 
@@ -289,6 +291,14 @@ describe("Patterns", ({test, _}) => {
         compile(`{% match a with {a: "a"} %} {% with {a: 1} %} {{ a }} {% /match %}`),
       ).toMatchSnapshot()
     })
+  })
+  test("Missing child components are reported correctly.", ({expect, _}) => {
+    let a = Source.src(~name="A", `{{ B }}`)
+    let components = Compile.Components.make([a])->Result.getExn
+    let src = `{% A /%}`
+    expect.value(compile(src, ~components)).toMatchSnapshot()
+    let src = `{% A B=#/# C=#/# /%}`
+    expect.value(compile(src, ~components)).toMatchSnapshot()
   })
 })
 

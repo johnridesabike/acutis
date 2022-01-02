@@ -7,54 +7,31 @@
 */
 
 open TestFramework
-open Typechecker
 module MapString = Belt.Map.String
-module P = Parser.Pattern
-
 let debug = Typescheme.debug
 
 describe("basic", ({test, _}) => {
   test("pattern", ({expect, _}) => {
-    let pat1 = P.URecord(
-      Debug.Loc.empty,
-      [
-        ("a", P.UTrue(Debug.Loc.empty)),
-        ("b", P.USome(Debug.Loc.empty, P.UString(Debug.Loc.empty, "lol"))),
-        ("c", P.UNull(Debug.Loc.empty)),
-        ("d", P.UList(Debug.Loc.empty, [P.UTrue(Debug.Loc.empty), P.UFalse(Debug.Loc.empty)])),
-      ],
-    )
-    let pat2 = P.URecord(
-      Debug.Loc.empty,
-      [
-        ("a", P.UFalse(Debug.Loc.empty)),
-        ("b", P.UNull(Debug.Loc.empty)),
-        ("c", P.USome(Debug.Loc.empty, P.UFloat(Debug.Loc.empty, 1.0))),
-        ("z", P.UInt(Debug.Loc.empty, 1)),
-      ],
-    )
-    let t1 = Local.fromPattern(
-      pat1,
-      Belt.MutableQueue.make(),
-      ~default=Typescheme.unknown(),
-      ~name="",
-    )
-    let t2 = Local.fromPattern(
-      pat2,
-      Belt.MutableQueue.make(),
-      ~default=Typescheme.unknown(),
-      ~name="",
-    )
-    unify(t1, t2, Expand, ~loc=Debug.Loc.empty, ~name="")
-    expect.value(debug(t1)).toEqual(
-      #Record([
-        ("a", #Boolean),
-        ("b", #Nullable(#String)),
-        ("c", #Nullable(#Float)),
-        ("d", #List(#Boolean)),
-        ("z", #Int),
-      ]),
-    )
+    let src = `
+    {% match a
+       with {a: true, b: !"lol", c: null, d: [true, false]}
+       with {a: false, b: null, c: !1.0, z: 1} %}
+    {% with _ %}
+    {% /match %}`
+    let {prop_types, _} = Compile.make(~name="test", src, Compile.Components.empty())->Result.getExn
+    let result = prop_types->MapString.map(debug)->MapString.toArray
+    expect.value(result).toEqual([
+      (
+        "a",
+        #Record([
+          ("a", #Boolean),
+          ("b", #Nullable(#String)),
+          ("c", #Nullable(#Float)),
+          ("d", #List(#Boolean)),
+          ("z", #Int),
+        ]),
+      ),
+    ])
   })
 })
 
@@ -135,6 +112,13 @@ describe("match", ({test, _}) => {
       ("b", #Echo),
       ("c", #Record([("d", #Echo), ("e", #Int), ("f", #Record([("g", #Nullable(#String))]))])),
     ])
+  })
+
+  test("Inferrence works for nested types", ({expect, _}) => {
+    let src = `{% match a with [{a: 1}, c, {b: "b"}] %} {% with _ %} {% /match %}`
+    let {prop_types, _} = Compile.make(~name="test", src, Compile.Components.empty())->Result.getExn
+    let bindingsGlobal = prop_types->MapString.map(debug)->MapString.toArray
+    expect.value(bindingsGlobal).toEqual([("a", #List(#Record([("a", #Int), ("b", #String)])))])
   })
 })
 

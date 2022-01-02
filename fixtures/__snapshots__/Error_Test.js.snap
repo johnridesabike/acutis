@@ -467,11 +467,11 @@ exports[`Parser Illegal binding name 1`] = `
 Array [
   Object {
     "exn": undefined,
-    "kind": "Parse",
+    "kind": "Type",
     "location": Object {
-      "char": 23,
+      "char": 16,
     },
-    "message": "Unexpected token: \\"null\\".",
+    "message": "Only bindings are allowed as list tails.",
     "path": Array [
       "",
     ],
@@ -992,6 +992,38 @@ Array [
     "message": "This input is type \\"JSON null\\", which does not match the template's required type, [int].",
     "path": Array [
       "key: c",
+    ],
+  },
+]
+`;
+
+exports[`Patterns Missing child components are reported correctly. 1`] = `
+Array [
+  Object {
+    "exn": undefined,
+    "kind": "Type",
+    "location": Object {
+      "char": 3,
+    },
+    "message": "This call of component \\"A\\" is missing child \\"B.\\"",
+    "path": Array [
+      "",
+    ],
+  },
+]
+`;
+
+exports[`Patterns Missing child components are reported correctly. 2`] = `
+Array [
+  Object {
+    "exn": undefined,
+    "kind": "Type",
+    "location": Object {
+      "char": 3,
+    },
+    "message": "This call of component \\"A\\" includes unexpected child \\"C.\\"",
+    "path": Array [
+      "",
     ],
   },
 ]
@@ -1593,11 +1625,11 @@ exports[`Patterns Unexpected tokens 7`] = `
 Array [
   Object {
     "exn": undefined,
-    "kind": "Parse",
+    "kind": "Type",
     "location": Object {
-      "char": 23,
+      "char": 16,
     },
-    "message": "Unexpected token: \\"\\"a\\"\\".",
+    "message": "Only bindings are allowed as list tails.",
     "path": Array [
       "",
     ],
@@ -1611,9 +1643,9 @@ Array [
     "exn": undefined,
     "kind": "Parse",
     "location": Object {
-      "char": 23,
+      "char": 24,
     },
-    "message": "Unexpected token: \\"{\\".",
+    "message": "Unexpected token: \\"]\\".",
     "path": Array [
       "",
     ],

@@ -12,7 +12,6 @@ module Queue = Belt.MutableQueue
 module SetString = Belt.Set.String
 
 exception Exit = Debug.Exit
-exception Exit2(option<string>, option<string>)
 
 module Pattern = {
   type constant =
@@ -42,7 +41,6 @@ module Pattern = {
     | TOptionalVar(Debug.Loc.t, string) // any binding, may not be set
     | TAny(Debug.Loc.t) // ignored wildcard _
 
-  @raises(Exit2)
   let rec makeList = (a, ty, ~tail) => {
     let r = ref(tail)
     for i in Array.size(a) - 1 downto 0 {
@@ -53,7 +51,6 @@ module Pattern = {
     r.contents
   }
 
-  @raises(Exit2)
   and make = (p: UPat.t, ty) =>
     switch (p, ty) {
     | (UNull(l), Typescheme.Nullable(_)) => TConstruct(l, TNullable, None)
@@ -88,10 +85,9 @@ module Pattern = {
     | (UBinding(l, "_"), _) => TAny(l)
     | (UBinding(l, b), Nullable(_)) => TOptionalVar(l, b)
     | (UBinding(l, b), _) => TVar(l, b)
-    | _ => raise(Exit2(Js.Json.stringifyAny(p), Js.Json.stringifyAny(Typescheme.debug(ref(ty)))))
+    | _ => assert false
     }
 
-  @raises(Exit2)
   and make_record = (x, ty, ~loc) => {
     let r = MapString.fromArray(x)
     MapString.mergeU(r, ty, (. _, p, ty) =>
@@ -378,7 +374,7 @@ module Local = {
       let t = T.list(t)
       Queue.add(q, (b, t))
       t
-    | UListWithTailBinding(_, _, _) => assert false // error goes here
+    | UListWithTailBinding(loc, _, _) => raise(Exit(Debug.tailBindingClash(~loc, ~name)))
     | UDict(loc, d) =>
       let t = T.unknown()
       Array.forEachU(d, (. (_, x)) =>
@@ -444,7 +440,7 @@ module Global = {
       )
       let t = T.list(t)
       updateContext(ctx, b, t, ~loc=bloc, ~name)
-    | UListWithTailBinding(_, _, _) => assert false // error goes here
+    | UListWithTailBinding(loc, _, _) => raise(Exit(Debug.tailBindingClash(~loc, ~name)))
     | UDict(loc, d) =>
       let t = T.unknown()
       Array.forEachU(d, (. (_, x)) =>
@@ -604,11 +600,12 @@ and makeNodes = (nodes, ctx, ~name, g) =>
       let children =
         children
         ->MapString.fromArray
-        ->MapString.mergeU(propTypesChildren, (. _, c, ty) =>
+        ->MapString.mergeU(propTypesChildren, (. k, c, ty) =>
           switch (c, ty) {
           | (None, None) | (None, Some({contents: NullableChild})) => None
-          | (None, Some({contents: Child})) => assert false // error message goes here
-          | (Some(_), None) => assert false // error message goes here
+          | (None, Some({contents: Child})) =>
+            raise(Exit(Debug.missingChild(~loc, ~name, ~comp=cname, k)))
+          | (Some(_), None) => raise(Exit(Debug.extraChild(~loc, ~name, ~comp=cname, k)))
           | (Some(UChildName(loc, c)), Some({contents: ty})) =>
             Context.updateChild(ctx, c, ref(ty), ~loc)
             Some(TChildName(c))
