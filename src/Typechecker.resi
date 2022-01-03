@@ -54,17 +54,6 @@ type t = {
   child_types: Typescheme.Child.props,
 }
 
-type mode = Expand | Narrow
-
-let unify: (Typescheme.t, Typescheme.t, mode, ~loc: Debug.Loc.t, ~name: string) => unit
-
-type root = [#Root | #Component]
-
-module Context: {
-  type t
-  let make: root => t
-}
-
 let makeComponents: Utils.Dagmap.map<Source.t<Parser.t, Source.fnU<'a>>> => Utils.Dagmap.map<
   Source.t<t, Source.fnU<'a>>,
 >

@@ -657,7 +657,7 @@ let makeCase = (hd, a, ~exit, ~name) => {
       let b = fromArray(NonEmpty.toArray(ps), ~exit, ~name)
       switch merge(t, b, Z) {
       | t => aux(t, succ(i))
-      | exception MergeFail => raise(Exit(Debug.unusedCase(ps, module(Tpat))))
+      | exception MergeFail => raise(Exit(Debug.unusedCase(ps, module(Tpat), ~name)))
       }
     }
   aux(hd, 1)
@@ -684,7 +684,7 @@ let make = (~name, cases: NonEmpty.t<Typechecker.case>) => {
       | tree =>
         let tree = makeCase(tree, pats, ~exit, ~name)
         aux(tree, succ(i))
-      | exception MergeFail => raise(Exit(Debug.unusedCase(NonEmpty.hd(pats), module(Tpat))))
+      | exception MergeFail => raise(Exit(Debug.unusedCase(NonEmpty.hd(pats), module(Tpat), ~name)))
       }
     }
   aux(tree, 1)
@@ -855,8 +855,9 @@ module ParMatch = {
 }
 
 @raises(Exit)
-let partial_match_check = (~loc, tree) =>
+let partial_match_check = (~loc, ~name, tree) =>
   switch ParMatch.check(tree, ParMatch.key_int) {
   | {flag: Exhaustive, _} => ()
-  | {flag: Partial, pats, _} => raise(Exit(Debug.partialMatch(pats, ParMatch.toString, ~loc)))
+  | {flag: Partial, pats, _} =>
+    raise(Exit(Debug.partialMatch(pats, ParMatch.toString, ~loc, ~name)))
   }

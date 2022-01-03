@@ -60,4 +60,4 @@ type t<'a> = {
 
 let make: (~name: string, NonEmpty.t<Typechecker.case>) => t<Typechecker.nodes>
 
-let partial_match_check: (~loc: Debug.Loc.t, tree<'a, int>) => unit
+let partial_match_check: (~loc: Debug.Loc.t, ~name: string, tree<'a, int>) => unit

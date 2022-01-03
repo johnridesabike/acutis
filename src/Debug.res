@@ -116,14 +116,14 @@ let unexpectedToken = (type a, t, module(M): debuggable<a>, ~name) => {
 
 /* Type errors */
 
-let cantNarrowType = (~loc, a, b, f) => {
+let cantNarrowType = (~loc, ~name, a, b, f) => {
   message: `These types have no subset:
 ${f(a)}
 ${f(b)}`,
   kind: #Type,
   exn: None,
   location: Some(loc),
-  path: [],
+  path: [name],
 }
 
 let childNotAllowedInRoot = loc => {
@@ -134,12 +134,12 @@ let childNotAllowedInRoot = loc => {
   exn: None,
 }
 
-let childTypeMismatch = (a, b, ~loc, f) => {
+let childTypeMismatch = (~loc, ~name, a, b, f) => {
   message: `This pattern is type ${f(b)}} but expected type ${f(a)}.`,
   kind: #Type,
   exn: None,
   location: Some(loc),
-  path: [],
+  path: [name],
 }
 
 let extraChild = (~loc, ~name, ~comp, child) => {
@@ -174,12 +174,12 @@ let missingProp = (p, t, ~loc, ~name, ~comp, f) => {
   path: [name],
 }
 
-let nonNullableEchoLiteral = loc => {
+let nonNullableEchoLiteral = (~loc, ~name) => {
   message: `String, int, or float literals are not nullable and therefore allowed before a ? operator.`,
   kind: #Type,
   exn: None,
   location: Some(loc),
-  path: [],
+  path: [name],
 }
 
 let patternNumberMismatch = (~loc, ~name) => {
@@ -224,17 +224,17 @@ let nameBoundMultipleTimes = (~loc, ~binding, ~name) => {
   exn: None,
 }
 
-let partialMatch = (pat, f, ~loc) => {
+let partialMatch = (~loc, ~name, pat, f) => {
   message: `This pattern-matching is not exhaustive.
 Here is an example of a case that is not matched:
 ${f(pat)}`,
   kind: #Matching,
   exn: None,
   location: Some(loc),
-  path: [],
+  path: [name],
 }
 
-let unusedCase = (type a, pats, module(M): debuggable<a>) => {
+let unusedCase = (type a, ~name, pats, module(M): debuggable<a>) => {
   let hd = NonEmpty.hd(pats)
   let loc = M.toLocation(hd)
   let pat = pats->NonEmpty.toArray->Array.joinWith(", ", M.toString)
@@ -244,7 +244,7 @@ ${pat}`,
     kind: #Matching,
     exn: None,
     location: Some(loc),
-    path: [],
+    path: [name],
   }
 }
 

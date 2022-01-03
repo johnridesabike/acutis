@@ -56,14 +56,14 @@ let unterminatedString: (~loc: Loc.t, ~name: string) => t
 let unexpectedToken: ('a, debuggable<'a>, ~name: string) => t
 
 /* Type errors */
-let cantNarrowType: (~loc: Loc.t, 'a, 'a, 'a => string) => t
+let cantNarrowType: (~loc: Loc.t, ~name: string, 'a, 'a, 'a => string) => t
 let childNotAllowedInRoot: Loc.t => t
-let childTypeMismatch: ('a, 'a, ~loc: Loc.t, 'a => string) => t
+let childTypeMismatch: (~loc: Loc.t, ~name: string, 'a, 'a, 'a => string) => t
 let extraChild: (~loc: Loc.t, ~name: string, ~comp: string, string) => t
 let mapPatternSizeMismatch: (~loc: Loc.t, ~name: string) => t
 let missingChild: (~loc: Loc.t, ~name: string, ~comp: string, string) => t
 let missingProp: (string, 'a, ~loc: Loc.t, ~name: string, ~comp: string, 'a => string) => t
-let nonNullableEchoLiteral: Loc.t => t
+let nonNullableEchoLiteral: (~loc: Loc.t, ~name: string) => t
 let patternNumberMismatch: (~loc: Loc.t, ~name: string) => t
 let tailBindingClash: (~loc: Loc.t, ~name: string) => t
 let tupleSizeMismatch: (~loc: Loc.t, ~name: string, int, int) => t
@@ -71,8 +71,8 @@ let typeMismatch: ('a, 'a, ~loc: Loc.t, ~name: string, 'a => string) => t
 
 /* Matching errors */
 let nameBoundMultipleTimes: (~loc: Loc.t, ~binding: string, ~name: string) => t
-let partialMatch: ('a, 'a => string, ~loc: Loc.t) => t
-let unusedCase: (NonEmpty.t<'a>, debuggable<'a>) => t
+let partialMatch: (~loc: Loc.t, ~name: string, 'a, 'a => string) => t
+let unusedCase: (~name: string, NonEmpty.t<'a>, debuggable<'a>) => t
 
 /* Compile errors */
 let duplicateCompName: string => t

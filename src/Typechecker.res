@@ -10,6 +10,7 @@ module UPat = Parser.Pattern
 module MapString = Belt.Map.String
 module Queue = Belt.MutableQueue
 module SetString = Belt.Set.String
+module Ty = Typescheme
 
 exception Exit = Debug.Exit
 
@@ -53,7 +54,7 @@ module Pattern = {
 
   and make = (p: UPat.t, ty) =>
     switch (p, ty) {
-    | (UNull(l), Typescheme.Nullable(_)) => TConstruct(l, TNullable, None)
+    | (UNull(l), Ty.Nullable(_)) => TConstruct(l, TNullable, None)
     | (USome(l, p), Nullable({contents})) =>
       TConstruct(l, TNullable, Some(TTuple(l, [make(p, contents)])))
     | (UFalse(l), _) => TConst(l, TBool(false))
@@ -166,8 +167,8 @@ and child = TChildName(string) | TChildBlock(nodes)
 
 type t = {
   nodes: nodes,
-  prop_types: Typescheme.props,
-  child_types: Typescheme.Child.props,
+  prop_types: Ty.props,
+  child_types: Ty.Child.props,
 }
 
 // If a type is incomplete, then it can be unified more liberally. (Unused).
@@ -176,9 +177,9 @@ type t = {
 type mode = Expand | Narrow
 
 @raises(Exit)
-let rec unify = (tref1, tref2, mode, ~loc, ~name) =>
+let rec unify = (~loc, ~name, tref1, tref2, mode) =>
   switch (tref1.contents, tref2.contents) {
-  | (Typescheme.Boolean, Typescheme.Boolean)
+  | (Ty.Boolean, Ty.Boolean)
   | (Int, Int)
   | (Float, Float)
   | (String, String) => ()
@@ -199,7 +200,7 @@ let rec unify = (tref1, tref2, mode, ~loc, ~name) =>
     | Expand => unifyRecord_expand(t1, t2, ~loc, ~name)
     | Narrow => unifyRecord_narrow(t1, t2, ~loc, ~name)
     }
-  | _ => raise(Exit(Debug.typeMismatch(tref1, tref2, ~loc, ~name, Typescheme.toString)))
+  | _ => raise(Exit(Debug.typeMismatch(tref1, tref2, ~loc, ~name, Ty.toString)))
   }
 
 @raises(Exit)
@@ -231,7 +232,7 @@ and unifyRecord_expand = (t1, t2, ~loc, ~name) => {
 }
 
 @raises(Exit)
-and unifyRecord_narrow = (t1, t2, ~loc, ~name) => {
+and unifyRecord_narrow = (~loc, ~name, t1, t2) => {
   let r = MapString.mergeU(t1.contents, t2.contents, (. _, v1, v2) =>
     switch (v1, v2) {
     | (Some(v1) as r, Some(v2)) =>
@@ -242,7 +243,7 @@ and unifyRecord_narrow = (t1, t2, ~loc, ~name) => {
     }
   )
   if MapString.isEmpty(r) {
-    raise(Exit(Debug.cantNarrowType(t1, t2, Typescheme.record_toString, ~loc)))
+    raise(Exit(Debug.cantNarrowType(t1, t2, Ty.record_toString, ~loc, ~name)))
   } else {
     t1 := r
     t2 := r
@@ -256,8 +257,7 @@ let unifyRecord_exact = (t1, t2, ~loc, ~comp, ~name) => {
     | (Some(v1) as r, Some(v2)) =>
       unify(v1, v2, Expand, ~loc, ~name)
       r
-    | (None, Some(v)) =>
-      raise(Exit(Debug.missingProp(k, v, ~name, ~comp, ~loc, Typescheme.toString)))
+    | (None, Some(v)) => raise(Exit(Debug.missingProp(k, v, ~name, ~comp, ~loc, Ty.toString)))
     | (Some(_), None) | (None, None) => None
     }
   )
@@ -266,36 +266,38 @@ let unifyRecord_exact = (t1, t2, ~loc, ~comp, ~name) => {
 }
 
 @raises(Exit)
-let unify_child = (a, b, ~loc) =>
-  if Typescheme.Child.equal(a, b) {
+let unify_child = (~loc, ~name, a, b) =>
+  if Ty.Child.equal(a, b) {
     ()
   } else {
-    raise(Exit(Debug.childTypeMismatch(a, b, ~loc, Typescheme.Child.toString)))
+    raise(Exit(Debug.childTypeMismatch(~loc, ~name, a, b, Ty.Child.toString)))
   }
 
 type root = [#Root | #Component]
 
 module Context = {
   type t = {
-    global: ref<MapString.t<Typescheme.t>>,
-    scope: MapString.t<Typescheme.t>,
-    children: ref<MapString.t<Typescheme.Child.t>>,
+    global: ref<MapString.t<Ty.t>>,
+    scope: MapString.t<Ty.t>,
+    children: ref<MapString.t<Ty.Child.t>>,
     root: root,
+    name: string,
   }
 
-  let make = root => {
+  let make = (~name, root) => {
     global: ref(MapString.empty),
     scope: MapString.empty,
     children: ref(MapString.empty),
     root: root,
+    name: name,
   }
 
   @raises(Exit)
-  let update = (ctx, k, v, ~loc, ~name) =>
-    switch MapString.get(ctx.scope, k) {
+  let update = ({scope, global, name, _}, k, v, ~loc) =>
+    switch MapString.get(scope, k) {
     | None =>
-      ctx.global :=
-        MapString.updateU(ctx.global.contents, k, (. v') =>
+      global :=
+        MapString.updateU(global.contents, k, (. v') =>
           switch v' {
           | None => Some(v)
           | Some(v') as r =>
@@ -307,30 +309,30 @@ module Context = {
     }
 
   @raises(Exit)
-  let updateChild = (ctx, k, v, ~loc) =>
-    switch ctx.root {
+  let updateChild = ({root, children, name, _}, k, v, ~loc) =>
+    switch root {
     | #Root => raise(Exit(Debug.childNotAllowedInRoot(loc)))
     | #Component =>
-      ctx.children :=
-        MapString.updateU(ctx.children.contents, k, (. v') =>
+      children :=
+        MapString.updateU(children.contents, k, (. v') =>
           switch v' {
           | None => Some(v)
           | Some(v') as r =>
-            unify_child(v', v, ~loc)
+            unify_child(v', v, ~loc, ~name)
             r
           }
         )
     }
 
   @raises(Exit)
-  let addScope = (ctx, q, ~loc, ~name) => {
+  let addScope = (ctx, q, ~loc) => {
     // Merge all of the bindings into a single map & typecheck them.
     let newscope = Queue.reduceU(q, MapString.empty, (. newscope, (k, v)) => {
       MapString.updateU(newscope, k, (. v') =>
         switch v' {
         | None => Some(v)
         | Some(v') as r =>
-          unify(v', v, Expand, ~loc, ~name)
+          unify(v', v, Expand, ~loc, ~name=ctx.name)
           r
         }
       )
@@ -344,187 +346,142 @@ module Context = {
     )
     {...ctx, scope: scope}
   }
-}
 
-module Local = {
-  @raises(Exit)
-  let rec fromPattern = (~default, pattern, q, ~name) => {
-    module T = Typescheme
-    switch pattern {
-    | UPat.UNull(_) => T.nullable(T.unknown())
-    | USome(_, x) => T.nullable(fromPattern(x, q, ~default=T.unknown(), ~name))
-    | UFalse(_) | UTrue(_) => T.boolean()
-    | UString(_) => T.string()
-    | UInt(_) => T.int()
-    | UFloat(_) => T.float()
-    | UTuple(_, t) =>
-      let types = Array.mapU(t, (. x) => fromPattern(x, q, ~default, ~name))
-      T.tuple(types)
-    | UList(loc, a) =>
-      let t = T.unknown()
-      Array.forEachU(a, (. x) =>
-        unify(t, fromPattern(x, q, ~default=t, ~name), Expand, ~loc, ~name)
-      )
-      T.list(t)
-    | UListWithTailBinding(loc, a, UBinding(_, b)) =>
-      let t = T.unknown()
-      Array.forEachU(a, (. x) =>
-        unify(t, fromPattern(x, ~default=t, q, ~name), Expand, ~loc, ~name)
-      )
-      let t = T.list(t)
-      Queue.add(q, (b, t))
-      t
-    | UListWithTailBinding(loc, _, _) => raise(Exit(Debug.tailBindingClash(~loc, ~name)))
-    | UDict(loc, d) =>
-      let t = T.unknown()
-      Array.forEachU(d, (. (_, x)) =>
-        unify(t, fromPattern(x, q, ~default=t, ~name), Expand, ~loc, ~name)
-      )
-      let ks = d->Array.mapU((. (k, _)) => k)->SetString.fromArray
-      ref(T.Dict(t, ref(ks)))
-    | URecord(_, o) =>
-      let types = o->Array.mapU((. (k, x)) => {
-        let types = fromPattern(x, q, ~default=T.unknown(), ~name)
-        (k, types)
-      })
-      T.record(types)
-    | UBinding(_, "_") => default
-    | UBinding(_, b) =>
-      Queue.add(q, (b, default))
-      default
-    }
-  }
-}
-
-module Global = {
-  @raise(Exit)
-  let updateContext = (ctx, k, v, ~loc, ~name) =>
-    switch MapString.get(ctx.Context.scope, k) {
-    | None =>
-      switch MapString.get(ctx.global.contents, k) {
-      | None =>
-        ctx.global := MapString.set(ctx.global.contents, k, v)
-        v
-      | Some(v') =>
-        unify(v, v', Expand, ~loc, ~name)
-        v'
-      }
-    | Some(v') =>
-      unify(v, v', Expand, ~loc, ~name)
-      v'
-    }
-
-  @raises(Exit)
-  let rec fromPattern = (~default, ~name, pattern: UPat.t, ctx) => {
-    module T = Typescheme
-    switch pattern {
-    | UNull(_) => T.nullable(T.unknown())
-    | USome(_, x) => T.nullable(fromPattern(~default=T.unknown(), x, ctx, ~name))
-    | UFalse(_) | UTrue(_) => T.boolean()
-    | UString(_) => T.string()
-    | UInt(_) => T.int()
-    | UFloat(_) => T.float()
-    | UTuple(_, t) =>
-      let types = Array.mapU(t, (. x) => fromPattern(~default=T.unknown(), x, ctx, ~name))
-      T.tuple(types)
-    | UList(loc, a) =>
-      let t = T.unknown()
-      Array.forEachU(a, (. x) =>
-        unify(t, fromPattern(~default=t, x, ctx, ~name), Narrow, ~loc, ~name)
-      )
-      T.list(t)
-    | UListWithTailBinding(loc, a, UBinding(bloc, b)) =>
-      let t = T.unknown()
-      Array.forEachU(a, (. x) =>
-        unify(t, fromPattern(~default=t, x, ctx, ~name), Narrow, ~loc, ~name)
-      )
-      let t = T.list(t)
-      updateContext(ctx, b, t, ~loc=bloc, ~name)
-    | UListWithTailBinding(loc, _, _) => raise(Exit(Debug.tailBindingClash(~loc, ~name)))
-    | UDict(loc, d) =>
-      let t = T.unknown()
-      Array.forEachU(d, (. (_, x)) =>
-        unify(t, fromPattern(~default=t, x, ctx, ~name), Narrow, ~loc, ~name)
-      )
-      let ks = d->Array.mapU((. (k, _)) => k)->SetString.fromArray
-      ref(T.Dict(t, ref(ks)))
-    | URecord(_, o) => T.record2(fromPattern_record(o, ctx, ~name))
-    | UBinding(_, "_") => default
-    | UBinding(loc, b) => updateContext(ctx, b, default, ~loc, ~name)
-    }
-  }
-
-  @raises(Exit)
-  and fromPattern_record = (x, ctx, ~name) => {
-    let types = Array.mapU(x, (. (k, x)) => (
-      k,
-      fromPattern(~default=Typescheme.unknown(), x, ctx, ~name),
-    ))
-    MapString.fromArray(types)
-  }
-
-  @raises((Exit, Exit2))
-  let unifyMatchCases = (bindingArray, cases, ctx, ~name) =>
-    if NonEmpty.size(bindingArray) != NonEmpty.size(cases) {
-      let loc = NonEmpty.hd(bindingArray)->UPat.toLocation
-      raise(Exit(Debug.patternNumberMismatch(~loc, ~name)))
-    } else {
-      NonEmpty.zipExn(bindingArray, cases)->NonEmpty.map((. (pat, ty)) => {
-        let t = fromPattern(pat, ctx, ~default=Typescheme.unknown(), ~name)
-        unify(ty, t, Expand, ~loc=UPat.toLocation(pat), ~name)
-        Pattern.make(pat, t.contents)
-      })
-    }
-
-  @raises((Exit, Exit2))
-  let unifyMapListCases = (pat, tys, ctx, ~loc, ~name) => {
-    let ty = switch NonEmpty.toArray(tys) {
-    | [hd] => Typescheme.list(hd)
-    | [hd, tl] =>
-      unify(Typescheme.int(), tl, Expand, ~loc, ~name)
-      Typescheme.list(hd)
-    | _ => raise(Exit(Debug.mapPatternSizeMismatch(~loc, ~name)))
-    }
-    let t = fromPattern(~default=Typescheme.unknown(), pat, ctx, ~name)
-    unify(ty, t, Expand, ~loc, ~name)
-    Pattern.make(pat, ty.contents)
-  }
-
-  @raises((Exit, Exit2))
-  let unifyMapDictCases = (pat, tys, ctx, ~loc, ~name) => {
-    let ty = switch NonEmpty.toArray(tys) {
-    | [hd] => Typescheme.dict(hd)
-    | [hd, tl] =>
-      unify(Typescheme.string(), tl, Expand, ~loc, ~name)
-      Typescheme.dict(hd)
-    | _ => raise(Exit(Debug.mapPatternSizeMismatch(~loc, ~name)))
-    }
-    let t = fromPattern(~default=Typescheme.unknown(), pat, ctx, ~name)
-    unify(ty, t, Expand, ~loc, ~name)
-    Pattern.make(pat, ty.contents)
-  }
+  let name = t => t.name
 }
 
 @raises(Exit)
-let unifyEchoes = (nullables, default, ctx, ~name) => {
-  open Typescheme
+let rec fromPattern = (~default, ~name, ~f, mode, pattern) => {
+  switch pattern {
+  | UPat.UNull(_) => Ty.nullable(Ty.unknown())
+  | USome(_, x) => Ty.nullable(fromPattern(mode, x, ~f, ~default=Ty.unknown(), ~name))
+  | UFalse(_) | UTrue(_) => Ty.boolean()
+  | UString(_) => Ty.string()
+  | UInt(_) => Ty.int()
+  | UFloat(_) => Ty.float()
+  | UTuple(_, t) =>
+    let types = Array.mapU(t, (. x) => fromPattern(mode, x, ~f, ~default, ~name))
+    Ty.tuple(types)
+  | UList(loc, a) =>
+    let t = Ty.unknown()
+    Array.forEachU(a, (. x) =>
+      unify(t, fromPattern(mode, x, ~f, ~default=t, ~name), mode, ~loc, ~name)
+    )
+    Ty.list(t)
+  | UListWithTailBinding(loc, a, UBinding(_, b)) =>
+    let t = Ty.unknown()
+    Array.forEachU(a, (. x) =>
+      unify(t, fromPattern(mode, x, ~default=t, ~f, ~name), mode, ~loc, ~name)
+    )
+    let t = Ty.list(t)
+    f(. ~loc, b, t)
+  | UListWithTailBinding(loc, _, _) => raise(Exit(Debug.tailBindingClash(~loc, ~name)))
+  | UDict(loc, d) =>
+    let t = Ty.unknown()
+    Array.forEachU(d, (. (_, x)) =>
+      unify(t, fromPattern(mode, x, ~f, ~default=t, ~name), mode, ~loc, ~name)
+    )
+    let ks = d->Array.mapU((. (k, _)) => k)->SetString.fromArray
+    ref(Ty.Dict(t, ref(ks)))
+  | URecord(_, o) =>
+    let types = o->Array.mapU((. (k, x)) => {
+      let types = fromPattern(mode, x, ~f, ~default=Ty.unknown(), ~name)
+      (k, types)
+    })
+    Ty.record(types)
+  | UBinding(_, "_") => default
+  | UBinding(loc, b) => f(. ~loc, b, default)
+  }
+}
 
+@raise(Exit)
+let updateContext = (ctx, . ~loc, k, v) =>
+  switch MapString.get(ctx.Context.scope, k) {
+  | None =>
+    switch MapString.get(ctx.global.contents, k) {
+    | None =>
+      ctx.global := MapString.set(ctx.global.contents, k, v)
+      v
+    | Some(v') =>
+      unify(v, v', Expand, ~loc, ~name=ctx.name)
+      v'
+    }
+  | Some(v') =>
+    unify(v, v', Expand, ~loc, ~name=ctx.name)
+    v'
+  }
+
+@raises(Exit)
+let fromProps = (x, ctx, ~name) => {
+  Array.mapU(x, (. (k, x)) => {
+    let types = fromPattern(Narrow, x, ~default=Ty.unknown(), ~name, ~f=updateContext(ctx))
+    (k, types)
+  })->MapString.fromArray
+}
+
+@raises(Exit)
+let unifyMatchCases = (bindingArray, cases, ctx) => {
+  let name = Context.name(ctx)
+  if NonEmpty.size(bindingArray) != NonEmpty.size(cases) {
+    let loc = NonEmpty.hd(bindingArray)->UPat.toLocation
+    raise(Exit(Debug.patternNumberMismatch(~loc, ~name)))
+  } else {
+    NonEmpty.zipExn(bindingArray, cases)->NonEmpty.map((. (pat, ty)) => {
+      let t = fromPattern(Narrow, pat, ~default=Ty.unknown(), ~name, ~f=updateContext(ctx))
+      unify(ty, t, Expand, ~loc=UPat.toLocation(pat), ~name)
+      Pattern.make(pat, t.contents)
+    })
+  }
+}
+
+module type MapTy = {
+  let make: (. Ty.t) => Ty.t
+  let key: (. unit) => Ty.t
+}
+
+module ListTy = {
+  let make = (. t) => Ty.list(t)
+  let key = (. ()) => Ty.int()
+}
+
+module DictTy = {
+  let make = (. t) => Ty.dict(t)
+  let key = (. ()) => Ty.string()
+}
+
+@raises(Exit)
+let unifyMap = (~loc, module(M: MapTy), pat, tys, ctx) => {
+  let name = Context.name(ctx)
+  let ty = switch NonEmpty.toArray(tys) {
+  | [hd] => M.make(. hd)
+  | [hd, tl] =>
+    unify(M.key(.), tl, Expand, ~loc, ~name)
+    M.make(. hd)
+  | _ => raise(Exit(Debug.mapPatternSizeMismatch(~loc, ~name)))
+  }
+  let t = fromPattern(Narrow, pat, ~default=Ty.unknown(), ~name, ~f=updateContext(ctx))
+  unify(ty, t, Expand, ~loc, ~name)
+  Pattern.make(pat, ty.contents)
+}
+
+@raises(Exit)
+let unifyEchoes = (nullables, default, ctx) => {
   @raises(Exit)
   let rec aux = i => {
     switch nullables[i] {
     | None =>
       switch default {
-      | Parser.EBinding(loc, binding, _) => Context.update(ctx, binding, echo(), ~loc, ~name)
-      | EChild(loc, child) => Context.updateChild(ctx, child, Child.child(), ~loc)
+      | Parser.EBinding(loc, binding, _) => Context.update(ctx, binding, Ty.echo(), ~loc)
+      | EChild(loc, child) => Context.updateChild(ctx, child, Ty.Child.child(), ~loc)
       | EString(_, _, _) | EInt(_, _, _) | EFloat(_, _, _) => ()
       }
     | Some(Parser.EBinding(loc, binding, _)) =>
-      Context.update(ctx, binding, nullable(echo()), ~loc, ~name)
+      Context.update(ctx, binding, Ty.nullable(Ty.echo()), ~loc)
       aux(succ(i))
     | Some(EString(loc, _, _) | EInt(loc, _, _) | EFloat(loc, _, _)) =>
-      raise(Exit(Debug.nonNullableEchoLiteral(loc)))
+      raise(Exit(Debug.nonNullableEchoLiteral(~loc, ~name=ctx.name)))
     | Some(EChild(loc, child)) =>
-      Context.updateChild(ctx, child, Child.nullable(), ~loc)
+      Context.updateChild(ctx, child, Ty.Child.nullable(), ~loc)
       aux(succ(i))
     }
   }
@@ -548,18 +505,23 @@ let getTypes = x =>
   | Function(_, props, children, _) => (props, children)
   }
 
-@raises((Exit, Exit2))
-let rec makeCases = (cases, ctx, ~loc, ~name, g) => {
+@raises(Exit)
+let rec makeCases = (cases, ctx, ~loc, g) => {
+  let name = Context.name(ctx)
   let (casetypes, cases) =
     cases
     ->NonEmpty.map((. {Parser.patterns: pats, nodes}) => {
       let bindings = Queue.make()
+      let f = (. ~loc as _, k, v) => {
+        Queue.add(bindings, (k, v))
+        v
+      }
       let casetypes =
         pats
         ->NonEmpty.map((. pattern) =>
           NonEmpty.map(pattern, (. p) => (
             UPat.toLocation(p),
-            Local.fromPattern(p, bindings, ~default=Typescheme.unknown(), ~name),
+            fromPattern(Expand, p, ~default=Ty.unknown(), ~name, ~f),
           ))
         )
         ->NonEmpty.reduceHd((. pat1, pat2) =>
@@ -568,7 +530,7 @@ let rec makeCases = (cases, ctx, ~loc, ~name, g) => {
             (loc, a)
           })
         )
-      let ctx = Context.addScope(ctx, bindings, ~loc, ~name)
+      let ctx = Context.addScope(ctx, bindings, ~loc)
       (casetypes, (pats, nodes, ctx))
     })
     ->NonEmpty.unzip
@@ -579,24 +541,26 @@ let rec makeCases = (cases, ctx, ~loc, ~name, g) => {
     pats: NonEmpty.map(pats, (. pats) =>
       NonEmpty.zipByExn(pats, casetypes, (. p, ty) => Pattern.make(p, ty.contents))
     ),
-    nodes: makeNodes(nodes, ctx, ~name, g),
+    nodes: makeNodes(nodes, ctx, g),
   })
   (casetypes, cases)
 }
 
-@raises((Exit, Exit2))
-and makeNodes = (nodes, ctx, ~name, g) =>
+@raises(Exit)
+and makeNodes = (nodes, ctx, g) =>
   Array.mapU(nodes, (. node) =>
     switch node {
     | Parser.UText(s, t) => TText(s, t)
     | UEcho({loc, nullables, default}) =>
-      unifyEchoes(nullables, default, ctx, ~name)->ignore
+      unifyEchoes(nullables, default, ctx)->ignore
       TEcho({loc: loc, nullables: nullables, default: default})
     | UComponent({loc, props, children, name: cname}) =>
-      let (propTypes, propTypesChildren) = getTypes(Utils.Dagmap.getExn(g, ~name, ~key=cname, ~loc))
-      let t = Global.fromPattern_record(props, ctx, ~name)
+      let (propTypes, propTypesChildren) = getTypes(
+        Utils.Dagmap.getExn(g, ~name=ctx.name, ~key=cname, ~loc),
+      )
+      let t = fromProps(props, ctx, ~name=ctx.name)
       // The original proptypes should not mutate.
-      unifyRecord_exact(ref(t), ref(Typescheme.copy_record(propTypes)), ~loc, ~comp=cname, ~name)
+      unifyRecord_exact(ref(t), ref(Ty.copy_record(propTypes)), ~loc, ~comp=cname, ~name=ctx.name)
       let children =
         children
         ->MapString.fromArray
@@ -604,13 +568,12 @@ and makeNodes = (nodes, ctx, ~name, g) =>
           switch (c, ty) {
           | (None, None) | (None, Some({contents: NullableChild})) => None
           | (None, Some({contents: Child})) =>
-            raise(Exit(Debug.missingChild(~loc, ~name, ~comp=cname, k)))
-          | (Some(_), None) => raise(Exit(Debug.extraChild(~loc, ~name, ~comp=cname, k)))
+            raise(Exit(Debug.missingChild(~loc, ~name=ctx.name, ~comp=cname, k)))
+          | (Some(_), None) => raise(Exit(Debug.extraChild(~loc, ~name=ctx.name, ~comp=cname, k)))
           | (Some(UChildName(loc, c)), Some({contents: ty})) =>
             Context.updateChild(ctx, c, ref(ty), ~loc)
             Some(TChildName(c))
-          | (Some(UChildBlock(_, nodes)), Some(_)) =>
-            Some(TChildBlock(makeNodes(nodes, ctx, ~name=cname, g)))
+          | (Some(UChildBlock(_, nodes)), Some(_)) => Some(TChildBlock(makeNodes(nodes, ctx, g)))
           }
         )
         ->MapString.toArray
@@ -618,8 +581,8 @@ and makeNodes = (nodes, ctx, ~name, g) =>
       TComponent({loc: loc, props: props, children: children, val: cname})
     | UMatch(loc, bindingArray, cases) =>
       // Add a default wildcard for patterns without indices
-      let (caseTypes, cases) = makeCases(cases, ctx, ~loc, ~name, g)
-      let patterns = Global.unifyMatchCases(bindingArray, caseTypes, ctx, ~name)
+      let (caseTypes, cases) = makeCases(cases, ctx, ~loc, g)
+      let patterns = unifyMatchCases(bindingArray, caseTypes, ctx)
       TMatch(loc, patterns, cases)
     | UMapList(loc, pattern, cases) =>
       // Add a default wildcard for patterns without indices
@@ -632,8 +595,8 @@ and makeNodes = (nodes, ctx, ~name, g) =>
           }
         ),
       })
-      let (casetypes, cases) = makeCases(cases, ctx, ~loc, ~name, g)
-      let pattern = Global.unifyMapListCases(pattern, casetypes, ctx, ~loc, ~name)
+      let (casetypes, cases) = makeCases(cases, ctx, ~loc, g)
+      let pattern = unifyMap(module(ListTy), pattern, casetypes, ctx, ~loc)
       TMapList(loc, pattern, cases)
     | UMapDict(loc, pattern, cases) =>
       // Add a default wildcard for patterns without indices
@@ -646,16 +609,16 @@ and makeNodes = (nodes, ctx, ~name, g) =>
           }
         ),
       })
-      let (casetypes, cases) = makeCases(cases, ctx, ~loc, ~name, g)
-      let pattern = Global.unifyMapDictCases(pattern, casetypes, ctx, ~loc, ~name)
+      let (casetypes, cases) = makeCases(cases, ctx, ~loc, g)
+      let pattern = unifyMap(module(DictTy), pattern, casetypes, ctx, ~loc)
       TMapDict(loc, pattern, cases)
     }
   )
 
-@raises((Exit, Exit2))
+@raises(Exit)
 and make = (name, ast, g, root) => {
-  let ctx = Context.make(root)
-  let nodes = makeNodes(ast, ctx, ~name, g)
+  let ctx = Context.make(~name, root)
+  let nodes = makeNodes(ast, ctx, g)
   let ast = {
     nodes: nodes,
     prop_types: ctx.global.contents,

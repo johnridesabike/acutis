@@ -71,17 +71,17 @@ let rec nodes = (~name, a) =>
     | TEcho({loc: _, nullables, default}) => OEcho(Array.mapU(nullables, echo), echo(. default))
     | TMatch(loc, pats, cases) =>
       let tree = Matching.make(cases, ~name)
-      Matching.partial_match_check(tree.tree, ~loc)
+      Matching.partial_match_check(tree.tree, ~loc, ~name)
       let tree = {...tree, exits: Matching.Exit.map(tree.exits, ~f=(. x) => nodes(x, ~name))}
       OMatch(pats, tree)
     | TMapList(loc, pat, cases) =>
       let tree = Matching.make(cases, ~name)
-      Matching.partial_match_check(tree.tree, ~loc)
+      Matching.partial_match_check(tree.tree, ~loc, ~name)
       let tree = {...tree, exits: Matching.Exit.map(tree.exits, ~f=(. x) => nodes(x, ~name))}
       OMapList(pat, tree)
     | TMapDict(loc, pat, cases) =>
       let tree = Matching.make(cases, ~name)
-      Matching.partial_match_check(tree.tree, ~loc)
+      Matching.partial_match_check(tree.tree, ~loc, ~name)
       let tree = {...tree, exits: Matching.Exit.map(tree.exits, ~f=(. x) => nodes(x, ~name))}
       OMapDict(pat, tree)
     | TComponent({loc, val, props, children}) =>

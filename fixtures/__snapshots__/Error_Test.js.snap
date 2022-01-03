@@ -300,7 +300,9 @@ Array [
     "message": "This pattern-matching is not exhaustive.
 Here is an example of a case that is not matched:
 _",
-    "path": Array [],
+    "path": Array [
+      "",
+    ],
   },
 ]
 `;
@@ -316,7 +318,9 @@ Array [
     "message": "This pattern-matching is not exhaustive.
 Here is an example of a case that is not matched:
 1",
-    "path": Array [],
+    "path": Array [
+      "",
+    ],
   },
 ]
 `;
@@ -332,7 +336,9 @@ Array [
     "message": "This pattern-matching is not exhaustive.
 Here is an example of a case that is not matched:
 [_, ..._]",
-    "path": Array [],
+    "path": Array [
+      "",
+    ],
   },
 ]
 `;
@@ -348,7 +354,9 @@ Array [
     "message": "This pattern-matching is not exhaustive.
 Here is an example of a case that is not matched:
 []",
-    "path": Array [],
+    "path": Array [
+      "",
+    ],
   },
 ]
 `;
@@ -364,7 +372,9 @@ Array [
     "message": "This pattern-matching is not exhaustive.
 Here is an example of a case that is not matched:
 {a, b: 0}",
-    "path": Array [],
+    "path": Array [
+      "",
+    ],
   },
 ]
 `;
@@ -379,7 +389,9 @@ Array [
     },
     "message": "This match case is unused:
 10, 11, 12",
-    "path": Array [],
+    "path": Array [
+      "",
+    ],
   },
 ]
 `;
@@ -394,7 +406,9 @@ Array [
     },
     "message": "This match case is unused:
 30, 31, 42",
-    "path": Array [],
+    "path": Array [
+      "",
+    ],
   },
 ]
 `;
@@ -409,7 +423,9 @@ Array [
     },
     "message": "This match case is unused:
 (_, _), 40",
-    "path": Array [],
+    "path": Array [
+      "",
+    ],
   },
 ]
 `;
@@ -424,7 +440,9 @@ Array [
     },
     "message": "This match case is unused:
 (\\"a\\", \\"b\\"), 1",
-    "path": Array [],
+    "path": Array [
+      "",
+    ],
   },
 ]
 `;
@@ -1040,7 +1058,9 @@ Array [
     "message": "This pattern-matching is not exhaustive.
 Here is an example of a case that is not matched:
 {favoriteColor: \\"a\\", firstName}",
-    "path": Array [],
+    "path": Array [
+      "",
+    ],
   },
 ]
 `;
