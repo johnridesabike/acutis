@@ -405,9 +405,10 @@ describe("Graphs are parsed correctly", ({test, _}) => {
         {
           exn: None,
           kind: #Compile,
-          location: Some({char: 3}),
-          message: "Cyclic dependency detected. I can't compile any components in this path.",
-          path: ["C", "B", "C"],
+          location: Some({name: "B", char: 3}),
+          message: `Cyclic dependency detected:
+C -> B -> C`,
+          stack: [],
         },
       ]),
     )
@@ -423,9 +424,10 @@ describe("Graphs are parsed correctly", ({test, _}) => {
         {
           exn: None,
           kind: #Compile,
-          location: Some({char: 3}),
-          message: "Cyclic dependency detected. I can't compile any components in this path.",
-          path: ["C", "B", "D", "C"],
+          location: Some({name: "B", char: 3}),
+          message: `Cyclic dependency detected:
+C -> D -> B -> C`,
+          stack: [],
         },
       ]),
     )
@@ -439,9 +441,9 @@ describe("Graphs are parsed correctly", ({test, _}) => {
         {
           exn: None,
           kind: #Compile,
-          location: Some({char: 3}),
+          location: Some({name: "B", char: 3}),
           message: `Template component "C" is missing, which is required by "B."`,
-          path: ["B"],
+          stack: [],
         },
       ]),
     )

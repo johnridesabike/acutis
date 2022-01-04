@@ -7,7 +7,7 @@
 */
 
 /* We use a polymorphic variant because it has a nicer JS representation */
-type t<'a> = [#ok('a) | #errors(array<Debug.t>)]
+type t<'a> = [#ok('a) | #errors(array<Debug.error>)]
 
 @live
 let mapU: (t<'a>, (. 'a) => 'b) => t<'b>
@@ -20,5 +20,5 @@ let flatMap: (t<'a>, 'a => t<'b>) => t<'b>
 let getExn: t<'a> => 'a
 
 @live
-let getOrElseU: (t<'a>, (. array<Debug.t>) => 'a) => 'a
-let getOrElse: (t<'a>, array<Debug.t> => 'a) => 'a
+let getOrElseU: (t<'a>, (. array<Debug.error>) => 'a) => 'a
+let getOrElse: (t<'a>, array<Debug.error> => 'a) => 'a

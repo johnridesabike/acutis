@@ -58,6 +58,6 @@ type t<'a> = {
   exits: Exit.t<'a>,
 }
 
-let make: (~name: string, NonEmpty.t<Typechecker.case>) => t<Typechecker.nodes>
+let make: NonEmpty.t<Typechecker.case> => t<Typechecker.nodes>
 
-let partial_match_check: (~loc: Debug.Loc.t, ~name: string, tree<'a, int>) => unit
+let partial_match_check: (tree<'a, int>, Debug.t) => unit

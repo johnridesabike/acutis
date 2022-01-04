@@ -576,20 +576,14 @@ and merge:
 type continue<'a, 'k> = (. MapString.t<int>) => tree<'a, 'k>
 
 @raises(Exit)
-let rec fromTPat: 'a 'k. (_, 'k, _, ~name: _, continue<'a, 'k>) => tree<'a, 'k> = (
-  p,
-  key,
-  b,
-  ~name,
-  k,
-) =>
+let rec fromTPat: 'a 'k. (_, _, 'k, continue<'a, 'k>) => tree<'a, 'k> = (p, b, key, k) =>
   switch p {
   | Tpat.TAny(_) => Wildcard({ids: SetInt.empty, key: key, child: k(. b)})
-  | TVar(loc, x) | TOptionalVar(loc, x) =>
+  | TVar(debug, x) | TOptionalVar(debug, x) =>
     if MapString.has(b, x) {
-      raise(Exit(Debug.nameBoundMultipleTimes(~binding=x, ~loc, ~name)))
+      raise(Exit(Debug.nameBoundMultipleTimes(debug, x)))
     }
-    let id = Debug.Loc.char(loc)
+    let id = Debug.char(debug)
     Wildcard({
       ids: SetInt.add(SetInt.empty, id),
       key: key,
@@ -601,7 +595,7 @@ let rec fromTPat: 'a 'k. (_, 'k, _, ~name: _, continue<'a, 'k>) => tree<'a, 'k> 
       ids: SetInt.empty,
       extra: kind,
       nil: None,
-      cons: Some(fromTPat(cons, key, b, k, ~name)),
+      cons: Some(fromTPat(cons, b, key, k)),
     })
   | TConstruct(_, kind, None) =>
     Construct({key: key, ids: SetInt.empty, extra: kind, nil: Some(k(. b)), cons: None})
@@ -613,64 +607,58 @@ let rec fromTPat: 'a 'k. (_, 'k, _, ~name: _, continue<'a, 'k>) => tree<'a, 'k> 
       wildcard: None,
     })
   | TTuple(_, a) =>
-    let child = fromArray(a, b, 0, ~name, (. b) => End(k(. b)))
+    let child = fromArray(a, b, 0, (. b) => End(k(. b)))
     Nest({key: key, ids: SetInt.empty, child: IntKeys(child), wildcard: None, extra: Tuple})
   | TRecord(_, a) =>
-    let child = fromKeyValues(a, b, 0, ~name, (. b) => End(k(. b)))
+    let child = fromKeyValues(a, b, 0, (. b) => End(k(. b)))
     Nest({key: key, ids: SetInt.empty, child: StringKeys(child), wildcard: None, extra: Record})
   | TDict(_, a) =>
-    let child = fromKeyValues(a, b, 0, ~name, (. b) => End(k(. b)))
+    let child = fromKeyValues(a, b, 0, (. b) => End(k(. b)))
     Nest({key: key, ids: SetInt.empty, child: StringKeys(child), wildcard: None, extra: Dict})
   }
 
 @raises(Exit)
-and fromArray: 'a. (_, _, _, ~name: _, continue<'a, int>) => tree<'a, int> = (a, b, i, ~name, k) =>
+and fromArray: 'a. (_, _, _, continue<'a, int>) => tree<'a, int> = (a, b, i, k) =>
   switch a[i] {
   | None => k(. b)
-  | Some(p) => fromTPat(p, i, b, ~name, (. b) => fromArray(a, b, succ(i), ~name, k))
+  | Some(p) => fromTPat(p, b, i, (. b) => fromArray(a, b, succ(i), k))
   }
 
 @raises(Exit)
-and fromKeyValues: 'a. (_, _, _, ~name: _, continue<'a, string>) => tree<'a, string> = (
-  a,
-  b,
-  i,
-  ~name,
-  k,
-) =>
+and fromKeyValues: 'a. (_, _, _, continue<'a, string>) => tree<'a, string> = (a, b, i, k) =>
   switch a[i] {
   | None => k(. b)
-  | Some((key, v)) => fromTPat(v, key, b, ~name, (. b) => fromKeyValues(a, b, succ(i), ~name, k))
+  | Some((key, v)) => fromTPat(v, b, key, (. b) => fromKeyValues(a, b, succ(i), k))
   }
 
 @raises(Exit)
-let fromArray = (~exit, ~name, a) =>
-  fromArray(a, MapString.empty, 0, ~name, (. names) => End({names: names, exit: exit}))
+let fromArray = (~exit, a) =>
+  fromArray(a, MapString.empty, 0, (. names) => End({names: names, exit: exit}))
 
 @raises(Exit)
-let makeCase = (hd, a, ~exit, ~name) => {
+let makeCase = (hd, a, ~exit) => {
   @raises(Exit)
   let rec aux = (t, i) =>
     switch NonEmpty.get(a, i) {
     | None => t
     | Some(ps) =>
-      let b = fromArray(NonEmpty.toArray(ps), ~exit, ~name)
+      let b = fromArray(NonEmpty.toArray(ps), ~exit)
       switch merge(t, b, Z) {
       | t => aux(t, succ(i))
-      | exception MergeFail => raise(Exit(Debug.unusedCase(ps, module(Tpat), ~name)))
+      | exception MergeFail => raise(Exit(Debug.unusedCase(ps, module(Tpat))))
       }
     }
   aux(hd, 1)
 }
 
 @raises(Exit)
-let make = (~name, cases: NonEmpty.t<Typechecker.case>) => {
+let make = (cases: NonEmpty.t<Typechecker.case>) => {
   let exitq = Queue.make()
   let hdcase = NonEmpty.hd(cases)
   Queue.add(exitq, hdcase.nodes)
   let exit = Queue.size(exitq) - 1
-  let hdTree = NonEmpty.hd(hdcase.pats)->NonEmpty.toArray->fromArray(~exit, ~name)
-  let tree = makeCase(hdTree, hdcase.pats, ~name, ~exit)
+  let hdTree = NonEmpty.hd(hdcase.pats)->NonEmpty.toArray->fromArray(~exit)
+  let tree = makeCase(hdTree, hdcase.pats, ~exit)
 
   @raises(Exit)
   let rec aux = (tree, i) =>
@@ -679,12 +667,12 @@ let make = (~name, cases: NonEmpty.t<Typechecker.case>) => {
     | Some({pats, nodes}) =>
       Queue.add(exitq, nodes)
       let exit = Queue.size(exitq) - 1
-      let hdTree = NonEmpty.hd(pats)->NonEmpty.toArray->fromArray(~exit, ~name)
+      let hdTree = NonEmpty.hd(pats)->NonEmpty.toArray->fromArray(~exit)
       switch merge(tree, hdTree, Z) {
       | tree =>
-        let tree = makeCase(tree, pats, ~exit, ~name)
+        let tree = makeCase(tree, pats, ~exit)
         aux(tree, succ(i))
-      | exception MergeFail => raise(Exit(Debug.unusedCase(NonEmpty.hd(pats), module(Tpat), ~name)))
+      | exception MergeFail => raise(Exit(Debug.unusedCase(NonEmpty.hd(pats), module(Tpat))))
       }
     }
   aux(tree, 1)
@@ -727,8 +715,8 @@ module ParMatch = {
 
   let exhaustive = (key, {pats, flag, next}) => {
     let pat = switch key {
-    | "" => Tpat.TAny(Debug.Loc.empty)
-    | k => TVar(Debug.Loc.empty, k)
+    | "" => Tpat.TAny(Debug.empty)
+    | k => TVar(Debug.empty, k)
     }
     {flag: flag, pats: list{(key, pat), ...pats}, next: next}
   }
@@ -754,7 +742,7 @@ module ParMatch = {
           | Some(wildcard) => exhaustive(kf(. key), check(wildcard, kf))
           | None =>
             let {pats, next, _} = check(next, kf)
-            {flag: Partial, pats: list{(kf(. key), TAny(Debug.Loc.empty)), ...pats}, next: next}
+            {flag: Partial, pats: list{(kf(. key), TAny(Debug.empty)), ...pats}, next: next}
           }
         }
       | {flag: Partial, pats, next} =>
@@ -762,9 +750,9 @@ module ParMatch = {
         | Some(wildcard) => exhaustive(kf(. key), check(wildcard, kf))
         | None =>
           let nest = switch extra {
-          | Tuple => Tpat.TTuple(Debug.Loc.empty, toArray(pats))
-          | Record => TRecord(Debug.Loc.empty, toKeyValues(pats))
-          | Dict => TDict(Debug.Loc.empty, toKeyValues(pats))
+          | Tuple => Tpat.TTuple(Debug.empty, toArray(pats))
+          | Record => TRecord(Debug.empty, toKeyValues(pats))
+          | Dict => TDict(Debug.empty, toKeyValues(pats))
           }
           let {pats, next, _} = check(next, kf)
           {flag: Partial, pats: list{(kf(. key), nest), ...pats}, next: next}
@@ -777,7 +765,7 @@ module ParMatch = {
         {
           flag: Partial,
           pats: switch pats {
-          | list{_, ...pats} => list{(kf(. key), TConstruct(Debug.Loc.empty, extra, None)), ...pats}
+          | list{_, ...pats} => list{(kf(. key), TConstruct(Debug.empty, extra, None)), ...pats}
           | _ => assert false
           },
           next: next,
@@ -786,10 +774,7 @@ module ParMatch = {
         let {pats, next, _} = check(nil, kf)
         {
           flag: Partial,
-          pats: list{
-            (kf(. key), TConstruct(Debug.Loc.empty, extra, Some(TAny(Debug.Loc.empty)))),
-            ...pats,
-          },
+          pats: list{(kf(. key), TConstruct(Debug.empty, extra, Some(TAny(Debug.empty)))), ...pats},
           next: next,
         }
       | (Some(nil), Some(cons)) =>
@@ -800,7 +785,7 @@ module ParMatch = {
           | {flag: Partial, pats, next} =>
             let pats = switch pats {
             | list{(key, cons), ...pats} => list{
-                (key, Tpat.TConstruct(Debug.Loc.empty, extra, Some(cons))),
+                (key, Tpat.TConstruct(Debug.empty, extra, Some(cons))),
                 ...pats,
               }
             | _ => assert false
@@ -809,7 +794,7 @@ module ParMatch = {
           }
         | {flag: Partial, pats, next} => {
             flag: Partial,
-            pats: list{(kf(. key), Tpat.TConstruct(Debug.Loc.empty, extra, None)), ...pats},
+            pats: list{(kf(. key), Tpat.TConstruct(Debug.empty, extra, None)), ...pats},
             next: next,
           }
         }
@@ -824,7 +809,7 @@ module ParMatch = {
           switch check(ifMatch, kf) {
           | {flag: Partial, pats, next} => {
               flag: Partial,
-              pats: list{(kf(. key), TConst(Debug.Loc.empty, Const.toTPat(val))), ...pats},
+              pats: list{(kf(. key), TConst(Debug.empty, Const.toTPat(val))), ...pats},
               next: next,
             }
           | {flag: Exhaustive, pats, next} =>
@@ -835,7 +820,7 @@ module ParMatch = {
                 switch nextCase {
                 | None => {
                     flag: Partial,
-                    pats: list{(kf(. key), TConst(Debug.Loc.empty, Const.toTPat(refute))), ...pats},
+                    pats: list{(kf(. key), TConst(Debug.empty, Const.toTPat(refute))), ...pats},
                     next: next,
                   }
                 | Some(case) => aux(refute, case)
@@ -844,7 +829,7 @@ module ParMatch = {
             } else {
               {
                 flag: Partial,
-                pats: list{(kf(. key), TConst(Debug.Loc.empty, Const.toTPat(refute))), ...pats},
+                pats: list{(kf(. key), TConst(Debug.empty, Const.toTPat(refute))), ...pats},
                 next: next,
               }
             }
@@ -855,9 +840,8 @@ module ParMatch = {
 }
 
 @raises(Exit)
-let partial_match_check = (~loc, ~name, tree) =>
+let partial_match_check = (tree, debug) =>
   switch ParMatch.check(tree, ParMatch.key_int) {
   | {flag: Exhaustive, _} => ()
-  | {flag: Partial, pats, _} =>
-    raise(Exit(Debug.partialMatch(pats, ParMatch.toString, ~loc, ~name)))
+  | {flag: Partial, pats, _} => raise(Exit(Debug.partialMatch(debug, pats, ParMatch.toString)))
   }

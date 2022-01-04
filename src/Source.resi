@@ -11,7 +11,7 @@ module type Env = {
   type e
   let return: (. string) => t
   let error: (. string) => t
-  let error_internal: (. array<Debug.t>) => t
+  let error_internal: (. array<Debug.error>) => t
   let render: (. Belt.MutableQueue.t<t>) => t
   let try_: (. (. unit) => t, (. e) => t) => t
   let map: (. t, string => string) => t

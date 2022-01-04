@@ -76,7 +76,7 @@ module Dagmap = {
   // When we link components in the tree, ensure that it keeps the
   // directed-acyclic structure.
   @raises(Exit)
-  let getExn = (g, ~name, ~loc, ~key) =>
+  let get = (g, key, debug) =>
     switch HashmapString.get(g.linked, key) {
     | Some(x) => x // It was linked already during a previous search.
     | None =>
@@ -91,9 +91,9 @@ module Dagmap = {
       | None =>
         // It is either being linked (thus in a cycle) or it doesn't exist.
         if List.hasU(g.stack, key, string_equal) {
-          raise(Exit(Debug.cyclicDependency(~loc, ~stack)))
+          raise(Exit(Debug.cyclicDependency(debug, ~stack)))
         } else {
-          raise(Exit(Debug.missingComponent(~name, ~loc, key)))
+          raise(Exit(Debug.missingComponent(debug, key)))
         }
       }
     }

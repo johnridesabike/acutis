@@ -43,13 +43,10 @@ type rec node<'a> =
   | OMatch(NonEmpty.t<Typechecker.Pattern.t>, Matching.t<nodes<'a>>)
   | OMapList(Typechecker.Pattern.t, Matching.t<nodes<'a>>)
   | OMapDict(Typechecker.Pattern.t, Matching.t<nodes<'a>>)
-  | OComponent({
-      loc: Debug.Loc.t,
-      props: array<(string, Typechecker.Pattern.t)>,
-      children: array<(string, child<'a>)>,
-      val: 'a,
-    })
+  | OComponent(Debug.t, 'a, array<(string, Typechecker.Pattern.t)>, array<(string, child<'a>)>)
+
 and child<'a> = OChildName(string) | OChildBlock(nodes<'a>)
+
 and nodes<'a> = array<node<'a>>
 
 let echo = (. x) =>
@@ -61,52 +58,46 @@ let echo = (. x) =>
   | EFloat(_, i, e) => OEString(Utils.escape(e, Belt.Float.toString(i)))
   }
 
-let rec nodes = (~name, a) =>
+let rec nodes = a =>
   Array.mapU(a, (. x) =>
     switch x {
     | Typechecker.TText(s, NoTrim) => OText(s)
     | TText(s, TrimStart) => OText(trimStart(s))
     | TText(s, TrimEnd) => OText(trimEnd(s))
     | TText(s, TrimBoth) => OText(trimStart(trimEnd(s)))
-    | TEcho({loc: _, nullables, default}) => OEcho(Array.mapU(nullables, echo), echo(. default))
-    | TMatch(loc, pats, cases) =>
-      let tree = Matching.make(cases, ~name)
-      Matching.partial_match_check(tree.tree, ~loc, ~name)
-      let tree = {...tree, exits: Matching.Exit.map(tree.exits, ~f=(. x) => nodes(x, ~name))}
+    | TEcho(_, nullables, default) => OEcho(Array.mapU(nullables, echo), echo(. default))
+    | TMatch(debug, pats, cases) =>
+      let tree = Matching.make(cases)
+      Matching.partial_match_check(tree.tree, debug)
+      let tree = {...tree, exits: Matching.Exit.map(tree.exits, ~f=(. x) => nodes(x))}
       OMatch(pats, tree)
-    | TMapList(loc, pat, cases) =>
-      let tree = Matching.make(cases, ~name)
-      Matching.partial_match_check(tree.tree, ~loc, ~name)
-      let tree = {...tree, exits: Matching.Exit.map(tree.exits, ~f=(. x) => nodes(x, ~name))}
+    | TMapList(debug, pat, cases) =>
+      let tree = Matching.make(cases)
+      Matching.partial_match_check(tree.tree, debug)
+      let tree = {...tree, exits: Matching.Exit.map(tree.exits, ~f=(. x) => nodes(x))}
       OMapList(pat, tree)
-    | TMapDict(loc, pat, cases) =>
-      let tree = Matching.make(cases, ~name)
-      Matching.partial_match_check(tree.tree, ~loc, ~name)
-      let tree = {...tree, exits: Matching.Exit.map(tree.exits, ~f=(. x) => nodes(x, ~name))}
+    | TMapDict(debug, pat, cases) =>
+      let tree = Matching.make(cases)
+      Matching.partial_match_check(tree.tree, debug)
+      let tree = {...tree, exits: Matching.Exit.map(tree.exits, ~f=(. x) => nodes(x))}
       OMapDict(pat, tree)
-    | TComponent({loc, val, props, children}) =>
+    | TComponent(debug, name, props, children) =>
       let children = Array.mapU(children, (. (k, v)) =>
         switch v {
         | TChildName(s) => (k, OChildName(s))
-        | TChildBlock(n) => (k, OChildBlock(nodes(n, ~name)))
+        | TChildBlock(n) => (k, OChildBlock(nodes(n)))
         }
       )
-      OComponent({loc: loc, val: val, props: props, children: children})
+      OComponent(debug, name, props, children)
     }
   )
 
-let makeNodes = (~name, ast: Typechecker.t) => nodes(ast.nodes, ~name)
+let makeNodes = (ast: Typechecker.t) => nodes(ast.nodes)
 
 type t<'a> = {
   prop_types: Typescheme.props,
   nodes: nodes<'a>,
   name: string,
-}
-
-let make = (~name, ast) => {
-  prop_types: ast.Typechecker.prop_types,
-  nodes: makeNodes(~name, ast),
-  name: name,
 }
 
 type rec template<'a> =
@@ -134,7 +125,7 @@ module Components = {
         if HashmapString.has(m, name) {
           raise(Exit(Debug.duplicateCompName(name)))
         }
-        HashmapString.set(m, name, Source.src(~name, Parser.makeExn(~name, src)))
+        HashmapString.set(m, name, Source.src(~name, Parser.make(Lexer.make(~name, src))))
       | Function(name, p, c, f) =>
         if HashmapString.has(m, name) {
           raise(Exit(Debug.duplicateCompName(name)))
@@ -147,7 +138,7 @@ module Components = {
     HashmapString.forEachU(typed, (. _, v) =>
       switch v {
       | Source.Acutis(name, src) =>
-        HashmapString.set(optimized, name, Source.src(~name, makeNodes(~name, src)))
+        HashmapString.set(optimized, name, Source.src(~name, makeNodes(src)))
       | Function(name, p, c, f) => HashmapString.set(optimized, name, Source.fnU(~name, p, c, f))
       }
     )
@@ -178,18 +169,15 @@ let rec linkNodesExn = (nodes, graph) =>
     | OMapDict(p, t) =>
       let exits = Matching.Exit.map(t.exits, ~f=(. n) => linkNodesExn(n, graph))
       OMapDict(p, {...t, exits: exits})
-    | OComponent({loc, val, props, children}) =>
-      OComponent({
-        loc: loc,
-        props: props,
-        children: Array.mapU(children, (. (name, child)) =>
-          switch child {
-          | OChildName(_) as child => (name, child)
-          | OChildBlock(nodes) => (name, OChildBlock(linkNodesExn(nodes, graph)))
-          }
-        ),
-        val: Utils.Dagmap.getExn(graph, ~name=val, ~key=val, ~loc),
-      })
+    | OComponent(debug, name, props, children) =>
+      let val = Utils.Dagmap.get(graph, name, debug)
+      let children = Array.mapU(children, (. (name, child)) =>
+        switch child {
+        | OChildName(_) as child => (name, child)
+        | OChildBlock(nodes) => (name, OChildBlock(linkNodesExn(nodes, graph)))
+        }
+      )
+      OComponent(debug, val, props, children)
     }
   )
 
@@ -202,11 +190,15 @@ let linkSrc = (. g, src) =>
 
 let make = (~name, src, components: Components.t<_>) =>
   try {
-    let nodes = Parser.makeExn(~name, src)
-    let ast = Typechecker.make(name, nodes, components.typed)
+    let nodes = Parser.make(Lexer.make(~name, src))
+    let ast = Typechecker.make(nodes, components.typed)
     let g = Utils.Dagmap.make(components.optimized, ~f=linkSrc)
-    let root = make(~name, ast)
-    #ok({...root, nodes: linkNodesExn(root.nodes, g)})
+    let nodes = makeNodes(ast)
+    #ok({
+      prop_types: ast.Typechecker.prop_types,
+      nodes: linkNodesExn(nodes, g),
+      name: name,
+    })
   } catch {
   | Exit(e) => #errors([e])
   | e => #errors([Debug.uncaughtCompileError(e, ~name)])

@@ -19,21 +19,21 @@ exception Exit = Debug.Exit
 
 module Pattern = {
   type rec t =
-    | UNull(Debug.Loc.t)
-    | USome(Debug.Loc.t, t)
-    | UFalse(Debug.Loc.t)
-    | UTrue(Debug.Loc.t)
-    | UString(Debug.Loc.t, string)
-    | UInt(Debug.Loc.t, int)
-    | UFloat(Debug.Loc.t, float)
-    | UTuple(Debug.Loc.t, array<t>)
-    | UList(Debug.Loc.t, array<t>)
-    | UListWithTailBinding(Debug.Loc.t, array<t>, t)
-    | UDict(Debug.Loc.t, array<(string, t)>)
-    | URecord(Debug.Loc.t, array<(string, t)>)
-    | UBinding(Debug.Loc.t, string)
+    | UNull(Debug.t)
+    | USome(Debug.t, t)
+    | UFalse(Debug.t)
+    | UTrue(Debug.t)
+    | UString(Debug.t, string)
+    | UInt(Debug.t, int)
+    | UFloat(Debug.t, float)
+    | UTuple(Debug.t, array<t>)
+    | UList(Debug.t, array<t>)
+    | UListWithTailBinding(Debug.t, array<t>, t)
+    | UDict(Debug.t, array<(string, t)>)
+    | URecord(Debug.t, array<(string, t)>)
+    | UBinding(Debug.t, string)
 
-  let toLocation = x =>
+  let debug = x =>
     switch x {
     | UTrue(x)
     | UFalse(x)
@@ -53,106 +53,106 @@ module Pattern = {
   @raises(Exit)
   let rec parseNode = (t, tokens) =>
     switch t {
-    | T.Tkn_Null(loc) => UNull(loc)
-    | Tkn_False(loc) => UFalse(loc)
-    | Tkn_True(loc) => UTrue(loc)
-    | Tkn_Identifier(loc, x) => UBinding(loc, x)
-    | Tkn_Int(loc, x) => UInt(loc, x)
-    | Tkn_Float(loc, x) => UFloat(loc, x)
-    | Tkn_String(loc, x) => UString(loc, x)
-    | Tkn_OpenParen(loc) =>
-      switch Lexer.popExn(tokens) {
-      | Tkn_CloseParen(_) => UTuple(loc, [])
-      | t => parseTuple(loc, t, tokens)
+    | T.Tkn_Null(d) => UNull(d)
+    | Tkn_False(d) => UFalse(d)
+    | Tkn_True(d) => UTrue(d)
+    | Tkn_Identifier(d, x) => UBinding(d, x)
+    | Tkn_Int(d, x) => UInt(d, x)
+    | Tkn_Float(d, x) => UFloat(d, x)
+    | Tkn_String(d, x) => UString(d, x)
+    | Tkn_OpenParen(d) =>
+      switch Lexer.pop(tokens) {
+      | Tkn_CloseParen(_) => UTuple(d, [])
+      | t => parseTuple(d, t, tokens)
       }
-    | Tkn_OpenBracket(loc) =>
-      switch Lexer.popExn(tokens) {
-      | Tkn_CloseBracket(_) => UList(loc, [])
-      | t => parseList(loc, t, tokens)
+    | Tkn_OpenBracket(d) =>
+      switch Lexer.pop(tokens) {
+      | Tkn_CloseBracket(_) => UList(d, [])
+      | t => parseList(d, t, tokens)
       }
-    | Tkn_OpenBrace(loc) =>
-      switch Lexer.popExn(tokens) {
-      | Tkn_CloseBrace(_) => URecord(loc, [])
-      | t => parseObject(loc, t, tokens)
+    | Tkn_OpenBrace(d) =>
+      switch Lexer.pop(tokens) {
+      | Tkn_CloseBrace(_) => URecord(d, [])
+      | t => parseObject(d, t, tokens)
       }
-    | Tkn_OpenPointyBracket(loc) =>
-      switch Lexer.popExn(tokens) {
-      | Tkn_ClosePointyBracket(_) => UDict(loc, [])
-      | t => parseDict(loc, t, tokens)
+    | Tkn_OpenPointyBracket(d) =>
+      switch Lexer.pop(tokens) {
+      | Tkn_ClosePointyBracket(_) => UDict(d, [])
+      | t => parseDict(d, t, tokens)
       }
-    | Tkn_Bang(loc) => USome(loc, parseNode(Lexer.popExn(tokens), tokens))
-    | t => raise(Exit(Debug.unexpectedToken(t, module(T), ~name=Lexer.name(tokens))))
+    | Tkn_Bang(d) => USome(d, parseNode(Lexer.pop(tokens), tokens))
+    | t => raise(Exit(Debug.unexpectedToken(t, module(T))))
     }
   @raises(Exit)
-  and parseList = (loc, t, tokens) => {
+  and parseList = (d, t, tokens) => {
     let q = Queue.make()
     Queue.add(q, parseNode(t, tokens))
 
     @raises(Exit)
     let rec aux = () =>
-      switch Lexer.popExn(tokens) {
-      | Tkn_CloseBracket(_) => UList(loc, Queue.toArray(q))
+      switch Lexer.pop(tokens) {
+      | Tkn_CloseBracket(_) => UList(d, Queue.toArray(q))
       | Tkn_Comma(_) =>
-        switch Lexer.popExn(tokens) {
+        switch Lexer.pop(tokens) {
         | Tkn_Spread(_) =>
-          let tail = parseNode(Lexer.popExn(tokens), tokens)
-          switch Lexer.popExn(tokens) {
-          | Tkn_CloseBracket(_) => UListWithTailBinding(loc, Queue.toArray(q), tail)
-          | t => raise(Exit(Debug.unexpectedToken(t, module(T), ~name=Lexer.name(tokens))))
+          let tail = parseNode(Lexer.pop(tokens), tokens)
+          switch Lexer.pop(tokens) {
+          | Tkn_CloseBracket(_) => UListWithTailBinding(d, Queue.toArray(q), tail)
+          | t => raise(Exit(Debug.unexpectedToken(t, module(T))))
           }
         | t =>
           Queue.add(q, parseNode(t, tokens))
           aux()
         }
-      | t => raise(Exit(Debug.unexpectedToken(t, module(T), ~name=Lexer.name(tokens))))
+      | t => raise(Exit(Debug.unexpectedToken(t, module(T))))
       }
     aux()
   }
   @raises(Exit)
-  and parseTuple = (loc, t, tokens) => {
+  and parseTuple = (d, t, tokens) => {
     let q = Queue.make()
     Queue.add(q, parseNode(t, tokens))
 
     @raises(Exit)
     let rec aux = () =>
-      switch Lexer.popExn(tokens) {
-      | Tkn_CloseParen(_) => UTuple(loc, Queue.toArray(q))
+      switch Lexer.pop(tokens) {
+      | Tkn_CloseParen(_) => UTuple(d, Queue.toArray(q))
       | Tkn_Comma(_) =>
-        Queue.add(q, parseNode(Lexer.popExn(tokens), tokens))
+        Queue.add(q, parseNode(Lexer.pop(tokens), tokens))
         aux()
-      | t => raise(Exit(Debug.unexpectedToken(t, module(T), ~name=Lexer.name(tokens))))
+      | t => raise(Exit(Debug.unexpectedToken(t, module(T))))
       }
     aux()
   }
   @raises(Exit)
-  and parseObject = (loc, t, tokens) => {
+  and parseObject = (d, t, tokens) => {
     let q = Queue.make()
     Queue.add(q, parseObjectKeyValue(t, tokens))
 
     @raises(Exit)
     let rec aux = () =>
-      switch Lexer.popExn(tokens) {
-      | Tkn_CloseBrace(_) => URecord(loc, Queue.toArray(q))
+      switch Lexer.pop(tokens) {
+      | Tkn_CloseBrace(_) => URecord(d, Queue.toArray(q))
       | Tkn_Comma(_) =>
-        Queue.add(q, parseObjectKeyValue(Lexer.popExn(tokens), tokens))
+        Queue.add(q, parseObjectKeyValue(Lexer.pop(tokens), tokens))
         aux()
-      | t => raise(Exit(Debug.unexpectedToken(t, module(T), ~name=Lexer.name(tokens))))
+      | t => raise(Exit(Debug.unexpectedToken(t, module(T))))
       }
     aux()
   }
   @raises(Exit)
-  and parseDict = (loc, t, tokens) => {
+  and parseDict = (d, t, tokens) => {
     let q = Queue.make()
     Queue.add(q, parseObjectKeyValue(t, tokens))
 
     @raises(Exit)
     let rec aux = () =>
-      switch Lexer.popExn(tokens) {
-      | Tkn_ClosePointyBracket(_) => UDict(loc, Queue.toArray(q))
+      switch Lexer.pop(tokens) {
+      | Tkn_ClosePointyBracket(_) => UDict(d, Queue.toArray(q))
       | Tkn_Comma(_) =>
-        Queue.add(q, parseObjectKeyValue(Lexer.popExn(tokens), tokens))
+        Queue.add(q, parseObjectKeyValue(Lexer.pop(tokens), tokens))
         aux()
-      | t => raise(Exit(Debug.unexpectedToken(t, module(T), ~name=Lexer.name(tokens))))
+      | t => raise(Exit(Debug.unexpectedToken(t, module(T))))
       }
     aux()
   }
@@ -160,31 +160,31 @@ module Pattern = {
   and parseObjectKeyValue = (t, tokens) =>
     switch t {
     | Tkn_String(_, key) =>
-      switch Lexer.popExn(tokens) {
-      | Tkn_Colon(_) => (key, parseNode(Lexer.popExn(tokens), tokens))
-      | t => raise(Exit(Debug.unexpectedToken(t, module(T), ~name=Lexer.name(tokens))))
+      switch Lexer.pop(tokens) {
+      | Tkn_Colon(_) => (key, parseNode(Lexer.pop(tokens), tokens))
+      | t => raise(Exit(Debug.unexpectedToken(t, module(T))))
       }
-    | Tkn_Identifier(loc, key) =>
-      switch Lexer.peekExn(tokens) {
+    | Tkn_Identifier(d, key) =>
+      switch Lexer.peek(tokens) {
       | Tkn_Colon(_) =>
-        Lexer.popExn(tokens)->ignore
-        (key, parseNode(Lexer.popExn(tokens), tokens))
-      | _ => (key, UBinding(loc, key))
+        Lexer.pop(tokens)->ignore
+        (key, parseNode(Lexer.pop(tokens), tokens))
+      | _ => (key, UBinding(d, key))
       }
-    | t => raise(Exit(Debug.unexpectedToken(t, module(T), ~name=Lexer.name(tokens))))
+    | t => raise(Exit(Debug.unexpectedToken(t, module(T))))
     }
 
   @raises(Exit)
   let make = tokens => {
-    let head = parseNode(Lexer.popExn(tokens), tokens)
+    let head = parseNode(Lexer.pop(tokens), tokens)
     let q = Queue.make()
 
     @raises(Exit)
     let rec aux = () => {
-      switch Lexer.peekExn(tokens) {
+      switch Lexer.peek(tokens) {
       | Tkn_Comma(_) =>
-        Lexer.popExn(tokens)->ignore
-        Queue.add(q, parseNode(Lexer.popExn(tokens), tokens))
+        Lexer.pop(tokens)->ignore
+        Queue.add(q, parseNode(Lexer.pop(tokens), tokens))
         aux()
       | _ => NonEmpty.fromQueue(head, q)
       }
@@ -194,32 +194,27 @@ module Pattern = {
 }
 
 type echo =
-  | EBinding(Debug.Loc.t, string, Utils.escape)
-  | EChild(Debug.Loc.t, string)
-  | EString(Debug.Loc.t, string, Utils.escape)
-  | EInt(Debug.Loc.t, int, Utils.escape)
-  | EFloat(Debug.Loc.t, float, Utils.escape)
+  | EBinding(Debug.t, string, Utils.escape)
+  | EChild(Debug.t, string)
+  | EString(Debug.t, string, Utils.escape)
+  | EInt(Debug.t, int, Utils.escape)
+  | EFloat(Debug.t, float, Utils.escape)
 
 type trim = NoTrim | TrimStart | TrimEnd | TrimBoth
 
 type rec node =
   | UText(string, trim)
   // The first echo item that isn't null will be returned.
-  | UEcho({loc: Debug.Loc.t, nullables: array<echo>, default: echo})
-  | UMatch(Debug.Loc.t, NonEmpty.t<Pattern.t>, NonEmpty.t<case>)
-  | UMapList(Debug.Loc.t, Pattern.t, NonEmpty.t<case>)
-  | UMapDict(Debug.Loc.t, Pattern.t, NonEmpty.t<case>)
-  | UComponent({
-      loc: Debug.Loc.t,
-      name: string,
-      props: array<(string, Pattern.t)>,
-      children: array<(string, child)>,
-    })
+  | UEcho(Debug.t, array<echo>, echo)
+  | UMatch(Debug.t, NonEmpty.t<Pattern.t>, NonEmpty.t<case>)
+  | UMapList(Debug.t, Pattern.t, NonEmpty.t<case>)
+  | UMapDict(Debug.t, Pattern.t, NonEmpty.t<case>)
+  | UComponent(Debug.t, string, array<(string, Pattern.t)>, array<(string, child)>)
 and case = {
   patterns: NonEmpty.t<NonEmpty.t<Pattern.t>>,
   nodes: t,
 }
-and child = UChildName(Debug.Loc.t, string) | UChildBlock(Debug.Loc.t, t)
+and child = UChildName(Debug.t, string) | UChildBlock(Debug.t, t)
 and t = array<node>
 
 type parseData<'a> = {
@@ -228,21 +223,21 @@ type parseData<'a> = {
 }
 
 @raises(Exit)
-let parseEchoAux = (t, tokens, esc) =>
+let parseEchoAux = (t, esc) =>
   switch t {
-  | T.Tkn_Identifier(loc, x) => EBinding(loc, x, esc)
-  | Tkn_String(loc, x) => EString(loc, x, esc)
-  | Tkn_Int(loc, x) => EInt(loc, x, esc)
-  | Tkn_Float(loc, x) => EFloat(loc, x, esc)
-  | t => raise(Exit(Debug.unexpectedToken(t, module(T), ~name=Lexer.name(tokens))))
+  | T.Tkn_Identifier(d, x) => EBinding(d, x, esc)
+  | Tkn_String(d, x) => EString(d, x, esc)
+  | Tkn_Int(d, x) => EInt(d, x, esc)
+  | Tkn_Float(d, x) => EFloat(d, x, esc)
+  | t => raise(Exit(Debug.unexpectedToken(t, module(T))))
   }
 
 @raises(Exit)
 let parseEcho = tokens =>
-  switch Lexer.popExn(tokens) {
-  | Tkn_Ampersand(_) => parseEchoAux(Lexer.popExn(tokens), tokens, NoEscape)
-  | Tkn_ComponentName(loc, x) => EChild(loc, x)
-  | t => parseEchoAux(t, tokens, Escape)
+  switch Lexer.pop(tokens) {
+  | Tkn_Ampersand(_) => parseEchoAux(Lexer.pop(tokens), NoEscape)
+  | Tkn_ComponentName(d, x) => EChild(d, x)
+  | t => parseEchoAux(t, Escape)
   }
 
 @raises(Exit)
@@ -252,12 +247,12 @@ let parseEchoes = tokens => {
 
   @raises(Exit)
   let rec aux = last =>
-    switch Lexer.popExn(tokens) {
+    switch Lexer.pop(tokens) {
     | (Tkn_Tilde(_) | Tkn_Text(_)) as t => {nextT: t, data: (Queue.toArray(q), last)}
     | Tkn_Question(_) =>
       Queue.add(q, last)
       aux(parseEcho(tokens))
-    | t => raise(Exit(Debug.unexpectedToken(t, module(T), ~name=Lexer.name(tokens))))
+    | t => raise(Exit(Debug.unexpectedToken(t, module(T))))
     }
   aux(head)
 }
@@ -289,51 +284,51 @@ let rec parse = (t, tokens, ~until) => {
     switch t {
     | t if until(. t) => {nextT: t, data: Queue.toArray(q)}
     | T.Tkn_Text(_, x) =>
-      switch Lexer.popExn(tokens) {
+      switch Lexer.pop(tokens) {
       | Tkn_Tilde(_) =>
         Queue.add(q, UText(x, TrimEnd))
-        aux(Lexer.popExn(tokens))
+        aux(Lexer.pop(tokens))
       | t =>
         Queue.add(q, UText(x, NoTrim))
         aux(t)
       }
     | Tkn_Tilde(_) =>
-      switch Lexer.popExn(tokens) {
+      switch Lexer.pop(tokens) {
       | Tkn_Text(_, x) =>
-        switch Lexer.popExn(tokens) {
+        switch Lexer.pop(tokens) {
         | Tkn_Tilde(_) =>
           Queue.add(q, UText(x, TrimBoth))
-          aux(Lexer.popExn(tokens))
+          aux(Lexer.pop(tokens))
         | t =>
           Queue.add(q, UText(x, TrimStart))
           aux(t)
         }
-      | t => raise(Exit(Debug.unexpectedToken(t, module(T), ~name=Lexer.name(tokens))))
+      | t => raise(Exit(Debug.unexpectedToken(t, module(T))))
       }
-    | Tkn_Comment(_) => aux(Lexer.popExn(tokens))
-    | Tkn_Identifier(loc, "match") =>
+    | Tkn_Comment(_) => aux(Lexer.pop(tokens))
+    | Tkn_Identifier(d, "match") =>
       let identifiers = Pattern.make(tokens)
       let withs = parseWithBlocks(tokens, ~block="match")
-      Queue.add(q, UMatch(loc, identifiers, withs))
-      aux(Lexer.popExn(tokens))
-    | Tkn_Identifier(loc, "map") =>
-      let pattern = Pattern.parseNode(Lexer.popExn(tokens), tokens)
+      Queue.add(q, UMatch(d, identifiers, withs))
+      aux(Lexer.pop(tokens))
+    | Tkn_Identifier(d, "map") =>
+      let pattern = Pattern.parseNode(Lexer.pop(tokens), tokens)
       let withs = parseWithBlocks(tokens, ~block="map")
-      Queue.add(q, UMapList(loc, pattern, withs))
-      aux(Lexer.popExn(tokens))
-    | Tkn_Identifier(loc, "map_dict") =>
-      let pattern = Pattern.parseNode(Lexer.popExn(tokens), tokens)
+      Queue.add(q, UMapList(d, pattern, withs))
+      aux(Lexer.pop(tokens))
+    | Tkn_Identifier(d, "map_dict") =>
+      let pattern = Pattern.parseNode(Lexer.pop(tokens), tokens)
       let withs = parseWithBlocks(tokens, ~block="map_dict")
-      Queue.add(q, UMapDict(loc, pattern, withs))
-      aux(Lexer.popExn(tokens))
-    | Tkn_Echo(loc) =>
+      Queue.add(q, UMapDict(d, pattern, withs))
+      aux(Lexer.pop(tokens))
+    | Tkn_Echo(debug) =>
       let {nextT, data: (nullables, default)} = parseEchoes(tokens)
-      Queue.add(q, UEcho({loc: loc, nullables: nullables, default: default}))
+      Queue.add(q, UEcho(debug, nullables, default))
       aux(nextT)
-    | Tkn_ComponentName(loc, name) =>
-      Queue.add(q, parseComponent(loc, name, tokens))
-      aux(Lexer.popExn(tokens))
-    | t => raise(Exit(Debug.unexpectedToken(t, module(T), ~name=Lexer.name(tokens))))
+    | Tkn_ComponentName(d, name) =>
+      Queue.add(q, parseComponent(d, name, tokens))
+      aux(Lexer.pop(tokens))
+    | t => raise(Exit(Debug.unexpectedToken(t, module(T))))
     }
   aux(t)
 }
@@ -344,7 +339,7 @@ and parseWithBlock = tokens => {
 
   @raises(Exit)
   let rec aux = () =>
-    switch Lexer.popExn(tokens) {
+    switch Lexer.pop(tokens) {
     | Tkn_Identifier(_, "with") =>
       Queue.add(q, Pattern.make(tokens))
       aux()
@@ -356,7 +351,7 @@ and parseWithBlock = tokens => {
 }
 @raises(Exit)
 and parseWithBlocks = (tokens, ~block) =>
-  switch Lexer.popExn(tokens) {
+  switch Lexer.pop(tokens) {
   | Tkn_Identifier(_, "with") =>
     let {nextT, data: head} = parseWithBlock(tokens)
     let q = Queue.make()
@@ -365,9 +360,9 @@ and parseWithBlocks = (tokens, ~block) =>
     let rec aux = t =>
       switch t {
       | T.Tkn_Slash(_) =>
-        switch Lexer.popExn(tokens) {
+        switch Lexer.pop(tokens) {
         | Tkn_Identifier(_, x) if x == block => NonEmpty.fromQueue(head, q)
-        | t => raise(Exit(Debug.unexpectedToken(t, module(T), ~name=Lexer.name(tokens))))
+        | t => raise(Exit(Debug.unexpectedToken(t, module(T))))
         }
       /* This is guaranteed to be a "with" clause. */
       | _with =>
@@ -376,31 +371,20 @@ and parseWithBlocks = (tokens, ~block) =>
         aux(nextT)
       }
     aux(nextT)
-  | t => raise(Exit(Debug.unexpectedToken(t, module(T), ~name=Lexer.name(tokens))))
+  | t => raise(Exit(Debug.unexpectedToken(t, module(T))))
   }
 @raises(Exit)
-and parseComponent = (loc, name, tokens) => {
+and parseComponent = (debug, name, tokens) => {
   let {nextT, data: (props, children)} = parseProps(tokens)
   switch nextT {
-  | Tkn_Slash(_) =>
-    UComponent({
-      loc: loc,
-      name: name,
-      props: Queue.toArray(props),
-      children: Queue.toArray(children),
-    })
+  | Tkn_Slash(_) => UComponent(debug, name, Queue.toArray(props), Queue.toArray(children))
   | t =>
     let {data: child, _} = parse(t, tokens, ~until=slash)
-    switch Lexer.popExn(tokens) {
-    | Tkn_ComponentName(loc', name') if name == name' =>
-      Queue.add(children, ("Children", UChildBlock(loc', child)))
-      UComponent({
-        loc: loc,
-        name: name,
-        props: Queue.toArray(props),
-        children: Queue.toArray(children),
-      })
-    | t => raise(Exit(Debug.unexpectedToken(t, module(T), ~name=Lexer.name(tokens))))
+    switch Lexer.pop(tokens) {
+    | Tkn_ComponentName(d', name') if name == name' =>
+      Queue.add(children, ("Children", UChildBlock(d', child)))
+      UComponent(debug, name, Queue.toArray(props), Queue.toArray(children))
+    | t => raise(Exit(Debug.unexpectedToken(t, module(T))))
     }
   }
 }
@@ -412,46 +396,42 @@ and parseProps = tokens => {
   @raises(Exit)
   let rec aux = t =>
     switch t {
-    | T.Tkn_Identifier(loc, key) =>
-      switch Lexer.popExn(tokens) {
+    | T.Tkn_Identifier(d, key) =>
+      switch Lexer.pop(tokens) {
       | Tkn_Equals(_) =>
-        let prop = Pattern.parseNode(Lexer.popExn(tokens), tokens)
+        let prop = Pattern.parseNode(Lexer.pop(tokens), tokens)
         Queue.add(props, (key, prop))
-        aux(Lexer.popExn(tokens))
+        aux(Lexer.pop(tokens))
       | t =>
-        Queue.add(props, (key, UBinding(loc, key)))
+        Queue.add(props, (key, UBinding(d, key)))
         aux(t)
       }
-    | Tkn_ComponentName(loc, name) =>
-      switch Lexer.popExn(tokens) {
+    | Tkn_ComponentName(d, name) =>
+      switch Lexer.pop(tokens) {
       | Tkn_Equals(_) =>
-        switch Lexer.popExn(tokens) {
+        switch Lexer.pop(tokens) {
         | Tkn_Block(_) =>
-          let {data: child, _} = parse(Lexer.popExn(tokens), tokens, ~until=slash)
-          switch Lexer.popExn(tokens) {
-          | Tkn_Block(loc) =>
-            Queue.add(children, (name, UChildBlock(loc, child)))
-            aux(Lexer.popExn(tokens))
-          | t => raise(Exit(Debug.unexpectedToken(t, module(T), ~name=Lexer.name(tokens))))
+          let {data: child, _} = parse(Lexer.pop(tokens), tokens, ~until=slash)
+          switch Lexer.pop(tokens) {
+          | Tkn_Block(d) =>
+            Queue.add(children, (name, UChildBlock(d, child)))
+            aux(Lexer.pop(tokens))
+          | t => raise(Exit(Debug.unexpectedToken(t, module(T))))
           }
-        | Tkn_ComponentName(loc, name') =>
-          Queue.add(children, (name, UChildName(loc, name')))
-          aux(Lexer.popExn(tokens))
-        | t => raise(Exit(Debug.unexpectedToken(t, module(T), ~name=Lexer.name(tokens))))
+        | Tkn_ComponentName(d, name') =>
+          Queue.add(children, (name, UChildName(d, name')))
+          aux(Lexer.pop(tokens))
+        | t => raise(Exit(Debug.unexpectedToken(t, module(T))))
         }
       | t =>
-        Queue.add(children, (name, UChildName(loc, name)))
+        Queue.add(children, (name, UChildName(d, name)))
 
         aux(t)
       }
     | t => {nextT: t, data: (props, children)}
     }
-  aux(Lexer.popExn(tokens))
+  aux(Lexer.pop(tokens))
 }
 
 @raises(Exit)
-let makeExn = (~name, source) => {
-  let tokens = Lexer.make(source, ~name)
-  let {data, _} = parse(Lexer.popExn(tokens), tokens, ~until=endOfFile)
-  data
-}
+let make = tokens => parse(Lexer.pop(tokens), tokens, ~until=endOfFile).data

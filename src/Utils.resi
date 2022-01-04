@@ -14,6 +14,6 @@ module Dagmap: {
   type t<'a, 'b>
   let make: (map<'a>, ~f: (. t<'a, 'b>, 'a) => 'b) => t<'a, 'b>
   let prelinked: map<'a> => t<'a, 'a>
-  let getExn: (t<'a, 'b>, ~name: string, ~loc: Debug.Loc.t, ~key: string) => 'b
+  let get: (t<'a, 'b>, string, Debug.t) => 'b
   let linkAll: t<'a, 'b> => map<'b>
 }

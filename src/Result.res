@@ -7,7 +7,7 @@
 */
 
 /* We're using a polymorphic variant because it has a nicer JS representation. */
-type t<'a> = [#ok('a) | #errors(array<Debug.t>)]
+type t<'a> = [#ok('a) | #errors(array<Debug.error>)]
 
 let mapU = (x: t<_>, f) =>
   switch x {

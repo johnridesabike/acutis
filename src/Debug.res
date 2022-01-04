@@ -9,12 +9,10 @@ module Array = Belt.Array
 module Int = Belt.Int
 module List = Belt.List
 
-module Loc = {
-  type t = {char: int}
-  let empty = {char: 0}
-  let make = i => {char: i}
-  let char = t => t.char
-}
+type t = {name: string, char: int}
+let empty = {name: "", char: 0}
+let make = (name, char) => {name: name, char: char}
+let char = t => t.char
 
 type kind = [
   | #Type
@@ -28,223 +26,225 @@ type kind = [
 @unboxed
 type rec anyExn = AnyExn(_): anyExn
 
-type t = {
+type error = {
   message: string,
   kind: kind,
-  location: option<Loc.t>,
-  path: array<string>,
+  location: option<t>,
+  stack: array<string>,
   exn: option<anyExn>,
 }
 
-exception Exit(t)
+exception Exit(error)
+
+type debug = t
 
 module type Debuggable = {
   type t
   let toString: t => string
-  let toLocation: t => Loc.t
+  let debug: t => debug
 }
 
 type debuggable<'a> = module(Debuggable with type t = 'a)
 
 /* Lexer errors */
 
-let illegalIdentifier = (~loc, ~name, ~identifier) => {
+let illegalIdentifier = (t, identifier) => {
   kind: #Syntax,
   message: `"${identifier}" is an illegal identifier name.`,
-  location: Some(loc),
-  path: [name],
+  location: Some(t),
+  stack: [],
   exn: None,
 }
 
-let invalidCharacter = (~loc, ~name, ~character) => {
+let invalidCharacter = (t, character) => {
   kind: #Syntax,
   message: `Invalid character: "${character}".`,
-  location: Some(loc),
-  path: [name],
+  location: Some(t),
+  stack: [],
   exn: None,
 }
 
-let unexpectedCharacter = (~loc, ~name, ~character, ~expected) => {
+let unexpectedCharacter = (t, ~character, ~expected) => {
   kind: #Syntax,
   message: `Unexpected character: "${character}". Expected: "${expected}".`,
-  location: Some(loc),
-  path: [name],
+  location: Some(t),
+  stack: [],
   exn: None,
 }
 
-let unexpectedEof = (~loc, ~name) => {
+let unexpectedEof = t => {
   kind: #Syntax,
   message: "Unexpected end of file.",
-  location: Some(loc),
-  path: [name],
+  location: Some(t),
+  stack: [],
   exn: None,
 }
 
-let unknownEscapeSequence = (~loc, ~name, ~char) => {
+let unknownEscapeSequence = (t, char) => {
   kind: #Syntax,
   message: `Unknown escape sequence: ${char}.`,
-  location: Some(loc),
-  path: [name],
+  location: Some(t),
+  stack: [],
   exn: None,
 }
 
-let unterminatedComment = (~loc, ~name) => {
+let unterminatedComment = t => {
   kind: #Syntax,
   message: "Unterminated comment.",
-  location: Some(loc),
-  path: [name],
+  location: Some(t),
+  stack: [],
   exn: None,
 }
 
-let unterminatedString = (~loc, ~name) => {
+let unterminatedString = t => {
   kind: #Syntax,
   message: "Unterminated string.",
-  location: Some(loc),
-  path: [name],
+  location: Some(t),
+  stack: [],
   exn: None,
 }
 
 /* Parse errors. */
 
-let unexpectedToken = (type a, t, module(M): debuggable<a>, ~name) => {
-  message: `Unexpected token: "${M.toString(t)}".`,
+let unexpectedToken = (type a, token, module(M): debuggable<a>) => {
+  message: `Unexpected token: "${M.toString(token)}".`,
   kind: #Parse,
-  location: Some(M.toLocation(t)),
-  path: [name],
+  location: Some(M.debug(token)),
+  stack: [],
   exn: None,
 }
 
 /* Type errors */
 
-let cantNarrowType = (~loc, ~name, a, b, f) => {
+let cantNarrowType = (t, a, b, f) => {
   message: `These types have no subset:
 ${f(a)}
 ${f(b)}`,
   kind: #Type,
   exn: None,
-  location: Some(loc),
-  path: [name],
+  location: Some(t),
+  stack: [],
 }
 
-let childNotAllowedInRoot = loc => {
+let childNotAllowedInRoot = t => {
   message: `Children are not allowed in root templates, only in components.`,
   kind: #Type,
-  location: Some(loc),
-  path: [],
+  location: Some(t),
+  stack: [],
   exn: None,
 }
 
-let childTypeMismatch = (~loc, ~name, a, b, f) => {
+let childTypeMismatch = (t, a, b, f) => {
   message: `This pattern is type ${f(b)}} but expected type ${f(a)}.`,
   kind: #Type,
   exn: None,
-  location: Some(loc),
-  path: [name],
+  location: Some(t),
+  stack: [],
 }
 
-let extraChild = (~loc, ~name, ~comp, child) => {
+let extraChild = (t, ~comp, child) => {
   message: `This call of component "${comp}" includes unexpected child "${child}."`,
   kind: #Type,
   exn: None,
-  location: Some(loc),
-  path: [name],
+  location: Some(t),
+  stack: [],
 }
 
-let mapPatternSizeMismatch = (~loc, ~name) => {
+let mapPatternSizeMismatch = t => {
   message: `Map blocks can only have two patterns per "with" clause: the item and the index.`,
   kind: #Type,
   exn: None,
-  location: Some(loc),
-  path: [name],
+  location: Some(t),
+  stack: [],
 }
 
-let missingChild = (~loc, ~name, ~comp, child) => {
+let missingChild = (t, ~comp, child) => {
   message: `This call of component "${comp}" is missing child "${child}."`,
   kind: #Type,
   exn: None,
-  location: Some(loc),
-  path: [name],
+  location: Some(t),
+  stack: [],
 }
 
-let missingProp = (p, t, ~loc, ~name, ~comp, f) => {
-  message: `This call of component "${comp}" is missing prop "${p}" of type ${f(t)}.`,
+let missingProp = (t, p, ~comp, ty, f) => {
+  message: `This call of component "${comp}" is missing prop "${p}" of type ${f(ty)}.`,
   kind: #Type,
   exn: None,
-  location: Some(loc),
-  path: [name],
+  location: Some(t),
+  stack: [],
 }
 
-let nonNullableEchoLiteral = (~loc, ~name) => {
+let nonNullableEchoLiteral = t => {
   message: `String, int, or float literals are not nullable and therefore allowed before a ? operator.`,
   kind: #Type,
   exn: None,
-  location: Some(loc),
-  path: [name],
+  location: Some(t),
+  stack: [],
 }
 
-let patternNumberMismatch = (~loc, ~name) => {
-  location: Some(loc),
-  path: [name],
+let patternNumberMismatch = t => {
+  location: Some(t),
+  stack: [],
   kind: #Type,
   message: "The number of patterns does not match the number of data.",
   exn: None,
 }
 
-let tailBindingClash = (~loc, ~name) => {
+let tailBindingClash = t => {
   message: `Only bindings are allowed as list tails.`,
   kind: #Type,
   exn: None,
-  location: Some(loc),
-  path: [name],
+  location: Some(t),
+  stack: [],
 }
 
-let tupleSizeMismatch = (~loc, ~name, a, b) => {
+let tupleSizeMismatch = (t, a, b) => {
   message: `This is a ${Int.toString(a)}-tuple but expected a ${Int.toString(b)}-tuple.`,
   kind: #Type,
   exn: None,
-  location: Some(loc),
-  path: [name],
+  location: Some(t),
+  stack: [],
 }
 
-let typeMismatch = (a, b, ~loc, ~name, f) => {
+let typeMismatch = (t, a, b, f) => {
   message: `This pattern is type ${f(b)} but expected type ${f(a)}.`,
   kind: #Type,
   exn: None,
-  location: Some(loc),
-  path: [name],
+  location: Some(t),
+  stack: [],
 }
 
 /* Matching errors */
 
-let nameBoundMultipleTimes = (~loc, ~binding, ~name) => {
+let nameBoundMultipleTimes = (t, binding) => {
   message: `"${binding}" is bound multiple times in this pattern.`,
   kind: #Matching,
-  location: Some(loc),
-  path: [name],
+  location: Some(t),
+  stack: [],
   exn: None,
 }
 
-let partialMatch = (~loc, ~name, pat, f) => {
+let partialMatch = (t, pat, f) => {
   message: `This pattern-matching is not exhaustive.
 Here is an example of a case that is not matched:
 ${f(pat)}`,
   kind: #Matching,
   exn: None,
-  location: Some(loc),
-  path: [name],
+  location: Some(t),
+  stack: [],
 }
 
-let unusedCase = (type a, ~name, pats, module(M): debuggable<a>) => {
+let unusedCase = (type a, pats, module(M): debuggable<a>) => {
   let hd = NonEmpty.hd(pats)
-  let loc = M.toLocation(hd)
+  let t = M.debug(hd)
   let pat = pats->NonEmpty.toArray->Array.joinWith(", ", M.toString)
   {
     message: `This match case is unused:
 ${pat}`,
     kind: #Matching,
     exn: None,
-    location: Some(loc),
-    path: [name],
+    location: Some(t),
+    stack: [],
   }
 }
 
@@ -253,15 +253,15 @@ ${pat}`,
 let duplicateCompName = name => {
   message: `The template component name "${name}" was used twice. Every component needs a unique name.`,
   location: None,
-  path: [],
+  stack: [],
   kind: #Compile,
   exn: None,
 }
 
 let uncaughtCompileError = (e, ~name) => {
-  message: `An exception was thrown while compiling this template. This is probably due to malformed input.`,
+  message: `An exception was thrown while compiling template "${name}." This is probably due to malformed input.`,
   location: None,
-  path: [name],
+  stack: [],
   kind: #Compile,
   exn: Some(AnyExn(e)),
 }
@@ -271,7 +271,7 @@ let uncaughtCompileError = (e, ~name) => {
 let customError = message => {
   message: message,
   location: None,
-  path: [],
+  stack: [],
   kind: #Render,
   exn: None,
 }
@@ -294,7 +294,7 @@ let decodeError = (~stack, a, b, f) => {
     kind: #Render,
     exn: None,
     location: None,
-    path: List.toArray(stack),
+    stack: List.toArray(stack),
   }
 }
 
@@ -303,29 +303,33 @@ let decodeErrorMissingKey = (~stack, k) => {
   kind: #Render,
   exn: None,
   location: None,
-  path: List.toArray(stack),
+  stack: List.toArray(stack),
 }
 
-let uncaughtComponentError = (~loc, ~name, ~stack, e) => {
+let uncaughtComponentError = (t, ~name, ~stack, e) => {
   message: `Template component "${name}" threw an exception.`,
-  location: Some(loc),
-  path: List.toArray(stack),
+  location: Some(t),
+  stack: List.toArray(stack),
   kind: #Render,
   exn: Some(AnyExn(e)),
 }
 
 /* Other errors */
 
-let cyclicDependency = (~loc, ~stack) => {
-  message: `Cyclic dependency detected. I can't compile any components in this path.`,
-  kind: #Compile,
-  location: Some(loc),
-  path: List.toArray(stack),
-  exn: None,
+let cyclicDependency = (t, ~stack) => {
+  let stack = List.toArray(stack)->Array.reverse->Array.joinWith(" -> ", s => s)
+  {
+    message: `Cyclic dependency detected:
+${stack}`,
+    kind: #Compile,
+    location: Some(t),
+    stack: [],
+    exn: None,
+  }
 }
 
-let missingComponent = (~name, ~loc, a) => {
-  let name' = switch name {
+let missingComponent = (t, a) => {
+  let name' = switch t.name {
   | "" => "<root>"
   | s => s
   }
@@ -333,7 +337,7 @@ let missingComponent = (~name, ~loc, a) => {
     message: `Template component "${a}" is missing, which is required by "${name'}."`,
     kind: #Compile,
     exn: None,
-    location: Some(loc),
-    path: [name],
+    location: Some(t),
+    stack: [],
   }
 }

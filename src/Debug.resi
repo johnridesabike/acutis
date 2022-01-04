@@ -6,12 +6,10 @@
   file, You can obtain one at http://mozilla.org/MPL/2.0/.
 */
 
-module Loc: {
-  type t = {@live char: int}
-  let empty: t
-  let make: int => t
-  let char: t => int
-}
+type t = {name: string, char: int}
+let empty: t
+let make: (string, int) => t
+let char: t => int
 
 type kind = [
   | #Type
@@ -25,65 +23,67 @@ type kind = [
 @unboxed
 type rec anyExn = AnyExn(_): anyExn
 
-type t = {
+type error = {
   @live message: string,
   @live kind: kind,
-  @live location: option<Loc.t>,
-  @live path: array<string>,
+  @live location: option<t>,
+  @live stack: array<string>,
   @live exn: option<anyExn>,
 }
 
-exception Exit(t)
+exception Exit(error)
+
+type debug = t
 
 module type Debuggable = {
   type t
   let toString: t => string
-  let toLocation: t => Loc.t
+  let debug: t => debug
 }
 
 type debuggable<'a> = module(Debuggable with type t = 'a)
 
 /* Lexer errors */
-let illegalIdentifier: (~loc: Loc.t, ~name: string, ~identifier: string) => t
-let invalidCharacter: (~loc: Loc.t, ~name: string, ~character: string) => t
-let unexpectedCharacter: (~loc: Loc.t, ~name: string, ~character: string, ~expected: string) => t
-let unexpectedEof: (~loc: Loc.t, ~name: string) => t
-let unknownEscapeSequence: (~loc: Loc.t, ~name: string, ~char: string) => t
-let unterminatedComment: (~loc: Loc.t, ~name: string) => t
-let unterminatedString: (~loc: Loc.t, ~name: string) => t
+let illegalIdentifier: (t, string) => error
+let invalidCharacter: (t, string) => error
+let unexpectedCharacter: (t, ~character: string, ~expected: string) => error
+let unexpectedEof: t => error
+let unknownEscapeSequence: (t, string) => error
+let unterminatedComment: t => error
+let unterminatedString: t => error
 
 /* Parse errors */
-let unexpectedToken: ('a, debuggable<'a>, ~name: string) => t
+let unexpectedToken: ('a, debuggable<'a>) => error
 
 /* Type errors */
-let cantNarrowType: (~loc: Loc.t, ~name: string, 'a, 'a, 'a => string) => t
-let childNotAllowedInRoot: Loc.t => t
-let childTypeMismatch: (~loc: Loc.t, ~name: string, 'a, 'a, 'a => string) => t
-let extraChild: (~loc: Loc.t, ~name: string, ~comp: string, string) => t
-let mapPatternSizeMismatch: (~loc: Loc.t, ~name: string) => t
-let missingChild: (~loc: Loc.t, ~name: string, ~comp: string, string) => t
-let missingProp: (string, 'a, ~loc: Loc.t, ~name: string, ~comp: string, 'a => string) => t
-let nonNullableEchoLiteral: (~loc: Loc.t, ~name: string) => t
-let patternNumberMismatch: (~loc: Loc.t, ~name: string) => t
-let tailBindingClash: (~loc: Loc.t, ~name: string) => t
-let tupleSizeMismatch: (~loc: Loc.t, ~name: string, int, int) => t
-let typeMismatch: ('a, 'a, ~loc: Loc.t, ~name: string, 'a => string) => t
+let cantNarrowType: (t, 'a, 'a, 'a => string) => error
+let childNotAllowedInRoot: t => error
+let childTypeMismatch: (t, 'a, 'a, 'a => string) => error
+let extraChild: (t, ~comp: string, string) => error
+let mapPatternSizeMismatch: t => error
+let missingChild: (t, ~comp: string, string) => error
+let missingProp: (t, string, ~comp: string, 'a, 'a => string) => error
+let nonNullableEchoLiteral: t => error
+let patternNumberMismatch: t => error
+let tailBindingClash: t => error
+let tupleSizeMismatch: (t, int, int) => error
+let typeMismatch: (t, 'a, 'a, 'a => string) => error
 
 /* Matching errors */
-let nameBoundMultipleTimes: (~loc: Loc.t, ~binding: string, ~name: string) => t
-let partialMatch: (~loc: Loc.t, ~name: string, 'a, 'a => string) => t
-let unusedCase: (~name: string, NonEmpty.t<'a>, debuggable<'a>) => t
+let nameBoundMultipleTimes: (t, string) => error
+let partialMatch: (t, 'a, 'a => string) => error
+let unusedCase: (NonEmpty.t<'a>, debuggable<'a>) => error
 
 /* Compile errors */
-let duplicateCompName: string => t
-let uncaughtCompileError: ('e, ~name: string) => t
+let duplicateCompName: string => error
+let uncaughtCompileError: ('e, ~name: string) => error
 
 /* Render errors */
-let customError: string => t
-let decodeError: (~stack: list<string>, 'a, Js.Json.t, 'a => string) => t
-let decodeErrorMissingKey: (~stack: list<string>, string) => t
-let uncaughtComponentError: (~loc: Loc.t, ~name: string, ~stack: list<string>, 'e) => t
+let customError: string => error
+let decodeError: (~stack: list<string>, 'a, Js.Json.t, 'a => string) => error
+let decodeErrorMissingKey: (~stack: list<string>, string) => error
+let uncaughtComponentError: (t, ~name: string, ~stack: list<string>, 'e) => error
 
 /* Other errors */
-let cyclicDependency: (~loc: Loc.t, ~stack: list<string>) => t
-let missingComponent: (~name: string, ~loc: Loc.t, string) => t
+let cyclicDependency: (t, ~stack: list<string>) => error
+let missingComponent: (t, string) => error

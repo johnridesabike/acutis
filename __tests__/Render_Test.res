@@ -282,7 +282,7 @@ describe("API helper functions", ({test, _}) => {
           message: "e",
           location: None,
           kind: #Render,
-          path: [],
+          stack: [],
           exn: None,
         },
       ]),
@@ -306,7 +306,7 @@ describe("API helper functions", ({test, _}) => {
         {
           message: "Input is missing JSON object key \"e\" which is required.",
           location: None,
-          path: [],
+          stack: [],
           kind: #Render,
           exn: None,
         },
@@ -332,7 +332,7 @@ describe("API helper functions", ({test, _}) => {
         {
           message: "Input is missing JSON object key \"e\" which is required.",
           location: None,
-          path: [],
+          stack: [],
           kind: #Render,
           exn: None,
         },

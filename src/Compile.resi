@@ -20,12 +20,7 @@ type rec node<'a> =
   | OMatch(NonEmpty.t<Typechecker.Pattern.t>, Matching.t<nodes<'a>>)
   | OMapList(Typechecker.Pattern.t, Matching.t<nodes<'a>>)
   | OMapDict(Typechecker.Pattern.t, Matching.t<nodes<'a>>)
-  | OComponent({
-      loc: Debug.Loc.t,
-      props: array<(string, Typechecker.Pattern.t)>,
-      children: array<(string, child<'a>)>,
-      val: 'a,
-    })
+  | OComponent(Debug.t, 'a, array<(string, Typechecker.Pattern.t)>, array<(string, child<'a>)>)
 
 and child<'a> = OChildName(string) | OChildBlock(nodes<'a>)
 

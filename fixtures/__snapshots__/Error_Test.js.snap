@@ -9,10 +9,8 @@ Array [
     },
     "kind": "Compile",
     "location": undefined,
-    "message": "An exception was thrown while compiling this template. This is probably due to malformed input.",
-    "path": Array [
-      "Template",
-    ],
+    "message": "An exception was thrown while compiling template \\"Template.\\" This is probably due to malformed input.",
+    "stack": Array [],
   },
 ]
 `;
@@ -24,11 +22,10 @@ Array [
     "kind": "Parse",
     "location": Object {
       "char": 5,
+      "name": "",
     },
     "message": "Unexpected token: \\"null\\".",
-    "path": Array [
-      "",
-    ],
+    "stack": Array [],
   },
 ]
 `;
@@ -40,11 +37,10 @@ Array [
     "kind": "Parse",
     "location": Object {
       "char": 5,
+      "name": "",
     },
     "message": "Unexpected token: \\"false\\".",
-    "path": Array [
-      "",
-    ],
+    "stack": Array [],
   },
 ]
 `;
@@ -56,11 +52,10 @@ Array [
     "kind": "Syntax",
     "location": Object {
       "char": 10,
+      "name": "BadCharacter",
     },
     "message": "Invalid character: \\"*\\".",
-    "path": Array [
-      "BadCharacter",
-    ],
+    "stack": Array [],
   },
 ]
 `;
@@ -72,11 +67,10 @@ Array [
     "kind": "Syntax",
     "location": Object {
       "char": 5,
+      "name": "BadCharacter",
     },
     "message": "Unexpected character: \\"a\\". Expected: \\".\\".",
-    "path": Array [
-      "BadCharacter",
-    ],
+    "stack": Array [],
   },
 ]
 `;
@@ -88,11 +82,10 @@ Array [
     "kind": "Syntax",
     "location": Object {
       "char": 5,
+      "name": "BadCharacter",
     },
     "message": "Unexpected character: \\"b\\". Expected: \\".\\".",
-    "path": Array [
-      "BadCharacter",
-    ],
+    "stack": Array [],
   },
 ]
 `;
@@ -104,11 +97,10 @@ Array [
     "kind": "Syntax",
     "location": Object {
       "char": 15,
+      "name": "",
     },
     "message": "Unexpected character: \\"%\\". Expected: \\"}\\".",
-    "path": Array [
-      "",
-    ],
+    "stack": Array [],
   },
 ]
 `;
@@ -120,11 +112,10 @@ Array [
     "kind": "Syntax",
     "location": Object {
       "char": 7,
+      "name": "",
     },
     "message": "Invalid character: \\"%\\".",
-    "path": Array [
-      "",
-    ],
+    "stack": Array [],
   },
 ]
 `;
@@ -136,11 +127,10 @@ Array [
     "kind": "Parse",
     "location": Object {
       "char": 7,
+      "name": "",
     },
     "message": "Unexpected token: \\"b\\".",
-    "path": Array [
-      "",
-    ],
+    "stack": Array [],
   },
 ]
 `;
@@ -152,11 +142,10 @@ Array [
     "kind": "Parse",
     "location": Object {
       "char": 5,
+      "name": "BadCharacter",
     },
     "message": "Unexpected token: \\"?\\".",
-    "path": Array [
-      "BadCharacter",
-    ],
+    "stack": Array [],
   },
 ]
 `;
@@ -168,11 +157,10 @@ Array [
     "kind": "Syntax",
     "location": Object {
       "char": 9,
+      "name": "",
     },
     "message": "Unexpected character: \\"%\\". Expected: \\"}\\".",
-    "path": Array [
-      "",
-    ],
+    "stack": Array [],
   },
 ]
 `;
@@ -184,11 +172,10 @@ Array [
     "kind": "Syntax",
     "location": Object {
       "char": 7,
+      "name": "BadString",
     },
     "message": "Unterminated string.",
-    "path": Array [
-      "BadString",
-    ],
+    "stack": Array [],
   },
 ]
 `;
@@ -200,11 +187,10 @@ Array [
     "kind": "Syntax",
     "location": Object {
       "char": 8,
+      "name": "",
     },
     "message": "Unterminated string.",
-    "path": Array [
-      "",
-    ],
+    "stack": Array [],
   },
 ]
 `;
@@ -216,11 +202,10 @@ Array [
     "kind": "Syntax",
     "location": Object {
       "char": 4,
+      "name": "",
     },
     "message": "Unterminated comment.",
-    "path": Array [
-      "",
-    ],
+    "stack": Array [],
   },
 ]
 `;
@@ -232,11 +217,10 @@ Array [
     "kind": "Syntax",
     "location": Object {
       "char": 4,
+      "name": "BadComment",
     },
     "message": "Unterminated comment.",
-    "path": Array [
-      "BadComment",
-    ],
+    "stack": Array [],
   },
 ]
 `;
@@ -248,11 +232,10 @@ Array [
     "kind": "Syntax",
     "location": Object {
       "char": 6,
+      "name": "",
     },
     "message": "Unexpected end of file.",
-    "path": Array [
-      "",
-    ],
+    "stack": Array [],
   },
 ]
 `;
@@ -264,11 +247,10 @@ Array [
     "kind": "Syntax",
     "location": Object {
       "char": 5,
+      "name": "BadIdentifier",
     },
     "message": "\\"--1\\" is an illegal identifier name.",
-    "path": Array [
-      "BadIdentifier",
-    ],
+    "stack": Array [],
   },
 ]
 `;
@@ -280,11 +262,10 @@ Array [
     "kind": "Syntax",
     "location": Object {
       "char": 6,
+      "name": "InvalidEscapeToken",
     },
     "message": "Unknown escape sequence: a.",
-    "path": Array [
-      "InvalidEscapeToken",
-    ],
+    "stack": Array [],
   },
 ]
 `;
@@ -296,13 +277,12 @@ Array [
     "kind": "Matching",
     "location": Object {
       "char": 3,
+      "name": "",
     },
     "message": "This pattern-matching is not exhaustive.
 Here is an example of a case that is not matched:
 _",
-    "path": Array [
-      "",
-    ],
+    "stack": Array [],
   },
 ]
 `;
@@ -314,13 +294,12 @@ Array [
     "kind": "Matching",
     "location": Object {
       "char": 3,
+      "name": "",
     },
     "message": "This pattern-matching is not exhaustive.
 Here is an example of a case that is not matched:
 1",
-    "path": Array [
-      "",
-    ],
+    "stack": Array [],
   },
 ]
 `;
@@ -332,13 +311,12 @@ Array [
     "kind": "Matching",
     "location": Object {
       "char": 3,
+      "name": "",
     },
     "message": "This pattern-matching is not exhaustive.
 Here is an example of a case that is not matched:
 [_, ..._]",
-    "path": Array [
-      "",
-    ],
+    "stack": Array [],
   },
 ]
 `;
@@ -350,13 +328,12 @@ Array [
     "kind": "Matching",
     "location": Object {
       "char": 3,
+      "name": "",
     },
     "message": "This pattern-matching is not exhaustive.
 Here is an example of a case that is not matched:
 []",
-    "path": Array [
-      "",
-    ],
+    "stack": Array [],
   },
 ]
 `;
@@ -368,13 +345,12 @@ Array [
     "kind": "Matching",
     "location": Object {
       "char": 3,
+      "name": "",
     },
     "message": "This pattern-matching is not exhaustive.
 Here is an example of a case that is not matched:
 {a, b: 0}",
-    "path": Array [
-      "",
-    ],
+    "stack": Array [],
   },
 ]
 `;
@@ -386,12 +362,11 @@ Array [
     "kind": "Matching",
     "location": Object {
       "char": 76,
+      "name": "",
     },
     "message": "This match case is unused:
 10, 11, 12",
-    "path": Array [
-      "",
-    ],
+    "stack": Array [],
   },
 ]
 `;
@@ -403,12 +378,11 @@ Array [
     "kind": "Matching",
     "location": Object {
       "char": 120,
+      "name": "",
     },
     "message": "This match case is unused:
 30, 31, 42",
-    "path": Array [
-      "",
-    ],
+    "stack": Array [],
   },
 ]
 `;
@@ -420,12 +394,11 @@ Array [
     "kind": "Matching",
     "location": Object {
       "char": 51,
+      "name": "",
     },
     "message": "This match case is unused:
 (_, _), 40",
-    "path": Array [
-      "",
-    ],
+    "stack": Array [],
   },
 ]
 `;
@@ -437,12 +410,11 @@ Array [
     "kind": "Matching",
     "location": Object {
       "char": 82,
+      "name": "",
     },
     "message": "This match case is unused:
 (\\"a\\", \\"b\\"), 1",
-    "path": Array [
-      "",
-    ],
+    "stack": Array [],
   },
 ]
 `;
@@ -456,11 +428,10 @@ Object {
       "kind": "Syntax",
       "location": Object {
         "char": 2,
+        "name": "A",
       },
       "message": "Unexpected end of file.",
-      "path": Array [
-        "A",
-      ],
+      "stack": Array [],
     },
   ],
 }
@@ -475,7 +446,7 @@ Object {
       "kind": "Compile",
       "location": undefined,
       "message": "The template component name \\"A\\" was used twice. Every component needs a unique name.",
-      "path": Array [],
+      "stack": Array [],
     },
   ],
 }
@@ -488,11 +459,10 @@ Array [
     "kind": "Type",
     "location": Object {
       "char": 16,
+      "name": "",
     },
     "message": "Only bindings are allowed as list tails.",
-    "path": Array [
-      "",
-    ],
+    "stack": Array [],
   },
 ]
 `;
@@ -504,11 +474,10 @@ Array [
     "kind": "Parse",
     "location": Object {
       "char": 5,
+      "name": "",
     },
     "message": "Unexpected token: \\"null\\".",
-    "path": Array [
-      "",
-    ],
+    "stack": Array [],
   },
 ]
 `;
@@ -520,11 +489,10 @@ Array [
     "kind": "Parse",
     "location": Object {
       "char": 5,
+      "name": "BadStatement",
     },
     "message": "Unexpected token: \\"c\\".",
-    "path": Array [
-      "BadStatement",
-    ],
+    "stack": Array [],
   },
 ]
 `;
@@ -536,11 +504,10 @@ Array [
     "kind": "Parse",
     "location": Object {
       "char": 5,
+      "name": "",
     },
     "message": "Unexpected token: \\"{\\".",
-    "path": Array [
-      "",
-    ],
+    "stack": Array [],
   },
 ]
 `;
@@ -552,11 +519,10 @@ Array [
     "kind": "Parse",
     "location": Object {
       "char": 5,
+      "name": "",
     },
     "message": "Unexpected token: \\"[\\".",
-    "path": Array [
-      "",
-    ],
+    "stack": Array [],
   },
 ]
 `;
@@ -568,11 +534,10 @@ Array [
     "kind": "Parse",
     "location": Object {
       "char": 5,
+      "name": "",
     },
     "message": "Unexpected token: \\"}\\".",
-    "path": Array [
-      "",
-    ],
+    "stack": Array [],
   },
 ]
 `;
@@ -584,11 +549,10 @@ Array [
     "kind": "Parse",
     "location": Object {
       "char": 5,
+      "name": "",
     },
     "message": "Unexpected token: \\"]\\".",
-    "path": Array [
-      "",
-    ],
+    "stack": Array [],
   },
 ]
 `;
@@ -600,11 +564,10 @@ Array [
     "kind": "Parse",
     "location": Object {
       "char": 5,
+      "name": "",
     },
     "message": "Unexpected token: \\",\\".",
-    "path": Array [
-      "",
-    ],
+    "stack": Array [],
   },
 ]
 `;
@@ -616,11 +579,10 @@ Array [
     "kind": "Parse",
     "location": Object {
       "char": 9,
+      "name": "",
     },
     "message": "Unexpected token: \\"/\\".",
-    "path": Array [
-      "",
-    ],
+    "stack": Array [],
   },
 ]
 `;
@@ -632,11 +594,10 @@ Array [
     "kind": "Parse",
     "location": Object {
       "char": 5,
+      "name": "",
     },
     "message": "Unexpected token: \\":\\".",
-    "path": Array [
-      "",
-    ],
+    "stack": Array [],
   },
 ]
 `;
@@ -648,11 +609,10 @@ Array [
     "kind": "Parse",
     "location": Object {
       "char": 5,
+      "name": "",
     },
     "message": "Unexpected token: \\"\\"a\\"\\".",
-    "path": Array [
-      "",
-    ],
+    "stack": Array [],
   },
 ]
 `;
@@ -664,11 +624,10 @@ Array [
     "kind": "Parse",
     "location": Object {
       "char": 5,
+      "name": "",
     },
     "message": "Unexpected token: \\"1\\".",
-    "path": Array [
-      "",
-    ],
+    "stack": Array [],
   },
 ]
 `;
@@ -680,11 +639,10 @@ Array [
     "kind": "Parse",
     "location": Object {
       "char": 27,
+      "name": "",
     },
     "message": "Unexpected token: \\"[end of file]\\".",
-    "path": Array [
-      "",
-    ],
+    "stack": Array [],
   },
 ]
 `;
@@ -696,11 +654,10 @@ Array [
     "kind": "Parse",
     "location": Object {
       "char": 30,
+      "name": "",
     },
     "message": "Unexpected token: \\"[end of file]\\".",
-    "path": Array [
-      "",
-    ],
+    "stack": Array [],
   },
 ]
 `;
@@ -712,11 +669,10 @@ Array [
     "kind": "Parse",
     "location": Object {
       "char": 5,
+      "name": "",
     },
     "message": "Unexpected token: \\"/\\".",
-    "path": Array [
-      "",
-    ],
+    "stack": Array [],
   },
 ]
 `;
@@ -728,11 +684,10 @@ Array [
     "kind": "Parse",
     "location": Object {
       "char": 7,
+      "name": "",
     },
     "message": "Unexpected token: \\"#\\".",
-    "path": Array [
-      "",
-    ],
+    "stack": Array [],
   },
 ]
 `;
@@ -744,11 +699,10 @@ Array [
     "kind": "Parse",
     "location": Object {
       "char": 20,
+      "name": "",
     },
     "message": "Unexpected token: \\"[text]:  d\\".",
-    "path": Array [
-      "",
-    ],
+    "stack": Array [],
   },
 ]
 `;
@@ -760,11 +714,10 @@ Array [
     "kind": "Parse",
     "location": Object {
       "char": 7,
+      "name": "",
     },
     "message": "Unexpected token: \\"1\\".",
-    "path": Array [
-      "",
-    ],
+    "stack": Array [],
   },
 ]
 `;
@@ -776,11 +729,10 @@ Array [
     "kind": "Parse",
     "location": Object {
       "char": 3,
+      "name": "",
     },
     "message": "Unexpected token: \\"...\\".",
-    "path": Array [
-      "",
-    ],
+    "stack": Array [],
   },
 ]
 `;
@@ -792,11 +744,10 @@ Array [
     "kind": "Parse",
     "location": Object {
       "char": 3,
+      "name": "",
     },
     "message": "Unexpected token: \\"=\\".",
-    "path": Array [
-      "",
-    ],
+    "stack": Array [],
   },
 ]
 `;
@@ -808,11 +759,10 @@ Array [
     "kind": "Parse",
     "location": Object {
       "char": 9,
+      "name": "",
     },
     "message": "Unexpected token: \\"~\\".",
-    "path": Array [
-      "",
-    ],
+    "stack": Array [],
   },
 ]
 `;
@@ -824,11 +774,10 @@ Array [
     "kind": "Parse",
     "location": Object {
       "char": 7,
+      "name": "",
     },
     "message": "Unexpected token: \\"match\\".",
-    "path": Array [
-      "",
-    ],
+    "stack": Array [],
   },
 ]
 `;
@@ -840,11 +789,10 @@ Array [
     "kind": "Parse",
     "location": Object {
       "char": 5,
+      "name": "",
     },
     "message": "Unexpected token: \\"&\\".",
-    "path": Array [
-      "",
-    ],
+    "stack": Array [],
   },
 ]
 `;
@@ -856,11 +804,10 @@ Array [
     "kind": "Parse",
     "location": Object {
       "char": 4,
+      "name": "",
     },
     "message": "Unexpected token: \\"A\\".",
-    "path": Array [
-      "",
-    ],
+    "stack": Array [],
   },
 ]
 `;
@@ -872,11 +819,10 @@ Array [
     "kind": "Type",
     "location": Object {
       "char": 9,
+      "name": "",
     },
     "message": "The number of patterns does not match the number of data.",
-    "path": Array [
-      "",
-    ],
+    "stack": Array [],
   },
 ]
 `;
@@ -888,11 +834,10 @@ Array [
     "kind": "Type",
     "location": Object {
       "char": 3,
+      "name": "",
     },
     "message": "Map blocks can only have two patterns per \\"with\\" clause: the item and the index.",
-    "path": Array [
-      "",
-    ],
+    "stack": Array [],
   },
 ]
 `;
@@ -904,11 +849,10 @@ Array [
     "kind": "Parse",
     "location": Object {
       "char": 24,
+      "name": "",
     },
     "message": "Unexpected token: \\"Abc\\".",
-    "path": Array [
-      "",
-    ],
+    "stack": Array [],
   },
 ]
 `;
@@ -920,11 +864,10 @@ Array [
     "kind": "Parse",
     "location": Object {
       "char": 23,
+      "name": "",
     },
     "message": "Unexpected token: \\"null\\".",
-    "path": Array [
-      "",
-    ],
+    "stack": Array [],
   },
 ]
 `;
@@ -936,11 +879,10 @@ Array [
     "kind": "Parse",
     "location": Object {
       "char": 23,
+      "name": "",
     },
     "message": "Unexpected token: \\"true\\".",
-    "path": Array [
-      "",
-    ],
+    "stack": Array [],
   },
 ]
 `;
@@ -952,11 +894,10 @@ Array [
     "kind": "Parse",
     "location": Object {
       "char": 24,
+      "name": "",
     },
     "message": "Unexpected token: \\"false\\".",
-    "path": Array [
-      "",
-    ],
+    "stack": Array [],
   },
 ]
 `;
@@ -968,11 +909,10 @@ Array [
     "kind": "Parse",
     "location": Object {
       "char": 4,
+      "name": "",
     },
     "message": "Unexpected token: \\"null\\".",
-    "path": Array [
-      "",
-    ],
+    "stack": Array [],
   },
 ]
 `;
@@ -984,7 +924,7 @@ Array [
     "kind": "Render",
     "location": undefined,
     "message": "Input is missing JSON object key \\"b\\" which is required.",
-    "path": Array [],
+    "stack": Array [],
   },
 ]
 `;
@@ -996,7 +936,7 @@ Array [
     "kind": "Render",
     "location": undefined,
     "message": "Input is missing JSON object key \\"b\\" which is required.",
-    "path": Array [],
+    "stack": Array [],
   },
 ]
 `;
@@ -1008,7 +948,7 @@ Array [
     "kind": "Render",
     "location": undefined,
     "message": "This input is type \\"JSON null\\", which does not match the template's required type, [int].",
-    "path": Array [
+    "stack": Array [
       "key: c",
     ],
   },
@@ -1022,11 +962,10 @@ Array [
     "kind": "Type",
     "location": Object {
       "char": 3,
+      "name": "",
     },
     "message": "This call of component \\"A\\" is missing child \\"B.\\"",
-    "path": Array [
-      "",
-    ],
+    "stack": Array [],
   },
 ]
 `;
@@ -1038,11 +977,10 @@ Array [
     "kind": "Type",
     "location": Object {
       "char": 3,
+      "name": "",
     },
     "message": "This call of component \\"A\\" includes unexpected child \\"C.\\"",
-    "path": Array [
-      "",
-    ],
+    "stack": Array [],
   },
 ]
 `;
@@ -1054,13 +992,12 @@ Array [
     "kind": "Matching",
     "location": Object {
       "char": 10,
+      "name": "",
     },
     "message": "This pattern-matching is not exhaustive.
 Here is an example of a case that is not matched:
 {favoriteColor: \\"a\\", firstName}",
-    "path": Array [
-      "",
-    ],
+    "stack": Array [],
   },
 ]
 `;
@@ -1072,11 +1009,10 @@ Array [
     "kind": "Type",
     "location": Object {
       "char": 33,
+      "name": "",
     },
     "message": "This pattern is type boolean but expected type string.",
-    "path": Array [
-      "",
-    ],
+    "stack": Array [],
   },
 ]
 `;
@@ -1088,11 +1024,10 @@ Array [
     "kind": "Type",
     "location": Object {
       "char": 33,
+      "name": "",
     },
     "message": "This pattern is type boolean but expected type string.",
-    "path": Array [
-      "",
-    ],
+    "stack": Array [],
   },
 ]
 `;
@@ -1104,11 +1039,10 @@ Array [
     "kind": "Type",
     "location": Object {
       "char": 31,
+      "name": "",
     },
     "message": "This pattern is type boolean but expected type int.",
-    "path": Array [
-      "",
-    ],
+    "stack": Array [],
   },
 ]
 `;
@@ -1120,11 +1054,10 @@ Array [
     "kind": "Type",
     "location": Object {
       "char": 31,
+      "name": "",
     },
     "message": "This pattern is type boolean but expected type int.",
-    "path": Array [
-      "",
-    ],
+    "stack": Array [],
   },
 ]
 `;
@@ -1136,11 +1069,10 @@ Array [
     "kind": "Type",
     "location": Object {
       "char": 33,
+      "name": "",
     },
     "message": "This pattern is type boolean but expected type [int].",
-    "path": Array [
-      "",
-    ],
+    "stack": Array [],
   },
 ]
 `;
@@ -1152,11 +1084,10 @@ Array [
     "kind": "Type",
     "location": Object {
       "char": 33,
+      "name": "",
     },
     "message": "This pattern is type boolean but expected type [int].",
-    "path": Array [
-      "",
-    ],
+    "stack": Array [],
   },
 ]
 `;
@@ -1168,11 +1099,10 @@ Array [
     "kind": "Type",
     "location": Object {
       "char": 39,
+      "name": "",
     },
     "message": "This pattern is type boolean but expected type {\\"a\\": _}.",
-    "path": Array [
-      "",
-    ],
+    "stack": Array [],
   },
 ]
 `;
@@ -1184,11 +1114,10 @@ Array [
     "kind": "Type",
     "location": Object {
       "char": 31,
+      "name": "",
     },
     "message": "This pattern is type [int] but expected type string.",
-    "path": Array [
-      "",
-    ],
+    "stack": Array [],
   },
 ]
 `;
@@ -1200,11 +1129,10 @@ Array [
     "kind": "Type",
     "location": Object {
       "char": 31,
+      "name": "",
     },
     "message": "This pattern is type [int] but expected type string.",
-    "path": Array [
-      "",
-    ],
+    "stack": Array [],
   },
 ]
 `;
@@ -1216,11 +1144,10 @@ Array [
     "kind": "Type",
     "location": Object {
       "char": 32,
+      "name": "",
     },
     "message": "This pattern is type [int] but expected type boolean.",
-    "path": Array [
-      "",
-    ],
+    "stack": Array [],
   },
 ]
 `;
@@ -1232,11 +1159,10 @@ Array [
     "kind": "Type",
     "location": Object {
       "char": 33,
+      "name": "",
     },
     "message": "This pattern is type [_] but expected type boolean.",
-    "path": Array [
-      "",
-    ],
+    "stack": Array [],
   },
 ]
 `;
@@ -1248,11 +1174,10 @@ Array [
     "kind": "Type",
     "location": Object {
       "char": 29,
+      "name": "",
     },
     "message": "This pattern is type [_] but expected type int.",
-    "path": Array [
-      "",
-    ],
+    "stack": Array [],
   },
 ]
 `;
@@ -1264,11 +1189,10 @@ Array [
     "kind": "Type",
     "location": Object {
       "char": 39,
+      "name": "",
     },
     "message": "This pattern is type [_] but expected type {\\"a\\": _}.",
-    "path": Array [
-      "",
-    ],
+    "stack": Array [],
   },
 ]
 `;
@@ -1280,11 +1204,10 @@ Array [
     "kind": "Type",
     "location": Object {
       "char": 39,
+      "name": "",
     },
     "message": "This pattern is type int but expected type string.",
-    "path": Array [
-      "",
-    ],
+    "stack": Array [],
   },
 ]
 `;
@@ -1296,11 +1219,10 @@ Array [
     "kind": "Type",
     "location": Object {
       "char": 32,
+      "name": "",
     },
     "message": "This pattern is type {\\"a\\": _} but expected type string.",
-    "path": Array [
-      "",
-    ],
+    "stack": Array [],
   },
 ]
 `;
@@ -1312,11 +1234,10 @@ Array [
     "kind": "Type",
     "location": Object {
       "char": 33,
+      "name": "",
     },
     "message": "This pattern is type {\\"a\\": _} but expected type boolean.",
-    "path": Array [
-      "",
-    ],
+    "stack": Array [],
   },
 ]
 `;
@@ -1328,11 +1249,10 @@ Array [
     "kind": "Type",
     "location": Object {
       "char": 34,
+      "name": "",
     },
     "message": "This pattern is type {\\"a\\": _} but expected type boolean.",
-    "path": Array [
-      "",
-    ],
+    "stack": Array [],
   },
 ]
 `;
@@ -1344,11 +1264,10 @@ Array [
     "kind": "Type",
     "location": Object {
       "char": 31,
+      "name": "",
     },
     "message": "This pattern is type {\\"a\\": _} but expected type [_].",
-    "path": Array [
-      "",
-    ],
+    "stack": Array [],
   },
 ]
 `;
@@ -1360,11 +1279,10 @@ Array [
     "kind": "Type",
     "location": Object {
       "char": 30,
+      "name": "",
     },
     "message": "This pattern is type {\\"a\\": _} but expected type int.",
-    "path": Array [
-      "",
-    ],
+    "stack": Array [],
   },
 ]
 `;
@@ -1376,11 +1294,10 @@ Array [
     "kind": "Type",
     "location": Object {
       "char": 36,
+      "name": "",
     },
     "message": "This pattern is type int but expected type string.",
-    "path": Array [
-      "",
-    ],
+    "stack": Array [],
   },
 ]
 `;
@@ -1392,11 +1309,10 @@ Array [
     "kind": "Type",
     "location": Object {
       "char": 33,
+      "name": "",
     },
     "message": "This pattern is type int but expected type string.",
-    "path": Array [
-      "",
-    ],
+    "stack": Array [],
   },
 ]
 `;
@@ -1408,11 +1324,10 @@ Array [
     "kind": "Type",
     "location": Object {
       "char": 34,
+      "name": "",
     },
     "message": "This pattern is type int but expected type boolean.",
-    "path": Array [
-      "",
-    ],
+    "stack": Array [],
   },
 ]
 `;
@@ -1424,11 +1339,10 @@ Array [
     "kind": "Type",
     "location": Object {
       "char": 35,
+      "name": "",
     },
     "message": "This pattern is type int but expected type boolean.",
-    "path": Array [
-      "",
-    ],
+    "stack": Array [],
   },
 ]
 `;
@@ -1440,11 +1354,10 @@ Array [
     "kind": "Type",
     "location": Object {
       "char": 32,
+      "name": "",
     },
     "message": "This pattern is type int but expected type [_].",
-    "path": Array [
-      "",
-    ],
+    "stack": Array [],
   },
 ]
 `;
@@ -1456,11 +1369,10 @@ Array [
     "kind": "Type",
     "location": Object {
       "char": 39,
+      "name": "",
     },
     "message": "This pattern is type int but expected type {\\"a\\": _}.",
-    "path": Array [
-      "",
-    ],
+    "stack": Array [],
   },
 ]
 `;
@@ -1472,11 +1384,10 @@ Array [
     "kind": "Type",
     "location": Object {
       "char": 31,
+      "name": "",
     },
     "message": "This pattern is type string but expected type int.",
-    "path": Array [
-      "",
-    ],
+    "stack": Array [],
   },
 ]
 `;
@@ -1488,11 +1399,10 @@ Array [
     "kind": "Type",
     "location": Object {
       "char": 34,
+      "name": "",
     },
     "message": "This pattern is type string but expected type boolean.",
-    "path": Array [
-      "",
-    ],
+    "stack": Array [],
   },
 ]
 `;
@@ -1504,11 +1414,10 @@ Array [
     "kind": "Type",
     "location": Object {
       "char": 35,
+      "name": "",
     },
     "message": "This pattern is type string but expected type boolean.",
-    "path": Array [
-      "",
-    ],
+    "stack": Array [],
   },
 ]
 `;
@@ -1520,11 +1429,10 @@ Array [
     "kind": "Type",
     "location": Object {
       "char": 33,
+      "name": "",
     },
     "message": "This pattern is type string but expected type [int].",
-    "path": Array [
-      "",
-    ],
+    "stack": Array [],
   },
 ]
 `;
@@ -1536,11 +1444,10 @@ Array [
     "kind": "Type",
     "location": Object {
       "char": 39,
+      "name": "",
     },
     "message": "This pattern is type string but expected type {\\"a\\": _}.",
-    "path": Array [
-      "",
-    ],
+    "stack": Array [],
   },
 ]
 `;
@@ -1552,11 +1459,10 @@ Array [
     "kind": "Parse",
     "location": Object {
       "char": 16,
+      "name": "",
     },
     "message": "Unexpected token: \\"}\\".",
-    "path": Array [
-      "",
-    ],
+    "stack": Array [],
   },
 ]
 `;
@@ -1568,11 +1474,10 @@ Array [
     "kind": "Parse",
     "location": Object {
       "char": 17,
+      "name": "",
     },
     "message": "Unexpected token: \\",\\".",
-    "path": Array [
-      "",
-    ],
+    "stack": Array [],
   },
 ]
 `;
@@ -1584,11 +1489,10 @@ Array [
     "kind": "Parse",
     "location": Object {
       "char": 17,
+      "name": "",
     },
     "message": "Unexpected token: \\"1\\".",
-    "path": Array [
-      "",
-    ],
+    "stack": Array [],
   },
 ]
 `;
@@ -1600,11 +1504,10 @@ Array [
     "kind": "Parse",
     "location": Object {
       "char": 21,
+      "name": "",
     },
     "message": "Unexpected token: \\"[\\".",
-    "path": Array [
-      "",
-    ],
+    "stack": Array [],
   },
 ]
 `;
@@ -1616,11 +1519,10 @@ Array [
     "kind": "Parse",
     "location": Object {
       "char": 19,
+      "name": "",
     },
     "message": "Unexpected token: \\"\\"a\\"\\".",
-    "path": Array [
-      "",
-    ],
+    "stack": Array [],
   },
 ]
 `;
@@ -1632,11 +1534,10 @@ Array [
     "kind": "Parse",
     "location": Object {
       "char": 20,
+      "name": "",
     },
     "message": "Unexpected token: \\",\\".",
-    "path": Array [
-      "",
-    ],
+    "stack": Array [],
   },
 ]
 `;
@@ -1648,11 +1549,10 @@ Array [
     "kind": "Type",
     "location": Object {
       "char": 16,
+      "name": "",
     },
     "message": "Only bindings are allowed as list tails.",
-    "path": Array [
-      "",
-    ],
+    "stack": Array [],
   },
 ]
 `;
@@ -1664,11 +1564,10 @@ Array [
     "kind": "Parse",
     "location": Object {
       "char": 24,
+      "name": "",
     },
     "message": "Unexpected token: \\"]\\".",
-    "path": Array [
-      "",
-    ],
+    "stack": Array [],
   },
 ]
 `;
@@ -1680,11 +1579,10 @@ Array [
     "kind": "Parse",
     "location": Object {
       "char": 25,
+      "name": "",
     },
     "message": "Unexpected token: \\"[\\".",
-    "path": Array [
-      "",
-    ],
+    "stack": Array [],
   },
 ]
 `;
@@ -1696,11 +1594,10 @@ Array [
     "kind": "Parse",
     "location": Object {
       "char": 25,
+      "name": "",
     },
     "message": "Unexpected token: \\"b\\".",
-    "path": Array [
-      "",
-    ],
+    "stack": Array [],
   },
 ]
 `;
@@ -1712,11 +1609,10 @@ Array [
     "kind": "Parse",
     "location": Object {
       "char": 19,
+      "name": "",
     },
     "message": "Unexpected token: \\"b\\".",
-    "path": Array [
-      "",
-    ],
+    "stack": Array [],
   },
 ]
 `;
@@ -1728,11 +1624,10 @@ Array [
     "kind": "Parse",
     "location": Object {
       "char": 19,
+      "name": "",
     },
     "message": "Unexpected token: \\"]\\".",
-    "path": Array [
-      "",
-    ],
+    "stack": Array [],
   },
 ]
 `;
@@ -1744,11 +1639,10 @@ Array [
     "kind": "Parse",
     "location": Object {
       "char": 11,
+      "name": "",
     },
     "message": "Unexpected token: \\"}\\".",
-    "path": Array [
-      "",
-    ],
+    "stack": Array [],
   },
 ]
 `;
@@ -1760,11 +1654,10 @@ Array [
     "kind": "Parse",
     "location": Object {
       "char": 11,
+      "name": "",
     },
     "message": "Unexpected token: \\"match\\".",
-    "path": Array [
-      "",
-    ],
+    "stack": Array [],
   },
 ]
 `;
@@ -1776,11 +1669,10 @@ Array [
     "kind": "Parse",
     "location": Object {
       "char": 18,
+      "name": "",
     },
     "message": "Unexpected token: \\"a\\".",
-    "path": Array [
-      "",
-    ],
+    "stack": Array [],
   },
 ]
 `;
@@ -1792,11 +1684,10 @@ Array [
     "kind": "Parse",
     "location": Object {
       "char": 26,
+      "name": "",
     },
     "message": "Unexpected token: \\"map\\".",
-    "path": Array [
-      "",
-    ],
+    "stack": Array [],
   },
 ]
 `;
@@ -1808,11 +1699,10 @@ Array [
     "kind": "Parse",
     "location": Object {
       "char": 26,
+      "name": "",
     },
     "message": "Unexpected token: \\"1\\".",
-    "path": Array [
-      "",
-    ],
+    "stack": Array [],
   },
 ]
 `;
@@ -1824,11 +1714,10 @@ Array [
     "kind": "Parse",
     "location": Object {
       "char": 13,
+      "name": "",
     },
     "message": "Unexpected token: \\"B\\".",
-    "path": Array [
-      "",
-    ],
+    "stack": Array [],
   },
 ]
 `;
@@ -1840,11 +1729,10 @@ Array [
     "kind": "Parse",
     "location": Object {
       "char": 13,
+      "name": "",
     },
     "message": "Unexpected token: \\"1\\".",
-    "path": Array [
-      "",
-    ],
+    "stack": Array [],
   },
 ]
 `;
@@ -1856,11 +1744,10 @@ Array [
     "kind": "Parse",
     "location": Object {
       "char": 5,
+      "name": "",
     },
     "message": "Unexpected token: \\"1\\".",
-    "path": Array [
-      "",
-    ],
+    "stack": Array [],
   },
 ]
 `;
@@ -1872,11 +1759,10 @@ Array [
     "kind": "Matching",
     "location": Object {
       "char": 20,
+      "name": "",
     },
     "message": "\\"x\\" is bound multiple times in this pattern.",
-    "path": Array [
-      "",
-    ],
+    "stack": Array [],
   },
 ]
 `;
@@ -1888,11 +1774,10 @@ Array [
     "kind": "Type",
     "location": Object {
       "char": 3,
+      "name": "",
     },
     "message": "This call of component \\"A\\" is missing prop \\"a\\" of type echoable.",
-    "path": Array [
-      "",
-    ],
+    "stack": Array [],
   },
 ]
 `;
@@ -1908,9 +1793,10 @@ Array [
     "kind": "Render",
     "location": Object {
       "char": 3,
+      "name": "ExceptionsTest",
     },
     "message": "Template component \\"A\\" threw an exception.",
-    "path": Array [
+    "stack": Array [
       "ExceptionsTest",
     ],
   },
@@ -1924,7 +1810,7 @@ Array [
     "kind": "Render",
     "location": undefined,
     "message": "This input is type \\"JSON string\\", which does not match the template's required type, [{\\"a\\": echoable}].",
-    "path": Array [
+    "stack": Array [
       "key: a",
     ],
   },
@@ -1938,7 +1824,7 @@ Array [
     "kind": "Render",
     "location": undefined,
     "message": "This input is type \\"JSON boolean\\", which does not match the template's required type, [{\\"a\\": echoable}].",
-    "path": Array [
+    "stack": Array [
       "key: b",
     ],
   },
@@ -1952,7 +1838,7 @@ Array [
     "kind": "Render",
     "location": undefined,
     "message": "This input is type \\"JSON string\\", which does not match the template's required type, [int].",
-    "path": Array [
+    "stack": Array [
       "key: a",
     ],
   },
@@ -1966,7 +1852,7 @@ Array [
     "kind": "Render",
     "location": undefined,
     "message": "Input is missing JSON object key \\"z\\" which is required.",
-    "path": Array [],
+    "stack": Array [],
   },
 ]
 `;
@@ -1978,11 +1864,10 @@ Array [
     "kind": "Type",
     "location": Object {
       "char": 3,
+      "name": "",
     },
     "message": "This pattern is type {\\"a\\": int} but expected type [echoable].",
-    "path": Array [
-      "",
-    ],
+    "stack": Array [],
   },
 ]
 `;
@@ -1994,11 +1879,10 @@ Array [
     "kind": "Type",
     "location": Object {
       "char": 3,
+      "name": "",
     },
     "message": "This pattern is type string but expected type int.",
-    "path": Array [
-      "",
-    ],
+    "stack": Array [],
   },
 ]
 `;
@@ -2010,11 +1894,10 @@ Array [
     "kind": "Type",
     "location": Object {
       "char": 3,
+      "name": "",
     },
     "message": "This pattern is type {\\"a\\": int} but expected type <echoable>.",
-    "path": Array [
-      "",
-    ],
+    "stack": Array [],
   },
 ]
 `;
@@ -2026,11 +1909,10 @@ Array [
     "kind": "Type",
     "location": Object {
       "char": 3,
+      "name": "",
     },
     "message": "This pattern is type int but expected type string.",
-    "path": Array [
-      "",
-    ],
+    "stack": Array [],
   },
 ]
 `;
@@ -2042,7 +1924,7 @@ Array [
     "kind": "Render",
     "location": undefined,
     "message": "Input is missing JSON object key \\"z\\" which is required.",
-    "path": Array [],
+    "stack": Array [],
   },
 ]
 `;
@@ -2054,9 +1936,10 @@ Array [
     "kind": "Type",
     "location": Object {
       "char": 3,
+      "name": "",
     },
     "message": "Children are not allowed in root templates, only in components.",
-    "path": Array [],
+    "stack": Array [],
   },
 ]
 `;
@@ -2068,11 +1951,10 @@ Array [
     "kind": "Compile",
     "location": Object {
       "char": 3,
+      "name": "",
     },
     "message": "Template component \\"Z\\" is missing, which is required by \\"<root>.\\"",
-    "path": Array [
-      "",
-    ],
+    "stack": Array [],
   },
 ]
 `;
@@ -2084,9 +1966,10 @@ Array [
     "kind": "Type",
     "location": Object {
       "char": 7,
+      "name": "",
     },
     "message": "Children are not allowed in root templates, only in components.",
-    "path": Array [],
+    "stack": Array [],
   },
 ]
 `;
@@ -2098,7 +1981,7 @@ Array [
     "kind": "Render",
     "location": undefined,
     "message": "Input is missing JSON object key \\"b\\" which is required.",
-    "path": Array [],
+    "stack": Array [],
   },
 ]
 `;
@@ -2110,7 +1993,7 @@ Array [
     "kind": "Render",
     "location": undefined,
     "message": "This input is type \\"JSON boolean\\", which does not match the template's required type, echoable.",
-    "path": Array [
+    "stack": Array [
       "key: b",
     ],
   },
@@ -2124,7 +2007,7 @@ Array [
     "kind": "Render",
     "location": undefined,
     "message": "This input is type \\"JSON array\\", which does not match the template's required type, echoable.",
-    "path": Array [
+    "stack": Array [
       "key: c",
     ],
   },
@@ -2138,7 +2021,7 @@ Array [
     "kind": "Render",
     "location": undefined,
     "message": "This input is type \\"JSON boolean\\", which does not match the template's required type, echoable.",
-    "path": Array [
+    "stack": Array [
       "key: b",
     ],
   },
@@ -2152,11 +2035,10 @@ Array [
     "kind": "Type",
     "location": Object {
       "char": 26,
+      "name": "B",
     },
     "message": "This call of component \\"C\\" is missing prop \\"c\\" of type echoable.",
-    "path": Array [
-      "B",
-    ],
+    "stack": Array [],
   },
 ]
 `;

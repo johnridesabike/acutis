@@ -12,7 +12,7 @@ module type Env = {
   type e
   let return: (. string) => t
   let error: (. string) => t
-  let error_internal: (. array<Debug.t>) => t
+  let error_internal: (. array<Debug.error>) => t
   let render: (. Queue.t<t>) => t
   let try_: (. (. unit) => t, (. e) => t) => t
   let map: (. t, string => string) => t
@@ -25,7 +25,9 @@ type fnU<'a> = (. env<'a>, Js.Dict.t<Js.Json.t>, Js.Dict.t<'a>) => 'a
 
 type fn<'a> = (env<'a>, Js.Dict.t<Js.Json.t>, Js.Dict.t<'a>) => 'a
 
-type t<'a, 'b> = Acutis(string, 'a) | Function(string, Typescheme.props, Typescheme.Child.props, 'b)
+type t<'a, 'b> =
+  | Acutis(string, 'a)
+  | Function(string, Typescheme.props, Typescheme.Child.props, 'b)
 
 let src = (~name, src) => Acutis(name, src)
 

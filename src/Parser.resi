@@ -10,55 +10,50 @@
 
 module Pattern: {
   type rec t =
-    | UNull(Debug.Loc.t)
-    | USome(Debug.Loc.t, t)
-    | UFalse(Debug.Loc.t)
-    | UTrue(Debug.Loc.t)
-    | UString(Debug.Loc.t, string)
-    | UInt(Debug.Loc.t, int)
-    | UFloat(Debug.Loc.t, float)
-    | UTuple(Debug.Loc.t, array<t>)
-    | UList(Debug.Loc.t, array<t>)
-    | UListWithTailBinding(Debug.Loc.t, array<t>, t)
-    | UDict(Debug.Loc.t, array<(string, t)>)
-    | URecord(Debug.Loc.t, array<(string, t)>)
-    | UBinding(Debug.Loc.t, string)
+    | UNull(Debug.t)
+    | USome(Debug.t, t)
+    | UFalse(Debug.t)
+    | UTrue(Debug.t)
+    | UString(Debug.t, string)
+    | UInt(Debug.t, int)
+    | UFloat(Debug.t, float)
+    | UTuple(Debug.t, array<t>)
+    | UList(Debug.t, array<t>)
+    | UListWithTailBinding(Debug.t, array<t>, t)
+    | UDict(Debug.t, array<(string, t)>)
+    | URecord(Debug.t, array<(string, t)>)
+    | UBinding(Debug.t, string)
 
-  let toLocation: t => Debug.Loc.t
+  let debug: t => Debug.t
 
   let make: Lexer.t => NonEmpty.t<t>
 }
 
 type echo =
-  | EBinding(Debug.Loc.t, string, Utils.escape)
-  | EChild(Debug.Loc.t, string)
-  | EString(Debug.Loc.t, string, Utils.escape)
-  | EInt(Debug.Loc.t, int, Utils.escape)
-  | EFloat(Debug.Loc.t, float, Utils.escape)
+  | EBinding(Debug.t, string, Utils.escape)
+  | EChild(Debug.t, string)
+  | EString(Debug.t, string, Utils.escape)
+  | EInt(Debug.t, int, Utils.escape)
+  | EFloat(Debug.t, float, Utils.escape)
 
 type trim = NoTrim | TrimStart | TrimEnd | TrimBoth
 
 type rec node =
   | UText(string, trim)
   // The first echo item that isn't null will be returned.
-  | UEcho({loc: Debug.Loc.t, nullables: array<echo>, default: echo})
-  | UMatch(Debug.Loc.t, NonEmpty.t<Pattern.t>, NonEmpty.t<case>)
-  | UMapList(Debug.Loc.t, Pattern.t, NonEmpty.t<case>)
-  | UMapDict(Debug.Loc.t, Pattern.t, NonEmpty.t<case>)
-  | UComponent({
-      loc: Debug.Loc.t,
-      name: string,
-      props: array<(string, Pattern.t)>,
-      children: array<(string, child)>,
-    })
+  | UEcho(Debug.t, array<echo>, echo)
+  | UMatch(Debug.t, NonEmpty.t<Pattern.t>, NonEmpty.t<case>)
+  | UMapList(Debug.t, Pattern.t, NonEmpty.t<case>)
+  | UMapDict(Debug.t, Pattern.t, NonEmpty.t<case>)
+  | UComponent(Debug.t, string, array<(string, Pattern.t)>, array<(string, child)>)
 
 and case = {
   patterns: NonEmpty.t<NonEmpty.t<Pattern.t>>,
   nodes: t,
 }
 
-and child = UChildName(Debug.Loc.t, string) | UChildBlock(Debug.Loc.t, t)
+and child = UChildName(Debug.t, string) | UChildBlock(Debug.t, t)
 
 and t = array<node>
 
-let makeExn: (~name: string, string) => t
+let make: Lexer.t => t

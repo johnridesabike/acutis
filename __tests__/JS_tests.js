@@ -17,13 +17,12 @@ describe("The JS interface works as expected", () => {
       VAL: [
         {
           kind: "Compile",
-          message:
-            "An exception was thrown while compiling this template. This is probably due to malformed input.",
+          message: `An exception was thrown while compiling template "X." This is probably due to malformed input.`,
           exn: {
             RE_EXN_ID: "Caml_js_exceptions.Error/2",
             _1: new TypeError("source.str.charAt is not a function"),
           },
-          path: ["X"],
+          stack: [],
         },
       ],
     });
@@ -68,9 +67,9 @@ describe("Async templates", () => {
         {
           message: `Template component "D" threw an exception.`,
           kind: "Render",
-          path: ["E"],
+          stack: ["E"],
           exn: new Error("fail."),
-          location: { char: 3 },
+          location: { name: "E", char: 3 },
         },
       ],
     });
@@ -106,7 +105,7 @@ describe("Async helper functions", () => {
     );
     expect(await Render.async(template, {})).toEqual({
       NAME: "errors",
-      VAL: [{ message: "e", kind: "Render", path: [] }],
+      VAL: [{ message: "e", kind: "Render", stack: [] }],
     });
   });
 

@@ -15,32 +15,27 @@ module Pattern: {
   type construct = TList | TNullable
 
   type rec t =
-    | TConst(Debug.Loc.t, constant)
-    | TConstruct(Debug.Loc.t, construct, option<t>)
-    | TTuple(Debug.Loc.t, array<t>)
-    | TRecord(Debug.Loc.t, array<(string, t)>)
-    | TDict(Debug.Loc.t, array<(string, t)>)
-    | TVar(Debug.Loc.t, string) // any binding
-    | TOptionalVar(Debug.Loc.t, string) // any binding, may not be set
-    | TAny(Debug.Loc.t) // ignored wildcard _
+    | TConst(Debug.t, constant)
+    | TConstruct(Debug.t, construct, option<t>)
+    | TTuple(Debug.t, array<t>)
+    | TRecord(Debug.t, array<(string, t)>)
+    | TDict(Debug.t, array<(string, t)>)
+    | TVar(Debug.t, string) // any binding
+    | TOptionalVar(Debug.t, string) // any binding, may not be set
+    | TAny(Debug.t) // ignored wildcard _
 
   let toString: t => string
-  let toLocation: t => Debug.Loc.t
+  let debug: t => Debug.t
 }
 
 type rec node =
   | TText(string, Parser.trim)
   // The first echo item that isn't null will be returned.
-  | TEcho({loc: Debug.Loc.t, nullables: array<Parser.echo>, default: Parser.echo})
-  | TMatch(Debug.Loc.t, NonEmpty.t<Pattern.t>, NonEmpty.t<case>)
-  | TMapList(Debug.Loc.t, Pattern.t, NonEmpty.t<case>)
-  | TMapDict(Debug.Loc.t, Pattern.t, NonEmpty.t<case>)
-  | TComponent({
-      loc: Debug.Loc.t,
-      props: array<(string, Pattern.t)>,
-      children: array<(string, child)>,
-      val: string,
-    })
+  | TEcho(Debug.t, array<Parser.echo>, Parser.echo)
+  | TMatch(Debug.t, NonEmpty.t<Pattern.t>, NonEmpty.t<case>)
+  | TMapList(Debug.t, Pattern.t, NonEmpty.t<case>)
+  | TMapDict(Debug.t, Pattern.t, NonEmpty.t<case>)
+  | TComponent(Debug.t, string, array<(string, Pattern.t)>, array<(string, child)>)
 
 and nodes = array<node>
 
@@ -58,4 +53,4 @@ let makeComponents: Utils.Dagmap.map<Source.t<Parser.t, Source.fnU<'a>>> => Util
   Source.t<t, Source.fnU<'a>>,
 >
 
-let make: (string, Parser.t, Utils.Dagmap.map<Source.t<t, 'a>>) => t
+let make: (Parser.t, Utils.Dagmap.map<Source.t<t, 'a>>) => t

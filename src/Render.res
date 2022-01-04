@@ -206,7 +206,7 @@ let rec make:
             Queue.transfer(result, queue)
           }
         )
-      | OComponent({loc, props: compPropsRaw, children: compChildrenRaw, val}) =>
+      | OComponent(debug, val, compPropsRaw, compChildrenRaw) =>
         let compChildren = Array.mapU(compChildrenRaw, (. (key, child)) =>
           switch child {
           | OChildBlock(nodes) =>
@@ -234,7 +234,7 @@ let rec make:
         | Function(name, propTypes, f) =>
           Env.try_(.
             (. ()) => f(. env, Data.toJson(compProps, propTypes), mapToDict(compChildren)),
-            (. e) => Env.error_internal(. [Debug.uncaughtComponentError(~loc, ~name, ~stack, e)]),
+            (. e) => Env.error_internal(. [Debug.uncaughtComponentError(debug, ~name, ~stack, e)]),
           )
         }
         Queue.add(queue, result)

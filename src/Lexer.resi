@@ -9,54 +9,52 @@
 module Token: {
   type t =
     // Static elements
-    | Tkn_Text(Debug.Loc.t, string)
-    | Tkn_Comment(Debug.Loc.t, string)
+    | Tkn_Text(Debug.t, string)
+    | Tkn_Comment(Debug.t, string)
     // JSON values
-    | Tkn_String(Debug.Loc.t, string)
-    | Tkn_Int(Debug.Loc.t, int)
-    | Tkn_Float(Debug.Loc.t, float)
-    | Tkn_True(Debug.Loc.t) // a reserved identifier
-    | Tkn_False(Debug.Loc.t) // a reserved identifier
-    | Tkn_Null(Debug.Loc.t) // a reserved identifier
+    | Tkn_String(Debug.t, string)
+    | Tkn_Int(Debug.t, int)
+    | Tkn_Float(Debug.t, float)
+    | Tkn_True(Debug.t) // a reserved identifier
+    | Tkn_False(Debug.t) // a reserved identifier
+    | Tkn_Null(Debug.t) // a reserved identifier
     // JSON syntax
-    | Tkn_Comma(Debug.Loc.t)
-    | Tkn_Colon(Debug.Loc.t)
-    | Tkn_OpenBracket(Debug.Loc.t)
-    | Tkn_CloseBracket(Debug.Loc.t)
-    | Tkn_OpenBrace(Debug.Loc.t)
-    | Tkn_CloseBrace(Debug.Loc.t)
-    | Tkn_OpenParen(Debug.Loc.t)
-    | Tkn_CloseParen(Debug.Loc.t)
-    | Tkn_OpenPointyBracket(Debug.Loc.t)
-    | Tkn_ClosePointyBracket(Debug.Loc.t)
-    | Tkn_Spread(Debug.Loc.t)
+    | Tkn_Comma(Debug.t)
+    | Tkn_Colon(Debug.t)
+    | Tkn_OpenBracket(Debug.t)
+    | Tkn_CloseBracket(Debug.t)
+    | Tkn_OpenBrace(Debug.t)
+    | Tkn_CloseBrace(Debug.t)
+    | Tkn_OpenParen(Debug.t)
+    | Tkn_CloseParen(Debug.t)
+    | Tkn_OpenPointyBracket(Debug.t)
+    | Tkn_ClosePointyBracket(Debug.t)
+    | Tkn_Spread(Debug.t)
     // Component syntax
-    | Tkn_ComponentName(Debug.Loc.t, string)
-    | Tkn_Slash(Debug.Loc.t)
-    | Tkn_Block(Debug.Loc.t)
-    | Tkn_Equals(Debug.Loc.t)
+    | Tkn_ComponentName(Debug.t, string)
+    | Tkn_Slash(Debug.t)
+    | Tkn_Block(Debug.t)
+    | Tkn_Equals(Debug.t)
     // Dynamic content
-    | Tkn_Identifier(Debug.Loc.t, string)
-    | Tkn_Tilde(Debug.Loc.t)
-    | Tkn_Question(Debug.Loc.t)
-    | Tkn_Ampersand(Debug.Loc.t)
-    | Tkn_Bang(Debug.Loc.t)
-    | Tkn_Echo(Debug.Loc.t)
-    | Tkn_EndOfFile(Debug.Loc.t)
+    | Tkn_Identifier(Debug.t, string)
+    | Tkn_Tilde(Debug.t)
+    | Tkn_Question(Debug.t)
+    | Tkn_Ampersand(Debug.t)
+    | Tkn_Bang(Debug.t)
+    | Tkn_Echo(Debug.t)
+    | Tkn_EndOfFile(Debug.t)
 
   let toString: t => string
 
-  let toLocation: t => Debug.Loc.t
+  let debug: t => Debug.t
 }
 
 type t
 
 let make: (~name: string, string) => t
 
-let peekExn: t => Token.t
+let peek: t => Token.t
 
-let popExn: t => Token.t
-
-let name: t => string
+let pop: t => Token.t
 
 let debugToArray: t => array<Token.t>
