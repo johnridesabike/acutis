@@ -5,7 +5,7 @@ Array [
   Object {
     "exn": Object {
       "RE_EXN_ID": "Caml_js_exceptions.Error/1",
-      "_1": [TypeError: source.str.charAt is not a function],
+      "_1": [TypeError: src.str.charAt is not a function],
     },
     "kind": "Compile",
     "location": undefined,

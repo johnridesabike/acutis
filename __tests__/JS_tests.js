@@ -20,7 +20,7 @@ describe("The JS interface works as expected", () => {
           message: `An exception was thrown while compiling template "X." This is probably due to malformed input.`,
           exn: {
             RE_EXN_ID: "Caml_js_exceptions.Error/2",
-            _1: new TypeError("source.str.charAt is not a function"),
+            _1: new TypeError("src.str.charAt is not a function"),
           },
           stack: [],
         },
