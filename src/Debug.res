@@ -166,12 +166,20 @@ let missingChild = (t, ~comp, child) => {
   stack: [],
 }
 
-let missingProp = (t, p, ~comp, ty, f) => {
-  message: `This call of component "${comp}" is missing prop "${p}" of type ${f(ty)}.`,
+let missingRecordField = (t, field, ty, f) => {
+  message: `This record is missing field "${field}" of type ${f(ty)}.`,
   kind: #Type,
   exn: None,
   location: Some(t),
   stack: [],
+}
+
+let nameBoundMultipleTimes = (t, binding) => {
+  message: `"${binding}" is bound multiple times in this pattern.`,
+  kind: #Type,
+  location: Some(t),
+  stack: [],
+  exn: None,
 }
 
 let nonNullableEchoLiteral = t => {
@@ -214,15 +222,15 @@ let typeMismatch = (t, a, b, f) => {
   stack: [],
 }
 
-/* Matching errors */
-
-let nameBoundMultipleTimes = (t, binding) => {
-  message: `"${binding}" is bound multiple times in this pattern.`,
-  kind: #Matching,
+let underscoreInConstruct = t => {
+  message: `"_" isn't a valid name.`,
+  kind: #Type,
+  exn: None,
   location: Some(t),
   stack: [],
-  exn: None,
 }
+
+/* Matching errors */
 
 let partialMatch = (t, pat, f) => {
   message: `This pattern-matching is not exhaustive.

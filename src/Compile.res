@@ -8,6 +8,7 @@
 
 module Array = Belt.Array
 module HashmapString = Belt.HashMap.String
+module MapString = Belt.Map.String
 exception Exit = Debug.Exit
 
 let trimStart = string => {
@@ -43,7 +44,7 @@ type rec node<'a> =
   | OMatch(NonEmpty.t<Typechecker.Pattern.t>, Matching.t<nodes<'a>>)
   | OMapList(Typechecker.Pattern.t, Matching.t<nodes<'a>>)
   | OMapDict(Typechecker.Pattern.t, Matching.t<nodes<'a>>)
-  | OComponent(Debug.t, 'a, array<(string, Typechecker.Pattern.t)>, array<(string, child<'a>)>)
+  | OComponent(Debug.t, 'a, MapString.t<Typechecker.Pattern.t>, MapString.t<child<'a>>)
 
 and child<'a> = OChildName(string) | OChildBlock(nodes<'a>)
 
@@ -82,10 +83,10 @@ let rec nodes = a =>
       let tree = {...tree, exits: Matching.Exit.map(tree.exits, ~f=(. x) => nodes(x))}
       OMapDict(pat, tree)
     | TComponent(debug, name, props, children) =>
-      let children = Array.mapU(children, (. (k, v)) =>
+      let children = MapString.mapU(children, (. v) =>
         switch v {
-        | TChildName(s) => (k, OChildName(s))
-        | TChildBlock(n) => (k, OChildBlock(nodes(n)))
+        | TChildName(s) => OChildName(s)
+        | TChildBlock(n) => OChildBlock(nodes(n))
         }
       )
       OComponent(debug, name, props, children)
@@ -171,10 +172,10 @@ let rec linkNodesExn = (nodes, graph) =>
       OMapDict(p, {...t, exits: exits})
     | OComponent(debug, name, props, children) =>
       let val = Utils.Dagmap.get(graph, name, debug)
-      let children = Array.mapU(children, (. (name, child)) =>
+      let children = MapString.mapU(children, (. child) =>
         switch child {
-        | OChildName(_) as child => (name, child)
-        | OChildBlock(nodes) => (name, OChildBlock(linkNodesExn(nodes, graph)))
+        | OChildName(_) as child => child
+        | OChildBlock(nodes) => OChildBlock(linkNodesExn(nodes, graph))
         }
       )
       OComponent(debug, val, props, children)

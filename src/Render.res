@@ -206,20 +206,16 @@ let rec make:
             Queue.transfer(result, queue)
           }
         )
-      | OComponent(debug, val, compPropsRaw, compChildrenRaw) =>
-        let compChildren = Array.mapU(compChildrenRaw, (. (key, child)) =>
+      | OComponent(debug, val, compProps, compChildren) =>
+        let compChildren = MapString.mapU(compChildren, (. child) =>
           switch child {
           | OChildBlock(nodes) =>
             let result = make(~nodes, ~props, ~children, ~stack, ~env)
-            (key, Env.render(. result))
-          | OChildName(child) => (key, MapString.getExn(children, child))
+            Env.render(. result)
+          | OChildName(child) => MapString.getExn(children, child)
           }
-        )->MapString.fromArray
-        let compProps =
-          Array.mapU(compPropsRaw, (. (key, data)) => (
-            key,
-            Data.fromPattern(data, props),
-          ))->MapString.fromArray
+        )
+        let compProps = MapString.mapU(compProps, (. data) => Data.fromPattern(data, props))
         let result = switch val {
         | Acutis(name, nodes) =>
           Env.render(.

@@ -12,7 +12,7 @@ module Float = Belt.Float
 module Int = Belt.Int
 module MapString = Belt.Map.String
 module Queue = Belt.MutableQueue
-module Tys = Typescheme
+module Ty = Typescheme
 
 exception Exit = Debug.Exit
 
@@ -84,28 +84,28 @@ module Stack = {
 let boolean = (~stack, j) =>
   switch Json.decodeBoolean(j) {
   | Some(b) => PConst(PBool(b))
-  | None => raise(Exit(Debug.decodeError(Tys.boolean(), j, Tys.toString, ~stack)))
+  | None => raise(Exit(Debug.decodeError(Ty.boolean(), j, Ty.toString, ~stack)))
   }
 
 @raises(Exit)
 let string = (~stack, j) =>
   switch Json.decodeString(j) {
   | Some(s) => PConst(PString(s))
-  | None => raise(Exit(Debug.decodeError(Tys.string(), j, Tys.toString, ~stack)))
+  | None => raise(Exit(Debug.decodeError(Ty.string(), j, Ty.toString, ~stack)))
   }
 
 @raises(Exit)
 let int = (~stack, j) =>
   switch Json.decodeNumber(j) {
   | Some(i) => PConst(PInt(Int.fromFloat(i)))
-  | None => raise(Exit(Debug.decodeError(Tys.int(), j, Tys.toString, ~stack)))
+  | None => raise(Exit(Debug.decodeError(Ty.int(), j, Ty.toString, ~stack)))
   }
 
 @raises(Exit)
 let float = (~stack, j) =>
   switch Json.decodeNumber(j) {
   | Some(f) => PConst(PFloat(f))
-  | None => raise(Exit(Debug.decodeError(Tys.float(), j, Tys.toString, ~stack)))
+  | None => raise(Exit(Debug.decodeError(Ty.float(), j, Ty.toString, ~stack)))
   }
 
 @raises(Exit)
@@ -113,7 +113,7 @@ let echo = (~stack, j) =>
   switch Json.classify(j) {
   | JSONString(s) => PConst(PString(s))
   | JSONNumber(f) => PConst(PFloat(f))
-  | _ => raise(Exit(Debug.decodeError(Tys.echo(), j, Tys.toString, ~stack)))
+  | _ => raise(Exit(Debug.decodeError(Ty.echo(), j, Ty.toString, ~stack)))
   }
 
 let some = x => PArray([x])
@@ -136,7 +136,7 @@ and list = (~stack, j, ty) =>
       l := PArray([make(x, ty, ~stack), l.contents])
     }
     l.contents
-  | None => raise(Exit(Debug.decodeError(Tys.list(ty), j, Tys.toString, ~stack)))
+  | None => raise(Exit(Debug.decodeError(Ty.list(ty), j, Ty.toString, ~stack)))
   }
 
 @raises(Exit)
@@ -146,7 +146,7 @@ and dict = (~stack, j, ty) =>
     let keys = Dict.entries(obj)
     let dict = Array.mapU(keys, (. (k, v)) => (k, make(v, ty, ~stack)))
     PDict(MapString.fromArray(dict))
-  | None => raise(Exit(Debug.decodeError(Tys.dict(ty), j, Tys.toString, ~stack)))
+  | None => raise(Exit(Debug.decodeError(Ty.dict(ty), j, Ty.toString, ~stack)))
   }
 
 @raises(Exit)
@@ -154,14 +154,14 @@ and tuple = (~stack, j, tys) =>
   switch Json.decodeArray(j) {
   | Some(arr) =>
     PArray(Array.zipByU(tys, arr, (. ty, j) => make(j, ty, ~stack=list{Stack.array, ...stack})))
-  | None => raise(Exit(Debug.decodeError(Tys.tuple(tys), j, Tys.toString, ~stack)))
+  | None => raise(Exit(Debug.decodeError(Ty.tuple(tys), j, Ty.toString, ~stack)))
   }
 
 @raises(Exit)
 and recordAux = (~stack, j, tys) => {
   MapString.mapWithKeyU(tys, (. k, ty) =>
     switch (ty, Dict.get(j, k)) {
-    | ({contents: Tys.Nullable(_) | Unknown}, None) => PNull
+    | ({contents: Ty.Nullable(_) | Unknown}, None) => PNull
     | (ty, Some(j)) => make(j, ty, ~stack=list{Stack.obj_key(k), ...stack})
     | _ => raise(Exit(Debug.decodeErrorMissingKey(~stack, k)))
     }
@@ -172,13 +172,13 @@ and recordAux = (~stack, j, tys) => {
 and record = (~stack, j, tys) =>
   switch Json.decodeObject(j) {
   | Some(obj) => PDict(recordAux(obj, tys, ~stack))
-  | _ => raise(Exit(Debug.decodeError(Tys.record2(tys), j, Tys.toString, ~stack)))
+  | _ => raise(Exit(Debug.decodeError(Ty.record2(tys), j, Ty.toString, ~stack)))
   }
 
 @raises(Exit)
 and make = (~stack, j, ty) =>
   switch ty.contents {
-  | Tys.Unknown => PUnknown(j)
+  | Ty.Unknown => PUnknown(j)
   | Nullable(ty) => nullable(~stack, j, ty)
   | Boolean => boolean(~stack, j)
   | String => string(~stack, j)
@@ -239,15 +239,7 @@ let rec fromPattern = (x, props) =>
   | TConstruct(_, _, Some(x)) => fromPattern(x, props)
   | TConstruct(_, _, None) => PNull
   | TTuple(_, x) => PArray(Array.map(x, x => fromPattern(x, props)))
-  | TRecord(_, x)
-  | TDict(_, x) =>
-    let d = Dict.empty()
-    for i in 0 to Array.size(x) - 1 {
-      let (k, v) = Array.getUnsafe(x, i)
-      Dict.set(d, k, fromPattern(v, props))
-    }
-    let d = Array.mapU(x, (. (k, v)) => (k, fromPattern(v, props)))->MapString.fromArray
-    PDict(d)
+  | TRecord(_, x, _) | TDict(_, x, _) => PDict(MapString.mapU(x, (. v) => fromPattern(v, props)))
   | TAny(_) => assert false
   }
 
@@ -296,7 +288,7 @@ and toJson_record = (t, ty) => {
 
 and toJson = (t, ty) =>
   switch (t, ty) {
-  | (PUnknown(j), Tys.Unknown) => j
+  | (PUnknown(j), Ty.Unknown) => j
   | (PConst(PBool(b)), Boolean) => Json.boolean(b)
   | (PConst(PInt(i)), Int | Echo) => Json.number(Int.toFloat(i))
   | (PConst(PFloat(f)), Float | Echo) => Json.number(f)

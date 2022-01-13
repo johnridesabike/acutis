@@ -18,8 +18,8 @@ module Pattern: {
     | TConst(Debug.t, constant)
     | TConstruct(Debug.t, construct, option<t>)
     | TTuple(Debug.t, array<t>)
-    | TRecord(Debug.t, array<(string, t)>)
-    | TDict(Debug.t, array<(string, t)>)
+    | TRecord(Debug.t, Belt.Map.String.t<t>, ref<Belt.Map.String.t<Typescheme.t>>)
+    | TDict(Debug.t, Belt.Map.String.t<t>, ref<Belt.Set.String.t>)
     | TVar(Debug.t, string) // any binding
     | TOptionalVar(Debug.t, string) // any binding, may not be set
     | TAny(Debug.t) // ignored wildcard _
@@ -35,7 +35,7 @@ type rec node =
   | TMatch(Debug.t, NonEmpty.t<Pattern.t>, NonEmpty.t<case>)
   | TMapList(Debug.t, Pattern.t, NonEmpty.t<case>)
   | TMapDict(Debug.t, Pattern.t, NonEmpty.t<case>)
-  | TComponent(Debug.t, string, array<(string, Pattern.t)>, array<(string, child)>)
+  | TComponent(Debug.t, string, Belt.Map.String.t<Pattern.t>, Belt.Map.String.t<child>)
 
 and nodes = array<node>
 
@@ -53,4 +53,4 @@ let makeComponents: Utils.Dagmap.map<Source.t<Parser.t, Source.fnU<'a>>> => Util
   Source.t<t, Source.fnU<'a>>,
 >
 
-let make: (Parser.t, Utils.Dagmap.map<Source.t<t, 'a>>) => t
+let make: (Parser.t, Utils.Dagmap.map<Source.t<t, Source.fnU<'a>>>) => t

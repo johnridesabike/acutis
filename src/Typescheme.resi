@@ -9,24 +9,15 @@
 type rec typescheme =
   | Unknown
   | Boolean
-  //| LiteralTrue
-  //| LiteralFalse
   | Int
   | Float
-  //| LiteralInt(NonEmpty.t<int>)
   | String
-  //| LiteralString(NonEmpty.t<string>)
-  // | LiteralNull
   | Echo
   | Nullable(t)
   | List(t)
   | Dict(t, ref<Belt.Set.String.t>)
-  // 0 and 1 sized tuples are legal.
-  | Tuple(ref<array<t>>)
+  | Tuple(ref<array<t>>) // 0 and 1 sized tuples are legal.
   | Record(ref<Belt.Map.String.t<t>>)
-// The discriminant field, common field, and variant fields cannot intersect.
-//| UnionStr({discriminant: string, common: MapString.t<t>, variants: MapString.t<MapString.t<t>>})
-//| UnionInt({discriminant: string, common: MapString.t<t>, variants: MapInt.t<MapString.t<t>>})
 
 and t = ref<typescheme>
 
@@ -52,6 +43,7 @@ let record: array<(string, t)> => t
 let record2: props => t
 let props: array<(string, t)> => props
 
+// This prints better in JavaScript.
 type rec debug = [
   | #Polymorphic
   | #Boolean

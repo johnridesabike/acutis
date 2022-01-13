@@ -62,15 +62,16 @@ let childTypeMismatch: (t, 'a, 'a, 'a => string) => error
 let extraChild: (t, ~comp: string, string) => error
 let mapPatternSizeMismatch: t => error
 let missingChild: (t, ~comp: string, string) => error
-let missingProp: (t, string, ~comp: string, 'a, 'a => string) => error
+let missingRecordField: (t, string, 'a, 'a => string) => error
+let nameBoundMultipleTimes: (t, string) => error
 let nonNullableEchoLiteral: t => error
 let patternNumberMismatch: t => error
 let tailBindingClash: t => error
 let tupleSizeMismatch: (t, int, int) => error
 let typeMismatch: (t, 'a, 'a, 'a => string) => error
+let underscoreInConstruct: t => error
 
 /* Matching errors */
-let nameBoundMultipleTimes: (t, string) => error
 let partialMatch: (t, 'a, 'a => string) => error
 let unusedCase: (NonEmpty.t<'a>, debuggable<'a>) => error
 

@@ -20,7 +20,7 @@ type rec node<'a> =
   | OMatch(NonEmpty.t<Typechecker.Pattern.t>, Matching.t<nodes<'a>>)
   | OMapList(Typechecker.Pattern.t, Matching.t<nodes<'a>>)
   | OMapDict(Typechecker.Pattern.t, Matching.t<nodes<'a>>)
-  | OComponent(Debug.t, 'a, array<(string, Typechecker.Pattern.t)>, array<(string, child<'a>)>)
+  | OComponent(Debug.t, 'a, Belt.Map.String.t<Typechecker.Pattern.t>, Belt.Map.String.t<child<'a>>)
 
 and child<'a> = OChildName(string) | OChildBlock(nodes<'a>)
 

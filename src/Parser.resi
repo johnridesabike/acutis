@@ -10,18 +10,15 @@
 
 module Pattern: {
   type rec t =
-    | UNull(Debug.t)
-    | USome(Debug.t, t)
-    | UFalse(Debug.t)
-    | UTrue(Debug.t)
+    | UNullable(Debug.t, option<t>)
+    | UBool(Debug.t, bool)
     | UString(Debug.t, string)
     | UInt(Debug.t, int)
     | UFloat(Debug.t, float)
     | UTuple(Debug.t, array<t>)
-    | UList(Debug.t, array<t>)
-    | UListWithTailBinding(Debug.t, array<t>, t)
-    | UDict(Debug.t, array<(string, t)>)
-    | URecord(Debug.t, array<(string, t)>)
+    | UList(Debug.t, array<t>, option<t>)
+    | UDict(Debug.t, Belt.Map.String.t<t>)
+    | URecord(Debug.t, Belt.Map.String.t<t>)
     | UBinding(Debug.t, string)
 
   let debug: t => Debug.t
@@ -40,12 +37,11 @@ type trim = NoTrim | TrimStart | TrimEnd | TrimBoth
 
 type rec node =
   | UText(string, trim)
-  // The first echo item that isn't null will be returned.
   | UEcho(Debug.t, array<echo>, echo)
   | UMatch(Debug.t, NonEmpty.t<Pattern.t>, NonEmpty.t<case>)
   | UMapList(Debug.t, Pattern.t, NonEmpty.t<case>)
   | UMapDict(Debug.t, Pattern.t, NonEmpty.t<case>)
-  | UComponent(Debug.t, string, array<(string, Pattern.t)>, array<(string, child)>)
+  | UComponent(Debug.t, string, Belt.Map.String.t<Pattern.t>, Belt.Map.String.t<child>)
 
 and case = {
   patterns: NonEmpty.t<NonEmpty.t<Pattern.t>>,

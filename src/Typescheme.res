@@ -13,24 +13,15 @@ module Array = Belt.Array
 type rec typescheme =
   | Unknown
   | Boolean
-  //| LiteralTrue
-  //| LiteralFalse
   | Int
   | Float
-  //| LiteralInt(NonEmpty.t<int>)
   | String
-  //| LiteralString(NonEmpty.t<string>)
-  // | LiteralNull
   | Echo
   | Nullable(t)
   | List(t)
   | Dict(t, ref<SetString.t>)
-  // 0 and 1 sized tuples are legal.
   | Tuple(ref<array<t>>)
   | Record(ref<MapString.t<t>>)
-// The discriminant field, common field, and variant fields cannot intersect.
-//| UnionStr({discriminant: string, common: MapString.t<t>, variants: MapString.t<MapString.t<t>>})
-//| UnionInt({discriminant: string, common: MapString.t<t>, variants: MapInt.t<MapString.t<t>>})
 
 and t = ref<typescheme>
 
@@ -53,9 +44,13 @@ let rec toString = x =>
   | Record(x) => record_toString(x)
   }
 
-and record_toString = x =>
-  "{" ++
-  MapString.toArray(x.contents)->Array.joinWith(", ", ((k, v)) => `"${k}": ${toString(v)}`) ++ "}"
+and record_toString = x => {
+  let rows = switch MapString.toArray(x.contents) {
+  | [] => "_"
+  | a => Array.joinWithU(a, ", ", (. (k, v)) => `"${k}": ${toString(v)}`)
+  }
+  "{" ++ rows ++ "}"
+}
 
 let rec copy = x =>
   switch x {

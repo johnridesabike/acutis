@@ -917,6 +917,21 @@ Array [
 ]
 `;
 
+exports[`Patterns Illegal bindings 6`] = `
+Array [
+  Object {
+    "exn": undefined,
+    "kind": "Type",
+    "location": Object {
+      "char": 8,
+      "name": "",
+    },
+    "message": "\\"_\\" isn't a valid name.",
+    "stack": Array [],
+  },
+]
+`;
+
 exports[`Patterns Missing bindings 1`] = `
 Array [
   Object {
@@ -997,6 +1012,23 @@ Array [
     "message": "This pattern-matching is not exhaustive.
 Here is an example of a case that is not matched:
 {favoriteColor: \\"a\\", firstName}",
+    "stack": Array [],
+  },
+]
+`;
+
+exports[`Patterns Records that have no subset are reported. 1`] = `
+Array [
+  Object {
+    "exn": undefined,
+    "kind": "Type",
+    "location": Object {
+      "char": 16,
+      "name": "",
+    },
+    "message": "These types have no subset:
+{\\"a\\": int}
+{\\"b\\": _}",
     "stack": Array [],
   },
 ]
@@ -1116,7 +1148,7 @@ Array [
       "char": 31,
       "name": "",
     },
-    "message": "This pattern is type [int] but expected type string.",
+    "message": "This pattern is type [_] but expected type string.",
     "stack": Array [],
   },
 ]
@@ -1131,7 +1163,7 @@ Array [
       "char": 31,
       "name": "",
     },
-    "message": "This pattern is type [int] but expected type string.",
+    "message": "This pattern is type [_] but expected type string.",
     "stack": Array [],
   },
 ]
@@ -1146,7 +1178,7 @@ Array [
       "char": 32,
       "name": "",
     },
-    "message": "This pattern is type [int] but expected type boolean.",
+    "message": "This pattern is type [_] but expected type boolean.",
     "stack": Array [],
   },
 ]
@@ -1203,7 +1235,7 @@ Array [
     "exn": undefined,
     "kind": "Type",
     "location": Object {
-      "char": 39,
+      "char": 40,
       "name": "",
     },
     "message": "This pattern is type int but expected type string.",
@@ -1293,7 +1325,7 @@ Array [
     "exn": undefined,
     "kind": "Type",
     "location": Object {
-      "char": 36,
+      "char": 40,
       "name": "",
     },
     "message": "This pattern is type int but expected type string.",
@@ -1756,7 +1788,7 @@ exports[`Patterns You can't bind a value more than once. 1`] = `
 Array [
   Object {
     "exn": undefined,
-    "kind": "Matching",
+    "kind": "Type",
     "location": Object {
       "char": 20,
       "name": "",
@@ -1776,7 +1808,7 @@ Array [
       "char": 3,
       "name": "",
     },
-    "message": "This call of component \\"A\\" is missing prop \\"a\\" of type echoable.",
+    "message": "This record is missing field \\"a\\" of type echoable.",
     "stack": Array [],
   },
 ]
@@ -1863,10 +1895,10 @@ Array [
     "exn": undefined,
     "kind": "Type",
     "location": Object {
-      "char": 3,
+      "char": 7,
       "name": "",
     },
-    "message": "This pattern is type {\\"a\\": int} but expected type [echoable].",
+    "message": "This pattern is type {\\"a\\": _} but expected type [echoable].",
     "stack": Array [],
   },
 ]
@@ -1893,10 +1925,10 @@ Array [
     "exn": undefined,
     "kind": "Type",
     "location": Object {
-      "char": 3,
+      "char": 12,
       "name": "",
     },
-    "message": "This pattern is type {\\"a\\": int} but expected type <echoable>.",
+    "message": "This pattern is type {\\"a\\": _} but expected type <echoable>.",
     "stack": Array [],
   },
 ]
@@ -2037,7 +2069,7 @@ Array [
       "char": 26,
       "name": "B",
     },
-    "message": "This call of component \\"C\\" is missing prop \\"c\\" of type echoable.",
+    "message": "This record is missing field \\"c\\" of type echoable.",
     "stack": Array [],
   },
 ]

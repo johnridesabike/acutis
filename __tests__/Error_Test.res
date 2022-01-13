@@ -165,6 +165,7 @@ describe("Patterns", ({test, _}) => {
     expect.value(compile(`{% match trueKey with {true} %} {% /match %}`)).toMatchSnapshot()
     expect.value(compile(`{% match falseKey with {false} %} {% /match %}`)).toMatchSnapshot()
     expect.value(compile(`{{ &null }}`)).toMatchSnapshot()
+    expect.value(compile(`{% map [_] with x %} {{ x }} {% /map %}`)).toMatchSnapshot()
   })
 
   test("Missing bindings", ({expect, _}) => {
@@ -288,7 +289,7 @@ describe("Patterns", ({test, _}) => {
         compile(`{% match a with 1 %}  {% with {a} %} {{ a }} {% /match %}`),
       ).toMatchSnapshot()
       expect.value(
-        compile(`{% match a with {a: "a"} %} {% with {a: 1} %} {{ a }} {% /match %}`),
+        compile(`{% match a with {a: "a"} %} {% with {a: 1} %} {% /match %}`),
       ).toMatchSnapshot()
     })
   })
@@ -299,6 +300,11 @@ describe("Patterns", ({test, _}) => {
     expect.value(compile(src, ~components)).toMatchSnapshot()
     let src = `{% A B=#/# C=#/# /%}`
     expect.value(compile(src, ~components)).toMatchSnapshot()
+  })
+
+  test("Records that have no subset are reported.", ({expect, _}) => {
+    let x = compile(`{% map [{a: 1}, {b: 2}] with {a} %} {{ a }} {% /map %}`)
+    expect.value(x).toMatchSnapshot()
   })
 })
 

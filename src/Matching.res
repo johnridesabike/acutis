@@ -10,6 +10,7 @@ module Const = Data.Const
 module MapString = Belt.Map.String
 module Queue = Belt.MutableQueue
 module SetInt = Belt.Set.Int
+module SetString = Belt.Set.String
 module Tpat = Typechecker.Pattern
 
 exception Exit = Debug.Exit
@@ -580,9 +581,6 @@ let rec fromTPat: 'a 'k. (_, _, 'k, continue<'a, 'k>) => tree<'a, 'k> = (p, b, k
   switch p {
   | Tpat.TAny(_) => Wildcard({ids: SetInt.empty, key: key, child: k(. b)})
   | TVar(debug, x) | TOptionalVar(debug, x) =>
-    if MapString.has(b, x) {
-      raise(Exit(Debug.nameBoundMultipleTimes(debug, x)))
-    }
     let id = Debug.char(debug)
     Wildcard({
       ids: SetInt.add(SetInt.empty, id),
@@ -609,10 +607,27 @@ let rec fromTPat: 'a 'k. (_, _, 'k, continue<'a, 'k>) => tree<'a, 'k> = (p, b, k
   | TTuple(_, a) =>
     let child = fromArray(a, b, 0, (. b) => End(k(. b)))
     Nest({key: key, ids: SetInt.empty, child: IntKeys(child), wildcard: None, extra: Tuple})
-  | TRecord(_, a) =>
+  | TRecord(dbg, m, tys) =>
+    /* We need to expand the map to include all of its type's keys. */
+    let a = MapString.mergeU(m, tys.contents, (. _, p, ty) =>
+      switch (p, ty) {
+      | (None, Some(_)) => Some(Tpat.TAny(dbg))
+      | (Some(p), _) => Some(p)
+      | (None, None) => None
+      }
+    )->MapString.toArray
     let child = fromKeyValues(a, b, 0, (. b) => End(k(. b)))
     Nest({key: key, ids: SetInt.empty, child: StringKeys(child), wildcard: None, extra: Record})
-  | TDict(_, a) =>
+  | TDict(dbg, m, kys) =>
+    /* We need to expand the map to include all of its type's keys. */
+    let kys =
+      SetString.toArray(kys.contents)->Array.mapU((. k) => (k, Tpat.TAny(dbg)))->MapString.fromArray
+    let a = MapString.mergeU(m, kys, (. _, p, k) =>
+      switch (p, k) {
+      | (Some(p), _) | (None, Some(p)) => Some(p)
+      | (None, None) => None
+      }
+    )->MapString.toArray
     let child = fromKeyValues(a, b, 0, (. b) => End(k(. b)))
     Nest({key: key, ids: SetInt.empty, child: StringKeys(child), wildcard: None, extra: Dict})
   }
@@ -707,7 +722,9 @@ module ParMatch = {
   }
 
   let toArray = l => List.toArray(l)->Array.mapU((. (_k, v)) => v)
-  let toKeyValues = l => List.toArray(l)
+
+  let toKeyValues = l => List.reduceU(l, MapString.empty, (. m, (k, v)) => MapString.set(m, k, v))
+
   let toString = l => toArray(l)->Array.joinWith(", ", Tpat.toString)
 
   let key_str = (. s) => s
@@ -751,8 +768,8 @@ module ParMatch = {
         | None =>
           let nest = switch extra {
           | Tuple => Tpat.TTuple(Debug.empty, toArray(pats))
-          | Record => TRecord(Debug.empty, toKeyValues(pats))
-          | Dict => TDict(Debug.empty, toKeyValues(pats))
+          | Record => TRecord(Debug.empty, toKeyValues(pats), ref(MapString.empty))
+          | Dict => TDict(Debug.empty, toKeyValues(pats), ref(Belt.Set.String.empty))
           }
           let {pats, next, _} = check(next, kf)
           {flag: Partial, pats: list{(kf(. key), nest), ...pats}, next: next}

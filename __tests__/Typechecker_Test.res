@@ -114,6 +114,22 @@ describe("match", ({test, _}) => {
     ])
   })
 
+  test("Type narrowing works when constructing values", ({expect, _}) => {
+    let src = `
+      {% match x with {a, b} %} {{ a }} {{ b }} {% /match %}
+      {% match y with {c} %} {{ c }} {% /match %}
+      {% map [{a: "a", b: 1}, {a: "a", c: true}, x, y] with {a} %}
+        {{ a }}
+      {% /map %}
+      `
+    let {prop_types, _} = Compile.make(~name="", src, Compile.Components.empty())->Result.getExn
+    let result = prop_types->MapString.map(debug)->MapString.toArray
+    expect.value(result).toEqual([
+      ("x", #Record([("a", #String), ("b", #Echo)])),
+      ("y", #Record([("a", #String), ("c", #Echo)])),
+    ])
+  })
+
   test("Inferrence works for nested types", ({expect, _}) => {
     let src = `{% match a with [{a: 1}, c, {b: "b"}] %} {% with _ %} {% /match %}`
     let {prop_types, _} = Compile.make(~name="test", src, Compile.Components.empty())->Result.getExn

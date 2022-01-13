@@ -12,7 +12,10 @@ module MS = Belt.Map.String
 let e = Matching.Exit.unsafe_key
 
 let compile = src => {
-  let {nodes, _} = Compile.make(~name="", src, Compile.Components.empty())->Result.getExn
+  let {nodes, _} = Compile.make(~name="", src, Compile.Components.empty())->Result.getOrElse(e => {
+    Js.log(Js.Json.stringifyAny(e))
+    assert false
+  })
   Belt.Array.reduce(nodes, None, (acc, x) =>
     switch x {
     | OMatch(_, {tree, _}) => Some(tree)
