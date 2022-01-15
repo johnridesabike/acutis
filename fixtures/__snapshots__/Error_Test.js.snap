@@ -361,7 +361,7 @@ Array [
     "exn": undefined,
     "kind": "Matching",
     "location": Object {
-      "char": 76,
+      "char": 85,
       "name": "",
     },
     "message": "This match case is unused:
@@ -377,7 +377,7 @@ Array [
     "exn": undefined,
     "kind": "Matching",
     "location": Object {
-      "char": 120,
+      "char": 137,
       "name": "",
     },
     "message": "This match case is unused:
@@ -2070,6 +2070,36 @@ Array [
       "name": "B",
     },
     "message": "This record is missing field \\"c\\" of type echoable.",
+    "stack": Array [],
+  },
+]
+`;
+
+exports[`Variables in multiple \`with\` clauses Variable names must be coherent 1`] = `
+Array [
+  Object {
+    "exn": undefined,
+    "kind": "Type",
+    "location": Object {
+      "char": 53,
+      "name": "",
+    },
+    "message": "Binding \\"a\\" must occur in both instances of this pattern.",
+    "stack": Array [],
+  },
+]
+`;
+
+exports[`Variables in multiple \`with\` clauses Variable types must be coherent 1`] = `
+Array [
+  Object {
+    "exn": undefined,
+    "kind": "Type",
+    "location": Object {
+      "char": 73,
+      "name": "",
+    },
+    "message": "This pattern is type string but expected type int.",
     "stack": Array [],
   },
 ]

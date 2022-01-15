@@ -70,6 +70,7 @@ let tailBindingClash: t => error
 let tupleSizeMismatch: (t, int, int) => error
 let typeMismatch: (t, 'a, 'a, 'a => string) => error
 let underscoreInConstruct: t => error
+let variableMissingInPattern: (t, string) => error
 
 /* Matching errors */
 let partialMatch: (t, 'a, 'a => string) => error

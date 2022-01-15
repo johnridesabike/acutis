@@ -257,27 +257,27 @@ describe("Basic tree", ({test, _}) => {
   test("Basic dec tree 2", ({expect, _}) => {
     let src = `
     {% match a, b, c
-       with 10, 11, 12
-       with  x, 21, 22
-       with 30, 31, 32
-       with 30,  y, 42
-       with  a,  b,  c %}
+       with 10, 11, 12 %}
+    {% with  x, 21, 22 %}
+    {% with 30, 31, 32 %}
+    {% with 30,  y, 42 %}
+    {% with  a,  b,  c %}
     {% /match %}`
     let result = compile(src)
     expect.value(result).toEqual(
       Switch({
         key: 0,
-        ids: SI.empty->SI.add(58)->SI.add(127),
+        ids: SI.empty->SI.add(61)->SI.add(139),
         cases: {
           val: PInt(10),
           ifMatch: Switch({
             key: 1,
-            ids: SI.fromArray([131]),
+            ids: SI.fromArray([143]),
             cases: {
               val: PInt(11),
               ifMatch: Switch({
                 key: 2,
-                ids: SI.fromArray([135]),
+                ids: SI.fromArray([147]),
                 cases: {
                   val: PInt(12),
                   ifMatch: End({names: MS.empty, exit: e(0)}),
@@ -285,8 +285,8 @@ describe("Basic tree", ({test, _}) => {
                 },
                 wildcard: Some(
                   End({
-                    exit: e(0),
-                    names: MS.empty->MS.set("a", 127)->MS.set("b", 131)->MS.set("c", 135),
+                    exit: e(4),
+                    names: MS.empty->MS.set("a", 139)->MS.set("b", 143)->MS.set("c", 147),
                   }),
                 ),
               }),
@@ -294,16 +294,16 @@ describe("Basic tree", ({test, _}) => {
                 val: PInt(21),
                 ifMatch: Switch({
                   key: 2,
-                  ids: SI.fromArray([135]),
+                  ids: SI.fromArray([147]),
                   cases: {
                     val: PInt(22),
-                    ifMatch: End({names: MS.fromArray([("x", 58)]), exit: e(0)}),
+                    ifMatch: End({names: MS.fromArray([("x", 61)]), exit: e(1)}),
                     nextCase: None,
                   },
                   wildcard: Some(
                     End({
-                      exit: e(0),
-                      names: MS.empty->MS.set("a", 127)->MS.set("b", 131)->MS.set("c", 135),
+                      exit: e(4),
+                      names: MS.empty->MS.set("a", 139)->MS.set("b", 143)->MS.set("c", 147),
                     }),
                   ),
                 }),
@@ -313,10 +313,10 @@ describe("Basic tree", ({test, _}) => {
             wildcard: Some(
               Wildcard({
                 key: 2,
-                ids: SI.fromArray([135]),
+                ids: SI.fromArray([147]),
                 child: End({
-                  exit: e(0),
-                  names: MS.empty->MS.set("a", 127)->MS.set("b", 131)->MS.set("c", 135),
+                  exit: e(4),
+                  names: MS.empty->MS.set("a", 139)->MS.set("b", 143)->MS.set("c", 147),
                 }),
               }),
             ),
@@ -325,25 +325,25 @@ describe("Basic tree", ({test, _}) => {
             val: PInt(30),
             ifMatch: Switch({
               key: 1,
-              ids: SI.empty->SI.add(108)->SI.add(131),
+              ids: SI.empty->SI.add(117)->SI.add(143),
               cases: {
                 val: PInt(21),
                 ifMatch: Switch({
                   key: 2,
-                  ids: SI.fromArray([135]),
+                  ids: SI.fromArray([147]),
                   cases: {
                     val: PInt(22),
-                    ifMatch: End({names: MS.fromArray([("x", 58)]), exit: e(0)}),
+                    ifMatch: End({names: MS.fromArray([("x", 61)]), exit: e(1)}),
                     nextCase: Some({
                       val: PInt(42),
-                      ifMatch: End({names: MS.fromArray([("y", 108)]), exit: e(0)}),
+                      ifMatch: End({names: MS.fromArray([("y", 117)]), exit: e(3)}),
                       nextCase: None,
                     }),
                   },
                   wildcard: Some(
                     End({
-                      exit: e(0),
-                      names: MS.empty->MS.set("a", 127)->MS.set("b", 131)->MS.set("c", 135),
+                      exit: e(4),
+                      names: MS.empty->MS.set("a", 139)->MS.set("b", 143)->MS.set("c", 147),
                     }),
                   ),
                 }),
@@ -351,20 +351,20 @@ describe("Basic tree", ({test, _}) => {
                   val: PInt(31),
                   ifMatch: Switch({
                     key: 2,
-                    ids: SI.fromArray([135]),
+                    ids: SI.fromArray([147]),
                     cases: {
                       val: PInt(32),
-                      ifMatch: End({names: MS.empty, exit: e(0)}),
+                      ifMatch: End({names: MS.empty, exit: e(2)}),
                       nextCase: Some({
                         val: PInt(42),
-                        ifMatch: End({names: MS.fromArray([("y", 108)]), exit: e(0)}),
+                        ifMatch: End({names: MS.fromArray([("y", 117)]), exit: e(3)}),
                         nextCase: None,
                       }),
                     },
                     wildcard: Some(
                       End({
-                        exit: e(0),
-                        names: MS.empty->MS.set("a", 127)->MS.set("b", 131)->MS.set("c", 135),
+                        exit: e(4),
+                        names: MS.empty->MS.set("a", 139)->MS.set("b", 143)->MS.set("c", 147),
                       }),
                     ),
                   }),
@@ -374,16 +374,16 @@ describe("Basic tree", ({test, _}) => {
               wildcard: Some(
                 Switch({
                   key: 2,
-                  ids: SI.fromArray([135]),
+                  ids: SI.fromArray([147]),
                   cases: {
                     val: PInt(42),
-                    ifMatch: End({names: MS.fromArray([("y", 108)]), exit: e(0)}),
+                    ifMatch: End({names: MS.fromArray([("y", 117)]), exit: e(3)}),
                     nextCase: None,
                   },
                   wildcard: Some(
                     End({
-                      exit: e(0),
-                      names: MS.empty->MS.set("a", 127)->MS.set("b", 131)->MS.set("c", 135),
+                      exit: e(4),
+                      names: MS.empty->MS.set("a", 139)->MS.set("b", 143)->MS.set("c", 147),
                     }),
                   ),
                 }),
@@ -395,21 +395,21 @@ describe("Basic tree", ({test, _}) => {
         wildcard: Some(
           Switch({
             key: 1,
-            ids: SI.fromArray([131]),
+            ids: SI.fromArray([143]),
             cases: {
               val: PInt(21),
               ifMatch: Switch({
                 key: 2,
-                ids: SI.fromArray([135]),
+                ids: SI.fromArray([147]),
                 cases: {
                   val: PInt(22),
-                  ifMatch: End({names: MS.fromArray([("x", 58)]), exit: e(0)}),
+                  ifMatch: End({names: MS.fromArray([("x", 61)]), exit: e(1)}),
                   nextCase: None,
                 },
                 wildcard: Some(
                   End({
-                    exit: e(0),
-                    names: MS.empty->MS.set("a", 127)->MS.set("b", 131)->MS.set("c", 135),
+                    exit: e(4),
+                    names: MS.empty->MS.set("a", 139)->MS.set("b", 143)->MS.set("c", 147),
                   }),
                 ),
               }),
@@ -418,10 +418,10 @@ describe("Basic tree", ({test, _}) => {
             wildcard: Some(
               Wildcard({
                 key: 2,
-                ids: SI.fromArray([135]),
+                ids: SI.fromArray([147]),
                 child: End({
-                  exit: e(0),
-                  names: MS.empty->MS.set("a", 127)->MS.set("b", 131)->MS.set("c", 135),
+                  exit: e(4),
+                  names: MS.empty->MS.set("a", 139)->MS.set("b", 143)->MS.set("c", 147),
                 }),
               }),
             ),

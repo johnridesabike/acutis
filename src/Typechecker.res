@@ -260,7 +260,7 @@ module Pattern = {
       "<" ++ Array.joinWith(a, ", ", ((k, v)) => keyValuesToString(k, toString(v))) ++ ">"
     | TVar(_, v) | TOptionalVar(_, v) => v
     | TConstruct(_, TNullable, None) => "null"
-    | TConstruct(_, TNullable, Some(x)) => toString(x)
+    | TConstruct(_, TNullable, Some(x)) => "!" ++ toString(x)
     | TConstruct(_, TList, None) => "[]"
     | TConstruct(_, TList, Some(l)) =>
       let rec aux = (s, ~sep, l) =>
@@ -367,22 +367,40 @@ module Context = {
     }
 
   @raises(Exit)
-  let addScope = (ctx, q) => {
-    let newscope = Queue.reduceU(q, MapString.empty, (. newscope, (k, v, debug)) =>
-      if MapString.has(newscope, k) {
-        raise(Exit(Debug.nameBoundMultipleTimes(debug, k)))
-      } else {
-        MapString.set(newscope, k, v)
-      }
+  let addScope = (ctx, bindings_all) => {
+    let bindings_all = Queue.mapU(bindings_all, (. q) =>
+      Queue.reduceU(q, MapString.empty, (. newscope, (k, v, dbg)) =>
+        if MapString.has(newscope, k) {
+          raise(Exit(Debug.nameBoundMultipleTimes(dbg, k)))
+        } else {
+          MapString.set(newscope, k, (v, dbg))
+        }
+      )
     )
-    // Merge the new bindings with the outer scope & shadow duplicate names.
-    let scope = MapString.mergeU(ctx.scope, newscope, (. _, a, b) =>
-      switch (a, b) {
-      | (None, None) => None
-      | (Some(_) as x, None) | (None | Some(_), Some(_) as x) => x
-      }
-    )
-    {...ctx, scope: scope}
+    switch Queue.pop(bindings_all) {
+    | None => ctx
+    | Some(hd) =>
+      let newscope = Queue.reduceU(bindings_all, hd, (. acc, m) =>
+        MapString.mergeU(acc, m, (. k, a, b) =>
+          switch (a, b) {
+          | (Some((a, _)), Some((b, dbg))) =>
+            unify(a, b, Narrow_left, dbg)
+            Some((a, dbg))
+          | (Some((_, dbg)), None) | (None, Some((_, dbg))) =>
+            raise(Exit(Debug.variableMissingInPattern(dbg, k)))
+          | (None, None) => None
+          }
+        )
+      )
+      // Merge the new bindings with the outer scope & shadow duplicate names.
+      let scope = MapString.mergeU(ctx.scope, newscope, (. _, a, b) =>
+        switch (a, b) {
+        | (None, None) => None
+        | (Some(x), None) | (_, Some((x, _))) => Some(x)
+        }
+      )
+      {...ctx, scope: scope}
+    }
   }
 }
 
@@ -443,12 +461,14 @@ let getTypes = x =>
 let rec makeCases = (cases, ctx, g) => {
   let tys = NonEmpty.hd(cases).Parser.patterns->NonEmpty.hd->NonEmpty.map((. _) => Ty.unknown())
   let cases = NonEmpty.map(cases, (. {Parser.patterns: patterns, nodes}) => {
-    let bindings = Queue.make()
-    let f = (. k, v, debug) => Queue.add(bindings, (k, v, debug))
-    let pats = NonEmpty.map(patterns, (. ps) =>
+    let bindings_all = Queue.make()
+    let pats = NonEmpty.map(patterns, (. ps) => {
+      let bindings = Queue.make()
+      Queue.add(bindings_all, bindings)
+      let f = (. k, v, debug) => Queue.add(bindings, (k, v, debug))
       NonEmpty.zipByExn(ps, tys, (. p, ty) => Pattern.make(Expand_both, Destruct, p, ty, ~f))
-    )
-    let ctx = Context.addScope(ctx, bindings)
+    })
+    let ctx = Context.addScope(ctx, bindings_all)
     (pats, nodes, ctx)
   })->NonEmpty.map((. (pats, nodes, ctx)) => {
     pats: pats,

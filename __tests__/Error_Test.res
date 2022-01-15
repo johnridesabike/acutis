@@ -308,6 +308,29 @@ describe("Patterns", ({test, _}) => {
   })
 })
 
+describe("Variables in multiple `with` clauses", ({test, _}) => {
+  test("Variable names must be coherent", ({expect, _}) => {
+    let src = `
+    {% match a, b
+       with null, !b
+       with !a, null %}
+    {% with !_, !_ %}
+    {% with null, null %}
+    {% /match %}`
+    expect.value(compile(src)).toMatchSnapshot()
+  })
+
+  test("Variable types must be coherent", ({expect, _}) => {
+    let src = `
+    {% match a, b
+       with 1, "a" %}
+    {% with a, _
+       with _, a %}
+    {% /match %}`
+    expect.value(compile(src)).toMatchSnapshot()
+  })
+})
+
 @raises(Failure)
 describe("Rendering", ({test, _}) => {
   test("Type mismatches", ({expect, _}) => {
@@ -460,19 +483,19 @@ describe("Matching: unused patterns", ({test, _}) => {
   test("Basic patterns", ({expect, _}) => {
     let src = `
     {% match a, b, c
-      with 10, 11, 12
-      with x, 21, 22
-      with 10, 11, 12 %} 
+       with 10, 11, 12 %}
+    {% with x, 21, 22 %}
+    {% with 10, 11, 12 %} 
     {% /match %}`
     let result = compile(src)
     expect.value(result).toMatchSnapshot()
     let src = `
     {% match a, b, c 
-      with 10, 11, 12
-      with x, 21, 22
-      with 30, 31, 32
-      with 30, y, 42
-      with 30, 31, 42%}
+       with 10, 11, 12 %}
+    {% with x, 21, 22 %}
+    {% with 30, 31, 32 %}
+    {% with 30, y, 42 %}
+    {% with 30, 31, 42 %}
     {% /match %}`
     let result = compile(src)
     expect.value(result).toMatchSnapshot()

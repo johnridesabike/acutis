@@ -230,6 +230,14 @@ let underscoreInConstruct = t => {
   stack: [],
 }
 
+let variableMissingInPattern = (t, v) => {
+  message: `Binding "${v}" must occur in both instances of this pattern.`,
+  kind: #Type,
+  exn: None,
+  location: Some(t),
+  stack: [],
+}
+
 /* Matching errors */
 
 let partialMatch = (t, pat, f) => {
