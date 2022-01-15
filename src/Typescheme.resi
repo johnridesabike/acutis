@@ -7,17 +7,19 @@
 */
 
 type rec typescheme =
+  private
   | Unknown
   | Boolean
   | Int
   | Float
   | String
   | Echo
+  | Tuple(array<t>) // 0 and 1 sized tuples are legal.
   | Nullable(t)
   | List(t)
-  | Dict(t, ref<Belt.Set.String.t>)
-  | Tuple(ref<array<t>>) // 0 and 1 sized tuples are legal.
   | Record(ref<Belt.Map.String.t<t>>)
+  /* The string set tracks referenced keys for matching compilation. */
+  | Dict(t, ref<Belt.Set.String.t>)
 
 and t = ref<typescheme>
 
@@ -37,15 +39,16 @@ let string: unit => t
 let echo: unit => t
 let nullable: t => t
 let list: t => t
+let dict_keys: (t, ref<Belt.Set.String.t>) => t // internal use
 let dict: t => t
 let tuple: array<t> => t
 let record: array<(string, t)> => t
-let record2: props => t
+let record2: ref<props> => t // internal use
 let props: array<(string, t)> => props
 
 // This prints better in JavaScript.
 type rec debug = [
-  | #Polymorphic
+  | #Unknown
   | #Boolean
   | #Int
   | #Float
@@ -60,12 +63,12 @@ type rec debug = [
 let debug: t => debug
 
 module Child: {
-  type t' = Child | NullableChild
-  type t = ref<t'>
+  type t
   type props = Belt.Map.String.t<t>
   let props: array<(string, t)> => props
-  let child: unit => t
-  let nullable: unit => t
+  let child: string => (string, t)
+  let nullable: string => (string, t)
   let equal: (t, t) => bool
+  let is_nullable: t => bool
   let toString: t => string
 }

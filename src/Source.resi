@@ -10,6 +10,8 @@ module type Env = {
   type t
   type e
   let return: (. string) => t
+  /* return is a reserved word in JavaScript. */
+  let return_: (. string) => t
   let error: (. string) => t
   let error_internal: (. array<Debug.error>) => t
   let render: (. Belt.MutableQueue.t<t>) => t

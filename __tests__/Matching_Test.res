@@ -21,7 +21,7 @@ let compile = src => {
     | OMatch(_, {tree, _}) => Some(tree)
     | _ => acc
     }
-  )->Belt.Option.getExn
+  )->Belt.Option.getWithDefault(End({exit: e(0), names: MS.empty}))
 }
 
 describe("Basic tree", ({test, _}) => {

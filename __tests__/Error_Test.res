@@ -87,9 +87,6 @@ describe("Parser", ({test, _}) => {
   })
 
   test("Illegal binding name", ({expect, _}) => {
-    expect.value(
-      compile(`{% match a with [x, ...null] %} {% with _ %} {% /match %}`),
-    ).toMatchSnapshot()
     expect.value(compile(`{% A null=1 /%}`)).toMatchSnapshot()
   })
 
@@ -143,6 +140,7 @@ describe("Patterns", ({test, _}) => {
   test("Count mismatch failure", ({expect, _}) => {
     expect.value(compile(`{% match a, b, c with 1, 2 %} d {% /match %}`)).toMatchSnapshot()
     expect.value(compile(`{% map a with b, c, d %} {{ b }} {% /map %}`)).toMatchSnapshot()
+    expect.value(compile(`{% match a, b with 1, 2 %} {% with a %} {% /match %}`)).toMatchSnapshot()
   })
 
   test("Non-exhuastive matching", ({expect, _}) => {

@@ -42,7 +42,7 @@ describe("Async templates", () => {
       "Y",
       Typescheme.props([["name", Typescheme.string()]]),
       Typescheme.Child.props([]),
-      async (Env, props, _children) => Env.$$return(props.name)
+      async (Env, props, _children) => Env.return_(props.name)
     );
     const comps = Result.getExn(Compile.Components.make([Y]));
     const X = Result.getExn(Compile.make("X", "{% Y name /%}", comps));
@@ -82,7 +82,7 @@ describe("Async helper functions", () => {
       "X",
       Typescheme.props([]),
       Typescheme.Child.props([]),
-      (Env, _props, _children) => Env.$$return("a")
+      (Env, _props, _children) => Env.return_("a")
     );
     const comps = Result.getExn(Compile.Components.make([X]));
     const template = Result.getExn(Compile.make("", "{% X / %}", comps));
@@ -113,7 +113,7 @@ describe("Async helper functions", () => {
     const X = Source.fn(
       "X",
       Typescheme.props([]),
-      Typescheme.Child.props([["Children", Typescheme.Child.child()]]),
+      Typescheme.Child.props([Typescheme.Child.child("Children")]),
       (Env, _props, { Children }) => Env.map(Children, (x) => x.toUpperCase())
     );
     const comps = Result.getExn(Compile.Components.make([X]));
@@ -130,9 +130,9 @@ describe("Async helper functions", () => {
     const X = Source.fn(
       "X",
       Typescheme.props([]),
-      Typescheme.Child.props([["Children", Typescheme.Child.child()]]),
+      Typescheme.Child.props([Typescheme.Child.child("Children")]),
       (Env, _props, { Children }) =>
-        Env.flatmap(Children, (x) => Env.$$return(x.toUpperCase()))
+        Env.flatmap(Children, (x) => Env.return_(x.toUpperCase()))
     );
     const comps = Result.getExn(Compile.Components.make([X]));
     const template = Result.getExn(

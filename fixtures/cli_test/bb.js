@@ -4,5 +4,5 @@ module.exports = Source.fn(
   "Bb",
   Typescheme.props([["name", Typescheme.string()]]),
   Typescheme.Child.props([]),
-  (Env, { name }, _children) => Env.$$return("B: " + name.toUpperCase())
+  (Env, { name }, _children) => Env.return_("B: " + name.toUpperCase())
 );

@@ -4,5 +4,5 @@ export default Source.fn(
   "D_async",
   Typescheme.props([["name", Typescheme.string()]]),
   Typescheme.Child.props([]),
-  async (Env, { name }, _children) => Env.$$return("D: " + name.toUpperCase())
+  async (Env, { name }, _children) => Env.return_("D: " + name.toUpperCase())
 );

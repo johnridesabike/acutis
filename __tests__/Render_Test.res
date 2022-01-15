@@ -109,6 +109,13 @@ describe("Render essentials", ({test, _}) => {
     expect.value(result).toEqual(#ok(`I did not. Oh hai Mark.`))
   })
 
+  test("List literal spread", ({expect, _}) => {
+    let src = `
+    {%~ map ["a", "b", ...["c", "d"]] with x ~%} {{ x }} {% /map %}`
+    let result = render(src, Js.Dict.empty(), [])
+    expect.value(result).toEqual(#ok("a b c d "))
+  })
+
   test("Map", ({expect, _}) => {
     let data = dict([("a", json(`[{"name": "John"}, {"name": "Megan"}]`))])
     let result = render(`{% map a with {name} %} {{ name }} {% /map %}`, data, [])
@@ -293,7 +300,7 @@ describe("API helper functions", ({test, _}) => {
     let x = Source.fn(
       ~name="X",
       Typescheme.props([]),
-      Typescheme.Child.props([("Children", Typescheme.Child.child())]),
+      Typescheme.Child.props([Typescheme.Child.child("Children")]),
       (type a, module(Env): Source.env<a>, _props, children) => {
         Env.map(.Js.Dict.unsafeGet(children, "Children"), child => Js.String.toUpperCase(child))
       },
@@ -318,7 +325,7 @@ describe("API helper functions", ({test, _}) => {
     let x = Source.fn(
       ~name="X",
       Typescheme.props([]),
-      Typescheme.Child.props([("Children", Typescheme.Child.child())]),
+      Typescheme.Child.props([Typescheme.Child.child("Children")]),
       (type a, module(Env): Source.env<a>, _props, children) =>
         Env.flatmap(.Js.Dict.unsafeGet(children, "Children"), child =>
           Env.return(. Js.String.toUpperCase(child))

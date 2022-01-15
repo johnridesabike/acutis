@@ -194,16 +194,8 @@ let patternNumberMismatch = t => {
   location: Some(t),
   stack: [],
   kind: #Type,
-  message: "The number of patterns does not match the number of data.",
+  message: "The number of patterns here is incorrect.",
   exn: None,
-}
-
-let tailBindingClash = t => {
-  message: `Only bindings are allowed as list tails.`,
-  kind: #Type,
-  exn: None,
-  location: Some(t),
-  stack: [],
 }
 
 let tupleSizeMismatch = (t, a, b) => {

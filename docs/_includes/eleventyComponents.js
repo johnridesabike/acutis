@@ -16,7 +16,7 @@ module.exports = [
     Typescheme.Child.props([]),
     (Env, props, _children) => {
       console.log(props);
-      return Env.$$return("");
+      return Env.return_("");
     }
   ),
   Source.fn(
@@ -25,7 +25,7 @@ module.exports = [
     Typescheme.Child.props([]),
     (Env, props, children) => {
       debugger;
-      return Env.$$return("");
+      return Env.return_("");
     }
   ),
   Source.fn(
@@ -47,7 +47,7 @@ module.exports = [
       } else {
         link = `<a href="${props.link}">{{ name }}</a>`;
       }
-      return Env.$$return(`
+      return Env.return_(`
         <footer class="footer">
           <p>
             Published in ${props.year} by ${link}
@@ -65,7 +65,7 @@ module.exports = [
       ["path", Typescheme.string()],
       ["page", Typescheme.record([["url", Typescheme.string()]])],
     ]),
-    Typescheme.Child.props([["Children", Typescheme.Child.child()]]),
+    Typescheme.Child.props([Typescheme.Child.child("Children")]),
     (Env, { path, page }, { Children }) => {
       const current = path === page.url ? "true" : "false";
       const href = site.url + path;

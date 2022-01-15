@@ -456,21 +456,6 @@ exports[`Parser Illegal binding name 1`] = `
 Array [
   Object {
     "exn": undefined,
-    "kind": "Type",
-    "location": Object {
-      "char": 16,
-      "name": "",
-    },
-    "message": "Only bindings are allowed as list tails.",
-    "stack": Array [],
-  },
-]
-`;
-
-exports[`Parser Illegal binding name 2`] = `
-Array [
-  Object {
-    "exn": undefined,
     "kind": "Parse",
     "location": Object {
       "char": 5,
@@ -821,7 +806,7 @@ Array [
       "char": 9,
       "name": "",
     },
-    "message": "The number of patterns does not match the number of data.",
+    "message": "The number of patterns here is incorrect.",
     "stack": Array [],
   },
 ]
@@ -837,6 +822,21 @@ Array [
       "name": "",
     },
     "message": "Map blocks can only have two patterns per \\"with\\" clause: the item and the index.",
+    "stack": Array [],
+  },
+]
+`;
+
+exports[`Patterns Count mismatch failure 3`] = `
+Array [
+  Object {
+    "exn": undefined,
+    "kind": "Type",
+    "location": Object {
+      "char": 35,
+      "name": "",
+    },
+    "message": "The number of patterns here is incorrect.",
     "stack": Array [],
   },
 ]
@@ -1580,10 +1580,10 @@ Array [
     "exn": undefined,
     "kind": "Type",
     "location": Object {
-      "char": 16,
+      "char": 23,
       "name": "",
     },
-    "message": "Only bindings are allowed as list tails.",
+    "message": "This pattern is type string but expected type [_].",
     "stack": Array [],
   },
 ]

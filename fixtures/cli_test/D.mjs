@@ -4,5 +4,5 @@ export default Source.fn(
   "D",
   Typescheme.props([["name", Typescheme.string()]]),
   Typescheme.Child.props([]),
-  (Env, { name }, _children) => Env.$$return("D: " + name.toUpperCase())
+  (Env, { name }, _children) => Env.return_("D: " + name.toUpperCase())
 );

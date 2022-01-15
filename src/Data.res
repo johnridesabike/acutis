@@ -171,7 +171,7 @@ and recordAux = (~stack, j, tys) => {
 @raises(Exit)
 and record = (~stack, j, tys) =>
   switch Json.decodeObject(j) {
-  | Some(obj) => PDict(recordAux(obj, tys, ~stack))
+  | Some(obj) => PDict(recordAux(obj, tys.contents, ~stack))
   | _ => raise(Exit(Debug.decodeError(Ty.record2(tys), j, Ty.toString, ~stack)))
   }
 
@@ -187,8 +187,8 @@ and make = (~stack, j, ty) =>
   | Echo => echo(~stack, j)
   | List(ty) => list(~stack, j, ty)
   | Dict(ty, _) => dict(~stack, j, ty)
-  | Tuple(ty) => tuple(~stack, j, ty.contents)
-  | Record(ty) => record(~stack, j, ty.contents)
+  | Tuple(tys) => tuple(~stack, j, tys)
+  | Record(tys) => record(~stack, j, tys)
   }
 
 @raises(Exit)
@@ -296,9 +296,9 @@ and toJson = (t, ty) =>
   | (PNull, Nullable(_)) => Json.null
   | (PArray([t]), Nullable(ty)) => toJson(t, ty.contents)
   | (_, List(ty)) => toJson_list(t, ty.contents)
-  | (PArray(a), Tuple(ty)) =>
-    assert (Array.size(a) == Array.size(ty.contents))
-    Array.zipByU(a, ty.contents, (. t, ty) => toJson(t, ty.contents))->Json.array
+  | (PArray(a), Tuple(tys)) =>
+    assert (Array.size(a) == Array.size(tys))
+    Array.zipByU(a, tys, (. t, ty) => toJson(t, ty.contents))->Json.array
   | (PDict(o), Dict(ty, _)) =>
     let r = Dict.empty()
     Array.forEachU(MapString.toArray(o), (. (k, v)) => Dict.set(r, k, toJson(v, ty.contents)))

@@ -66,7 +66,6 @@ let missingRecordField: (t, string, 'a, 'a => string) => error
 let nameBoundMultipleTimes: (t, string) => error
 let nonNullableEchoLiteral: t => error
 let patternNumberMismatch: t => error
-let tailBindingClash: t => error
 let tupleSizeMismatch: (t, int, int) => error
 let typeMismatch: (t, 'a, 'a, 'a => string) => error
 let underscoreInConstruct: t => error

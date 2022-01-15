@@ -34,26 +34,12 @@ let fromArrayExn = a =>
   | a => a
   }
 
-let reduceHd = (a, f) => {
-  let r = ref(hd(a))
-  for i in 1 to Array.length(a) - 1 {
-    r.contents = f(. r.contents, Array.getUnsafe(a, i))
-  }
-  r.contents
-}
-
 let get = Array.get
 
 let map = Array.mapU
 
 let unzip = Array.unzip
 
-let zipExn = (a, b) => {
-  assert (Array.size(a) == Array.size(b))
-  Array.zip(a, b)
-}
+let zip = Array.zip
 
-let zipByExn = (a, b, f) => {
-  assert (Array.size(a) == Array.size(b))
-  Array.zipByU(a, b, f)
-}
+let zipBy = Array.zipByU

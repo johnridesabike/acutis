@@ -17,11 +17,11 @@ type rec typescheme =
   | Float
   | String
   | Echo
+  | Tuple(array<t>)
   | Nullable(t)
   | List(t)
-  | Dict(t, ref<SetString.t>)
-  | Tuple(ref<array<t>>)
   | Record(ref<MapString.t<t>>)
+  | Dict(t, ref<SetString.t>)
 
 and t = ref<typescheme>
 
@@ -39,7 +39,7 @@ let rec toString = x =>
   | List(x) => `[${toString(x)}]`
   | Dict(x, _) => `<${toString(x)}>`
   | Tuple(x) =>
-    let x = Array.joinWith(x.contents, ", ", toString)
+    let x = Array.joinWith(x, ", ", toString)
     `(${x})`
   | Record(x) => record_toString(x)
   }
@@ -58,7 +58,7 @@ let rec copy = x =>
   | Nullable({contents}) => Nullable(ref(copy(contents)))
   | List({contents}) => List(ref(copy(contents)))
   | Dict({contents}, fixme) => Dict(ref(copy(contents)), fixme)
-  | Tuple({contents}) => Tuple(ref(Array.mapU(contents, (. {contents}) => ref(copy(contents)))))
+  | Tuple(a) => Tuple(Array.mapU(a, (. {contents}) => ref(copy(contents))))
   | Record({contents}) => Record(ref(copy_record(contents)))
   }
 
@@ -72,14 +72,15 @@ let string = () => ref(String)
 let echo = () => ref(Echo)
 let nullable = t => ref(Nullable(t))
 let list = t => ref(List(t))
+let dict_keys = (t, kys) => ref(Dict(t, kys))
 let dict = t => ref(Dict(t, ref(SetString.empty)))
-let tuple = a => ref(Tuple(ref(a)))
+let tuple = a => ref(Tuple(a))
 let record = a => ref(Record(ref(MapString.fromArray(a))))
-let record2 = m => ref(Record(ref(m)))
+let record2 = m => ref(Record(m))
 let props = a => MapString.fromArray(a)
 
 type rec debug = [
-  | #Polymorphic
+  | #Unknown
   | #Boolean
   | #Int
   | #Float
@@ -93,7 +94,7 @@ type rec debug = [
 ]
 let rec debug = (x): debug =>
   switch x.contents {
-  | Unknown => #Polymorphic
+  | Unknown => #Unknown
   | Boolean => #Boolean
   | Int => #Int
   | Float => #Float
@@ -101,7 +102,7 @@ let rec debug = (x): debug =>
   | Echo => #Echo
   | Nullable(x) => #Nullable(debug(x))
   | List(x) => #List(debug(x))
-  | Tuple(x) => #Tuple(Array.map(x.contents, debug))
+  | Tuple(x) => #Tuple(Array.map(x, debug))
   | Dict(x, _) => #Dict(debug(x))
   | Record(x) => #Record(MapString.map(x.contents, debug)->MapString.toArray)
   }
@@ -111,9 +112,10 @@ module Child = {
   type t = ref<t'>
   type props = MapString.t<t>
   let props = a => MapString.fromArray(a)
-  let child = () => ref(Child)
-  let nullable = () => ref(NullableChild)
+  let child = x => (x, ref(Child))
+  let nullable = x => (x, ref(NullableChild))
   let equal = (a: t, b: t) => a.contents == b.contents
+  let is_nullable = t => t.contents == NullableChild
   let toString = x =>
     switch x.contents {
     | Child => "Child"
