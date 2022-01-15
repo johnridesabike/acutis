@@ -2,7 +2,7 @@
 title: Acutis language manual
 description: The manual for how to use the Acutis template language.
 showTitle: true
-layout: layout.acutis
+layout: main.acutis
 next:
   text: Read the API 👉
   url: /api/

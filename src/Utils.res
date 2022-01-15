@@ -58,7 +58,7 @@ module Dagmap = {
   let make = (m, ~f) => {
     {
       queue: HashmapString.keysToArray(m),
-      notlinked: m,
+      notlinked: HashmapString.copy(m),
       linked: HashmapString.make(~hintSize=HashmapString.size(m)),
       stack: list{},
       f: f,

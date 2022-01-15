@@ -2,7 +2,7 @@
 title: Acutis development information
 description: Technical details on how Acutis works under the hood.
 showTitle: true
-layout: layout.acutis
+layout: main.acutis
 next: null
 ---
 

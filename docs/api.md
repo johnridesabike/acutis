@@ -4,7 +4,7 @@ description: |
   The manual for the application programming interface for the Acutis template
   language.
 showTitle: true
-layout: layout.acutis
+layout: main.acutis
 next: null
 ---
 
