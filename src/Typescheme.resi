@@ -46,22 +46,6 @@ let record: array<(string, t)> => t
 let record2: ref<props> => t // internal use
 let props: array<(string, t)> => props
 
-// This prints better in JavaScript.
-type rec debug = [
-  | #Unknown
-  | #Boolean
-  | #Int
-  | #Float
-  | #String
-  | #Echo
-  | #Nullable(debug)
-  | #List(debug)
-  | #Tuple(array<debug>)
-  | #Dict(debug)
-  | #Record(array<(string, debug)>)
-]
-let debug: t => debug
-
 module Child: {
   type t
   type props = Belt.Map.String.t<t>

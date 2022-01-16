@@ -35,7 +35,7 @@ let rec toString = x =>
   | Float => "float"
   | String => "string"
   | Echo => "echoable"
-  | Nullable(x) => `nullable(${toString(x)})`
+  | Nullable(x) => `?${toString(x)}`
   | List(x) => `[${toString(x)}]`
   | Dict(x, _) => `<${toString(x)}>`
   | Tuple(x) =>
@@ -78,34 +78,6 @@ let tuple = a => ref(Tuple(a))
 let record = a => ref(Record(ref(MapString.fromArray(a))))
 let record2 = m => ref(Record(m))
 let props = a => MapString.fromArray(a)
-
-type rec debug = [
-  | #Unknown
-  | #Boolean
-  | #Int
-  | #Float
-  | #String
-  | #Echo
-  | #Nullable(debug)
-  | #List(debug)
-  | #Tuple(array<debug>)
-  | #Dict(debug)
-  | #Record(array<(string, debug)>)
-]
-let rec debug = (x): debug =>
-  switch x.contents {
-  | Unknown => #Unknown
-  | Boolean => #Boolean
-  | Int => #Int
-  | Float => #Float
-  | String => #String
-  | Echo => #Echo
-  | Nullable(x) => #Nullable(debug(x))
-  | List(x) => #List(debug(x))
-  | Tuple(x) => #Tuple(Array.map(x, debug))
-  | Dict(x, _) => #Dict(debug(x))
-  | Record(x) => #Record(MapString.map(x.contents, debug)->MapString.toArray)
-  }
 
 module Child = {
   type t' = Child | NullableChild
