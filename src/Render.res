@@ -37,7 +37,7 @@ let rec make_match: 'a 'args 'key. (
 ) => option<(MapInt.t<Data.t>, 'a)> = (tree, args, get, vars) =>
   switch tree {
   | End(x) => Some((vars, x))
-  | Switch({key, cases, wildcard, ids}) =>
+  | Switch({key, cases, wildcard, ids, _}) =>
     switch get(. args, key) {
     | Some(val) =>
       let vars = bindNames(vars, ids, val)

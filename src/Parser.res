@@ -1,5 +1,5 @@
 /**
-  Copyright (c) 2021 John Jackson. 
+  Copyright (c) 2021 John Jackson.
 
   This Source Code Form is subject to the terms of the Mozilla Public
   License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -26,6 +26,8 @@ module Pattern = {
     | UInt(Debug.t, int)
     | UFloat(Debug.t, float)
     | UTuple(Debug.t, array<t>)
+    | UStringEnum(Debug.t, string)
+    | UIntEnum(Debug.t, int)
     | UList(Debug.t, array<t>, option<t>)
     | UDict(Debug.t, MapString.t<t>)
     | URecord(Debug.t, MapString.t<t>)
@@ -39,6 +41,8 @@ module Pattern = {
     | UInt(x, _)
     | UFloat(x, _)
     | UTuple(x, _)
+    | UStringEnum(x, _)
+    | UIntEnum(x, _)
     | UList(x, _, _)
     | URecord(x, _)
     | UDict(x, _)
@@ -56,6 +60,12 @@ module Pattern = {
     | Tkn_Int(d, x) => UInt(d, x)
     | Tkn_Float(d, x) => UFloat(d, x)
     | Tkn_String(d, x) => UString(d, x)
+    | Tkn_At(_) =>
+      switch Lexer.pop(tokens) {
+      | Tkn_String(d, x) => UStringEnum(d, x)
+      | Tkn_Int(d, x) => UIntEnum(d, x)
+      | t => raise(Exit(Debug.unexpectedToken(t, module(T))))
+      }
     | Tkn_OpenParen(d) =>
       switch Lexer.pop(tokens) {
       | Tkn_CloseParen(_) => UTuple(d, [])

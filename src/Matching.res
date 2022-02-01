@@ -1,5 +1,5 @@
 /**
-  Copyright (c) 2021 John Jackson. 
+  Copyright (c) 2021 John Jackson.
 
   This Source Code Form is subject to the terms of the Mozilla Public
   License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -37,10 +37,10 @@ exception Exit = Debug.Exit
   that come after the wildcard will also expand into all of the nodes after the
   other node. This has tradeoffs. One advantage is that we can guarantee that
   every node is only visited once at runtime. One disadvantage is that some
-  patterns may produce extremely large trees. 
+  patterns may produce extremely large trees.
 
   One feature that this structure gives us is that redundant patterns are
-  automatically detected because merging them with an existing tree fails. 
+  automatically detected because merging them with an existing tree fails.
 
   The tree type is a polymorphic "nested" type. Each tree can use itself as its
   own type variable, i.e. tree<tree<'a>>. This allows the end nodes to be
@@ -48,20 +48,32 @@ exception Exit = Debug.Exit
   tree. This nesting corresponds to the nesting of patterns.
 
   Nested types are simple to create, but complicated to manipulate. Functions
-  cannot consume these types under normal polymorphism rules. We need to 
+  cannot consume these types under normal polymorphism rules. We need to
   use explicitly polymorphic type annotations and GADTs.
 */
 type extra_nest_info = Tuple | Dict | Record
 
+type enum =
+  | Enum_Bool
+  | Enum_String(Belt.Set.String.t)
+  | Enum_Int(Belt.Set.Int.t)
+
+type extra_switch_info =
+  | Extra_String
+  | Extra_Int
+  | Extra_Float
+  | Extra_Enum(enum)
+
 type rec tree<'leaf, 'key> =
   /*
-    A Switch represents a list of discreet values to test (1, "a", etc.). If
-    none of the values match the input, then the wildcard is used.
+    A Switch represents a list of discreet values to test (i.e., 1, "a", etc.).
+    If none of the values match the input, then the wildcard is used.
  */
   | Switch({
       key: 'key,
       ids: SetInt.t,
       cases: switchcase<'leaf, 'key>,
+      extra: extra_switch_info,
       wildcard: option<tree<'leaf, 'key>>,
     })
   /*
@@ -597,11 +609,22 @@ let rec fromTPat: 'a 'k. (_, _, 'k, continue<'a, 'k>) => tree<'a, 'k> = (p, b, k
     })
   | TConstruct(_, kind, None) =>
     Construct({key: key, ids: SetInt.empty, extra: kind, nil: Some(k(. b)), cons: None})
-  | TConst(_, val) =>
+  | TConst(_, val, enum) =>
     Switch({
       key: key,
       ids: SetInt.empty,
       cases: {val: Const.fromTPat(val), ifMatch: k(. b), nextCase: None},
+      extra: switch enum {
+      | Some({cases: Enum_String(e), _}) => Extra_Enum(Enum_String(e))
+      | Some({cases: Enum_Int(e), _}) => Extra_Enum(Enum_Int(e))
+      | None =>
+        switch val {
+        | TString(_) => Extra_String
+        | TInt(_) => Extra_Int
+        | TBool(_) => Extra_Enum(Enum_Bool)
+        | TFloat(_) => Extra_Float
+        }
+      },
       wildcard: None,
     })
   | TTuple(_, a) =>
@@ -696,22 +719,44 @@ let make = (cases: NonEmpty.t<Typechecker.case>) => {
 module ParMatch = {
   module List = Belt.List
 
-  let makeRefutation = x =>
-    switch x {
-    | Const.PBool(_) => Const.PBool(false)
-    | PInt(_) => PInt(0)
-    | PString(_) => PString("a")
-    | PFloat(_) => PFloat(0.0)
-    }
+  module Refutation = {
+    type t = {test: Const.t, enum: enum}
 
-  let succ = x =>
-    switch x {
-    | Const.PBool(false) => Some(Const.PBool(true))
-    | PBool(true) => None
-    | PInt(i) => Some(PInt(succ(i)))
-    | PString(s) => Some(PString(s ++ "a"))
-    | PFloat(f) => Some(PFloat(f +. 1.0))
-    }
+    let succ_string = cases =>
+      switch SetString.minimum(cases) {
+      | None => None
+      | Some(s) =>
+        let cases = SetString.remove(cases, s)
+        Some({test: PString(s), enum: Enum_String(cases)})
+      }
+
+    let succ_int = cases =>
+      switch SetInt.minimum(cases) {
+      | None => None
+      | Some(i) =>
+        let cases = SetInt.remove(cases, i)
+        Some({test: PInt(i), enum: Enum_Int(cases)})
+      }
+
+    let make = x =>
+      switch x {
+      | Extra_Int | Extra_String | Extra_Float => None
+      | Extra_Enum(Enum_Bool) => Some({test: PBool(false), enum: Enum_Bool})
+      | Extra_Enum(Enum_String(enum)) => succ_string(enum)
+      | Extra_Enum(Enum_Int(enum)) => succ_int(enum)
+      }
+
+    let succ = ({test, enum}) =>
+      switch enum {
+      | Enum_Bool =>
+        switch test {
+        | PBool(false) => Some({test: PBool(true), enum: enum})
+        | _ => None
+        }
+      | Enum_String(enum) => succ_string(enum)
+      | Enum_Int(enum) => succ_int(enum)
+      }
+  }
 
   type flag = Partial | Exhaustive
 
@@ -746,6 +791,7 @@ module ParMatch = {
       // Either the child _or_ the wildcard can be exhaustive.
       // A nest filled with exhaustive patterns e.g. tuple (_, _, _) can lead to
       // an exhaustive path even if it's paired with a wildcard _ that doesn't.
+      // (In which case, the wildcard is redundant and will never be used.)
       let result = switch child {
       | IntKeys(child) => check(child, key_int)
       | StringKeys(child) => check(child, key_str)
@@ -817,27 +863,30 @@ module ParMatch = {
         }
       | (None, None) => assert false
       }
-    | Switch({key, cases, wildcard, _}) =>
+    | Switch({key, cases, wildcard, extra, _}) =>
+      // The enum info gets lost here. FIX THIS.
       switch wildcard {
       | Some(wildcard) => exhaustive(kf(. key), check(wildcard, kf))
       | None =>
-        let refute = makeRefutation(cases.val)
         let rec aux = (refute, {val, ifMatch, nextCase}) =>
           switch check(ifMatch, kf) {
           | {flag: Partial, pats, next} => {
               flag: Partial,
-              pats: list{(kf(. key), TConst(Debug.empty, Const.toTPat(val))), ...pats},
+              pats: list{(kf(. key), TConst(Debug.empty, Const.toTPat(val), None)), ...pats},
               next: next,
             }
           | {flag: Exhaustive, pats, next} =>
-            if Const.equal(refute, val) {
-              switch succ(refute) {
+            if Const.equal(refute.Refutation.test, val) {
+              switch Refutation.succ(refute) {
               | None => exhaustive(kf(. key), check(ifMatch, kf))
               | Some(refute) =>
                 switch nextCase {
                 | None => {
                     flag: Partial,
-                    pats: list{(kf(. key), TConst(Debug.empty, Const.toTPat(refute))), ...pats},
+                    pats: list{
+                      (kf(. key), TConst(Debug.empty, Const.toTPat(refute.test), None)),
+                      ...pats,
+                    },
                     next: next,
                   }
                 | Some(case) => aux(refute, case)
@@ -846,12 +895,24 @@ module ParMatch = {
             } else {
               {
                 flag: Partial,
-                pats: list{(kf(. key), TConst(Debug.empty, Const.toTPat(refute))), ...pats},
+                pats: list{
+                  (kf(. key), TConst(Debug.empty, Const.toTPat(refute.test), None)),
+                  ...pats,
+                },
                 next: next,
               }
             }
           }
-        aux(refute, cases)
+        switch Refutation.make(extra) {
+        | None =>
+          let {pats, next, _} = check(cases.ifMatch, kf)
+          {
+            flag: Partial,
+            pats: list{(kf(. key), TAny(Debug.empty)), ...pats},
+            next: next,
+          }
+        | Some(refute) => aux(refute, cases)
+        }
       }
     }
 }

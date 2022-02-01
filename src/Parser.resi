@@ -1,5 +1,5 @@
 /**
-  Copyright (c) 2021 John Jackson. 
+  Copyright (c) 2021 John Jackson.
 
   This Source Code Form is subject to the terms of the Mozilla Public
   License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -16,6 +16,8 @@ module Pattern: {
     | UInt(Debug.t, int)
     | UFloat(Debug.t, float)
     | UTuple(Debug.t, array<t>)
+    | UStringEnum(Debug.t, string)
+    | UIntEnum(Debug.t, int)
     | UList(Debug.t, array<t>, option<t>)
     | UDict(Debug.t, Belt.Map.String.t<t>)
     | URecord(Debug.t, Belt.Map.String.t<t>)

@@ -41,6 +41,7 @@ module Token: {
     | Tkn_Question(Debug.t)
     | Tkn_Ampersand(Debug.t)
     | Tkn_Bang(Debug.t)
+    | Tkn_At(Debug.t)
     | Tkn_Echo(Debug.t)
     | Tkn_EndOfFile(Debug.t)
 

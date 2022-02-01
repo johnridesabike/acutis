@@ -1,5 +1,5 @@
 /**
-  Copyright (c) 2021 John Jackson. 
+  Copyright (c) 2021 John Jackson.
 
   This Source Code Form is subject to the terms of the Mozilla Public
   License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -9,11 +9,23 @@
 /* This is extra information for debugging. */
 type extra_nest_info = Tuple | Dict | Record
 
+type enum =
+  | Enum_Bool
+  | Enum_String(Belt.Set.String.t)
+  | Enum_Int(Belt.Set.Int.t)
+
+type extra_switch_info =
+  | Extra_String
+  | Extra_Int
+  | Extra_Float
+  | Extra_Enum(enum)
+
 type rec tree<'leaf, 'key> =
   | Switch({
       key: 'key,
       ids: Belt.Set.Int.t,
       cases: switchcase<'leaf, 'key>,
+      extra: extra_switch_info,
       wildcard: option<tree<'leaf, 'key>>,
     })
   | Nest({

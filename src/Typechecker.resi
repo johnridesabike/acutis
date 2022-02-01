@@ -1,5 +1,5 @@
 /**
-  Copyright (c) 2021 John Jackson. 
+  Copyright (c) 2021 John Jackson.
 
   This Source Code Form is subject to the terms of the Mozilla Public
   License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -15,7 +15,7 @@ module Pattern: {
   type construct = TList | TNullable
 
   type rec t =
-    | TConst(Debug.t, constant)
+    | TConst(Debug.t, constant, option<Typescheme.enum>)
     | TConstruct(Debug.t, construct, option<t>)
     | TTuple(Debug.t, array<t>)
     | TRecord(Debug.t, Belt.Map.String.t<t>, ref<Belt.Map.String.t<Typescheme.t>>)

@@ -1,5 +1,5 @@
 /**
-  Copyright (c) 2021 John Jackson. 
+  Copyright (c) 2021 John Jackson.
 
   This Source Code Form is subject to the terms of the Mozilla Public
   License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -120,6 +120,91 @@ describe("match", ({test, _}) => {
     let {prop_types, _} = Compile.make(~name="test", src, Compile.Components.empty())->Result.getExn
     let bindingsGlobal = prop_types->MapString.map(Typescheme.toString)->MapString.toArray
     expect.value(bindingsGlobal).toEqual([("a", `[{"a": int, "b": string}]`)])
+  })
+})
+
+describe("enums", ({test, _}) => {
+  test("open enums work ", ({expect, _}) => {
+    let src = `
+    {% match a with @"a" %} {% with @"b" %} {% with _ %} {% /match %}
+    {% match b with @1 %} {% with @2 %} {% with _ %} {% /match %}
+    `
+    let {prop_types, _} = Compile.make(~name="test", src, Compile.Components.empty())->Result.getExn
+    let bindings = prop_types->MapString.map(Typescheme.toString)->MapString.toArray
+    expect.value(bindings).toEqual([("a", `[@"a" | @"b" ...]`), ("b", "[@1 | @2 ...]")])
+    let src = `
+    {% match a with @"a" %} {% with @"b" %} {% with _ %} {% /match %}
+    {% map [@"c", a] with _ %} {% /map %}
+    {% match b with @1 %} {% with @2 %} {% with _ %} {% /match %}
+    {% map [@3, b] with _ %} {% /map %}
+    `
+    let {prop_types, _} = Compile.make(~name="test", src, Compile.Components.empty())->Result.getExn
+    let bindings = prop_types->MapString.map(Typescheme.toString)->MapString.toArray
+    expect.value(bindings).toEqual([("a", `[@"a" | @"b" | @"c" ...]`), ("b", "[@1 | @2 | @3 ...]")])
+  })
+
+  test("closed enums work", ({expect, _}) => {
+    let src = `
+    {% match a with @"a" %} {% with @"b" %} {% /match %}
+    {% match b with @1 %} {% with @2 %} {% /match %}
+    `
+    let {prop_types, _} = Compile.make(~name="test", src, Compile.Components.empty())->Result.getExn
+    let bindings = prop_types->MapString.map(Typescheme.toString)->MapString.toArray
+    expect.value(bindings).toEqual([("a", `[@"a" | @"b"]`), ("b", "[@1 | @2]")])
+    let src = `
+    {% match a with @"a" %} {% with @"b" %} {% /match %}
+    {% match a with @"a" %} {% with _ %} {% /match %}
+    {% match b with @1 %} {% with @2 %} {% /match %}
+    {% match b with @3 %} {% with _ %} {% /match %}
+    `
+    let {prop_types, _} = Compile.make(~name="test", src, Compile.Components.empty())->Result.getExn
+    let bindings = prop_types->MapString.map(Typescheme.toString)->MapString.toArray
+    expect.value(bindings).toEqual([("a", `[@"a" | @"b"]`), ("b", "[@1 | @2]")])
+    let src = `
+    {% match a with @"a" %} {% with @"b" %} {% /match %}
+    {% map [@"c", @"d", a, b] with _ %} {% /map %}
+    {% match c with @1 %} {% with @2 %} {% /match %}
+    {% map [@3, @4, c, d] with _ %} {% /map %}
+    `
+    let {prop_types, _} = Compile.make(~name="test", src, Compile.Components.empty())->Result.getExn
+    let bindings = prop_types->MapString.map(Typescheme.toString)->MapString.toArray
+    expect.value(bindings).toEqual([
+      ("a", `[@"a" | @"b"]`),
+      ("b", `[@"a" | @"b" | @"c" | @"d" ...]`),
+      ("c", `[@1 | @2]`),
+      ("d", `[@1 | @2 | @3 | @4 ...]`),
+    ])
+    let src = `
+    {% map [@"a", a] with @"a" %} {% with @"b" %} {% /map %}
+    {% map [@1, b] with @1 %} {% with @2 %} {% /map %}
+    `
+    let {prop_types, _} = Compile.make(~name="test", src, Compile.Components.empty())->Result.getExn
+    let bindings = prop_types->MapString.map(Typescheme.toString)->MapString.toArray
+    expect.value(bindings).toEqual([("a", `[@"a" | @"b"]`), ("b", "[@1 | @2]")])
+  })
+
+  test("Nested closed enums work", ({expect, _}) => {
+    let src = `
+    {% match a with {a: @"a"} %} {% with {a: @"b"} %} {% /match %}
+    {% match b with {a: @1} %} {% with {a: @2} %} {% /match %}
+    `
+    let {prop_types, _} = Compile.make(~name="test", src, Compile.Components.empty())->Result.getExn
+    let bindings = prop_types->MapString.map(Typescheme.toString)->MapString.toArray
+    expect.value(bindings).toEqual([("a", `{"a": [@"a" | @"b"]}`), ("b", `{"a": [@1 | @2]}`)])
+    let src = `
+    {% match a with {a: @"a"} %} {% with {a: @"b"} %} {% /match %}
+    {% map [{a: @"c"}, a, b] with _ %} {% /map %}
+    {% match c with {a: @1} %} {% with {a: @2} %} {% /match %}
+    {% map [{a: @3}, c, d] with _ %} {% /map %}
+    `
+    let {prop_types, _} = Compile.make(~name="test", src, Compile.Components.empty())->Result.getExn
+    let bindings = prop_types->MapString.map(Typescheme.toString)->MapString.toArray
+    expect.value(bindings).toEqual([
+      ("a", `{"a": [@"a" | @"b"]}`),
+      ("b", `{"a": [@"a" | @"b" | @"c" ...]}`),
+      ("c", `{"a": [@1 | @2]}`),
+      ("d", `{"a": [@1 | @2 | @3 ...]}`),
+    ])
   })
 })
 

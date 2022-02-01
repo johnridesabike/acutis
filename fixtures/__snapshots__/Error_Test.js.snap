@@ -298,7 +298,7 @@ Array [
     },
     "message": "This pattern-matching is not exhaustive.
 Here is an example of a case that is not matched:
-1",
+_",
     "stack": Array [],
   },
 ]
@@ -349,7 +349,7 @@ Array [
     },
     "message": "This pattern-matching is not exhaustive.
 Here is an example of a case that is not matched:
-{a, b: 0}",
+{a, b: _}",
     "stack": Array [],
   },
 ]
@@ -377,7 +377,7 @@ Array [
     "exn": undefined,
     "kind": "Matching",
     "location": Object {
-      "char": 137,
+      "char": 136,
       "name": "",
     },
     "message": "This match case is unused:
@@ -409,7 +409,7 @@ Array [
     "exn": undefined,
     "kind": "Matching",
     "location": Object {
-      "char": 82,
+      "char": 81,
       "name": "",
     },
     "message": "This match case is unused:
@@ -842,6 +842,51 @@ Array [
 ]
 `;
 
+exports[`Patterns Enum errors 1`] = `
+Array [
+  Object {
+    "exn": undefined,
+    "kind": "Type",
+    "location": Object {
+      "char": 84,
+      "name": "",
+    },
+    "message": "This pattern is type [@\\"a\\" | @\\"b\\" ...] but expected type [@\\"a\\"].",
+    "stack": Array [],
+  },
+]
+`;
+
+exports[`Patterns Enum errors 2`] = `
+Array [
+  Object {
+    "exn": undefined,
+    "kind": "Type",
+    "location": Object {
+      "char": 130,
+      "name": "",
+    },
+    "message": "This pattern is type [@\\"c\\" | @\\"d\\"] but expected type [@\\"a\\" | @\\"b\\"].",
+    "stack": Array [],
+  },
+]
+`;
+
+exports[`Patterns Enum errors 3`] = `
+Array [
+  Object {
+    "exn": undefined,
+    "kind": "Type",
+    "location": Object {
+      "char": 74,
+      "name": "",
+    },
+    "message": "This pattern is type [@\\"c\\" ...] but expected type [@\\"a\\" | @\\"b\\"].",
+    "stack": Array [],
+  },
+]
+`;
+
 exports[`Patterns Illegal bindings 1`] = `
 Array [
   Object {
@@ -1011,7 +1056,7 @@ Array [
     },
     "message": "This pattern-matching is not exhaustive.
 Here is an example of a case that is not matched:
-{favoriteColor: \\"a\\", firstName}",
+{favoriteColor: _, firstName}",
     "stack": Array [],
   },
 ]

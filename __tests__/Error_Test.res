@@ -1,5 +1,5 @@
 /**
-  Copyright (c) 2021 John Jackson. 
+  Copyright (c) 2021 John Jackson.
 
   This Source Code Form is subject to the terms of the Mozilla Public
   License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -291,6 +291,7 @@ describe("Patterns", ({test, _}) => {
       ).toMatchSnapshot()
     })
   })
+
   test("Missing child components are reported correctly.", ({expect, _}) => {
     let a = Source.src(~name="A", `{{ B }}`)
     let components = Compile.Components.make([a])->Result.getExn
@@ -303,6 +304,25 @@ describe("Patterns", ({test, _}) => {
   test("Records that have no subset are reported.", ({expect, _}) => {
     let x = compile(`{% map [{a: 1}, {b: 2}] with {a} %} {{ a }} {% /map %}`)
     expect.value(x).toMatchSnapshot()
+  })
+
+  test("Enum errors", ({expect, _}) => {
+    let src = `
+    {% match a with @"a" %} {% with @"b" %} {% with _ %} {% /match %}
+    {% match a with @"a" %} {% /match %}
+    `
+    expect.value(compile(src)).toMatchSnapshot()
+    let src = `
+    {% match a with @"a" %} {% with @"b" %} {% /match %}
+    {% match b with @"c" %} {% with @"d" %} {% /match %}
+    {% map [a, b] with _ %} {% /map %}
+    `
+    expect.value(compile(src)).toMatchSnapshot()
+    let src = `
+    {% match a with @"a" %} {% with @"b" %} {% /match %}
+    {% map [a, @"c"] with _ %} {% /map %}
+    `
+    expect.value(compile(src)).toMatchSnapshot()
   })
 })
 
@@ -483,12 +503,12 @@ describe("Matching: unused patterns", ({test, _}) => {
     {% match a, b, c
        with 10, 11, 12 %}
     {% with x, 21, 22 %}
-    {% with 10, 11, 12 %} 
+    {% with 10, 11, 12 %}
     {% /match %}`
     let result = compile(src)
     expect.value(result).toMatchSnapshot()
     let src = `
-    {% match a, b, c 
+    {% match a, b, c
        with 10, 11, 12 %}
     {% with x, 21, 22 %}
     {% with 30, 31, 32 %}
@@ -498,6 +518,7 @@ describe("Matching: unused patterns", ({test, _}) => {
     let result = compile(src)
     expect.value(result).toMatchSnapshot()
   })
+
   test("Nests merge into wildcards correctly", ({expect, _}) => {
     let src = `
     {% match a, b
@@ -507,12 +528,10 @@ describe("Matching: unused patterns", ({test, _}) => {
     let result = compile(src)
     expect.value(result).toMatchSnapshot()
   })
-})
 
-describe("Matching: unused patterns", ({test, _}) => {
   test("Unused nest patterns are reported correctly.", ({expect, _}) => {
     let src = `
-    {% match a, b 
+    {% match a, b
        with x, 1 %}
     {% with ("a", "b"), 10 %}
     {% with ("a", "b"), 1 %}

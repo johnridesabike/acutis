@@ -47,6 +47,7 @@ module Token = {
     | Tkn_Question(Debug.t)
     | Tkn_Ampersand(Debug.t)
     | Tkn_Bang(Debug.t)
+    | Tkn_At(Debug.t)
     | Tkn_Echo(Debug.t)
     | Tkn_EndOfFile(Debug.t)
 
@@ -80,6 +81,7 @@ module Token = {
     | Tkn_Question(_) => "?"
     | Tkn_Ampersand(_) => "&"
     | Tkn_Bang(_) => "!"
+    | Tkn_At(_) => "@"
     | Tkn_Echo(_) => "{{"
     | Tkn_EndOfFile(_) => "[end of file]"
     }
@@ -115,6 +117,7 @@ module Token = {
     | Tkn_Ampersand(x)
     | Tkn_Echo(x)
     | Tkn_Bang(x)
+    | Tkn_At(x)
     | Tkn_EndOfFile(x) => x
     }
 }
@@ -300,6 +303,7 @@ let makeExpression = (src, tokens: Queue.t<Token.t>, ~until) => {
     | "?" => Queue.add(tokens, Tkn_Question(d))
     | "&" => Queue.add(tokens, Tkn_Ampersand(d))
     | "!" => Queue.add(tokens, Tkn_Bang(d))
+    | "@" => Queue.add(tokens, Tkn_At(d))
     | ("-" | "0" | "1" | "2" | "3" | "4" | "5" | "6" | "7" | "8" | "9") as c =>
       Queue.add(tokens, readNumber(c, src, d))
     | c if isValidIdentifierStart(c) => Queue.add(tokens, readIdentifier(c, src, d))

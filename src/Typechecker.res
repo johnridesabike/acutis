@@ -1,23 +1,48 @@
 /**
-  Copyright (c) 2021 John Jackson. 
+  Copyright (c) 2021 John Jackson.
 
   This Source Code Form is subject to the terms of the Mozilla Public
   License, v. 2.0. If a copy of the MPL was not distributed with this
   file, You can obtain one at http://mozilla.org/MPL/2.0/.
 */
 module Array = Belt.Array
-module UPat = Parser.Pattern
 module MapString = Belt.Map.String
 module Queue = Belt.MutableQueue
+module SetInt = Belt.Set.Int
 module SetString = Belt.Set.String
 module Ty = Typescheme
+module UPat = Parser.Pattern
 
 exception Exit = Debug.Exit
 
+/*
+  When we unify a type during destructuring, we expand any structural types
+  (records, enums).
+
+  When we unify a type during constructing literal values, record types are
+  narrowed (we use a subset of both) and enum behavior depends on its row
+  property.
+
+  When we unify a type during constructing with a variable, then we expand
+  records and open enums in the variable's type.
+*/
+
 type mode =
-  | Expand_both // Record a and b both take on each other's fields.
-  | Expand_left_to_right // Record a expands into b only.
-  | Narrow_left // Record a is narrowed to a subset of a and b.
+  | Destructure_expand // Record a and b both take on each other's fields.
+  | Construct_literal // Record a is narrowed to a subset of a and b.
+  | Construct_var // Record a expands into b only.
+
+let check_enum_subset = (subset, a, b, tref1, tref2, debug) =>
+  if !subset(b, a) {
+    raise(Exit(Debug.typeMismatch(debug, tref1, tref2, Ty.toString)))
+  }
+
+let union_enum = (a, b, tref1, tref2, debug) =>
+  switch (a, b) {
+  | (Ty.Enum_String(a), Ty.Enum_String(b)) => Ty.Enum_String(SetString.union(a, b))
+  | (Enum_Int(a), Enum_Int(b)) => Enum_Int(SetInt.union(a, b))
+  | _ => raise(Exit(Debug.typeMismatch(debug, tref1, tref2, Ty.toString)))
+  }
 
 @raises(Exit)
 let rec unify = (tref1, tref2, mode, debug) =>
@@ -42,60 +67,98 @@ let rec unify = (tref1, tref2, mode, debug) =>
     } else {
       raise(Exit(Debug.tupleSizeMismatch(debug, s1, s2)))
     }
-  | (Record(t1), Record(t2)) =>
+  | (Record(a), Record(b)) =>
     switch mode {
-    | Expand_both => unifyRecord_expand_bidirectional(t1, t2, debug)
-    | Expand_left_to_right => unifyRecord_expand_leftToRight(t1, t2, debug)
-    | Narrow_left => unifyRecord_narrow_left(t1, t2, debug)
+    | Destructure_expand =>
+      let r = MapString.mergeU(a.contents, b.contents, (. _, v1, v2) => {
+        switch (v1, v2) {
+        | (Some(v1) as x, Some(v2)) =>
+          unify(v1, v2, mode, debug)
+          x
+        | (Some(_) as x, None) | (None, Some(_) as x) => x
+        | (None, None) => None
+        }
+      })
+      a := r
+    | Construct_var =>
+      let r = MapString.mergeU(a.contents, b.contents, (. _, v1, v2) => {
+        switch (v1, v2) {
+        | (Some(v1), Some(v2) as x) =>
+          unify(v1, v2, mode, debug)
+          x
+        | (Some(_) as x, None) | (None, Some(_) as x) => x
+        | (None, None) => None
+        }
+      })
+      b := r
+    | Construct_literal =>
+      let r = MapString.mergeU(a.contents, b.contents, (. _, v1, v2) =>
+        switch (v1, v2) {
+        | (Some(v1) as x, Some(v2)) =>
+          unify(v1, v2, mode, debug)
+          x
+        | (Some(_), None) | (None, Some(_)) | (None, None) => None
+        }
+      )
+      if MapString.isEmpty(r) {
+        raise(Exit(Debug.cantNarrowType(debug, tref1, tref2, Ty.toString)))
+      } else {
+        a := r
+      }
+    }
+  | (Enum(a), Enum(b)) =>
+    switch mode {
+    | Destructure_expand =>
+      let cases = union_enum(a.cases, b.cases, tref1, tref2, debug)
+      let row = switch (a.row, b.row) {
+      | (Closed, Closed) => Ty.Closed
+      | (Open, _) | (_, Open) => Open
+      }
+      a.cases = cases
+      a.row = row
+    | Construct_literal =>
+      switch (a.row, b.row) {
+      | (Open, Closed | Open) =>
+        let cases = union_enum(a.cases, b.cases, tref1, tref2, debug)
+        a.cases = cases
+      | (Closed, Closed | Open) =>
+        switch (a.cases, b.cases) {
+        | (Enum_String(a), Enum_String(b)) =>
+          check_enum_subset(SetString.subset, a, b, tref1, tref2, debug)
+        | (Enum_Int(a), Enum_Int(b)) => check_enum_subset(SetInt.subset, a, b, tref1, tref2, debug)
+        | _ => raise(Exit(Debug.typeMismatch(debug, tref1, tref2, Ty.toString)))
+        }
+      }
+    | Construct_var =>
+      switch (a.row, b.row) {
+      | (Closed, Closed) =>
+        switch (a.cases, b.cases) {
+        | (Enum_String(a), Enum_String(b)) =>
+          check_enum_subset(SetString.subset, a, b, tref1, tref2, debug)
+        | (Enum_Int(a), Enum_Int(b)) => check_enum_subset(SetInt.subset, a, b, tref1, tref2, debug)
+        | _ => raise(Exit(Debug.typeMismatch(debug, tref1, tref2, Ty.toString)))
+        }
+      | (Open, Closed) =>
+        let cases = union_enum(a.cases, b.cases, tref1, tref2, debug)
+        a.cases = cases
+      | (Open, Open) =>
+        let cases = union_enum(a.cases, b.cases, tref1, tref2, debug)
+        a.cases = cases
+        b.cases = cases
+      | (Closed, Open) => raise(Exit(Debug.typeMismatch(debug, tref1, tref2, Ty.toString)))
+      }
     }
   | _ => raise(Exit(Debug.typeMismatch(debug, tref1, tref2, Ty.toString)))
   }
 
-@raises(Exit)
-and unifyRecord_expand_bidirectional = (a, b, debug) => {
-  let r = MapString.mergeU(a.contents, b.contents, (. _, v1, v2) => {
-    switch (v1, v2) {
-    | (Some(v1) as x, Some(v2)) =>
-      unify(v1, v2, Expand_both, debug)
-      x
-    | (Some(_) as x, None) | (None, Some(_) as x) => x
-    | (None, None) => None
-    }
-  })
-  a := r
-  b := r
-}
-
-@raises(Exit)
-and unifyRecord_expand_leftToRight = (a, b, debug) => {
-  let r = MapString.mergeU(a.contents, b.contents, (. _, v1, v2) => {
-    switch (v1, v2) {
-    | (Some(v1) as x, Some(v2)) =>
-      unify(v1, v2, Expand_left_to_right, debug)
-      x
-    | (Some(_) as x, None) | (None, Some(_) as x) => x
-    | (None, None) => None
-    }
-  })
-  b := r
-}
-
-@raises(Exit)
-and unifyRecord_narrow_left = (a, b, debug) => {
-  let r = MapString.mergeU(a.contents, b.contents, (. _, v1, v2) =>
-    switch (v1, v2) {
-    | (Some(v1) as x, Some(v2)) =>
-      unify(v1, v2, Narrow_left, debug)
-      x
-    | (Some(_), None) | (None, Some(_)) | (None, None) => None
-    }
-  )
-  if MapString.isEmpty(r) {
-    raise(Exit(Debug.cantNarrowType(debug, a, b, Ty.record_toString)))
-  } else {
-    a := r
+let rec open_all_rows = ty =>
+  switch ty.contents {
+  | Ty.Enum(ty) => ty.row = Open
+  | Nullable(ty) | List(ty) | Dict(ty, _) => open_all_rows(ty)
+  | Tuple(a) => Array.forEach(a, open_all_rows)
+  | Record(d) => MapString.forEachU(d.contents, (. _, ty) => open_all_rows(ty))
+  | Unknown | Boolean | Int | Float | String | Echo => ()
   }
-}
 
 module Pattern = {
   type constant =
@@ -104,19 +167,29 @@ module Pattern = {
     | TInt(int)
     | TFloat(float)
 
-  let toStringConst = x =>
+  let toStringConst = (~enum, x) =>
     switch x {
     | TBool(true) => "true"
     | TBool(false) => "false"
-    | TString(s) => `"${s}"`
-    | TInt(i) => Belt.Int.toString(i)
+    | TString(s) =>
+      if enum {
+        `@"${s}"`
+      } else {
+        `"${s}"`
+      }
+    | TInt(i) =>
+      if enum {
+        "@" ++ Belt.Int.toString(i)
+      } else {
+        Belt.Int.toString(i)
+      }
     | TFloat(f) => Belt.Float.toString(f)
     }
 
   type construct = TList | TNullable
 
   type rec t =
-    | TConst(Debug.t, constant)
+    | TConst(Debug.t, constant, option<Ty.enum>)
     | TConstruct(Debug.t, construct, option<t>)
     | TTuple(Debug.t, array<t>)
     | TRecord(Debug.t, Belt.Map.String.t<t>, ref<Belt.Map.String.t<Typescheme.t>>)
@@ -125,23 +198,47 @@ module Pattern = {
     | TOptionalVar(Debug.t, string) // any binding, may not be set
     | TAny(Debug.t) // ignored wildcard _
 
-  type mode = Construct | Destruct
-
   @raises(Exit)
-  let rec make = (umode, mode, ~f, pat, ty) =>
+  let rec make = (pat, ty, ~f, mode) =>
     switch pat {
     | UPat.UInt(dbg, i) =>
-      unify(ty, Ty.int(), umode, dbg)
-      TConst(dbg, TInt(i))
+      unify(ty, Ty.int(), mode, dbg)
+      TConst(dbg, TInt(i), None)
     | UString(dbg, s) =>
-      unify(ty, Ty.string(), umode, dbg)
-      TConst(dbg, TString(s))
+      unify(ty, Ty.string(), mode, dbg)
+      TConst(dbg, TString(s), None)
     | UFloat(dbg, x) =>
-      unify(ty, Ty.float(), umode, dbg)
-      TConst(dbg, TFloat(x))
+      unify(ty, Ty.float(), mode, dbg)
+      TConst(dbg, TFloat(x), None)
     | UBool(dbg, b) =>
-      unify(ty, Ty.boolean(), umode, dbg)
-      TConst(dbg, TBool(b))
+      unify(ty, Ty.boolean(), mode, dbg)
+      TConst(dbg, TBool(b), None)
+    | UStringEnum(dbg, s) =>
+      let new_enum = switch mode {
+      | Destructure_expand => Ty.enum(#String(s), Closed)
+      | Construct_var | Construct_literal => Ty.enum(#String(s), Open)
+      }
+      let new_ty = ref(Ty.Enum(new_enum))
+      let enum = switch ty.contents {
+      | Enum(enum) => enum
+      | Unknown => new_enum
+      | _ => raise(Exit(Debug.typeMismatch(dbg, ty, new_ty, Ty.toString)))
+      }
+      unify(ty, new_ty, mode, dbg)
+      TConst(dbg, TString(s), Some(enum))
+    | UIntEnum(dbg, i) =>
+      let new_enum = switch mode {
+      | Destructure_expand => Ty.enum(#Int(i), Closed)
+      | Construct_var | Construct_literal => Ty.enum(#Int(i), Open)
+      }
+      let new_ty = ref(Ty.Enum(new_enum))
+      let enum = switch ty.contents {
+      | Enum(enum) => enum
+      | Unknown => new_enum
+      | _ => raise(Exit(Debug.typeMismatch(dbg, ty, new_ty, Ty.toString)))
+      }
+      unify(ty, new_ty, mode, dbg)
+      TConst(dbg, TInt(i), Some(enum))
     | UNullable(dbg, pat) =>
       let tyvar = switch ty.contents {
       | Nullable(ty) => ty
@@ -150,9 +247,9 @@ module Pattern = {
       }
       let pat = switch pat {
       | None => None
-      | Some(pat) => Some(TTuple(dbg, [make(~f, umode, mode, pat, tyvar)]))
+      | Some(pat) => Some(TTuple(dbg, [make(~f, pat, tyvar, mode)]))
       }
-      unify(ty, Ty.nullable(tyvar), umode, dbg)
+      unify(ty, Ty.nullable(tyvar), mode, dbg)
       TConstruct(dbg, TNullable, pat)
     | UList(dbg, a, tail) =>
       let tyvar = switch ty.contents {
@@ -160,12 +257,12 @@ module Pattern = {
       | Unknown => Ty.unknown()
       | _ => raise(Exit(Debug.typeMismatch(dbg, ty, Ty.list(Ty.unknown()), Ty.toString)))
       }
-      unify(ty, Ty.list(tyvar), umode, dbg)
+      unify(ty, Ty.list(tyvar), mode, dbg)
       let tl = switch tail {
       | None => TConstruct(dbg, TList, None)
-      | Some(tail) => make(umode, mode, tail, ty, ~f)
+      | Some(tail) => make(tail, ty, mode, ~f)
       }
-      make_list(umode, mode, a, 0, tyvar, ~tl, ~f)
+      make_list(a, 0, tyvar, ~tl, ~f, mode)
     | UTuple(dbg, a) =>
       let new_tyvars = Array.mapU(a, (. _) => Ty.unknown())
       let tyvars = switch ty.contents {
@@ -173,8 +270,8 @@ module Pattern = {
       | Unknown => new_tyvars
       | _ => raise(Exit(Debug.typeMismatch(dbg, ty, Ty.tuple(new_tyvars), Ty.toString)))
       }
-      unify(ty, Ty.tuple(tyvars), umode, dbg)
-      TTuple(dbg, Array.zipByU(a, tyvars, (. pat, ty) => make(umode, mode, pat, ty, ~f)))
+      unify(ty, Ty.tuple(tyvars), mode, dbg)
+      TTuple(dbg, Array.zipByU(a, tyvars, (. pat, ty) => make(pat, ty, mode, ~f)))
     | URecord(dbg, m) =>
       let new_tyvars = MapString.mapU(m, (. _) => Ty.unknown())->ref
       let tyvars = switch ty.contents {
@@ -182,10 +279,10 @@ module Pattern = {
       | Unknown => new_tyvars
       | _ => raise(Exit(Debug.typeMismatch(dbg, ty, Ty.record2(new_tyvars), Ty.toString)))
       }
-      unify(ty, Ty.record2(new_tyvars), umode, dbg)
+      unify(ty, Ty.record2(new_tyvars), mode, dbg)
       let r = switch mode {
-      | Construct => make_record(umode, m, tyvars.contents, ~f, dbg)
-      | Destruct => make_record_destructure(umode, m, tyvars.contents, ~f, dbg)
+      | Destructure_expand => make_record_destructure(mode, m, tyvars.contents, ~f, dbg)
+      | Construct_var | Construct_literal => make_record(m, tyvars.contents, ~f, dbg, mode)
       }
       TRecord(dbg, r, tyvars)
     | UDict(dbg, m) =>
@@ -196,47 +293,53 @@ module Pattern = {
       | _ =>
         raise(Exit(Debug.typeMismatch(dbg, ty, Ty.dict_keys(Ty.unknown(), new_kys), Ty.toString)))
       }
-      unify(ty, Ty.dict_keys(tyvar, new_kys), umode, dbg)
-      let d = MapString.mapU(m, (. pat) => make(umode, mode, pat, tyvar, ~f))
+      unify(ty, Ty.dict_keys(tyvar, new_kys), mode, dbg)
+      let d = MapString.mapU(m, (. pat) => make(pat, tyvar, mode, ~f))
       TDict(dbg, d, kys)
     | UBinding(dbg, "_") =>
       switch mode {
-      | Construct => raise(Exit(Debug.underscoreInConstruct(dbg)))
-      | Destruct => TAny(dbg)
+      | Destructure_expand =>
+        open_all_rows(ty)
+        TAny(dbg)
+      | Construct_literal | Construct_var => raise(Exit(Debug.underscoreInConstruct(dbg)))
       }
     | UBinding(dbg, b) =>
+      switch mode {
+      | Destructure_expand => open_all_rows(ty)
+      | Construct_literal | Construct_var => ()
+      }
       f(. b, ty, dbg)
       TVar(dbg, b)
     }
 
   @raises(Exit)
-  and make_list = (umode, mode, ~tl, ~f, a, i, ty) =>
+  and make_list = (~tl, ~f, a, i, ty, mode) =>
     switch a[i] {
     | None => tl
     | Some(p) =>
       let dbg = UPat.debug(p)
-      let hd = make(umode, mode, ~f, p, ty)
-      let tl = make_list(umode, mode, ~tl, ~f, a, succ(i), ty)
+      let hd = make(~f, p, ty, mode)
+      let tl = make_list(~tl, ~f, a, succ(i), ty, mode)
       TConstruct(dbg, TList, Some(TTuple(dbg, [hd, tl])))
     }
 
   @raises(Exit)
-  and make_record = (mode, m, tyvars, ~f, dbg) => {
+  and make_record = (m, tyvars, ~f, dbg, mode) => {
     MapString.mergeU(m, tyvars, (. k, pat, ty) =>
       switch (pat, ty) {
       | (Some(_), None) | (None, None) => None
-      | (Some(pat), Some(ty)) => Some(make(mode, Construct, pat, ty, ~f))
+      | (Some(pat), Some(ty)) => Some(make(pat, ty, ~f, mode))
       | (None, Some(ty)) => raise(Exit(Debug.missingRecordField(dbg, k, ty, Ty.toString)))
       }
     )
   }
 
   @raises(Exit)
-  and make_record_destructure = (umode, m, tyvars, ~f, dbg) => {
+  and make_record_destructure = (mode, m, tyvars, ~f, dbg) => {
     MapString.mergeU(m, tyvars, (. _, pat, ty) =>
       switch (pat, ty) {
-      | (Some(pat), None) => Some(make(umode, Destruct, pat, Ty.unknown(), ~f))
-      | (Some(pat), Some(ty)) => Some(make(umode, Destruct, pat, ty, ~f))
+      | (Some(pat), None) => Some(make(pat, Ty.unknown(), mode, ~f))
+      | (Some(pat), Some(ty)) => Some(make(pat, ty, mode, ~f))
       | (None, Some(_)) => Some(TAny(dbg))
       | (None, None) => None
       }
@@ -252,7 +355,8 @@ module Pattern = {
 
   let rec toString = x =>
     switch x {
-    | TConst(_, x) => toStringConst(x)
+    | TConst(_, x, None) => toStringConst(x, ~enum=false)
+    | TConst(_, x, Some(_)) => toStringConst(x, ~enum=true)
     | TTuple(_, t) => "(" ++ Array.joinWith(t, ", ", toString) ++ ")"
     | TRecord(_, r, _) =>
       let a = MapString.toArray(r)
@@ -279,7 +383,7 @@ module Pattern = {
 
   let debug = t =>
     switch t {
-    | TConst(d, _)
+    | TConst(d, _, _)
     | TConstruct(d, _, _)
     | TTuple(d, _)
     | TRecord(d, _, _)
@@ -336,19 +440,14 @@ module Context = {
   }
 
   @raises(Exit)
-  let update = ({scope, global, _}, k, v, debug) =>
+  let update = ({scope, global, _}, . k, v, debug) =>
     switch MapString.get(scope, k) {
     | None =>
-      global :=
-        MapString.updateU(global.contents, k, (. v') =>
-          switch v' {
-          | None => Some(v)
-          | Some(v') as r =>
-            unify(v', v, Narrow_left, debug)
-            r
-          }
-        )
-    | Some(v') => unify(v', v, Narrow_left, debug)
+      switch MapString.get(global.contents, k) {
+      | None => global := MapString.set(global.contents, k, v)
+      | Some(v') => unify(v, v', Construct_var, debug)
+      }
+    | Some(v') => unify(v', v, Construct_var, debug)
     }
 
   @raises(Exit)
@@ -384,9 +483,9 @@ module Context = {
       let newscope = Queue.reduceU(bindings_all, hd, (. acc, m) =>
         MapString.mergeU(acc, m, (. k, a, b) =>
           switch (a, b) {
-          | (Some((a, _)), Some((b, dbg))) =>
-            unify(a, b, Narrow_left, dbg)
-            Some((a, dbg))
+          | (Some((a, _)) as a', Some((b, dbg))) =>
+            unify(a, b, Construct_literal, dbg)
+            a'
           | (Some((_, dbg)), None) | (None, Some((_, dbg))) =>
             raise(Exit(Debug.variableMissingInPattern(dbg, k)))
           | (None, None) => None
@@ -405,17 +504,6 @@ module Context = {
   }
 }
 
-@raise(Exit)
-let updateContext = (ctx, . k, v, debug) =>
-  switch MapString.get(ctx.Context.scope, k) {
-  | None =>
-    switch MapString.get(ctx.global.contents, k) {
-    | None => ctx.global := MapString.set(ctx.global.contents, k, v)
-    | Some(v') => unify(v, v', Expand_left_to_right, debug)
-    }
-  | Some(v') => unify(v, v', Expand_left_to_right, debug)
-  }
-
 @raises(Exit)
 let unifyMatchCases = (bindingArray, tys, ctx) => {
   if NonEmpty.size(bindingArray) != NonEmpty.size(tys) {
@@ -423,7 +511,7 @@ let unifyMatchCases = (bindingArray, tys, ctx) => {
     raise(Exit(Debug.patternNumberMismatch(debug)))
   } else {
     NonEmpty.zip(bindingArray, tys)->NonEmpty.map((. (pat, ty)) =>
-      Pattern.make(Narrow_left, Construct, pat, ty, ~f=updateContext(ctx))
+      Pattern.make(pat, ty, Construct_literal, ~f=Context.update(ctx))
     )
   }
 }
@@ -435,12 +523,12 @@ let unifyEchoes = (nullables, default, ctx) => {
     switch nullables[i] {
     | None =>
       switch default {
-      | Parser.EBinding(debug, binding, _) => Context.update(ctx, binding, Ty.echo(), debug)
+      | Parser.EBinding(debug, binding, _) => Context.update(ctx)(. binding, Ty.echo(), debug)
       | EChild(debug, child) => Context.updateChild(ctx, Ty.Child.child(child), debug)
       | EString(_, _, _) | EInt(_, _, _) | EFloat(_, _, _) => ()
       }
     | Some(Parser.EBinding(debug, binding, _)) =>
-      Context.update(ctx, binding, Ty.nullable(Ty.echo()), debug)
+      Context.update(ctx)(. binding, Ty.nullable(Ty.echo()), debug)
       aux(succ(i))
     | Some(EString(debug, _, _) | EInt(debug, _, _) | EFloat(debug, _, _)) =>
       raise(Exit(Debug.nonNullableEchoLiteral(debug)))
@@ -458,6 +546,29 @@ let getTypes = x =>
   | Function(_, props, children, _) => (props, children)
   }
 
+let addDefaultWildcardToCases = cases =>
+  NonEmpty.map(cases, (. case) => {
+    ...case,
+    Parser.patterns: NonEmpty.map(case.Parser.patterns, (. pattern) =>
+      switch NonEmpty.toArray(pattern) {
+      | [hd] => NonEmpty.two(hd, UBinding(UPat.debug(hd), "_"))
+      | _ => pattern
+      }
+    ),
+  })
+
+@raises(Exit)
+let unifyMap = (~ty, ~key, (tys, cases), pattern, ctx, debug) => {
+  let hd_ty = switch NonEmpty.toArray(tys) {
+  | [hd, tl] =>
+    unify(key(.), tl, Construct_literal, debug)
+    ty(. hd)
+  | _ => raise(Exit(Debug.mapPatternSizeMismatch(debug)))
+  }
+  let pattern = Pattern.make(pattern, hd_ty, Construct_literal, ~f=Context.update(ctx))
+  (pattern, cases)
+}
+
 @raises(Exit)
 let rec makeCases = (cases, ctx, g) => {
   let tys = NonEmpty.hd(cases).Parser.patterns->NonEmpty.hd->NonEmpty.map((. _) => Ty.unknown())
@@ -472,7 +583,7 @@ let rec makeCases = (cases, ctx, g) => {
         let debug = NonEmpty.hd(ps)->UPat.debug
         raise(Exit(Debug.patternNumberMismatch(debug)))
       } else {
-        NonEmpty.zipBy(ps, tys, (. p, ty) => Pattern.make(Expand_both, Destruct, p, ty, ~f))
+        NonEmpty.zipBy(ps, tys, (. p, ty) => Pattern.make(p, ty, Destructure_expand, ~f))
       }
     })
     let ctx = Context.addScope(ctx, bindings_all)
@@ -482,29 +593,6 @@ let rec makeCases = (cases, ctx, g) => {
     nodes: makeNodes(nodes, ctx, g),
   })
   (tys, cases)
-}
-
-@raises(Exit)
-and unifyMap = (~ty, ~key, cases, pattern, ctx, g, debug) => {
-  // Add a default wildcard for patterns without indices
-  let cases = NonEmpty.map(cases, (. case) => {
-    ...case,
-    Parser.patterns: NonEmpty.map(case.Parser.patterns, (. pattern) =>
-      switch NonEmpty.toArray(pattern) {
-      | [hd] => NonEmpty.two(hd, UBinding(debug, "_"))
-      | _ => pattern
-      }
-    ),
-  })
-  let (tys, cases) = makeCases(cases, ctx, g)
-  let hd_ty = switch NonEmpty.toArray(tys) {
-  | [hd, tl] =>
-    unify(key(.), tl, Narrow_left, debug)
-    ty(. hd)
-  | _ => raise(Exit(Debug.mapPatternSizeMismatch(debug)))
-  }
-  let pattern = Pattern.make(Narrow_left, Construct, pattern, hd_ty, ~f=updateContext(ctx))
-  (pattern, cases)
 }
 
 @raises(Exit)
@@ -518,7 +606,13 @@ and makeNodes = (nodes, ctx, g) =>
     | UComponent(debug, comp, props, children) =>
       let (propTypes, propTypesChildren) = getTypes(Utils.Dagmap.get(g, comp, debug))
       let propTypes = Ty.copy_record(propTypes) // The original should not mutate.
-      let props = Pattern.make_record(Narrow_left, props, ~f=updateContext(ctx), propTypes, debug)
+      let props = Pattern.make_record(
+        props,
+        propTypes,
+        debug,
+        ~f=Context.update(ctx),
+        Construct_literal,
+      )
       let children = MapString.mergeU(children, propTypesChildren, (. k, c, ty) =>
         switch (c, ty) {
         | (None, None) => None
@@ -543,12 +637,14 @@ and makeNodes = (nodes, ctx, g) =>
     | UMapList(debug, pattern, cases) =>
       let ty = (. t) => Ty.list(t)
       let key = (. ()) => Ty.int()
-      let (pattern, cases) = unifyMap(~ty, ~key, cases, pattern, ctx, g, debug)
+      let cases = addDefaultWildcardToCases(cases)->makeCases(ctx, g)
+      let (pattern, cases) = unifyMap(~ty, ~key, cases, pattern, ctx, debug)
       TMapList(debug, pattern, cases)
     | UMapDict(debug, pattern, cases) =>
       let ty = (. t) => Ty.dict(t)
       let key = (. ()) => Ty.string()
-      let (pattern, cases) = unifyMap(~ty, ~key, cases, pattern, ctx, g, debug)
+      let cases = addDefaultWildcardToCases(cases)->makeCases(ctx, g)
+      let (pattern, cases) = unifyMap(~ty, ~key, cases, pattern, ctx, debug)
       TMapDict(debug, pattern, cases)
     }
   )

@@ -1,19 +1,30 @@
 /**
-  Copyright (c) 2021 John Jackson. 
+  Copyright (c) 2021 John Jackson.
 
   This Source Code Form is subject to the terms of the Mozilla Public
   License, v. 2.0. If a copy of the MPL was not distributed with this
   file, You can obtain one at http://mozilla.org/MPL/2.0/.
 */
 
+type row = Closed | Open
+
+type enum_ty =
+  | Enum_String(Belt.Set.String.t)
+  | Enum_Int(Belt.Set.Int.t)
+
+type enum = {
+  mutable cases: enum_ty,
+  mutable row: row,
+}
+
 type rec typescheme =
-  private
   | Unknown
   | Boolean
   | Int
   | Float
   | String
   | Echo
+  | Enum(enum)
   | Tuple(array<t>) // 0 and 1 sized tuples are legal.
   | Nullable(t)
   | List(t)
@@ -26,8 +37,6 @@ and t = ref<typescheme>
 type props = Belt.Map.String.t<t>
 
 let toString: t => string
-
-let record_toString: ref<props> => string
 
 let copy_record: props => props
 
@@ -45,6 +54,8 @@ let tuple: array<t> => t
 let record: array<(string, t)> => t
 let record2: ref<props> => t // internal use
 let props: array<(string, t)> => props
+
+let enum: ([#String(string) | #Int(int)], row) => enum
 
 module Child: {
   type t

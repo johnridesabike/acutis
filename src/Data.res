@@ -1,5 +1,5 @@
 /**
-  Copyright (c) 2021 John Jackson. 
+  Copyright (c) 2021 John Jackson.
 
   This Source Code Form is subject to the terms of the Mozilla Public
   License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -181,8 +181,8 @@ and make = (~stack, j, ty) =>
   | Ty.Unknown => PUnknown(j)
   | Nullable(ty) => nullable(~stack, j, ty)
   | Boolean => boolean(~stack, j)
-  | String => string(~stack, j)
-  | Int => int(~stack, j)
+  | String | Enum({cases: Enum_String(_), _}) => string(~stack, j)
+  | Int | Enum({cases: Enum_Int(_), _}) => int(~stack, j)
   | Float => float(~stack, j)
   | Echo => echo(~stack, j)
   | List(ty) => list(~stack, j, ty)
@@ -227,10 +227,7 @@ let nullableExn = t =>
 
 let rec fromPattern = (x, props) =>
   switch x {
-  | Typechecker.Pattern.TConst(_, TBool(x)) => PConst(PBool(x))
-  | TConst(_, TString(x)) => PConst(PString(x))
-  | TConst(_, TInt(x)) => PConst(PInt(x))
-  | TConst(_, TFloat(x)) => PConst(PFloat(x))
+  | Typechecker.Pattern.TConst(_, x, _) => PConst(Const.fromTPat(x))
   | TOptionalVar(_, x) | TVar(_, x) =>
     switch MapString.get(props, x) {
     | Some(x) => x

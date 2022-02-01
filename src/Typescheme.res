@@ -1,14 +1,27 @@
 /**
-  Copyright (c) 2021 John Jackson. 
+  Copyright (c) 2021 John Jackson.
 
   This Source Code Form is subject to the terms of the Mozilla Public
   License, v. 2.0. If a copy of the MPL was not distributed with this
   file, You can obtain one at http://mozilla.org/MPL/2.0/.
 */
 
-module SetString = Belt.Set.String
-module MapString = Belt.Map.String
 module Array = Belt.Array
+module Int = Belt.Int
+module MapString = Belt.Map.String
+module SetString = Belt.Set.String
+module SetInt = Belt.Set.Int
+
+type row = Closed | Open
+
+type enum_ty =
+  | Enum_String(Belt.Set.String.t)
+  | Enum_Int(Belt.Set.Int.t)
+
+type enum = {
+  mutable cases: enum_ty,
+  mutable row: row,
+}
 
 type rec typescheme =
   | Unknown
@@ -17,6 +30,7 @@ type rec typescheme =
   | Float
   | String
   | Echo
+  | Enum(enum)
   | Tuple(array<t>)
   | Nullable(t)
   | List(t)
@@ -27,6 +41,12 @@ and t = ref<typescheme>
 
 type props = MapString.t<t>
 
+let row_toString = x =>
+  switch x {
+  | Closed => ""
+  | Open => " ..."
+  }
+
 let rec toString = x =>
   switch x.contents {
   | Unknown => "_"
@@ -35,26 +55,31 @@ let rec toString = x =>
   | Float => "float"
   | String => "string"
   | Echo => "echoable"
-  | Nullable(x) => `?${toString(x)}`
+  | Enum({cases, row}) =>
+    let s = switch cases {
+    | Enum_String(cases) => SetString.toArray(cases)->Array.joinWithU(" | ", (. s) => `@"${s}"`)
+    | Enum_Int(cases) =>
+      SetInt.toArray(cases)->Array.joinWithU(" | ", (. i) => "@" ++ Int.toString(i))
+    }
+    "[" ++ s ++ row_toString(row) ++ "]"
+  | Nullable(x) => "?" ++ toString(x)
   | List(x) => `[${toString(x)}]`
   | Dict(x, _) => `<${toString(x)}>`
   | Tuple(x) =>
     let x = Array.joinWith(x, ", ", toString)
     `(${x})`
-  | Record(x) => record_toString(x)
+  | Record(x) =>
+    let rows = switch MapString.toArray(x.contents) {
+    | [] => "_"
+    | a => Array.joinWithU(a, ", ", (. (k, v)) => `"${k}": ${toString(v)}`)
+    }
+    "{" ++ rows ++ "}"
   }
-
-and record_toString = x => {
-  let rows = switch MapString.toArray(x.contents) {
-  | [] => "_"
-  | a => Array.joinWithU(a, ", ", (. (k, v)) => `"${k}": ${toString(v)}`)
-  }
-  "{" ++ rows ++ "}"
-}
 
 let rec copy = x =>
   switch x {
   | (Unknown | Boolean | Int | Float | String | Echo) as x => x
+  | Enum({cases, row}) => Enum({cases: cases, row: row})
   | Nullable({contents}) => Nullable(ref(copy(contents)))
   | List({contents}) => List(ref(copy(contents)))
   | Dict({contents}, fixme) => Dict(ref(copy(contents)), fixme)
@@ -78,6 +103,12 @@ let tuple = a => ref(Tuple(a))
 let record = a => ref(Record(ref(MapString.fromArray(a))))
 let record2 = m => ref(Record(m))
 let props = a => MapString.fromArray(a)
+
+let enum = (x, row) =>
+  switch x {
+  | #String(s) => {cases: Enum_String(SetString.add(SetString.empty, s)), row: row}
+  | #Int(s) => {cases: Enum_Int(SetInt.add(SetInt.empty, s)), row: row}
+  }
 
 module Child = {
   type t' = Child | NullableChild
