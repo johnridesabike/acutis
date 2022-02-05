@@ -39,7 +39,7 @@ let check_enum_subset = (subset, a, b, tref1, tref2, debug) =>
 
 let union_enum = (a, b, tref1, tref2, debug) =>
   switch (a, b) {
-  | (Ty.Enum_String(a), Ty.Enum_String(b)) => Ty.Enum_String(SetString.union(a, b))
+  | (Ty.Enum.Enum_String(a), Ty.Enum.Enum_String(b)) => Ty.Enum.Enum_String(SetString.union(a, b))
   | (Enum_Int(a), Enum_Int(b)) => Enum_Int(SetInt.union(a, b))
   | _ => raise(Exit(Debug.typeMismatch(debug, tref1, tref2, Ty.toString)))
   }
@@ -47,7 +47,7 @@ let union_enum = (a, b, tref1, tref2, debug) =>
 @raises(Exit)
 let rec unify = (tref1, tref2, mode, debug) =>
   switch (tref1.contents, tref2.contents) {
-  | (Ty.Boolean, Ty.Boolean) | (Int, Int) | (Float, Float) | (String, String) => ()
+  | (Ty.Int, Ty.Int) | (Float, Float) | (String, String) => ()
   | (Unknown, t) => tref1 := t
   | (t, Unknown) => tref2 := t
   | (Echo, (Int | Float | String | Echo) as t) => tref1 := t
@@ -111,7 +111,7 @@ let rec unify = (tref1, tref2, mode, debug) =>
     | Destructure_expand =>
       let cases = union_enum(a.cases, b.cases, tref1, tref2, debug)
       let row = switch (a.row, b.row) {
-      | (Closed, Closed) => Ty.Closed
+      | (Closed, Closed) => Ty.Enum.Closed
       | (Open, _) | (_, Open) => Open
       }
       a.cases = cases
@@ -148,16 +148,23 @@ let rec unify = (tref1, tref2, mode, debug) =>
       | (Closed, Open) => raise(Exit(Debug.typeMismatch(debug, tref1, tref2, Ty.toString)))
       }
     }
+  | (Boolean(a), Boolean(b)) =>
+    switch mode {
+    | Destructure_expand => a := Ty.Boolean.union(a.contents, b.contents)
+    | Construct_literal | Construct_var =>
+      check_enum_subset(Ty.Boolean.subset, a.contents, b.contents, tref1, tref2, debug)
+    }
   | _ => raise(Exit(Debug.typeMismatch(debug, tref1, tref2, Ty.toString)))
   }
 
 let rec open_all_rows = ty =>
   switch ty.contents {
   | Ty.Enum(ty) => ty.row = Open
+  | Boolean(ty) => ty := Ty.Boolean.False_or_true
   | Nullable(ty) | List(ty) | Dict(ty, _) => open_all_rows(ty)
   | Tuple(a) => Array.forEach(a, open_all_rows)
   | Record(d) => MapString.forEachU(d.contents, (. _, ty) => open_all_rows(ty))
-  | Unknown | Boolean | Int | Float | String | Echo => ()
+  | Unknown | Int | Float | String | Echo => ()
   }
 
 module Pattern = {
@@ -189,7 +196,7 @@ module Pattern = {
   type construct = TList | TNullable
 
   type rec t =
-    | TConst(Debug.t, constant, option<Ty.enum>)
+    | TConst(Debug.t, constant, option<Ty.Enum.t>)
     | TConstruct(Debug.t, construct, option<t>)
     | TTuple(Debug.t, array<t>)
     | TRecord(Debug.t, Belt.Map.String.t<t>, ref<Belt.Map.String.t<Typescheme.t>>)
@@ -211,12 +218,20 @@ module Pattern = {
       unify(ty, Ty.float(), mode, dbg)
       TConst(dbg, TFloat(x), None)
     | UBool(dbg, b) =>
-      unify(ty, Ty.boolean(), mode, dbg)
+      let new_ty = switch mode {
+      | Destructure_expand =>
+        switch b {
+        | true => Ty.true_()
+        | false => Ty.false_()
+        }
+      | Construct_var | Construct_literal => Ty.boolean()
+      }
+      unify(ty, new_ty, mode, dbg)
       TConst(dbg, TBool(b), None)
     | UStringEnum(dbg, s) =>
       let new_enum = switch mode {
-      | Destructure_expand => Ty.enum(#String(s), Closed)
-      | Construct_var | Construct_literal => Ty.enum(#String(s), Open)
+      | Destructure_expand => Ty.Enum.make(#String(s), Closed)
+      | Construct_var | Construct_literal => Ty.Enum.make(#String(s), Open)
       }
       let new_ty = ref(Ty.Enum(new_enum))
       let enum = switch ty.contents {
@@ -228,8 +243,8 @@ module Pattern = {
       TConst(dbg, TString(s), Some(enum))
     | UIntEnum(dbg, i) =>
       let new_enum = switch mode {
-      | Destructure_expand => Ty.enum(#Int(i), Closed)
-      | Construct_var | Construct_literal => Ty.enum(#Int(i), Open)
+      | Destructure_expand => Ty.Enum.make(#Int(i), Closed)
+      | Construct_var | Construct_literal => Ty.Enum.make(#Int(i), Open)
       }
       let new_ty = ref(Ty.Enum(new_enum))
       let enum = switch ty.contents {

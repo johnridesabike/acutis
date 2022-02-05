@@ -12,25 +12,68 @@ module MapString = Belt.Map.String
 module SetString = Belt.Set.String
 module SetInt = Belt.Set.Int
 
-type row = Closed | Open
+module Boolean = {
+  type t =
+    | Only_false
+    | Only_true
+    | False_or_true
 
-type enum_ty =
-  | Enum_String(Belt.Set.String.t)
-  | Enum_Int(Belt.Set.Int.t)
+  let subset = (a, b) =>
+    switch (a, b) {
+    | (Only_false, Only_false)
+    | (Only_true, Only_true)
+    | (_, False_or_true) => true
+    | _ => false
+    }
 
-type enum = {
-  mutable cases: enum_ty,
-  mutable row: row,
+  let union = (a, b) =>
+    switch (a, b) {
+    | (Only_true, Only_true) => Only_true
+    | (Only_false, Only_false) => Only_false
+    | _ => False_or_true
+    }
+
+  let toString = x =>
+    switch x {
+    | Only_false => "false"
+    | Only_true => "true"
+    | False_or_true => "false | true"
+    }
+}
+
+module Enum = {
+  type row = Closed | Open
+
+  type ty =
+    | Enum_String(Belt.Set.String.t)
+    | Enum_Int(Belt.Set.Int.t)
+
+  type t = {
+    mutable cases: ty,
+    mutable row: row,
+  }
+
+  let row_toString = x =>
+    switch x {
+    | Closed => ""
+    | Open => " ..."
+    }
+
+  let make = (x, row) =>
+    switch x {
+    | #String(s) => {cases: Enum_String(SetString.add(SetString.empty, s)), row: row}
+    | #Int(s) => {cases: Enum_Int(SetInt.add(SetInt.empty, s)), row: row}
+    }
 }
 
 type rec typescheme =
   | Unknown
-  | Boolean
   | Int
   | Float
   | String
   | Echo
-  | Enum(enum)
+  | Enum(Enum.t)
+  | Boolean(ref<Boolean.t>)
   | Tuple(array<t>)
   | Nullable(t)
   | List(t)
@@ -41,16 +84,9 @@ and t = ref<typescheme>
 
 type props = MapString.t<t>
 
-let row_toString = x =>
-  switch x {
-  | Closed => ""
-  | Open => " ..."
-  }
-
 let rec toString = x =>
   switch x.contents {
   | Unknown => "_"
-  | Boolean => "boolean"
   | Int => "int"
   | Float => "float"
   | String => "string"
@@ -61,7 +97,8 @@ let rec toString = x =>
     | Enum_Int(cases) =>
       SetInt.toArray(cases)->Array.joinWithU(" | ", (. i) => "@" ++ Int.toString(i))
     }
-    "[" ++ s ++ row_toString(row) ++ "]"
+    "[" ++ s ++ Enum.row_toString(row) ++ "]"
+  | Boolean({contents}) => Boolean.toString(contents)
   | Nullable(x) => "?" ++ toString(x)
   | List(x) => `[${toString(x)}]`
   | Dict(x, _) => `<${toString(x)}>`
@@ -78,8 +115,9 @@ let rec toString = x =>
 
 let rec copy = x =>
   switch x {
-  | (Unknown | Boolean | Int | Float | String | Echo) as x => x
+  | (Unknown | Int | Float | String | Echo) as x => x
   | Enum({cases, row}) => Enum({cases: cases, row: row})
+  | Boolean({contents}) => Boolean({contents: contents})
   | Nullable({contents}) => Nullable(ref(copy(contents)))
   | List({contents}) => List(ref(copy(contents)))
   | Dict({contents}, fixme) => Dict(ref(copy(contents)), fixme)
@@ -90,7 +128,9 @@ let rec copy = x =>
 and copy_record = m => MapString.mapU(m, (. {contents}) => ref(copy(contents)))
 
 let unknown = () => ref(Unknown)
-let boolean = () => ref(Boolean)
+let boolean = () => ref(Boolean(ref(Boolean.False_or_true)))
+let true_ = () => ref(Boolean(ref(Boolean.Only_true)))
+let false_ = () => ref(Boolean(ref(Boolean.Only_false)))
 let int = () => ref(Int)
 let float = () => ref(Float)
 let string = () => ref(String)
@@ -103,12 +143,6 @@ let tuple = a => ref(Tuple(a))
 let record = a => ref(Record(ref(MapString.fromArray(a))))
 let record2 = m => ref(Record(m))
 let props = a => MapString.fromArray(a)
-
-let enum = (x, row) =>
-  switch x {
-  | #String(s) => {cases: Enum_String(SetString.add(SetString.empty, s)), row: row}
-  | #Int(s) => {cases: Enum_Int(SetInt.add(SetInt.empty, s)), row: row}
-  }
 
 module Child = {
   type t' = Child | NullableChild

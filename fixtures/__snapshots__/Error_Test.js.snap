@@ -797,6 +797,21 @@ Array [
 ]
 `;
 
+exports[`Patterns Boolean errors 1`] = `
+Array [
+  Object {
+    "exn": undefined,
+    "kind": "Type",
+    "location": Object {
+      "char": 9,
+      "name": "",
+    },
+    "message": "This pattern is type false | true but expected type false.",
+    "stack": Array [],
+  },
+]
+`;
+
 exports[`Patterns Count mismatch failure 1`] = `
 Array [
   Object {
@@ -882,6 +897,21 @@ Array [
       "name": "",
     },
     "message": "This pattern is type [@\\"c\\" ...] but expected type [@\\"a\\" | @\\"b\\"].",
+    "stack": Array [],
+  },
+]
+`;
+
+exports[`Patterns Enum errors 4`] = `
+Array [
+  Object {
+    "exn": undefined,
+    "kind": "Type",
+    "location": Object {
+      "char": 10,
+      "name": "",
+    },
+    "message": "This pattern is type [@\\"a\\" ...] but expected type [@\\"b\\"].",
     "stack": Array [],
   },
 ]
@@ -1088,7 +1118,7 @@ Array [
       "char": 33,
       "name": "",
     },
-    "message": "This pattern is type boolean but expected type string.",
+    "message": "This pattern is type true but expected type string.",
     "stack": Array [],
   },
 ]
@@ -1103,7 +1133,7 @@ Array [
       "char": 33,
       "name": "",
     },
-    "message": "This pattern is type boolean but expected type string.",
+    "message": "This pattern is type false but expected type string.",
     "stack": Array [],
   },
 ]
@@ -1118,7 +1148,7 @@ Array [
       "char": 31,
       "name": "",
     },
-    "message": "This pattern is type boolean but expected type int.",
+    "message": "This pattern is type true but expected type int.",
     "stack": Array [],
   },
 ]
@@ -1133,7 +1163,7 @@ Array [
       "char": 31,
       "name": "",
     },
-    "message": "This pattern is type boolean but expected type int.",
+    "message": "This pattern is type false but expected type int.",
     "stack": Array [],
   },
 ]
@@ -1148,7 +1178,7 @@ Array [
       "char": 33,
       "name": "",
     },
-    "message": "This pattern is type boolean but expected type [int].",
+    "message": "This pattern is type true but expected type [int].",
     "stack": Array [],
   },
 ]
@@ -1163,7 +1193,7 @@ Array [
       "char": 33,
       "name": "",
     },
-    "message": "This pattern is type boolean but expected type [int].",
+    "message": "This pattern is type false but expected type [int].",
     "stack": Array [],
   },
 ]
@@ -1178,7 +1208,7 @@ Array [
       "char": 39,
       "name": "",
     },
-    "message": "This pattern is type boolean but expected type {\\"a\\": _}.",
+    "message": "This pattern is type true but expected type {\\"a\\": _}.",
     "stack": Array [],
   },
 ]
@@ -1223,7 +1253,7 @@ Array [
       "char": 32,
       "name": "",
     },
-    "message": "This pattern is type [_] but expected type boolean.",
+    "message": "This pattern is type [_] but expected type true.",
     "stack": Array [],
   },
 ]
@@ -1238,7 +1268,7 @@ Array [
       "char": 33,
       "name": "",
     },
-    "message": "This pattern is type [_] but expected type boolean.",
+    "message": "This pattern is type [_] but expected type false.",
     "stack": Array [],
   },
 ]
@@ -1313,7 +1343,7 @@ Array [
       "char": 33,
       "name": "",
     },
-    "message": "This pattern is type {\\"a\\": _} but expected type boolean.",
+    "message": "This pattern is type {\\"a\\": _} but expected type true.",
     "stack": Array [],
   },
 ]
@@ -1328,7 +1358,7 @@ Array [
       "char": 34,
       "name": "",
     },
-    "message": "This pattern is type {\\"a\\": _} but expected type boolean.",
+    "message": "This pattern is type {\\"a\\": _} but expected type false.",
     "stack": Array [],
   },
 ]
@@ -1403,7 +1433,7 @@ Array [
       "char": 34,
       "name": "",
     },
-    "message": "This pattern is type int but expected type boolean.",
+    "message": "This pattern is type int but expected type true.",
     "stack": Array [],
   },
 ]
@@ -1418,7 +1448,7 @@ Array [
       "char": 35,
       "name": "",
     },
-    "message": "This pattern is type int but expected type boolean.",
+    "message": "This pattern is type int but expected type false.",
     "stack": Array [],
   },
 ]
@@ -1478,7 +1508,7 @@ Array [
       "char": 34,
       "name": "",
     },
-    "message": "This pattern is type string but expected type boolean.",
+    "message": "This pattern is type string but expected type true.",
     "stack": Array [],
   },
 ]
@@ -1493,7 +1523,7 @@ Array [
       "char": 35,
       "name": "",
     },
-    "message": "This pattern is type string but expected type boolean.",
+    "message": "This pattern is type string but expected type false.",
     "stack": Array [],
   },
 ]

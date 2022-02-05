@@ -180,7 +180,7 @@ and make = (~stack, j, ty) =>
   switch ty.contents {
   | Ty.Unknown => PUnknown(j)
   | Nullable(ty) => nullable(~stack, j, ty)
-  | Boolean => boolean(~stack, j)
+  | Boolean(_) => boolean(~stack, j)
   | String | Enum({cases: Enum_String(_), _}) => string(~stack, j)
   | Int | Enum({cases: Enum_Int(_), _}) => int(~stack, j)
   | Float => float(~stack, j)
@@ -286,7 +286,7 @@ and toJson_record = (t, ty) => {
 and toJson = (t, ty) =>
   switch (t, ty) {
   | (PUnknown(j), Ty.Unknown) => j
-  | (PConst(PBool(b)), Boolean) => Json.boolean(b)
+  | (PConst(PBool(b)), Boolean(_)) => Json.boolean(b)
   | (PConst(PInt(i)), Int | Echo) => Json.number(Int.toFloat(i))
   | (PConst(PFloat(f)), Float | Echo) => Json.number(f)
   | (PConst(PString(s)), String | Echo) => Json.string(s)

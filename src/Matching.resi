@@ -9,16 +9,9 @@
 /* This is extra information for debugging. */
 type extra_nest_info = Tuple | Dict | Record
 
-type enum =
-  | Enum_Bool
-  | Enum_String(Belt.Set.String.t)
-  | Enum_Int(Belt.Set.Int.t)
-
 type extra_switch_info =
-  | Extra_String
-  | Extra_Int
-  | Extra_Float
-  | Extra_Enum(enum)
+  | Extra_none
+  | Extra_enum_closed
 
 type rec tree<'leaf, 'key> =
   | Switch({

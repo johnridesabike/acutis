@@ -18,13 +18,13 @@ exception Exit = Debug.Exit
 /*
   Every pattern represents a one-dimensional path across a multi-dimensional
   data structure. A list of patterns is a two-dimensional matrix of paths. In
-  order to transverse these paths efficiently, we need to combine them into
-  a tree.
+  order to transverse these paths efficiently, we need to combine them into a
+  tree.
 
-  We take advantage of a few properties that can make our tree simpler. We
-  only test discrete static values, integers, strings, etc. We sort record
-  fields and replace ommited fields with wildcards, so every pattern "lines up"
-  with the others. We also sort the tested values (the integers, strings, etc.).
+  We take advantage of a few properties that can make our tree simpler. We only
+  test discrete static values, integers, strings, etc. We sort record fields
+  and replace ommited fields with wildcards, so every pattern "lines up" with
+  the others. We also sort the tested values (the integers, strings, etc.).
 
   Every node has a set of integer "IDs." These keep track of bindings. If a
   pattern has a binding, then we store that binding's ID in its node. Due to
@@ -43,26 +43,19 @@ exception Exit = Debug.Exit
   automatically detected because merging them with an existing tree fails.
 
   The tree type is a polymorphic "nested" type. Each tree can use itself as its
-  own type variable, i.e. tree<tree<'a>>. This allows the end nodes to be
-  fully polymorphic. They can either lead to a leaf or back to their containing
-  tree. This nesting corresponds to the nesting of patterns.
+  own type variable, i.e. tree<tree<'a>>. This allows the end nodes to be fully
+  polymorphic. They can either lead to a leaf or back to their containing tree.
+  This nesting corresponds to the nesting of patterns.
 
   Nested types are simple to create, but complicated to manipulate. Functions
-  cannot consume these types under normal polymorphism rules. We need to
-  use explicitly polymorphic type annotations and GADTs.
+  cannot consume these types under normal polymorphism rules. We need to use
+  explicitly polymorphic type annotations and GADTs.
 */
 type extra_nest_info = Tuple | Dict | Record
 
-type enum =
-  | Enum_Bool
-  | Enum_String(Belt.Set.String.t)
-  | Enum_Int(Belt.Set.Int.t)
-
 type extra_switch_info =
-  | Extra_String
-  | Extra_Int
-  | Extra_Float
-  | Extra_Enum(enum)
+  | Extra_none
+  | Extra_enum_closed
 
 type rec tree<'leaf, 'key> =
   /*
@@ -615,14 +608,11 @@ let rec fromTPat: 'a 'k. (_, _, 'k, continue<'a, 'k>) => tree<'a, 'k> = (p, b, k
       ids: SetInt.empty,
       cases: {val: Const.fromTPat(val), ifMatch: k(. b), nextCase: None},
       extra: switch enum {
-      | Some({cases: Enum_String(e), _}) => Extra_Enum(Enum_String(e))
-      | Some({cases: Enum_Int(e), _}) => Extra_Enum(Enum_Int(e))
-      | None =>
+      | Some({row: Closed, _}) => Extra_enum_closed
+      | Some({row: Open, _}) | None =>
         switch val {
-        | TString(_) => Extra_String
-        | TInt(_) => Extra_Int
-        | TBool(_) => Extra_Enum(Enum_Bool)
-        | TFloat(_) => Extra_Float
+        | TBool(_) => Extra_enum_closed
+        | _ => Extra_none
         }
       },
       wildcard: None,
@@ -718,45 +708,6 @@ let make = (cases: NonEmpty.t<Typechecker.case>) => {
 
 module ParMatch = {
   module List = Belt.List
-
-  module Refutation = {
-    type t = {test: Const.t, enum: enum}
-
-    let succ_string = cases =>
-      switch SetString.minimum(cases) {
-      | None => None
-      | Some(s) =>
-        let cases = SetString.remove(cases, s)
-        Some({test: PString(s), enum: Enum_String(cases)})
-      }
-
-    let succ_int = cases =>
-      switch SetInt.minimum(cases) {
-      | None => None
-      | Some(i) =>
-        let cases = SetInt.remove(cases, i)
-        Some({test: PInt(i), enum: Enum_Int(cases)})
-      }
-
-    let make = x =>
-      switch x {
-      | Extra_Int | Extra_String | Extra_Float => None
-      | Extra_Enum(Enum_Bool) => Some({test: PBool(false), enum: Enum_Bool})
-      | Extra_Enum(Enum_String(enum)) => succ_string(enum)
-      | Extra_Enum(Enum_Int(enum)) => succ_int(enum)
-      }
-
-    let succ = ({test, enum}) =>
-      switch enum {
-      | Enum_Bool =>
-        switch test {
-        | PBool(false) => Some({test: PBool(true), enum: enum})
-        | _ => None
-        }
-      | Enum_String(enum) => succ_string(enum)
-      | Enum_Int(enum) => succ_int(enum)
-      }
-  }
 
   type flag = Partial | Exhaustive
 
@@ -864,54 +815,36 @@ module ParMatch = {
       | (None, None) => assert false
       }
     | Switch({key, cases, wildcard, extra, _}) =>
-      // The enum info gets lost here. FIX THIS.
       switch wildcard {
       | Some(wildcard) => exhaustive(kf(. key), check(wildcard, kf))
       | None =>
-        let rec aux = (refute, {val, ifMatch, nextCase}) =>
-          switch check(ifMatch, kf) {
-          | {flag: Partial, pats, next} => {
-              flag: Partial,
-              pats: list{(kf(. key), TConst(Debug.empty, Const.toTPat(val), None)), ...pats},
-              next: next,
-            }
-          | {flag: Exhaustive, pats, next} =>
-            if Const.equal(refute.Refutation.test, val) {
-              switch Refutation.succ(refute) {
-              | None => exhaustive(kf(. key), check(ifMatch, kf))
-              | Some(refute) =>
-                switch nextCase {
-                | None => {
-                    flag: Partial,
-                    pats: list{
-                      (kf(. key), TConst(Debug.empty, Const.toTPat(refute.test), None)),
-                      ...pats,
-                    },
-                    next: next,
-                  }
-                | Some(case) => aux(refute, case)
-                }
-              }
-            } else {
-              {
-                flag: Partial,
-                pats: list{
-                  (kf(. key), TConst(Debug.empty, Const.toTPat(refute.test), None)),
-                  ...pats,
-                },
-                next: next,
-              }
-            }
-          }
-        switch Refutation.make(extra) {
-        | None =>
+        switch extra {
+        | Extra_none =>
           let {pats, next, _} = check(cases.ifMatch, kf)
           {
             flag: Partial,
             pats: list{(kf(. key), TAny(Debug.empty)), ...pats},
             next: next,
           }
-        | Some(refute) => aux(refute, cases)
+        | Extra_enum_closed =>
+          let rec aux = ({val, ifMatch, nextCase}) =>
+            switch check(ifMatch, kf) {
+            | {flag: Partial, pats, next} => {
+                flag: Partial,
+                pats: list{(kf(. key), TConst(Debug.empty, Const.toTPat(val), None)), ...pats},
+                next: next,
+              }
+            | {flag: Exhaustive, pats, next} =>
+              switch nextCase {
+              | None => {
+                  flag: Exhaustive,
+                  pats: list{(kf(. key), TAny(Debug.empty)), ...pats},
+                  next: next,
+                }
+              | Some(case) => aux(case)
+              }
+            }
+          aux(cases)
         }
       }
     }

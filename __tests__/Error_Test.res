@@ -323,6 +323,13 @@ describe("Patterns", ({test, _}) => {
     {% map [a, @"c"] with _ %} {% /map %}
     `
     expect.value(compile(src)).toMatchSnapshot()
+    let src = `{% match @"a" with @"b" %} {% /match %}`
+    expect.value(compile(src)).toMatchSnapshot()
+  })
+
+  test("Boolean errors", ({expect, _}) => {
+    let src = `{% match true with false %} {% /match %}`
+    expect.value(compile(src)).toMatchSnapshot()
   })
 })
 

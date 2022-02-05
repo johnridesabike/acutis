@@ -9,6 +9,12 @@
 open TestFramework
 module MapString = Belt.Map.String
 
+let isOk = r =>
+  switch r {
+  | #ok(_) => true
+  | #errors(_) => false
+  }
+
 describe("basic", ({test, _}) => {
   test("pattern", ({expect, _}) => {
     let src = `
@@ -20,7 +26,7 @@ describe("basic", ({test, _}) => {
     let {prop_types, _} = Compile.make(~name="test", src, Compile.Components.empty())->Result.getExn
     let result = prop_types->MapString.map(Typescheme.toString)->MapString.toArray
     expect.value(result).toEqual([
-      ("a", `{"a": boolean, "b": ?string, "c": ?float, "d": [boolean], "z": int}`),
+      ("a", `{"a": false | true, "b": ?string, "c": ?float, "d": [false | true], "z": int}`),
     ])
   })
 })
@@ -205,6 +211,29 @@ describe("enums", ({test, _}) => {
       ("c", `{"a": [@1 | @2]}`),
       ("d", `{"a": [@1 | @2 | @3 ...]}`),
     ])
+  })
+})
+
+describe("Booleans", ({test, _}) => {
+  test("Booleans", ({expect, _}) => {
+    let src = `
+    {% match a with true %} {% /match %}
+    {% match b with false %} {% /match %}
+    {% match c with true %} {% with false %} {% /match %}
+    `
+    let {prop_types, _} = Compile.make(~name="test", src, Compile.Components.empty())->Result.getExn
+    let bindings = prop_types->MapString.map(Typescheme.toString)->MapString.toArray
+    expect.value(bindings).toEqual([("a", "true"), ("b", "false"), ("c", "false | true")])
+    let src = `{% match true with true %} {% with false %} {% /match %}`
+    let result = isOk(Compile.make(~name="test", src, Compile.Components.empty()))
+    expect.bool(result).toBe(true)
+    let src = `{% map [true, false] with true %} {% with false %} {% /map %}`
+    let result = isOk(Compile.make(~name="test", src, Compile.Components.empty()))
+    expect.bool(result).toBe(true)
+    let src = `{% match a with true %} {% with _ %} {% /match %}`
+    let {prop_types, _} = Compile.make(~name="test", src, Compile.Components.empty())->Result.getExn
+    let bindings = prop_types->MapString.map(Typescheme.toString)->MapString.toArray
+    expect.value(bindings).toEqual([("a", "false | true")])
   })
 })
 

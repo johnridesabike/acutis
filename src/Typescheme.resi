@@ -6,25 +6,38 @@
   file, You can obtain one at http://mozilla.org/MPL/2.0/.
 */
 
-type row = Closed | Open
+module Boolean: {
+  type t =
+    | Only_false
+    | Only_true
+    | False_or_true
+  let subset: (t, t) => bool
+  let union: (t, t) => t
+}
 
-type enum_ty =
-  | Enum_String(Belt.Set.String.t)
-  | Enum_Int(Belt.Set.Int.t)
+module Enum: {
+  type row = Closed | Open
 
-type enum = {
-  mutable cases: enum_ty,
-  mutable row: row,
+  type ty =
+    | Enum_String(Belt.Set.String.t)
+    | Enum_Int(Belt.Set.Int.t)
+
+  type t = {
+    mutable cases: ty,
+    mutable row: row,
+  }
+
+  let make: ([#String(string) | #Int(int)], row) => t
 }
 
 type rec typescheme =
   | Unknown
-  | Boolean
   | Int
   | Float
   | String
   | Echo
-  | Enum(enum)
+  | Enum(Enum.t)
+  | Boolean(ref<Boolean.t>)
   | Tuple(array<t>) // 0 and 1 sized tuples are legal.
   | Nullable(t)
   | List(t)
@@ -42,6 +55,8 @@ let copy_record: props => props
 
 let unknown: unit => t
 let boolean: unit => t
+let true_: unit => t
+let false_: unit => t
 let int: unit => t
 let float: unit => t
 let string: unit => t
@@ -54,8 +69,6 @@ let tuple: array<t> => t
 let record: array<(string, t)> => t
 let record2: ref<props> => t // internal use
 let props: array<(string, t)> => props
-
-let enum: ([#String(string) | #Int(int)], row) => enum
 
 module Child: {
   type t

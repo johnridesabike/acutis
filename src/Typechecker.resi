@@ -15,7 +15,7 @@ module Pattern: {
   type construct = TList | TNullable
 
   type rec t =
-    | TConst(Debug.t, constant, option<Typescheme.enum>)
+    | TConst(Debug.t, constant, option<Typescheme.Enum.t>)
     | TConstruct(Debug.t, construct, option<t>)
     | TTuple(Debug.t, array<t>)
     | TRecord(Debug.t, Belt.Map.String.t<t>, ref<Belt.Map.String.t<Typescheme.t>>)
