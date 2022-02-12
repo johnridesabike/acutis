@@ -6,28 +6,27 @@
   file, You can obtain one at http://mozilla.org/MPL/2.0/.
 */
 
-module Boolean: {
-  type t =
-    | Only_false
-    | Only_true
-    | False_or_true
-  let subset: (t, t) => bool
-  let union: (t, t) => t
-}
-
 module Enum: {
   type row = Closed | Open
 
+  type extra = Extra_none | Extra_boolean
+
   type ty =
-    | Enum_String(Belt.Set.String.t)
-    | Enum_Int(Belt.Set.Int.t)
+    | Enum_int(Belt.Set.Int.t)
+    | Enum_string(Belt.Set.String.t)
 
   type t = {
     mutable cases: ty,
     mutable row: row,
+    extra: extra,
   }
 
   let make: ([#String(string) | #Int(int)], row) => t
+
+  let false_and_true_cases: ty
+  let false_and_true: unit => t
+  let false_only: unit => t
+  let true_only: unit => t
 }
 
 type rec typescheme =
@@ -37,7 +36,6 @@ type rec typescheme =
   | String
   | Echo
   | Enum(Enum.t)
-  | Boolean(ref<Boolean.t>)
   | Tuple(array<t>) // 0 and 1 sized tuples are legal.
   | Nullable(t)
   | List(t)
@@ -55,8 +53,6 @@ let copy_record: props => props
 
 let unknown: unit => t
 let boolean: unit => t
-let true_: unit => t
-let false_: unit => t
 let int: unit => t
 let float: unit => t
 let string: unit => t

@@ -7,7 +7,6 @@
 */
 module Pattern: {
   type constant =
-    | TBool(bool)
     | TString(string)
     | TInt(int)
     | TFloat(float)

@@ -1,14 +1,12 @@
 /**
-  Copyright (c) 2021 John Jackson. 
+  Copyright (c) 2021 John Jackson.
 
   This Source Code Form is subject to the terms of the Mozilla Public
   License, v. 2.0. If a copy of the MPL was not distributed with this
   file, You can obtain one at http://mozilla.org/MPL/2.0/.
 */
-
 module Const: {
   type t =
-    | PBool(bool)
     | PInt(int)
     | PString(string)
     | PFloat(float)
@@ -16,7 +14,6 @@ module Const: {
   let toTPat: t => Typechecker.Pattern.constant
   let equal: (t, t) => bool
   let compare: (t, t) => int
-  let toString: t => string
 }
 
 type t
@@ -38,5 +35,7 @@ let fromPattern: (Typechecker.Pattern.t, Belt.Map.String.t<t>) => t
 let forEachListExn: (t, (. ~index: t, t) => unit) => unit
 
 let forEachDictExn: (t, (. ~index: t, t) => unit) => unit
+
+let toString: t => string
 
 let toJson: (Belt.Map.String.t<t>, Typescheme.props) => Js.Dict.t<Js.Json.t>

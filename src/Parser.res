@@ -21,7 +21,7 @@ exception Exit = Debug.Exit
 module Pattern = {
   type rec t =
     | UNullable(Debug.t, option<t>)
-    | UBool(Debug.t, bool)
+    | UBool(Debug.t, int)
     | UString(Debug.t, string)
     | UInt(Debug.t, int)
     | UFloat(Debug.t, float)
@@ -54,8 +54,8 @@ module Pattern = {
     switch t {
     | T.Tkn_Null(d) => UNullable(d, None)
     | Tkn_Bang(d) => UNullable(d, Some(parseNode(Lexer.pop(tokens), tokens)))
-    | Tkn_False(d) => UBool(d, false)
-    | Tkn_True(d) => UBool(d, true)
+    | Tkn_False(d) => UBool(d, 0)
+    | Tkn_True(d) => UBool(d, 1)
     | Tkn_Identifier(d, x) => UBinding(d, x)
     | Tkn_Int(d, x) => UInt(d, x)
     | Tkn_Float(d, x) => UFloat(d, x)

@@ -866,7 +866,7 @@ Array [
       "char": 84,
       "name": "",
     },
-    "message": "This pattern is type [@\\"a\\" | @\\"b\\" ...] but expected type [@\\"a\\"].",
+    "message": "This pattern is type @\\"a\\" | @\\"b\\" | ... but expected type @\\"a\\".",
     "stack": Array [],
   },
 ]
@@ -881,7 +881,7 @@ Array [
       "char": 130,
       "name": "",
     },
-    "message": "This pattern is type [@\\"c\\" | @\\"d\\"] but expected type [@\\"a\\" | @\\"b\\"].",
+    "message": "This pattern is type @\\"c\\" | @\\"d\\" but expected type @\\"a\\" | @\\"b\\".",
     "stack": Array [],
   },
 ]
@@ -896,7 +896,7 @@ Array [
       "char": 74,
       "name": "",
     },
-    "message": "This pattern is type [@\\"c\\" ...] but expected type [@\\"a\\" | @\\"b\\"].",
+    "message": "This pattern is type @\\"c\\" | ... but expected type @\\"a\\" | @\\"b\\".",
     "stack": Array [],
   },
 ]
@@ -911,7 +911,7 @@ Array [
       "char": 10,
       "name": "",
     },
-    "message": "This pattern is type [@\\"a\\" ...] but expected type [@\\"b\\"].",
+    "message": "This pattern is type @\\"a\\" | ... but expected type @\\"b\\".",
     "stack": Array [],
   },
 ]
@@ -2099,9 +2099,9 @@ Array [
     "exn": undefined,
     "kind": "Render",
     "location": undefined,
-    "message": "This input is type \\"JSON boolean\\", which does not match the template's required type, echoable.",
+    "message": "This input is type \\"JSON array\\", which does not match the template's required type, echoable.",
     "stack": Array [
-      "key: b",
+      "key: c",
     ],
   },
 ]
@@ -2116,20 +2116,6 @@ Array [
     "message": "This input is type \\"JSON array\\", which does not match the template's required type, echoable.",
     "stack": Array [
       "key: c",
-    ],
-  },
-]
-`;
-
-exports[`Rendering Type mismatches 3`] = `
-Array [
-  Object {
-    "exn": undefined,
-    "kind": "Render",
-    "location": undefined,
-    "message": "This input is type \\"JSON boolean\\", which does not match the template's required type, echoable.",
-    "stack": Array [
-      "key: b",
     ],
   },
 ]

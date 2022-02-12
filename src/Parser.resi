@@ -11,7 +11,7 @@
 module Pattern: {
   type rec t =
     | UNullable(Debug.t, option<t>)
-    | UBool(Debug.t, bool)
+    | UBool(Debug.t, int)
     | UString(Debug.t, string)
     | UInt(Debug.t, int)
     | UFloat(Debug.t, float)

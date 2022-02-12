@@ -609,11 +609,7 @@ let rec fromTPat: 'a 'k. (_, _, 'k, continue<'a, 'k>) => tree<'a, 'k> = (p, b, k
       cases: {val: Const.fromTPat(val), ifMatch: k(. b), nextCase: None},
       extra: switch enum {
       | Some({row: Closed, _}) => Extra_enum_closed
-      | Some({row: Open, _}) | None =>
-        switch val {
-        | TBool(_) => Extra_enum_closed
-        | _ => Extra_none
-        }
+      | Some({row: Open, _}) | None => Extra_none
       },
       wildcard: None,
     })

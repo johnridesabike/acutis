@@ -1,5 +1,5 @@
 /**
-  Copyright (c) 2021 John Jackson. 
+  Copyright (c) 2021 John Jackson.
 
   This Source Code Form is subject to the terms of the Mozilla Public
   License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -56,8 +56,8 @@ describe("Patterns", ({test, _}) => {
     expect.value(parseString("!a")).toEqual(
       NonEmpty.one(P.UNullable(Debug.make("", 3), Some(UBinding(Debug.make("", 4), "a")))),
     )
-    expect.value(parseString("false")).toEqual(NonEmpty.one(P.UBool(Debug.make("", 3), false)))
-    expect.value(parseString("true")).toEqual(NonEmpty.one(P.UBool(Debug.make("", 3), true)))
+    expect.value(parseString("false")).toEqual(NonEmpty.one(P.UBool(Debug.make("", 3), 0)))
+    expect.value(parseString("true")).toEqual(NonEmpty.one(P.UBool(Debug.make("", 3), 1)))
   })
 
   test("Numbers", ({expect, _}) => {
@@ -270,7 +270,7 @@ describe("Patterns", ({test, _}) => {
   test("Multiple patterns", ({expect, _}) => {
     expect.value(parseString(`true, "a", b`)).toEqual(
       NonEmpty.fromArrayExn([
-        P.UBool(Debug.make("", 3), true),
+        P.UBool(Debug.make("", 3), 1),
         P.UString(Debug.make("", 9), "a"),
         P.UBinding(Debug.make("", 14), "b"),
       ]),

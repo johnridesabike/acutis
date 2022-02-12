@@ -18,30 +18,26 @@ exception Exit = Debug.Exit
 
 module Const = {
   type t =
-    | PBool(bool)
     | PInt(int)
     | PString(string)
     | PFloat(float)
 
   let fromTPat = x =>
     switch x {
-    | Typechecker.Pattern.TBool(x) => PBool(x)
-    | TString(x) => PString(x)
+    | Typechecker.Pattern.TString(x) => PString(x)
     | TFloat(x) => PFloat(x)
     | TInt(x) => PInt(x)
     }
 
   let toTPat = x =>
     switch x {
-    | PBool(x) => Typechecker.Pattern.TBool(x)
-    | PString(x) => TString(x)
+    | PString(x) => Typechecker.Pattern.TString(x)
     | PFloat(x) => TFloat(x)
     | PInt(x) => TInt(x)
     }
 
   let equal = (a, b) =>
     switch (a, b) {
-    | (PBool(a), PBool(b)) => a == b
     | (PString(a), PString(b)) => a == b
     | (PFloat(a), PFloat(b)) => a == b
     | (PInt(a), PInt(b)) => a == b
@@ -50,20 +46,22 @@ module Const = {
 
   let compare = (a, b) =>
     switch (a, b) {
-    | (PBool(a), PBool(b)) => compare(a, b)
     | (PString(a), PString(b)) => compare(a, b)
     | (PFloat(a), PFloat(b)) => compare(a, b)
     | (PInt(a), PInt(b)) => compare(a, b)
     | _ => assert false
     }
 
-  let toString = t =>
+  let toString = (t, extra) =>
     switch t {
     | PString(s) => s
     | PFloat(n) => Float.toString(n)
-    | PInt(i) => Int.toString(i)
-    | PBool(true) => "true"
-    | PBool(false) => "false"
+    | PInt(i) =>
+      switch (i, extra) {
+      | (i, Ty.Enum.Extra_none) => Int.toString(i)
+      | (0, Extra_boolean) => "false"
+      | (_, Extra_boolean) => "true"
+      }
     }
 }
 
@@ -72,7 +70,7 @@ type rec t =
   | PNull
   | PArray(array<t>)
   | PDict(MapString.t<t>)
-  | PConst(Const.t)
+  | PConst(Const.t, Ty.Enum.extra)
 
 module Stack = {
   let nullable = "nullable"
@@ -83,36 +81,39 @@ module Stack = {
 @raises(Exit)
 let boolean = (~stack, j) =>
   switch Json.decodeBoolean(j) {
-  | Some(b) => PConst(PBool(b))
+  | Some(false) => PConst(PInt(0), Extra_boolean)
+  | Some(true) => PConst(PInt(1), Extra_boolean)
   | None => raise(Exit(Debug.decodeError(Ty.boolean(), j, Ty.toString, ~stack)))
   }
 
 @raises(Exit)
 let string = (~stack, j) =>
   switch Json.decodeString(j) {
-  | Some(s) => PConst(PString(s))
+  | Some(s) => PConst(PString(s), Extra_none)
   | None => raise(Exit(Debug.decodeError(Ty.string(), j, Ty.toString, ~stack)))
   }
 
 @raises(Exit)
 let int = (~stack, j) =>
   switch Json.decodeNumber(j) {
-  | Some(i) => PConst(PInt(Int.fromFloat(i)))
+  | Some(i) => PConst(PInt(Int.fromFloat(i)), Extra_none)
   | None => raise(Exit(Debug.decodeError(Ty.int(), j, Ty.toString, ~stack)))
   }
 
 @raises(Exit)
 let float = (~stack, j) =>
   switch Json.decodeNumber(j) {
-  | Some(f) => PConst(PFloat(f))
+  | Some(f) => PConst(PFloat(f), Extra_none)
   | None => raise(Exit(Debug.decodeError(Ty.float(), j, Ty.toString, ~stack)))
   }
 
 @raises(Exit)
 let echo = (~stack, j) =>
   switch Json.classify(j) {
-  | JSONString(s) => PConst(PString(s))
-  | JSONNumber(f) => PConst(PFloat(f))
+  | JSONString(s) => PConst(PString(s), Extra_none)
+  | JSONNumber(f) => PConst(PFloat(f), Extra_none)
+  | JSONFalse => PConst(PInt(0), Extra_boolean)
+  | JSONTrue => PConst(PInt(1), Extra_boolean)
   | _ => raise(Exit(Debug.decodeError(Ty.echo(), j, Ty.toString, ~stack)))
   }
 
@@ -180,9 +181,9 @@ and make = (~stack, j, ty) =>
   switch ty.contents {
   | Ty.Unknown => PUnknown(j)
   | Nullable(ty) => nullable(~stack, j, ty)
-  | Boolean(_) => boolean(~stack, j)
-  | String | Enum({cases: Enum_String(_), _}) => string(~stack, j)
-  | Int | Enum({cases: Enum_Int(_), _}) => int(~stack, j)
+  | Enum({extra: Extra_boolean, _}) => boolean(~stack, j)
+  | String | Enum({cases: Enum_string(_), _}) => string(~stack, j)
+  | Int | Enum({cases: Enum_int(_), _}) => int(~stack, j)
   | Float => float(~stack, j)
   | Echo => echo(~stack, j)
   | List(ty) => list(~stack, j, ty)
@@ -196,7 +197,7 @@ let make = (j, ty) => recordAux(j, ty, ~stack=list{})
 
 let constantExn = t =>
   switch t {
-  | PConst(x) => x
+  | PConst(x, _) => x
   | _ => assert false
   }
 
@@ -227,7 +228,9 @@ let nullableExn = t =>
 
 let rec fromPattern = (x, props) =>
   switch x {
-  | Typechecker.Pattern.TConst(_, x, _) => PConst(Const.fromTPat(x))
+  | Typechecker.Pattern.TConst(_, x, Some({extra: Extra_boolean, _})) =>
+    PConst(Const.fromTPat(x), Extra_boolean)
+  | TConst(_, x, _) => PConst(Const.fromTPat(x), Extra_none)
   | TOptionalVar(_, x) | TVar(_, x) =>
     switch MapString.get(props, x) {
     | Some(x) => x
@@ -247,7 +250,7 @@ let forEachListExn = (l, f) => {
     } else {
       switch tupleExn(l) {
       | [hd, tl] =>
-        f(. ~index=PConst(PInt(i)), hd)
+        f(. ~index=PConst(PInt(i), Extra_none), hd)
         aux(succ(i), tl)
       | _ => assert false
       }
@@ -256,8 +259,14 @@ let forEachListExn = (l, f) => {
 }
 
 let forEachDictExn = (d, f) => {
-  MapString.forEachU(dictExn(d), (. k, v) => f(. ~index=PConst(PString(k)), v))
+  MapString.forEachU(dictExn(d), (. k, v) => f(. ~index=PConst(PString(k), Extra_none), v))
 }
+
+let toString = t =>
+  switch t {
+  | PConst(x, e) => Const.toString(x, e)
+  | _ => assert false
+  }
 
 let rec toJson_list = (l, ty) => {
   let q = Queue.make()
@@ -286,10 +295,11 @@ and toJson_record = (t, ty) => {
 and toJson = (t, ty) =>
   switch (t, ty) {
   | (PUnknown(j), Ty.Unknown) => j
-  | (PConst(PBool(b)), Boolean(_)) => Json.boolean(b)
-  | (PConst(PInt(i)), Int | Echo) => Json.number(Int.toFloat(i))
-  | (PConst(PFloat(f)), Float | Echo) => Json.number(f)
-  | (PConst(PString(s)), String | Echo) => Json.string(s)
+  | (PConst(PInt(0), Extra_boolean), Ty.Enum({extra: Extra_boolean, _})) => Json.boolean(false)
+  | (PConst(PInt(_), Extra_boolean), Ty.Enum({extra: Extra_boolean, _})) => Json.boolean(true)
+  | (PConst(PInt(i), _), Int | Echo) => Json.number(Int.toFloat(i))
+  | (PConst(PFloat(f), _), Float | Echo) => Json.number(f)
+  | (PConst(PString(s), _), String | Echo) => Json.string(s)
   | (PNull, Nullable(_)) => Json.null
   | (PArray([t]), Nullable(ty)) => toJson(t, ty.contents)
   | (_, List(ty)) => toJson_list(t, ty.contents)

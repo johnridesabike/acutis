@@ -359,14 +359,9 @@ describe("Variables in multiple `with` clauses", ({test, _}) => {
 @raises(Failure)
 describe("Rendering", ({test, _}) => {
   test("Type mismatches", ({expect, _}) => {
-    let data = dict([
-      ("a", Js.Json.string("a")),
-      ("b", Js.Json.boolean(true)),
-      ("c", Js.Json.stringArray([])),
-    ])
-    expect.value(render("{{ b }}", data, [])).toMatchSnapshot()
+    let data = dict([("c", Js.Json.stringArray([]))])
     expect.value(render("{{ c }}", data, [])).toMatchSnapshot()
-    expect.value(render("{{ &b }}", data, [])).toMatchSnapshot()
+    expect.value(render("{{ &c }}", data, [])).toMatchSnapshot()
   })
 
   test("Map type mismatches", ({expect, _}) => {

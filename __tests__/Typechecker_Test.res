@@ -137,7 +137,7 @@ describe("enums", ({test, _}) => {
     `
     let {prop_types, _} = Compile.make(~name="test", src, Compile.Components.empty())->Result.getExn
     let bindings = prop_types->MapString.map(Typescheme.toString)->MapString.toArray
-    expect.value(bindings).toEqual([("a", `[@"a" | @"b" ...]`), ("b", "[@1 | @2 ...]")])
+    expect.value(bindings).toEqual([("a", `@"a" | @"b" | ...`), ("b", "@1 | @2 | ...")])
     let src = `
     {% match a with @"a" %} {% with @"b" %} {% with _ %} {% /match %}
     {% map [@"c", a] with _ %} {% /map %}
@@ -146,7 +146,7 @@ describe("enums", ({test, _}) => {
     `
     let {prop_types, _} = Compile.make(~name="test", src, Compile.Components.empty())->Result.getExn
     let bindings = prop_types->MapString.map(Typescheme.toString)->MapString.toArray
-    expect.value(bindings).toEqual([("a", `[@"a" | @"b" | @"c" ...]`), ("b", "[@1 | @2 | @3 ...]")])
+    expect.value(bindings).toEqual([("a", `@"a" | @"b" | @"c" | ...`), ("b", "@1 | @2 | @3 | ...")])
   })
 
   test("closed enums work", ({expect, _}) => {
@@ -156,7 +156,7 @@ describe("enums", ({test, _}) => {
     `
     let {prop_types, _} = Compile.make(~name="test", src, Compile.Components.empty())->Result.getExn
     let bindings = prop_types->MapString.map(Typescheme.toString)->MapString.toArray
-    expect.value(bindings).toEqual([("a", `[@"a" | @"b"]`), ("b", "[@1 | @2]")])
+    expect.value(bindings).toEqual([("a", `@"a" | @"b"`), ("b", "@1 | @2")])
     let src = `
     {% match a with @"a" %} {% with @"b" %} {% /match %}
     {% match a with @"a" %} {% with _ %} {% /match %}
@@ -165,7 +165,7 @@ describe("enums", ({test, _}) => {
     `
     let {prop_types, _} = Compile.make(~name="test", src, Compile.Components.empty())->Result.getExn
     let bindings = prop_types->MapString.map(Typescheme.toString)->MapString.toArray
-    expect.value(bindings).toEqual([("a", `[@"a" | @"b"]`), ("b", "[@1 | @2]")])
+    expect.value(bindings).toEqual([("a", `@"a" | @"b"`), ("b", "@1 | @2")])
     let src = `
     {% match a with @"a" %} {% with @"b" %} {% /match %}
     {% map [@"c", @"d", a, b] with _ %} {% /map %}
@@ -175,10 +175,10 @@ describe("enums", ({test, _}) => {
     let {prop_types, _} = Compile.make(~name="test", src, Compile.Components.empty())->Result.getExn
     let bindings = prop_types->MapString.map(Typescheme.toString)->MapString.toArray
     expect.value(bindings).toEqual([
-      ("a", `[@"a" | @"b"]`),
-      ("b", `[@"a" | @"b" | @"c" | @"d" ...]`),
-      ("c", `[@1 | @2]`),
-      ("d", `[@1 | @2 | @3 | @4 ...]`),
+      ("a", `@"a" | @"b"`),
+      ("b", `@"a" | @"b" | @"c" | @"d" | ...`),
+      ("c", `@1 | @2`),
+      ("d", `@1 | @2 | @3 | @4 | ...`),
     ])
     let src = `
     {% map [@"a", a] with @"a" %} {% with @"b" %} {% /map %}
@@ -186,7 +186,7 @@ describe("enums", ({test, _}) => {
     `
     let {prop_types, _} = Compile.make(~name="test", src, Compile.Components.empty())->Result.getExn
     let bindings = prop_types->MapString.map(Typescheme.toString)->MapString.toArray
-    expect.value(bindings).toEqual([("a", `[@"a" | @"b"]`), ("b", "[@1 | @2]")])
+    expect.value(bindings).toEqual([("a", `@"a" | @"b"`), ("b", "@1 | @2")])
   })
 
   test("Nested closed enums work", ({expect, _}) => {
@@ -196,7 +196,7 @@ describe("enums", ({test, _}) => {
     `
     let {prop_types, _} = Compile.make(~name="test", src, Compile.Components.empty())->Result.getExn
     let bindings = prop_types->MapString.map(Typescheme.toString)->MapString.toArray
-    expect.value(bindings).toEqual([("a", `{"a": [@"a" | @"b"]}`), ("b", `{"a": [@1 | @2]}`)])
+    expect.value(bindings).toEqual([("a", `{"a": @"a" | @"b"}`), ("b", `{"a": @1 | @2}`)])
     let src = `
     {% match a with {a: @"a"} %} {% with {a: @"b"} %} {% /match %}
     {% map [{a: @"c"}, a, b] with _ %} {% /map %}
@@ -206,10 +206,10 @@ describe("enums", ({test, _}) => {
     let {prop_types, _} = Compile.make(~name="test", src, Compile.Components.empty())->Result.getExn
     let bindings = prop_types->MapString.map(Typescheme.toString)->MapString.toArray
     expect.value(bindings).toEqual([
-      ("a", `{"a": [@"a" | @"b"]}`),
-      ("b", `{"a": [@"a" | @"b" | @"c" ...]}`),
-      ("c", `{"a": [@1 | @2]}`),
-      ("d", `{"a": [@1 | @2 | @3 ...]}`),
+      ("a", `{"a": @"a" | @"b"}`),
+      ("b", `{"a": @"a" | @"b" | @"c" | ...}`),
+      ("c", `{"a": @1 | @2}`),
+      ("d", `{"a": @1 | @2 | @3 | ...}`),
     ])
   })
 })

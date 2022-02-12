@@ -39,8 +39,8 @@ let check_enum_subset = (subset, a, b, tref1, tref2, debug) =>
 
 let union_enum = (a, b, tref1, tref2, debug) =>
   switch (a, b) {
-  | (Ty.Enum.Enum_String(a), Ty.Enum.Enum_String(b)) => Ty.Enum.Enum_String(SetString.union(a, b))
-  | (Enum_Int(a), Enum_Int(b)) => Enum_Int(SetInt.union(a, b))
+  | (Ty.Enum.Enum_string(a), Ty.Enum.Enum_string(b)) => Ty.Enum.Enum_string(SetString.union(a, b))
+  | (Enum_int(a), Enum_int(b)) => Enum_int(SetInt.union(a, b))
   | _ => raise(Exit(Debug.typeMismatch(debug, tref1, tref2, Ty.toString)))
   }
 
@@ -50,8 +50,8 @@ let rec unify = (tref1, tref2, mode, debug) =>
   | (Ty.Int, Ty.Int) | (Float, Float) | (String, String) => ()
   | (Unknown, t) => tref1 := t
   | (t, Unknown) => tref2 := t
-  | (Echo, (Int | Float | String | Echo) as t) => tref1 := t
-  | ((Int | Float | String) as t, Echo) => tref2 := t
+  | (Echo, (Int | Float | String | Echo | Enum(_)) as t) => tref1 := t
+  | ((Int | Float | String | Enum(_)) as t, Echo) => tref2 := t
   | (Nullable(t1), Nullable(t2)) => unify(t1, t2, mode, debug)
   | (List(t1), List(t2)) => unify(t1, t2, mode, debug)
   | (Dict(t1, ks1), Dict(t2, ks2)) =>
@@ -123,9 +123,9 @@ let rec unify = (tref1, tref2, mode, debug) =>
         a.cases = cases
       | (Closed, Closed | Open) =>
         switch (a.cases, b.cases) {
-        | (Enum_String(a), Enum_String(b)) =>
+        | (Enum_string(a), Enum_string(b)) =>
           check_enum_subset(SetString.subset, a, b, tref1, tref2, debug)
-        | (Enum_Int(a), Enum_Int(b)) => check_enum_subset(SetInt.subset, a, b, tref1, tref2, debug)
+        | (Enum_int(a), Enum_int(b)) => check_enum_subset(SetInt.subset, a, b, tref1, tref2, debug)
         | _ => raise(Exit(Debug.typeMismatch(debug, tref1, tref2, Ty.toString)))
         }
       }
@@ -133,9 +133,9 @@ let rec unify = (tref1, tref2, mode, debug) =>
       switch (a.row, b.row) {
       | (Closed, Closed) =>
         switch (a.cases, b.cases) {
-        | (Enum_String(a), Enum_String(b)) =>
+        | (Enum_string(a), Enum_string(b)) =>
           check_enum_subset(SetString.subset, a, b, tref1, tref2, debug)
-        | (Enum_Int(a), Enum_Int(b)) => check_enum_subset(SetInt.subset, a, b, tref1, tref2, debug)
+        | (Enum_int(a), Enum_int(b)) => check_enum_subset(SetInt.subset, a, b, tref1, tref2, debug)
         | _ => raise(Exit(Debug.typeMismatch(debug, tref1, tref2, Ty.toString)))
         }
       | (Open, Closed) =>
@@ -148,19 +148,16 @@ let rec unify = (tref1, tref2, mode, debug) =>
       | (Closed, Open) => raise(Exit(Debug.typeMismatch(debug, tref1, tref2, Ty.toString)))
       }
     }
-  | (Boolean(a), Boolean(b)) =>
-    switch mode {
-    | Destructure_expand => a := Ty.Boolean.union(a.contents, b.contents)
-    | Construct_literal | Construct_var =>
-      check_enum_subset(Ty.Boolean.subset, a.contents, b.contents, tref1, tref2, debug)
-    }
   | _ => raise(Exit(Debug.typeMismatch(debug, tref1, tref2, Ty.toString)))
   }
 
 let rec open_all_rows = ty =>
   switch ty.contents {
-  | Ty.Enum(ty) => ty.row = Open
-  | Boolean(ty) => ty := Ty.Boolean.False_or_true
+  | Ty.Enum(ty) =>
+    switch ty.extra {
+    | Extra_none => ty.row = Open
+    | Extra_boolean => ty.cases = Ty.Enum.false_and_true_cases
+    }
   | Nullable(ty) | List(ty) | Dict(ty, _) => open_all_rows(ty)
   | Tuple(a) => Array.forEach(a, open_all_rows)
   | Record(d) => MapString.forEachU(d.contents, (. _, ty) => open_all_rows(ty))
@@ -169,28 +166,22 @@ let rec open_all_rows = ty =>
 
 module Pattern = {
   type constant =
-    | TBool(bool)
     | TString(string)
     | TInt(int)
     | TFloat(float)
 
-  let toStringConst = (~enum, x) =>
-    switch x {
-    | TBool(true) => "true"
-    | TBool(false) => "false"
-    | TString(s) =>
-      if enum {
-        `@"${s}"`
-      } else {
-        `"${s}"`
+  let toStringConst = (x, e) =>
+    switch (x, e) {
+    | (TInt(i), Some({Ty.Enum.extra: Extra_boolean, _})) =>
+      switch i {
+      | 0 => "false"
+      | _ => "true"
       }
-    | TInt(i) =>
-      if enum {
-        "@" ++ Belt.Int.toString(i)
-      } else {
-        Belt.Int.toString(i)
-      }
-    | TFloat(f) => Belt.Float.toString(f)
+    | (TInt(i), Some(_)) => "@" ++ Belt.Int.toString(i)
+    | (TInt(i), None) => Belt.Int.toString(i)
+    | (TString(s), Some(_)) => `@"${s}"`
+    | (TString(s), None) => `"${s}"`
+    | (TFloat(f), _) => Belt.Float.toString(f)
     }
 
   type construct = TList | TNullable
@@ -218,16 +209,22 @@ module Pattern = {
       unify(ty, Ty.float(), mode, dbg)
       TConst(dbg, TFloat(x), None)
     | UBool(dbg, b) =>
-      let new_ty = switch mode {
+      let new_enum = switch mode {
       | Destructure_expand =>
         switch b {
-        | true => Ty.true_()
-        | false => Ty.false_()
+        | 0 => Ty.Enum.false_only()
+        | _ => Ty.Enum.true_only()
         }
-      | Construct_var | Construct_literal => Ty.boolean()
+      | Construct_var | Construct_literal => Ty.Enum.false_and_true()
+      }
+      let new_ty = ref(Ty.Enum(new_enum))
+      let enum = switch ty.contents {
+      | Enum(enum) => enum
+      | Unknown => new_enum
+      | _ => raise(Exit(Debug.typeMismatch(dbg, ty, new_ty, Ty.toString)))
       }
       unify(ty, new_ty, mode, dbg)
-      TConst(dbg, TBool(b), None)
+      TConst(dbg, TInt(b), Some(enum))
     | UStringEnum(dbg, s) =>
       let new_enum = switch mode {
       | Destructure_expand => Ty.Enum.make(#String(s), Closed)
@@ -370,8 +367,7 @@ module Pattern = {
 
   let rec toString = x =>
     switch x {
-    | TConst(_, x, None) => toStringConst(x, ~enum=false)
-    | TConst(_, x, Some(_)) => toStringConst(x, ~enum=true)
+    | TConst(_, x, e) => toStringConst(x, e)
     | TTuple(_, t) => "(" ++ Array.joinWith(t, ", ", toString) ++ ")"
     | TRecord(_, r, _) =>
       let a = MapString.toArray(r)

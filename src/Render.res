@@ -1,5 +1,5 @@
 /**
-  Copyright (c) 2021 John Jackson. 
+  Copyright (c) 2021 John Jackson.
 
   This Source Code Form is subject to the terms of the Mozilla Public
   License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -106,7 +106,7 @@ let echoNotNull = (x, props, children, return) =>
   switch x {
   | Compile.OEBinding(binding, esc) =>
     switch MapString.get(props, binding) {
-    | Some(x) => return(. Utils.escape(esc, x->Data.constantExn->Data.Const.toString))
+    | Some(x) => return(. Utils.escape(esc, Data.toString(x)))
     | None => assert false
     }
   | OEChild(child) =>
@@ -124,7 +124,7 @@ let echoNullable = (x, props, children, return) =>
     | Some(x) =>
       switch Data.nullableExn(x) {
       | None => None
-      | Some(x) => Some(return(. Utils.escape(esc, x->Data.constantExn->Data.Const.toString)))
+      | Some(x) => Some(return(. Utils.escape(esc, Data.toString(x))))
       }
     | None => assert false
     }
