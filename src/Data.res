@@ -12,6 +12,8 @@ module Float = Belt.Float
 module Int = Belt.Int
 module MapString = Belt.Map.String
 module Queue = Belt.MutableQueue
+module SetInt = Belt.Set.Int
+module SetString = Belt.Set.String
 module Ty = Typescheme
 
 exception Exit = Debug.Exit
@@ -79,25 +81,50 @@ module Stack = {
 }
 
 @raises(Exit)
-let boolean = (~stack, j) =>
-  switch Json.decodeBoolean(j) {
-  | Some(false) => PConst(PInt(0), Extra_boolean)
-  | Some(true) => PConst(PInt(1), Extra_boolean)
-  | None => raise(Exit(Debug.decodeError(Ty.boolean(), j, Ty.toString, ~stack)))
+let boolean = (~stack, j, ty, cases) => {
+  let i = switch Json.decodeBoolean(j) {
+  | Some(false) => 0
+  | Some(true) => 1
+  | None => raise(Exit(Debug.decodeError(ty, j, Ty.toString, ~stack)))
   }
+  if SetInt.has(cases, i) {
+    PConst(PInt(i), Extra_boolean)
+  } else {
+    raise(Exit(Debug.decodeError(ty, j, Ty.toString, ~stack)))
+  }
+}
 
 @raises(Exit)
-let string = (~stack, j) =>
+let string = (~stack, j, ty, cases) =>
   switch Json.decodeString(j) {
-  | Some(s) => PConst(PString(s), Extra_none)
-  | None => raise(Exit(Debug.decodeError(Ty.string(), j, Ty.toString, ~stack)))
+  | Some(s) =>
+    switch cases {
+    | None => PConst(PString(s), Extra_none)
+    | Some(cases) =>
+      if SetString.has(cases, s) {
+        PConst(PString(s), Extra_none)
+      } else {
+        raise(Exit(Debug.decodeError(ty, j, Ty.toString, ~stack)))
+      }
+    }
+  | None => raise(Exit(Debug.decodeError(ty, j, Ty.toString, ~stack)))
   }
 
 @raises(Exit)
-let int = (~stack, j) =>
+let int = (~stack, j, ty, cases) =>
   switch Json.decodeNumber(j) {
-  | Some(i) => PConst(PInt(Int.fromFloat(i)), Extra_none)
-  | None => raise(Exit(Debug.decodeError(Ty.int(), j, Ty.toString, ~stack)))
+  | Some(i) =>
+    let i = Int.fromFloat(i)
+    switch cases {
+    | None => PConst(PInt(i), Extra_none)
+    | Some(cases) =>
+      if SetInt.has(cases, i) {
+        PConst(PInt(i), Extra_none)
+      } else {
+        raise(Exit(Debug.decodeError(ty, j, Ty.toString, ~stack)))
+      }
+    }
+  | None => raise(Exit(Debug.decodeError(ty, j, Ty.toString, ~stack)))
   }
 
 @raises(Exit)
@@ -181,9 +208,11 @@ and make = (~stack, j, ty) =>
   switch ty.contents {
   | Ty.Unknown => PUnknown(j)
   | Nullable(ty) => nullable(~stack, j, ty)
-  | Enum({extra: Extra_boolean, _}) => boolean(~stack, j)
-  | String | Enum({cases: Enum_string(_), _}) => string(~stack, j)
-  | Int | Enum({cases: Enum_int(_), _}) => int(~stack, j)
+  | Enum({extra: Extra_boolean, cases: Enum_int(cases), _}) => boolean(~stack, j, ty, cases)
+  | String => string(~stack, j, ty, None)
+  | Enum({cases: Enum_string(cases), _}) => string(~stack, j, ty, Some(cases))
+  | Int => int(~stack, j, ty, None)
+  | Enum({cases: Enum_int(cases), _}) => int(~stack, j, ty, Some(cases))
   | Float => float(~stack, j)
   | Echo => echo(~stack, j)
   | List(ty) => list(~stack, j, ty)

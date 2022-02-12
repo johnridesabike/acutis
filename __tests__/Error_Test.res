@@ -5,6 +5,7 @@
   License, v. 2.0. If a copy of the MPL was not distributed with this
   file, You can obtain one at http://mozilla.org/MPL/2.0/.
 */
+module Json = Js.Json
 open TestFramework
 
 let getError = x =>
@@ -167,7 +168,7 @@ describe("Patterns", ({test, _}) => {
   })
 
   test("Missing bindings", ({expect, _}) => {
-    let props = dict([("a", Js.Json.number(1.0)), ("c", Js.Json.null)])
+    let props = dict([("a", Json.number(1.0)), ("c", Json.null)])
     let a = Source.fn(
       ~name="A",
       Typescheme.props([("b", Typescheme.record([("b", Typescheme.string())]))]),
@@ -359,16 +360,16 @@ describe("Variables in multiple `with` clauses", ({test, _}) => {
 @raises(Failure)
 describe("Rendering", ({test, _}) => {
   test("Type mismatches", ({expect, _}) => {
-    let data = dict([("c", Js.Json.stringArray([]))])
+    let data = dict([("c", Json.stringArray([]))])
     expect.value(render("{{ c }}", data, [])).toMatchSnapshot()
     expect.value(render("{{ &c }}", data, [])).toMatchSnapshot()
   })
 
   test("Map type mismatches", ({expect, _}) => {
     let data = dict([
-      ("a", Js.Json.string("a")),
-      ("b", Js.Json.boolean(true)),
-      ("c", Js.Json.stringArray([])),
+      ("a", Json.string("a")),
+      ("b", Json.boolean(true)),
+      ("c", Json.stringArray([])),
     ])
     expect.value(render("{% map a with {a} %}{{ a }}{% /map %}", data, [])).toMatchSnapshot()
     expect.value(render("{% map b with {a} %}{{ a }}{% /map %}", data, [])).toMatchSnapshot()
@@ -438,7 +439,7 @@ describe("Stack trace is rendered correctly", ({test, _}) => {
     let c = Source.src(~name="C", "{{ c }}")
     let b = Source.src(~name="B", `{% match x with "x" %} {% C /%} {% /match %}`)
     let components = [c, b]
-    let data = dict([("x", Js.Json.string("x"))])
+    let data = dict([("x", Json.string("x"))])
     expect.value(render(~name="A", `{% B x / %}`, data, components)).toMatchSnapshot()
   })
 })
@@ -572,5 +573,26 @@ describe("Matching: partial matching", ({test, _}) => {
     let src = `{% match a with <a: true> %} {% with <a: false> %} {% with _ %} {% /match %}`
     let result = compile(src)
     expect.value(result).toEqual([])
+  })
+})
+
+describe("Decoding", ({test, _}) => {
+  // Some of this is covered by some old tests that need to be moved.
+  test("Booleans", ({expect, _}) => {
+    let src = `{% match a with true %} {% /match %}`
+    let data = dict([("a", Json.boolean(false))])
+    expect.value(render(src, data, [])).toMatchSnapshot()
+  })
+
+  test("Int enums", ({expect, _}) => {
+    let src = `{% match a with @1 %} {% with @2 %} {% /match %}`
+    let data = dict([("a", Json.number(3.0))])
+    expect.value(render(src, data, [])).toMatchSnapshot()
+  })
+
+  test("String enums", ({expect, _}) => {
+    let src = `{% match a with @"a" %} {% with @"b" %} {% /match %}`
+    let data = dict([("a", Json.string("c"))])
+    expect.value(render(src, data, [])).toMatchSnapshot()
   })
 })

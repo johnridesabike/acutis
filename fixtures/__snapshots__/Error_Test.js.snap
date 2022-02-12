@@ -1,5 +1,47 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
+exports[`Decoding Booleans 1`] = `
+Array [
+  Object {
+    "exn": undefined,
+    "kind": "Render",
+    "location": undefined,
+    "message": "This input is type \\"JSON false\\", which does not match the template's required type, true.",
+    "stack": Array [
+      "key: a",
+    ],
+  },
+]
+`;
+
+exports[`Decoding Int enums 1`] = `
+Array [
+  Object {
+    "exn": undefined,
+    "kind": "Render",
+    "location": undefined,
+    "message": "This input is type \\"JSON number\\", which does not match the template's required type, @1 | @2.",
+    "stack": Array [
+      "key: a",
+    ],
+  },
+]
+`;
+
+exports[`Decoding String enums 1`] = `
+Array [
+  Object {
+    "exn": undefined,
+    "kind": "Render",
+    "location": undefined,
+    "message": "This input is type \\"JSON string\\", which does not match the template's required type, @\\"a\\" | @\\"b\\".",
+    "stack": Array [
+      "key: a",
+    ],
+  },
+]
+`;
+
 exports[`Inputs Bad source input 1`] = `
 Array [
   Object {
@@ -1930,7 +1972,7 @@ Array [
     "exn": undefined,
     "kind": "Render",
     "location": undefined,
-    "message": "This input is type \\"JSON boolean\\", which does not match the template's required type, [{\\"a\\": echoable}].",
+    "message": "This input is type \\"JSON true\\", which does not match the template's required type, [{\\"a\\": echoable}].",
     "stack": Array [
       "key: b",
     ],
