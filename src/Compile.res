@@ -55,8 +55,6 @@ let echo = (. x) =>
   | Parser.EBinding(_, s, e) => OEBinding(s, e)
   | EChild(_, s) => OEChild(s)
   | EString(_, s, e) => OEString(Utils.escape(e, s))
-  | EInt(_, i, e) => OEString(Utils.escape(e, Belt.Int.toString(i)))
-  | EFloat(_, i, e) => OEString(Utils.escape(e, Belt.Float.toString(i)))
   }
 
 let rec nodes = a =>

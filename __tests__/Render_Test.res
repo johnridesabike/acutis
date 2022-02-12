@@ -1,5 +1,5 @@
 /**
-  Copyright (c) 2021 John Jackson. 
+  Copyright (c) 2021 John Jackson.
 
   This Source Code Form is subject to the terms of the Mozilla Public
   License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -28,13 +28,9 @@ describe("Render essentials", ({test, _}) => {
       ("b", Js.Json.string("World")),
       ("c", Js.Json.string("&\"'></`=")),
     ])
-    let result = render(
-      `{{ a }} {{ b }}! {{ c }} {{ &c }} {{ &"<" }} {{ "d" }} {{ 1.5 }}`,
-      props,
-      [],
-    )
+    let result = render(`{{ a }} {{ b }}! {{ c }} {{ &c }} {{ &"<" }} {{ "d" }}`, props, [])
     expect.value(result).toEqual(
-      #ok("Hello World! &amp;&quot;&apos;&gt;&lt;&#x2F;&#x60;&#x3D; &\"'></`= < d 1.5"),
+      #ok("Hello World! &amp;&quot;&apos;&gt;&lt;&#x2F;&#x60;&#x3D; &\"'></`= < d"),
     )
   })
 
@@ -87,7 +83,7 @@ describe("Render essentials", ({test, _}) => {
   test("Whitespace control", ({expect, _}) => {
     let data = dict([("a", json(`{"a": {"b": "hi"}}`))])
     let result = render(
-      `{% match a with {a: {b}} ~%}  
+      `{% match a with {a: {b}} ~%}
    \t  _ {{ b }} _
     \t \r  {%~ /match %}`,
       data,
@@ -220,12 +216,6 @@ describe("Nullish coalescing", ({test, _}) => {
       [Source.src(~name="Comp", `{{ a ? B ? X ? "y" }}`)],
     )
     expect.value(result).toEqual(#ok("y"))
-    let result = render(
-      `{% Comp a=null /%}`,
-      Js.Dict.empty(),
-      [Source.src(~name="Comp", ` {{~ &a ? B ? X ? 1 ~}} `)],
-    )
-    expect.value(result).toEqual(#ok("1"))
     let result = render(
       `{% Comp x=null Z=#%}z{%/# /%}`,
       Js.Dict.empty(),

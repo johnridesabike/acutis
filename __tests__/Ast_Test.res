@@ -288,7 +288,6 @@ a
 {* b *}
 {{ c }}
 {{ "d" }}
-{{ 1.5 }}
 {{ &e }}
 f`,
       )->Parser.make,
@@ -299,9 +298,7 @@ f`,
       UText("\n", NoTrim),
       UEcho(Debug.make("", 21), [], EString(Debug.make("", 22), "d", Escape)),
       UText("\n", NoTrim),
-      UEcho(Debug.make("", 31), [], EFloat(Debug.make("", 32), 1.5, Escape)),
-      UText("\n", NoTrim),
-      UEcho(Debug.make("", 41), [], EBinding(Debug.make("", 43), "e", NoEscape)),
+      UEcho(Debug.make("", 31), [], EBinding(Debug.make("", 33), "e", NoEscape)),
       UText("\nf", NoTrim),
     ])
   })

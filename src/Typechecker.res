@@ -536,13 +536,12 @@ let unifyEchoes = (nullables, default, ctx) => {
       switch default {
       | Parser.EBinding(debug, binding, _) => Context.update(ctx)(. binding, Ty.echo(), debug)
       | EChild(debug, child) => Context.updateChild(ctx, Ty.Child.child(child), debug)
-      | EString(_, _, _) | EInt(_, _, _) | EFloat(_, _, _) => ()
+      | EString(_, _, _) => ()
       }
     | Some(Parser.EBinding(debug, binding, _)) =>
       Context.update(ctx)(. binding, Ty.nullable(Ty.echo()), debug)
       aux(succ(i))
-    | Some(EString(debug, _, _) | EInt(debug, _, _) | EFloat(debug, _, _)) =>
-      raise(Exit(Debug.nonNullableEchoLiteral(debug)))
+    | Some(EString(debug, _, _)) => raise(Exit(Debug.nonNullableEchoLiteral(debug)))
     | Some(EChild(debug, child)) =>
       Context.updateChild(ctx, Ty.Child.nullable(child), debug)
       aux(succ(i))

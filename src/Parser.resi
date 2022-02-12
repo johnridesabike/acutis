@@ -32,8 +32,6 @@ type echo =
   | EBinding(Debug.t, string, Utils.escape)
   | EChild(Debug.t, string)
   | EString(Debug.t, string, Utils.escape)
-  | EInt(Debug.t, int, Utils.escape)
-  | EFloat(Debug.t, float, Utils.escape)
 
 type trim = NoTrim | TrimStart | TrimEnd | TrimBoth
 

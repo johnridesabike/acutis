@@ -201,8 +201,6 @@ type echo =
   | EBinding(Debug.t, string, Utils.escape)
   | EChild(Debug.t, string)
   | EString(Debug.t, string, Utils.escape)
-  | EInt(Debug.t, int, Utils.escape)
-  | EFloat(Debug.t, float, Utils.escape)
 
 type trim = NoTrim | TrimStart | TrimEnd | TrimBoth
 
@@ -234,8 +232,6 @@ let parseEchoAux = (t, esc) =>
   switch t {
   | T.Tkn_Identifier(d, x) => EBinding(d, x, esc)
   | Tkn_String(d, x) => EString(d, x, esc)
-  | Tkn_Int(d, x) => EInt(d, x, esc)
-  | Tkn_Float(d, x) => EFloat(d, x, esc)
   | t => raise(Exit(Debug.unexpectedToken(t, module(T))))
   }
 
