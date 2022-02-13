@@ -32,11 +32,6 @@ type mode =
   | Construct_literal // Record a is narrowed to a subset of a and b.
   | Construct_var // Record a expands into b only.
 
-let check_enum_subset = (subset, a, b, tref1, tref2, debug) =>
-  if !subset(b, a) {
-    raise(Exit(Debug.typeMismatch(debug, tref1, tref2, Ty.toString)))
-  }
-
 let union_enum = (a, b, tref1, tref2, debug) =>
   switch (a, b) {
   | (Ty.Enum.Enum_string(a), Ty.Enum.Enum_string(b)) => Ty.Enum.Enum_string(SetString.union(a, b))
@@ -45,7 +40,8 @@ let union_enum = (a, b, tref1, tref2, debug) =>
   }
 
 @raises(Exit)
-let rec unify = (tref1, tref2, mode, debug) =>
+let rec unify = (tref1, tref2, mode, debug) => {
+  @inline let mismatch = () => raise(Exit(Debug.typeMismatch(debug, tref1, tref2, Ty.toString)))
   switch (tref1.contents, tref2.contents) {
   | (Ty.Int, Ty.Int) | (Float, Float) | (String, String) => ()
   | (Unknown, t) => tref1 := t
@@ -124,9 +120,14 @@ let rec unify = (tref1, tref2, mode, debug) =>
       | (Closed, Closed | Open) =>
         switch (a.cases, b.cases) {
         | (Enum_string(a), Enum_string(b)) =>
-          check_enum_subset(SetString.subset, a, b, tref1, tref2, debug)
-        | (Enum_int(a), Enum_int(b)) => check_enum_subset(SetInt.subset, a, b, tref1, tref2, debug)
-        | _ => raise(Exit(Debug.typeMismatch(debug, tref1, tref2, Ty.toString)))
+          if !SetString.subset(b, a) {
+            mismatch()
+          }
+        | (Enum_int(a), Enum_int(b)) =>
+          if !SetInt.subset(b, a) {
+            mismatch()
+          }
+        | _ => mismatch()
         }
       }
     | Construct_var =>
@@ -134,9 +135,14 @@ let rec unify = (tref1, tref2, mode, debug) =>
       | (Closed, Closed) =>
         switch (a.cases, b.cases) {
         | (Enum_string(a), Enum_string(b)) =>
-          check_enum_subset(SetString.subset, a, b, tref1, tref2, debug)
-        | (Enum_int(a), Enum_int(b)) => check_enum_subset(SetInt.subset, a, b, tref1, tref2, debug)
-        | _ => raise(Exit(Debug.typeMismatch(debug, tref1, tref2, Ty.toString)))
+          if !SetString.subset(b, a) {
+            mismatch()
+          }
+        | (Enum_int(a), Enum_int(b)) =>
+          if !SetInt.subset(b, a) {
+            mismatch()
+          }
+        | _ => mismatch()
         }
       | (Open, Closed) =>
         let cases = union_enum(a.cases, b.cases, tref1, tref2, debug)
@@ -145,23 +151,21 @@ let rec unify = (tref1, tref2, mode, debug) =>
         let cases = union_enum(a.cases, b.cases, tref1, tref2, debug)
         a.cases = cases
         b.cases = cases
-      | (Closed, Open) => raise(Exit(Debug.typeMismatch(debug, tref1, tref2, Ty.toString)))
+      | (Closed, Open) => mismatch()
       }
     }
-  | _ => raise(Exit(Debug.typeMismatch(debug, tref1, tref2, Ty.toString)))
+  | _ => mismatch()
   }
+}
 
-let rec open_all_rows = ty =>
+let open_rows = ty =>
   switch ty.contents {
   | Ty.Enum(ty) =>
     switch ty.extra {
     | Extra_none => ty.row = Open
     | Extra_boolean => ty.cases = Ty.Enum.false_and_true_cases
     }
-  | Nullable(ty) | List(ty) | Dict(ty, _) => open_all_rows(ty)
-  | Tuple(a) => Array.forEach(a, open_all_rows)
-  | Record(d) => MapString.forEachU(d.contents, (. _, ty) => open_all_rows(ty))
-  | Unknown | Int | Float | String | Echo => ()
+  | _ => ()
   }
 
 module Pattern = {
@@ -311,13 +315,13 @@ module Pattern = {
     | UBinding(dbg, "_") =>
       switch mode {
       | Destructure_expand =>
-        open_all_rows(ty)
+        open_rows(ty)
         TAny(dbg)
       | Construct_literal | Construct_var => raise(Exit(Debug.underscoreInConstruct(dbg)))
       }
     | UBinding(dbg, b) =>
       switch mode {
-      | Destructure_expand => open_all_rows(ty)
+      | Destructure_expand => open_rows(ty)
       | Construct_literal | Construct_var => ()
       }
       f(. b, ty, dbg)
