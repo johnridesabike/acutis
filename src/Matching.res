@@ -581,6 +581,17 @@ and merge:
 */
 type continue<'a, 'k> = (. MapString.t<int>) => tree<'a, 'k>
 
+let fromConst = (key, val, ifMatch, enum) => Switch({
+  key: key,
+  ids: SetInt.empty,
+  cases: {val: Const.fromTPat(val), ifMatch: ifMatch, nextCase: None},
+  extra: switch enum {
+  | Some({Typescheme.Variant.row: Closed, _}) => Extra_enum_closed
+  | Some({row: Open, _}) | None => Extra_none
+  },
+  wildcard: None,
+})
+
 @raises(Exit)
 let rec fromTPat: 'a 'k. (_, _, 'k, continue<'a, 'k>) => tree<'a, 'k> = (p, b, key, k) =>
   switch p {
@@ -602,30 +613,23 @@ let rec fromTPat: 'a 'k. (_, _, 'k, continue<'a, 'k>) => tree<'a, 'k> = (p, b, k
     })
   | TConstruct(_, kind, None) =>
     Construct({key: key, ids: SetInt.empty, extra: kind, nil: Some(k(. b)), cons: None})
-  | TConst(_, val, enum) =>
-    Switch({
-      key: key,
-      ids: SetInt.empty,
-      cases: {val: Const.fromTPat(val), ifMatch: k(. b), nextCase: None},
-      extra: switch enum {
-      | Some({row: Closed, _}) => Extra_enum_closed
-      | Some({row: Open, _}) | None => Extra_none
-      },
-      wildcard: None,
-    })
+  | TConst(_, val, enum) => fromConst(key, val, k(. b), enum)
   | TTuple(_, a) =>
     let child = fromArray(a, b, 0, (. b) => End(k(. b)))
     Nest({key: key, ids: SetInt.empty, child: IntKeys(child), wildcard: None, extra: Tuple})
-  | TRecord(dbg, m, tys) =>
+  | TRecord(dbg, tag, m, tys) =>
     /* We need to expand the map to include all of its type's keys. */
-    let a = MapString.mergeU(m, tys.contents, (. _, p, ty) =>
-      switch (p, ty) {
-      | (None, Some(_)) => Some(Tpat.TAny(dbg))
-      | (Some(p), _) => Some(p)
-      | (None, None) => None
+    let a = MapString.mergeU(m, tys.contents, (. _k, p, _ty) =>
+      switch p {
+      | None => Some(Tpat.TAny(dbg))
+      | Some(p) => Some(p)
       }
     )->MapString.toArray
     let child = fromKeyValues(a, b, 0, (. b) => End(k(. b)))
+    let child = switch tag {
+    | Some((key, val, union)) => fromConst(key, val, child, Some(union))
+    | None => child
+    }
     Nest({key: key, ids: SetInt.empty, child: StringKeys(child), wildcard: None, extra: Record})
   | TDict(dbg, m, kys) =>
     /* We need to expand the map to include all of its type's keys. */
@@ -761,7 +765,7 @@ module ParMatch = {
         | None =>
           let nest = switch extra {
           | Tuple => Tpat.TTuple(Debug.empty, toArray(pats))
-          | Record => TRecord(Debug.empty, toKeyValues(pats), ref(MapString.empty))
+          | Record => TRecord(Debug.empty, None, toKeyValues(pats), ref(MapString.empty))
           | Dict => TDict(Debug.empty, toKeyValues(pats), ref(Belt.Set.String.empty))
           }
           let {pats, next, _} = check(next, kf)

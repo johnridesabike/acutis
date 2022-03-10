@@ -186,6 +186,17 @@ describe("Patterns", ({test, _}) => {
     expect.value(render(`{% Z b=[a, ...c] / %}`, props, [z])).toMatchSnapshot()
   })
 
+  test("Records with duplicate field names are reported", ({expect, _}) => {
+    let src = `{% match a with {a: 0, a: "a"} %} {% with _ %} {% /match %}`
+    expect.value(compile(src)).toMatchSnapshot()
+    let src = `{% match a with {a: 0, "a": "a"} %} {% with _ %} {% /match %}`
+    expect.value(compile(src)).toMatchSnapshot()
+    let src = `{% match a with {@a: 0, a: "a"} %} {% with _ %} {% /match %}`
+    expect.value(compile(src)).toMatchSnapshot()
+    let src = `{% match a with <a: 0, a: "a"> %} {% with _ %} {% /match %}`
+    expect.value(compile(src)).toMatchSnapshot()
+  })
+
   describe("Type errors", ({test, _}) => {
     test("number pattern", ({expect, _}) => {
       expect.value(
@@ -325,6 +336,19 @@ describe("Patterns", ({test, _}) => {
     `
     expect.value(compile(src)).toMatchSnapshot()
     let src = `{% match @"a" with @"b" %} {% /match %}`
+    expect.value(compile(src)).toMatchSnapshot()
+  })
+
+  test("Union errors", ({expect, _}) => {
+    let src = `{% match a with {@tag: 0} %} {% with {@tag: "a", b} %} {{ b }} {% /match %}`
+    expect.value(compile(src)).toMatchSnapshot()
+    let src = `{% match a with @0 %} {% with {@tag: 0} %} {% /match %}`
+    expect.value(compile(src)).toMatchSnapshot()
+    let src = `{% match a with {@tag: 1.5} %} {% /match %}`
+    expect.value(compile(src)).toMatchSnapshot()
+    let src = `{% match a with {@tag: []} %} {% /match %}`
+    expect.value(compile(src)).toMatchSnapshot()
+    let src = `{% match a with {@a: 0} %} {% with {@b: 1, c} %} {{ c }} {% /match %}`
     expect.value(compile(src)).toMatchSnapshot()
   })
 

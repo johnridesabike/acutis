@@ -6,12 +6,13 @@
   file, You can obtain one at http://mozilla.org/MPL/2.0/.
 */
 open TestFramework
+module Json = Js.Json
 
 let json = x =>
   try {
-    Js.Json.parseExn(x)
+    Json.parseExn(x)
   } catch {
-  | _ => Js.Json.string("THIS IS EASIER THAN DEALING WITH EXCEPTIONS.")
+  | _ => Json.string("THIS IS EASIER THAN DEALING WITH EXCEPTIONS.")
   }
 
 let dict = Js.Dict.fromArray
@@ -24,9 +25,9 @@ let render = (~name="", src, props, components) =>
 describe("Render essentials", ({test, _}) => {
   test("Basic", ({expect, _}) => {
     let props = dict([
-      ("a", Js.Json.string("Hello")),
-      ("b", Js.Json.string("World")),
-      ("c", Js.Json.string("&\"'></`=")),
+      ("a", Json.string("Hello")),
+      ("b", Json.string("World")),
+      ("c", Json.string("&\"'></`=")),
     ])
     let result = render(`{{ a }} {{ b }}! {{ c }} {{ &c }} {{ &"<" }} {{ "d" }}`, props, [])
     expect.value(result).toEqual(
@@ -46,7 +47,7 @@ describe("Render essentials", ({test, _}) => {
   test("Unwrapping not-null (!) works.", ({expect, _}) => {
     let result = render(
       "{% match a with !a %} {{ a }} {% with null %} a doesn't exist. {% /match %}",
-      dict([("a", Js.Json.string("works"))]),
+      dict([("a", Json.string("works"))]),
       [],
     )
     expect.value(result).toEqual(#ok(" works "))
@@ -174,7 +175,7 @@ describe("Render essentials", ({test, _}) => {
       Typescheme.props([("index", Typescheme.int())]),
       Typescheme.Child.props([]),
       (type a, module(Env): Source.env<a>, props, _children) => {
-        let index = props->Js.Dict.get("index")->Belt.Option.flatMap(Js.Json.decodeNumber)
+        let index = props->Js.Dict.get("index")->Belt.Option.flatMap(Json.decodeNumber)
         switch index {
         | None => Env.error(. "oops")
         | Some(i) => Env.return(. Belt.Float.toString(i +. 1.0))
@@ -199,7 +200,7 @@ describe("Render essentials", ({test, _}) => {
 
 describe("Nullish coalescing", ({test, _}) => {
   test("Nullish coalescing", ({expect, _}) => {
-    let props = Js.Dict.fromArray([("b", Js.Json.string("b")), ("c", Js.Json.string("c"))])
+    let props = dict([("b", Json.string("b")), ("c", Json.string("c"))])
     let result = render(`{{ a ? b ? c }}`, props, [])
     expect.value(result).toEqual(#ok("b"))
     let result = render(`{{ a ? d ? c }}`, props, [])
@@ -222,6 +223,24 @@ describe("Nullish coalescing", ({test, _}) => {
       [Source.src(~name="Comp", `{{ &x ? Y ? Z ? "x" }}`)],
     )
     expect.value(result).toEqual(#ok("z"))
+  })
+})
+
+describe("Advanced types", ({test, _}) => {
+  let props = dict([
+    ("a", Json.object_(dict([("tag", Json.number(0.0)), ("a", Json.string("a"))]))),
+    ("b", Json.object_(dict([("tag", Json.number(1.0)), ("a", Json.number(1.0))]))),
+  ])
+  test("Tagged unions", ({expect, _}) => {
+    let src = `
+    {%~ map [a, b]
+        with {@tag: 0, a: "a"}
+        with {@tag: 1, a: 1} ~%} success {%
+        with _ %} fail {%
+    /map ~%}
+    `
+    let result = render(src, props, [])
+    expect.value(result).toEqual(#ok("success success "))
   })
 })
 

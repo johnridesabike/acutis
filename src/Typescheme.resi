@@ -6,27 +6,35 @@
   file, You can obtain one at http://mozilla.org/MPL/2.0/.
 */
 
-module Enum: {
+module Variant: {
   type row = Closed | Open
 
   type extra = Extra_none | Extra_boolean
 
-  type ty =
-    | Enum_int(Belt.Set.Int.t)
-    | Enum_string(Belt.Set.String.t)
+  type ty<'a, 'b> = Int('a) | String('b)
 
-  type t = {
-    mutable cases: ty,
+  type t<'a, 'b> = {
+    mutable cases: ty<'a, 'b>,
     mutable row: row,
     extra: extra,
   }
+}
 
-  let make: ([#String(string) | #Int(int)], row) => t
-
-  let false_and_true_cases: ty
+module Enum: {
+  type t = Variant.t<Belt.Set.Int.t, Belt.Set.String.t>
+  let string: (string, Variant.row) => t
+  let int: (int, Variant.row) => t
+  let false_and_true_cases: Variant.ty<Belt.Set.Int.t, _>
   let false_and_true: unit => t
   let false_only: unit => t
   let true_only: unit => t
+}
+
+module Union: {
+  type t<'a> = Variant.t<
+    Belt.Map.Int.t<ref<Belt.Map.String.t<'a>>>,
+    Belt.Map.String.t<ref<Belt.Map.String.t<'a>>>,
+  >
 }
 
 type rec typescheme =
@@ -40,6 +48,7 @@ type rec typescheme =
   | Nullable(t)
   | List(t)
   | Record(ref<Belt.Map.String.t<t>>)
+  | Union(string, Union.t<t>)
   /* The string set tracks referenced keys for matching compilation. */
   | Dict(t, ref<Belt.Set.String.t>)
 

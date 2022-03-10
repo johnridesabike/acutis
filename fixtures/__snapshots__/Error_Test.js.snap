@@ -1151,6 +1151,66 @@ Array [
 ]
 `;
 
+exports[`Patterns Records with duplicate field names are reported 1`] = `
+Array [
+  Object {
+    "exn": undefined,
+    "kind": "Parse",
+    "location": Object {
+      "char": 23,
+      "name": "",
+    },
+    "message": "This field was already used: \\"a\\".",
+    "stack": Array [],
+  },
+]
+`;
+
+exports[`Patterns Records with duplicate field names are reported 2`] = `
+Array [
+  Object {
+    "exn": undefined,
+    "kind": "Parse",
+    "location": Object {
+      "char": 23,
+      "name": "",
+    },
+    "message": "This field was already used: \\"\\"a\\"\\".",
+    "stack": Array [],
+  },
+]
+`;
+
+exports[`Patterns Records with duplicate field names are reported 3`] = `
+Array [
+  Object {
+    "exn": undefined,
+    "kind": "Parse",
+    "location": Object {
+      "char": 24,
+      "name": "",
+    },
+    "message": "This field was already used: \\"a\\".",
+    "stack": Array [],
+  },
+]
+`;
+
+exports[`Patterns Records with duplicate field names are reported 4`] = `
+Array [
+  Object {
+    "exn": undefined,
+    "kind": "Parse",
+    "location": Object {
+      "char": 23,
+      "name": "",
+    },
+    "message": "This field was already used: \\"a\\".",
+    "stack": Array [],
+  },
+]
+`;
+
 exports[`Patterns Type errors Boolean pattern 1`] = `
 Array [
   Object {
@@ -1896,6 +1956,81 @@ Array [
       "name": "",
     },
     "message": "Unexpected token: \\"1\\".",
+    "stack": Array [],
+  },
+]
+`;
+
+exports[`Patterns Union errors 1`] = `
+Array [
+  Object {
+    "exn": undefined,
+    "kind": "Type",
+    "location": Object {
+      "char": 37,
+      "name": "",
+    },
+    "message": "This pattern is type {@\\"tag\\": \\"a\\", \\"b\\": _} but expected type {@\\"tag\\": 0}.",
+    "stack": Array [],
+  },
+]
+`;
+
+exports[`Patterns Union errors 2`] = `
+Array [
+  Object {
+    "exn": undefined,
+    "kind": "Type",
+    "location": Object {
+      "char": 30,
+      "name": "",
+    },
+    "message": "This pattern is type {@\\"tag\\": 0} but expected type @0.",
+    "stack": Array [],
+  },
+]
+`;
+
+exports[`Patterns Union errors 3`] = `
+Array [
+  Object {
+    "exn": undefined,
+    "kind": "Type",
+    "location": Object {
+      "char": 16,
+      "name": "",
+    },
+    "message": "Only integer, string, and boolean literals may be used as union tags.",
+    "stack": Array [],
+  },
+]
+`;
+
+exports[`Patterns Union errors 4`] = `
+Array [
+  Object {
+    "exn": undefined,
+    "kind": "Type",
+    "location": Object {
+      "char": 16,
+      "name": "",
+    },
+    "message": "Only integer, string, and boolean literals may be used as union tags.",
+    "stack": Array [],
+  },
+]
+`;
+
+exports[`Patterns Union errors 5`] = `
+Array [
+  Object {
+    "exn": undefined,
+    "kind": "Type",
+    "location": Object {
+      "char": 35,
+      "name": "",
+    },
+    "message": "This pattern is type {@\\"b\\": 1, \\"c\\": _} but expected type {@\\"a\\": 0}.",
     "stack": Array [],
   },
 ]

@@ -20,7 +20,7 @@ module Pattern: {
     | UIntEnum(Debug.t, int)
     | UList(Debug.t, array<t>, option<t>)
     | UDict(Debug.t, Belt.Map.String.t<t>)
-    | URecord(Debug.t, Belt.Map.String.t<t>)
+    | URecord(Debug.t, option<(string, t)>, Belt.Map.String.t<t>)
     | UBinding(Debug.t, string)
 
   let debug: t => Debug.t

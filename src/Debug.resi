@@ -1,5 +1,5 @@
 /**
-  Copyright (c) 2021 John Jackson. 
+  Copyright (c) 2021 John Jackson.
 
   This Source Code Form is subject to the terms of the Mozilla Public
   License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -54,8 +54,11 @@ let unterminatedString: t => error
 
 /* Parse errors */
 let unexpectedToken: ('a, debuggable<'a>) => error
+let tooManyFields: ('a, debuggable<'a>) => error
+let tooManyTags: t => error
 
 /* Type errors */
+let badUnionTag: t => error
 let cantNarrowType: (t, 'a, 'a, 'a => string) => error
 let childNotAllowedInRoot: t => error
 let childTypeMismatch: (t, 'a, 'a, 'a => string) => error

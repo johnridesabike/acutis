@@ -10,6 +10,7 @@ module Dict = Js.Dict
 module Json = Js.Json
 module Float = Belt.Float
 module Int = Belt.Int
+module MapInt = Belt.Map.Int
 module MapString = Belt.Map.String
 module Queue = Belt.MutableQueue
 module SetInt = Belt.Set.Int
@@ -60,7 +61,7 @@ module Const = {
     | PFloat(n) => Float.toString(n)
     | PInt(i) =>
       switch (i, extra) {
-      | (i, Ty.Enum.Extra_none) => Int.toString(i)
+      | (i, Ty.Variant.Extra_none) => Int.toString(i)
       | (0, Extra_boolean) => "false"
       | (_, Extra_boolean) => "true"
       }
@@ -72,7 +73,7 @@ type rec t =
   | PNull
   | PArray(array<t>)
   | PDict(MapString.t<t>)
-  | PConst(Const.t, Ty.Enum.extra)
+  | PConst(Const.t, Ty.Variant.extra)
 
 module Stack = {
   let nullable = "nullable"
@@ -197,28 +198,60 @@ and recordAux = (~stack, j, tys) => {
 }
 
 @raises(Exit)
-and record = (~stack, j, tys) =>
+and record = (~stack, j, map, ty) =>
   switch Json.decodeObject(j) {
-  | Some(obj) => PDict(recordAux(obj, tys.contents, ~stack))
-  | _ => raise(Exit(Debug.decodeError(Ty.record2(tys), j, Ty.toString, ~stack)))
+  | Some(obj) => PDict(recordAux(obj, map.contents, ~stack))
+  | None => raise(Exit(Debug.decodeError(ty, j, Ty.toString, ~stack)))
   }
+
+and union = (~stack, j, key, map, extra, ty) => {
+  let fail = () => raise(Exit(Debug.decodeError(ty, j, Ty.toString, ~stack)))
+  switch Json.decodeObject(j) {
+  | Some(obj) =>
+    switch Dict.get(obj, key) {
+    | Some(tag) =>
+      let (tag, map) = switch (Json.classify(tag), map, extra) {
+      | (JSONFalse, Ty.Variant.Int(map), Ty.Variant.Extra_boolean) =>
+        let tag = 0
+        (PConst(PInt(tag), extra), MapInt.get(map, tag))
+      | (JSONTrue, Int(map), Extra_boolean) =>
+        let tag = 1
+        (PConst(PInt(tag), extra), MapInt.get(map, tag))
+      | (JSONNumber(tag), Int(map), Extra_none) =>
+        let tag = Int.fromFloat(tag)
+        (PConst(PInt(tag), extra), MapInt.get(map, tag))
+      | (JSONString(tag), String(map), _) => (PConst(PString(tag), extra), MapString.get(map, tag))
+      | _ => fail()
+      }
+      switch map {
+      | Some(map) =>
+        let r = recordAux(obj, map.contents, ~stack)
+        PDict(MapString.set(r, key, tag))
+      | None => fail()
+      }
+    | None => fail()
+    }
+  | None => fail()
+  }
+}
 
 @raises(Exit)
 and make = (~stack, j, ty) =>
   switch ty.contents {
   | Ty.Unknown => PUnknown(j)
   | Nullable(ty) => nullable(~stack, j, ty)
-  | Enum({extra: Extra_boolean, cases: Enum_int(cases), _}) => boolean(~stack, j, ty, cases)
-  | String => string(~stack, j, ty, None)
-  | Enum({cases: Enum_string(cases), _}) => string(~stack, j, ty, Some(cases))
-  | Int => int(~stack, j, ty, None)
-  | Enum({cases: Enum_int(cases), _}) => int(~stack, j, ty, Some(cases))
+  | Enum({extra: Extra_boolean, cases: Int(cases), _}) => boolean(~stack, j, ty, cases)
+  | String | Enum({row: Open, cases: String(_), _}) => string(~stack, j, ty, None)
+  | Enum({cases: String(cases), row: Closed, _}) => string(~stack, j, ty, Some(cases))
+  | Int | Enum({row: Open, cases: Int(_), _}) => int(~stack, j, ty, None)
+  | Enum({cases: Int(cases), row: Closed, _}) => int(~stack, j, ty, Some(cases))
   | Float => float(~stack, j)
   | Echo => echo(~stack, j)
   | List(ty) => list(~stack, j, ty)
   | Dict(ty, _) => dict(~stack, j, ty)
   | Tuple(tys) => tuple(~stack, j, tys)
-  | Record(tys) => record(~stack, j, tys)
+  | Record(tys) => record(~stack, j, tys, ty)
+  | Union(key, {cases, extra, _}) => union(~stack, j, key, cases, extra, ty)
   }
 
 @raises(Exit)
@@ -268,7 +301,7 @@ let rec fromPattern = (x, props) =>
   | TConstruct(_, _, Some(x)) => fromPattern(x, props)
   | TConstruct(_, _, None) => PNull
   | TTuple(_, x) => PArray(Array.map(x, x => fromPattern(x, props)))
-  | TRecord(_, x, _) | TDict(_, x, _) => PDict(MapString.mapU(x, (. v) => fromPattern(v, props)))
+  | TRecord(_, _, x, _) | TDict(_, x, _) => PDict(MapString.mapU(x, (. v) => fromPattern(v, props)))
   | TAny(_) => assert false
   }
 

@@ -30,7 +30,7 @@ module Pattern = {
     | UIntEnum(Debug.t, int)
     | UList(Debug.t, array<t>, option<t>)
     | UDict(Debug.t, MapString.t<t>)
-    | URecord(Debug.t, MapString.t<t>)
+    | URecord(Debug.t, option<(string, t)>, MapString.t<t>)
     | UBinding(Debug.t, string)
 
   let debug = x =>
@@ -44,7 +44,7 @@ module Pattern = {
     | UStringEnum(x, _)
     | UIntEnum(x, _)
     | UList(x, _, _)
-    | URecord(x, _)
+    | URecord(x, _, _)
     | UDict(x, _)
     | UBinding(x, _) => x
     }
@@ -78,8 +78,8 @@ module Pattern = {
       }
     | Tkn_OpenBrace(d) =>
       switch Lexer.pop(tokens) {
-      | Tkn_CloseBrace(_) => URecord(d, MapString.empty)
-      | t => parseObject(d, t, tokens)
+      | Tkn_CloseBrace(_) => URecord(d, None, MapString.empty)
+      | t => parseRecord(d, t, tokens)
       }
     | Tkn_OpenPointyBracket(d) =>
       switch Lexer.pop(tokens) {
@@ -133,50 +133,81 @@ module Pattern = {
   }
 
   @raises(Exit)
-  and parseObject = (d, t, tokens) => {
-    let m = parseObjectKeyValue(t, tokens, MapString.empty)
+  and parseRecord = (d, t, tokens) => {
+    let (tag, m) = parseKeyValueRecord(t, tokens, None, MapString.empty)
 
     @raises(Exit)
-    let rec aux = m =>
+    let rec aux = (tag, m) =>
       switch Lexer.pop(tokens) {
-      | Tkn_CloseBrace(_) => URecord(d, m)
-      | Tkn_Comma(_) => aux(parseObjectKeyValue(Lexer.pop(tokens), tokens, m))
+      | Tkn_CloseBrace(_) => URecord(d, tag, m)
+      | Tkn_Comma(_) =>
+        let t = Lexer.pop(tokens)
+        let (tag, m) = parseKeyValueRecord(t, tokens, tag, m)
+        switch tag {
+        | Some((k, _)) if MapString.has(m, k) => raise(Exit(Debug.tooManyFields(t, module(T))))
+        | _ => ()
+        }
+        aux(tag, m)
       | t => raise(Exit(Debug.unexpectedToken(t, module(T))))
       }
-    aux(m)
+    aux(tag, m)
   }
 
   @raises(Exit)
   and parseDict = (d, t, tokens) => {
-    let m = parseObjectKeyValue(t, tokens, MapString.empty)
+    let m = parseKeyValueDict(t, tokens, MapString.empty)
 
     @raises(Exit)
     let rec aux = m =>
       switch Lexer.pop(tokens) {
       | Tkn_ClosePointyBracket(_) => UDict(d, m)
-      | Tkn_Comma(_) => aux(parseObjectKeyValue(Lexer.pop(tokens), tokens, m))
+      | Tkn_Comma(_) => aux(parseKeyValueDict(Lexer.pop(tokens), tokens, m))
       | t => raise(Exit(Debug.unexpectedToken(t, module(T))))
       }
     aux(m)
   }
 
   @raises(Exit)
-  and parseObjectKeyValue = (t, tokens, m) =>
+  and parseKeyValueAux = (t, tokens, m) =>
     switch t {
-    | Tkn_String(_, key) =>
+    | T.Tkn_String(_, key) =>
+      if MapString.has(m, key) {
+        raise(Exit(Debug.tooManyFields(t, module(T))))
+      }
       switch Lexer.pop(tokens) {
-      | Tkn_Colon(_) => MapString.set(m, key, parseNode(Lexer.pop(tokens), tokens))
+      | Tkn_Colon(_) => (key, parseNode(Lexer.pop(tokens), tokens))
       | t => raise(Exit(Debug.unexpectedToken(t, module(T))))
       }
     | Tkn_Identifier(d, key) =>
+      if MapString.has(m, key) {
+        raise(Exit(Debug.tooManyFields(t, module(T))))
+      }
       switch Lexer.peek(tokens) {
       | Tkn_Colon(_) =>
         Lexer.pop(tokens)->ignore
-        MapString.set(m, key, parseNode(Lexer.pop(tokens), tokens))
-      | _ => MapString.set(m, key, UBinding(d, key))
+        (key, parseNode(Lexer.pop(tokens), tokens))
+      | _ => (key, UBinding(d, key))
       }
     | t => raise(Exit(Debug.unexpectedToken(t, module(T))))
     }
+
+  @raises(Exit)
+  and parseKeyValueRecord = (t, tokens, tag, m) => {
+    switch t {
+    | T.Tkn_At(d) =>
+      switch tag {
+      | None => (Some(parseKeyValueAux(Lexer.pop(tokens), tokens, m)), m)
+      | Some(_) => raise(Exit(Debug.tooManyTags(d)))
+      }
+    | _ => (tag, parseKeyValueDict(t, tokens, m))
+    }
+  }
+
+  @raises(Exit)
+  and parseKeyValueDict = (t, tokens, m) => {
+    let (k, v) = parseKeyValueAux(t, tokens, m)
+    MapString.set(m, k, v)
+  }
 
   @raises(Exit)
   let make = tokens => {

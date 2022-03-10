@@ -162,12 +162,13 @@ describe("Patterns", ({test, _}) => {
 
   test("Objects", ({expect, _}) => {
     expect.value(parseString("{}")).toEqual(
-      NonEmpty.one(P.URecord(Debug.make("", 3), MapString.empty)),
+      NonEmpty.one(P.URecord(Debug.make("", 3), None, MapString.empty)),
     )
     expect.value(parseString("{pun}")).toEqual(
       NonEmpty.one(
         P.URecord(
           Debug.make("", 3),
+          None,
           MapString.fromArray([("pun", P.UBinding(Debug.make("", 4), "pun"))]),
         ),
       ),
@@ -176,6 +177,7 @@ describe("Patterns", ({test, _}) => {
       NonEmpty.one(
         P.URecord(
           Debug.make("", 3),
+          None,
           MapString.empty
           ->MapString.set("pun1", P.UBinding(Debug.make("", 4), "pun1"))
           ->MapString.set("pun2", P.UBinding(Debug.make("", 10), "pun2")),
@@ -186,6 +188,7 @@ describe("Patterns", ({test, _}) => {
       NonEmpty.one(
         P.URecord(
           Debug.make("", 3),
+          None,
           MapString.fromArray([("a", P.UBinding(Debug.make("", 7), "b"))]),
         ),
       ),
@@ -194,6 +197,7 @@ describe("Patterns", ({test, _}) => {
       NonEmpty.one(
         P.URecord(
           Debug.make("", 3),
+          None,
           MapString.empty
           ->MapString.set("a", P.UBinding(Debug.make("", 7), "b"))
           ->MapString.set("c", P.UBinding(Debug.make("", 13), "d")),
@@ -204,6 +208,7 @@ describe("Patterns", ({test, _}) => {
       NonEmpty.one(
         P.URecord(
           Debug.make("", 3),
+          None,
           MapString.empty
           ->MapString.set("#illegal", P.UBinding(Debug.make("", 16), "legal"))
           ->MapString.set("<%name%>", P.UBinding(Debug.make("", 35), "name")),
@@ -214,6 +219,7 @@ describe("Patterns", ({test, _}) => {
       NonEmpty.one(
         P.URecord(
           Debug.make("", 3),
+          None,
           MapString.empty
           ->MapString.set("a", P.UFloat(Debug.make("", 7), 1.5))
           ->MapString.set("b", P.UString(Debug.make("", 15), "b"))
@@ -241,6 +247,7 @@ describe("Patterns", ({test, _}) => {
       NonEmpty.one(
         P.URecord(
           Debug.make("", 4),
+          None,
           MapString.empty
           ->MapString.set("a", P.UBinding(Debug.make("", 11), "bindingA"))
           ->MapString.set("b", P.UFloat(Debug.make("", 26), 1.5))
@@ -256,6 +263,7 @@ describe("Patterns", ({test, _}) => {
             "d",
             P.URecord(
               Debug.make("", 86),
+              None,
               MapString.empty
               ->MapString.set("<% illegal %>", P.UNullable(Debug.make("", 109), None))
               ->MapString.set("d", P.UBinding(Debug.make("", 122), "bindingD")),

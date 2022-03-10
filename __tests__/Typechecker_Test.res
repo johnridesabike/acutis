@@ -15,6 +15,18 @@ let isOk = r =>
   | #errors(_) => false
   }
 
+let prop_types = x => x.Compile.prop_types
+
+let get_types = (~components=Compile.Components.empty(), src) =>
+  Compile.make(~name="test", src, components)
+  ->Result.getOrElse(e => {
+    Js.log(e)
+    assert false
+  })
+  ->prop_types
+  ->MapString.map(Typescheme.toString)
+  ->MapString.toArray
+
 describe("basic", ({test, _}) => {
   test("pattern", ({expect, _}) => {
     let src = `
@@ -23,8 +35,7 @@ describe("basic", ({test, _}) => {
        with {a: false, b: null, c: !1.0, z: 1} %}
     {% with _ %}
     {% /match %}`
-    let {prop_types, _} = Compile.make(~name="test", src, Compile.Components.empty())->Result.getExn
-    let result = prop_types->MapString.map(Typescheme.toString)->MapString.toArray
+    let result = get_types(src)
     expect.value(result).toEqual([
       ("a", `{"a": false | true, "b": ?string, "c": ?float, "d": [false | true], "z": int}`),
     ])
@@ -36,8 +47,7 @@ describe("match", ({test, _}) => {
     let src = `
     {% match a with !1 %} {% with null %} {% with !_ %} {% /match %}
     `
-    let {prop_types, _} = Compile.make(~name="test", src, Compile.Components.empty())->Result.getExn
-    let bindings = prop_types->MapString.map(Typescheme.toString)->MapString.toArray
+    let bindings = get_types(src)
     expect.value(bindings).toEqual([("a", `?int`)])
   })
   test("Typechecker nested", ({expect, _}) => {
@@ -46,16 +56,14 @@ describe("match", ({test, _}) => {
       {% match b with !1 %} {% with null %} {% with !_ %} {% /match %}
     {% /match %}
     `
-    let {prop_types, _} = Compile.make(~name="test", src, Compile.Components.empty())->Result.getExn
-    let bindingsGlobal = prop_types->MapString.map(Typescheme.toString)->MapString.toArray
+    let bindingsGlobal = get_types(src)
     expect.value(bindingsGlobal).toEqual([("a", `{"b": ?int}`)])
     let src = `
     {% match a with {b: {c}, d } %}
       {% match c with !1 %} {{ d }} {% with null %} {% with !_ %} {% /match %}
     {% /match %}
     `
-    let {prop_types, _} = Compile.make(~name="test", src, Compile.Components.empty())->Result.getExn
-    let bindingsGlobal = prop_types->MapString.map(Typescheme.toString)->MapString.toArray
+    let bindingsGlobal = get_types(src)
     expect.value(bindingsGlobal).toEqual([("a", `{"b": {"c": ?int}, "d": echoable}`)])
   })
 
@@ -66,8 +74,7 @@ describe("match", ({test, _}) => {
     {% with _, _ %}
     {% /match %}
     `
-    let {prop_types, _} = Compile.make(~name="test", src, Compile.Components.empty())->Result.getExn
-    let bindingsGlobal = prop_types->MapString.map(Typescheme.toString)->MapString.toArray
+    let bindingsGlobal = get_types(src)
     expect.value(bindingsGlobal).toEqual([("a", `{"c": ?{"d": int}}`), ("b", `int`)])
   })
 
@@ -89,15 +96,7 @@ describe("match", ({test, _}) => {
         {% /match %}
       {% /match %}
     `
-    let {prop_types, _} = Compile.make(
-      ~name="test",
-      src,
-      Compile.Components.empty(),
-    )->Result.getOrElse(e => {
-      Js.log(e)
-      assert false
-    })
-    let bindingsGlobal = prop_types->MapString.map(Typescheme.toString)->MapString.toArray
+    let bindingsGlobal = get_types(src)
     expect.value(bindingsGlobal).toEqual([
       ("a", `?echoable`),
       ("b", `echoable`),
@@ -113,8 +112,7 @@ describe("match", ({test, _}) => {
         {{ a }}
       {% /map %}
       `
-    let {prop_types, _} = Compile.make(~name="", src, Compile.Components.empty())->Result.getExn
-    let result = prop_types->MapString.map(Typescheme.toString)->MapString.toArray
+    let result = get_types(src)
     expect.value(result).toEqual([
       ("x", `{"a": string, "b": echoable}`),
       ("y", `{"a": string, "c": echoable}`),
@@ -123,9 +121,13 @@ describe("match", ({test, _}) => {
 
   test("Inferrence works for nested types", ({expect, _}) => {
     let src = `{% match a with [{a: 1}, c, {b: "b"}] %} {% with _ %} {% /match %}`
-    let {prop_types, _} = Compile.make(~name="test", src, Compile.Components.empty())->Result.getExn
-    let bindingsGlobal = prop_types->MapString.map(Typescheme.toString)->MapString.toArray
+    let bindingsGlobal = get_types(src)
     expect.value(bindingsGlobal).toEqual([("a", `[{"a": int, "b": string}]`)])
+    let src = `{% match a with [{@tag: 0, a: 1}, c, {@tag: 1, b: "b"}] %} {% with _ %} {% /match %}`
+    let bindingsGlobal = get_types(src)
+    expect.value(bindingsGlobal).toEqual([
+      ("a", `[{@"tag": 0, "a": int} | {@"tag": 1, "b": string} | ...]`),
+    ])
   })
 })
 
@@ -135,8 +137,7 @@ describe("enums", ({test, _}) => {
     {% match a with @"a" %} {% with @"b" %} {% with _ %} {% /match %}
     {% match b with @1 %} {% with @2 %} {% with _ %} {% /match %}
     `
-    let {prop_types, _} = Compile.make(~name="test", src, Compile.Components.empty())->Result.getExn
-    let bindings = prop_types->MapString.map(Typescheme.toString)->MapString.toArray
+    let bindings = get_types(src)
     expect.value(bindings).toEqual([("a", `@"a" | @"b" | ...`), ("b", "@1 | @2 | ...")])
     let src = `
     {% match a with @"a" %} {% with @"b" %} {% with _ %} {% /match %}
@@ -144,8 +145,7 @@ describe("enums", ({test, _}) => {
     {% match b with @1 %} {% with @2 %} {% with _ %} {% /match %}
     {% map [@3, b] with _ %} {% /map %}
     `
-    let {prop_types, _} = Compile.make(~name="test", src, Compile.Components.empty())->Result.getExn
-    let bindings = prop_types->MapString.map(Typescheme.toString)->MapString.toArray
+    let bindings = get_types(src)
     expect.value(bindings).toEqual([("a", `@"a" | @"b" | @"c" | ...`), ("b", "@1 | @2 | @3 | ...")])
   })
 
@@ -154,8 +154,7 @@ describe("enums", ({test, _}) => {
     {% match a with @"a" %} {% with @"b" %} {% /match %}
     {% match b with @1 %} {% with @2 %} {% /match %}
     `
-    let {prop_types, _} = Compile.make(~name="test", src, Compile.Components.empty())->Result.getExn
-    let bindings = prop_types->MapString.map(Typescheme.toString)->MapString.toArray
+    let bindings = get_types(src)
     expect.value(bindings).toEqual([("a", `@"a" | @"b"`), ("b", "@1 | @2")])
     let src = `
     {% match a with @"a" %} {% with @"b" %} {% /match %}
@@ -163,8 +162,7 @@ describe("enums", ({test, _}) => {
     {% match b with @1 %} {% with @2 %} {% /match %}
     {% match b with @3 %} {% with _ %} {% /match %}
     `
-    let {prop_types, _} = Compile.make(~name="test", src, Compile.Components.empty())->Result.getExn
-    let bindings = prop_types->MapString.map(Typescheme.toString)->MapString.toArray
+    let bindings = get_types(src)
     expect.value(bindings).toEqual([("a", `@"a" | @"b"`), ("b", "@1 | @2")])
     let src = `
     {% match a with @"a" %} {% with @"b" %} {% /match %}
@@ -172,8 +170,7 @@ describe("enums", ({test, _}) => {
     {% match c with @1 %} {% with @2 %} {% /match %}
     {% map [@3, @4, c, d] with _ %} {% /map %}
     `
-    let {prop_types, _} = Compile.make(~name="test", src, Compile.Components.empty())->Result.getExn
-    let bindings = prop_types->MapString.map(Typescheme.toString)->MapString.toArray
+    let bindings = get_types(src)
     expect.value(bindings).toEqual([
       ("a", `@"a" | @"b"`),
       ("b", `@"a" | @"b" | @"c" | @"d" | ...`),
@@ -184,8 +181,7 @@ describe("enums", ({test, _}) => {
     {% map [@"a", a] with @"a" %} {% with @"b" %} {% /map %}
     {% map [@1, b] with @1 %} {% with @2 %} {% /map %}
     `
-    let {prop_types, _} = Compile.make(~name="test", src, Compile.Components.empty())->Result.getExn
-    let bindings = prop_types->MapString.map(Typescheme.toString)->MapString.toArray
+    let bindings = get_types(src)
     expect.value(bindings).toEqual([("a", `@"a" | @"b"`), ("b", "@1 | @2")])
   })
 
@@ -194,8 +190,7 @@ describe("enums", ({test, _}) => {
     {% match a with {a: @"a"} %} {% with {a: @"b"} %} {% /match %}
     {% match b with {a: @1} %} {% with {a: @2} %} {% /match %}
     `
-    let {prop_types, _} = Compile.make(~name="test", src, Compile.Components.empty())->Result.getExn
-    let bindings = prop_types->MapString.map(Typescheme.toString)->MapString.toArray
+    let bindings = get_types(src)
     expect.value(bindings).toEqual([("a", `{"a": @"a" | @"b"}`), ("b", `{"a": @1 | @2}`)])
     let src = `
     {% match a with {a: @"a"} %} {% with {a: @"b"} %} {% /match %}
@@ -203,8 +198,7 @@ describe("enums", ({test, _}) => {
     {% match c with {a: @1} %} {% with {a: @2} %} {% /match %}
     {% map [{a: @3}, c, d] with _ %} {% /map %}
     `
-    let {prop_types, _} = Compile.make(~name="test", src, Compile.Components.empty())->Result.getExn
-    let bindings = prop_types->MapString.map(Typescheme.toString)->MapString.toArray
+    let bindings = get_types(src)
     expect.value(bindings).toEqual([
       ("a", `{"a": @"a" | @"b"}`),
       ("b", `{"a": @"a" | @"b" | @"c" | ...}`),
@@ -212,17 +206,14 @@ describe("enums", ({test, _}) => {
       ("d", `{"a": @1 | @2 | @3 | ...}`),
     ])
   })
-})
 
-describe("Booleans", ({test, _}) => {
   test("Booleans", ({expect, _}) => {
     let src = `
     {% match a with true %} {% /match %}
     {% match b with false %} {% /match %}
     {% match c with true %} {% with false %} {% /match %}
     `
-    let {prop_types, _} = Compile.make(~name="test", src, Compile.Components.empty())->Result.getExn
-    let bindings = prop_types->MapString.map(Typescheme.toString)->MapString.toArray
+    let bindings = get_types(src)
     expect.value(bindings).toEqual([("a", "true"), ("b", "false"), ("c", "false | true")])
     let src = `{% match true with true %} {% with false %} {% /match %}`
     let result = isOk(Compile.make(~name="test", src, Compile.Components.empty()))
@@ -231,9 +222,109 @@ describe("Booleans", ({test, _}) => {
     let result = isOk(Compile.make(~name="test", src, Compile.Components.empty()))
     expect.bool(result).toBe(true)
     let src = `{% match a with true %} {% with _ %} {% /match %}`
-    let {prop_types, _} = Compile.make(~name="test", src, Compile.Components.empty())->Result.getExn
-    let bindings = prop_types->MapString.map(Typescheme.toString)->MapString.toArray
+    let bindings = get_types(src)
     expect.value(bindings).toEqual([("a", "false | true")])
+  })
+})
+
+describe("Tagged unions", ({test, _}) => {
+  test("open unions work ", ({expect, _}) => {
+    let src = `
+    {% match a with {@tag: "a", b} %} {{ b }} {% with {@tag: "b", b: 1} %} {% with _ %} {% /match %}
+    {% match b with {@tag: 0, b} %} {{ b }} {% with {@tag: 1, b: 1} %} {% with _ %} {% /match %}
+    `
+    let bindings = get_types(src)
+    expect.value(bindings).toEqual([
+      ("a", `{@"tag": "a", "b": echoable} | {@"tag": "b", "b": int} | ...`),
+      ("b", `{@"tag": 0, "b": echoable} | {@"tag": 1, "b": int} | ...`),
+    ])
+    let src = `
+    {% match a with {@tag: "a", b} %} {{ b }} {% with {@tag: "b", b: 1} %} {% with _ %} {% /match %}
+    {% map [{@tag: "c", b: 1.5}, a] with _ %} {% /map %}
+    `
+    let bindings = get_types(src)
+    expect.value(bindings).toEqual([
+      (
+        "a",
+        `{@"tag": "a", "b": echoable} | {@"tag": "b", "b": int} | {@"tag": "c", "b": float} | ...`,
+      ),
+    ])
+  })
+  test("Closed unions work", ({expect, _}) => {
+    let src = `
+    {% match a
+       with {@tag: 1, b: "a"} %} {%
+       with {@tag: 2, b: 0} %} {%
+       with {@tag: 1} with {@tag: 2} %} {%
+      /match %}
+    `
+    let bindings = get_types(src)
+    expect.value(bindings).toEqual([("a", `{@"tag": 1, "b": string} | {@"tag": 2, "b": int}`)])
+    let src = `
+    {% match a
+      with {@tag: "a", b: 1} %} {%
+      with {@tag: "b", b: "c"} %} {%
+      with {@tag: "a"} %} {%
+      with {@tag: "b"} %} {%
+    /match %}
+    {% match a with {@tag: "a", b: 2} %} {% with _ %} {% /match %}
+    `
+    let bindings = get_types(src)
+    expect.value(bindings).toEqual([("a", `{@"tag": "a", "b": int} | {@"tag": "b", "b": string}`)])
+    let src = `
+    {% match a
+      with {@tag: "a", b: 1} %} {%
+      with {@tag: "b", b: "a"} %} {%
+      with {@tag: "a"} %} {%
+      with {@tag: "b"} %} {%
+    /match %}
+    {% map [{@tag: "c", b: 1.5}, {@tag: "d", b: [1]}, a, b] with _ %} {% /map %}
+    {% match c
+      with {@tag: 0, b: 1} %} {%
+      with {@tag: 1, b: "a"} %} {%
+      with {@tag: 0} %} {%
+      with {@tag: 1} %} {%
+    /match %}
+    {% map [{@tag: 2, b: 1.5}, {@tag: 3, b: [1]}, c, d] with _ %} {% /map %}
+    `
+    let bindings = get_types(src)
+    expect.value(bindings).toEqual([
+      ("a", `{@"tag": "a", "b": int} | {@"tag": "b", "b": string}`),
+      (
+        "b",
+        `{@"tag": "a", "b": int} | {@"tag": "b", "b": string} | {@"tag": "c", "b": float} | {@"tag": "d", "b": [int]} | ...`,
+      ),
+      ("c", `{@"tag": 0, "b": int} | {@"tag": 1, "b": string}`),
+      (
+        "d",
+        `{@"tag": 0, "b": int} | {@"tag": 1, "b": string} | {@"tag": 2, "b": float} | {@"tag": 3, "b": [int]} | ...`,
+      ),
+    ])
+    let src = `
+    {% map [{@tag: "a", b: 1}, a] with {@tag: "a", b} %} {% with {@tag: "b", c} %} {{ c }} {% /map %}
+    {% map [{@tag: 0, b: 1}, b] with {@tag: 0, b} %} {% with {@tag: 1, c} %} {{ c }} {% /map %}
+    `
+    let bindings = get_types(src)
+    expect.value(bindings).toEqual([
+      ("a", `{@"tag": "a", "b": int} | {@"tag": "b", "c": echoable}`),
+      ("b", `{@"tag": 0, "b": int} | {@"tag": 1, "c": echoable}`),
+    ])
+  })
+  test("Booleans", ({expect, _}) => {
+    let src = `
+    {% match a with {@tag: true, b} %} {{ b }} {% /match %}
+    {% match b with {@tag: false, b} %} {{ b }} {% /match %}
+    {% match c with {@tag: true, b} %} {{ b }} {% with {@tag: false, c} %} {{ c }} {% /match %}
+    `
+    let bindings = get_types(src)
+    expect.value(bindings).toEqual([
+      ("a", `{@"tag": true, "b": echoable}`),
+      ("b", `{@"tag": false, "b": echoable}`),
+      ("c", `{@"tag": false, "c": echoable} | {@"tag": true, "b": echoable}`),
+    ])
+    let src = `{% match a with {@tag: true, b} %} {{ b }} {% with _ %} {% /match %}`
+    let bindings = get_types(src)
+    expect.value(bindings).toEqual([("a", `{@"tag": false} | {@"tag": true, "b": echoable}`)])
   })
 })
 
@@ -247,9 +338,7 @@ describe("component", ({test, _}) => {
     let src = `
     {% A a=[1, a] b=["b", b] /%}
     `
-    let {prop_types, _} =
-      Compile.make(~name="test", src, Compile.Components.make([a])->Result.getExn)->Result.getExn
-    let bindings = prop_types->MapString.map(Typescheme.toString)->MapString.toArray
+    let bindings = get_types(src, ~components=Compile.Components.make([a])->Result.getExn)
     expect.value(bindings).toEqual([("a", `int`), ("b", `string`)])
   })
 })

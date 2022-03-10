@@ -17,7 +17,12 @@ module Pattern: {
     | TConst(Debug.t, constant, option<Typescheme.Enum.t>)
     | TConstruct(Debug.t, construct, option<t>)
     | TTuple(Debug.t, array<t>)
-    | TRecord(Debug.t, Belt.Map.String.t<t>, ref<Belt.Map.String.t<Typescheme.t>>)
+    | TRecord(
+        Debug.t,
+        option<(string, constant, Typescheme.Union.t<Typescheme.t>)>,
+        Belt.Map.String.t<t>,
+        ref<Belt.Map.String.t<Typescheme.t>>,
+      )
     | TDict(Debug.t, Belt.Map.String.t<t>, ref<Belt.Set.String.t>)
     | TVar(Debug.t, string) // any binding
     | TOptionalVar(Debug.t, string) // any binding, may not be set

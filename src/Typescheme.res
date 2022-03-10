@@ -8,21 +8,20 @@
 
 module Array = Belt.Array
 module Int = Belt.Int
+module MapInt = Belt.Map.Int
 module MapString = Belt.Map.String
-module SetString = Belt.Set.String
 module SetInt = Belt.Set.Int
+module SetString = Belt.Set.String
 
-module Enum = {
+module Variant = {
   type row = Closed | Open
 
   type extra = Extra_none | Extra_boolean
 
-  type ty =
-    | Enum_int(Belt.Set.Int.t)
-    | Enum_string(Belt.Set.String.t)
+  type ty<'a, 'b> = Int('a) | String('b)
 
-  type t = {
-    mutable cases: ty,
+  type t<'a, 'b> = {
+    mutable cases: ty<'a, 'b>,
     mutable row: row,
     extra: extra,
   }
@@ -32,24 +31,37 @@ module Enum = {
     | Closed => ""
     | Open => " | ..."
     }
+}
 
-  let make = (x, row) =>
-    switch x {
-    | #String(s) => {
-        cases: Enum_string(SetString.add(SetString.empty, s)),
-        row: row,
-        extra: Extra_none,
-      }
-    | #Int(s) => {cases: Enum_int(SetInt.add(SetInt.empty, s)), row: row, extra: Extra_none}
-    }
+module Enum = {
+  type t = Variant.t<SetInt.t, SetString.t>
 
-  let false_and_true_cases = Enum_int(SetInt.fromArray([0, 1]))
-  let false_only = Enum_int(SetInt.add(SetInt.empty, 0))
-  let true_only = Enum_int(SetInt.add(SetInt.empty, 1))
+  let string = (s, row) => {
+    Variant.cases: String(SetString.add(SetString.empty, s)),
+    row: row,
+    extra: Extra_none,
+  }
+  let int = (i, row) => {
+    Variant.cases: Int(SetInt.add(SetInt.empty, i)),
+    row: row,
+    extra: Extra_none,
+  }
 
-  let false_and_true = () => {cases: false_and_true_cases, row: Closed, extra: Extra_boolean}
-  let true_only = () => {cases: true_only, row: Closed, extra: Extra_boolean}
-  let false_only = () => {cases: false_only, row: Closed, extra: Extra_boolean}
+  let false_and_true_cases = Variant.Int(SetInt.fromArray([0, 1]))
+  let false_only = Variant.Int(SetInt.add(SetInt.empty, 0))
+  let true_only = Variant.Int(SetInt.add(SetInt.empty, 1))
+
+  let false_and_true = () => {
+    Variant.cases: false_and_true_cases,
+    row: Closed,
+    extra: Extra_boolean,
+  }
+  let true_only = () => {Variant.cases: true_only, row: Closed, extra: Extra_boolean}
+  let false_only = () => {Variant.cases: false_only, row: Closed, extra: Extra_boolean}
+}
+
+module Union = {
+  type t<'a> = Variant.t<MapInt.t<ref<MapString.t<'a>>>, MapString.t<ref<MapString.t<'a>>>>
 }
 
 type rec typescheme =
@@ -63,11 +75,18 @@ type rec typescheme =
   | Nullable(t)
   | List(t)
   | Record(ref<MapString.t<t>>)
+  | Union(string, Union.t<t>)
   | Dict(t, ref<SetString.t>)
 
 and t = ref<typescheme>
 
 type props = MapString.t<t>
+
+let bool_toString = i =>
+  switch i {
+  | 0 => "false"
+  | _ => "true"
+  }
 
 let rec toString = x =>
   switch x.contents {
@@ -78,20 +97,14 @@ let rec toString = x =>
   | Echo => "echoable"
   | Enum({cases, row, extra}) =>
     let s = switch cases {
-    | Enum_string(cases) => SetString.toArray(cases)->Array.joinWithU(" | ", (. s) => `@"${s}"`)
-    | Enum_int(cases) =>
+    | String(cases) => SetString.toArray(cases)->Array.joinWithU(" | ", (. s) => `@"${s}"`)
+    | Int(cases) =>
       switch extra {
       | Extra_none => SetInt.toArray(cases)->Array.joinWithU(" | ", (. i) => "@" ++ Int.toString(i))
-      | Extra_boolean =>
-        SetInt.toArray(cases)->Array.joinWithU(" | ", (. i) =>
-          switch i {
-          | 0 => "false"
-          | _ => "true"
-          }
-        )
+      | Extra_boolean => SetInt.toArray(cases)->Array.joinWith(" | ", bool_toString)
       }
     }
-    s ++ Enum.row_toString(row)
+    s ++ Variant.row_toString(row)
   | Nullable(x) => "?" ++ toString(x)
   | List(x) => `[${toString(x)}]`
   | Dict(x, _) => `<${toString(x)}>`
@@ -99,12 +112,29 @@ let rec toString = x =>
     let x = Array.joinWith(x, ", ", toString)
     `(${x})`
   | Record(x) =>
-    let rows = switch MapString.toArray(x.contents) {
-    | [] => "_"
-    | a => Array.joinWithU(a, ", ", (. (k, v)) => `"${k}": ${toString(v)}`)
-    }
+    let rows = x.contents->MapString.toArray->record_rows_toString
     "{" ++ rows ++ "}"
+  | Union(key, {cases, extra, row}) =>
+    let cases = switch cases {
+    | String(m) => MapString.toArray(m)->Array.mapU((. (tag, m)) => (`"${tag}"`, m))
+    | Int(m) =>
+      switch extra {
+      | Extra_none => MapInt.toArray(m)->Array.mapU((. (tag, m)) => (Int.toString(tag), m))
+      | Extra_boolean => MapInt.toArray(m)->Array.mapU((. (tag, m)) => (bool_toString(tag), m))
+      }
+    }
+    Array.joinWithU(cases, " | ", (. (tag, m)) => {
+      let rows = record_rows_toString(MapString.toArray(m.contents))
+      let rows = switch rows {
+      | "" => ""
+      | rows => ", " ++ rows
+      }
+      `{@"${key}": ${tag}${rows}}`
+    }) ++
+    Variant.row_toString(row)
   }
+
+and record_rows_toString = a => Array.joinWithU(a, ", ", (. (k, v)) => `"${k}": ${toString(v)}`)
 
 let rec copy = x =>
   switch x {
@@ -115,6 +145,12 @@ let rec copy = x =>
   | Dict({contents}, fixme) => Dict(ref(copy(contents)), fixme)
   | Tuple(a) => Tuple(Array.mapU(a, (. {contents}) => ref(copy(contents))))
   | Record({contents}) => Record(ref(copy_record(contents)))
+  | Union(tag, {cases, row, extra}) =>
+    let cases = switch cases {
+    | String(m) => Variant.String(MapString.mapU(m, (. {contents}) => ref(copy_record(contents))))
+    | Int(m) => Int(MapInt.mapU(m, (. {contents}) => ref(copy_record(contents))))
+    }
+    Union(tag, {cases: cases, row: row, extra: extra})
   }
 
 and copy_record = m => MapString.mapU(m, (. {contents}) => ref(copy(contents)))

@@ -114,7 +114,32 @@ let unexpectedToken = (type a, token, module(M): debuggable<a>) => {
   exn: None,
 }
 
+let tooManyFields = (type a, token, module(M): debuggable<a>) => {
+  message: `This field was already used: "${M.toString(token)}".`,
+  kind: #Parse,
+  location: Some(M.debug(token)),
+  stack: [],
+  exn: None
+}
+
+let tooManyTags = t => {
+  message: "A tagged union may only have one tag field.",
+  kind: #Parse,
+  location: Some(t),
+  stack: [],
+  exn: None,
+}
+
+
 /* Type errors */
+
+let badUnionTag = t => {
+  message: `Only integer, string, and boolean literals may be used as union tags.`,
+  kind: #Type,
+  exn: None,
+  location: Some(t),
+  stack: [],
+}
 
 let cantNarrowType = (t, a, b, f) => {
   message: `These types have no subset:

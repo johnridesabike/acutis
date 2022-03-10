@@ -6,6 +6,7 @@
   file, You can obtain one at http://mozilla.org/MPL/2.0/.
 */
 module Array = Belt.Array
+module MapInt = Belt.Map.Int
 module MapString = Belt.Map.String
 module Queue = Belt.MutableQueue
 module SetInt = Belt.Set.Int
@@ -32,22 +33,57 @@ type mode =
   | Construct_literal // Record a is narrowed to a subset of a and b.
   | Construct_var // Record a expands into b only.
 
-let union_enum = (a, b, tref1, tref2, debug) =>
+let unify_enum_cases = (a, b, aty, bty, _, debug) =>
   switch (a, b) {
-  | (Ty.Enum.Enum_string(a), Ty.Enum.Enum_string(b)) => Ty.Enum.Enum_string(SetString.union(a, b))
-  | (Enum_int(a), Enum_int(b)) => Enum_int(SetInt.union(a, b))
-  | _ => raise(Exit(Debug.typeMismatch(debug, tref1, tref2, Ty.toString)))
+  | (Ty.Variant.String(a), Ty.Variant.String(b)) => Ty.Variant.String(SetString.union(a, b))
+  | (Int(a), Int(b)) => Int(SetInt.union(a, b))
+  | _ => raise(Exit(Debug.typeMismatch(debug, aty, bty, Ty.toString)))
+  }
+
+let subset_enum_cases = (a, b, aty, bty, _, debug) => {
+  let success = switch (a, b) {
+  | (Ty.Variant.String(a), Ty.Variant.String(b)) => SetString.subset(b, a)
+  | (Int(a), Int(b)) => SetInt.subset(b, a)
+  | _ => false
+  }
+  if !success {
+    raise(Exit(Debug.typeMismatch(debug, aty, bty, Ty.toString)))
+  }
+}
+
+let unify_variant = (a, b, aty, bty, mode, debug, ~unify_cases, ~subset_cases) =>
+  switch mode {
+  | Destructure_expand =>
+    switch (a.Ty.Variant.row, b.Ty.Variant.row) {
+    | (Closed, Closed) => a.row = Closed
+    | (Open, _) | (_, Open) => a.row = Open
+    }
+    a.cases = unify_cases(a.cases, b.cases, aty, bty, mode, debug)
+  | Construct_literal =>
+    switch (a.row, b.row) {
+    | (Open, Closed | Open) => a.cases = unify_cases(a.cases, b.cases, aty, bty, mode, debug)
+    | (Closed, Closed | Open) => subset_cases(a.cases, b.cases, aty, bty, mode, debug)
+    }
+  | Construct_var =>
+    switch (a.row, b.row) {
+    | (Closed, Closed) => subset_cases(a.cases, b.cases, aty, bty, mode, debug)
+    | (Open, Closed) => a.cases = unify_cases(a.cases, b.cases, aty, bty, mode, debug)
+    | (Open, Open) =>
+      let cases = unify_cases(a.cases, b.cases, aty, bty, mode, debug)
+      a.cases = cases
+      b.cases = cases
+    | (Closed, Open) => raise(Exit(Debug.typeMismatch(debug, aty, bty, Ty.toString)))
+    }
   }
 
 @raises(Exit)
-let rec unify = (tref1, tref2, mode, debug) => {
-  @inline let mismatch = () => raise(Exit(Debug.typeMismatch(debug, tref1, tref2, Ty.toString)))
-  switch (tref1.contents, tref2.contents) {
+let rec unify = (aty, bty, mode, debug) => {
+  switch (aty.contents, bty.contents) {
   | (Ty.Int, Ty.Int) | (Float, Float) | (String, String) => ()
-  | (Unknown, t) => tref1 := t
-  | (t, Unknown) => tref2 := t
-  | (Echo, (Int | Float | String | Echo | Enum(_)) as t) => tref1 := t
-  | ((Int | Float | String | Enum(_)) as t, Echo) => tref2 := t
+  | (Unknown, t) => aty := t
+  | (t, Unknown) => bty := t
+  | (Echo, (Int | Float | String | Echo | Enum(_)) as t) => aty := t
+  | ((Int | Float | String | Enum(_)) as t, Echo) => bty := t
   | (Nullable(t1), Nullable(t2)) => unify(t1, t2, mode, debug)
   | (List(t1), List(t2)) => unify(t1, t2, mode, debug)
   | (Dict(t1, ks1), Dict(t2, ks2)) =>
@@ -63,10 +99,71 @@ let rec unify = (tref1, tref2, mode, debug) => {
     } else {
       raise(Exit(Debug.tupleSizeMismatch(debug, s1, s2)))
     }
-  | (Record(a), Record(b)) =>
-    switch mode {
-    | Destructure_expand =>
-      let r = MapString.mergeU(a.contents, b.contents, (. _, v1, v2) => {
+  | (Record(a), Record(b)) => unify_record(a, b, aty, bty, mode, debug)
+  | (Enum(a), Enum(b)) =>
+    unify_variant(
+      ~unify_cases=unify_enum_cases,
+      ~subset_cases=subset_enum_cases,
+      a,
+      b,
+      aty,
+      bty,
+      mode,
+      debug,
+    )
+  | (Union(ka, a), Union(kb, b)) if ka == kb =>
+    unify_variant(
+      ~unify_cases=unify_union_cases,
+      ~subset_cases=subset_union_cases,
+      a,
+      b,
+      aty,
+      bty,
+      mode,
+      debug,
+    )
+  | _ => raise(Exit(Debug.typeMismatch(debug, aty, bty, Ty.toString)))
+  }
+}
+
+and unify_union_cases = (a, b, aty, bty, mode, debug) => {
+  let f = (. _, a, b) =>
+    switch (a, b) {
+    | (Some(_) as x, None) | (None, Some(_) as x) => x
+    | (Some(a) as x, Some(b)) =>
+      unify_record(a, b, aty, bty, mode, debug)
+      x
+    | (None, None) => None
+    }
+  switch (a, b) {
+  | (Ty.Variant.String(a), Ty.Variant.String(b)) => Ty.Variant.String(MapString.mergeU(a, b, f))
+  | (Int(a), Int(b)) => Int(MapInt.mergeU(a, b, f))
+  | _ => raise(Exit(Debug.typeMismatch(debug, aty, bty, Ty.toString)))
+  }
+}
+
+and subset_union_cases = (a, b, aty, bty, mode, debug) => {
+  let f = (. _, a, b) =>
+    switch (a, b) {
+    | (Some(_) as x, None) => x
+    | (Some(a) as x, Some(b)) =>
+      unify_record(a, b, aty, bty, mode, debug)
+      x
+    | (None, Some(_)) => raise(Exit(Debug.typeMismatch(debug, aty, bty, Ty.toString)))
+    | (None, None) => None
+    }
+  switch (a, b) {
+  | (Ty.Variant.String(a), Ty.Variant.String(b)) => MapString.mergeU(a, b, f)->ignore
+  | (Int(a), Int(b)) => MapInt.mergeU(a, b, f)->ignore
+  | _ => raise(Exit(Debug.typeMismatch(debug, aty, bty, Ty.toString)))
+  }
+}
+
+and unify_record = (a, b, aty, bty, mode, debug) =>
+  switch mode {
+  | Destructure_expand =>
+    a :=
+      MapString.mergeU(a.contents, b.contents, (. _, v1, v2) => {
         switch (v1, v2) {
         | (Some(v1) as x, Some(v2)) =>
           unify(v1, v2, mode, debug)
@@ -75,9 +172,9 @@ let rec unify = (tref1, tref2, mode, debug) => {
         | (None, None) => None
         }
       })
-      a := r
-    | Construct_var =>
-      let r = MapString.mergeU(a.contents, b.contents, (. _, v1, v2) => {
+  | Construct_var =>
+    b :=
+      MapString.mergeU(a.contents, b.contents, (. _, v1, v2) => {
         switch (v1, v2) {
         | (Some(v1), Some(v2) as x) =>
           unify(v1, v2, mode, debug)
@@ -86,77 +183,27 @@ let rec unify = (tref1, tref2, mode, debug) => {
         | (None, None) => None
         }
       })
-      b := r
-    | Construct_literal =>
-      let r = MapString.mergeU(a.contents, b.contents, (. _, v1, v2) =>
-        switch (v1, v2) {
-        | (Some(v1) as x, Some(v2)) =>
-          unify(v1, v2, mode, debug)
-          x
-        | (Some(_), None) | (None, Some(_)) | (None, None) => None
-        }
-      )
-      if MapString.isEmpty(r) {
-        raise(Exit(Debug.cantNarrowType(debug, tref1, tref2, Ty.toString)))
-      } else {
-        a := r
+  | Construct_literal =>
+    let r = MapString.mergeU(a.contents, b.contents, (. _, v1, v2) =>
+      switch (v1, v2) {
+      | (Some(v1) as x, Some(v2)) =>
+        unify(v1, v2, mode, debug)
+        x
+      | (Some(_), None) | (None, Some(_)) | (None, None) => None
       }
+    )
+    if MapString.isEmpty(r) {
+      raise(Exit(Debug.cantNarrowType(debug, aty, bty, Ty.toString)))
+    } else {
+      a := r
     }
-  | (Enum(a), Enum(b)) =>
-    switch mode {
-    | Destructure_expand =>
-      let cases = union_enum(a.cases, b.cases, tref1, tref2, debug)
-      let row = switch (a.row, b.row) {
-      | (Closed, Closed) => Ty.Enum.Closed
-      | (Open, _) | (_, Open) => Open
-      }
-      a.cases = cases
-      a.row = row
-    | Construct_literal =>
-      switch (a.row, b.row) {
-      | (Open, Closed | Open) =>
-        let cases = union_enum(a.cases, b.cases, tref1, tref2, debug)
-        a.cases = cases
-      | (Closed, Closed | Open) =>
-        switch (a.cases, b.cases) {
-        | (Enum_string(a), Enum_string(b)) =>
-          if !SetString.subset(b, a) {
-            mismatch()
-          }
-        | (Enum_int(a), Enum_int(b)) =>
-          if !SetInt.subset(b, a) {
-            mismatch()
-          }
-        | _ => mismatch()
-        }
-      }
-    | Construct_var =>
-      switch (a.row, b.row) {
-      | (Closed, Closed) =>
-        switch (a.cases, b.cases) {
-        | (Enum_string(a), Enum_string(b)) =>
-          if !SetString.subset(b, a) {
-            mismatch()
-          }
-        | (Enum_int(a), Enum_int(b)) =>
-          if !SetInt.subset(b, a) {
-            mismatch()
-          }
-        | _ => mismatch()
-        }
-      | (Open, Closed) =>
-        let cases = union_enum(a.cases, b.cases, tref1, tref2, debug)
-        a.cases = cases
-      | (Open, Open) =>
-        let cases = union_enum(a.cases, b.cases, tref1, tref2, debug)
-        a.cases = cases
-        b.cases = cases
-      | (Closed, Open) => mismatch()
-      }
-    }
-  | _ => mismatch()
   }
-}
+
+let open_rows_bool_union_aux = (. ty) =>
+  switch ty {
+  | None => Some(ref(MapString.empty))
+  | Some(_) as m => m
+  }
 
 let open_rows = ty =>
   switch ty.contents {
@@ -164,6 +211,16 @@ let open_rows = ty =>
     switch ty.extra {
     | Extra_none => ty.row = Open
     | Extra_boolean => ty.cases = Ty.Enum.false_and_true_cases
+    }
+  | Union(_, ty) =>
+    switch (ty.extra, ty.cases) {
+    | (Extra_boolean, Int(cases)) =>
+      ty.cases = Int(
+        cases
+        ->MapInt.updateU(0, open_rows_bool_union_aux)
+        ->MapInt.updateU(1, open_rows_bool_union_aux),
+      )
+    | _ => ty.row = Open
     }
   | _ => ()
   }
@@ -176,7 +233,7 @@ module Pattern = {
 
   let toStringConst = (x, e) =>
     switch (x, e) {
-    | (TInt(i), Some({Ty.Enum.extra: Extra_boolean, _})) =>
+    | (TInt(i), Some({Ty.Variant.extra: Extra_boolean, _})) =>
       switch i {
       | 0 => "false"
       | _ => "true"
@@ -194,11 +251,31 @@ module Pattern = {
     | TConst(Debug.t, constant, option<Ty.Enum.t>)
     | TConstruct(Debug.t, construct, option<t>)
     | TTuple(Debug.t, array<t>)
-    | TRecord(Debug.t, Belt.Map.String.t<t>, ref<Belt.Map.String.t<Typescheme.t>>)
-    | TDict(Debug.t, Belt.Map.String.t<t>, ref<Belt.Set.String.t>)
+    | TRecord(
+        Debug.t,
+        option<(string, constant, Typescheme.Union.t<Typescheme.t>)>,
+        MapString.t<t>,
+        ref<MapString.t<Typescheme.t>>,
+      )
+    | TDict(Debug.t, MapString.t<t>, ref<SetString.t>)
     | TVar(Debug.t, string) // any binding
     | TOptionalVar(Debug.t, string) // any binding, may not be set
     | TAny(Debug.t) // ignored wildcard _
+
+  let make_enum_aux = (tag, extra, row, tyvars, debug) =>
+    switch tag {
+    | TInt(i) => {
+        Ty.Variant.cases: Int(MapInt.set(MapInt.empty, i, tyvars)),
+        row: row,
+        extra: extra,
+      }
+    | TString(s) => {
+        Ty.Variant.cases: String(MapString.set(MapString.empty, s, tyvars)),
+        row: row,
+        extra: extra,
+      }
+    | _ => raise(Exit(Debug.badUnionTag(debug))) // error goes here
+    }
 
   @raises(Exit)
   let rec make = (pat, ty, ~f, mode) =>
@@ -231,8 +308,8 @@ module Pattern = {
       TConst(dbg, TInt(b), Some(enum))
     | UStringEnum(dbg, s) =>
       let new_enum = switch mode {
-      | Destructure_expand => Ty.Enum.make(#String(s), Closed)
-      | Construct_var | Construct_literal => Ty.Enum.make(#String(s), Open)
+      | Destructure_expand => Ty.Enum.string(s, Closed)
+      | Construct_var | Construct_literal => Ty.Enum.string(s, Open)
       }
       let new_ty = ref(Ty.Enum(new_enum))
       let enum = switch ty.contents {
@@ -244,8 +321,8 @@ module Pattern = {
       TConst(dbg, TString(s), Some(enum))
     | UIntEnum(dbg, i) =>
       let new_enum = switch mode {
-      | Destructure_expand => Ty.Enum.make(#Int(i), Closed)
-      | Construct_var | Construct_literal => Ty.Enum.make(#Int(i), Open)
+      | Destructure_expand => Ty.Enum.int(i, Closed)
+      | Construct_var | Construct_literal => Ty.Enum.int(i, Open)
       }
       let new_ty = ref(Ty.Enum(new_enum))
       let enum = switch ty.contents {
@@ -288,7 +365,7 @@ module Pattern = {
       }
       unify(ty, Ty.tuple(tyvars), mode, dbg)
       TTuple(dbg, Array.zipByU(a, tyvars, (. pat, ty) => make(pat, ty, mode, ~f)))
-    | URecord(dbg, m) =>
+    | URecord(dbg, None, m) =>
       let new_tyvars = MapString.mapU(m, (. _) => Ty.unknown())->ref
       let tyvars = switch ty.contents {
       | Record(tys) => tys
@@ -300,7 +377,42 @@ module Pattern = {
       | Destructure_expand => make_record_destructure(mode, m, tyvars.contents, ~f, dbg)
       | Construct_var | Construct_literal => make_record(m, tyvars.contents, ~f, dbg, mode)
       }
-      TRecord(dbg, r, tyvars)
+      TRecord(dbg, None, r, tyvars)
+    | URecord(dbg, Some((k, v)), m) =>
+      let new_tyvars = MapString.mapU(m, (. _) => Ty.unknown())->ref
+      let new_tag_ty = Ty.unknown()
+      let row = switch mode {
+      | Destructure_expand => Ty.Variant.Closed
+      | Construct_var | Construct_literal => Open
+      }
+      let (tag, tag_extra) = switch make(v, new_tag_ty, ~f, mode) {
+      | TConst(_, tag, None) => (tag, Ty.Variant.Extra_none)
+      | TConst(_, tag, Some({extra, _})) => (tag, extra) // for booleans
+      | _ => raise(Exit(Debug.badUnionTag(dbg)))
+      }
+      let tyvars = switch ty.contents {
+      | Union(_, enum) =>
+        let tyvars = switch (tag, enum) {
+        | (TInt(i), {cases: Int(cases), _}) => MapInt.get(cases, i)
+        | (TString(s), {cases: String(cases), _}) => MapString.get(cases, s)
+        | _ => None // Let the unification function handle the type error.
+        }
+        switch tyvars {
+        | Some(vars) => vars
+        | None => new_tyvars
+        }
+      | Unknown => new_tyvars
+      | _ =>
+        let ty' = ref(Ty.Union(k, make_enum_aux(tag, tag_extra, row, new_tyvars, dbg)))
+        raise(Exit(Debug.typeMismatch(dbg, ty, ty', Ty.toString)))
+      }
+      let new_enum = make_enum_aux(tag, tag_extra, row, new_tyvars, dbg)
+      unify(ty, ref(Ty.Union(k, new_enum)), mode, dbg)
+      let r = switch mode {
+      | Destructure_expand => make_record_destructure(mode, m, tyvars.contents, ~f, dbg)
+      | Construct_var | Construct_literal => make_record(m, tyvars.contents, ~f, dbg, mode)
+      }
+      TRecord(dbg, Some((k, tag, new_enum)), r, tyvars)
     | UDict(dbg, m) =>
       let new_kys = ref(SetString.empty)
       let (tyvar, kys) = switch ty.contents {
@@ -373,7 +485,7 @@ module Pattern = {
     switch x {
     | TConst(_, x, e) => toStringConst(x, e)
     | TTuple(_, t) => "(" ++ Array.joinWith(t, ", ", toString) ++ ")"
-    | TRecord(_, r, _) =>
+    | TRecord(_, _, r, _) =>
       let a = MapString.toArray(r)
       "{" ++ Array.joinWith(a, ", ", ((k, v)) => keyValuesToString(k, toString(v))) ++ "}"
     | TDict(_, r, _) =>
@@ -401,7 +513,7 @@ module Pattern = {
     | TConst(d, _, _)
     | TConstruct(d, _, _)
     | TTuple(d, _)
-    | TRecord(d, _, _)
+    | TRecord(d, _, _, _)
     | TDict(d, _, _)
     | TVar(d, _)
     | TOptionalVar(d, _)
