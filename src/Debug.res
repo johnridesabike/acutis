@@ -123,7 +123,7 @@ let tooManyFields = (type a, token, module(M): debuggable<a>) => {
 }
 
 let tooManyTags = t => {
-  message: "A tagged union may only have one tag field.",
+  message: "This union has too many tagged fields.",
   kind: #Parse,
   location: Some(t),
   stack: [],

@@ -230,6 +230,10 @@ describe("Advanced types", ({test, _}) => {
   let props = dict([
     ("a", Json.object_(dict([("tag", Json.number(0.0)), ("a", Json.string("a"))]))),
     ("b", Json.object_(dict([("tag", Json.number(1.0)), ("a", Json.number(1.0))]))),
+    ("c", Json.object_(dict([("tag", Json.string("a")), ("a", Json.string("a"))]))),
+    ("d", Json.object_(dict([("tag", Json.string("b")), ("a", Json.number(1.0))]))),
+    ("e", Json.object_(dict([("tag", Json.boolean(true)), ("a", Json.string("a"))]))),
+    ("f", Json.object_(dict([("tag", Json.boolean(false)), ("a", Json.number(1.0))]))),
   ])
   test("Tagged unions", ({expect, _}) => {
     let src = `
@@ -238,9 +242,19 @@ describe("Advanced types", ({test, _}) => {
         with {@tag: 1, a: 1} ~%} success {%
         with _ %} fail {%
     /map ~%}
+    {%~ map [c, d]
+        with {@tag: "a", a: "a"}
+        with {@tag: "b", a: 1} ~%} success {%
+        with _ %} fail {%
+    /map ~%}
+    {%~ map [e, f]
+        with {@tag: true, a: "a"}
+        with {@tag: false, a: 1} ~%} success {%
+        with _ %} fail {%
+    /map ~%}
     `
     let result = render(src, props, [])
-    expect.value(result).toEqual(#ok("success success "))
+    expect.value(result).toEqual(#ok("success success success success success success "))
   })
 })
 
@@ -265,6 +279,153 @@ describe("Template sections", ({test, _}) => {
     let y = Source.src(~name="Y", "{% X PassthroughChild /%}")
     let result = render(`{% Y PassthroughChild=#%} a {%/# / %}`, Js.Dict.empty(), [x, y])
     expect.value(result).toEqual(#ok(" a "))
+  })
+})
+
+describe("Typescheme API", ({test, _}) => {
+  module Ty = Typescheme
+  let empty_child_props = Typescheme.Child.props([])
+
+  let f = props =>
+    Source.fn(~name="F", props, empty_child_props, (type a, module(Env): Source.env<a>, props, _) =>
+      Env.return(. Json.stringifyWithSpace(Json.object_(props), 2))
+    )
+
+  let parse_json = s =>
+    try {
+      s->Json.parseExn->Json.decodeObject->Belt.Option.getExn
+    } catch {
+    | _ => Js.Dict.empty()
+    }
+
+  test("Unknown, int, float, string, echo", ({expect, _}) => {
+    let props = Ty.props([
+      ("u", Ty.unknown()),
+      ("i", Ty.int()),
+      ("f", Ty.float()),
+      ("s", Ty.string()),
+      ("e", Ty.echo()),
+    ])
+    let rawjson = `{
+  "e": true,
+  "f": 1.5,
+  "i": 1,
+  "s": "s",
+  "u": null
+}`
+    let data = parse_json(rawjson)
+    let result = render(`{% F u i f s e / %}`, data, [f(props)])
+    expect.value(result).toEqual(#ok(rawjson))
+  })
+
+  test("Nullable, list", ({expect, _}) => {
+    let props = Ty.props([
+      ("n1", Ty.nullable(Ty.string())),
+      ("n2", Ty.nullable(Ty.string())),
+      ("l", Ty.list(Ty.int())),
+    ])
+    let rawjson = `{
+  "l": [
+    0,
+    1,
+    2
+  ],
+  "n1": null,
+  "n2": "n"
+}`
+    let data = parse_json(rawjson)
+    let result = render(`{% F n1 n2 l / %}`, data, [f(props)])
+    expect.value(result).toEqual(#ok(rawjson))
+  })
+
+  test("Tuple, record, dict", ({expect, _}) => {
+    let props = Ty.props([
+      ("t", Ty.tuple([Ty.int(), Ty.string()])),
+      ("r", Ty.record([("a", Ty.int()), ("b", Ty.string())])),
+      ("d", Ty.dict(Ty.nullable(Ty.int()))),
+    ])
+    let rawjson = `{
+  "d": {
+    "c": null,
+    "d": 3
+  },
+  "r": {
+    "a": 2,
+    "b": "r"
+  },
+  "t": [
+    1,
+    "t"
+  ]
+}`
+    let data = parse_json(rawjson)
+    let result = render(`{% F t r d / %}`, data, [f(props)])
+    expect.value(result).toEqual(#ok(rawjson))
+  })
+
+  test("Enums: int, string, boolean", ({expect, _}) => {
+    let props = Ty.props([
+      ("i", Ty.enum_int([0, 1])),
+      ("s", Ty.enum_string(["a", "b"])),
+      ("b", Ty.bool()),
+    ])
+    let rawjson = `{
+  "b": true,
+  "i": 1,
+  "s": "a"
+}`
+    let data = parse_json(rawjson)
+    let result = render(`{% F i s b / %}`, data, [f(props)])
+    expect.value(result).toEqual(#ok(rawjson))
+  })
+
+  test("Unions: int, string, boolean", ({expect, _}) => {
+    let i = Ty.union_int(
+      "tag",
+      [(0, [("a", Ty.string())]), (1, [("a", Ty.int()), ("b", Ty.string())])],
+    )
+    let s = Ty.union_string(
+      "tag",
+      [("a", [("a", Ty.string())]), ("b", [("a", Ty.int()), ("b", Ty.string())])],
+    )
+    let b = Ty.union_boolean(
+      "tag",
+      ~f=[("a", Ty.string())],
+      ~t=[("a", Ty.int()), ("b", Ty.string())],
+    )
+    let props = Ty.props([("i1", i), ("i2", i), ("s1", s), ("s2", s), ("b1", b), ("b2", b)])
+    let rawjson = `{
+  "b1": {
+    "a": "s",
+    "tag": false
+  },
+  "b2": {
+    "a": 0,
+    "b": "s",
+    "tag": true
+  },
+  "i1": {
+    "a": "s",
+    "tag": 0
+  },
+  "i2": {
+    "a": 0,
+    "b": "s",
+    "tag": 1
+  },
+  "s1": {
+    "a": "s",
+    "tag": "a"
+  },
+  "s2": {
+    "a": 0,
+    "b": "s",
+    "tag": "b"
+  }
+}`
+    let data = parse_json(rawjson)
+    let result = render(`{% F i1 i2 s1 s2 b1 b2 / %}`, data, [f(props)])
+    expect.value(result).toEqual(#ok(rawjson))
   })
 })
 

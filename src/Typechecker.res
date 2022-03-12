@@ -33,6 +33,7 @@ type mode =
   | Construct_literal // Record a is narrowed to a subset of a and b.
   | Construct_var // Record a expands into b only.
 
+@raises(Exit)
 let unify_enum_cases = (a, b, aty, bty, _, debug) =>
   switch (a, b) {
   | (Ty.Variant.String(a), Ty.Variant.String(b)) => Ty.Variant.String(SetString.union(a, b))
@@ -40,6 +41,7 @@ let unify_enum_cases = (a, b, aty, bty, _, debug) =>
   | _ => raise(Exit(Debug.typeMismatch(debug, aty, bty, Ty.toString)))
   }
 
+@raises(Exit)
 let subset_enum_cases = (a, b, aty, bty, _, debug) => {
   let success = switch (a, b) {
   | (Ty.Variant.String(a), Ty.Variant.String(b)) => SetString.subset(b, a)
@@ -51,6 +53,7 @@ let subset_enum_cases = (a, b, aty, bty, _, debug) => {
   }
 }
 
+@raises(Exit)
 let unify_variant = (a, b, aty, bty, mode, debug, ~unify_cases, ~subset_cases) =>
   switch mode {
   | Destructure_expand =>
@@ -126,6 +129,7 @@ let rec unify = (aty, bty, mode, debug) => {
   }
 }
 
+@raises(Exit)
 and unify_union_cases = (a, b, aty, bty, mode, debug) => {
   let f = (. _, a, b) =>
     switch (a, b) {
@@ -142,6 +146,7 @@ and unify_union_cases = (a, b, aty, bty, mode, debug) => {
   }
 }
 
+@raises(Exit)
 and subset_union_cases = (a, b, aty, bty, mode, debug) => {
   let f = (. _, a, b) =>
     switch (a, b) {
@@ -159,6 +164,7 @@ and subset_union_cases = (a, b, aty, bty, mode, debug) => {
   }
 }
 
+@raises(Exit)
 and unify_record = (a, b, aty, bty, mode, debug) =>
   switch mode {
   | Destructure_expand =>
@@ -231,20 +237,6 @@ module Pattern = {
     | TInt(int)
     | TFloat(float)
 
-  let toStringConst = (x, e) =>
-    switch (x, e) {
-    | (TInt(i), Some({Ty.Variant.extra: Extra_boolean, _})) =>
-      switch i {
-      | 0 => "false"
-      | _ => "true"
-      }
-    | (TInt(i), Some(_)) => "@" ++ Belt.Int.toString(i)
-    | (TInt(i), None) => Belt.Int.toString(i)
-    | (TString(s), Some(_)) => `@"${s}"`
-    | (TString(s), None) => `"${s}"`
-    | (TFloat(f), _) => Belt.Float.toString(f)
-    }
-
   type construct = TList | TNullable
 
   type rec t =
@@ -262,6 +254,7 @@ module Pattern = {
     | TOptionalVar(Debug.t, string) // any binding, may not be set
     | TAny(Debug.t) // ignored wildcard _
 
+  @raises(Exit)
   let make_enum_aux = (tag, extra, row, tyvars, debug) =>
     switch tag {
     | TInt(i) => {
@@ -308,8 +301,8 @@ module Pattern = {
       TConst(dbg, TInt(b), Some(enum))
     | UStringEnum(dbg, s) =>
       let new_enum = switch mode {
-      | Destructure_expand => Ty.Enum.string(s, Closed)
-      | Construct_var | Construct_literal => Ty.Enum.string(s, Open)
+      | Destructure_expand => Ty.Enum.string_singleton(s, Closed)
+      | Construct_var | Construct_literal => Ty.Enum.string_singleton(s, Open)
       }
       let new_ty = ref(Ty.Enum(new_enum))
       let enum = switch ty.contents {
@@ -321,8 +314,8 @@ module Pattern = {
       TConst(dbg, TString(s), Some(enum))
     | UIntEnum(dbg, i) =>
       let new_enum = switch mode {
-      | Destructure_expand => Ty.Enum.int(i, Closed)
-      | Construct_var | Construct_literal => Ty.Enum.int(i, Open)
+      | Destructure_expand => Ty.Enum.int_singleton(i, Closed)
+      | Construct_var | Construct_literal => Ty.Enum.int_singleton(i, Open)
       }
       let new_ty = ref(Ty.Enum(new_enum))
       let enum = switch ty.contents {
@@ -370,9 +363,9 @@ module Pattern = {
       let tyvars = switch ty.contents {
       | Record(tys) => tys
       | Unknown => new_tyvars
-      | _ => raise(Exit(Debug.typeMismatch(dbg, ty, Ty.record2(new_tyvars), Ty.toString)))
+      | _ => raise(Exit(Debug.typeMismatch(dbg, ty, Ty.internal_record(new_tyvars), Ty.toString)))
       }
-      unify(ty, Ty.record2(new_tyvars), mode, dbg)
+      unify(ty, Ty.internal_record(new_tyvars), mode, dbg)
       let r = switch mode {
       | Destructure_expand => make_record_destructure(mode, m, tyvars.contents, ~f, dbg)
       | Construct_var | Construct_literal => make_record(m, tyvars.contents, ~f, dbg, mode)
@@ -419,9 +412,9 @@ module Pattern = {
       | Dict(ty, kys) => (ty, kys)
       | Unknown => (Ty.unknown(), new_kys)
       | _ =>
-        raise(Exit(Debug.typeMismatch(dbg, ty, Ty.dict_keys(Ty.unknown(), new_kys), Ty.toString)))
+        raise(Exit(Debug.typeMismatch(dbg, ty, Ty.internal_dict_keys(Ty.unknown(), new_kys), Ty.toString)))
       }
-      unify(ty, Ty.dict_keys(tyvar, new_kys), mode, dbg)
+      unify(ty, Ty.internal_dict_keys(tyvar, new_kys), mode, dbg)
       let d = MapString.mapU(m, (. pat) => make(pat, tyvar, mode, ~f))
       TDict(dbg, d, kys)
     | UBinding(dbg, "_") =>
@@ -474,6 +467,20 @@ module Pattern = {
     )
   }
 
+  let toStringConst = (x, e) =>
+    switch (x, e) {
+    | (TInt(i), Some({Ty.Variant.extra: Extra_boolean, _})) =>
+      switch i {
+      | 0 => "false"
+      | _ => "true"
+      }
+    | (TInt(i), Some(_)) => "@" ++ Belt.Int.toString(i)
+    | (TInt(i), None) => Belt.Int.toString(i)
+    | (TString(s), Some(_)) => `@"${s}"`
+    | (TString(s), None) => `"${s}"`
+    | (TFloat(f), _) => Belt.Float.toString(f)
+    }
+
   let keyValuesToString = (k, v) =>
     if v == k {
       v
@@ -485,9 +492,23 @@ module Pattern = {
     switch x {
     | TConst(_, x, e) => toStringConst(x, e)
     | TTuple(_, t) => "(" ++ Array.joinWith(t, ", ", toString) ++ ")"
-    | TRecord(_, _, r, _) =>
-      let a = MapString.toArray(r)
-      "{" ++ Array.joinWith(a, ", ", ((k, v)) => keyValuesToString(k, toString(v))) ++ "}"
+    | TRecord(_, uniontag, r, _) =>
+      let s =
+        MapString.toArray(r)->Array.joinWith(", ", ((k, v)) => keyValuesToString(k, toString(v)))
+      switch uniontag {
+      | Some(tag) =>
+        let tag = switch tag {
+        | (k, TInt(0), {extra: Extra_boolean, _}) => `@"${k}": false`
+        | (k, _, {extra: Extra_boolean, _}) => `@"${k}": true`
+        | (k, v, _) => `@"${k}": ${toStringConst(v, None)}`
+        }
+        let sep = switch s {
+        | "" => ""
+        | _ => ", "
+        }
+        "{" ++ tag ++ sep ++ s ++ "}"
+      | None => "{" ++ s ++ "}"
+      }
     | TDict(_, r, _) =>
       let a = MapString.toArray(r)
       "<" ++ Array.joinWith(a, ", ", ((k, v)) => keyValuesToString(k, toString(v))) ++ ">"

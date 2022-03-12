@@ -337,6 +337,10 @@ describe("Patterns", ({test, _}) => {
     expect.value(compile(src)).toMatchSnapshot()
     let src = `{% match @"a" with @"b" %} {% /match %}`
     expect.value(compile(src)).toMatchSnapshot()
+    let src = `{% match a with @0 %} {% with @"a" %} {% /match %}`
+    expect.value(compile(src)).toMatchSnapshot()
+    let src = `{% match a with @"a" %} {% with @0 %} {% /match %}`
+    expect.value(compile(src)).toMatchSnapshot()
   })
 
   test("Union errors", ({expect, _}) => {
@@ -349,6 +353,8 @@ describe("Patterns", ({test, _}) => {
     let src = `{% match a with {@tag: []} %} {% /match %}`
     expect.value(compile(src)).toMatchSnapshot()
     let src = `{% match a with {@a: 0} %} {% with {@b: 1, c} %} {{ c }} {% /match %}`
+    expect.value(compile(src)).toMatchSnapshot()
+    let src = `{% match a with {@a: 0, @b: 1} %} {% /match %}`
     expect.value(compile(src)).toMatchSnapshot()
   })
 
@@ -597,6 +603,18 @@ describe("Matching: partial matching", ({test, _}) => {
     let src = `{% match a with <a: true> %} {% with <a: false> %} {% with _ %} {% /match %}`
     let result = compile(src)
     expect.value(result).toEqual([])
+  })
+
+  test("Unions", ({expect, _}) => {
+    let src = `{% match a with {@tag: 0, a: 10} %} {% with {@tag: 1, b: 20} %} {% /match %}`
+    let result = compile(src)
+    expect.value(result).toMatchSnapshot()
+    let src = `{% match a with {@tag: true, a: 10} %} {% with {@tag: false, b: 20} %} {% /match %}`
+    let result = compile(src)
+    expect.value(result).toMatchSnapshot()
+    let src = `{% match a with {@tag: true, a: 10} %} {% with {@tag: false, b} %} {% /match %}`
+    let result = compile(src)
+    expect.value(result).toMatchSnapshot()
   })
 })
 

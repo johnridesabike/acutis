@@ -22,8 +22,10 @@ module Variant: {
 
 module Enum: {
   type t = Variant.t<Belt.Set.Int.t, Belt.Set.String.t>
-  let string: (string, Variant.row) => t
-  let int: (int, Variant.row) => t
+  let string: (array<string>, Variant.row) => t
+  let string_singleton: (string, Variant.row) => t
+  let int: (array<int>, Variant.row) => t
+  let int_singleton: (int, Variant.row) => t
   let false_and_true_cases: Variant.ty<Belt.Set.Int.t, _>
   let false_and_true: unit => t
   let false_only: unit => t
@@ -43,37 +45,44 @@ type rec typescheme =
   | Float
   | String
   | Echo
-  | Enum(Enum.t)
-  | Tuple(array<t>) // 0 and 1 sized tuples are legal.
   | Nullable(t)
   | List(t)
+  | Tuple(array<t>) // 0 and 1 sized tuples are legal.
   | Record(ref<Belt.Map.String.t<t>>)
-  | Union(string, Union.t<t>)
   /* The string set tracks referenced keys for matching compilation. */
   | Dict(t, ref<Belt.Set.String.t>)
+  | Enum(Enum.t)
+  | Union(string, Union.t<t>)
 
 and t = ref<typescheme>
 
 type props = Belt.Map.String.t<t>
 
-let toString: t => string
+let internal_dict_keys: (t, ref<Belt.Set.String.t>) => t
+let internal_record: ref<props> => t
 
-let copy_record: props => props
-
+/* Public API for declaring type schemes: */
 let unknown: unit => t
-let boolean: unit => t
 let int: unit => t
 let float: unit => t
 let string: unit => t
 let echo: unit => t
 let nullable: t => t
 let list: t => t
-let dict_keys: (t, ref<Belt.Set.String.t>) => t // internal use
-let dict: t => t
 let tuple: array<t> => t
 let record: array<(string, t)> => t
-let record2: ref<props> => t // internal use
+let dict: t => t
+let enum_int: array<int> => t
+let enum_string: array<string> => t
+let bool: unit => t
+let union_int: (string, array<(int, array<(string, t)>)>) => t
+let union_string: (string, array<(string, array<(string, t)>)>) => t
+let union_boolean: (string, ~f: array<(string, t)>, ~t: array<(string, t)>) => t
 let props: array<(string, t)> => props
+
+let toString: t => string
+
+let copy_record: props => props
 
 module Child: {
   type t

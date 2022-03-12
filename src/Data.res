@@ -204,7 +204,9 @@ and record = (~stack, j, map, ty) =>
   | None => raise(Exit(Debug.decodeError(ty, j, Ty.toString, ~stack)))
   }
 
+@raises(Exit)
 and union = (~stack, j, key, map, extra, ty) => {
+  @raises(Exit)
   let fail = () => raise(Exit(Debug.decodeError(ty, j, Ty.toString, ~stack)))
   switch Json.decodeObject(j) {
   | Some(obj) =>
@@ -330,20 +332,7 @@ let toString = t =>
   | _ => assert false
   }
 
-let rec toJson_list = (l, ty) => {
-  let q = Queue.make()
-  let rec aux = l =>
-    switch l {
-    | PNull => Json.array(Queue.toArray(q))
-    | PArray([hd, tl]) =>
-      Queue.add(q, toJson(hd, ty))
-      aux(tl)
-    | _ => assert false
-    }
-  aux(l)
-}
-
-and toJson_record = (t, ty) => {
+let rec toJson_record = (t, ty) => {
   MapString.mapWithKeyU(ty, (. k, v) =>
     switch MapString.get(t, k) {
     | None => assert false
@@ -356,23 +345,49 @@ and toJson_record = (t, ty) => {
 
 and toJson = (t, ty) =>
   switch (t, ty) {
-  | (PUnknown(j), Ty.Unknown) => j
-  | (PConst(PInt(0), Extra_boolean), Ty.Enum({extra: Extra_boolean, _})) => Json.boolean(false)
-  | (PConst(PInt(_), Extra_boolean), Ty.Enum({extra: Extra_boolean, _})) => Json.boolean(true)
-  | (PConst(PInt(i), _), Int | Echo) => Json.number(Int.toFloat(i))
-  | (PConst(PFloat(f), _), Float | Echo) => Json.number(f)
-  | (PConst(PString(s), _), String | Echo) => Json.string(s)
+  | (PUnknown(j), _) => j
+  | (PConst(PFloat(f), _), _) => Json.number(f)
+  | (PConst(PString(s), _), _) => Json.string(s)
+  | (PConst(PInt(0), Extra_boolean), Ty.Enum({extra: Extra_boolean, _}) | Echo) =>
+    Json.boolean(false)
+  | (PConst(PInt(_), Extra_boolean), Enum({extra: Extra_boolean, _}) | Echo) => Json.boolean(true)
+  | (PConst(PInt(i), _), Enum(_) | Int | Echo) => Json.number(Int.toFloat(i))
   | (PNull, Nullable(_)) => Json.null
   | (PArray([t]), Nullable(ty)) => toJson(t, ty.contents)
-  | (_, List(ty)) => toJson_list(t, ty.contents)
-  | (PArray(a), Tuple(tys)) =>
-    assert (Array.size(a) == Array.size(tys))
-    Array.zipByU(a, tys, (. t, ty) => toJson(t, ty.contents))->Json.array
+  | (t, List(ty)) =>
+    let q = Queue.make()
+    let rec aux = l =>
+      switch l {
+      | PNull => Json.array(Queue.toArray(q))
+      | PArray([hd, tl]) =>
+        Queue.add(q, toJson(hd, ty.contents))
+        aux(tl)
+      | _ => assert false
+      }
+    aux(t)
+  | (PArray(a), Tuple(tys)) => Array.zipByU(a, tys, (. t, ty) => toJson(t, ty.contents))->Json.array
   | (PDict(o), Dict(ty, _)) =>
     let r = Dict.empty()
     Array.forEachU(MapString.toArray(o), (. (k, v)) => Dict.set(r, k, toJson(v, ty.contents)))
     Json.object_(r)
   | (PDict(o), Record(ty)) => Json.object_(toJson_record(o, ty.contents))
+  | (PDict(o), Union(k, {cases, _})) =>
+    let tag = MapString.getExn(o, k)
+    let recordTy = switch (cases, tag) {
+    | (Int(m), PConst(PInt(i), _)) => MapInt.getExn(m, i).contents
+    | (String(m), PConst(PString(s), _)) => MapString.getExn(m, s).contents
+    | _ => assert false
+    }
+    let tag = switch tag {
+    | PConst(PString(s), _) => Json.string(s)
+    | PConst(PInt(0), Extra_boolean) => Json.boolean(false)
+    | PConst(PInt(_), Extra_boolean) => Json.boolean(true)
+    | PConst(PInt(i), Extra_none) => Json.number(Int.toFloat(i))
+    | _ => assert false
+    }
+    let jrecord = toJson_record(o, recordTy)
+    Dict.set(jrecord, k, tag)
+    Json.object_(jrecord)
   | _ => assert false
   }
 

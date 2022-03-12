@@ -51,7 +51,7 @@ exception Exit = Debug.Exit
   cannot consume these types under normal polymorphism rules. We need to use
   explicitly polymorphic type annotations and GADTs.
 */
-type extra_nest_info = Tuple | Dict | Record
+type extra_nest_info = Tuple | Dict | Record | Union(Typescheme.Variant.extra)
 
 type extra_switch_info =
   | Extra_none
@@ -592,7 +592,6 @@ let fromConst = (key, val, ifMatch, enum) => Switch({
   wildcard: None,
 })
 
-@raises(Exit)
 let rec fromTPat: 'a 'k. (_, _, 'k, continue<'a, 'k>) => tree<'a, 'k> = (p, b, key, k) =>
   switch p {
   | Tpat.TAny(_) => Wildcard({ids: SetInt.empty, key: key, child: k(. b)})
@@ -626,11 +625,11 @@ let rec fromTPat: 'a 'k. (_, _, 'k, continue<'a, 'k>) => tree<'a, 'k> = (p, b, k
       }
     )->MapString.toArray
     let child = fromKeyValues(a, b, 0, (. b) => End(k(. b)))
-    let child = switch tag {
-    | Some((key, val, union)) => fromConst(key, val, child, Some(union))
-    | None => child
+    let (child, extra) = switch tag {
+    | Some((key, val, union)) => (fromConst(key, val, child, Some(union)), Union(union.extra))
+    | None => (child, Record)
     }
-    Nest({key: key, ids: SetInt.empty, child: StringKeys(child), wildcard: None, extra: Record})
+    Nest({key: key, ids: SetInt.empty, child: StringKeys(child), wildcard: None, extra: extra})
   | TDict(dbg, m, kys) =>
     /* We need to expand the map to include all of its type's keys. */
     let kys =
@@ -645,21 +644,18 @@ let rec fromTPat: 'a 'k. (_, _, 'k, continue<'a, 'k>) => tree<'a, 'k> = (p, b, k
     Nest({key: key, ids: SetInt.empty, child: StringKeys(child), wildcard: None, extra: Dict})
   }
 
-@raises(Exit)
 and fromArray: 'a. (_, _, _, continue<'a, int>) => tree<'a, int> = (a, b, i, k) =>
   switch a[i] {
   | None => k(. b)
   | Some(p) => fromTPat(p, b, i, (. b) => fromArray(a, b, succ(i), k))
   }
 
-@raises(Exit)
 and fromKeyValues: 'a. (_, _, _, continue<'a, string>) => tree<'a, string> = (a, b, i, k) =>
   switch a[i] {
   | None => k(. b)
   | Some((key, v)) => fromTPat(v, b, key, (. b) => fromKeyValues(a, b, succ(i), k))
   }
 
-@raises(Exit)
 let fromArray = (~exit, a) =>
   fromArray(a, MapString.empty, 0, (. names) => End({names: names, exit: exit}))
 
@@ -750,7 +746,7 @@ module ParMatch = {
       switch result {
       | {flag: Exhaustive, next, _} =>
         switch extra {
-        | Tuple | Record => exhaustive(kf(. key), check(next, kf))
+        | Tuple | Record | Union(_) => exhaustive(kf(. key), check(next, kf))
         | Dict =>
           switch wildcard {
           | Some(wildcard) => exhaustive(kf(. key), check(wildcard, kf))
@@ -766,6 +762,20 @@ module ParMatch = {
           let nest = switch extra {
           | Tuple => Tpat.TTuple(Debug.empty, toArray(pats))
           | Record => TRecord(Debug.empty, None, toKeyValues(pats), ref(MapString.empty))
+          | Union(extra) =>
+            switch pats {
+            | list{(k, TConst(_, v, _)), ...pats} =>
+              TRecord(
+                Debug.empty,
+                Some((k, v, {cases: String(MapString.empty), row: Closed, extra: extra})),
+                toKeyValues(pats),
+                ref(MapString.empty),
+              )
+            | _ =>
+              /* If the child (tag) was not a constant, then it was a TAny and we report the entire
+               union pattern as a TAny. */
+              TAny(Debug.empty)
+            }
           | Dict => TDict(Debug.empty, toKeyValues(pats), ref(Belt.Set.String.empty))
           }
           let {pats, next, _} = check(next, kf)

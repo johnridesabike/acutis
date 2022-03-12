@@ -7,7 +7,7 @@
 */
 
 /* This is extra information for debugging. */
-type extra_nest_info = Tuple | Dict | Record
+type extra_nest_info = Tuple | Dict | Record | Union(Typescheme.Variant.extra)
 
 type extra_switch_info =
   | Extra_none

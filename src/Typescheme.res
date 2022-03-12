@@ -36,12 +36,25 @@ module Variant = {
 module Enum = {
   type t = Variant.t<SetInt.t, SetString.t>
 
-  let string = (s, row) => {
+  let string = (a, row) => {
+    Variant.cases: String(SetString.fromArray(a)),
+    row: row,
+    extra: Extra_none,
+  }
+
+  let string_singleton = (s, row) => {
     Variant.cases: String(SetString.add(SetString.empty, s)),
     row: row,
     extra: Extra_none,
   }
-  let int = (i, row) => {
+
+  let int = (a, row) => {
+    Variant.cases: Int(SetInt.fromArray(a)),
+    row: row,
+    extra: Extra_none,
+  }
+
+  let int_singleton = (i, row) => {
     Variant.cases: Int(SetInt.add(SetInt.empty, i)),
     row: row,
     extra: Extra_none,
@@ -62,6 +75,24 @@ module Enum = {
 
 module Union = {
   type t<'a> = Variant.t<MapInt.t<ref<MapString.t<'a>>>, MapString.t<ref<MapString.t<'a>>>>
+
+  let string = (a, row) => {
+    Variant.cases: String(MapString.fromArray(a)),
+    row: row,
+    extra: Extra_none,
+  }
+
+  let int = (a, row) => {
+    Variant.cases: Int(MapInt.fromArray(a)),
+    row: row,
+    extra: Extra_none,
+  }
+
+  let boolean = (f, t, row) => {
+    Variant.cases: Int(MapInt.empty->MapInt.set(0, f)->MapInt.set(1, t)),
+    row: row,
+    extra: Extra_boolean,
+  }
 }
 
 type rec typescheme =
@@ -70,17 +101,41 @@ type rec typescheme =
   | Float
   | String
   | Echo
-  | Enum(Enum.t)
-  | Tuple(array<t>)
   | Nullable(t)
   | List(t)
+  | Tuple(array<t>)
   | Record(ref<MapString.t<t>>)
-  | Union(string, Union.t<t>)
   | Dict(t, ref<SetString.t>)
+  | Enum(Enum.t)
+  | Union(string, Union.t<t>)
 
 and t = ref<typescheme>
 
 type props = MapString.t<t>
+
+let internal_dict_keys = (t, kys) => ref(Dict(t, kys))
+let internal_record = m => ref(Record(m))
+
+let unknown = () => ref(Unknown)
+let int = () => ref(Int)
+let float = () => ref(Float)
+let string = () => ref(String)
+let echo = () => ref(Echo)
+let nullable = t => ref(Nullable(t))
+let list = t => ref(List(t))
+let tuple = a => ref(Tuple(a))
+let record = a => ref(Record(ref(MapString.fromArray(a))))
+let dict = t => ref(Dict(t, ref(SetString.empty)))
+let enum_int = a => ref(Enum(Enum.int(a, Closed)))
+let enum_string = a => ref(Enum(Enum.string(a, Closed)))
+let bool = () => ref(Enum(Enum.false_and_true()))
+let union_int = (k, a) =>
+  ref(Union(k, Union.int(Array.mapU(a, (. (k, v)) => (k, ref(MapString.fromArray(v)))), Closed)))
+let union_string = (k, a) =>
+  ref(Union(k, Union.string(Array.mapU(a, (. (k, v)) => (k, ref(MapString.fromArray(v)))), Closed)))
+let union_boolean = (k, ~f, ~t) =>
+  ref(Union(k, Union.boolean(ref(MapString.fromArray(f)), ref(MapString.fromArray(t)), Closed)))
+let props = a => MapString.fromArray(a)
 
 let bool_toString = i =>
   switch i {
@@ -154,21 +209,6 @@ let rec copy = x =>
   }
 
 and copy_record = m => MapString.mapU(m, (. {contents}) => ref(copy(contents)))
-
-let unknown = () => ref(Unknown)
-let boolean = () => ref(Enum(Enum.false_and_true()))
-let int = () => ref(Int)
-let float = () => ref(Float)
-let string = () => ref(String)
-let echo = () => ref(Echo)
-let nullable = t => ref(Nullable(t))
-let list = t => ref(List(t))
-let dict_keys = (t, kys) => ref(Dict(t, kys))
-let dict = t => ref(Dict(t, ref(SetString.empty)))
-let tuple = a => ref(Tuple(a))
-let record = a => ref(Record(ref(MapString.fromArray(a))))
-let record2 = m => ref(Record(m))
-let props = a => MapString.fromArray(a)
 
 module Child = {
   type t' = Child | NullableChild

@@ -397,6 +397,57 @@ Here is an example of a case that is not matched:
 ]
 `;
 
+exports[`Matching: partial matching Unions 1`] = `
+Array [
+  Object {
+    "exn": undefined,
+    "kind": "Matching",
+    "location": Object {
+      "char": 3,
+      "name": "",
+    },
+    "message": "This pattern-matching is not exhaustive.
+Here is an example of a case that is not matched:
+{@\\"tag\\": 0, a: _}",
+    "stack": Array [],
+  },
+]
+`;
+
+exports[`Matching: partial matching Unions 2`] = `
+Array [
+  Object {
+    "exn": undefined,
+    "kind": "Matching",
+    "location": Object {
+      "char": 3,
+      "name": "",
+    },
+    "message": "This pattern-matching is not exhaustive.
+Here is an example of a case that is not matched:
+{@\\"tag\\": false, b: _}",
+    "stack": Array [],
+  },
+]
+`;
+
+exports[`Matching: partial matching Unions 3`] = `
+Array [
+  Object {
+    "exn": undefined,
+    "kind": "Matching",
+    "location": Object {
+      "char": 3,
+      "name": "",
+    },
+    "message": "This pattern-matching is not exhaustive.
+Here is an example of a case that is not matched:
+{@\\"tag\\": true, a: _}",
+    "stack": Array [],
+  },
+]
+`;
+
 exports[`Matching: unused patterns Basic patterns 1`] = `
 Array [
   Object {
@@ -954,6 +1005,36 @@ Array [
       "name": "",
     },
     "message": "This pattern is type @\\"a\\" | ... but expected type @\\"b\\".",
+    "stack": Array [],
+  },
+]
+`;
+
+exports[`Patterns Enum errors 5`] = `
+Array [
+  Object {
+    "exn": undefined,
+    "kind": "Type",
+    "location": Object {
+      "char": 31,
+      "name": "",
+    },
+    "message": "This pattern is type @\\"a\\" but expected type @0.",
+    "stack": Array [],
+  },
+]
+`;
+
+exports[`Patterns Enum errors 6`] = `
+Array [
+  Object {
+    "exn": undefined,
+    "kind": "Type",
+    "location": Object {
+      "char": 33,
+      "name": "",
+    },
+    "message": "This pattern is type @0 but expected type @\\"a\\".",
     "stack": Array [],
   },
 ]
@@ -2031,6 +2112,21 @@ Array [
       "name": "",
     },
     "message": "This pattern is type {@\\"b\\": 1, \\"c\\": _} but expected type {@\\"a\\": 0}.",
+    "stack": Array [],
+  },
+]
+`;
+
+exports[`Patterns Union errors 6`] = `
+Array [
+  Object {
+    "exn": undefined,
+    "kind": "Parse",
+    "location": Object {
+      "char": 24,
+      "name": "",
+    },
+    "message": "This union has too many tagged fields.",
     "stack": Array [],
   },
 ]
