@@ -46,7 +46,7 @@ const output = Result.getOrElse(
 console.log(output); // Logs: "Hello Carlo."
 ```
 
-### ReScript 
+### ReScript
 
 ```reason
 open AcutisLang
@@ -401,9 +401,9 @@ one error, then it won't return any rendered data.
 Templates returned by `Compile.make` are functions that accept three
 arguments:
 
-1. An environment object created by `Environment.make`.
+1. An environment object created by `Environment.make`
 2. A props object.
-3. A children object. 
+3. A children object.
 
 In ReScript, the environment is a [record], and props and children are both
 [JS dictionary objects][dict].
@@ -443,7 +443,7 @@ const footer = Source.funcWithString(
 #### ReScript example
 
 ```reason
-let footer = 
+let footer =
   AcutisLang.Source.funcWithString(
     ~name="Footer",
     "Copyright {{ year }}"
@@ -736,9 +736,9 @@ Examples:
 [component]: ../manual/#template-components
 [dict]: https://rescript-lang.org/docs/manual/latest/api/js/dict
 [polymorphic variant]: https://rescript-lang.org/docs/manual/latest/polymorphic-variant
-[Promise]: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise 
+[Promise]: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise
 [record]: https://rescript-lang.org/docs/manual/latest/record
-[ReScript result type]: https://rescript-lang.org/docs/manual/latest/api/belt/result 
+[ReScript result type]: https://rescript-lang.org/docs/manual/latest/api/belt/result
 [result]: #results
 [results]: #results
 [string map]: https://rescript-lang.org/docs/manual/latest/api/belt/map-string

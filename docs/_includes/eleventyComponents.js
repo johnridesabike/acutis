@@ -1,5 +1,5 @@
 /**
-  Copyright (c) 2021 John Jackson. 
+  Copyright (c) 2021 John Jackson.
 
   This Source Code Form is subject to the terms of the Mozilla Public
   License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -45,7 +45,7 @@ module.exports = [
       if (props.link == null) {
         link = props.name;
       } else {
-        link = `<a href="${props.link}">{{ name }}</a>`;
+        link = `<a href="${props.link}">${props.name}</a>`;
       }
       return Env.return_(`
         <footer class="footer">
