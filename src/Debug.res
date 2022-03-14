@@ -302,7 +302,8 @@ let uncaughtCompileError = (e, ~name) => {
 /* Render errors */
 
 let customError = message => {
-  message: message,
+  message: `A template function raised this error:
+${message}`,
   location: None,
   stack: [],
   kind: #Render,

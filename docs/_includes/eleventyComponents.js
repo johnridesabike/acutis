@@ -23,7 +23,7 @@ module.exports = [
     "Debugger",
     Typescheme.props([["val", Typescheme.unknown()]]),
     Typescheme.Child.props([]),
-    (Env, props, children) => {
+    (Env, _props, _children) => {
       debugger;
       return Env.return_("");
     }

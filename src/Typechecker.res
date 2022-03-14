@@ -294,8 +294,7 @@ module Pattern = {
       let new_ty = ref(Ty.Enum(new_enum))
       let enum = switch ty.contents {
       | Enum(enum) => enum
-      | Unknown => new_enum
-      | _ => raise(Exit(Debug.typeMismatch(dbg, ty, new_ty, Ty.toString)))
+      | _ => new_enum
       }
       unify(ty, new_ty, mode, dbg)
       TConst(dbg, TInt(b), Some(enum))
@@ -307,8 +306,7 @@ module Pattern = {
       let new_ty = ref(Ty.Enum(new_enum))
       let enum = switch ty.contents {
       | Enum(enum) => enum
-      | Unknown => new_enum
-      | _ => raise(Exit(Debug.typeMismatch(dbg, ty, new_ty, Ty.toString)))
+      | _ => new_enum
       }
       unify(ty, new_ty, mode, dbg)
       TConst(dbg, TString(s), Some(enum))
@@ -320,16 +318,14 @@ module Pattern = {
       let new_ty = ref(Ty.Enum(new_enum))
       let enum = switch ty.contents {
       | Enum(enum) => enum
-      | Unknown => new_enum
-      | _ => raise(Exit(Debug.typeMismatch(dbg, ty, new_ty, Ty.toString)))
+      | _ => new_enum
       }
       unify(ty, new_ty, mode, dbg)
       TConst(dbg, TInt(i), Some(enum))
     | UNullable(dbg, pat) =>
       let tyvar = switch ty.contents {
       | Nullable(ty) => ty
-      | Unknown => Ty.unknown()
-      | _ => raise(Exit(Debug.typeMismatch(dbg, ty, Ty.nullable(Ty.unknown()), Ty.toString)))
+      | _ => Ty.unknown()
       }
       let pat = switch pat {
       | None => None
@@ -340,8 +336,7 @@ module Pattern = {
     | UList(dbg, a, tail) =>
       let tyvar = switch ty.contents {
       | List(ty) => ty
-      | Unknown => Ty.unknown()
-      | _ => raise(Exit(Debug.typeMismatch(dbg, ty, Ty.list(Ty.unknown()), Ty.toString)))
+      | _ => Ty.unknown()
       }
       unify(ty, Ty.list(tyvar), mode, dbg)
       let tl = switch tail {
@@ -353,8 +348,7 @@ module Pattern = {
       let new_tyvars = Array.mapU(a, (. _) => Ty.unknown())
       let tyvars = switch ty.contents {
       | Tuple(tys) => tys
-      | Unknown => new_tyvars
-      | _ => raise(Exit(Debug.typeMismatch(dbg, ty, Ty.tuple(new_tyvars), Ty.toString)))
+      | _ => new_tyvars
       }
       unify(ty, Ty.tuple(tyvars), mode, dbg)
       TTuple(dbg, Array.zipByU(a, tyvars, (. pat, ty) => make(pat, ty, mode, ~f)))
@@ -362,14 +356,10 @@ module Pattern = {
       let new_tyvars = MapString.mapU(m, (. _) => Ty.unknown())->ref
       let tyvars = switch ty.contents {
       | Record(tys) => tys
-      | Unknown => new_tyvars
-      | _ => raise(Exit(Debug.typeMismatch(dbg, ty, Ty.internal_record(new_tyvars), Ty.toString)))
+      | _ => new_tyvars
       }
       unify(ty, Ty.internal_record(new_tyvars), mode, dbg)
-      let r = switch mode {
-      | Destructure_expand => make_record_destructure(mode, m, tyvars.contents, ~f, dbg)
-      | Construct_var | Construct_literal => make_record(m, tyvars.contents, ~f, dbg, mode)
-      }
+      let r = make_record(m, tyvars.contents, ~f, dbg, mode)
       TRecord(dbg, None, r, tyvars)
     | URecord(dbg, Some((k, v)), m) =>
       let new_tyvars = MapString.mapU(m, (. _) => Ty.unknown())->ref
@@ -388,31 +378,23 @@ module Pattern = {
         let tyvars = switch (tag, enum) {
         | (TInt(i), {cases: Int(cases), _}) => MapInt.get(cases, i)
         | (TString(s), {cases: String(cases), _}) => MapString.get(cases, s)
-        | _ => None // Let the unification function handle the type error.
+        | _ => None
         }
         switch tyvars {
         | Some(vars) => vars
         | None => new_tyvars
         }
-      | Unknown => new_tyvars
-      | _ =>
-        let ty' = ref(Ty.Union(k, make_enum_aux(tag, tag_extra, row, new_tyvars, dbg)))
-        raise(Exit(Debug.typeMismatch(dbg, ty, ty', Ty.toString)))
+      | _ => new_tyvars
       }
       let new_enum = make_enum_aux(tag, tag_extra, row, new_tyvars, dbg)
       unify(ty, ref(Ty.Union(k, new_enum)), mode, dbg)
-      let r = switch mode {
-      | Destructure_expand => make_record_destructure(mode, m, tyvars.contents, ~f, dbg)
-      | Construct_var | Construct_literal => make_record(m, tyvars.contents, ~f, dbg, mode)
-      }
+      let r = make_record(m, tyvars.contents, ~f, dbg, mode)
       TRecord(dbg, Some((k, tag, new_enum)), r, tyvars)
     | UDict(dbg, m) =>
       let new_kys = ref(SetString.empty)
       let (tyvar, kys) = switch ty.contents {
       | Dict(ty, kys) => (ty, kys)
-      | Unknown => (Ty.unknown(), new_kys)
-      | _ =>
-        raise(Exit(Debug.typeMismatch(dbg, ty, Ty.internal_dict_keys(Ty.unknown(), new_kys), Ty.toString)))
+      | _ => (Ty.unknown(), new_kys)
       }
       unify(ty, Ty.internal_dict_keys(tyvar, new_kys), mode, dbg)
       let d = MapString.mapU(m, (. pat) => make(pat, tyvar, mode, ~f))
@@ -445,27 +427,26 @@ module Pattern = {
     }
 
   @raises(Exit)
-  and make_record = (m, tyvars, ~f, dbg, mode) => {
-    MapString.mergeU(m, tyvars, (. k, pat, ty) =>
-      switch (pat, ty) {
-      | (Some(_), None) | (None, None) => None
-      | (Some(pat), Some(ty)) => Some(make(pat, ty, ~f, mode))
-      | (None, Some(ty)) => raise(Exit(Debug.missingRecordField(dbg, k, ty, Ty.toString)))
-      }
-    )
-  }
-
-  @raises(Exit)
-  and make_record_destructure = (mode, m, tyvars, ~f, dbg) => {
-    MapString.mergeU(m, tyvars, (. _, pat, ty) =>
-      switch (pat, ty) {
-      | (Some(pat), None) => Some(make(pat, Ty.unknown(), mode, ~f))
-      | (Some(pat), Some(ty)) => Some(make(pat, ty, mode, ~f))
-      | (None, Some(_)) => Some(TAny(dbg))
-      | (None, None) => None
-      }
-    )
-  }
+  and make_record = (m, tyvars, ~f, dbg, mode) =>
+    switch mode {
+    | Destructure_expand =>
+      MapString.mergeU(m, tyvars, (. _, pat, ty) =>
+        switch (pat, ty) {
+        | (Some(pat), None) => Some(make(pat, Ty.unknown(), mode, ~f))
+        | (Some(pat), Some(ty)) => Some(make(pat, ty, mode, ~f))
+        | (None, Some(_)) => Some(TAny(dbg))
+        | (None, None) => None
+        }
+      )
+    | Construct_var | Construct_literal =>
+      MapString.mergeU(m, tyvars, (. k, pat, ty) =>
+        switch (pat, ty) {
+        | (Some(_), None) | (None, None) => None
+        | (Some(pat), Some(ty)) => Some(make(pat, ty, ~f, mode))
+        | (None, Some(ty)) => raise(Exit(Debug.missingRecordField(dbg, k, ty, Ty.toString)))
+        }
+      )
+    }
 
   let toStringConst = (x, e) =>
     switch (x, e) {

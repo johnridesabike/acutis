@@ -105,7 +105,7 @@ describe("Async helper functions", () => {
     );
     expect(await Render.async(template, {})).toEqual({
       NAME: "errors",
-      VAL: [{ message: "e", kind: "Render", stack: [] }],
+      VAL: [{ message: "A template function raised this error:\ne", kind: "Render", stack: [] }],
     });
   });
 

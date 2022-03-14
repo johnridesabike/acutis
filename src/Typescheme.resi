@@ -64,7 +64,9 @@ let internal_record: ref<props> => t
 /* Public API for declaring type schemes: */
 let unknown: unit => t
 let int: unit => t
+let int_: unit => t // int is a JS keyword
 let float: unit => t
+let float_: unit => t // float is a JS keyword
 let string: unit => t
 let echo: unit => t
 let nullable: t => t

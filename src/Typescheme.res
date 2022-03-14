@@ -118,7 +118,9 @@ let internal_record = m => ref(Record(m))
 
 let unknown = () => ref(Unknown)
 let int = () => ref(Int)
+let int_ = int
 let float = () => ref(Float)
+let float_ = float
 let string = () => ref(String)
 let echo = () => ref(Echo)
 let nullable = t => ref(Nullable(t))

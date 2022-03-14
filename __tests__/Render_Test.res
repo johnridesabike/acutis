@@ -429,6 +429,29 @@ describe("Typescheme API", ({test, _}) => {
   })
 })
 
+describe("Constructing values", ({test, _}) => {
+  test("Constructing values", ({expect, _}) => {
+    let src = `{%~
+      match [(1, 2), (3, 4)],
+            [@"y", @"z"],
+            [@99, @100],
+            [!{@tag: "a", a: 1.5}, null],
+            {@tag: 0, a: !"z"},
+            <a: "a">
+      with  [(1, 2), (3, 4)],
+            [@"y", @"z"],
+            [@99, @100],
+            [!{@tag: "a", a: 1.5}, null],
+            {@tag: 0, a: !"z"},
+            <a: "a">
+    ~%} success {%~
+      with _, _, _, _, _, _ %} fail {%
+      /match ~%}`
+    let result = render(src, Js.Dict.empty(), [])
+    expect.value(result).toEqual(#ok("success"))
+  })
+})
+
 describe("API helper functions", ({test, _}) => {
   test("env.return", ({expect, _}) => {
     let x = Source.fn(~name="X", Typescheme.props([]), Typescheme.Child.props([]), (
@@ -456,7 +479,7 @@ describe("API helper functions", ({test, _}) => {
     expect.value(result).toEqual(
       #errors([
         {
-          message: "e",
+          message: "A template function raised this error:\ne",
           location: None,
           kind: #Render,
           stack: [],

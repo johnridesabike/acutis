@@ -268,17 +268,13 @@ let constantExn = t =>
 let tupleExn = t =>
   switch t {
   | PArray(t) => t
-  | _ =>
-    Js.log2("tuple", Js.Json.stringifyAny(t))
-    assert false
+  | _ => assert false
   }
 
 let dictExn = t =>
   switch t {
   | PDict(t) => t
-  | _ =>
-    Js.log2("dict", t)
-    assert false
+  | _ => assert false
   }
 
 let isNull = t => t == PNull
@@ -303,7 +299,14 @@ let rec fromPattern = (x, props) =>
   | TConstruct(_, _, Some(x)) => fromPattern(x, props)
   | TConstruct(_, _, None) => PNull
   | TTuple(_, x) => PArray(Array.map(x, x => fromPattern(x, props)))
-  | TRecord(_, _, x, _) | TDict(_, x, _) => PDict(MapString.mapU(x, (. v) => fromPattern(v, props)))
+  | TRecord(_, Some((k, v, {extra, _})), x, _) =>
+    let m =
+      x
+      ->MapString.mapU((. v) => fromPattern(v, props))
+      ->MapString.set(k, PConst(Const.fromTPat(v), extra))
+    PDict(m)
+  | TRecord(_, None, x, _) | TDict(_, x, _) =>
+    PDict(MapString.mapU(x, (. v) => fromPattern(v, props)))
   | TAny(_) => assert false
   }
 
@@ -332,16 +335,15 @@ let toString = t =>
   | _ => assert false
   }
 
-let rec toJson_record = (t, ty) => {
-  MapString.mapWithKeyU(ty, (. k, v) =>
-    switch MapString.get(t, k) {
-    | None => assert false
-    | Some(t) => toJson(t, v.contents)
+let rec toJson_record = (t, ty) =>
+  MapString.mergeU(t, ty, (. _, t, ty) =>
+    switch (t, ty) {
+    | (Some(t), Some(ty)) => Some(toJson(t, ty.contents))
+    | _ => None
     }
   )
   ->MapString.toArray
   ->Dict.fromArray
-}
 
 and toJson = (t, ty) =>
   switch (t, ty) {
@@ -385,9 +387,9 @@ and toJson = (t, ty) =>
     | PConst(PInt(i), Extra_none) => Json.number(Int.toFloat(i))
     | _ => assert false
     }
-    let jrecord = toJson_record(o, recordTy)
-    Dict.set(jrecord, k, tag)
-    Json.object_(jrecord)
+    let jsobj = toJson_record(o, recordTy)
+    Dict.set(jsobj, k, tag)
+    Json.object_(jsobj)
   | _ => assert false
   }
 
