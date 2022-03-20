@@ -172,8 +172,8 @@ describe("Render essentials", ({test, _}) => {
     expect.value(result).toEqual(#ok(` I did not.  Oh hai Mark.`))
     let addOne = Source.fn(
       ~name="AddOne",
-      Typescheme.props([("index", Typescheme.int())]),
-      Typescheme.Child.props([]),
+      Typescheme.make([("index", Typescheme.int())]),
+      Typescheme.Child.make([]),
       (type a, module(Env): Source.env<a>, props, _children) => {
         let index = props->Js.Dict.get("index")->Belt.Option.flatMap(Json.decodeNumber)
         switch index {
@@ -267,14 +267,14 @@ describe("Template sections", ({test, _}) => {
     expect.value(result).toEqual(#ok(" b "))
   })
 
-  test("Child props are passed correctly", ({expect, _}) => {
+  test("Child.make are passed correctly", ({expect, _}) => {
     let x = Source.src(~name="X", "{{ PassthroughChild }}")
     let y = Source.src(~name="Y", "{% X PassthroughChild=A /%}")
     let result = render(`{% Y A=#%} a {%/# / %}`, Js.Dict.empty(), [x, y])
     expect.value(result).toEqual(#ok(" a "))
   })
 
-  test("Child props are passed correctly with punning", ({expect, _}) => {
+  test("Child.make are passed correctly with punning", ({expect, _}) => {
     let x = Source.src(~name="X", "{{ PassthroughChild }}")
     let y = Source.src(~name="Y", "{% X PassthroughChild /%}")
     let result = render(`{% Y PassthroughChild=#%} a {%/# / %}`, Js.Dict.empty(), [x, y])
@@ -284,7 +284,7 @@ describe("Template sections", ({test, _}) => {
 
 describe("Typescheme API", ({test, _}) => {
   module Ty = Typescheme
-  let empty_child_props = Typescheme.Child.props([])
+  let empty_child_props = Typescheme.Child.make([])
 
   let f = props =>
     Source.fn(~name="F", props, empty_child_props, (type a, module(Env): Source.env<a>, props, _) =>
@@ -299,7 +299,7 @@ describe("Typescheme API", ({test, _}) => {
     }
 
   test("Unknown, int, float, string, echo", ({expect, _}) => {
-    let props = Ty.props([
+    let props = Ty.make([
       ("u", Ty.unknown()),
       ("i", Ty.int()),
       ("f", Ty.float()),
@@ -319,7 +319,7 @@ describe("Typescheme API", ({test, _}) => {
   })
 
   test("Nullable, list", ({expect, _}) => {
-    let props = Ty.props([
+    let props = Ty.make([
       ("n1", Ty.nullable(Ty.string())),
       ("n2", Ty.nullable(Ty.string())),
       ("l", Ty.list(Ty.int())),
@@ -339,7 +339,7 @@ describe("Typescheme API", ({test, _}) => {
   })
 
   test("Tuple, record, dict", ({expect, _}) => {
-    let props = Ty.props([
+    let props = Ty.make([
       ("t", Ty.tuple([Ty.int(), Ty.string()])),
       ("r", Ty.record([("a", Ty.int()), ("b", Ty.string())])),
       ("d", Ty.dict(Ty.nullable(Ty.int()))),
@@ -364,7 +364,7 @@ describe("Typescheme API", ({test, _}) => {
   })
 
   test("Enums: int, string, boolean", ({expect, _}) => {
-    let props = Ty.props([
+    let props = Ty.make([
       ("i", Ty.enum_int([0, 1])),
       ("s", Ty.enum_string(["a", "b"])),
       ("b", Ty.bool()),
@@ -393,7 +393,7 @@ describe("Typescheme API", ({test, _}) => {
       ~f=[("a", Ty.string())],
       ~t=[("a", Ty.int()), ("b", Ty.string())],
     )
-    let props = Ty.props([("i1", i), ("i2", i), ("s1", s), ("s2", s), ("b1", b), ("b2", b)])
+    let props = Ty.make([("i1", i), ("i2", i), ("s1", s), ("s2", s), ("b1", b), ("b2", b)])
     let rawjson = `{
   "b1": {
     "a": "s",
@@ -454,7 +454,7 @@ describe("Constructing values", ({test, _}) => {
 
 describe("API helper functions", ({test, _}) => {
   test("env.return", ({expect, _}) => {
-    let x = Source.fn(~name="X", Typescheme.props([]), Typescheme.Child.props([]), (
+    let x = Source.fn(~name="X", Typescheme.make([]), Typescheme.Child.make([]), (
       type a,
       module(Env): Source.env<a>,
       _props,
@@ -467,7 +467,7 @@ describe("API helper functions", ({test, _}) => {
   })
 
   test("env.error", ({expect, _}) => {
-    let x = Source.fn(~name="X", Typescheme.props([]), Typescheme.Child.props([]), (
+    let x = Source.fn(~name="X", Typescheme.make([]), Typescheme.Child.make([]), (
       type a,
       module(Env): Source.env<a>,
       _props,
@@ -492,8 +492,8 @@ describe("API helper functions", ({test, _}) => {
   test("env.mapChild", ({expect, _}) => {
     let x = Source.fn(
       ~name="X",
-      Typescheme.props([]),
-      Typescheme.Child.props([Typescheme.Child.child("Children")]),
+      Typescheme.make([]),
+      Typescheme.Child.make([Typescheme.Child.child("Children")]),
       (type a, module(Env): Source.env<a>, _props, children) => {
         Env.map(.Js.Dict.unsafeGet(children, "Children"), child => Js.String.toUpperCase(child))
       },
@@ -517,8 +517,8 @@ describe("API helper functions", ({test, _}) => {
   test("env.flatMapChild", ({expect, _}) => {
     let x = Source.fn(
       ~name="X",
-      Typescheme.props([]),
-      Typescheme.Child.props([Typescheme.Child.child("Children")]),
+      Typescheme.make([]),
+      Typescheme.Child.make([Typescheme.Child.child("Children")]),
       (type a, module(Env): Source.env<a>, _props, children) =>
         Env.flatmap(.Js.Dict.unsafeGet(children, "Children"), child =>
           Env.return(. Js.String.toUpperCase(child))

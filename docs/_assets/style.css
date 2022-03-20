@@ -84,9 +84,13 @@ code[class*="language-"] {
   font-family: var(--font-family-mono);
 }
 
-p code,
-li code {
+/* Use Prism colors for inline code. */
+code:not([class*="language-"]) {
   white-space: nowrap;
+  color: #000;
+  background-color: #f5f2f0;
+  text-shadow: 0 1px #fff;
+  padding: 0 0.125em;
 }
 
 blockquote {
@@ -188,7 +192,6 @@ li::marker {
   text-align: center;
   font-family: var(--font-family-mono);
   font-size: 0.8em;
-  width: 20ch;
 }
 
 .site-header__nav-list {
@@ -199,7 +202,6 @@ li::marker {
 .site-header__nav li {
   margin-left: 1.5em;
   margin-bottom: 0.5em;
-  margin-top: 0.5em;
 }
 
 .site-header__nav a {

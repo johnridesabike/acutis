@@ -10,25 +10,18 @@ next:
 
 An Acutis template is parsed as three basic building blocks:
 
-- Text, which is rendered as-is.
-- Echoes, which are values wrapped in `{{` "mustaches" `}}`.
-- Expressions, which are wrapped in `{%` and `%}`.
+- **Text**, which is rendered as-is.
+- **Echoes**, which are values wrapped in `{{` "mustaches" `}}`.
+- **Expressions**, which are wrapped in `{%` and `%}`.
 
 Most of the language features occur within `{%` expressions `%}`.
 
 [[toc]]
 
-## Bindings
+## Props and bindings
 
-Every template accepts a properties object (props) that binds values to
-names. The object `{"color": "blue"}` binds `"blue"` to the name `color`.
-
-If a template tries to access a binding that doesn't exist, then the value
-defaults to `null`. (See [Pattern matching][1] and [Type][2] for more
-information about this.)
-
-[1]: #patterns%2C-matching%2C-and-mapping
-[2]: #type
+Every template accepts a JSON map of properties (props) that binds values to
+names. The JSON object `{"color": "blue"}` binds `"blue"` to the name `color`.
 
 ## Echoing values
 
@@ -46,8 +39,8 @@ My favorite color is blue.
 
 ### Nullish coalescing
 
-The `?` (question mark) echoes the value on its right-hand side if the value
-on its left-hand side is `null`.
+The `?` (question mark) echoes the value on its right-hand side if the value on
+its left-hand side is `null`.
 
 ```acutis
 My favorite color is {{ color ? fallbackColor }}.
@@ -64,8 +57,8 @@ HTML entities:
 & " ' > < / ` =
 ```
 
-If the `&` (ampersand) character appears before a value, then the value will
-not be escaped.
+If the `&` (ampersand) character appears before a value, then it will not escape
+the value.
 
 ```acutis
 My favorite color is {{ &color }}.
@@ -77,16 +70,13 @@ My favorite color is {{ &color }}.
 {* TODO: add more colors. *}
 ```
 
-Anything wrapped `{*` and `*}` is always ignored in the output. It is
-possible to nest comments, similar to ML-style languages.
-
-<!-- Prism can't render nested comments. -->
-<pre class="language-acutis"><code class="language-acutis"><span class="token acutis language-acutis"><span class="token comment">{* None of {* this is *} rendered. *}</span></span></code></pre>
+Anything wrapped `{*` and `*}` is always ignored in the output. It is possible
+to nest comments, similar to ML-style languages.
 
 ## Whitespace control
 
-The `~` (tilde) symbol trims whitespace before or after an expression or an
-echo statement.
+The `~` (tilde) symbol trims whitespace before or after an expression or an echo
+statement.
 
 ```acutis
 <p>
@@ -100,17 +90,224 @@ Renders:
 <p>Blue</p>
 ```
 
-## Pattern matching
+## Introduction to types
 
-The `match` and `map` statements are the core of Acutis' superpowers. They
-use pattern matching to conditionally output sections of a template.
+Acutis is statically typed, where types are checked at compile time. The type
+scheme is mostly based on JSON with some additional features.
 
-Pattern matching in Acutis combines object destructuring with equality
-checking. If you're used to destructuring objects and using the `switch`
-statement in JavaScript, then this may seem like a natural progression from
-that.
+Acutis does not use type annotations. The compiler can infer the types 100%
+correctly based on how you use the values in your templates. This is a
+double-edged sword, though. It means that code is more concise and easier to
+write, but, if you write a template incorrectly, the compiler will infer the
+types in ways you may not expect.
 
-### Example
+### Constants: int, float, and string
+
+Examples:
+
+```txt
+1
+1.5
+"abc"
+```
+
+The three "constant" types are `int`, `float`, and `string`, which work as you'd
+probably expect from other languages.
+
+### Nullable
+
+Examples:
+
+```txt
+null
+!"abc"
+```
+
+Any type may be "wrapped" in a nullable. Nullable types are indicated by a `?`
+preceding the wrapped type, e.g. `?int`. They can either be `null` or not-null,
+which is written in patterns with a `!`.
+
+Because of the way Acutis "wraps" nullable values, they're closer to what other
+languages call "option" types.
+
+### List
+
+Examples:
+
+```txt
+[]
+["a", "b"]
+[1, 2, 3, ...rest]
+```
+
+A list is an ordered sequence of values. Lists are homogeneous; each item must
+be of the same type. They are indicated with brackets, e.g. `[int]`.
+
+You can append or destructure items from the "head," or the front, of a list
+while ignoring the rest with the `...` syntax.
+
+An empty list is structured as `[]`.
+
+### Tuple
+
+Example:
+
+```txt
+(12, "abc", null)
+```
+
+A tuple is an ordered sequence of items. They're heterogeneous, so each item may
+be a different type than its neighbor. They are indicated with parentheses, e.g.
+`(int, string, ?float)`.
+
+Unlike lists, which are dynamically sized, tuple sizes are always fixed.
+
+### Record
+
+Example:
+
+```txt
+{a: 12, b: "xyz"}
+```
+
+A record is a series of key-value pairs. Records are indicated by braces, e.g.
+`{a: int, b: string}`.
+
+Acutis records are extensible. The compiler always assumes that every record may
+contain additional fields have not been specified yet.
+
+### Dictionary
+
+Example:
+
+```txt
+<a: 12, b: 101>
+```
+
+Dictionaries, or "dicts," are to records what lists are to tuples. They
+represent key-value pairs like records, but they are dynamically sized and
+homogeneously typed. They are specified with angled brackets, e.g. `<int>`.
+
+The order of keys in a dict is _not_ preserved. The compiler currently sorts
+them alphabetically, but that behavior could change.
+
+### Enumeration
+
+Examples:
+
+```txt
+@"abc"
+@12
+```
+
+An enumeration, or an "enum," is a set of integers or strings. Each enum value
+is indicated with an at-symbol, e.g. `@"a" | @"b" | @"c"`.
+
+Enums can be "open" or "closed." A closed enum only allows its specified values.
+An open enum allows the possibility of adding new values. "Openness" is
+indicated with ellipses, e.g. `@"a" | @"b" | ...`.
+
+### Boolean
+
+Examples:
+
+```txt
+false
+true
+```
+
+Boolean values are really just a special kind of enum. The `false | true` type
+works exactly any closed binary enum would, such as `@0 | @1`.
+
+It is possible to have a type which is _only_ `false` or _only_ `true`, but this
+is not useful and usually indicates a programmer error.
+
+### Tagged union
+
+Examples:
+
+```txt
+{@shape: "circle": radius: 12}
+{@shape: "rectangle", height: 11, width: 7}
+```
+
+A record may have a "tag" field, indicated by an at-symbol, which allows it to
+combine with other records. This is like a combination of a record and enum
+type, since the tag field works like an enum.
+
+```txt
+{@shape: "circle", r: int} | {@shape: "rectangle", h: int, w: int}
+```
+
+Unions may also be "open" or "closed," similar to enums.
+
+Tag fields may only contain literal integer, string, or boolean values.
+
+### Echoable
+
+Acutis can echo any int, string, float, or enum value. If it can't determine
+which of these types a particular echoed value is, then it uses a catch-all
+`echoable` type.
+
+### Unknown
+
+Finally, if Acutis can't determine anything at all about a value's type, then it
+uses "unknown," which is indicated by an underscore: `_`.
+
+## Typing philosophy
+
+Acutis is _strongly_ and _statically_ typed. The compiler guarantees that values
+are coherent, for example, a `string` will never appear where an `int` is
+expected.
+
+Acutis is also _structurally_ typed. This allows the compiler to do more than
+just check type equality. It can check for subtypes, which sees if a particular
+structure is compatible as a subset of another structure.
+
+The goal is to enable real-world data to easily fit into a system that's 100%
+type-safe. This means you must sometimes make decisions about which types best
+fit your data. For example, records and tuples are heterogeneous and
+fixed-sized, while dicts and lists are homogeneous and dynamically-sized. This
+trade-off is necessary because if a structure was heterogeneous and dynamic then
+it would be unsafe.
+
+## Types and JSON
+
+Acutis accepts incoming JSON data and decodes it according to the template's
+type scheme. Any data sent to an external function is encoded back into JSON.
+Here is how JSON values and the Acutis types work together.
+
+<!-- Adding bars inside inside tables messes with markdown tooling. -->
+
+| Acutis type                                         | JSON type or value                               |
+| --------------------------------------------------- | ------------------------------------------------ |
+| `int`                                               | `number`                                         |
+| `float`                                             | `number`                                         |
+| `string`                                            | `string`                                         |
+| <code>false &verbar; true</code>                    | `boolean`                                        |
+| `?string`                                           | `null` or `string`                               |
+| `[string]`                                          | `array` with `string` values                     |
+| `(int, string, float)`                              | `array` with shape `[number, string, number]`    |
+| `{a: int, b: string}`                               | `object` with shape `{"a": number, "b": string}` |
+| `<string>`                                          | `object` with `string` values                    |
+| <code>@&quot;a&quot; &verbar; @&quot;b&quot;</code> | Values `"a"` or `"b"`                            |
+| <code>@1 &verbar; @2</code>                         | Values `1` or `2`                                |
+| `{@tag: "a", b: int}`                               | `object` with shape `{"tag": "a", "b": number}`  |
+| `echoable`                                          | `number` or `string` or `boolean`                |
+| `_` (unknown)                                       | Any                                              |
+
+You may need to preprocess your input data to fit Acutis' type constraints. For
+example, if your JSON value can be one of multiple incompatible types, then you
+will have to transform it into a legal type such as a tagged union.
+
+## Introduction to pattern matching
+
+The `match` and `map` statements are the core of Acutis' superpowers. They use
+pattern matching to conditionally output sections of a template.
+
+Pattern matching in Acutis combines object destructuring with equality checking.
+If you're used to destructuring objects and using the `switch` statement in
+JavaScript, then this may seem like a natural progression from that.
 
 Consider this pattern:
 
@@ -119,9 +316,9 @@ Consider this pattern:
 ```
 
 This matches any object where `published` equals `true`, which contains a
-`title` field, and which contains a `dates` object with `posted` and
-`updated` fields. Additionally, it *binds* the values of `title`, `posted`,
-and `updated` to those names.
+`title` field, and which contains a `dates` object with `posted` and `updated`
+fields. Additionally, it _binds_ the values of `title`, `posted`, and `updated`
+to those names.
 
 Therefore, we can use these with the `match` statement and the `with` clause:
 
@@ -136,9 +333,8 @@ Therefore, we can use these with the `match` statement and the `with` clause:
 
 The `match`...`with` block is analogous to a `switch`...`case` block in some
 languages. Here, the structure and values of the `article` binding is checked
-against the patterns after each `with` clause. If one of the patterns
-*matches* the contents of `article`, then the following template section is
-rendered.
+against the patterns after each `with` clause. If one of the patterns _matches_
+the contents of `article`, then the following template section is rendered.
 
 ## Multiple patterns for a block
 
@@ -158,12 +354,12 @@ Acutis allows multiple `with` patterns to render single block expression.
 ## Shadowing bindings
 
 Bindings are immutable. Binding a value to an existing name does not override
-the original, but *shadows* it. Bindings are also scoped to their blocks.
+the original, but _shadows_ it. Bindings are also scoped to their blocks.
 
-Consider this object about my favorite colors:
+Consider this JSON object:
 
 ```json
-{"color": "blue", "other": {"color": "green"}}
+{ "color": "blue", "other": { "color": "green" } }
 ```
 
 And this template:
@@ -192,21 +388,16 @@ The top-level `color` is not affected by the nested `color` binding.
 
 ## Mapping
 
-The `map` statement is similar to `match` except that it is used on arrays
-and objects to render each value of the array or object.
-
-The value types must be homogenous (all the same type), or else a type error
-is likely.
-
-### Example
+The `map` statement is similar to `match` except that it is used on lists to
+render each value of the list.
 
 These props:
 
 ```json
 {
   "articles": [
-    {"title": "Acutis templates for beginners", "author": "John"}, 
-    {"title": "Level up your Acutis skills", "author": "Carlo"}
+    { "title": "Acutis templates for beginners", "author": "John" },
+    { "title": "Level up your Acutis skills", "author": "Carlo" }
   ]
 }
 ```
@@ -219,9 +410,9 @@ And this template:
 {% /map %}
 ```
 
-Renders:
+Will render:
 
-```html
+```txt
 The article "Acutis templates for beginners" was written by John.
 The article "Level up your Acutis skills" was written by Carlo.
 ```
@@ -240,7 +431,7 @@ different template sections based on an value's content.
 
 ### Mapping static patterns
 
-You can map static array patterns.
+You can map static list patterns.
 
 ```acutis
 {% map ["Carlo", "John"] with name ~%}
@@ -248,8 +439,8 @@ You can map static array patterns.
 {% /map %}
 ```
 
-You can also concatenate a static array pattern with an array binding by
-using the `...` (spread) syntax.
+You can also concatenate a static list pattern with an list binding by using the
+`...` (spread) syntax.
 
 ```acutis
 {% map ["Carlo", "John", ...others] with name ~%}
@@ -259,8 +450,8 @@ using the `...` (spread) syntax.
 
 ### Matching the item index
 
-You can optionally include an item's index in the pattern.
-*For arrays, indices always begin at zero.*
+You can optionally include an item's index in the pattern. _For lists, indices
+always begin at zero._
 
 ```acutis
 {% map articles with {title, author}, index %}
@@ -280,62 +471,70 @@ conditionally render sections by matching the index with specific numbers.
 {% /map %}
 ```
 
-### Mapping objects
+### Mapping dictionaries
 
-You can `map` an object binding or pattern. Each of the object's values will
-be matched with the pattern after the `with` clause. The index will be the
-key associated with the value.
+You can map dictionaries by using `map_dict`.
+
+Each of the dictionary's values will be matched with the pattern after the
+`with` clause. The index will be the string key associated with the value.
 
 ```acutis
-{% map {
+{% map <
     author: {name: "John"},
     editor: {name: "Carlo"}
-  } with {name}, role ~%}
+  > with {name}, role ~%}
   {{ name }} is the {{ role }}.
 {% /map %}
 ```
 
-## Pattern matching in-depth
+## More about pattern matching
 
 Pattern matching combines many concepts into one terse syntax. In other
 languages, you may use variable assignment, `if`...`else` statements, and
-imperative loops to control how your content is rendered. To help you
-maximize your use of patterns, this section explains the system's nuances.
+imperative loops to control how your content is rendered. To help you maximize
+your use of patterns, this section explains the system's nuances.
+
+Patterns work by comparing literal values. The following code may not work as
+you might expect: `{% match a with b %}`. It does not compare the value of `a`
+with value of `b`, but rather binds the value of `a` to a new `b` binding.
 
 ### Reference table
 
-| Pattern               | Matches                                              |
-|-----------------------|------------------------------------------------------|
-| `x`                   | A binding. It matches any value, and the value is bound to `x`. |
-| `true`                | Exactly `true`.                                      |
-| `false`               | Exactly `false`.                                     |
-| `null`                | Exactly `null`.                                      |
-| `"abc"`               | The exact string `"abc"`.                            |
-| `1.5`                 | The exact number `1.5`.                              |
-| `1.5e1`               | The exact number `15`.                               |
-| `[]`                  | An array with *exactly zero* items.                  |
-| `["a", "b"]`          | An array that contains strings `"a"` and `"b"` as its first two items, receptively. *There may be more items.* |
-| `["a", "b", ...rest]` | An array that contains strings `"a"` and `"b"` as its first two items, receptively. The remainder of the array is bound to `rest`. |
-| `{}`                  | An object with *exactly zero* fields.                |
-| `{a: 1.5}`            | An object with a field `"a"` containing number `1.5`. *There may be more fields.* |
-| `{a}`                 | An object with a field `"a"` whose value is then bound to name `a`. *There may be more fields.* |
-| `{a: x}`              | An object with a field `"a"` whose value is then bound to name `x`. *There may be more fields.* |
-| `{"null": a}`         | An object with a field `"null"` whose value is then bound to name `a`. (`null` itself is a reserved keyword). *There may be more fields.* |
-
-Notably, Acutis does not check the size of objects and arrays except for
-empty objects (`{}`) and empty arrays (`[]`).
+| Pattern                      | Matches                                                                                                            |
+| ---------------------------- | ------------------------------------------------------------------------------------------------------------------ |
+| `_`                          | Any value.                                                                                                         |
+| `x`                          | Any value, and the value is bound to `x`.                                                                          |
+| `true`                       | Exactly `true`.                                                                                                    |
+| `false`                      | Exactly `false`.                                                                                                   |
+| `"abc"`                      | The exact string `"abc"`.                                                                                          |
+| `1.5`                        | The exact float `1.5`.                                                                                             |
+| `7`                          | The exact integer `7`.                                                                                             |
+| `null`                       | A nullable value which is `null`.                                                                                  |
+| `!x`, `!1.5`, `!"abc"`, etc. | A nullable value which is not `null`.                                                                              |
+| `@7`                         | The exact integer `7`, when `7` is part of an enum.                                                                |
+| `@"a"`                       | The exact string `"a"`, when `"a"` is part of an enum.                                                             |
+| `[]`                         | A list with _exactly zero_ items.                                                                                  |
+| `["a", "b"]`                 | A list with _exactly two_ items, `"a"` and `"b"` receptively.                                                      |
+| `["a", "b", ...rest]`        | A list with _at least two_ items, `"a"` and `"b"`. The remainder of the list is bound to `rest`.                   |
+| `{a: 1}`                     | A record with field `"a"` containing integer `1`.                                                                  |
+| `{a}`                        | A record with field `"a"` whose value is then bound to name `a`.                                                   |
+| `{a: x}`                     | A record with field `"a"` whose value is then bound to name `x`.                                                   |
+| `{"null": a}`                | A record with field `"null"` whose value is then bound to name `a`. (`null` without quotes is a reserved keyword.) |
+| `(7, "a")`                   | A 2-tuple whose first value is `7` and whose second value is `"a"`                                                 |
+| `{@tag: "a", b: 7}`          | A tagged record with a tag field `"tag"` whose value is `"a"` and with field `"b"` whose value is 7.               |
+| `<a: 2>`                     | A dictionary with key `"a"` containing integer `2`.                                                                |
 
 ### Ignoring values with `_` (underscore)
 
-Bindings will match any value, so they can be used as "catch-all" patterns.
-However, Acutis will not let you reuse a binding in a pattern, so a pattern
-like `{a: x, b: x}` is illegal.
+Bindings will match any value, so you can use them as "catch-all" patterns.
+However, Acutis will not let you reuse a binding in a pattern, so a pattern like
+`{a: x, b: x}` is illegal.
 
-Acutis treats the `_` (underscore) name as a special case. Values bound to it
-are immediately discarded. Therefore `{a: _, b: _}` will always match any
-object with fields `a` and `b`, but it will ignore their contents.
+Acutis treats the `_` (underscore) name as a special. Values bound to it are
+immediately discarded. Therefore `{a: _, b: _}` will always match any object
+with fields `a` and `b`, but it will ignore their contents.
 
-Because bindings match *anything*, you can use `_` as a "default" case:
+Because bindings match _anything_, you can use `_` as a "default" case:
 
 ```acutis
 {% match greeting
@@ -363,78 +562,16 @@ can be useful for reasoning about two-dimensional matrices of data.
 {% /match %}
 ```
 
-The number of patterns must match the number of values. This is illegal:
-
-```acutis
-{% match object, color with "sky" %}
-  I forgot to match the color!
-{% /match %}
-```
-
-### The rules of pattern matching
-
-- When matching a value, at least one of the patterns *must* match. If no match
-  is found, then Acutis raises an error. (You can avoid this with a catch-all
-  pattern.)
-- Patterns are checked in the order they're written. It's usually best to put
-  more specific patterns before less specific patterns, with catch-all
-  patterns at the end.
-- When binding values, a binding name cannot be used more than once per
-  pattern. The only exception is `_`.
-- Each `with` clause must have the same number of patterns as the number of
-  values being matched.
-- Patterns can only contain concrete values. The following code doesn't work
-  as you may expect: `{% match a with b %}...`. It doesn't compare the value
-  of `a` with value of `b`, but rather binds the value of `a` to a new `b`
-  binding.
-
-## Type
-
-Acutis uses strong typing, where every value can only be of one type. Acutis
-also uses dynamic typing, where types are checked at runtime, not compile
-time.
-
-Type definitions types are borrowed from [JSON]:
-
-[JSON]: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/JSON 
-
-- Object
-- Array
-- String
-- Number
-- Boolean
-- Null
-
-When a value is in a pattern, the matched value must be the same type. The
-only exception to this rule that Acutis assumes all values are *nullable*, so
-`null` can be compared with any value without a type error.
-
-Only `string` and `number` values can be echoed. `null` cannot be echoed.
-
-Acutis is suited for environments where data comes from a statically typed
-source. Union types, such as `boolean | number`, are not supported. If you
-must use data like that, we recommend you normalize the data before passing
-it to templates. However, because type checking happens at runtime, it is
-sometimes possible write patterns that cleverly guard against potential
-errors. This usually isn't best practice, though.
-
 ## Template components
 
-Template components in Acutis are analogous to "partials" or "includes" in
-other template languages. They are how we reuse common pieces of templates.
-We can also write them in JavaScript to add custom runtime logic, which makes
-them also comparable to "filters" or "shortcodes" in other languages.
+Template components in Acutis are analogous to "partials" or "includes" in other
+template languages. They are how we reuse common pieces of templates. We can
+also write them in JavaScript to add custom runtime logic, which makes them
+comparable to "filters" or "shortcodes" in other languages.
 
-Components always begin with a capital letter. They accept XML-style props
-which are turned into bindings within the component. They also end with
-XML-style `/` (backslash). If you've used React JSX before, these concepts
-will look similar.
-
-Components are global. Once they are loaded into the render context, any
-template in the render tree can access them. (See [`renderContext`] in the API
-manual for more information.)
-
-[`renderContext`]: ../api/#rendercontext
+Components always begin with a capital letter. They accept XML-style props which
+are turned into bindings within the component. They also end with XML-style `/`
+(backslash). If you've used React JSX before, these concepts will look similar.
 
 A couple of basic components:
 
@@ -454,8 +591,8 @@ File: `Articles.acutis`
 
 ### Patterns in props
 
-Patterns can be used in props. They compile into the values they would match
-in pattern matching.
+Patterns can be used in props. They compile into the values they would match in
+pattern matching.
 
 ```acutis
 {% Article
@@ -465,9 +602,6 @@ in pattern matching.
    / %}
 ```
 
-⚠️ Unbound names in these patterns will not default to `null`. They will raise
-an error.
-
 ### Prop punning
 
 Props can be "punned." You can take code such as `{% DateTime date=date / %}`
@@ -475,10 +609,9 @@ and abbreviate it to `{% DateTime date / %}`.
 
 ### Template children props
 
-Props can be template sections, which are considered the template's
-"children." These are denoted with octothorpes, beginning with `#` and ending
-with `/#`. Children's names must begin with a capital letter, just like
-components.
+Props can be template sections, which are considered the template's "children."
+These are denoted with octothorps, beginning with `#` and ending with `/#`.
+Children's names must begin with a capital letter, just like components.
 
 ```acutis
 {% Layout
@@ -495,18 +628,17 @@ components.
 ```
 
 Inside the template, you can echo these children the same way you echo other
-bindings, such as `{{ Header }}` or `{{ Sidebar }}`. Their contents are
-rendered just like any template content, so they will not be escaped.
+bindings, such as `{{ Header }}` or `{{ Sidebar }}`. Their contents are rendered
+just like any template content, so they will not be escaped.
 
 Template children may look like regular bindings, but they live on a separate
-layer of the language. We can't use them with `map` or `match`, and we can't
-put them inside patterns. We can pass them to other components' children
-props.
+layer of the language. We can't use them with `map` or `match`, and we can't put
+them inside patterns. We can pass them to other components' children props.
 
 ### Default children prop
 
-A template section inside a component is automatically bound to a children
-prop named `Children`.
+A template section inside a component is automatically bound to a children prop
+named `Children`.
 
 An implicit children prop:
 
@@ -519,7 +651,7 @@ An implicit children prop:
 An explicit children prop:
 
 ```acutis
-{% Layout 
+{% Layout
    Children=#%}
     content
    {%/#

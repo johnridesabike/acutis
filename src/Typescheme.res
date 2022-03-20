@@ -95,26 +95,46 @@ module Union = {
   }
 }
 
-type rec typescheme =
+type rec ty' =
   | Unknown
   | Int
   | Float
   | String
   | Echo
-  | Nullable(t)
-  | List(t)
-  | Tuple(array<t>)
-  | Record(ref<MapString.t<t>>)
-  | Dict(t, ref<SetString.t>)
+  | Nullable(ty)
+  | List(ty)
+  | Tuple(array<ty>)
+  | Record(ref<MapString.t<ty>>)
+  | Dict(ty, ref<SetString.t>)
   | Enum(Enum.t)
-  | Union(string, Union.t<t>)
+  | Union(string, Union.t<ty>)
 
-and t = ref<typescheme>
+and ty = ref<ty'>
 
-type props = MapString.t<t>
+type t = MapString.t<ty>
 
 let internal_dict_keys = (t, kys) => ref(Dict(t, kys))
 let internal_record = m => ref(Record(m))
+
+let rec copy = x =>
+  switch x {
+  | (Unknown | Int | Float | String | Echo) as x => x
+  | Enum({cases, row, extra}) => Enum({cases: cases, row: row, extra: extra})
+  | Nullable({contents}) => Nullable(ref(copy(contents)))
+  | List({contents}) => List(ref(copy(contents)))
+  | Dict({contents}, fixme) => Dict(ref(copy(contents)), fixme)
+  | Tuple(a) => Tuple(Array.mapU(a, (. {contents}) => ref(copy(contents))))
+  | Record({contents}) => Record(ref(internal_copy_record(contents)))
+  | Union(tag, {cases, row, extra}) =>
+    let cases = switch cases {
+    | String(m) => Variant.String(MapString.mapU(m, (. {contents}) => ref(internal_copy_record(contents))))
+    | Int(m) => Int(MapInt.mapU(m, (. {contents}) => ref(internal_copy_record(contents))))
+    }
+    Union(tag, {cases: cases, row: row, extra: extra})
+  }
+
+and internal_copy_record = m => MapString.mapU(m, (. {contents}) => ref(copy(contents)))
+
 
 let unknown = () => ref(Unknown)
 let int = () => ref(Int)
@@ -137,7 +157,7 @@ let union_string = (k, a) =>
   ref(Union(k, Union.string(Array.mapU(a, (. (k, v)) => (k, ref(MapString.fromArray(v)))), Closed)))
 let union_boolean = (k, ~f, ~t) =>
   ref(Union(k, Union.boolean(ref(MapString.fromArray(f)), ref(MapString.fromArray(t)), Closed)))
-let props = a => MapString.fromArray(a)
+let make = a => MapString.fromArray(a)
 
 let bool_toString = i =>
   switch i {
@@ -193,33 +213,14 @@ let rec toString = x =>
 
 and record_rows_toString = a => Array.joinWithU(a, ", ", (. (k, v)) => `"${k}": ${toString(v)}`)
 
-let rec copy = x =>
-  switch x {
-  | (Unknown | Int | Float | String | Echo) as x => x
-  | Enum({cases, row, extra}) => Enum({cases: cases, row: row, extra: extra})
-  | Nullable({contents}) => Nullable(ref(copy(contents)))
-  | List({contents}) => List(ref(copy(contents)))
-  | Dict({contents}, fixme) => Dict(ref(copy(contents)), fixme)
-  | Tuple(a) => Tuple(Array.mapU(a, (. {contents}) => ref(copy(contents))))
-  | Record({contents}) => Record(ref(copy_record(contents)))
-  | Union(tag, {cases, row, extra}) =>
-    let cases = switch cases {
-    | String(m) => Variant.String(MapString.mapU(m, (. {contents}) => ref(copy_record(contents))))
-    | Int(m) => Int(MapInt.mapU(m, (. {contents}) => ref(copy_record(contents))))
-    }
-    Union(tag, {cases: cases, row: row, extra: extra})
-  }
-
-and copy_record = m => MapString.mapU(m, (. {contents}) => ref(copy(contents)))
-
 module Child = {
-  type t' = Child | NullableChild
-  type t = ref<t'>
-  type props = MapString.t<t>
-  let props = a => MapString.fromArray(a)
+  type ty' = Child | NullableChild
+  type ty = ref<ty'>
+  type t = MapString.t<ty>
+  let make = a => MapString.fromArray(a)
   let child = x => (x, ref(Child))
   let nullable = x => (x, ref(NullableChild))
-  let equal = (a: t, b: t) => a.contents == b.contents
+  let equal = (a: ty, b: ty) => a.contents == b.contents
   let is_nullable = t => t.contents == NullableChild
   let toString = x =>
     switch x.contents {

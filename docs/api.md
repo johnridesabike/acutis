@@ -8,209 +8,184 @@ layout: main.acutis
 next: null
 ---
 
-An Acutis template tree is rendered using *template source(s)*, a *props
-object*, and an *environment object*,
+An Acutis template is rendered using _template source(s)_, a _JSON object_, and
+an _environment module_. The Acutis runtime includes a synchronous and a
+JavaScript-Promise-based asynchronous environment, although other environments
+could potentially be added.
 
-Template sources are compiled into functions. These functions are then
-executed with their props and their environment's renderer, which produces
-the final output.
+⚠️ Warning: the API is experimental and likely to change. ⚠️
 
-(Note: This document refers to "objects" due to their representation in
-JavaScript. In ReScript, these are either records or dictionaries.)
+All of this page's examples are written in ReScript.
 
 [[toc]]
 
 ## Example code
 
-### JavaScript
-
-```js
-const { Compile, Environment, Result, Source } = require("acutis-lang");
-const components = Compile.Components.make([
-  Source.string("Footer", "Copyright 2021.")
-]);
-const env = Environment.sync
-const src = Source.string("Main", "Hello {{ name }}");
-const template = Compile.make(src, Result.getExn(components));
-const result = Result.flatMap(
-  template,
-  template => template(env, {name: "Carlo"}, {})
- );
-const output = Result.getOrElse(
-  result,
-  (errors) => {
-    console.error(errors);
-    throw new Error("I couldn't render this template.");
-  }
-);
-console.log(output); // Logs: "Hello Carlo."
-```
-
-### ReScript
-
 ```reason
 open AcutisLang
 let components = Compile.Components.make([
-  Source.string(~name="Footer", "Copyright 2021.")
+  Source.src(~name="Footer", "Copyright 2022.")
 ])
-let env = Environment.sync
 let props = Js.Dict.fromArray([("name", "Carlo")])
-Source.string(~name="Main", "Hello {{ name }}")
-  ->Compile.make(Result.getExn(components))
-  ->Result.flatMap(template => template(env, props, Js.Dict.empty()))
+Compile.make(~name="Main", "Hello {{ name }}.", Result.getExn(components))
+  ->Result.flatMap(template => Render.sync(template, props))
   ->Result.getOrElse(errors => {
-    Js.Console.error(errors)
     failwith("I couldn't render this template.")
+    Js.Console.error(errors)
   })
   ->Js.log // Logs: "Hello Carlo."
 ```
 
-## Sources
-
-The `Source` module's functions classify different types of sources to
-prepare them for the compiler. They return an internal data type that the
-compiler uses.
-
-⚠️ Note: The first `name` argument for each source will be the name used if
-the you include the template as a [component]. The compiler currently allows
-you to name your templates anything you want, but they must adhere to the
-component naming syntax to be usable as components.
-
-### `Source.string`
-
-The `Source.string` function accepts the name of a template and the raw
-source code in a string.
-
-#### JavaScript example
-
-```js
-const { Source } = require("acutis-lang");
-const src = Source.string("Main", "Hello {{ name }}");
-```
-
-#### ReScript example
-
-```reason
-open AcutisLang
-let src = Source.string(~name="Main", "Hello {{ name }}")
-```
-
-### `Source.func`
-
-The `Source.func` function accepts the name of the template and a function.
-See [template functions] for more information on how these work.
-
-#### JavaScript example
-
-```js
-const { Source } = require("acutis-lang");
-const src = Source.func(
-  "Main",
-  (env, props, children) => env.return("Hello")
-);
-```
-
-#### ReScript example
-
-```reason
-open AcutisLang
-let src = Source.func(
-  ~name="Main",
-  (env, props, children) => env.return(. "Hello")
-)
-```
-
-### `Source.funcWithString`
-
-The `Source.funcWithString` function accepts the name of the template, the
-raw template source as a string, and a function which accepts the compiled
-template and returns a template function. See [template functions] for more
-on how these work.
-
-This is useful if you have a regular string template, but you want to wrap it
-in some custom runtime logic.
-
-#### JavaScript example
-
-```js
-const { Source } = require("acutis-lang");
-const src = Source.funcWithString(
-  "Main",
-  "Hello {{ name }}",
-  (ast) => (env, props, children) => env.render(ast, props, children)
-);
-```
-
-#### ReScript example
-
-```reason
-open AcutisLang
-let src = Source.funcWithString(
-  ~name="Main",
-  "Hello {{ name }}",
-  (ast, env, props, children) => env.render(. ast, props, children)
-)
-```
-
 ## Compiling
 
-Once you classify a template source through one of the `Source` functions,
-the next step is compiling it.
+Acutis uses two compile functions. One is for the top-level "root" template, and
+one is for the template components.
 
 ### `Compile.make`
 
-The `Compile.make` function compiles a source and its components into a
-[result] of a template function. See [results] and [template functions] to
-read about how these work.
-
-#### JavaScript example
-
-```js
-const { Compile, Source } = require("acutis-lang");
-const components = Compile.Components.empty();
-const src = Source.string("Main", "Hello {{ name }}");
-const templateResult = Compile.make(src, components);
-```
-
-#### ReScript example
+The function `Compile.make` compiles a root source into a [result] of a
+template.
 
 ```reason
 open AcutisLang
-let components = Compile.Components.empty()
-let src = Source.string(~name="Main", "Hello {{ name }}")
-let templateResult = Compile.make(src, components)
+let templateResult =
+  Compile.make(~name="Main", "Hello {{ name }}", Compile.Components.empty())
 ```
+
+The function `Compile.makeExn` is identical except that it raises an exception
+if the compilation fails, instead of returning a `result`.
 
 ### `Compile.Components.make`
 
-The `Compile.Components.make` function accepts an array of [sources] and
-returns a [result] of their compiled output.
-
-#### JavaScript example
-
-```js
-const { Compile, Source } = require("acutis-lang");
-const header = Source.string("Header", "<h1>Hello</h1>");
-const footer = Source.string("Footer", "Copyright 2021 Carlo.");
-const componentsResult = Compile.Components.make([header, footer])
-```
-
-#### ReScript example
+The function `Compile.Components.make` accepts an array of [sources] and returns
+a [result] of their compiled output.
 
 ```reason
 open AcutisLang
-let header = Source.string(~name="Header", "<h1>Hello</h1>");
-let footer = Source.string(~name="Footer", "Copyright 2021 Carlo.");
+let header = Source.src(~name="Header", "<h1>Hello</h1>");
+let footer = Source.src(~name="Footer", "Copyright 2022 Carlo.");
 let componentsResult = Compile.Components.make([header, footer])
 ```
 
+The function `Compile.Components.makeExn` is identical except that it raises an
+exception if the compilation fails instead of returning a `result`.
+
 ### `Compile.Components.empty`
 
-If you aren't using components, or you need a placeholder, then the
-`Compile.Components.empty` function will return an empty components value.
+If you aren't using components, or you need a placeholder, then the function
+`Compile.Components.empty` will return an empty components value.
 
-Running `Compile.Components.empty()` is equivalent to
-`Compile.Components.make([])`. It's just slightly more efficient.
+## Type schemes
+
+The compiler infers type schemes for normal Acutis templates. But when you
+define a function to be used as a template, then you need to define its type
+scheme.
+
+The functions for defining a type scheme are found in the `Typescheme` module.
+Type `ty` represents an individual type (e.g. `int`), and `t` represents the
+entire type scheme.
+
+```reason
+type ty
+type t = Belt.Map.String.t<ty>
+let unknown: unit => ty
+let int: unit => ty
+let int_: unit => ty // int is a JS keyword
+let float: unit => ty
+let float_: unit => ty // float is a JS keyword
+let string: unit => ty
+let echo: unit => ty
+let nullable: ty => ty
+let list: ty => ty
+let tuple: array<ty> => ty
+let record: array<(string, ty)> => ty
+let dict: ty => ty
+let enum_int: array<int> => ty
+let enum_string: array<string> => ty
+let bool: unit => ty
+let union_int: (string, array<(int, array<(string, ty)>)>) => ty
+let union_string: (string, array<(string, array<(string, ty)>)>) => ty
+let union_boolean: (string, ~f: array<(string, ty)>, ~t: array<(string, ty)>) => ty
+let make: array<(string, ty)> => t
+```
+
+You need to also define the type scheme for a template's children, which are
+distinct from the props. These functions are found in the `Typescheme.Child`
+module. The only meaningful types for children is whether they can be nullable
+or not.
+
+```reason
+module Child: {
+  type ty
+  type t = Belt.Map.String.t<ty>
+  let make: array<(string, ty)> => t
+  let child: string => (string, ty)
+  let nullable: string => (string, ty)
+}
+```
+
+## Sources
+
+The `Source` module's functions classify different types of sources to prepare
+them for the compiler.
+
+### `Source.src`
+
+The `Source.src` function accepts the name of a template and the raw source code
+in a string.
+
+```reason
+open AcutisLang
+let src = Source.src(~name="Hello", "Hello {{ name }}")
+```
+
+### `Source.fn`
+
+The `Source.fn` function accepts the name of the template, a type scheme, and a
+function.
+
+```reason
+open AcutisLang
+let src = Source.fn(
+  ~name="Hello",
+  Typescheme.make([
+    ("name", Typescheme.string())
+  ]),
+  Typescheme.Child.make([]),
+  (Env, props, children) =>
+    Env.return(. "Hello " ++ Js.Dict.unsafeGet(props, "name") ++ ".")
+)
+```
+
+## Render
+
+The `Render` module handles all of the runtime code. `Render.make` is a
+general-purpose function for any return type, but you will probably use one of
+the specialized functions.
+
+### `Render.sync` and `Render.async`
+
+The `sync` and `async` functions are both predefined functions that render to
+specialized types. `sync` returns a [result] of a string, and `async` returns a
+JavaScript Promise of a result of a string.
+
+```reason
+open AcutisLang
+// Assume template and props are already defined.
+let result = Render.sync(template, props)
+let promise_result = Render.async(template, props)
+```
+
+### A note on synchronous and asynchronous templates
+
+If you have a template function that uses JavaScript `async` functions or
+promises, then you need to render your whole template tree with an asynchronous
+environment.
+
+Templates components inherit their environment from their parent templates, so
+synchronous templates can be used interchangeably between environment types.
+This does not work the other way around, though. Asynchronous templates cannot
+be made synchronous.
 
 ## Results
 
@@ -226,8 +201,8 @@ functions.
 
 Acutis returns data inside an object with `NAME` and `VAL` properties. If any
 errors occurred, then `NAME` will be `"errors"` and `VAL` will be an array of
-the errors. If no errors occurred, then `NAME` will be `"ok"` and `VAL` will
-be the rendered output.
+the errors. If no errors occurred, then `NAME` will be `"ok"` and `VAL` will be
+the rendered output.
 
 #### Example successful output
 
@@ -251,70 +226,38 @@ be the rendered output.
 }
 ```
 
-#### Example usage
+### ReScript: `[#ok('a) | #errors(array<Debug.error>)]`
 
-```js
-if (result.NAME === "errors") {
-  console.error(result.VAL);
-} else {
-  console.log(result.VAL);
-}
-```
-
-### ReScript: `[#ok('a) | #errors(array<Acutis_Types.Errors.t>)]`
-
-In ReScript, the output uses a polymorphic variant defined as `[#ok('a) |
-#errors(array<Acutis_Types.Errors.t>)]`. You can use `switch` with it like
-any variant.
+In ReScript, the output uses a polymorphic variant defined as
+`[#ok('a) | #errors(array<Debug.error>)]`.
 
 This is conceptually the same as the standard [ReScript result type]. We're
 using a custom polymorphic variant because of its nicer JavaScript
 representation.
 
-```reason
-switch result {
-| #ok(data) => Js.log(data)
-| #errors(errors) => Js.Console.error(errors)
-}
-```
-
 ### `Result.map`
 
 The `Result.map` function accepts a result and a function that accepts its
-contents and returns a new value. The given function only executes if the
-result does not have errors.
-
-#### JavaScript Example
-
-```js
-// Assume props and children are already defined.
-const result = template(Environment.sync, props, children);
-const resultALLCAPS = Result.map(result, x => x.toUpperCase());
-```
-
-#### ReScript Example
+contents and returns a new value. The given function only executes if the result
+does not have errors.
 
 ```reason
-// Assume props and children are already defined.
-let result = template(Environment.sync, props, children)
+// Assume props are already defined.
+let result = Render.sync(template, props)
 let resultALLCAPS = Result.map(result, Js.String.toUpperCase)
 ```
 
 ### `Result.flatMap`
 
-The `Result.flatMap` function works almost identically to `Result.map`,
-except that the given function must _return another `result`_.
-
-#### Example
-
-We can write the JavaScript and ReScript example identically.
+The `Result.flatMap` function works almost identically to `Result.map`, except
+that the given function must _return another `result`_.
 
 ```reason
-// Assume src, components, props, and children is defined already
-let templateResult = Compile.make(src, components)
+// Assume src, components, props is defined already
+let templateResult = Compile.make(~name="Main", src, components)
 let outputResult = Result.flatMap(
   templateResult,
-  (template) => template(Environment.sync, props, children)
+  (template) => Render.sync(template, props)
 )
 ```
 
@@ -323,13 +266,9 @@ let outputResult = Result.flatMap(
 The `Result.getExn` function returns the value of the result if there are no
 errors, and raises an exception if there are errors.
 
-The exception raised is a ReScript exception, which doesn't always play
-nicely with JavaScript tooling. Often, you'll want to use the more flexible
+The exception raised is a ReScript exception, which doesn't always play nicely
+with JavaScript tooling. Often, you'll want to use the more flexible
 `Result.getOrElse` function instead.
-
-#### Example
-
-We can write the JavaScript and ReScript example identically.
 
 ```reason
 // Raises an exception if the result has errors.
@@ -341,20 +280,8 @@ let output = Result.getExn(result)
 The `Result.getOrElse` function returns the value of the result if there are no
 errors, and executes a given function if there are errors.
 
-This can be useful for either getting a "default" value, or doing something
-with the errors (such as logging them to the console).
-
-#### JavaScript example
-
-```js
-const output = Result.getOrElse(
-  result,
-  (errors) => {
-    console.error(errors);
-    return "Some default value.";
-  }
-);
-```
+This can be useful for either getting a "default" value, or doing something with
+the errors (such as logging them to the console).
 
 #### ReScript example
 
@@ -370,170 +297,64 @@ let output = Result.getOrElse(
 
 ## Error messages
 
-In either language, errors are represented the same. Here's an example error
-message:
+Here's an example error message in JSON:
 
 ```json
 {
-  "kind": "Render",
+  "kind": "Type",
   "location": {
-    "character": 11,
+    "name": "Main",
+    "character": 11
   },
-  "message": "\"a\" is type null. I can only echo strings and numbers.",
-  "path": [
-    "ChildTemplate",
-    "match",
-    "MainTemplate"
-  ]
+  "message": "This pattern is type int but expected type string.",
+  "path": []
 }
 ```
 
-Any of these fields may not be present if there isn't any data for them. If
-an exception was thrown while rendering, then it will be caught and added to
-an `exn` field.
-
-When Acutis encounters an error, it will try to keep processing the template
-and report as many errors as it can find. But as long as there is at least
-one error, then it won't return any rendered data.
-
-## Template functions overview
-
-Templates returned by `Compile.make` are functions that accept three
-arguments:
-
-1. An environment object created by `Environment.make`
-2. A props object.
-3. A children object.
-
-In ReScript, the environment is a [record], and props and children are both
-[JS dictionary objects][dict].
-
-The children argument is similar to the props, except it contains rendered
-template sections. You'll typically pass an empty object (`{}`) to this from
-your top-level template. See [using the `children` argument][1] for more
-information about this.
-
-```js
-const result = template(env, props, children);
-```
+Any of these fields may not be present if there isn't any data for them. If an
+exception was thrown while rendering, then it will be caught and added to an
+`exn` field.
 
 ## Template component functions
 
-Because templates are just functions, we can write them manually with custom
-JavaScript. Any functions we write will need to adhere to the same signature
-as the functions created by `Compile.make`.
-
-Suppose we want a `Footer` template that will always display the current
-year. We can write a template to similar to the following.
-
-#### JavaScript example
-
-```js
-const { Source } = require("acutis-lang");
-const footer = Source.funcWithString(
-  "Footer",
-  "Copyright {{ year }}"
-  (ast) => (env, props, children) => {
-    const year = new Date().getFullYear();
-    return env.render(ast, { year }, children)
-  }
-);
-```
-
-#### ReScript example
+Suppose we want a `Footer` template that will always display the current year.
+We can write a template to similar to the following.
 
 ```reason
+open AcutisLang
 let footer =
-  AcutisLang.Source.funcWithString(
+  Source.fn(
     ~name="Footer",
-    "Copyright {{ year }}"
-    (ast, env, props, children) => {
-      Js.Dict.set(props, "year", Js.Date.make()->Js.Date.getFullYear)
-      env.render(. ast, props, children)
+    Typescheme.make([]),
+    Typescheme.Child.make([]),
+    (type a, module(Env): Source.env<a>, props, children) => {
+      let year = Js.Date.make()->Js.Date.getFullYear->Belt.Int.toString
+      Env.return(. "Copyright " ++ year ++ ".")
     }
   )
 ```
 
 ## Environment
 
-An environment is an object that contains logic that is global across all
-levels of a template tree.
-
-### `Environment.sync`
-
-If you use `Environment.sync`, then your templates will render as [results]
-of strings.
-
-### `Environment.async`
-
-This works identically to `Environment.sync`, except except that its render
-functions each return a [Promise] of a [result] of a string. Use this if you
-have [template functions] that require asynchronous logic.
-
-If you don't need asynchronous template component functions, then
-`Environment.sync` is a bit faster, since it doesn't need to allocate a bunch
-of Promises.
-
-## Environment functions
-
-Each environment object contains functions for returning rendered template
-contents.
-
-⚠️ In ReScript, environment functions are [uncurried].
-
-### `render`
-
-The `render` function processes compiled templates.
-
-#### JavaScript example
-
-```js
-Source.funcWithString(
-  "Footer",
-  "Copyright {{ year }}"
-  (ast) => (env, props, children) => {
-    const year = new Date().getFullYear();
-    return env.render(ast, { year }, children)
-  }
-);
-```
-
-#### ReScript example
-
-```reason
-AcutisLang.Source.funcWithString(
-  ~name="Footer",
-  "Copyright {{ year }}"
-  (ast, env, props, children) => {
-    Js.Dict.set(props, "year", Js.Date.make()->Js.Date.getFullYear)
-    env.render(. ast, props, children)
-  }
-)
-```
+An environment is a ReScript module (or a JavaScript object) that contains
+functions for returning rendered template contents.
 
 ### `return`
 
-The `return` function returns a string as-is, wrapped inside the result type.
-This is useful if you don't need the Acutis language features for a
-component.
+The `return` function returns a string as-is, wrapped inside the environment's
+type.
 
-#### JavaScript example
-
-```js
-const { Source } = require("acutis-lang");
-const sayHi = Source.func(
-  "SayHi",
-  (env, props, children) => env.return("Hello.")
-);
-```
-
-#### ReScript example
+In JavaScript, you can access it as `return_`.
 
 ```reason
+open AcutisLang
 let sayHi =
-  AcutisLang.Source.func(
+  Source.fn(
     ~name="SayHi",
-    (env, props, children) => env.return(. "Hello")
+    Typescheme.make([]),
+    Typescheme.Child.make([]),
+    (type a, module(Env): Source.env<a>, props, children) =>
+      Env.return(. "Hello")
   )
 ```
 
@@ -542,165 +363,74 @@ let sayHi =
 The `error` function returns an error with the given message. This will cause
 the template to fail to render.
 
-#### JavaScript example
-
-```js
-const { Source } = require("acutis-lang");
-const fail = Source.func(
-  "Fail",
-  (env, props, children) => env.error("This always fails.")
-);
-```
-
 #### ReScript example
 
 ```reason
+open AcutisLang
 let fail =
-  AcutisLang.Source.func(
+  Source.fn(
     ~name="Fail",
-    (env, props, children) => env.error(. "This always fails.")
+    Typescheme.make([]),
+    Typescheme.Child.make([]),
+    (type a, module(Env): Source.env<a>, props, children) =>
+      Env.error(. "This always fails.")
   )
 ```
 
-### `mapChild`
+### `map`
 
-The `mapChild` function takes a child prop and a callback to transform the
-child's contents. It returns a new child and does not mutate the original. If
-the child has an error, then `mapChild` has no effect.
-
-Template children are valid return types (each one is a fully rendered
-template). So they can either be returned as your template or passed to the
-children argument of `environment.render`.
-
-#### JavaScript example
-
-```js
-const { Source } = require("acutis-lang");
-const shout = Source.func(
-  "Shout",
-  (env, props, { Children }) => {
-    if (Children) {
-      return env.mapChild(Children, (x) => x.toUpperCase());
-    } else {
-      return env.return("");
-    }
-  }
-);
-```
-
-#### ReScript example
+The `map` function takes a child prop and a function to transform the child's
+contents. It returns a new child and does not mutate the original.
 
 ```reason
+open AcutisLang
 let shout =
-  AcutisLang.Source.func(
+  Source.fn(
     ~name="Shout",
-    (env, props, children) =>
+    Typescheme.make([]),
+    Typescheme.Child.make([
+      Typescheme.Child.nullable("Children")
+    ]),
+    (type a, module(Env): Source.env<a>, props, children) =>
       switch Js.Dict.get(children, "Children") {
-      | Some(children) =>
-        env.mapChild(. children, Js.String.toUpperCase)
+      | Some(children) => Env.map(. children, Js.String.toUpperCase)
       | None => env.return(. "")
       }
   )
 ```
 
-### `flatMapChild`
+### `flatMap`
 
-The `flatMapChild` function works similarly to `mapChild` except that it does
-not automatically wrap the returned data. When using `flatMapChild`, you're
-responsible for wrapping the output with `environment.return` in your
-callback. This means that you can choose to use `environment.error` instead
-to represent failures.
-
-#### JavaScript example
-
-```js
-const { Source } = require("acutis-lang");
-// assume we already defined a function called somethingThatThrows
-const src = Source.func(
-  "Template",
-  (env, props, { Children }) => {
-    return env.flatMapChild(Children, (contents) => {
-      try {
-        return env.return(somethingThatThrows(contents));
-      } catch (e) {
-        return env.error(e.message);
-      }
-    })
-  }
-);
-```
-
-#### ReScript example
-
-```reason
-// assume we already defined a function called somethingThatThrows
-let src =
-  AcutisLang.Source.func(
-    ~name="Template",
-    (env, props, children) =>
-      env.flatMapChild(.
-        Js.Dict.unsafeGet(children, "Children"),
-        contents =>
-          switch somethingThatThrows(contents) {
-          | result => env.return(. result)
-          | exception Failure(message) => env.error(. message)
-          }
-      )
-  )
-```
-
-## Template function tips
-
-### Synchronous and asynchronous templates
-
-If you have a template function that uses `async` functions or promises, then
-you need to render your whole template tree with an asynchronous environment.
-
-Templates components inherit their environment from their parent templates,
-so synchronous templates can be used interchangeably between environment
-types. This does not work the other way around, though. Asynchronous
-templates cannot be made synchronous.
-
-### Using the children argument
-
-[Template components can accept template sections as children props][2], but
-these are not interchangeable with pattern props. Therefore, Acutis keeps
-rendered template children in a separate object.
-
-You will usually not need to directly manipulate the children argument, or
-often you can just pass an empty object (`{}`) as children.
-
-If you are manually rendering a template section within a function, then make
-sure you pass it to the children argument.
+The `flatMap` function works similarly to `map` except that it does not
+automatically wrap the returned data. When using `flatMap`, you're responsible
+for wrapping the output with `return` in your callback. This means that you can
+choose to use `error` instead to represent failures.
 
 ## Node helpers API
 
-Acutis includes functions for rendering templates in a Node.js environment,
-such as for a static site generator. They can be imported from module
+Acutis includes functions for rendering templates in a Node.js environment, such
+as for a static site generator. They can be imported from module
 `acutis-lang/node-utils`.
 
 ### `loadTemplate`
 
-Calling `loadTemplate(fileName)` will return a [Promise] of a template
-function.
+Calling `loadTemplate(fileName)` will return a [Promise] of a template function.
 
-If the filename ends with a `.js` or `.mjs` extension, then it will load it
-with dynamic `import`. It uses the "default" export as the template source.
+If the filename ends with a `.js` or `.mjs` extension, then it will load it with
+dynamic `import`. It uses the "default" export as the template source.
 
-For all other file extension, it loads the file's text content as the
-template.
+For all other file extension, it loads the file's text content as the template.
 
 ### `filenameToComponent`
 
-Calling `filenameToComponent(fileName)` strips the extension and capitalizes
-the first letter. Example: `filenameToComponent("footer.js")` returns
-`"Footer"`. This is just a convenience to help components adhere to template
-naming rules.
+Calling `filenameToComponent(fileName)` strips the extension and capitalizes the
+first letter. Example: `filenameToComponent("footer.js")` returns `"Footer"`.
+This is just a convenience to help components adhere to template naming rules.
 
 ## Acutis command line interface (CLI)
 
-You can use Acutis from the command line. It accepts JSON data and an array
-of template filenames, and it prints the rendered output.
+You can use Acutis from the command line. It accepts JSON data and an array of
+template filenames, and it prints the rendered output.
 
 ```shell
 acutis Index.acutis src/**/*.(js|mjs|acutis) < data.json > dist/index.html
@@ -708,7 +438,7 @@ acutis Index.acutis src/**/*.(js|mjs|acutis) < data.json > dist/index.html
 
 Full options:
 
-```html
+```txt
 Usage:
   acutis [options] [template] [templates...]
 
@@ -731,17 +461,11 @@ Examples:
   curl https://example.com/api | acutis Index.acutis *.(js|acutis) -o index.html
 ```
 
-[1]: #using-the-children-argument
-[2]: ../manual/#template-children-props
-[component]: ../manual/#template-components
-[dict]: https://rescript-lang.org/docs/manual/latest/api/js/dict
-[polymorphic variant]: https://rescript-lang.org/docs/manual/latest/polymorphic-variant
-[Promise]: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise
-[record]: https://rescript-lang.org/docs/manual/latest/record
-[ReScript result type]: https://rescript-lang.org/docs/manual/latest/api/belt/result
+[polymorphic variant]:
+  https://rescript-lang.org/docs/manual/latest/polymorphic-variant
+[promise]:
+  https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise
+[rescript result type]:
+  https://rescript-lang.org/docs/manual/latest/api/belt/result
 [result]: #results
-[results]: #results
-[string map]: https://rescript-lang.org/docs/manual/latest/api/belt/map-string
 [sources]: #sources
-[template functions]: #template-functions-overview
-[uncurried]: https://rescript-lang.org/docs/manual/latest/function#uncurried-function

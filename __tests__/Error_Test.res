@@ -171,14 +171,14 @@ describe("Patterns", ({test, _}) => {
     let props = dict([("a", Json.number(1.0)), ("c", Json.null)])
     let a = Source.fn(
       ~name="A",
-      Typescheme.props([("b", Typescheme.record([("b", Typescheme.string())]))]),
-      Typescheme.Child.props([]),
+      Typescheme.make([("b", Typescheme.record([("b", Typescheme.string())]))]),
+      Typescheme.Child.make([]),
       (type a, module(Env): Source.env<a>, _p, _c) => Env.return(. ""),
     )
     let z = Source.fn(
       ~name="Z",
-      Typescheme.props([("b", Typescheme.list(Typescheme.int()))]),
-      Typescheme.Child.props([]),
+      Typescheme.make([("b", Typescheme.list(Typescheme.int()))]),
+      Typescheme.Child.make([]),
       (type a, module(Env): Source.env<a>, _p, _c) => Env.return(. ""),
     )
     expect.value(render(`{% A b={b} / %}`, props, [a])).toMatchSnapshot()
@@ -447,7 +447,7 @@ describe("Rendering", ({test, _}) => {
 
   test("Exceptions thrown in components are caught correctly", ({expect, _}) => {
     @raises(Failure)
-    let a = Source.fn(~name="A", Typescheme.props([]), Typescheme.Child.props([]), (_, _, _) =>
+    let a = Source.fn(~name="A", Typescheme.make([]), Typescheme.Child.make([]), (_, _, _) =>
       raise(Failure("fail."))
     )
     let data = Js.Dict.empty()

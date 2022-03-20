@@ -19,9 +19,9 @@ module Pattern: {
     | TTuple(Debug.t, array<t>)
     | TRecord(
         Debug.t,
-        option<(string, constant, Typescheme.Union.t<Typescheme.t>)>,
+        option<(string, constant, Typescheme.Union.t<Typescheme.ty>)>,
         Belt.Map.String.t<t>,
-        ref<Belt.Map.String.t<Typescheme.t>>,
+        ref<Belt.Map.String.t<Typescheme.ty>>,
       )
     | TDict(Debug.t, Belt.Map.String.t<t>, ref<Belt.Set.String.t>)
     | TVar(Debug.t, string) // any binding
@@ -49,8 +49,8 @@ and child = TChildName(string) | TChildBlock(nodes)
 
 type t = {
   nodes: nodes,
-  prop_types: Typescheme.props,
-  child_types: Typescheme.Child.props,
+  prop_types: Typescheme.t,
+  child_types: Typescheme.Child.t,
 }
 
 let makeComponents: Utils.Dagmap.map<Source.t<Parser.t, Source.fnU<'a>>> => Utils.Dagmap.map<

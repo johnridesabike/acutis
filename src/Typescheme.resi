@@ -39,60 +39,58 @@ module Union: {
   >
 }
 
-type rec typescheme =
+type rec ty' =
   | Unknown
   | Int
   | Float
   | String
   | Echo
-  | Nullable(t)
-  | List(t)
-  | Tuple(array<t>) // 0 and 1 sized tuples are legal.
-  | Record(ref<Belt.Map.String.t<t>>)
-  /* The string set tracks referenced keys for matching compilation. */
-  | Dict(t, ref<Belt.Set.String.t>)
+  | Nullable(ty)
+  | List(ty)
+  | Tuple(array<ty>)
+  | Record(ref<Belt.Map.String.t<ty>>)
+  | Dict(ty, ref<Belt.Set.String.t>)
   | Enum(Enum.t)
-  | Union(string, Union.t<t>)
+  | Union(string, Union.t<ty>)
 
-and t = ref<typescheme>
+and ty = ref<ty'>
 
-type props = Belt.Map.String.t<t>
+type t = Belt.Map.String.t<ty>
 
-let internal_dict_keys: (t, ref<Belt.Set.String.t>) => t
-let internal_record: ref<props> => t
+let internal_dict_keys: (ty, ref<Belt.Set.String.t>) => ty
+let internal_record: ref<t> => ty
+let internal_copy_record: t => t
 
 /* Public API for declaring type schemes: */
-let unknown: unit => t
-let int: unit => t
-let int_: unit => t // int is a JS keyword
-let float: unit => t
-let float_: unit => t // float is a JS keyword
-let string: unit => t
-let echo: unit => t
-let nullable: t => t
-let list: t => t
-let tuple: array<t> => t
-let record: array<(string, t)> => t
-let dict: t => t
-let enum_int: array<int> => t
-let enum_string: array<string> => t
-let bool: unit => t
-let union_int: (string, array<(int, array<(string, t)>)>) => t
-let union_string: (string, array<(string, array<(string, t)>)>) => t
-let union_boolean: (string, ~f: array<(string, t)>, ~t: array<(string, t)>) => t
-let props: array<(string, t)> => props
+let unknown: unit => ty
+let int: unit => ty
+let int_: unit => ty // int is a JS keyword
+let float: unit => ty
+let float_: unit => ty // float is a JS keyword
+let string: unit => ty
+let echo: unit => ty
+let nullable: ty => ty
+let list: ty => ty
+let tuple: array<ty> => ty
+let record: array<(string, ty)> => ty
+let dict: ty => ty
+let enum_int: array<int> => ty
+let enum_string: array<string> => ty
+let bool: unit => ty
+let union_int: (string, array<(int, array<(string, ty)>)>) => ty
+let union_string: (string, array<(string, array<(string, ty)>)>) => ty
+let union_boolean: (string, ~f: array<(string, ty)>, ~t: array<(string, ty)>) => ty
+let make: array<(string, ty)> => t
 
-let toString: t => string
-
-let copy_record: props => props
+let toString: ty => string
 
 module Child: {
-  type t
-  type props = Belt.Map.String.t<t>
-  let props: array<(string, t)> => props
-  let child: string => (string, t)
-  let nullable: string => (string, t)
-  let equal: (t, t) => bool
-  let is_nullable: t => bool
-  let toString: t => string
+  type ty
+  type t = Belt.Map.String.t<ty>
+  let make: array<(string, ty)> => t
+  let child: string => (string, ty)
+  let nullable: string => (string, ty)
+  let equal: (ty, ty) => bool
+  let is_nullable: ty => bool
+  let toString: ty => string
 }

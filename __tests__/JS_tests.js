@@ -40,8 +40,8 @@ describe("Async templates", () => {
   test("Async template components", async () => {
     const Y = Source.fn(
       "Y",
-      Typescheme.props([["name", Typescheme.string()]]),
-      Typescheme.Child.props([]),
+      Typescheme.make([["name", Typescheme.string()]]),
+      Typescheme.Child.make([]),
       async (Env, props, _children) => Env.return_(props.name)
     );
     const comps = Result.getExn(Compile.Components.make([Y]));
@@ -53,8 +53,8 @@ describe("Async templates", () => {
   test("Async template component errors", async () => {
     const D = Source.fn(
       "D",
-      Typescheme.props([]),
-      Typescheme.Child.props([]),
+      Typescheme.make([]),
+      Typescheme.Child.make([]),
       async (_env, _props, _children) => {
         throw new Error("fail.");
       }
@@ -80,8 +80,8 @@ describe("Async helper functions", () => {
   test("Env.return", async () => {
     const X = Source.fn(
       "X",
-      Typescheme.props([]),
-      Typescheme.Child.props([]),
+      Typescheme.make([]),
+      Typescheme.Child.make([]),
       (Env, _props, _children) => Env.return_("a")
     );
     const comps = Result.getExn(Compile.Components.make([X]));
@@ -95,8 +95,8 @@ describe("Async helper functions", () => {
   test("Env.error", async () => {
     const X = Source.fn(
       "X",
-      Typescheme.props([]),
-      Typescheme.Child.props([]),
+      Typescheme.make([]),
+      Typescheme.Child.make([]),
       (Env, _props, _children) => Env.error("e")
     );
     const comps = Result.getExn(Compile.Components.make([X]));
@@ -112,8 +112,8 @@ describe("Async helper functions", () => {
   test("Env.map", async () => {
     const X = Source.fn(
       "X",
-      Typescheme.props([]),
-      Typescheme.Child.props([Typescheme.Child.child("Children")]),
+      Typescheme.make([]),
+      Typescheme.Child.make([Typescheme.Child.child("Children")]),
       (Env, _props, { Children }) => Env.map(Children, (x) => x.toUpperCase())
     );
     const comps = Result.getExn(Compile.Components.make([X]));
@@ -129,8 +129,8 @@ describe("Async helper functions", () => {
   test("Env.flatmap", async () => {
     const X = Source.fn(
       "X",
-      Typescheme.props([]),
-      Typescheme.Child.props([Typescheme.Child.child("Children")]),
+      Typescheme.make([]),
+      Typescheme.Child.make([Typescheme.Child.child("Children")]),
       (Env, _props, { Children }) =>
         Env.flatmap(Children, (x) => Env.return_(x.toUpperCase()))
     );

@@ -245,9 +245,9 @@ module Pattern = {
     | TTuple(Debug.t, array<t>)
     | TRecord(
         Debug.t,
-        option<(string, constant, Typescheme.Union.t<Typescheme.t>)>,
+        option<(string, constant, Typescheme.Union.t<Typescheme.ty>)>,
         MapString.t<t>,
-        ref<MapString.t<Typescheme.t>>,
+        ref<MapString.t<Typescheme.ty>>,
       )
     | TDict(Debug.t, MapString.t<t>, ref<SetString.t>)
     | TVar(Debug.t, string) // any binding
@@ -539,8 +539,8 @@ and child = TChildName(string) | TChildBlock(nodes)
 
 type t = {
   nodes: nodes,
-  prop_types: Ty.props,
-  child_types: Ty.Child.props,
+  prop_types: Ty.t,
+  child_types: Ty.Child.t,
 }
 
 @raises(Exit)
@@ -555,9 +555,9 @@ type root = [#Root | #Component]
 
 module Context = {
   type t = {
-    global: ref<MapString.t<Ty.t>>,
-    scope: MapString.t<Ty.t>,
-    children: ref<MapString.t<Ty.Child.t>>,
+    global: ref<MapString.t<Ty.ty>>,
+    scope: MapString.t<Ty.ty>,
+    children: ref<MapString.t<Ty.Child.ty>>,
     root: root,
   }
 
@@ -733,7 +733,7 @@ and makeNodes = (nodes, ctx, g) =>
       TEcho(debug, nullables, default)
     | UComponent(debug, comp, props, children) =>
       let (propTypes, propTypesChildren) = getTypes(Utils.Dagmap.get(g, comp, debug))
-      let propTypes = Ty.copy_record(propTypes) // The original should not mutate.
+      let propTypes = Ty.internal_copy_record(propTypes) // The original should not mutate.
       let props = Pattern.make_record(
         props,
         propTypes,

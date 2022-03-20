@@ -18,7 +18,7 @@ module Const: {
 
 type t
 
-let make: (Js.Dict.t<Js.Json.t>, Typescheme.props) => Belt.Map.String.t<t>
+let make: (Js.Dict.t<Js.Json.t>, Typescheme.t) => Belt.Map.String.t<t>
 
 let constantExn: t => Const.t
 
@@ -38,4 +38,4 @@ let forEachDictExn: (t, (. ~index: t, t) => unit) => unit
 
 let toString: t => string
 
-let toJson: (Belt.Map.String.t<t>, Typescheme.props) => Js.Dict.t<Js.Json.t>
+let toJson: (Belt.Map.String.t<t>, Typescheme.t) => Js.Dict.t<Js.Json.t>

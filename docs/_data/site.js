@@ -22,7 +22,6 @@ module.exports = {
     { path: "/manual/", name: "Language manual" },
     { path: "/api/", name: "API" },
     { path: "/playground/", name: "Playground" },
-    { path: "/development/", name: "Development" },
     { path: "/credits/", name: "Credits" },
   ],
 };

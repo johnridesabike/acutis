@@ -94,14 +94,14 @@ let rec nodes = a =>
 let makeNodes = (ast: Typechecker.t) => nodes(ast.nodes)
 
 type t<'a> = {
-  prop_types: Typescheme.props,
+  prop_types: Typescheme.t,
   nodes: nodes<'a>,
   name: string,
 }
 
 type rec template<'a> =
   | Acutis(string, nodes<template<'a>>)
-  | Function(string, Typescheme.props, Source.fnU<'a>)
+  | Function(string, Typescheme.t, Source.fnU<'a>)
 
 module Components = {
   type t<'a> = {

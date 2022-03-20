@@ -28,9 +28,9 @@ type fn<'a> = (env<'a>, Js.Dict.t<Js.Json.t>, Js.Dict.t<'a>) => 'a
 
 type t<'a, 'b> =
   | Acutis(string, 'a)
-  | Function(string, Typescheme.props, Typescheme.Child.props, 'b)
+  | Function(string, Typescheme.t, Typescheme.Child.t, 'b)
 
 let src: (~name: string, 'a) => t<'a, 'b>
-let fnU: (~name: string, Typescheme.props, Typescheme.Child.props, fnU<'b>) => t<'a, fnU<'b>>
+let fnU: (~name: string, Typescheme.t, Typescheme.Child.t, fnU<'b>) => t<'a, fnU<'b>>
 // fn is not a reserved word in JavaScript, ReScript, or OCaml.
-let fn: (~name: string, Typescheme.props, Typescheme.Child.props, fn<'b>) => t<'a, fnU<'b>>
+let fn: (~name: string, Typescheme.t, Typescheme.Child.t, fn<'b>) => t<'a, fnU<'b>>

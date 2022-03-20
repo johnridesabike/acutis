@@ -28,7 +28,7 @@ type fn<'a> = (env<'a>, Js.Dict.t<Js.Json.t>, Js.Dict.t<'a>) => 'a
 
 type t<'a, 'b> =
   | Acutis(string, 'a)
-  | Function(string, Typescheme.props, Typescheme.Child.props, 'b)
+  | Function(string, Typescheme.t, Typescheme.Child.t, 'b)
 
 let src = (~name, src) => Acutis(name, src)
 

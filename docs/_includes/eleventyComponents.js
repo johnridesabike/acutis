@@ -12,8 +12,8 @@ const site = require("../_data/site");
 module.exports = [
   Source.fn(
     "Log",
-    Typescheme.props([["val", Typescheme.unknown()]]),
-    Typescheme.Child.props([]),
+    Typescheme.make([["val", Typescheme.unknown()]]),
+    Typescheme.Child.make([]),
     (Env, props, _children) => {
       console.log(props);
       return Env.return_("");
@@ -21,8 +21,8 @@ module.exports = [
   ),
   Source.fn(
     "Debugger",
-    Typescheme.props([["val", Typescheme.unknown()]]),
-    Typescheme.Child.props([]),
+    Typescheme.make([["val", Typescheme.unknown()]]),
+    Typescheme.Child.make([]),
     (Env, _props, _children) => {
       debugger;
       return Env.return_("");
@@ -30,13 +30,13 @@ module.exports = [
   ),
   Source.fn(
     "Footer",
-    Typescheme.props([
+    Typescheme.make([
       ["year", Typescheme.nullable(Typescheme.string())],
       ["link", Typescheme.nullable(Typescheme.string())],
       ["name", Typescheme.string()],
       ["siteUrl", Typescheme.string()],
     ]),
-    Typescheme.Child.props([]),
+    Typescheme.Child.make([]),
     (Env, props, _children) => {
       if (!props.year) {
         props.year = new Date().getFullYear();
@@ -50,8 +50,7 @@ module.exports = [
       return Env.return_(`
         <footer class="footer">
           <p>
-            Published in ${props.year} by ${link}
-            .
+            Published in ${props.year} by ${link}.
           </p>
           <p class="footer__license">
             <a href="${props.siteUrl}/license/">View the license</a>.
@@ -61,11 +60,11 @@ module.exports = [
   ),
   Source.fn(
     "Link",
-    Typescheme.props([
+    Typescheme.make([
       ["path", Typescheme.string()],
       ["page", Typescheme.record([["url", Typescheme.string()]])],
     ]),
-    Typescheme.Child.props([Typescheme.Child.child("Children")]),
+    Typescheme.Child.make([Typescheme.Child.child("Children")]),
     (Env, { path, page }, { Children }) => {
       const current = path === page.url ? "true" : "false";
       const href = site.url + path;
