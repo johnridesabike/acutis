@@ -1,81 +1,93 @@
 /**
-   Copyright 2021 John Jackson
+  Copyright (c) 2022 John Jackson.
 
-   Licensed under the Apache License, Version 2.0 (the "License");
-   you may not use this file except in compliance with the License.
-   You may obtain a copy of the License at
-
-       http://www.apache.org/licenses/LICENSE-2.0
-
-   Unless required by applicable law or agreed to in writing, software
-   distributed under the License is distributed on an "AS IS" BASIS,
-   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-   See the License for the specific language governing permissions and
-   limitations under the License.
+  This Source Code Form is subject to the terms of the Mozilla Public
+  License, v. 2.0. If a copy of the MPL was not distributed with this
+  file, You can obtain one at http://mozilla.org/MPL/2.0/.
 */
 
-open Acutis_Types
+type t = {name: string, char: int}
+let empty: t
+let make: (string, int) => t
+let char: t => int
 
-type kind = [#Type | #Render | #Compile | #Pattern | #Parse | #Syntax]
-
-type location = {@live character: int}
+type kind = [
+  | #Type
+  | #Matching
+  | #Render
+  | #Compile
+  | #Parse
+  | #Syntax
+]
 
 @unboxed
 type rec anyExn = AnyExn(_): anyExn
 
-type t = {
+type error = {
   @live message: string,
   @live kind: kind,
-  @live location: option<location>,
-  @live path: array<Js.Json.t>,
+  @live location: option<t>,
+  @live stack: array<string>,
   @live exn: option<anyExn>,
 }
 
-module Stack: {
-  type name =
-    | Component(string)
-    | Section({component: string, section: string})
-    | Match
-    | Map
-    | Index(Js.Json.t)
-  type t = list<name>
+exception Exit(error)
+
+type debug = t
+
+module type Debuggable = {
+  type t
+  let toString: t => string
+  let debug: t => debug
 }
 
-exception Exit(t)
+type debuggable<'a> = module(Debuggable with type t = 'a)
 
-/* Lexer errors. */
-let illegalIdentifier: (~loc: loc, ~name: string, ~identifier: string) => t
-let invalidCharacter: (~loc: loc, ~name: string, ~character: string) => t
-let unexpectedCharacter: (~loc: loc, ~name: string, ~character: string, ~expected: string) => t
-let unexpectedEof: (~loc: loc, ~name: string) => t
-let unterminatedComment: (~loc: loc, ~name: string) => t
-let unterminatedString: (~loc: loc, ~name: string) => t
-let unknownEscapeSequence: (~loc: loc, ~name: string, ~char: string) => t
+/* Lexer errors */
+let illegalIdentifier: (t, string) => error
+let invalidCharacter: (t, string) => error
+let unexpectedCharacter: (t, ~character: string, ~expected: string) => error
+let unexpectedEof: t => error
+let unknownEscapeSequence: (t, string) => error
+let unterminatedComment: t => error
+let unterminatedString: t => error
 
-/* Parse errors. */
-let badMapTypeParse: (Ast_Pattern.t, ~name: string) => t
-let unexpectedToken: (Token.t, ~name: string) => t
+/* Parse errors */
+let unexpectedToken: ('a, debuggable<'a>) => error
+let tooManyFields: ('a, debuggable<'a>) => error
+let tooManyTags: t => error
 
-/* Compile errors. */
-let componentDoesNotExist: (~loc: loc, ~name: string, ~stack: list<string>) => t
-let cyclicDependency: (~loc: loc, ~name: string, ~stack: list<string>) => t
-let duplicateCompName: string => t
-let uncaughtCompileError: ('e, ~name: string) => t
+/* Type errors */
+let badUnionTag: t => error
+let cantNarrowType: (t, 'a, 'a, 'a => string) => error
+let childNotAllowedInRoot: t => error
+let childTypeMismatch: (t, 'a, 'a, 'a => string) => error
+let extraChild: (t, ~comp: string, string) => error
+let mapPatternSizeMismatch: t => error
+let missingChild: (t, ~comp: string, string) => error
+let missingRecordField: (t, string, 'a, 'a => string) => error
+let nameBoundMultipleTimes: (t, string) => error
+let nonNullableEchoLiteral: t => error
+let patternNumberMismatch: t => error
+let tupleSizeMismatch: (t, int, int) => error
+let typeMismatch: (t, 'a, 'a, 'a => string) => error
+let underscoreInConstruct: t => error
+let variableMissingInPattern: (t, string) => error
+
+/* Matching errors */
+let partialMatch: (t, 'a, 'a => string) => error
+let unusedCase: (NonEmpty.t<'a>, debuggable<'a>) => error
+
+/* Compile errors */
+let duplicateCompName: string => error
+let uncaughtCompileError: ('e, ~name: string) => error
 
 /* Render errors */
-let badEchoType: (~loc: loc, ~binding: string, ~type_: Js.Json.tagged_t, ~stack: Stack.t) => t
-let badMapType: (~loc: loc, ~binding: string, ~type_: Js.Json.tagged_t, ~stack: Stack.t) => t
-let bindingDoesNotExist: (~loc: loc, ~binding: string, ~stack: Stack.t) => t
-let bindingTypeMismatch: (
-  ~data: Js.Json.tagged_t,
-  ~pattern: Ast_Pattern.t,
-  ~binding: string,
-  ~stack: Stack.t,
-) => t
-let childDoesNotExist: (~loc: loc, ~child: string, ~stack: Stack.t) => t
-let customError: (string, ~stack: Stack.t) => t
-let nameBoundMultipleTimes: (~loc: loc, ~binding: string, ~stack: Stack.t) => t
-let noMatchFound: (~loc: loc, ~stack: Stack.t) => t
-let patternTypeMismatch: (~data: Js.Json.tagged_t, ~pattern: Ast_Pattern.t, ~stack: Stack.t) => t
-let patternNumberMismatch: (~loc: loc, ~stack: Stack.t) => t
-let uncaughtComponentError: ('e, ~stack: Stack.t) => t
+let customError: string => error
+let decodeError: (~stack: list<string>, 'a, Js.Json.t, 'a => string) => error
+let decodeErrorMissingKey: (~stack: list<string>, string) => error
+let uncaughtComponentError: (t, ~name: string, ~stack: list<string>, 'e) => error
+
+/* Other errors */
+let cyclicDependency: (t, ~stack: list<string>) => error
+let missingComponent: (t, string) => error

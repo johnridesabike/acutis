@@ -1,8 +1,8 @@
-import { Source } from "../../lib/es6/src/AcutisJs.mjs";
+import { Source, Typescheme } from "../../lib/es6/src/AcutisJs.mjs";
 
-export default Source.funcWithString(
+export default Source.fn(
   "D",
-  "D: {{ name }}",
-  (ast) => (env, { name }, children) =>
-    env.render(ast, { name: name.toUpperCase() }, children)
+  Typescheme.make([["name", Typescheme.string()]]),
+  Typescheme.Child.make([]),
+  (Env, { name }, _children) => Env.return_("D: " + name.toUpperCase())
 );

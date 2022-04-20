@@ -1,484 +1,312 @@
 /**
-   Copyright 2021 John Jackson
+  Copyright (c) 2022 John Jackson.
 
-   Licensed under the Apache License, Version 2.0 (the "License");
-   you may not use this file except in compliance with the License.
-   You may obtain a copy of the License at
-
-       http://www.apache.org/licenses/LICENSE-2.0
-
-   Unless required by applicable law or agreed to in writing, software
-   distributed under the License is distributed on an "AS IS" BASIS,
-   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-   See the License for the specific language governing permissions and
-   limitations under the License.
+  This Source Code Form is subject to the terms of the Mozilla Public
+  License, v. 2.0. If a copy of the MPL was not distributed with this
+  file, You can obtain one at http://mozilla.org/MPL/2.0/.
 */
-module T = Acutis_Types
-
 module Array = Belt.Array
-module Ast = T.Ast
-module Ast_Pattern = T.Ast_Pattern
-module Float = Belt.Float
-module Int = Belt.Int
-module Json = Js.Json
 module MapString = Belt.Map.String
-module NonEmpty = T.NonEmpty
+module MapInt = Belt.Map.Int
 module Queue = Belt.MutableQueue
+module SetInt = Belt.Set.Int
 
-module Pattern = {
-  let arrayToQueueResult = (a, ~f) => {
-    let q = Queue.make()
-    let rec aux = i =>
-      switch a[i] {
-      | None => #ok(q)
-      | Some(x) =>
-        switch f(. x) {
-        | #ok(x) =>
-          Queue.add(q, x)
-          aux(succ(i))
-        | #errors(_) as e => e
-        }
-      }
-    aux(0)
+let rec testCase = (~wildcard, val, case) =>
+  if Data.Const.equal(val, case.Matching.val) {
+    Some(case.ifMatch)
+  } else {
+    switch case.nextCase {
+    | Some(case) => testCase(val, case, ~wildcard)
+    | None => wildcard
+    }
   }
 
-  let rec toJson = (pattern: Ast_Pattern.t, ~props, ~stack) =>
-    switch pattern {
-    | #True(_) => #ok(Json.boolean(true))
-    | #False(_) => #ok(Json.boolean(false))
-    | #Null(_) => #ok(Json.null)
-    | #String(_, x) => #ok(Json.string(x))
-    | #Number(_, x) => #ok(Json.number(x))
-    | #Object(_, x) =>
-      x
-      ->arrayToQueueResult(~f=(. (k, v)) => toJson(v, ~props, ~stack)->Result.mapU((. v) => (k, v)))
-      ->Result.mapU((. q) => {
-        let d = Js.Dict.empty()
-        Queue.forEachU(q, (. (k, v)) => Js.Dict.set(d, k, v))
-        Json.object_(d)
-      })
-    | #Binding(loc, binding) =>
-      switch Js.Dict.get(props, binding) {
-      | Some(x) => #ok(x)
-      | None => #errors([Debug.bindingDoesNotExist(~loc, ~binding, ~stack)])
-      }
-    | #...Ast_Pattern.arr as pattern =>
-      toArray(pattern, ~props, ~stack)->Result.mapU((. x) => Json.array(x))
-    }
-  and toArray = (pattern: Ast_Pattern.arr, ~props, ~stack) =>
-    switch pattern {
-    | #Array(_, x) =>
-      x
-      ->arrayToQueueResult(~f=(. x) => toJson(x, ~props, ~stack))
-      ->Result.mapU((. q) => Queue.toArray(q))
-    | #ArrayWithTailBinding(_, array, #Binding(bindLoc, binding)) =>
-      switch Js.Dict.get(props, binding) {
-      | Some(data) =>
-        switch Json.classify(data) {
-        | JSONArray(binding) =>
-          array
-          ->arrayToQueueResult(~f=(. x) => toJson(x, ~props, ~stack))
-          ->Result.mapU((. q) => q->Queue.toArray->Array.concat(binding))
-        | data =>
-          #errors([
-            Debug.bindingTypeMismatch(~data, ~pattern=(pattern :> Ast_Pattern.t), ~binding, ~stack),
-          ])
-        }
-      | None => #errors([Debug.bindingDoesNotExist(~loc=bindLoc, ~binding, ~stack)])
-      }
-    }
+let bindNames = (map, ids, val) => SetInt.reduceU(ids, map, (. map, id) => MapInt.set(map, id, val))
 
-  let setBinding = (bindings, #Binding(loc, identifier), json, ~stack) =>
-    switch identifier {
-    | "_" => #ok(bindings)
-    | identifier =>
-      if MapString.has(bindings, identifier) {
-        #errors([Debug.nameBoundMultipleTimes(~loc, ~binding=identifier, ~stack)])
+let arrayGet = (. a, i) => a[i]
+
+let mapStringGet = (. d, k) => MapString.get(d, k)
+
+let nonemptyGet = (. a, i) => NonEmpty.get(a, i)
+
+let rec make_match: 'a 'args 'key. (
+  Matching.tree<'a, 'key>,
+  'args,
+  (. 'args, 'key) => option<Data.t>,
+  MapInt.t<Data.t>,
+) => option<(MapInt.t<Data.t>, 'a)> = (tree, args, get, vars) =>
+  switch tree {
+  | End(x) => Some((vars, x))
+  | Switch({key, cases, wildcard, ids, _}) =>
+    switch get(. args, key) {
+    | Some(val) =>
+      let vars = bindNames(vars, ids, val)
+      let val = Data.constantExn(val)
+      switch testCase(val, cases, ~wildcard) {
+      | Some(tree) => make_match(tree, args, get, vars)
+      | None => None
+      }
+    | None => None
+    }
+  | Wildcard({key, ids, child}) =>
+    switch get(. args, key) {
+    | Some(val) =>
+      let vars = bindNames(vars, ids, val)
+      make_match(child, args, get, vars)
+    | None => None
+    }
+  | Construct({key, ids, nil, cons, _}) =>
+    switch get(. args, key) {
+    | Some(val) =>
+      let vars = bindNames(vars, ids, val)
+      let child = if Data.isNull(val) {
+        nil
       } else {
-        #ok(MapString.set(bindings, identifier, json))
+        cons
       }
+      switch child {
+      | Some(tree) => make_match(tree, args, get, vars)
+      | None => None
+      }
+    | None => None
     }
-
-  type testResult<'a> = NoMatch | Result(Result.t<'a>)
-
-  let rec testValue = (~pattern: Ast_Pattern.t, ~json, ~bindings, ~stack) =>
-    switch (pattern, Json.classify(json)) {
-    | (#Binding(_) as b, _) => Result(setBinding(bindings, b, json, ~stack))
-    | (#Number(_, x), JSONNumber(y)) if x == y => Result(#ok(bindings))
-    | (#String(_, x), JSONString(y)) if x == y => Result(#ok(bindings))
-    | (#True(_), JSONTrue)
-    | (#False(_), JSONFalse)
-    | (#Null(_), JSONNull) =>
-      Result(#ok(bindings))
-    | (#Number(_), JSONNumber(_))
-    | (#String(_), JSONString(_))
-    | (#False(_), JSONTrue)
-    | (#True(_), JSONFalse) =>
-      NoMatch
-    | (#Array(_, []), JSONArray([])) => Result(#ok(bindings))
-    | (#Array(_, []), JSONArray(_)) => NoMatch
-    | (#Array(_, x), JSONArray(data)) => testArray(~patterns=x, ~data, ~bindings, ~stack)
-    | (#ArrayWithTailBinding(_, patterns, binding), JSONArray(data)) =>
-      switch testArray(~patterns, ~data, ~bindings, ~stack) {
-      | Result(#ok(bindings)) =>
-        Result(
-          setBinding(
-            bindings,
-            binding,
-            data->Array.sliceToEnd(Array.size(patterns))->Json.array,
-            ~stack,
-          ),
-        )
-      | (Result(#errors(_)) | NoMatch) as e => e
+  | Nest({key, ids, child, wildcard, _}) =>
+    switch get(. args, key) {
+    | Some(val) =>
+      let vars = bindNames(vars, ids, val)
+      let result = switch child {
+      | IntKeys(child) =>
+        let tuple = Data.tupleExn(val)
+        make_match(child, tuple, arrayGet, vars)
+      | StringKeys(child) =>
+        let dict = Data.dictExn(val)
+        make_match(child, dict, mapStringGet, vars)
       }
-    | (#Object(_, []), JSONObject(obj)) if obj->Js.Dict.keys->Array.size == 0 =>
-      Result(#ok(bindings))
-    | (#Object(_, []), JSONObject(_)) => NoMatch
-    | (#Object(_, patterns), JSONObject(obj)) => testObject(~patterns, ~obj, ~bindings, ~stack)
-    | (_, JSONNull) | (#Null(_), _) => NoMatch
-    | (pattern, data) => Result(#errors([Debug.patternTypeMismatch(~pattern, ~data, ~stack)]))
+      switch result {
+      | Some((vars, tree)) => make_match(tree, args, get, vars)
+      | None =>
+        switch wildcard {
+        | Some(tree) => make_match(tree, args, get, vars)
+        | None => None
+        }
+      }
+    | None => None
     }
-  and testArray = (~patterns, ~data, ~bindings, ~stack) => {
-    let rec aux = (bindings, i) =>
-      switch patterns[i] {
-      | None => Result(#ok(bindings))
-      | Some(pattern) =>
-        switch data[i] {
-        | None => NoMatch
-        | Some(json) =>
-          switch testValue(~json, ~pattern, ~bindings, ~stack) {
-          | Result(#ok(bindings)) => aux(bindings, succ(i))
-          | (Result(#errors(_)) | NoMatch) as e => e
-          }
-        }
+  }
+
+let make_match = ({Matching.tree: tree, exits}, args) =>
+  switch make_match(tree, args, nonemptyGet, MapInt.empty) {
+  | Some((vars, {names, exit})) =>
+    let bindings = MapString.mapU(names, (. id) => MapInt.getExn(vars, id))
+    Some((bindings, Matching.Exit.get(exits, exit)))
+  | None => None
+  }
+
+let echoNotNull = (x, props, children, return) =>
+  switch x {
+  | Compile.OEBinding(binding, esc) =>
+    switch MapString.get(props, binding) {
+    | Some(x) => return(. Utils.escape(esc, Data.toString(x)))
+    | None => assert false
+    }
+  | OEChild(child) =>
+    switch MapString.get(children, child) {
+    | None => assert false
+    | Some(x) => x
+    }
+  | OEString(x) => return(. x)
+  }
+
+let echoNullable = (x, props, children, return) =>
+  switch x {
+  | Compile.OEBinding(binding, esc) =>
+    switch MapString.get(props, binding) {
+    | Some(x) =>
+      switch Data.nullableExn(x) {
+      | None => None
+      | Some(x) => Some(return(. Utils.escape(esc, Data.toString(x))))
       }
-    aux(bindings, 0)
+    | None => assert false
+    }
+  | OEChild(child) => MapString.get(children, child)
+  | OEString(x) => Some(return(. x))
   }
-  and testObject = (~patterns, ~obj, ~bindings, ~stack) => {
-    let rec aux = (bindings, i) =>
-      switch patterns[i] {
-      | None => Result(#ok(bindings))
-      | Some((key, value)) =>
-        switch Js.Dict.get(obj, key) {
-        | None => NoMatch
-        | Some(json) =>
-          switch testValue(~pattern=value, ~json, ~bindings, ~stack) {
-          | Result(#ok(bindings)) => aux(bindings, succ(i))
-          | (Result(#errors(_)) | NoMatch) as e => e
-          }
-        }
+
+let echo = (nullables, default, props, children, return) => {
+  let rec aux = i =>
+    switch nullables[i] {
+    | None => echoNotNull(default, props, children, return)
+    | Some(x) =>
+      switch echoNullable(x, props, children, return) {
+      | Some(x) => x
+      | None => aux(succ(i))
       }
-    aux(bindings, 0)
-  }
-
-  let test = (
-    NonEmpty(patternHead, patternTail): NonEmpty.t<_>,
-    NonEmpty(jsonHead, jsonTail): NonEmpty.t<_>,
-    ~loc,
-    ~stack,
-  ) => {
-    /* ALL of the patterns in the sequence need to match their data. */
-    let rec aux = (pattern, json, bindings, i) =>
-      switch testValue(~pattern, ~json, ~bindings, ~stack) {
-      | Result(#ok(bindings)) =>
-        switch (patternTail[i], jsonTail[i]) {
-        | (None, None) => Result(#ok(bindings))
-        | (Some(pattern), Some(json)) => aux(pattern, json, bindings, succ(i))
-        | (None, Some(_)) | (Some(_), None) =>
-          Result(#errors([Debug.patternNumberMismatch(~loc, ~stack)]))
-        }
-      | (Result(#errors(_)) | NoMatch) as e => e
-      }
-    aux(patternHead, jsonHead, MapString.empty, 0)
-  }
-
-  /*
-    Consider this pattern:
-    {% match a, b, c
-       with 1, 2, 3
-       with 4, 5, 6 %} path 1
-    {% with 7, 8, 9 %} path 2
-    {% /match %}
-
-    Here's a simplified version of how we represent that:
-    NonEmpty(
-      {
-        patterns: NonEmpty(NonEmpty(1, [2, 3]), [NonEmpty(4, [5, 6])]),
-        f: () => "path 1",
-      },
-      [
-        {
-          patterns: NonEmpty(NonEmpty(7, [8, 9]), []),
-          f: () => "path 2",
-        },
-      ],
-    )
- */
-  type t<'a> = {
-    patterns: NonEmpty.t<NonEmpty.t<Ast_Pattern.t>>,
-    f: (. Js.Dict.t<Json.t>) => 'a,
-  }
-
-  let matchCase = ({patterns: NonEmpty(head, tail), f}, json, ~loc, ~stack) => {
-    let rec aux = (pattern, i) =>
-      switch test(pattern, json, ~loc, ~stack) {
-      | Result(#ok(bindings)) =>
-        let d = Js.Dict.empty()
-        MapString.forEachU(bindings, (. k, v) => Js.Dict.set(d, k, v))
-        Result(#ok(f(. d)))
-      | Result(#errors(_)) as e => e
-      | NoMatch =>
-        switch tail[i] {
-        | None => NoMatch
-        | Some(pattern) => aux(pattern, succ(i))
-        }
-      }
-    aux(head, 0)
-  }
-
-  let match = (NonEmpty(head, tail): NonEmpty.t<_>, data, ~loc, ~stack) => {
-    let rec aux = (patterns, i) =>
-      switch matchCase(patterns, data, ~loc, ~stack) {
-      | Result((#ok(_) | #errors(_)) as x) => x
-      | NoMatch =>
-        switch tail[i] {
-        | Some(pattern) => aux(pattern, succ(i))
-        | None => #errors([Debug.noMatchFound(~loc, ~stack)])
-        }
-      }
-    aux(head, 0)
-  }
-}
-
-// This could possibly be defined in the environment.
-let escape = c =>
-  switch c {
-  | "&" => "&amp;"
-  | "\"" => "&quot;"
-  | "'" => "&apos;"
-  | ">" => "&gt;"
-  | "<" => "&lt;"
-  | "/" => "&#x2F;"
-  | "`" => "&#x60;"
-  | "=" => "&#x3D;"
-  | c => c
-  }
-
-let rec escapeAux = (str, pos, result) =>
-  switch Js.String2.charAt(str, pos) {
-  | "" => result
-  | c => escapeAux(str, succ(pos), result ++ escape(c))
-  }
-
-let escape = (esc: Ast.Echo.escape, str) =>
-  switch esc {
-  | Escape => escapeAux(str, 0, "")
-  | NoEscape => str
-  }
-
-let getBindingOrNull = (props, binding) =>
-  switch Js.Dict.get(props, binding) {
-  | Some(x) => x
-  | None => Json.null
-  }
-
-let echoBinding = (props, binding) =>
-  switch Json.classify(getBindingOrNull(props, binding)) {
-  | JSONString(x) => Ok(x)
-  | JSONNumber(x) => Ok(Float.toString(x))
-  | type_ => Error(type_)
-  }
-
-let trimStart = string => {
-  let rec aux = pos =>
-    switch Js.String2.charAt(string, pos) {
-    | " " | "\t" | "\r" | "\n" => aux(succ(pos))
-    | _ => Js.String2.sliceToEnd(string, ~from=pos)
     }
   aux(0)
 }
 
-let trimEnd = string => {
-  let rec aux = pos =>
-    switch Js.String2.charAt(string, pred(pos)) {
-    | " " | "\t" | "\r" | "\n" => aux(pred(pos))
-    | _ => Js.String2.slice(string, ~from=0, ~to_=pos)
-    }
-  aux(Js.String.length(string))
-}
-
-@val @scope("Object")
-external dictMerge: (@as(json`{}`) _, ~base: Js.Dict.t<'a>, Js.Dict.t<'a>) => Js.Dict.t<'a> =
-  "assign"
-
-let echo = (head, tail, ~props, ~stack, ~children, ~env: T.environment<_>, ~error) => {
-  let rec aux = (head: Ast.Echo.t, i) =>
-    switch head {
-    | Binding(loc, binding, esc) =>
-      switch echoBinding(props, binding) {
-      | Ok(x) => env.return(. escape(esc, x))
-      | Error(type_) =>
-        switch (type_, tail[i]) {
-        | (JSONNull, Some(head)) => aux(head, succ(i))
-        | (type_, _) => error(. [Debug.badEchoType(~binding, ~type_, ~loc, ~stack)])
-        }
-      }
-    | Child(loc, child) =>
-      switch Js.Dict.get(children, child) {
-      | Some(x) => x
-      | None =>
-        switch tail[i] {
-        | Some(head) => aux(head, succ(i))
-        | None => error(. [Debug.childDoesNotExist(~loc, ~child, ~stack)])
-        }
-      }
-    | String(x, esc) => env.return(. escape(esc, x))
-    | Number(x, esc) => env.return(. escape(esc, Float.toString(x)))
-    }
-  aux(head, 0)
-}
-
-let rec make = (~nodes, ~props, ~children, ~stack, ~makeEnv, ~error, ~try_, ~reduceQueue) => {
-  let env = makeEnv(. stack)
-  let queue = Queue.make()
-  Array.forEachU(nodes, (. node: Ast.node<_>) =>
-    switch node {
-    | Echo(_, NonEmpty(head, tail)) =>
-      Queue.add(queue, echo(head, tail, ~props, ~stack, ~children, ~env, ~error))
-    | Text(str, trim) =>
-      Queue.add(
-        queue,
-        env.return(.
-          switch trim {
-          | NoTrim => str
-          | TrimStart => trimStart(str)
-          | TrimEnd => trimEnd(str)
-          | TrimBoth => trimStart(trimEnd(str))
-          },
-        ),
-      )
-    | Match(loc, identifiers, cases) =>
-      let patterns = NonEmpty.map(cases, ~f=(. {patterns, nodes}): Pattern.t<_> => {
-        patterns: patterns,
-        f: (. props') =>
-          make(
-            ~nodes,
-            ~props=dictMerge(~base=props, props'),
-            ~children,
-            ~stack=list{Match, ...stack},
-            ~makeEnv,
-            ~error,
-            ~try_,
-            ~reduceQueue,
-          ),
-      })
-      let data = NonEmpty.map(identifiers, ~f=(. (_loc, x)) => getBindingOrNull(props, x))
-      switch Pattern.match(patterns, data, ~loc, ~stack) {
-      | #ok(result) => Queue.transfer(result, queue)
-      | #errors(e) => Queue.add(queue, error(. e))
-      }
-    | Map(loc, pattern, cases) =>
-      let f = (index, json) => {
-        let patterns = NonEmpty.map(cases, ~f=(. {patterns, nodes}): Pattern.t<_> => {
-          patterns: NonEmpty.map(patterns, ~f=(. x): NonEmpty.t<_> =>
-            switch x {
-            // Add a default binding for the index
-            | NonEmpty(x, []) => NonEmpty(x, [#Binding(loc, "_")])
-            | x => x
-            }
-          ),
-          f: (. props') =>
-            make(
-              ~nodes,
-              ~props=dictMerge(~base=props, props'),
-              ~children,
-              ~stack=list{Index(index), Map, ...stack},
-              ~makeEnv,
-              ~error,
-              ~try_,
-              ~reduceQueue,
-            ),
-        })
-        switch Pattern.match(patterns, NonEmpty(json, [index]), ~loc, ~stack) {
-        | #ok(result) => Queue.transfer(result, queue)
-        | #errors(e) => Queue.add(queue, error(. e))
-        }
-      }
-      switch pattern {
-      | #Binding(loc, binding) =>
-        switch Json.classify(getBindingOrNull(props, binding)) {
-        | JSONArray(a) => Array.forEachWithIndexU(a, (. i, x) => f(Json.number(Int.toFloat(i)), x))
-        | JSONObject(o) =>
-          // Js.Dict.forEach doesn't exist
-          let keys = Js.Dict.keys(o)
-          let l = Array.size(keys)
-          for i in 0 to l - 1 {
-            let key = Array.getUnsafe(keys, i)
-            f(Json.string(key), Js.Dict.unsafeGet(o, key))
-          }
-        | type_ => Queue.add(queue, error(. [Debug.badMapType(~binding, ~type_, ~loc, ~stack)]))
-        }
-      | #...Ast_Pattern.arr as a =>
-        Pattern.toArray(a, ~props, ~stack)
-        ->Result.mapU((. a) =>
-          Array.forEachWithIndexU(a, (. i, x) => f(Json.number(Int.toFloat(i)), x))
-        )
-        ->Result.getOrElseU((. e) => Queue.add(queue, error(. e)))
-      | #Object(_, o) =>
-        Pattern.arrayToQueueResult(o, ~f=(. (k, v)) =>
-          Pattern.toJson(v, ~props, ~stack)->Result.mapU((. x) => (Js.Json.string(k), x))
-        )
-        ->Result.mapU((. q) => Queue.forEachU(q, (. (k, v)) => f(k, v)))
-        ->Result.getOrElseU((. e) => Queue.add(queue, error(. e)))
-      }
-    | Component({loc, name, props: compPropsRaw, children: compChildrenRaw, f}) =>
-      let compProps = Js.Dict.empty()
-      let compChildren = Js.Dict.empty()
-      let errors = Queue.make()
-      Array.forEachU(compChildrenRaw, (. (key, child)) =>
-        switch child {
-        | ChildBlock(nodes) =>
-          Js.Dict.set(
-            compChildren,
-            key,
-            reduceQueue(.
-              make(
-                ~nodes,
-                ~props,
-                ~children,
-                ~stack=list{Section({component: name, section: key}), ...stack},
-                ~makeEnv,
-                ~error,
-                ~try_,
-                ~reduceQueue,
-              ),
-            ),
-          )
-        | ChildName(child) =>
-          switch Js.Dict.get(children, child) {
-          | Some(data) => Js.Dict.set(compChildren, key, data)
-          | None => Queue.add(errors, Debug.childDoesNotExist(~loc, ~child, ~stack))
-          }
-        }
-      )
-      Array.forEachU(compPropsRaw, (. (key, data)) =>
-        switch Pattern.toJson(data, ~props, ~stack) {
-        | #ok(data) => Js.Dict.set(compProps, key, data)
-        | #errors(e) => e->Queue.fromArray->Queue.transfer(errors)
-        }
-      )
-      if Queue.isEmpty(errors) {
-        Queue.add(
-          queue,
-          try_(.
-            (. ()) => f(. env, compProps, compChildren),
-            ~catch=(. e) => error(. [Debug.uncaughtComponentError(e, ~stack)]),
-          ),
-        )
-      } else {
-        Queue.add(queue, error(. Queue.toArray(errors)))
-      }
+let mapMerge = (d1, d2) =>
+  MapString.mergeU(d1, d2, (. _, v1, v2) =>
+    switch (v1, v2) {
+    | (None, None) => None
+    | (_, Some(_) as x) | (Some(_) as x, None) => x
     }
   )
-  queue
+
+let mapToDict = m => {
+  let d = Js.Dict.empty()
+  MapString.forEachU(m, (. k, v) => Js.Dict.set(d, k, v))
+  d
 }
+
+let rec make:
+  type a. (
+    ~nodes: Compile.nodes<Compile.template<a>>,
+    ~props: MapString.t<Data.t>,
+    ~children: MapString.t<a>,
+    ~env: Source.env<a>,
+    ~stack: list<string>,
+  ) => Queue.t<a> =
+  (~nodes, ~props, ~children, ~env, ~stack) => {
+    module Env = unpack(env)
+    let queue = Queue.make()
+    Array.forEachU(nodes, (. node) =>
+      switch node {
+      | Compile.OEcho(nullables, default) =>
+        Queue.add(queue, echo(nullables, default, props, children, Env.return))
+      | OText(str) => Queue.add(queue, Env.return(. str))
+      | OMatch(args, dectree) =>
+        let args = NonEmpty.map(args, (. x) => Data.fromPattern(x, props))
+        switch make_match(dectree, args) {
+        | None => assert false
+        | Some(props', nodes) =>
+          let props = mapMerge(props, props')
+          let result = make(~nodes, ~props, ~children, ~stack, ~env)
+          Queue.transfer(result, queue)
+        }
+      | OMapList(pattern, dectree) =>
+        let l = Data.fromPattern(pattern, props)
+        Data.forEachListExn(l, (. ~index, args) =>
+          switch make_match(dectree, NonEmpty.two(args, index)) {
+          | None => assert false
+          | Some(props', nodes) =>
+            let props = mapMerge(props, props')
+            let result = make(~nodes, ~props, ~children, ~stack, ~env)
+            Queue.transfer(result, queue)
+          }
+        )
+      | OMapDict(pattern, dectree) =>
+        let l = Data.fromPattern(pattern, props)
+        Data.forEachDictExn(l, (. ~index, args) =>
+          switch make_match(dectree, NonEmpty.two(args, index)) {
+          | None => assert false
+          | Some(props', nodes) =>
+            let props = mapMerge(props, props')
+            let result = make(~nodes, ~props, ~children, ~stack, ~env)
+            Queue.transfer(result, queue)
+          }
+        )
+      | OComponent(debug, val, compProps, compChildren) =>
+        let compChildren = MapString.mapU(compChildren, (. child) =>
+          switch child {
+          | OChildBlock(nodes) =>
+            let result = make(~nodes, ~props, ~children, ~stack, ~env)
+            Env.render(. result)
+          | OChildName(child) => MapString.getExn(children, child)
+          }
+        )
+        let compProps = MapString.mapU(compProps, (. data) => Data.fromPattern(data, props))
+        let result = switch val {
+        | Acutis(name, nodes) =>
+          Env.render(.
+            make(
+              ~nodes,
+              ~props=compProps,
+              ~children=compChildren,
+              ~stack=list{name, ...stack},
+              ~env,
+            ),
+          )
+        | Function(name, propTypes, f) =>
+          Env.try_(.
+            (. ()) => f(. env, Data.toJson(compProps, propTypes), mapToDict(compChildren)),
+            (. e) => Env.error_internal(. [Debug.uncaughtComponentError(debug, ~name, ~stack, e)]),
+          )
+        }
+        Queue.add(queue, result)
+      }
+    )
+    queue
+  }
+
+let make = (type a, env: Source.env<a>, {Compile.nodes: nodes, name, prop_types}, props) => {
+  module Env = unpack(env)
+  try {
+    let props = Data.make(props, prop_types)
+    Env.render(. make(~nodes, ~props, ~children=MapString.empty, ~env, ~stack=list{name}))
+  } catch {
+  | Debug.Exit(e) => Env.error_internal(. [e])
+  /* If the error came from JS, then re-raise it. ReScript automatically wraps JS errors in its own
+    variant structure, so we need to destructure it first.
+    For example, Eleventy uses its own errors for control flow which can raise during Data.make.*/
+  | Js.Exn.Error(e) => raise(Obj.magic(e))
+  }
+}
+
+let render = (forEach, x) => {
+  let result = ref("")
+  let errors = Queue.make()
+  forEach(.x, (. x) => {
+    switch x {
+    | #ok(s) => result := result.contents ++ s
+    | #errors(e) => e->Queue.fromArray->Queue.transfer(errors)
+    }
+  })
+  if Queue.isEmpty(errors) {
+    #ok(result.contents)
+  } else {
+    #errors(Queue.toArray(errors))
+  }
+}
+
+module Sync = {
+  type t = Result.t<string>
+  type e = exn
+  let return = (. s) => #ok(s)
+  let return_ = return
+  let error = (. s) => #errors([Debug.customError(s)])
+  let error_internal = (. x) => #errors(x)
+  let render = (. q) => render((. q, f) => Queue.forEachU(q, f), q)
+  let try_ = (. f, catch) =>
+    try {
+      f(.)
+    } catch {
+    | e => catch(. e)
+    }
+  let map = (. child, f) => Result.map(child, f)
+  let flatmap = (. child, f) => Result.flatMap(child, f)
+}
+
+let sync = make(module(Sync))
+
+module Async = {
+  module Promise = Js.Promise
+  type t = Promise.t<Result.t<string>>
+  type e = Promise.error
+  let return = (. s) => Promise.resolve(#ok(s))
+  let return_ = return
+  let error = (. s) => Promise.resolve(#errors([Debug.customError(s)]))
+  let error_internal = (. x) => Promise.resolve(#errors(x))
+  let render_array = a => Promise.resolve(render((. a, f) => Array.forEachU(a, f), a))
+  let render = (. q) => q |> Queue.toArray |> Promise.all |> Promise.then_(render_array)
+  let try_ = (. f, catch) => Promise.catch(e => catch(. e), f(.))
+  let map = (. child, f) => Promise.then_(child => Promise.resolve(Result.map(child, f)), child)
+  let flatmap = (. child, f) => Promise.then_(child =>
+      switch child {
+      | #ok(child) => f(child)
+      | #errors(_) as e => Promise.resolve(e)
+      }
+    , child)
+}
+
+let async = make(module(Async))

@@ -1,8 +1,8 @@
-const { Source } = require("../../lib/js/src/AcutisJs");
+const { Source, Typescheme } = require("../../");
 
-module.exports = Source.funcWithString(
+module.exports = Source.fn(
   "Bb_async",
-  "B: {{ name }}",
-  (ast) => async (env, { name }, children) =>
-    env.render(ast, { name: name.toUpperCase() }, children)
+  Typescheme.make([["name", Typescheme.string()]]),
+  Typescheme.Child.make([]),
+  async (Env, { name }, _children) => Env.return_("B: " + name.toUpperCase())
 );

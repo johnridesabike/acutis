@@ -1,283 +1,378 @@
 /**
-   Copyright 2021 John Jackson
+  Copyright (c) 2022 John Jackson.
 
-   Licensed under the Apache License, Version 2.0 (the "License");
-   you may not use this file except in compliance with the License.
-   You may obtain a copy of the License at
-
-       http://www.apache.org/licenses/LICENSE-2.0
-
-   Unless required by applicable law or agreed to in writing, software
-   distributed under the License is distributed on an "AS IS" BASIS,
-   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-   See the License for the specific language governing permissions and
-   limitations under the License.
+  This Source Code Form is subject to the terms of the Mozilla Public
+  License, v. 2.0. If a copy of the MPL was not distributed with this
+  file, You can obtain one at http://mozilla.org/MPL/2.0/.
 */
+module Array = Belt.Array
+module Int = Belt.Int
+module List = Belt.List
 
-module T = Acutis_Types
+type t = {name: string, char: int}
+let empty = {name: "", char: 0}
+let make = (name, char) => {name: name, char: char}
+let char = t => t.char
 
-type kind = [#Type | #Render | #Compile | #Pattern | #Parse | #Syntax]
-
-type location = {character: int}
-
-let location = (T.Loc(x)) => {character: x + 1}
+type kind = [
+  | #Type
+  | #Matching
+  | #Render
+  | #Compile
+  | #Parse
+  | #Syntax
+]
 
 @unboxed
 type rec anyExn = AnyExn(_): anyExn
 
-type t = {
+type error = {
   message: string,
   kind: kind,
-  location: option<location>,
-  path: array<Js.Json.t>,
+  location: option<t>,
+  stack: array<string>,
   exn: option<anyExn>,
 }
 
-module Stack = {
-  type name =
-    | Component(string)
-    | Section({component: string, section: string})
-    | Match
-    | Map
-    | Index(Js.Json.t)
-  type t = list<name>
+exception Exit(error)
 
-  let nameToJson = (. x) =>
-    switch x {
-    | Component(x) => Js.Json.string(x)
-    | Section({component, section}) => Js.Json.string(`section: ${component}#${section}`)
-    | Match => Js.Json.string("match")
-    | Map => Js.Json.string("map")
-    | Index(x) => x
-    }
+type debug = t
+
+module type Debuggable = {
+  type t
+  let toString: t => string
+  let debug: t => debug
 }
 
-exception Exit(t)
+type debuggable<'a> = module(Debuggable with type t = 'a)
 
-let stackToPath = x => x->Belt.List.toArray->Belt.Array.mapU(Stack.nameToJson)
+/* Lexer errors */
 
-/* Lexer errors. */
-
-let unexpectedEof = (~loc, ~name) => {
-  kind: #Syntax,
-  message: "Unexpected end of file.",
-  location: Some(location(loc)),
-  path: [Js.Json.string(name)],
-  exn: None,
-}
-
-let unterminatedComment = (~loc, ~name) => {
-  kind: #Syntax,
-  message: "Unterminated comment.",
-  location: Some(location(loc)),
-  path: [Js.Json.string(name)],
-  exn: None,
-}
-
-let unterminatedString = (~loc, ~name) => {
-  kind: #Syntax,
-  message: "Unterminated string.",
-  location: Some(location(loc)),
-  path: [Js.Json.string(name)],
-  exn: None,
-}
-
-let unknownEscapeSequence = (~loc, ~name, ~char) => {
-  kind: #Syntax,
-  message: `Unknown escape sequence: ${char}.`,
-  location: Some(location(loc)),
-  path: [Js.Json.string(name)],
-  exn: None,
-}
-
-let illegalIdentifier = (~loc, ~name, ~identifier) => {
+let illegalIdentifier = (t, identifier) => {
   kind: #Syntax,
   message: `"${identifier}" is an illegal identifier name.`,
-  location: Some(location(loc)),
-  path: [Js.Json.string(name)],
+  location: Some(t),
+  stack: [],
   exn: None,
 }
 
-let invalidCharacter = (~loc, ~name, ~character) => {
+let invalidCharacter = (t, character) => {
   kind: #Syntax,
   message: `Invalid character: "${character}".`,
-  location: Some(location(loc)),
-  path: [Js.Json.string(name)],
+  location: Some(t),
+  stack: [],
   exn: None,
 }
 
-let unexpectedCharacter = (~loc, ~name, ~character, ~expected) => {
+let unexpectedCharacter = (t, ~character, ~expected) => {
   kind: #Syntax,
   message: `Unexpected character: "${character}". Expected: "${expected}".`,
-  location: Some(location(loc)),
-  path: [Js.Json.string(name)],
+  location: Some(t),
+  stack: [],
+  exn: None,
+}
+
+let unexpectedEof = t => {
+  kind: #Syntax,
+  message: "Unexpected end of file.",
+  location: Some(t),
+  stack: [],
+  exn: None,
+}
+
+let unknownEscapeSequence = (t, char) => {
+  kind: #Syntax,
+  message: `Unknown escape sequence: ${char}.`,
+  location: Some(t),
+  stack: [],
+  exn: None,
+}
+
+let unterminatedComment = t => {
+  kind: #Syntax,
+  message: "Unterminated comment.",
+  location: Some(t),
+  stack: [],
+  exn: None,
+}
+
+let unterminatedString = t => {
+  kind: #Syntax,
+  message: "Unterminated string.",
+  location: Some(t),
+  stack: [],
   exn: None,
 }
 
 /* Parse errors. */
 
-let unexpectedToken = (t, ~name) => {
-  message: `Unexpected token: "${T.Token.toString(t)}".`,
+let unexpectedToken = (type a, token, module(M): debuggable<a>) => {
+  message: `Unexpected token: "${M.toString(token)}".`,
   kind: #Parse,
-  location: Some(location(T.Token.toLocation(t))),
-  path: [Js.Json.string(name)],
+  location: Some(M.debug(token)),
+  stack: [],
   exn: None,
 }
 
-let badMapTypeParse = (t, ~name) => {
-  message: `Bad map type: "${T.Ast_Pattern.toString(t)}". I can only map bindings and arrays.`,
+let tooManyFields = (type a, token, module(M): debuggable<a>) => {
+  message: `This field was already used: "${M.toString(token)}".`,
   kind: #Parse,
-  location: Some(location(T.Ast_Pattern.toLocation(t))),
-  path: [Js.Json.string(name)],
+  location: Some(M.debug(token)),
+  stack: [],
+  exn: None
+}
+
+let tooManyTags = t => {
+  message: "This union has too many tagged fields.",
+  kind: #Parse,
+  location: Some(t),
+  stack: [],
   exn: None,
 }
 
-/* Compile errors. */
 
-let jsonString = (. s) => Js.Json.string(s)
+/* Type errors */
 
-let cyclicDependency = (~loc, ~name, ~stack) => {
-  message: `Cyclic dependency detected. I can't compile any components in this path.`,
-  kind: #Compile,
-  location: Some(location(loc)),
-  path: list{name, ...stack}->Belt.List.toArray->Belt.Array.mapU(jsonString),
+let badUnionTag = t => {
+  message: `Only integer, string, and boolean literals may be used as union tags.`,
+  kind: #Type,
+  exn: None,
+  location: Some(t),
+  stack: [],
+}
+
+let cantNarrowType = (t, a, b, f) => {
+  message: `These types have no subset:
+${f(a)}
+${f(b)}`,
+  kind: #Type,
+  exn: None,
+  location: Some(t),
+  stack: [],
+}
+
+let childNotAllowedInRoot = t => {
+  message: `Children are not allowed in root templates, only in components.`,
+  kind: #Type,
+  location: Some(t),
+  stack: [],
   exn: None,
 }
 
-let componentDoesNotExist = (~loc, ~name, ~stack) => {
-  message: `Component "${name}" either does not exist or couldn't be compiled.`,
-  kind: #Compile,
-  location: Some(location(loc)),
-  path: stack->Belt.List.toArray->Belt.Array.mapU(jsonString),
+let childTypeMismatch = (t, a, b, f) => {
+  message: `This pattern is type ${f(b)}} but expected type ${f(a)}.`,
+  kind: #Type,
+  exn: None,
+  location: Some(t),
+  stack: [],
+}
+
+let extraChild = (t, ~comp, child) => {
+  message: `This call of component "${comp}" includes unexpected child "${child}."`,
+  kind: #Type,
+  exn: None,
+  location: Some(t),
+  stack: [],
+}
+
+let mapPatternSizeMismatch = t => {
+  message: `Map blocks can only have two patterns per "with" clause: the item and the index.`,
+  kind: #Type,
+  exn: None,
+  location: Some(t),
+  stack: [],
+}
+
+let missingChild = (t, ~comp, child) => {
+  message: `This call of component "${comp}" is missing child "${child}."`,
+  kind: #Type,
+  exn: None,
+  location: Some(t),
+  stack: [],
+}
+
+let missingRecordField = (t, field, ty, f) => {
+  message: `This record is missing field "${field}" of type ${f(ty)}.`,
+  kind: #Type,
+  exn: None,
+  location: Some(t),
+  stack: [],
+}
+
+let nameBoundMultipleTimes = (t, binding) => {
+  message: `"${binding}" is bound multiple times in this pattern.`,
+  kind: #Type,
+  location: Some(t),
+  stack: [],
   exn: None,
 }
+
+let nonNullableEchoLiteral = t => {
+  message: `String, int, or float literals are not nullable and therefore allowed before a ? operator.`,
+  kind: #Type,
+  exn: None,
+  location: Some(t),
+  stack: [],
+}
+
+let patternNumberMismatch = t => {
+  location: Some(t),
+  stack: [],
+  kind: #Type,
+  message: "The number of patterns here is incorrect.",
+  exn: None,
+}
+
+let tupleSizeMismatch = (t, a, b) => {
+  message: `This is a ${Int.toString(a)}-tuple but expected a ${Int.toString(b)}-tuple.`,
+  kind: #Type,
+  exn: None,
+  location: Some(t),
+  stack: [],
+}
+
+let typeMismatch = (t, a, b, f) => {
+  message: `This pattern is type ${f(b)} but expected type ${f(a)}.`,
+  kind: #Type,
+  exn: None,
+  location: Some(t),
+  stack: [],
+}
+
+let underscoreInConstruct = t => {
+  message: `"_" isn't a valid name.`,
+  kind: #Type,
+  exn: None,
+  location: Some(t),
+  stack: [],
+}
+
+let variableMissingInPattern = (t, v) => {
+  message: `Binding "${v}" must occur in both instances of this pattern.`,
+  kind: #Type,
+  exn: None,
+  location: Some(t),
+  stack: [],
+}
+
+/* Matching errors */
+
+let partialMatch = (t, pat, f) => {
+  message: `This pattern-matching is not exhaustive.
+Here is an example of a case that is not matched:
+${f(pat)}`,
+  kind: #Matching,
+  exn: None,
+  location: Some(t),
+  stack: [],
+}
+
+let unusedCase = (type a, pats, module(M): debuggable<a>) => {
+  let hd = NonEmpty.hd(pats)
+  let t = M.debug(hd)
+  let pat = pats->NonEmpty.toArray->Array.joinWith(", ", M.toString)
+  {
+    message: `This match case is unused:
+${pat}`,
+    kind: #Matching,
+    exn: None,
+    location: Some(t),
+    stack: [],
+  }
+}
+
+/* Compile errors */
 
 let duplicateCompName = name => {
   message: `The template component name "${name}" was used twice. Every component needs a unique name.`,
   location: None,
-  path: [],
+  stack: [],
   kind: #Compile,
   exn: None,
 }
 
 let uncaughtCompileError = (e, ~name) => {
-  message: `An exception was thrown while compiling this template. This is probably due to malformed input.`,
+  message: `An exception was thrown while compiling template "${name}." This is probably due to malformed input.`,
   location: None,
-  path: [Js.Json.string(name)],
+  stack: [],
   kind: #Compile,
   exn: Some(AnyExn(e)),
 }
 
 /* Render errors */
 
-let jsonTaggedTToString = (x: Js.Json.tagged_t) =>
-  switch x {
-  | JSONTrue | JSONFalse => "boolean"
-  | JSONNull => "null"
-  | JSONString(_) => "string"
-  | JSONNumber(_) => "number"
-  | JSONArray(_) => "array"
-  | JSONObject(_) => "object"
-  }
-
-let patternTypeMismatch = (~data, ~pattern, ~stack) => {
-  let data = jsonTaggedTToString(data)
-  let type_ = T.Ast_Pattern.toString(pattern)
-  {
-    message: `This pattern is type ${type_} but the data is type ${data}.`,
-    kind: #Type,
-    location: Some(location(T.Ast_Pattern.toLocation(pattern))),
-    path: stackToPath(stack),
-    exn: None,
-  }
-}
-
-let bindingTypeMismatch = (~data, ~pattern, ~binding, ~stack) => {
-  let data = jsonTaggedTToString(data)
-  let p = T.Ast_Pattern.toString(pattern)
-  {
-    message: `"${binding}" is type ${p} but the data is type ${data}.`,
-    kind: #Type,
-    location: Some(location(T.Ast_Pattern.toLocation(pattern))),
-    path: stackToPath(stack),
-    exn: None,
-  }
-}
-
-let nameBoundMultipleTimes = (~loc, ~binding, ~stack) => {
-  message: `"${binding}" is bound multiple times in this pattern.`,
-  kind: #Pattern,
-  location: Some(location(loc)),
-  path: stackToPath(stack),
-  exn: None,
-}
-
-let noMatchFound = (~loc, ~stack) => {
-  location: Some(location(loc)),
-  path: stackToPath(stack),
-  kind: #Pattern,
-  message: "None of the patterns match the data. Consider a catch-all case to avoid this.",
-  exn: None,
-}
-
-let patternNumberMismatch = (~loc, ~stack) => {
-  location: Some(location(loc)),
-  path: stackToPath(stack),
-  kind: #Pattern,
-  message: "The number of patterns does not match the number of data.",
-  exn: None,
-}
-
-let badEchoType = (~loc, ~binding, ~type_, ~stack) => {
-  let type_ = jsonTaggedTToString(type_)
-  {
-    location: Some(location(loc)),
-    path: stackToPath(stack),
-    kind: #Render,
-    message: `"${binding}" is type ${type_}. I can only echo strings and numbers.`,
-    exn: None,
-  }
-}
-
-let bindingDoesNotExist = (~loc, ~binding, ~stack) => {
-  location: Some(location(loc)),
-  path: stackToPath(stack),
-  kind: #Render,
-  message: `Binding "${binding}" does not exist.`,
-  exn: None,
-}
-
-let childDoesNotExist = (~loc, ~child, ~stack) => {
-  location: Some(location(loc)),
-  path: stackToPath(stack),
-  kind: #Render,
-  message: `Template child "${child}" does not exist.`,
-  exn: None,
-}
-
-let badMapType = (~loc, ~binding, ~type_, ~stack) => {
-  let type_ = jsonTaggedTToString(type_)
-  {
-    location: Some(location(loc)),
-    path: stackToPath(stack),
-    kind: #Type,
-    message: `"${binding}" is a ${type_}. I can only map arrays.`,
-    exn: None,
-  }
-}
-
-let uncaughtComponentError = (e, ~stack) => {
-  message: `An exception was thrown while rendering a template component.`,
+let customError = message => {
+  message: `A template function raised this error:
+${message}`,
   location: None,
-  path: stackToPath(stack),
+  stack: [],
+  kind: #Render,
+  exn: None,
+}
+
+let json = j =>
+  switch Js.Json.classify(j) {
+  | JSONFalse => "JSON false"
+  | JSONTrue => "JSON true"
+  | JSONNull => "JSON null"
+  | JSONString(_) => "JSON string"
+  | JSONNumber(_) => "JSON number"
+  | JSONObject(_) => "JSON object"
+  | JSONArray(_) => "JSON array"
+  }
+
+let decodeError = (~stack, a, b, f) => {
+  let a = f(a)
+  let b = json(b)
+  {
+    message: `This input is type "${b}", which does not match the template's required type, ${a}.`,
+    kind: #Render,
+    exn: None,
+    location: None,
+    stack: List.toArray(stack)->Array.reverse,
+  }
+}
+
+let decodeErrorMissingKey = (~stack, k) => {
+  message: `Input is missing JSON object key "${k}" which is required.`,
+  kind: #Render,
+  exn: None,
+  location: None,
+  stack: List.toArray(stack)->Array.reverse,
+}
+
+let uncaughtComponentError = (t, ~name, ~stack, e) => {
+  message: `Template component "${name}" threw an exception.`,
+  location: Some(t),
+  stack: List.toArray(stack),
   kind: #Render,
   exn: Some(AnyExn(e)),
 }
 
-let customError = (message, ~stack) => {
-  message: message,
-  location: None,
-  path: stackToPath(stack),
-  kind: #Render,
-  exn: None,
+/* Other errors */
+
+let cyclicDependency = (t, ~stack) => {
+  let stack = List.toArray(stack)->Array.reverse->Array.joinWith(" -> ", s => s)
+  {
+    message: `Cyclic dependency detected:
+${stack}`,
+    kind: #Compile,
+    location: Some(t),
+    stack: [],
+    exn: None,
+  }
+}
+
+let missingComponent = (t, a) => {
+  let name' = switch t.name {
+  | "" => "<root>"
+  | s => s
+  }
+  {
+    message: `Template component "${a}" is missing, which is required by "${name'}."`,
+    kind: #Compile,
+    exn: None,
+    location: Some(t),
+    stack: [],
+  }
 }

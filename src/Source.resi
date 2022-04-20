@@ -1,33 +1,36 @@
 /**
-   Copyright 2021 John Jackson
+  Copyright (c) 2022 John Jackson.
 
-   Licensed under the Apache License, Version 2.0 (the "License");
-   you may not use this file except in compliance with the License.
-   You may obtain a copy of the License at
-
-       http://www.apache.org/licenses/LICENSE-2.0
-
-   Unless required by applicable law or agreed to in writing, software
-   distributed under the License is distributed on an "AS IS" BASIS,
-   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-   See the License for the specific language governing permissions and
-   limitations under the License.
+  This Source Code Form is subject to the terms of the Mozilla Public
+  License, v. 2.0. If a copy of the MPL was not distributed with this
+  file, You can obtain one at http://mozilla.org/MPL/2.0/.
 */
 
-open Acutis_Types
+module type Env = {
+  type t
+  type e
+  let return: (. string) => t
+  /* return is a reserved word in JavaScript. */
+  let return_: (. string) => t
+  let error: (. string) => t
+  let error_internal: (. array<Debug.error>) => t
+  let render: (. Belt.MutableQueue.t<t>) => t
+  let try_: (. (. unit) => t, (. e) => t) => t
+  let map: (. t, string => string) => t
+  let flatmap: (. t, string => t) => t
+}
 
-type stringFunc<'a> = ast<'a> => template<'a>
+type env<'a> = module(Env with type t = 'a)
 
-type t<'a> =
-  private
-  | String({name: string, src: string})
-  | Func({name: string, f: template<'a>})
-  | StringFunc({name: string, src: string, f: stringFunc<'a>})
+type fnU<'a> = (. env<'a>, Js.Dict.t<Js.Json.t>, Js.Dict.t<'a>) => 'a
 
-let string: (~name: string, string) => t<'a>
+type fn<'a> = (env<'a>, Js.Dict.t<Js.Json.t>, Js.Dict.t<'a>) => 'a
 
-let func: (~name: string, template<'a>) => t<'a>
+type t<'a, 'b> =
+  | Acutis(string, 'a)
+  | Function(string, Typescheme.t, Typescheme.Child.t, 'b)
 
-let funcWithString: (~name: string, string, stringFunc<'a>) => t<'a>
-
-let name: t<_> => string
+let src: (~name: string, 'a) => t<'a, 'b>
+let fnU: (~name: string, Typescheme.t, Typescheme.Child.t, fnU<'b>) => t<'a, fnU<'b>>
+// fn is not a reserved word in JavaScript, ReScript, or OCaml.
+let fn: (~name: string, Typescheme.t, Typescheme.Child.t, fn<'b>) => t<'a, fnU<'b>>

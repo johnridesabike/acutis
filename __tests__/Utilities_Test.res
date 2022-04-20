@@ -1,33 +1,25 @@
 /**
-   Copyright 2021 John Jackson
+  Copyright (c) 2022 John Jackson.
 
-   Licensed under the Apache License, Version 2.0 (the "License");
-   you may not use this file except in compliance with the License.
-   You may obtain a copy of the License at
-
-       http://www.apache.org/licenses/LICENSE-2.0
-
-   Unless required by applicable law or agreed to in writing, software
-   distributed under the License is distributed on an "AS IS" BASIS,
-   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-   See the License for the specific language governing permissions and
-   limitations under the License.
+  This Source Code Form is subject to the terms of the Mozilla Public
+  License, v. 2.0. If a copy of the MPL was not distributed with this
+  file, You can obtain one at http://mozilla.org/MPL/2.0/.
 */
 open TestFramework
 
-let emptyComponents = Compile.Components.make([])->Result.getExn
+let emptyComponents = Compile.Components.empty()
 
 describe("Result", ({test, _}) => {
   test("getOrElse", ({expect, _}) => {
-    let good = Source.string(~name="Good", "{{ x }}")->Compile.make(emptyComponents)
-    let bad = Source.string(~name="Bad", "{{")->Compile.make(emptyComponents)
+    let good = Compile.make(~name="Good", "{{ x }}", emptyComponents)
+    let bad = Compile.make(~name="Bad", "{{", emptyComponents)
     let getOrElse = x => Result.getOrElse(x, _ => #error)
     expect.value(good->Result.map(_ => #noerror)->getOrElse).toEqual(#noerror)
     expect.value(bad->Result.map(_ => #noerror)->getOrElse).toEqual(#error)
   })
 
   test("getExn", ({expect, _}) => {
-    let bad = Source.string(~name="Bad", "{{")->Compile.make(emptyComponents)
+    let bad = Compile.make(~name="Bad", "{{", emptyComponents)
     expect.value(
       switch Result.getExn(bad) {
       | exception Not_found => #error

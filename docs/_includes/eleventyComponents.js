@@ -1,60 +1,78 @@
 /**
- *    Copyright 2021 John Jackson
- *
- *   Licensed under the Apache License, Version 2.0 (the "License");
- *   you may not use this file except in compliance with the License.
- *   You may obtain a copy of the License at
- *
- *       http://www.apache.org/licenses/LICENSE-2.0
- *
- *   Unless required by applicable law or agreed to in writing, software
- *   distributed under the License is distributed on an "AS IS" BASIS,
- *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *   See the License for the specific language governing permissions and
- *   limitations under the License.
- */
+  Copyright (c) 2022 John Jackson.
 
-const { Source } = require("../../");
+  This Source Code Form is subject to the terms of the Mozilla Public
+  License, v. 2.0. If a copy of the MPL was not distributed with this
+  file, You can obtain one at http://mozilla.org/MPL/2.0/.
+*/
+
+const { Source, Typescheme } = require("../../");
 const site = require("../_data/site");
 
 module.exports = [
-  Source.func("Log", (env, props, _children) => {
-    console.log(props);
-    return env.return("");
-  }),
-  Source.func("Debugger", (env, props, children) => {
-    debugger;
-    return env.return("");
-  }),
-  Source.funcWithString(
+  Source.fn(
+    "Log",
+    Typescheme.make([["val", Typescheme.unknown()]]),
+    Typescheme.Child.make([]),
+    (Env, props, _children) => {
+      console.log(props);
+      return Env.return_("");
+    }
+  ),
+  Source.fn(
+    "Debugger",
+    Typescheme.make([["val", Typescheme.unknown()]]),
+    Typescheme.Child.make([]),
+    (Env, _props, _children) => {
+      debugger;
+      return Env.return_("");
+    }
+  ),
+  Source.fn(
     "Footer",
-    `<footer class="footer">
-  <p>
-    Published in {{ year }} by
-    {%~ match link with null ~%} {{ name }}
-    {%~ with link %} <a href="{{ link }}">{{ name }}</a>
-    {%~ /match ~%}
-    .
-  </p>
-  <p class="footer__license">
-    <a href="{{ siteUrl }}/license/">View the license</a>.
-  </p>
-</footer>
-`,
-    (ast) => (env, props, children) => {
+    Typescheme.make([
+      ["year", Typescheme.nullable(Typescheme.string())],
+      ["link", Typescheme.nullable(Typescheme.string())],
+      ["name", Typescheme.string()],
+      ["siteUrl", Typescheme.string()],
+    ]),
+    Typescheme.Child.make([]),
+    (Env, props, _children) => {
       if (!props.year) {
         props.year = new Date().getFullYear();
       }
-      return env.render(ast, props, children);
+      var link;
+      if (props.link == null) {
+        link = props.name;
+      } else {
+        link = `<a href="${props.link}">${props.name}</a>`;
+      }
+      return Env.return_(`
+        <footer class="footer">
+          <p>
+            Published in ${props.year} by ${link}.
+          </p>
+          <p class="footer__license">
+            <a href="${props.siteUrl}/license/">View the license</a>.
+          </p>
+        </footer>`);
     }
   ),
-  Source.funcWithString(
+  Source.fn(
     "Link",
-    `<a href="{{ href }}" aria-current="{{ current }}">{{ Children }}</a>`,
-    (ast) => (env, { path, page }, children) => {
+    Typescheme.make([
+      ["path", Typescheme.string()],
+      ["page", Typescheme.record([["url", Typescheme.string()]])],
+    ]),
+    Typescheme.Child.make([Typescheme.Child.child("Children")]),
+    (Env, { path, page }, { Children }) => {
       const current = path === page.url ? "true" : "false";
       const href = site.url + path;
-      return env.render(ast, { href, current }, children);
+      return Env.map(
+        Children,
+        (Children) =>
+          `<a href="${href}" aria-current="${current}">${Children}</a>`
+      );
     }
   ),
 ];

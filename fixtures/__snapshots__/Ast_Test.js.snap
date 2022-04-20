@@ -4,564 +4,1015 @@ exports[`Lexer Tokens are generated correctly 1`] = `
 Array [
   Object {
     "TAG": 0,
-    "_0": 0,
+    "_0": Object {
+      "char": 0,
+      "name": "",
+    },
     "_1": "
 ",
   },
   Object {
-    "TAG": 14,
-    "_0": 4,
+    "TAG": 19,
+    "_0": Object {
+      "char": 4,
+      "name": "",
+    },
     "_1": "Abc",
   },
   Object {
-    "TAG": 18,
-    "_0": 8,
+    "TAG": 23,
+    "_0": Object {
+      "char": 8,
+      "name": "",
+    },
     "_1": "d",
   },
   Object {
-    "TAG": 18,
-    "_0": 10,
+    "TAG": 23,
+    "_0": Object {
+      "char": 10,
+      "name": "",
+    },
     "_1": "e",
   },
   Object {
-    "TAG": 17,
-    "_0": 11,
+    "TAG": 22,
+    "_0": Object {
+      "char": 11,
+      "name": "",
+    },
   },
   Object {
-    "TAG": 16,
-    "_0": 12,
+    "TAG": 21,
+    "_0": Object {
+      "char": 12,
+      "name": "",
+    },
   },
   Object {
     "TAG": 0,
-    "_0": 15,
+    "_0": Object {
+      "char": 15,
+      "name": "",
+    },
     "_1": " ",
   },
   Object {
-    "TAG": 22,
-    "_0": 18,
+    "TAG": 29,
+    "_0": Object {
+      "char": 18,
+      "name": "",
+    },
   },
   Object {
     "TAG": 2,
-    "_0": 19,
+    "_0": Object {
+      "char": 19,
+      "name": "",
+    },
     "_1": "f",
   },
   Object {
     "TAG": 0,
-    "_0": 25,
+    "_0": Object {
+      "char": 25,
+      "name": "",
+    },
     "_1": " ",
   },
   Object {
-    "TAG": 15,
-    "_0": 28,
+    "TAG": 20,
+    "_0": Object {
+      "char": 28,
+      "name": "",
+    },
   },
   Object {
-    "TAG": 16,
-    "_0": 29,
+    "TAG": 21,
+    "_0": Object {
+      "char": 29,
+      "name": "",
+    },
   },
   Object {
-    "TAG": 15,
-    "_0": 31,
+    "TAG": 20,
+    "_0": Object {
+      "char": 31,
+      "name": "",
+    },
   },
   Object {
     "TAG": 0,
-    "_0": 34,
+    "_0": Object {
+      "char": 34,
+      "name": "",
+    },
     "_1": "
 ",
   },
   Object {
-    "TAG": 18,
-    "_0": 38,
+    "TAG": 23,
+    "_0": Object {
+      "char": 38,
+      "name": "",
+    },
     "_1": "match",
   },
   Object {
-    "TAG": 18,
-    "_0": 44,
+    "TAG": 23,
+    "_0": Object {
+      "char": 44,
+      "name": "",
+    },
     "_1": "g",
   },
   Object {
-    "TAG": 18,
-    "_0": 46,
+    "TAG": 23,
+    "_0": Object {
+      "char": 46,
+      "name": "",
+    },
     "_1": "with",
   },
   Object {
-    "TAG": 11,
-    "_0": 51,
+    "TAG": 12,
+    "_0": Object {
+      "char": 51,
+      "name": "",
+    },
   },
   Object {
-    "TAG": 18,
-    "_0": 52,
+    "TAG": 23,
+    "_0": Object {
+      "char": 52,
+      "name": "",
+    },
     "_1": "h",
   },
   Object {
+    "TAG": 9,
+    "_0": Object {
+      "char": 53,
+      "name": "",
+    },
+  },
+  Object {
+    "TAG": 5,
+    "_0": Object {
+      "char": 55,
+      "name": "",
+    },
+  },
+  Object {
     "TAG": 8,
-    "_0": 53,
+    "_0": Object {
+      "char": 59,
+      "name": "",
+    },
   },
   Object {
-    "TAG": 4,
-    "_0": 55,
-  },
-  Object {
-    "TAG": 7,
-    "_0": 59,
-  },
-  Object {
-    "TAG": 18,
-    "_0": 61,
+    "TAG": 23,
+    "_0": Object {
+      "char": 61,
+      "name": "",
+    },
     "_1": "i",
   },
   Object {
-    "TAG": 8,
-    "_0": 62,
-  },
-  Object {
     "TAG": 9,
-    "_0": 64,
-  },
-  Object {
-    "TAG": 2,
-    "_0": 65,
-    "_1": "j",
+    "_0": Object {
+      "char": 62,
+      "name": "",
+    },
   },
   Object {
     "TAG": 10,
-    "_0": 68,
+    "_0": Object {
+      "char": 64,
+      "name": "",
+    },
   },
   Object {
-    "TAG": 7,
-    "_0": 69,
+    "TAG": 2,
+    "_0": Object {
+      "char": 65,
+      "name": "",
+    },
+    "_1": "j",
   },
   Object {
-    "TAG": 18,
-    "_0": 71,
+    "TAG": 11,
+    "_0": Object {
+      "char": 68,
+      "name": "",
+    },
+  },
+  Object {
+    "TAG": 8,
+    "_0": Object {
+      "char": 69,
+      "name": "",
+    },
+  },
+  Object {
+    "TAG": 23,
+    "_0": Object {
+      "char": 71,
+      "name": "",
+    },
     "_1": "k",
   },
   Object {
-    "TAG": 12,
-    "_0": 72,
+    "TAG": 13,
+    "_0": Object {
+      "char": 72,
+      "name": "",
+    },
   },
   Object {
     "TAG": 0,
-    "_0": 76,
+    "_0": Object {
+      "char": 76,
+      "name": "",
+    },
     "_1": "
   ",
   },
   Object {
-    "TAG": 22,
-    "_0": 81,
+    "TAG": 29,
+    "_0": Object {
+      "char": 81,
+      "name": "",
+    },
   },
   Object {
-    "TAG": 18,
-    "_0": 82,
+    "TAG": 23,
+    "_0": Object {
+      "char": 82,
+      "name": "",
+    },
     "_1": "k",
   },
   Object {
     "TAG": 0,
-    "_0": 86,
+    "_0": Object {
+      "char": 86,
+      "name": "",
+    },
     "_1": "
 ",
   },
   Object {
-    "TAG": 18,
-    "_0": 90,
+    "TAG": 23,
+    "_0": Object {
+      "char": 90,
+      "name": "",
+    },
     "_1": "with",
   },
   Object {
-    "TAG": 11,
-    "_0": 95,
+    "TAG": 12,
+    "_0": Object {
+      "char": 95,
+      "name": "",
+    },
   },
   Object {
-    "TAG": 18,
-    "_0": 96,
+    "TAG": 23,
+    "_0": Object {
+      "char": 96,
+      "name": "",
+    },
     "_1": "h",
   },
   Object {
+    "TAG": 9,
+    "_0": Object {
+      "char": 97,
+      "name": "",
+    },
+  },
+  Object {
+    "TAG": 6,
+    "_0": Object {
+      "char": 99,
+      "name": "",
+    },
+  },
+  Object {
     "TAG": 8,
-    "_0": 97,
+    "_0": Object {
+      "char": 104,
+      "name": "",
+    },
   },
   Object {
-    "TAG": 5,
-    "_0": 99,
-  },
-  Object {
-    "TAG": 7,
-    "_0": 104,
-  },
-  Object {
-    "TAG": 18,
-    "_0": 106,
+    "TAG": 23,
+    "_0": Object {
+      "char": 106,
+      "name": "",
+    },
     "_1": "l",
   },
   Object {
-    "TAG": 8,
-    "_0": 107,
-  },
-  Object {
     "TAG": 9,
-    "_0": 109,
-  },
-  Object {
-    "TAG": 2,
-    "_0": 110,
-    "_1": "m",
-  },
-  Object {
-    "TAG": 7,
-    "_0": 113,
-  },
-  Object {
-    "TAG": 13,
-    "_0": 115,
-  },
-  Object {
-    "TAG": 18,
-    "_0": 118,
-    "_1": "rest",
+    "_0": Object {
+      "char": 107,
+      "name": "",
+    },
   },
   Object {
     "TAG": 10,
-    "_0": 122,
+    "_0": Object {
+      "char": 109,
+      "name": "",
+    },
   },
   Object {
-    "TAG": 12,
-    "_0": 123,
+    "TAG": 2,
+    "_0": Object {
+      "char": 110,
+      "name": "",
+    },
+    "_1": "m",
+  },
+  Object {
+    "TAG": 8,
+    "_0": Object {
+      "char": 113,
+      "name": "",
+    },
+  },
+  Object {
+    "TAG": 18,
+    "_0": Object {
+      "char": 115,
+      "name": "",
+    },
+  },
+  Object {
+    "TAG": 23,
+    "_0": Object {
+      "char": 118,
+      "name": "",
+    },
+    "_1": "rest",
+  },
+  Object {
+    "TAG": 11,
+    "_0": Object {
+      "char": 122,
+      "name": "",
+    },
+  },
+  Object {
+    "TAG": 13,
+    "_0": Object {
+      "char": 123,
+      "name": "",
+    },
   },
   Object {
     "TAG": 0,
-    "_0": 127,
+    "_0": Object {
+      "char": 127,
+      "name": "",
+    },
     "_1": "
   ",
   },
   Object {
-    "TAG": 19,
-    "_0": 132,
+    "TAG": 24,
+    "_0": Object {
+      "char": 132,
+      "name": "",
+    },
   },
   Object {
-    "TAG": 18,
-    "_0": 134,
+    "TAG": 23,
+    "_0": Object {
+      "char": 134,
+      "name": "",
+    },
     "_1": "map",
   },
   Object {
-    "TAG": 18,
-    "_0": 138,
+    "TAG": 23,
+    "_0": Object {
+      "char": 138,
+      "name": "",
+    },
     "_1": "rest",
   },
   Object {
-    "TAG": 18,
-    "_0": 149,
+    "TAG": 23,
+    "_0": Object {
+      "char": 149,
+      "name": "",
+    },
     "_1": "with",
   },
   Object {
-    "TAG": 11,
-    "_0": 154,
+    "TAG": 12,
+    "_0": Object {
+      "char": 154,
+      "name": "",
+    },
   },
   Object {
-    "TAG": 18,
-    "_0": 155,
+    "TAG": 23,
+    "_0": Object {
+      "char": 155,
+      "name": "",
+    },
     "_1": "n",
   },
   Object {
-    "TAG": 7,
-    "_0": 156,
+    "TAG": 8,
+    "_0": Object {
+      "char": 156,
+      "name": "",
+    },
   },
   Object {
-    "TAG": 18,
-    "_0": 158,
+    "TAG": 23,
+    "_0": Object {
+      "char": 158,
+      "name": "",
+    },
     "_1": "o",
   },
   Object {
-    "TAG": 12,
-    "_0": 159,
+    "TAG": 13,
+    "_0": Object {
+      "char": 159,
+      "name": "",
+    },
   },
   Object {
-    "TAG": 7,
-    "_0": 160,
+    "TAG": 8,
+    "_0": Object {
+      "char": 160,
+      "name": "",
+    },
   },
   Object {
     "TAG": 3,
-    "_0": 162,
+    "_0": Object {
+      "char": 162,
+      "name": "",
+    },
     "_1": 0,
   },
   Object {
-    "TAG": 19,
-    "_0": 164,
+    "TAG": 24,
+    "_0": Object {
+      "char": 164,
+      "name": "",
+    },
   },
   Object {
     "TAG": 0,
-    "_0": 167,
+    "_0": Object {
+      "char": 167,
+      "name": "",
+    },
     "_1": "
     First ",
   },
   Object {
-    "TAG": 22,
-    "_0": 180,
+    "TAG": 29,
+    "_0": Object {
+      "char": 180,
+      "name": "",
+    },
   },
   Object {
-    "TAG": 18,
-    "_0": 181,
+    "TAG": 23,
+    "_0": Object {
+      "char": 181,
+      "name": "",
+    },
     "_1": "n",
   },
   Object {
     "TAG": 0,
-    "_0": 185,
+    "_0": Object {
+      "char": 185,
+      "name": "",
+    },
     "_1": " ",
   },
   Object {
-    "TAG": 22,
-    "_0": 188,
+    "TAG": 29,
+    "_0": Object {
+      "char": 188,
+      "name": "",
+    },
   },
   Object {
-    "TAG": 18,
-    "_0": 189,
+    "TAG": 23,
+    "_0": Object {
+      "char": 189,
+      "name": "",
+    },
     "_1": "o",
   },
   Object {
     "TAG": 0,
-    "_0": 193,
+    "_0": Object {
+      "char": 193,
+      "name": "",
+    },
     "_1": "
     ",
   },
   Object {
-    "TAG": 18,
-    "_0": 201,
+    "TAG": 23,
+    "_0": Object {
+      "char": 201,
+      "name": "",
+    },
     "_1": "with",
   },
   Object {
-    "TAG": 11,
-    "_0": 206,
+    "TAG": 12,
+    "_0": Object {
+      "char": 206,
+      "name": "",
+    },
   },
   Object {
-    "TAG": 18,
-    "_0": 207,
+    "TAG": 23,
+    "_0": Object {
+      "char": 207,
+      "name": "",
+    },
     "_1": "n",
   },
   Object {
-    "TAG": 7,
-    "_0": 208,
+    "TAG": 8,
+    "_0": Object {
+      "char": 208,
+      "name": "",
+    },
   },
   Object {
-    "TAG": 18,
-    "_0": 210,
+    "TAG": 23,
+    "_0": Object {
+      "char": 210,
+      "name": "",
+    },
     "_1": "o",
   },
   Object {
-    "TAG": 12,
-    "_0": 211,
+    "TAG": 13,
+    "_0": Object {
+      "char": 211,
+      "name": "",
+    },
   },
   Object {
-    "TAG": 7,
-    "_0": 212,
+    "TAG": 8,
+    "_0": Object {
+      "char": 212,
+      "name": "",
+    },
   },
   Object {
-    "TAG": 18,
-    "_0": 214,
+    "TAG": 23,
+    "_0": Object {
+      "char": 214,
+      "name": "",
+    },
     "_1": "index",
   },
   Object {
     "TAG": 0,
-    "_0": 222,
+    "_0": Object {
+      "char": 222,
+      "name": "",
+    },
     "_1": "
     ",
   },
   Object {
-    "TAG": 22,
-    "_0": 229,
+    "TAG": 29,
+    "_0": Object {
+      "char": 229,
+      "name": "",
+    },
   },
   Object {
-    "TAG": 18,
-    "_0": 230,
+    "TAG": 23,
+    "_0": Object {
+      "char": 230,
+      "name": "",
+    },
     "_1": "index",
   },
   Object {
     "TAG": 0,
-    "_0": 238,
+    "_0": Object {
+      "char": 238,
+      "name": "",
+    },
     "_1": " ",
   },
   Object {
-    "TAG": 22,
-    "_0": 241,
+    "TAG": 29,
+    "_0": Object {
+      "char": 241,
+      "name": "",
+    },
   },
   Object {
-    "TAG": 18,
-    "_0": 242,
+    "TAG": 23,
+    "_0": Object {
+      "char": 242,
+      "name": "",
+    },
     "_1": "n",
   },
   Object {
     "TAG": 0,
-    "_0": 246,
+    "_0": Object {
+      "char": 246,
+      "name": "",
+    },
     "_1": " ",
   },
   Object {
-    "TAG": 22,
-    "_0": 249,
+    "TAG": 29,
+    "_0": Object {
+      "char": 249,
+      "name": "",
+    },
   },
   Object {
-    "TAG": 18,
-    "_0": 250,
+    "TAG": 23,
+    "_0": Object {
+      "char": 250,
+      "name": "",
+    },
     "_1": "o",
   },
   Object {
     "TAG": 0,
-    "_0": 254,
+    "_0": Object {
+      "char": 254,
+      "name": "",
+    },
     "_1": "
   ",
   },
   Object {
-    "TAG": 19,
-    "_0": 259,
+    "TAG": 24,
+    "_0": Object {
+      "char": 259,
+      "name": "",
+    },
   },
   Object {
-    "TAG": 15,
-    "_0": 261,
+    "TAG": 20,
+    "_0": Object {
+      "char": 261,
+      "name": "",
+    },
   },
   Object {
-    "TAG": 18,
-    "_0": 262,
+    "TAG": 23,
+    "_0": Object {
+      "char": 262,
+      "name": "",
+    },
     "_1": "map",
   },
   Object {
-    "TAG": 19,
-    "_0": 266,
+    "TAG": 24,
+    "_0": Object {
+      "char": 266,
+      "name": "",
+    },
   },
   Object {
     "TAG": 0,
-    "_0": 269,
+    "_0": Object {
+      "char": 269,
+      "name": "",
+    },
     "_1": "
 ",
   },
   Object {
-    "TAG": 15,
-    "_0": 273,
+    "TAG": 20,
+    "_0": Object {
+      "char": 273,
+      "name": "",
+    },
   },
   Object {
-    "TAG": 18,
-    "_0": 274,
+    "TAG": 23,
+    "_0": Object {
+      "char": 274,
+      "name": "",
+    },
     "_1": "match",
   },
   Object {
     "TAG": 0,
-    "_0": 282,
+    "_0": Object {
+      "char": 282,
+      "name": "",
+    },
     "_1": "
 ",
   },
   Object {
-    "TAG": 19,
-    "_0": 285,
+    "TAG": 24,
+    "_0": Object {
+      "char": 285,
+      "name": "",
+    },
   },
   Object {
-    "TAG": 22,
-    "_0": 285,
+    "TAG": 29,
+    "_0": Object {
+      "char": 285,
+      "name": "",
+    },
   },
   Object {
-    "TAG": 3,
-    "_0": 287,
+    "TAG": 4,
+    "_0": Object {
+      "char": 287,
+      "name": "",
+    },
     "_1": -1.5,
   },
   Object {
-    "TAG": 19,
-    "_0": 292,
+    "TAG": 24,
+    "_0": Object {
+      "char": 292,
+      "name": "",
+    },
   },
   Object {
     "TAG": 0,
-    "_0": 295,
+    "_0": Object {
+      "char": 295,
+      "name": "",
+    },
     "_1": "
 { p %
 ",
   },
   Object {
     "TAG": 1,
-    "_0": 304,
+    "_0": Object {
+      "char": 304,
+      "name": "",
+    },
     "_1": " \\" \\\\ ",
   },
   Object {
     "TAG": 0,
-    "_0": 311,
+    "_0": Object {
+      "char": 311,
+      "name": "",
+    },
     "_1": "
 ",
   },
   Object {
     "TAG": 1,
-    "_0": 314,
+    "_0": Object {
+      "char": 314,
+      "name": "",
+    },
     "_1": " nested {* comment *} ",
   },
   Object {
     "TAG": 0,
-    "_0": 338,
+    "_0": Object {
+      "char": 338,
+      "name": "",
+    },
     "_1": "
 ",
   },
   Object {
-    "TAG": 22,
-    "_0": 341,
+    "TAG": 29,
+    "_0": Object {
+      "char": 341,
+      "name": "",
+    },
   },
   Object {
     "TAG": 2,
-    "_0": 342,
+    "_0": Object {
+      "char": 342,
+      "name": "",
+    },
     "_1": " \\\\ ",
   },
   Object {
     "TAG": 0,
-    "_0": 351,
+    "_0": Object {
+      "char": 351,
+      "name": "",
+    },
     "_1": "
 ",
   },
   Object {
-    "TAG": 22,
-    "_0": 354,
+    "TAG": 29,
+    "_0": Object {
+      "char": 354,
+      "name": "",
+    },
   },
   Object {
     "TAG": 2,
-    "_0": 355,
+    "_0": Object {
+      "char": 355,
+      "name": "",
+    },
     "_1": " \\" ",
   },
   Object {
     "TAG": 0,
-    "_0": 364,
+    "_0": Object {
+      "char": 364,
+      "name": "",
+    },
     "_1": "
 ",
   },
   Object {
-    "TAG": 22,
-    "_0": 367,
+    "TAG": 29,
+    "_0": Object {
+      "char": 367,
+      "name": "",
+    },
   },
   Object {
-    "TAG": 18,
-    "_0": 370,
+    "TAG": 23,
+    "_0": Object {
+      "char": 370,
+      "name": "",
+    },
     "_1": "a",
   },
   Object {
     "TAG": 0,
-    "_0": 374,
+    "_0": Object {
+      "char": 374,
+      "name": "",
+    },
     "_1": "
 ",
   },
   Object {
     "TAG": 1,
-    "_0": 377,
+    "_0": Object {
+      "char": 377,
+      "name": "",
+    },
     "_1": " {q*r ",
   },
   Object {
     "TAG": 0,
-    "_0": 385,
+    "_0": Object {
+      "char": 385,
+      "name": "",
+    },
     "_1": "
 ",
   },
   Object {
-    "TAG": 22,
-    "_0": 388,
+    "TAG": 23,
+    "_0": Object {
+      "char": 389,
+      "name": "",
+    },
+    "_1": "match",
+  },
+  Object {
+    "TAG": 23,
+    "_0": Object {
+      "char": 395,
+      "name": "",
+    },
+    "_1": "t",
+  },
+  Object {
+    "TAG": 23,
+    "_0": Object {
+      "char": 397,
+      "name": "",
+    },
+    "_1": "with",
   },
   Object {
     "TAG": 14,
-    "_0": 389,
+    "_0": Object {
+      "char": 402,
+      "name": "",
+    },
+  },
+  Object {
+    "TAG": 4,
+    "_0": Object {
+      "char": 403,
+      "name": "",
+    },
+    "_1": 1.5,
+  },
+  Object {
+    "TAG": 8,
+    "_0": Object {
+      "char": 406,
+      "name": "",
+    },
+  },
+  Object {
+    "TAG": 2,
+    "_0": Object {
+      "char": 408,
+      "name": "",
+    },
+    "_1": "2",
+  },
+  Object {
+    "TAG": 15,
+    "_0": Object {
+      "char": 411,
+      "name": "",
+    },
+  },
+  Object {
+    "TAG": 0,
+    "_0": Object {
+      "char": 415,
+      "name": "",
+    },
+    "_1": "
+  ",
+  },
+  Object {
+    "TAG": 29,
+    "_0": Object {
+      "char": 420,
+      "name": "",
+    },
+  },
+  Object {
+    "TAG": 19,
+    "_0": Object {
+      "char": 421,
+      "name": "",
+    },
     "_1": "S",
   },
   Object {
     "TAG": 0,
-    "_0": 393,
-    "_1": "",
+    "_0": Object {
+      "char": 425,
+      "name": "",
+    },
+    "_1": "
+",
+  },
+  Object {
+    "TAG": 20,
+    "_0": Object {
+      "char": 429,
+      "name": "",
+    },
   },
   Object {
     "TAG": 23,
-    "_0": 393,
+    "_0": Object {
+      "char": 430,
+      "name": "",
+    },
+    "_1": "match",
+  },
+  Object {
+    "TAG": 0,
+    "_0": Object {
+      "char": 438,
+      "name": "",
+    },
+    "_1": "",
+  },
+  Object {
+    "TAG": 30,
+    "_0": Object {
+      "char": 438,
+      "name": "",
+    },
   },
 ]
 `;
@@ -572,177 +1023,223 @@ Array [
     "TAG": 0,
     "_0": "
 ",
-    "_1": 3,
+    "_1": 0,
   },
   Object {
-    "TAG": 4,
-    "children": Array [
-      Array [
-        "G",
-        Object {
-          "TAG": 1,
-          "_0": Array [
-            Object {
-              "TAG": 0,
-              "_0": "
-     h ",
-              "_1": 3,
-            },
-            Object {
-              "TAG": 1,
-              "_0": 55,
-              "_1": Object {
-                "_0": Object {
-                  "TAG": 0,
-                  "_0": 56,
-                  "_1": "i",
-                  "_2": 1,
-                },
-                "_1": Array [],
-              },
-            },
-            Object {
-              "TAG": 0,
-              "_0": " ",
-              "_1": 3,
-            },
-            Object {
-              "TAG": 0,
-              "_0": "
-   ",
-              "_1": 3,
-            },
-          ],
+    "TAG": 5,
+    "_0": Object {
+      "char": 4,
+      "name": "",
+    },
+    "_1": "A",
+    "_2": Object {
+      "h": 3,
+      "k": "c",
+      "l": Object {
+        "h": 1,
+        "k": "b",
+        "l": undefined,
+        "r": undefined,
+        "v": Object {
+          "TAG": 11,
+          "_0": Object {
+            "char": 9,
+            "name": "",
+          },
+          "_1": "b",
         },
-      ],
-      Array [
-        "Children",
-        Object {
+      },
+      "r": Object {
+        "h": 2,
+        "k": "d",
+        "l": undefined,
+        "r": Object {
+          "h": 1,
+          "k": "f",
+          "l": undefined,
+          "r": undefined,
+          "v": Object {
+            "TAG": 1,
+            "_0": Object {
+              "char": 32,
+              "name": "",
+            },
+            "_1": 1,
+          },
+        },
+        "v": Object {
+          "TAG": 2,
+          "_0": Object {
+            "char": 23,
+            "name": "",
+          },
+          "_1": "e",
+        },
+      },
+      "v": Object {
+        "TAG": 3,
+        "_0": Object {
+          "char": 16,
+          "name": "",
+        },
+        "_1": 1,
+      },
+    },
+    "_3": Object {
+      "h": 2,
+      "k": "G",
+      "l": Object {
+        "h": 1,
+        "k": "Children",
+        "l": undefined,
+        "r": undefined,
+        "v": Object {
           "TAG": 1,
-          "_0": Array [
+          "_0": Object {
+            "char": 125,
+            "name": "",
+          },
+          "_1": Array [
             Object {
               "TAG": 0,
               "_0": "
    k
    ",
-              "_1": 3,
+              "_1": 0,
             },
             Object {
-              "TAG": 4,
-              "children": Array [],
-              "f": undefined,
-              "loc": 94,
-              "name": "L",
-              "props": Array [
-                Array [
-                  "m",
-                  Object {
-                    "NAME": "Object",
-                    "VAL": Array [
-                      98,
-                      Array [
-                        Array [
-                          "n",
-                          Object {
-                            "NAME": "Binding",
-                            "VAL": Array [
-                              102,
-                              "o",
-                            ],
-                          },
-                        ],
-                        Array [
-                          "p",
-                          Object {
-                            "NAME": "Array",
-                            "VAL": Array [
-                              108,
-                              Array [
-                                Object {
-                                  "NAME": "Binding",
-                                  "VAL": Array [
-                                    109,
-                                    "q",
-                                  ],
-                                },
-                              ],
-                            ],
-                          },
-                        ],
-                        Array [
-                          "r",
-                          Object {
-                            "NAME": "Binding",
-                            "VAL": Array [
-                              113,
-                              "r",
-                            ],
-                          },
-                        ],
-                      ],
-                    ],
+              "TAG": 5,
+              "_0": Object {
+                "char": 94,
+                "name": "",
+              },
+              "_1": "L",
+              "_2": Object {
+                "h": 1,
+                "k": "m",
+                "l": undefined,
+                "r": undefined,
+                "v": Object {
+                  "TAG": 10,
+                  "_0": Object {
+                    "char": 98,
+                    "name": "",
                   },
-                ],
-              ],
+                  "_1": undefined,
+                  "_2": Object {
+                    "h": 3,
+                    "k": "n",
+                    "l": undefined,
+                    "r": Object {
+                      "h": 2,
+                      "k": "p",
+                      "l": undefined,
+                      "r": Object {
+                        "h": 1,
+                        "k": "r",
+                        "l": undefined,
+                        "r": undefined,
+                        "v": Object {
+                          "TAG": 11,
+                          "_0": Object {
+                            "char": 113,
+                            "name": "",
+                          },
+                          "_1": "r",
+                        },
+                      },
+                      "v": Object {
+                        "TAG": 8,
+                        "_0": Object {
+                          "char": 108,
+                          "name": "",
+                        },
+                        "_1": Array [
+                          Object {
+                            "TAG": 11,
+                            "_0": Object {
+                              "char": 109,
+                              "name": "",
+                            },
+                            "_1": "q",
+                          },
+                        ],
+                        "_2": undefined,
+                      },
+                    },
+                    "v": Object {
+                      "TAG": 11,
+                      "_0": Object {
+                        "char": 102,
+                        "name": "",
+                      },
+                      "_1": "o",
+                    },
+                  },
+                },
+              },
+              "_3": undefined,
             },
             Object {
               "TAG": 0,
               "_0": "
 ",
-              "_1": 3,
+              "_1": 0,
             },
           ],
         },
-      ],
-    ],
-    "f": undefined,
-    "loc": 4,
-    "name": "A",
-    "props": Array [
-      Array [
-        "b",
-        Object {
-          "NAME": "Binding",
-          "VAL": Array [
-            9,
-            "b",
-          ],
+      },
+      "r": undefined,
+      "v": Object {
+        "TAG": 1,
+        "_0": Object {
+          "char": 75,
+          "name": "",
         },
-      ],
-      Array [
-        "c",
-        Object {
-          "NAME": "Number",
-          "VAL": Array [
-            16,
-            1,
-          ],
-        },
-      ],
-      Array [
-        "d",
-        Object {
-          "NAME": "String",
-          "VAL": Array [
-            23,
-            "e",
-          ],
-        },
-      ],
-      Array [
-        "f",
-        Object {
-          "NAME": "True",
-          "VAL": 32,
-        },
-      ],
-    ],
+        "_1": Array [
+          Object {
+            "TAG": 0,
+            "_0": "
+     h ",
+            "_1": 0,
+          },
+          Object {
+            "TAG": 1,
+            "_0": Object {
+              "char": 55,
+              "name": "",
+            },
+            "_1": Array [],
+            "_2": Object {
+              "TAG": 0,
+              "_0": Object {
+                "char": 56,
+                "name": "",
+              },
+              "_1": "i",
+              "_2": 1,
+            },
+          },
+          Object {
+            "TAG": 0,
+            "_0": " ",
+            "_1": 0,
+          },
+          Object {
+            "TAG": 0,
+            "_0": "
+   ",
+            "_1": 0,
+          },
+        ],
+      },
+    },
   },
   Object {
     "TAG": 0,
     "_0": "
 ",
-    "_1": 3,
+    "_1": 0,
   },
 ]
 `;
@@ -753,320 +1250,368 @@ Array [
     "TAG": 0,
     "_0": "
 ",
-    "_1": 3,
+    "_1": 0,
   },
   Object {
     "TAG": 3,
-    "_0": 4,
-    "_1": Object {
-      "NAME": "Binding",
-      "VAL": Array [
-        8,
-        "a",
-      ],
+    "_0": Object {
+      "char": 4,
+      "name": "",
     },
-    "_2": Object {
+    "_1": Object {
+      "TAG": 11,
       "_0": Object {
+        "char": 8,
+        "name": "",
+      },
+      "_1": "a",
+    },
+    "_2": Array [
+      Object {
         "nodes": Array [
           Object {
             "TAG": 0,
             "_0": "
   ",
-            "_1": 3,
+            "_1": 0,
           },
           Object {
             "TAG": 1,
-            "_0": 26,
-            "_1": Object {
-              "_0": Object {
-                "TAG": 0,
-                "_0": 27,
-                "_1": "b",
-                "_2": 1,
-              },
-              "_1": Array [],
-            },
-          },
-          Object {
-            "TAG": 0,
-            "_0": "
-",
-            "_1": 3,
-          },
-        ],
-        "patterns": Object {
-          "_0": Object {
             "_0": Object {
-              "NAME": "Object",
-              "VAL": Array [
-                15,
-                Array [
-                  Array [
-                    "b",
-                    Object {
-                      "NAME": "Binding",
-                      "VAL": Array [
-                        16,
-                        "b",
-                      ],
-                    },
-                  ],
-                ],
-              ],
+              "char": 26,
+              "name": "",
             },
             "_1": Array [],
-          },
-          "_1": Array [],
-        },
-      },
-      "_1": Array [],
-    },
-  },
-  Object {
-    "TAG": 0,
-    "_0": "
-",
-    "_1": 3,
-  },
-  Object {
-    "TAG": 3,
-    "_0": 46,
-    "_1": Object {
-      "NAME": "Binding",
-      "VAL": Array [
-        50,
-        "c",
-      ],
-    },
-    "_2": Object {
-      "_0": Object {
-        "nodes": Array [
-          Object {
-            "TAG": 0,
-            "_0": "
-  ",
-            "_1": 3,
-          },
-          Object {
-            "TAG": 1,
-            "_0": 80,
-            "_1": Object {
-              "_0": Object {
-                "TAG": 0,
-                "_0": 81,
-                "_1": "e",
-                "_2": 1,
-              },
-              "_1": Array [],
-            },
-          },
-          Object {
-            "TAG": 0,
-            "_0": "
-",
-            "_1": 3,
-          },
-        ],
-        "patterns": Object {
-          "_0": Object {
-            "_0": Object {
-              "NAME": "Object",
-              "VAL": Array [
-                60,
-                Array [
-                  Array [
-                    "d",
-                    Object {
-                      "NAME": "True",
-                      "VAL": 64,
-                    },
-                  ],
-                  Array [
-                    "e",
-                    Object {
-                      "NAME": "Binding",
-                      "VAL": Array [
-                        70,
-                        "e",
-                      ],
-                    },
-                  ],
-                ],
-              ],
-            },
-            "_1": Array [],
-          },
-          "_1": Array [],
-        },
-      },
-      "_1": Array [
-        Object {
-          "nodes": Array [
-            Object {
+            "_2": Object {
               "TAG": 0,
-              "_0": "
-  ",
-              "_1": 3,
+              "_0": Object {
+                "char": 27,
+                "name": "",
+              },
+              "_1": "b",
+              "_2": 1,
             },
+          },
+          Object {
+            "TAG": 0,
+            "_0": "
+",
+            "_1": 0,
+          },
+        ],
+        "patterns": Array [
+          Array [
             Object {
-              "TAG": 1,
-              "_0": 115,
-              "_1": Object {
-                "_0": Object {
-                  "TAG": 0,
-                  "_0": 116,
-                  "_1": "f",
-                  "_2": 1,
+              "TAG": 10,
+              "_0": Object {
+                "char": 15,
+                "name": "",
+              },
+              "_1": undefined,
+              "_2": Object {
+                "h": 1,
+                "k": "b",
+                "l": undefined,
+                "r": undefined,
+                "v": Object {
+                  "TAG": 11,
+                  "_0": Object {
+                    "char": 16,
+                    "name": "",
+                  },
+                  "_1": "b",
                 },
-                "_1": Array [],
               },
-            },
-            Object {
-              "TAG": 0,
-              "_0": "
-",
-              "_1": 3,
             },
           ],
-          "patterns": Object {
-            "_0": Object {
-              "_0": Object {
-                "NAME": "Object",
-                "VAL": Array [
-                  94,
-                  Array [
-                    Array [
-                      "d",
-                      Object {
-                        "NAME": "False",
-                        "VAL": 98,
-                      },
-                    ],
-                    Array [
-                      "f",
-                      Object {
-                        "NAME": "Binding",
-                        "VAL": Array [
-                          105,
-                          "f",
-                        ],
-                      },
-                    ],
-                  ],
-                ],
-              },
-              "_1": Array [],
-            },
-            "_1": Array [],
-          },
-        },
-      ],
-    },
+        ],
+      },
+    ],
   },
   Object {
     "TAG": 0,
     "_0": "
 ",
-    "_1": 3,
+    "_1": 0,
   },
   Object {
     "TAG": 3,
-    "_0": 135,
-    "_1": Object {
-      "NAME": "Binding",
-      "VAL": Array [
-        139,
-        "g",
-      ],
+    "_0": Object {
+      "char": 46,
+      "name": "",
     },
-    "_2": Object {
+    "_1": Object {
+      "TAG": 11,
       "_0": Object {
+        "char": 50,
+        "name": "",
+      },
+      "_1": "c",
+    },
+    "_2": Array [
+      Object {
         "nodes": Array [
           Object {
             "TAG": 0,
             "_0": "
   ",
-            "_1": 3,
+            "_1": 0,
           },
           Object {
             "TAG": 1,
-            "_0": 164,
-            "_1": Object {
+            "_0": Object {
+              "char": 80,
+              "name": "",
+            },
+            "_1": Array [],
+            "_2": Object {
+              "TAG": 0,
               "_0": Object {
-                "TAG": 0,
-                "_0": 165,
-                "_1": "index",
-                "_2": 1,
+                "char": 81,
+                "name": "",
               },
-              "_1": Array [],
+              "_1": "e",
+              "_2": 1,
+            },
+          },
+          Object {
+            "TAG": 0,
+            "_0": "
+",
+            "_1": 0,
+          },
+        ],
+        "patterns": Array [
+          Array [
+            Object {
+              "TAG": 10,
+              "_0": Object {
+                "char": 60,
+                "name": "",
+              },
+              "_1": undefined,
+              "_2": Object {
+                "h": 2,
+                "k": "d",
+                "l": undefined,
+                "r": Object {
+                  "h": 1,
+                  "k": "e",
+                  "l": undefined,
+                  "r": undefined,
+                  "v": Object {
+                    "TAG": 11,
+                    "_0": Object {
+                      "char": 70,
+                      "name": "",
+                    },
+                    "_1": "e",
+                  },
+                },
+                "v": Object {
+                  "TAG": 1,
+                  "_0": Object {
+                    "char": 64,
+                    "name": "",
+                  },
+                  "_1": 1,
+                },
+              },
+            },
+          ],
+        ],
+      },
+      Object {
+        "nodes": Array [
+          Object {
+            "TAG": 0,
+            "_0": "
+  ",
+            "_1": 0,
+          },
+          Object {
+            "TAG": 1,
+            "_0": Object {
+              "char": 115,
+              "name": "",
+            },
+            "_1": Array [],
+            "_2": Object {
+              "TAG": 0,
+              "_0": Object {
+                "char": 116,
+                "name": "",
+              },
+              "_1": "f",
+              "_2": 1,
+            },
+          },
+          Object {
+            "TAG": 0,
+            "_0": "
+",
+            "_1": 0,
+          },
+        ],
+        "patterns": Array [
+          Array [
+            Object {
+              "TAG": 10,
+              "_0": Object {
+                "char": 94,
+                "name": "",
+              },
+              "_1": undefined,
+              "_2": Object {
+                "h": 2,
+                "k": "d",
+                "l": undefined,
+                "r": Object {
+                  "h": 1,
+                  "k": "f",
+                  "l": undefined,
+                  "r": undefined,
+                  "v": Object {
+                    "TAG": 11,
+                    "_0": Object {
+                      "char": 105,
+                      "name": "",
+                    },
+                    "_1": "f",
+                  },
+                },
+                "v": Object {
+                  "TAG": 1,
+                  "_0": Object {
+                    "char": 98,
+                    "name": "",
+                  },
+                  "_1": 0,
+                },
+              },
+            },
+          ],
+        ],
+      },
+    ],
+  },
+  Object {
+    "TAG": 0,
+    "_0": "
+",
+    "_1": 0,
+  },
+  Object {
+    "TAG": 3,
+    "_0": Object {
+      "char": 135,
+      "name": "",
+    },
+    "_1": Object {
+      "TAG": 11,
+      "_0": Object {
+        "char": 139,
+        "name": "",
+      },
+      "_1": "g",
+    },
+    "_2": Array [
+      Object {
+        "nodes": Array [
+          Object {
+            "TAG": 0,
+            "_0": "
+  ",
+            "_1": 0,
+          },
+          Object {
+            "TAG": 1,
+            "_0": Object {
+              "char": 160,
+              "name": "",
+            },
+            "_1": Array [],
+            "_2": Object {
+              "TAG": 0,
+              "_0": Object {
+                "char": 161,
+                "name": "",
+              },
+              "_1": "i",
+              "_2": 1,
             },
           },
           Object {
             "TAG": 0,
             "_0": " ",
-            "_1": 3,
+            "_1": 0,
           },
           Object {
             "TAG": 1,
-            "_0": 176,
-            "_1": Object {
+            "_0": Object {
+              "char": 168,
+              "name": "",
+            },
+            "_1": Array [],
+            "_2": Object {
+              "TAG": 0,
               "_0": Object {
-                "TAG": 0,
-                "_0": 177,
-                "_1": "g",
-                "_2": 1,
+                "char": 169,
+                "name": "",
               },
-              "_1": Array [],
+              "_1": "j",
+              "_2": 1,
             },
           },
           Object {
             "TAG": 0,
             "_0": "
 ",
-            "_1": 3,
+            "_1": 0,
           },
         ],
-        "patterns": Object {
-          "_0": Object {
-            "_0": Object {
-              "NAME": "Object",
-              "VAL": Array [
-                146,
-                Array [
-                  Array [
-                    "h",
-                    Object {
-                      "NAME": "Binding",
-                      "VAL": Array [
-                        147,
-                        "h",
-                      ],
-                    },
-                  ],
-                ],
-              ],
-            },
-            "_1": Array [
-              Object {
-                "NAME": "Binding",
-                "VAL": Array [
-                  151,
-                  "index",
-                ],
+        "patterns": Array [
+          Array [
+            Object {
+              "TAG": 10,
+              "_0": Object {
+                "char": 146,
+                "name": "",
               },
-            ],
-          },
-          "_1": Array [],
-        },
+              "_1": undefined,
+              "_2": Object {
+                "h": 1,
+                "k": "h",
+                "l": undefined,
+                "r": undefined,
+                "v": Object {
+                  "TAG": 11,
+                  "_0": Object {
+                    "char": 147,
+                    "name": "",
+                  },
+                  "_1": "h",
+                },
+              },
+            },
+            Object {
+              "TAG": 11,
+              "_0": Object {
+                "char": 151,
+                "name": "",
+              },
+              "_1": "i",
+            },
+          ],
+        ],
       },
-      "_1": Array [],
-    },
+    ],
   },
   Object {
     "TAG": 0,
     "_0": "
 ",
-    "_1": 3,
+    "_1": 0,
   },
 ]
 `;
@@ -1077,224 +1622,336 @@ Array [
     "TAG": 0,
     "_0": "
 ",
-    "_1": 3,
+    "_1": 0,
   },
   Object {
     "TAG": 2,
-    "_0": 4,
-    "_1": Object {
-      "_0": Array [
-        10,
-        "a",
-      ],
-      "_1": Array [],
+    "_0": Object {
+      "char": 4,
+      "name": "",
     },
-    "_2": Object {
-      "_0": Object {
+    "_1": Array [
+      Object {
+        "TAG": 11,
+        "_0": Object {
+          "char": 10,
+          "name": "",
+        },
+        "_1": "a",
+      },
+    ],
+    "_2": Array [
+      Object {
         "nodes": Array [
           Object {
             "TAG": 0,
             "_0": "
   b
 ",
-            "_1": 3,
+            "_1": 0,
           },
         ],
-        "patterns": Object {
-          "_0": Object {
-            "_0": Object {
-              "NAME": "Number",
-              "VAL": Array [
-                20,
-                1,
-              ],
-            },
-            "_1": Array [],
-          },
-          "_1": Array [],
-        },
-      },
-      "_1": Array [
-        Object {
-          "nodes": Array [
+        "patterns": Array [
+          Array [
             Object {
-              "TAG": 0,
-              "_0": "
+              "TAG": 3,
+              "_0": Object {
+                "char": 20,
+                "name": "",
+              },
+              "_1": 1,
+            },
+          ],
+        ],
+      },
+      Object {
+        "nodes": Array [
+          Object {
+            "TAG": 0,
+            "_0": "
   c
 ",
+            "_1": 0,
+          },
+        ],
+        "patterns": Array [
+          Array [
+            Object {
+              "TAG": 3,
+              "_0": Object {
+                "char": 37,
+                "name": "",
+              },
+              "_1": 2,
+            },
+          ],
+          Array [
+            Object {
+              "TAG": 3,
+              "_0": Object {
+                "char": 47,
+                "name": "",
+              },
               "_1": 3,
             },
           ],
-          "patterns": Object {
-            "_0": Object {
-              "_0": Object {
-                "NAME": "Number",
-                "VAL": Array [
-                  37,
-                  2,
-                ],
-              },
-              "_1": Array [],
-            },
-            "_1": Array [
-              Object {
-                "_0": Object {
-                  "NAME": "Number",
-                  "VAL": Array [
-                    47,
-                    3,
-                  ],
-                },
-                "_1": Array [],
-              },
-            ],
-          },
-        },
-        Object {
-          "nodes": Array [
-            Object {
-              "TAG": 0,
-              "_0": "
+        ],
+      },
+      Object {
+        "nodes": Array [
+          Object {
+            "TAG": 0,
+            "_0": "
   d
 ",
-              "_1": 3,
+            "_1": 0,
+          },
+        ],
+        "patterns": Array [
+          Array [
+            Object {
+              "TAG": 3,
+              "_0": Object {
+                "char": 64,
+                "name": "",
+              },
+              "_1": 4,
             },
           ],
-          "patterns": Object {
-            "_0": Object {
-              "_0": Object {
-                "NAME": "Number",
-                "VAL": Array [
-                  64,
-                  4,
-                ],
-              },
-              "_1": Array [],
-            },
-            "_1": Array [],
-          },
-        },
-      ],
-    },
+        ],
+      },
+    ],
   },
   Object {
     "TAG": 0,
     "_0": "
 ",
-    "_1": 3,
+    "_1": 0,
   },
   Object {
     "TAG": 2,
-    "_0": 89,
-    "_1": Object {
-      "_0": Array [
-        95,
-        "e",
-      ],
-      "_1": Array [
-        Array [
-          98,
-          "f",
-        ],
-      ],
+    "_0": Object {
+      "char": 89,
+      "name": "",
     },
-    "_2": Object {
-      "_0": Object {
+    "_1": Array [
+      Object {
+        "TAG": 11,
+        "_0": Object {
+          "char": 95,
+          "name": "",
+        },
+        "_1": "e",
+      },
+      Object {
+        "TAG": 11,
+        "_0": Object {
+          "char": 98,
+          "name": "",
+        },
+        "_1": "f",
+      },
+    ],
+    "_2": Array [
+      Object {
         "nodes": Array [
           Object {
             "TAG": 0,
             "_0": "
   ",
-            "_1": 3,
+            "_1": 0,
           },
           Object {
             "TAG": 1,
-            "_0": 125,
-            "_1": Object {
+            "_0": Object {
+              "char": 125,
+              "name": "",
+            },
+            "_1": Array [],
+            "_2": Object {
+              "TAG": 0,
               "_0": Object {
-                "TAG": 0,
-                "_0": 126,
-                "_1": "g",
-                "_2": 1,
+                "char": 126,
+                "name": "",
               },
-              "_1": Array [],
+              "_1": "g",
+              "_2": 1,
             },
           },
           Object {
             "TAG": 0,
             "_0": "
 ",
-            "_1": 3,
+            "_1": 0,
           },
         ],
-        "patterns": Object {
-          "_0": Object {
-            "_0": Object {
-              "NAME": "True",
-              "VAL": 108,
-            },
-            "_1": Array [
-              Object {
-                "NAME": "Object",
-                "VAL": Array [
-                  114,
-                  Array [
-                    Array [
-                      "g",
-                      Object {
-                        "NAME": "Binding",
-                        "VAL": Array [
-                          115,
-                          "g",
-                        ],
-                      },
-                    ],
-                  ],
-                ],
-              },
-            ],
-          },
-          "_1": Array [],
-        },
-      },
-      "_1": Array [
-        Object {
-          "nodes": Array [
+        "patterns": Array [
+          Array [
             Object {
-              "TAG": 0,
-              "_0": "
-  h
-",
-              "_1": 3,
+              "TAG": 1,
+              "_0": Object {
+                "char": 108,
+                "name": "",
+              },
+              "_1": 1,
+            },
+            Object {
+              "TAG": 10,
+              "_0": Object {
+                "char": 114,
+                "name": "",
+              },
+              "_1": undefined,
+              "_2": Object {
+                "h": 1,
+                "k": "g",
+                "l": undefined,
+                "r": undefined,
+                "v": Object {
+                  "TAG": 11,
+                  "_0": Object {
+                    "char": 115,
+                    "name": "",
+                  },
+                  "_1": "g",
+                },
+              },
             },
           ],
-          "patterns": Object {
-            "_0": Object {
-              "_0": Object {
-                "NAME": "False",
-                "VAL": 139,
-              },
-              "_1": Array [
-                Object {
-                  "NAME": "Binding",
-                  "VAL": Array [
-                    146,
-                    "_",
-                  ],
-                },
-              ],
-            },
-            "_1": Array [],
+        ],
+      },
+      Object {
+        "nodes": Array [
+          Object {
+            "TAG": 0,
+            "_0": "
+  h
+",
+            "_1": 0,
           },
-        },
-      ],
-    },
+        ],
+        "patterns": Array [
+          Array [
+            Object {
+              "TAG": 1,
+              "_0": Object {
+                "char": 139,
+                "name": "",
+              },
+              "_1": 0,
+            },
+            Object {
+              "TAG": 11,
+              "_0": Object {
+                "char": 146,
+                "name": "",
+              },
+              "_1": "_",
+            },
+          ],
+        ],
+      },
+    ],
   },
   Object {
     "TAG": 0,
     "_0": "
 ",
-    "_1": 3,
+    "_1": 0,
+  },
+  Object {
+    "TAG": 2,
+    "_0": Object {
+      "char": 171,
+      "name": "",
+    },
+    "_1": Array [
+      Object {
+        "TAG": 11,
+        "_0": Object {
+          "char": 177,
+          "name": "",
+        },
+        "_1": "tuple",
+      },
+      Object {
+        "TAG": 11,
+        "_0": Object {
+          "char": 184,
+          "name": "",
+        },
+        "_1": "dict",
+      },
+    ],
+    "_2": Array [
+      Object {
+        "nodes": Array [
+          Object {
+            "TAG": 0,
+            "_0": "
+  m
+",
+            "_1": 0,
+          },
+        ],
+        "patterns": Array [
+          Array [
+            Object {
+              "TAG": 5,
+              "_0": Object {
+                "char": 194,
+                "name": "",
+              },
+              "_1": Array [
+                Object {
+                  "TAG": 11,
+                  "_0": Object {
+                    "char": 195,
+                    "name": "",
+                  },
+                  "_1": "i",
+                },
+                Object {
+                  "TAG": 2,
+                  "_0": Object {
+                    "char": 198,
+                    "name": "",
+                  },
+                  "_1": "j",
+                },
+              ],
+            },
+            Object {
+              "TAG": 9,
+              "_0": Object {
+                "char": 204,
+                "name": "",
+              },
+              "_1": Object {
+                "h": 1,
+                "k": "k",
+                "l": undefined,
+                "r": undefined,
+                "v": Object {
+                  "TAG": 11,
+                  "_0": Object {
+                    "char": 208,
+                    "name": "",
+                  },
+                  "_1": "l",
+                },
+              },
+            },
+          ],
+        ],
+      },
+    ],
+  },
+  Object {
+    "TAG": 0,
+    "_0": "
+",
+    "_1": 0,
   },
 ]
 `;

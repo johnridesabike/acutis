@@ -1,353 +1,495 @@
 /**
-   Copyright 2021 John Jackson
+  Copyright (c) 2022 John Jackson.
 
-   Licensed under the Apache License, Version 2.0 (the "License");
-   you may not use this file except in compliance with the License.
-   You may obtain a copy of the License at
-
-       http://www.apache.org/licenses/LICENSE-2.0
-
-   Unless required by applicable law or agreed to in writing, software
-   distributed under the License is distributed on an "AS IS" BASIS,
-   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-   See the License for the specific language governing permissions and
-   limitations under the License.
+  This Source Code Form is subject to the terms of the Mozilla Public
+  License, v. 2.0. If a copy of the MPL was not distributed with this
+  file, You can obtain one at http://mozilla.org/MPL/2.0/.
 */
 open TestFramework
+module Json = Js.Json
 
 let json = x =>
   try {
-    Js.Json.parseExn(x)
+    Json.parseExn(x)
   } catch {
-  | _ => Js.Json.string("THIS IS EASIER THAN DEALING WITH EXCEPTIONS.")
+  | _ => Json.string("THIS IS EASIER THAN DEALING WITH EXCEPTIONS.")
   }
 
 let dict = Js.Dict.fromArray
 
-let render = (~name="", ~children=Js.Dict.empty(), src, props, components) =>
-  Source.string(~name, src)
-  ->Compile.make(components)
-  ->Result.flatMap(f => f(Environment.sync, props, children))
+let render = (~name="", src, props, components) =>
+  Compile.make(~name, src, Compile.Components.makeExn(components))->Result.flatMap(t =>
+    Render.sync(t, props)
+  )
 
-@raises(Not_found)
 describe("Render essentials", ({test, _}) => {
   test("Basic", ({expect, _}) => {
     let props = dict([
-      ("a", Js.Json.string("Hello")),
-      ("b", Js.Json.string("World")),
-      ("c", Js.Json.string("&\"'></`=")),
+      ("a", Json.string("Hello")),
+      ("b", Json.string("World")),
+      ("c", Json.string("&\"'></`=")),
     ])
-    let children = dict([("Z", render(`Z`, props, Compile.Components.empty()))])
-    let result = render(
-      `{{ a }} {{ b }}! {{ c }} {{ &c }} {{ &"<" }} {{ "d" }} {{ 1.5 }} {{ Z }}`,
-      props,
-      ~children,
-      Compile.Components.empty(),
-    )
+    let result = render(`{{ a }} {{ b }}! {{ c }} {{ &c }} {{ &"<" }} {{ "d" }}`, props, [])
     expect.value(result).toEqual(
-      #ok("Hello World! &amp;&quot;&apos;&gt;&lt;&#x2F;&#x60;&#x3D; &\"'></`= < d 1.5 Z"),
+      #ok("Hello World! &amp;&quot;&apos;&gt;&lt;&#x2F;&#x60;&#x3D; &\"'></`= < d"),
     )
   })
 
   test("Unbound identifiers default to null", ({expect, _}) => {
     let result = render(
-      "{% match a with null %} a doesn't exist. {% with a %} {{ a }} {% /match %}",
+      "{% match a with !a %} {{ a }} {% with null %} a doesn't exist. {% /match %}",
       Js.Dict.empty(),
-      Compile.Components.empty(),
+      [],
     )
     expect.value(result).toEqual(#ok(" a doesn't exist. "))
   })
 
+  test("Unwrapping not-null (!) works.", ({expect, _}) => {
+    let result = render(
+      "{% match a with !a %} {{ a }} {% with null %} a doesn't exist. {% /match %}",
+      dict([("a", Json.string("works"))]),
+      [],
+    )
+    expect.value(result).toEqual(#ok(" works "))
+  })
+
   test("Nested comments", ({expect, _}) => {
-    let result = render("a {* b {* c *} d *} e", Js.Dict.empty(), Compile.Components.empty())
+    let result = render("a {* b {* c *} d *} e", Js.Dict.empty(), [])
     expect.value(result).toEqual(#ok("a  e"))
   })
 
   test("Match", ({expect, _}) => {
     let data = dict([("a", json(`{"a": "a"}`))])
-    let result = render(
-      `{% match a with {a} %} {{ a }} {% /match %}`,
-      data,
-      Compile.Components.empty(),
-    )
+    let result = render(`{% match a with {a} %} {{ a }} {% /match %}`, data, [])
     expect.value(result).toEqual(#ok(` a `))
     let data = dict([("a", json(`{"a": "a", "b": true}`))])
     let result = render(
       `{% match a with {b: false, a} %} b is false. {{ a }} {% with {b: true, a} %} b is true. {{ a }} {% /match %}`,
       data,
-      Compile.Components.empty(),
+      [],
     )
     expect.value(result).toEqual(#ok(` b is true. a `))
     let data = dict([("a", json(`{"a": true, "b": {"c": "hi"}}`))])
     let result = render(
       `{% match a with {a: false} %} a is false. {% with {a: true, b} %} {% match b with {c} %} {{ c }} {% /match %} {% /match %}`,
       data,
-      Compile.Components.empty(),
+      [],
     )
     expect.value(result).toEqual(#ok(`  hi  `))
     let data = dict([("a", json(`{"a": {"b": "hi"}}`))])
-    let result = render(
-      `{% match a with {a: {b}} %} {{ b }} {% /match %}`,
-      data,
-      Compile.Components.empty(),
-    )
+    let result = render(`{% match a with {a: {b}} %} {{ b }} {% /match %}`, data, [])
     expect.value(result).toEqual(#ok(` hi `))
   })
 
   test("Whitespace control", ({expect, _}) => {
     let data = dict([("a", json(`{"a": {"b": "hi"}}`))])
     let result = render(
-      `{% match a with {a: {b}} ~%}  
+      `{% match a with {a: {b}} ~%}
    \t  _ {{ b }} _
     \t \r  {%~ /match %}`,
       data,
-      Compile.Components.empty(),
+      [],
     )
     expect.value(result).toEqual(#ok(`_ hi _`))
     let data = dict([("a", json(`{"a": {"b": "hi"}}`))])
-    let result = render(
-      `{% match a with {a: {b}} %} _ {{~ b ~}} _ {% /match %}`,
-      data,
-      Compile.Components.empty(),
-    )
+    let result = render(`{% match a with {a: {b}} %} _ {{~ b ~}} _ {% /match %}`, data, [])
     expect.value(result).toEqual(#ok(` _hi_ `))
-    let ohHai = Source.funcWithString(~name="OhHai", "{{ Children }} Oh hai {{ name }}.", (
-      ast,
-      env,
-      props,
-      templates,
-    ) => env.render(. ast, props, templates))
-    let components = Compile.Components.make([ohHai])
-    let result = render(
-      `{% OhHai name="Mark" ~%} I did not. {%~ /OhHai %}`,
-      Js.Dict.empty(),
-      components->Result.getExn,
-    )
+    let ohHai = Source.src(~name="OhHai", "{{ Children }} Oh hai {{ name }}.")
+    let components = [ohHai]
+    let result = render(`{% OhHai name="Mark" ~%} I did not. {%~ /OhHai %}`, dict([]), components)
     expect.value(result).toEqual(#ok(`I did not. Oh hai Mark.`))
     let result = render(
       `{% OhHai name="Mark" Children=#~%} I did not. {%~/# /%}`,
       Js.Dict.empty(),
-      components->Result.getExn,
+      components,
     )
     expect.value(result).toEqual(#ok(`I did not. Oh hai Mark.`))
   })
 
+  test("List literal spread", ({expect, _}) => {
+    let src = `
+    {%~ map ["a", "b", ...["c", "d"]] with x ~%} {{ x }} {% /map %}`
+    let result = render(src, Js.Dict.empty(), [])
+    expect.value(result).toEqual(#ok("a b c d "))
+  })
+
   test("Map", ({expect, _}) => {
     let data = dict([("a", json(`[{"name": "John"}, {"name": "Megan"}]`))])
-    let result = render(
-      `{% map a with {name} %} {{ name }} {% /map %}`,
-      data,
-      Compile.Components.empty(),
-    )
+    let result = render(`{% map a with {name} %} {{ name }} {% /map %}`, data, [])
     expect.value(result).toEqual(#ok(` John  Megan `))
     let data = dict([("a", json(`[{"name": "John"}, {"name": "Megan"}]`)), ("b", json(`"hi"`))])
-    let result = render(
-      `{% map a with {name} %} {{ b }} {{ name }}. {% /map %}`,
-      data,
-      Compile.Components.empty(),
-    )
+    let result = render(`{% map a with {name} %} {{ b }} {{ name }}. {% /map %}`, data, [])
     expect.value(result).toEqual(#ok(` hi John.  hi Megan. `))
     let result = render(
       `{% map a with {name}, index %} {{ index }} {{ name }}. {% /map %}`,
       data,
-      Compile.Components.empty(),
+      [],
     )
     expect.value(result).toEqual(#ok(` 0 John.  1 Megan. `))
     let result = render(
       `{% map [{name: "Carlo"}, {name: "John"}] with {name} %} {{ name }}. {% /map %}`,
       data,
-      Compile.Components.empty(),
+      [],
     )
     expect.value(result).toEqual(#ok(` Carlo.  John. `))
     let result = render(
       `{% map [{name: "Carlo"}, ...a] with {name} %} {{ name }}. {% /map %}`,
       data,
-      Compile.Components.empty(),
+      [],
     )
     expect.value(result).toEqual(#ok(` Carlo.  John.  Megan. `))
   })
 
-  test("Map: objects", ({expect, _}) => {
+  test("Map: dictionaries", ({expect, _}) => {
     let data = dict([
       ("people", json(`{"lisa": {"job": "computers"}, "tommy": {"job": "banking"}}`)),
     ])
     let result = render(
-      `{% map people with {job}, key ~%} {{ key }}: {{ job }}. {% /map %}`,
+      `{% map_dict people with {job}, key ~%} {{ key }}: {{ job }}. {% /map_dict %}`,
       data,
-      Compile.Components.empty(),
+      [],
     )
     expect.value(result).toEqual(#ok(`lisa: computers. tommy: banking. `))
     let result = render(
-      `{% map {
+      `{% map_dict <
           lisa: {job: "computers"},
           tommy: {job: "banking"}
-        } with {job}, key ~%} {{ key }}: {{ job }}. {% /map %}`,
+        > with {job}, key ~%} {{ key }}: {{ job }}. {% /map_dict %}`,
       Js.Dict.empty(),
-      Compile.Components.empty(),
+      [],
     )
     expect.value(result).toEqual(#ok(`lisa: computers. tommy: banking. `))
   })
 
   test("Component", ({expect, _}) => {
-    let ohHai = Source.funcWithString(~name="OhHai", "{{ Children }} Oh hai {{ name }}.", (
-      ast,
-      env,
-      props,
-      templates,
-    ) => env.render(. ast, props, templates))
-    let components = Compile.Components.make([ohHai])
+    let ohHai = Source.src(~name="OhHai", "{{ Children }} Oh hai {{ name }}.")
+    let components = [ohHai]
     let result = render(
       `{% OhHai name="Mark" %} I did not. {% /OhHai %}`,
       Js.Dict.empty(),
-      components->Result.getExn,
+      components,
     )
     expect.value(result).toEqual(#ok(` I did not.  Oh hai Mark.`))
-
-    @raises(Not_found)
-    let addOne = Source.func(~name="AddOne", (env, props, _children) => {
-      let index =
-        props->Js.Dict.get("index")->Belt.Option.flatMap(Js.Json.decodeNumber)->Belt.Option.getExn
-      env.return(. Belt.Float.toString(index +. 1.0))
-    })
-
-    @raises(Not_found)
-    let components = Compile.Components.make([addOne])
+    let addOne = Source.fn(
+      ~name="AddOne",
+      Typescheme.make([("index", Typescheme.int())]),
+      Typescheme.Child.make([]),
+      (type a, module(Env): Source.env<a>, props, _children) => {
+        let index = props->Js.Dict.get("index")->Belt.Option.flatMap(Json.decodeNumber)
+        switch index {
+        | None => Env.error(. "oops")
+        | Some(i) => Env.return(. Belt.Float.toString(i +. 1.0))
+        }
+      },
+    )
     let data = dict([("a", json(`[{"name": "John"}, {"name": "Megan"}]`))])
     let result = render(
       `{% map a with {name}, index %} {% AddOne index / %} {{ name }}. {% /map %}`,
       data,
-      components->Result.getExn,
+      [addOne],
     )
     expect.value(result).toEqual(#ok(` 1 John.  2 Megan. `))
     let result = render(
       `{% map a with {name}, i %} {% AddOne index=i / %} {{ name }}. {% /map %}`,
       data,
-      components->Result.getExn,
+      [addOne],
     )
     expect.value(result).toEqual(#ok(` 1 John.  2 Megan. `))
+  })
+
+  test("Nullable props default to null", ({expect, _}) => {
+    let a = Source.src(~name="A", `{{ x ? "fail" }} {{ y ? "pass" }}`)
+    let src = `{% A x=!"pass" /%}`
+    let result = render(src, Js.Dict.empty(), [a])
+    expect.value(result).toEqual(#ok("pass pass"))
   })
 })
 
 describe("Nullish coalescing", ({test, _}) => {
   test("Nullish coalescing", ({expect, _}) => {
-    let children = Js.Dict.fromArray([
-      ("Z", render("z", Js.Dict.empty(), Compile.Components.empty())),
-    ])
-    let props = Js.Dict.fromArray([("b", Js.Json.string("b")), ("c", Js.Json.string("c"))])
-    let result = render(`{{ a ? b ? c }}`, props, Compile.Components.empty())
+    let props = dict([("b", Json.string("b")), ("c", Json.string("c"))])
+    let result = render(`{{ a ? b ? c }}`, props, [])
     expect.value(result).toEqual(#ok("b"))
-    let result = render(`{{ a ? d ? c }}`, props, Compile.Components.empty())
+    let result = render(`{{ a ? d ? c }}`, props, [])
     expect.value(result).toEqual(#ok("c"))
-    let result = render(`{{ a ? B ? Z }}`, Js.Dict.empty(), Compile.Components.empty(), ~children)
+    let result = render(
+      `{% Comp a=null Z=#%}z{%/# /%}`,
+      Js.Dict.empty(),
+      [Source.src(~name="Comp", `{{ a ? B ? Z }}`)],
+    )
     expect.value(result).toEqual(#ok("z"))
     let result = render(
-      `{{ a ? B ? X ? "y" }}`,
+      `{% Comp a=null /%}`,
       Js.Dict.empty(),
-      Compile.Components.empty(),
-      ~children,
+      [Source.src(~name="Comp", `{{ a ? B ? X ? "y" }}`)],
     )
     expect.value(result).toEqual(#ok("y"))
     let result = render(
-      ` {{~ &a ? B ? X ? 1 ~}} `,
+      `{% Comp x=null Z=#%}z{%/# /%}`,
       Js.Dict.empty(),
-      Compile.Components.empty(),
-      ~children,
-    )
-    expect.value(result).toEqual(#ok("1"))
-    let result = render(
-      `{{ &x ? Y ? Z ? X }}`,
-      Js.Dict.empty(),
-      Compile.Components.empty(),
-      ~children,
+      [Source.src(~name="Comp", `{{ &x ? Y ? Z ? "x" }}`)],
     )
     expect.value(result).toEqual(#ok("z"))
+  })
+})
+
+describe("Advanced types", ({test, _}) => {
+  let props = dict([
+    ("a", Json.object_(dict([("tag", Json.number(0.0)), ("a", Json.string("a"))]))),
+    ("b", Json.object_(dict([("tag", Json.number(1.0)), ("a", Json.number(1.0))]))),
+    ("c", Json.object_(dict([("tag", Json.string("a")), ("a", Json.string("a"))]))),
+    ("d", Json.object_(dict([("tag", Json.string("b")), ("a", Json.number(1.0))]))),
+    ("e", Json.object_(dict([("tag", Json.boolean(true)), ("a", Json.string("a"))]))),
+    ("f", Json.object_(dict([("tag", Json.boolean(false)), ("a", Json.number(1.0))]))),
+  ])
+  test("Tagged unions", ({expect, _}) => {
+    let src = `
+    {%~ map [a, b]
+        with {@tag: 0, a: "a"}
+        with {@tag: 1, a: 1} ~%} success {%
+        with _ %} fail {%
+    /map ~%}
+    {%~ map [c, d]
+        with {@tag: "a", a: "a"}
+        with {@tag: "b", a: 1} ~%} success {%
+        with _ %} fail {%
+    /map ~%}
+    {%~ map [e, f]
+        with {@tag: true, a: "a"}
+        with {@tag: false, a: 1} ~%} success {%
+        with _ %} fail {%
+    /map ~%}
+    `
+    let result = render(src, props, [])
+    expect.value(result).toEqual(#ok("success success success success success success "))
   })
 })
 
 describe("Template sections", ({test, _}) => {
   test("Default `Children` child", ({expect, _}) => {
-    let a = Source.funcWithString(~name="A", "{{ Children }}", (ast, env, props, children) => {
-      env.render(. ast, props, children)
-    })
-    let components = Compile.Components.make([a])
-    let result = render(`{% A %} b {%/ A %}`, Js.Dict.empty(), components->Result.getExn)
+    let a = Source.src(~name="A", "{{ Children }}")
+    let result = render(`{% A %} b {%/ A %}`, Js.Dict.empty(), [a])
     expect.value(result).toEqual(#ok(" b "))
-    let result = render(`{% A Children=#%} b {%/# / %}`, Js.Dict.empty(), components->Result.getExn)
+    let result = render(`{% A Children=#%} b {%/# / %}`, Js.Dict.empty(), [a])
     expect.value(result).toEqual(#ok(" b "))
   })
 
-  test("Child props are passed correctly", ({expect, _}) => {
-    let x = Source.funcWithString(~name="X", "{{ PassthroughChild }}", (
-      ast,
-      env,
-      props,
-      children,
-    ) => {
-      env.render(. ast, props, children)
-    })
-    let y = Source.funcWithString(~name="Y", "{% X PassthroughChild=A /%}", (
-      ast,
-      env,
-      props,
-      children,
-    ) => {
-      env.render(. ast, props, children)
-    })
-    let components = Compile.Components.make([x, y])
-    let result = render(`{% Y A=#%} a {%/# / %}`, Js.Dict.empty(), components->Result.getExn)
+  test("Child.make are passed correctly", ({expect, _}) => {
+    let x = Source.src(~name="X", "{{ PassthroughChild }}")
+    let y = Source.src(~name="Y", "{% X PassthroughChild=A /%}")
+    let result = render(`{% Y A=#%} a {%/# / %}`, Js.Dict.empty(), [x, y])
     expect.value(result).toEqual(#ok(" a "))
   })
 
-  test("Child props are passed correctly with punning", ({expect, _}) => {
-    let x = Source.funcWithString(~name="X", "{{ PassthroughChild }}", (
-      ast,
-      env,
-      props,
-      children,
-    ) => {
-      env.render(. ast, props, children)
-    })
-    let y = Source.funcWithString(~name="Y", "{% X PassthroughChild /%}", (
-      ast,
-      env,
-      props,
-      children,
-    ) => {
-      env.render(. ast, props, children)
-    })
-    let components = Compile.Components.make([x, y])
-    let result = render(
-      `{% Y PassthroughChild=#%} a {%/# / %}`,
-      Js.Dict.empty(),
-      components->Result.getExn,
+  test("Child.make are passed correctly with punning", ({expect, _}) => {
+    let x = Source.src(~name="X", "{{ PassthroughChild }}")
+    let y = Source.src(~name="Y", "{% X PassthroughChild /%}")
+    let result = render(`{% Y PassthroughChild=#%} a {%/# / %}`, Js.Dict.empty(), [x, y])
+    expect.value(result).toEqual(#ok(" a "))
+  })
+})
+
+describe("Typescheme API", ({test, _}) => {
+  module Ty = Typescheme
+  let empty_child_props = Typescheme.Child.make([])
+
+  let f = props =>
+    Source.fn(~name="F", props, empty_child_props, (type a, module(Env): Source.env<a>, props, _) =>
+      Env.return(. Json.stringifyWithSpace(Json.object_(props), 2))
     )
-    expect.value(result).toEqual(#ok(" a "))
+
+  let parse_json = s =>
+    try {
+      s->Json.parseExn->Json.decodeObject->Belt.Option.getExn
+    } catch {
+    | _ => Js.Dict.empty()
+    }
+
+  test("Unknown, int, float, string, echo", ({expect, _}) => {
+    let props = Ty.make([
+      ("u", Ty.unknown()),
+      ("i", Ty.int()),
+      ("f", Ty.float()),
+      ("s", Ty.string()),
+      ("e", Ty.echo()),
+    ])
+    let rawjson = `{
+  "e": true,
+  "f": 1.5,
+  "i": 1,
+  "s": "s",
+  "u": null
+}`
+    let data = parse_json(rawjson)
+    let result = render(`{% F u i f s e / %}`, data, [f(props)])
+    expect.value(result).toEqual(#ok(rawjson))
+  })
+
+  test("Nullable, list", ({expect, _}) => {
+    let props = Ty.make([
+      ("n1", Ty.nullable(Ty.string())),
+      ("n2", Ty.nullable(Ty.string())),
+      ("l", Ty.list(Ty.int())),
+    ])
+    let rawjson = `{
+  "l": [
+    0,
+    1,
+    2
+  ],
+  "n1": null,
+  "n2": "n"
+}`
+    let data = parse_json(rawjson)
+    let result = render(`{% F n1 n2 l / %}`, data, [f(props)])
+    expect.value(result).toEqual(#ok(rawjson))
+  })
+
+  test("Tuple, record, dict", ({expect, _}) => {
+    let props = Ty.make([
+      ("t", Ty.tuple([Ty.int(), Ty.string()])),
+      ("r", Ty.record([("a", Ty.int()), ("b", Ty.string())])),
+      ("d", Ty.dict(Ty.nullable(Ty.int()))),
+    ])
+    let rawjson = `{
+  "d": {
+    "c": null,
+    "d": 3
+  },
+  "r": {
+    "a": 2,
+    "b": "r"
+  },
+  "t": [
+    1,
+    "t"
+  ]
+}`
+    let data = parse_json(rawjson)
+    let result = render(`{% F t r d / %}`, data, [f(props)])
+    expect.value(result).toEqual(#ok(rawjson))
+  })
+
+  test("Enums: int, string, boolean", ({expect, _}) => {
+    let props = Ty.make([
+      ("i", Ty.enum_int([0, 1])),
+      ("s", Ty.enum_string(["a", "b"])),
+      ("b", Ty.bool()),
+    ])
+    let rawjson = `{
+  "b": true,
+  "i": 1,
+  "s": "a"
+}`
+    let data = parse_json(rawjson)
+    let result = render(`{% F i s b / %}`, data, [f(props)])
+    expect.value(result).toEqual(#ok(rawjson))
+  })
+
+  test("Unions: int, string, boolean", ({expect, _}) => {
+    let i = Ty.union_int(
+      "tag",
+      [(0, [("a", Ty.string())]), (1, [("a", Ty.int()), ("b", Ty.string())])],
+    )
+    let s = Ty.union_string(
+      "tag",
+      [("a", [("a", Ty.string())]), ("b", [("a", Ty.int()), ("b", Ty.string())])],
+    )
+    let b = Ty.union_boolean(
+      "tag",
+      ~f=[("a", Ty.string())],
+      ~t=[("a", Ty.int()), ("b", Ty.string())],
+    )
+    let props = Ty.make([("i1", i), ("i2", i), ("s1", s), ("s2", s), ("b1", b), ("b2", b)])
+    let rawjson = `{
+  "b1": {
+    "a": "s",
+    "tag": false
+  },
+  "b2": {
+    "a": 0,
+    "b": "s",
+    "tag": true
+  },
+  "i1": {
+    "a": "s",
+    "tag": 0
+  },
+  "i2": {
+    "a": 0,
+    "b": "s",
+    "tag": 1
+  },
+  "s1": {
+    "a": "s",
+    "tag": "a"
+  },
+  "s2": {
+    "a": 0,
+    "b": "s",
+    "tag": "b"
+  }
+}`
+    let data = parse_json(rawjson)
+    let result = render(`{% F i1 i2 s1 s2 b1 b2 / %}`, data, [f(props)])
+    expect.value(result).toEqual(#ok(rawjson))
+  })
+})
+
+describe("Constructing values", ({test, _}) => {
+  test("Constructing values", ({expect, _}) => {
+    let src = `{%~
+      match [(1, 2), (3, 4)],
+            [@"y", @"z"],
+            [@99, @100],
+            [!{@tag: "a", a: 1.5}, null],
+            {@tag: 0, a: !"z"},
+            <a: "a">
+      with  [(1, 2), (3, 4)],
+            [@"y", @"z"],
+            [@99, @100],
+            [!{@tag: "a", a: 1.5}, null],
+            {@tag: 0, a: !"z"},
+            <a: "a">
+    ~%} success {%~
+      with _, _, _, _, _, _ %} fail {%
+      /match ~%}`
+    let result = render(src, Js.Dict.empty(), [])
+    expect.value(result).toEqual(#ok("success"))
   })
 })
 
 describe("API helper functions", ({test, _}) => {
   test("env.return", ({expect, _}) => {
-    let x = Source.func(~name="X", (env, _props, _children) => {
-      env.return(. "a")
+    let x = Source.fn(~name="X", Typescheme.make([]), Typescheme.Child.make([]), (
+      type a,
+      module(Env): Source.env<a>,
+      _props,
+      _children,
+    ) => {
+      Env.return(. "a")
     })
-    let components = Compile.Components.make([x])
-    let result = render(`{% X / %}`, Js.Dict.empty(), components->Result.getExn)
+    let result = render(`{% X / %}`, Js.Dict.empty(), [x])
     expect.value(result).toEqual(#ok("a"))
   })
 
   test("env.error", ({expect, _}) => {
-    let x = Source.func(~name="X", (env, _props, _children) => {
-      env.error(. "e")
+    let x = Source.fn(~name="X", Typescheme.make([]), Typescheme.Child.make([]), (
+      type a,
+      module(Env): Source.env<a>,
+      _props,
+      _children,
+    ) => {
+      Env.error(. "e")
     })
-    let components = Compile.Components.make([x])
-    let result = render(`{% X / %}`, Js.Dict.empty(), components->Result.getExn)
+    let result = render(`{% X / %}`, Js.Dict.empty(), [x])
     expect.value(result).toEqual(
       #errors([
         {
-          message: "e",
+          message: "A template function raised this error:\ne",
           location: None,
           kind: #Render,
-          path: [Js.Json.string("")],
+          stack: [],
           exn: None,
         },
       ]),
@@ -355,24 +497,23 @@ describe("API helper functions", ({test, _}) => {
   })
 
   test("env.mapChild", ({expect, _}) => {
-    let x = Source.func(~name="X", (env, _props, children) => {
-      env.mapChild(.Js.Dict.unsafeGet(children, "Children"), child => Js.String.toUpperCase(child))
-    })
-    let components = Compile.Components.make([x])
-    let result = render(`{% X ~%} a {%~ /X %}`, Js.Dict.empty(), components->Result.getExn)
-    expect.value(result).toEqual(#ok("A"))
-    let errors = render(
-      ~name="A",
-      `{% X %} {{ e }} {% /X %}`,
-      Js.Dict.empty(),
-      components->Result.getExn,
+    let x = Source.fn(
+      ~name="X",
+      Typescheme.make([]),
+      Typescheme.Child.make([Typescheme.Child.child("Children")]),
+      (type a, module(Env): Source.env<a>, _props, children) => {
+        Env.map(.Js.Dict.unsafeGet(children, "Children"), child => Js.String.toUpperCase(child))
+      },
     )
+    let result = render(`{% X ~%} a {%~ /X %}`, Js.Dict.empty(), [x])
+    expect.value(result).toEqual(#ok("A"))
+    let errors = render(~name="A", `{% X %} {{ e }} {% /X %}`, Js.Dict.empty(), [x])
     expect.value(errors).toEqual(
       #errors([
         {
-          message: "\"e\" is type null. I can only echo strings and numbers.",
-          location: Some({character: 12}),
-          path: [Js.Json.string("section: X#Children"), Js.Json.string("A")],
+          message: "Input is missing JSON object key \"e\" which is required.",
+          location: None,
+          stack: [],
           kind: #Render,
           exn: None,
         },
@@ -381,26 +522,24 @@ describe("API helper functions", ({test, _}) => {
   })
 
   test("env.flatMapChild", ({expect, _}) => {
-    let x = Source.func(~name="X", (env, _props, children) =>
-      env.flatMapChild(.Js.Dict.unsafeGet(children, "Children"), child =>
-        env.return(. Js.String.toUpperCase(child))
-      )
+    let x = Source.fn(
+      ~name="X",
+      Typescheme.make([]),
+      Typescheme.Child.make([Typescheme.Child.child("Children")]),
+      (type a, module(Env): Source.env<a>, _props, children) =>
+        Env.flatmap(.Js.Dict.unsafeGet(children, "Children"), child =>
+          Env.return(. Js.String.toUpperCase(child))
+        ),
     )
-    let components = Compile.Components.make([x])
-    let result = render(`{% X %} a {% /X %}`, Js.Dict.empty(), components->Result.getExn)
+    let result = render(`{% X %} a {% /X %}`, Js.Dict.empty(), [x])
     expect.value(result).toEqual(#ok(" A "))
-    let errors = render(
-      ~name="A",
-      `{% X %} {{ e }} {% /X %}`,
-      Js.Dict.empty(),
-      components->Result.getExn,
-    )
+    let errors = render(~name="A", `{% X %} {{ e }} {% /X %}`, Js.Dict.empty(), [x])
     expect.value(errors).toEqual(
       #errors([
         {
-          message: "\"e\" is type null. I can only echo strings and numbers.",
-          location: Some({character: 12}),
-          path: [Js.Json.string("section: X#Children"), Js.Json.string("A")],
+          message: "Input is missing JSON object key \"e\" which is required.",
+          location: None,
+          stack: [],
           kind: #Render,
           exn: None,
         },

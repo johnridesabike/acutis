@@ -1,102 +1,94 @@
 /**
-   Copyright 2021 John Jackson
+  Copyright (c) 2022 John Jackson.
 
-   Licensed under the Apache License, Version 2.0 (the "License");
-   you may not use this file except in compliance with the License.
-   You may obtain a copy of the License at
-
-       http://www.apache.org/licenses/LICENSE-2.0
-
-   Unless required by applicable law or agreed to in writing, software
-   distributed under the License is distributed on an "AS IS" BASIS,
-   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-   See the License for the specific language governing permissions and
-   limitations under the License.
+  This Source Code Form is subject to the terms of the Mozilla Public
+  License, v. 2.0. If a copy of the MPL was not distributed with this
+  file, You can obtain one at http://mozilla.org/MPL/2.0/.
 */
 open TestFramework
 
-module NonEmpty = Acutis_Types.NonEmpty
-module Pattern = Render.Pattern
+module J = Js.Json
 
-let parseString = source => {
-  let tokens = Lexer.make(~name="", "{% " ++ source ++ "%}")
-  Lexer.popExn(tokens)->ignore // skip the opening string
-  Compile.Pattern.make(tokens)
-}
+let dict = Js.Dict.fromArray
 
-let json = x =>
-  try {
-    Js.Json.parseExn(x)
-  } catch {
-  | _ => Js.Json.string("THIS IS EASIER THAN DEALING WITH EXCEPTIONS.")
-  }
-
-let jsonList = (x): NonEmpty.t<_> => NonEmpty(json(x), [])
-let jsonList2 = (x): NonEmpty.t<_> => NonEmpty(x, [])
-
-let patternTest = (patterns, json) =>
-  switch Pattern.test(patterns, json, ~loc=Loc(0), ~stack=list{}) {
-  | NoMatch => #NoMatch
-  | Result(#ok(d)) => #Ok(Belt.Map.String.toArray(d))
-  | Result(#errors(_)) => #Error
-  }
+let render = (src, props, components) =>
+  Compile.make(~name="", src, Compile.Components.makeExn(components))->Result.flatMap(t =>
+    Render.sync(t, props)
+  )
 
 describe("Escaped strings work", ({test, _}) => {
   test("\\\"", ({expect, _}) => {
-    expect.value(patternTest(parseString("\"\\\"\""), jsonList2(Js.Json.string("\"")))).toEqual(
-      #Ok([]),
-    )
+    let src = "{% match a with \"\\\"\" ~%} pass {%~ with _ ~%} fail {%~ /match %}"
+    let props = dict([("a", J.string("\""))])
+    let r = render(src, props, [])
+    expect.value(r).toEqual(#ok("pass"))
   })
   test("\\\\", ({expect, _}) => {
-    expect.value(patternTest(parseString("\"\\\\\""), jsonList2(Js.Json.string("\\")))).toEqual(
-      #Ok([]),
-    )
+    let src = "{% match a with \"\\\\\" ~%} pass {%~ with _ ~%} fail {%~ /match %}"
+    let props = dict([("a", J.string("\\"))])
+    let r = render(src, props, [])
+    expect.value(r).toEqual(#ok("pass"))
   })
 })
 
 describe("Equality", ({test, _}) => {
   test("One value", ({expect, _}) => {
-    expect.value(patternTest(parseString("1"), jsonList("1"))).toEqual(#Ok([]))
-    expect.value(patternTest(parseString(`"a"`), jsonList(`"a"`))).toEqual(#Ok([]))
-    expect.value(patternTest(parseString("null"), jsonList("null"))).toEqual(#Ok([]))
-    expect.value(patternTest(parseString("true"), jsonList("true"))).toEqual(#Ok([]))
-    expect.value(patternTest(parseString("false"), jsonList("false"))).toEqual(#Ok([]))
-    expect.value(patternTest(parseString("{}"), jsonList("{}"))).toEqual(#Ok([]))
-    expect.value(patternTest(parseString("[]"), jsonList("[]"))).toEqual(#Ok([]))
+    // ???
+    // expect.value(patternTest(parseString("{}"), jsonList("{}"))).toEqual(#Ok([]))
+    // expect.value(patternTest(parseString("()"), jsonList("[]"))).toEqual(#Ok([]))
+    let src = `
+      {%~ match a with 1 ~%} pass {% with _ ~%} fail {% /match ~%}
+      {%~ match b with "b" ~%} pass {% with _ ~%} fail {% /match ~%}
+      {%~ match c with null ~%} pass {% with _ ~%} fail {% /match ~%}
+      {%~ match d with true ~%} pass {% with _ ~%} fail {% /match ~%}
+      {%~ match e with false ~%} pass {% with _ ~%} fail {% /match ~%}
+      {%~ match f with [] ~%} pass {%~ with _ ~%} fail {% /match ~%}
+      `
+    let props = dict([
+      ("a", J.number(1.0)),
+      ("b", J.string("b")),
+      ("c", J.null),
+      ("d", J.boolean(true)),
+      ("e", J.boolean(false)),
+      ("f", J.array([])),
+    ])
+    let r = render(src, props, [])
+    expect.value(r).toEqual(#ok("pass pass pass pass pass pass"))
   })
 
   test("Nested values", ({expect, _}) => {
-    expect.value(
-      patternTest(
-        parseString("{key: true, key2: {key3: false}}"),
-        jsonList(`{"key": true, "key2": {"key3": false}}`),
-      ),
-    ).toEqual(#Ok([]))
-    expect.value(patternTest(parseString(`["thing 1"]`), jsonList(`["thing 1"]`))).toEqual(#Ok([]))
-    expect.value(
-      patternTest(parseString(`["thing 1", "thing 2"]`), jsonList(`["thing 1", "thing 2"]`)),
-    ).toEqual(#Ok([]))
-    expect.value(
-      patternTest(
-        parseString(`
-          {
-            a: true,
-            b: false,
-            c: null,
-            d: 1,
-            e: 100.5,
-            f: [
-              "g",
-              null
-            ],
-            "h": {
-              i: "j",
-              k: "l"
-            },
-            "A complex string!": true
-          } 
-         `),
-        jsonList(`
+    let src = `
+      {%~ match a with {key: true, key2: {key3: false}} ~%} pass {% with _ ~%} fail {%~ /match ~%}
+      {%~ match b with <key: {nested: true}, key2: {nested: false}> ~%} pass {% with _ ~%} fail {%~ /match ~%}
+      {%~ match c with ["thing 1"] ~%} pass {% with _ ~%} fail {%~ /match ~%}
+      {%~ match d with ("thing 1", 2) ~%} pass {% with _ ~%} fail {%~ /match ~%}
+      {%~ match e with ["thing 1", "thing 2"] ~%} pass {% with _ ~%} fail {%~ /match ~%}
+      {%~ match f with {
+        a: true,
+        b: false,
+        c: null,
+        d: 1,
+        e: 100.5,
+        f: [
+          !"g",
+          null
+        ],
+        "h": {
+          i: "j",
+          k: "l"
+        },
+        "A complex string!": true
+      } ~%} pass {%~ with _ ~%} fail {%~ /match ~%}
+    `
+    let props = dict([
+      ("a", J.parseExn(`{"key": true, "key2": {"key3": false}}`)),
+      ("b", J.parseExn(`{"key": {"nested": true}, "key2": {"nested": false}}`)),
+      ("c", J.parseExn(`["thing 1"]`)),
+      ("d", J.parseExn(`["thing 1", 2]`)),
+      ("e", J.parseExn(`["thing 1", "thing 2"]`)),
+      (
+        "f",
+        J.parseExn(`
            {
              "a": true,
              "b": false,
@@ -115,259 +107,264 @@ describe("Equality", ({test, _}) => {
            }
          `),
       ),
-    ).toEqual(#Ok([]))
+    ])
+    let r = render(src, props, [])
+    expect.value(r).toEqual(#ok("pass pass pass pass pass pass"))
   })
 })
 
 describe("Inequality", ({test, _}) => {
   test("One value", ({expect, _}) => {
-    expect.value(patternTest(parseString("1"), jsonList("2"))).toEqual(#NoMatch)
-    expect.value(patternTest(parseString(`"string"`), jsonList(`"a"`))).toEqual(#NoMatch)
-    expect.value(patternTest(parseString("true"), jsonList("false"))).toEqual(#NoMatch)
-    expect.value(patternTest(parseString("false"), jsonList("true"))).toEqual(#NoMatch)
-    expect.value(patternTest(parseString("{}"), jsonList(`{"a": "b"}`))).toEqual(#NoMatch)
-    expect.value(patternTest(parseString(`{a: "b"}`), jsonList("{}"))).toEqual(#NoMatch)
-    expect.value(patternTest(parseString("[]"), jsonList("[1]"))).toEqual(#NoMatch)
-    expect.value(patternTest(parseString("[1]"), jsonList("[]"))).toEqual(#NoMatch)
-    expect.value(patternTest(parseString("[1]"), jsonList("[2]"))).toEqual(#NoMatch)
+    // ???
+    // expect.value(patternTest(parseString("{}"), jsonList(`{"a": "b"}`))).toEqual(#NoMatch)
+    let src = `
+      {%~ match a with 1 ~%} fail {% with _ ~%} pass {% /match ~%}
+      {%~ match b with "string" ~%} fail {% with _ ~%} pass {% /match ~%}
+      {%~ match c with true ~%} fail {% with _ ~%} pass {% /match ~%}
+      {%~ match d with false ~%} fail {% with _ ~%} pass {% /match ~%}
+      {%~ match f with [] ~%} fail {% with _ ~%} pass {%~ /match ~%}
+      `
+    let props = dict([
+      ("a", J.number(2.0)),
+      ("b", J.string("b")),
+      ("c", J.boolean(false)),
+      ("d", J.boolean(true)),
+      ("f", J.numberArray([1.0])),
+    ])
+    let r = render(src, props, [])
+    expect.value(r).toEqual(#ok("pass pass pass pass pass"))
   })
 
   test("Nested values", ({expect, _}) => {
-    expect.value(
-      patternTest(
-        parseString(`
-          {
-            a: true,
-            b: false,
-            c: null,
-            d: 1,
-            e: 100.5,
-            f: [
-              "g",
-              null
-            ],
-            "h": {
-              i: "j",
-              k: "l"
-            },
-            "A complex string!": true
-          } 
-         `),
-        jsonList(`
-           {
-             "a": false,
-             "b": false,
-             "c": null,
-             "d": 1,
-             "e": 100.5,
-             "f": [
-               "g",
-               null
-             ],
-             "h": {
-                  "i": "j",
-               "k": "l"
-             },
-             "A complex string!": true
-           }
-         `),
+    let src = `
+      {%~ match a with {a: "b"} ~%} fail {% with _ ~%} pass {% /match ~%}
+      {%~ match b with [1] ~%} fail {%~ with _ ~%} pass {% /match ~%}
+      {%~ match c with [1] ~%} fail {%~ with _ ~%} pass {% /match ~%}
+      {%~ match d with {
+        a: true,
+        b: false,
+        c: null,
+        d: 1,
+        e: 100.5,
+        f: [
+          !"g",
+          !"NOMATCH"
+        ],
+        "h": {
+          i: "j",
+          k: "l"
+        },
+        "A complex string!": true
+      }~%} fail {% with _ ~%} pass {%~ /match ~%}
+      `
+    let props = dict([
+      ("a", J.parseExn(`{"a": "c"}`)),
+      ("b", J.array([])),
+      ("c", J.numberArray([2.0])),
+      (
+        "d",
+        J.parseExn(`{
+          "a": true,
+          "b": false,
+          "c": null,
+          "d": 1,
+          "e": 100.5,
+          "f": [
+            "g",
+            null
+          ],
+          "h": {
+             "i": "j",
+             "k": "l"
+          },
+          "A complex string!": true
+        }`),
       ),
-    ).toEqual(#NoMatch)
+    ])
+    let r = render(src, props, [])
+    expect.value(r).toEqual(#ok("pass pass pass pass"))
   })
 })
 
 describe("Nullables", ({test, _}) => {
   test("Null data", ({expect, _}) => {
-    let null = jsonList("null")
-    expect.value(patternTest(parseString("1"), null)).toEqual(#NoMatch)
-    expect.value(patternTest(parseString(`"a"`), null)).toEqual(#NoMatch)
-    expect.value(patternTest(parseString("true"), null)).toEqual(#NoMatch)
-    expect.value(patternTest(parseString("false"), null)).toEqual(#NoMatch)
-    expect.value(patternTest(parseString("[]"), null)).toEqual(#NoMatch)
-    expect.value(patternTest(parseString("[1]"), null)).toEqual(#NoMatch)
-    expect.value(patternTest(parseString("[1, ...a]"), null)).toEqual(#NoMatch)
-    expect.value(patternTest(parseString("{}"), null)).toEqual(#NoMatch)
-    expect.value(patternTest(parseString("{a}"), null)).toEqual(#NoMatch)
+    // ???
+    // let null = jsonList("null")
+    //expect.value(patternTest(parseString("{}"), null)).toEqual(#NoMatch)
+    let src = `
+      {%~ match a with !1 ~%} fail {%~ with _ ~%} pass {% /match ~%}
+      {%~ match b with !"b" ~%} fail {%~ with _ ~%} pass {% /match ~%}
+      {%~ match c with !true ~%} fail {%~ with _ ~%} pass {% /match ~%}
+      {%~ match d with !false ~%} fail {%~ with _ ~%} pass {% /match ~%}
+      {%~ match e with ![] ~%} fail {%~ with _ ~%} pass {% /match ~%}
+      {%~ match f with ![1] ~%} fail {%~ with _ ~%} pass {% /match ~%}
+      {%~ match g with ![1, ...g] ~%} fail {%~ with _ ~%} pass {% /match ~%}
+      {%~ match h with !{a} ~%} fail {%~ with _ ~%} pass {%~ /match ~%}
+    `
+    let props = dict([
+      ("a", J.null),
+      ("b", J.null),
+      ("c", J.null),
+      ("d", J.null),
+      ("e", J.null),
+      ("f", J.null),
+      ("g", J.null),
+      ("h", J.null),
+    ])
+    let r = render(src, props, [])
+    expect.value(r).toEqual(#ok("pass pass pass pass pass pass pass pass"))
+  })
+
+  test("Not Null data", ({expect, _}) => {
+    let src = `
+      {%~ match a with !1 ~%} pass {% with _ ~%} fail {% /match ~%}
+      {%~ match b with !"b" ~%} pass {% with _ ~%} fail {% /match ~%}
+      {%~ match c with !true ~%} pass {% with _ ~%} fail {% /match ~%}
+      {%~ match d with !false ~%} pass {% with _ ~%} fail {% /match ~%}
+      {%~ match e with ![] ~%} pass {% with _ ~%} fail {% /match ~%}
+      {%~ match f with ![1] ~%} pass {% with _ ~%} fail {% /match ~%}
+      {%~ match g with ![1, ...g] ~%} pass {% with _ ~%} fail {% /match ~%}
+      {%~ match h with !{a} ~%} pass {%~ with _ ~%} fail {%~ /match ~%}
+    `
+    let props = dict([
+      ("a", J.number(1.0)),
+      ("b", J.string("b")),
+      ("c", J.boolean(true)),
+      ("d", J.boolean(false)),
+      ("e", J.array([])),
+      ("f", J.numberArray([1.])),
+      ("g", J.numberArray([1.])),
+      ("h", J.object_(dict([("a", J.null)]))),
+    ])
+    let r = render(src, props, [])
+    expect.value(r).toEqual(#ok("pass pass pass pass pass pass pass pass"))
   })
 
   test("Null patterns", ({expect, _}) => {
-    let null = parseString("null")
-    expect.value(patternTest(null, jsonList("1"))).toEqual(#NoMatch)
-    expect.value(patternTest(null, jsonList(`"a"`))).toEqual(#NoMatch)
-    expect.value(patternTest(null, jsonList("true"))).toEqual(#NoMatch)
-    expect.value(patternTest(null, jsonList("false"))).toEqual(#NoMatch)
-    expect.value(patternTest(null, jsonList("[]"))).toEqual(#NoMatch)
-    expect.value(patternTest(null, jsonList("{}"))).toEqual(#NoMatch)
+    // ???
+    // expect.value(patternTest(null, jsonList("{}"))).toEqual(#NoMatch)
+    let src = `
+      {%~ match a with null ~%} fail {% with _ ~%} pass {% /match ~%}
+      {%~ match b with null ~%} fail {% with _ ~%} pass {% /match ~%}
+      {%~ match c with null ~%} fail {% with _ ~%} pass {% /match ~%}
+      {%~ match d with null ~%} fail {% with _ ~%} pass {% /match ~%}
+      {%~ match e with null ~%} fail {% with _ ~%} pass {%~ /match ~%}
+    `
+    let props = dict([
+      ("a", J.number(1.0)),
+      ("b", J.string("b")),
+      ("c", J.boolean(true)),
+      ("d", J.boolean(false)),
+      ("e", J.array([])),
+    ])
+    let r = render(src, props, [])
+    expect.value(r).toEqual(#ok("pass pass pass pass pass"))
   })
 })
 
 describe("Binding", ({test, _}) => {
   test("One value", ({expect, _}) => {
-    expect.value(patternTest(parseString("x"), jsonList("1"))).toEqual(#Ok([("x", json("1"))]))
+    let src = `{%~ match a with x ~%} {{ x }} {%~ /match ~%}`
+    let props = dict([("a", J.string("pass"))])
+    let r = render(src, props, [])
+    expect.value(r).toEqual(#ok("pass"))
   })
 
   test("Ignore values with `_`", ({expect, _}) => {
-    expect.value(patternTest(parseString("[_, _, a]"), jsonList("[1, 2, 3]"))).toEqual(
-      #Ok([("a", json("3"))]),
-    )
+    let src = `{%~ match a with [_, _, x] ~%} {{ x }} {%~ with _ ~%} fail {%~ /match ~%}`
+    let props = dict([("a", J.stringArray(["fail", "fail", "pass"]))])
+    let r = render(src, props, [])
+    expect.value(r).toEqual(#ok("pass"))
   })
 
   test("Nested values", ({expect, _}) => {
-    expect.value(patternTest(parseString("[x, y]"), jsonList(`["thing 1", "thing 2"]`))).toEqual(
-      #Ok([("x", json(`"thing 1"`)), ("y", json(`"thing 2"`))]),
-    )
-    expect.value(
-      patternTest(parseString("{key: x, key2: y}"), jsonList(`{"key": true, "key2": false}`)),
-    ).toEqual(#Ok([("x", json("true")), ("y", json("false"))]))
-    expect.value(patternTest(parseString("{x, y}"), jsonList(`{"x": true}`))).toEqual(#NoMatch)
-    expect.value(
-      patternTest(parseString("[x, ...rest]"), jsonList(`["thing 1", "thing 2", "thing 3"]`)),
-    ).toEqual(#Ok([("rest", json(`["thing 2", "thing 3"]`)), ("x", json(`"thing 1"`))]))
-    expect.value(
-      patternTest(
-        parseString(`
-            {
-              a,
-              b: _,
-              c,
-              d: d,
-              e: _,
-              f: [g, ...rest],
-              h: {i, k},
-              "A complex string!": j
-            } 
-          `),
-        jsonList(`
-            {
+    let src = `
+      {%~ match a with [x, y] ~%} {{ x }} {{ y }} {% with _ ~%} fail {%~ /match ~%}
+      {%~ match b with {key: x, key2: y} ~%} {{ x }} {{ y }} {% with _ ~%} fail {%~ /match ~%}
+      {%~ match c with {x, y: !y} ~%} {{ x }} {%~ with _ ~%} pass {% /match ~%}
+      {%~ match d with [x, ...rest] ~%}
+        {{ x }} {% match rest with [y, z] ~%} {{ y }} {{ z }} {% with _ %} fail {%~ /match ~%}
+      {%~ with _ ~%} fail {%~ /match ~%}
+      {%~ match e with {
+          a,
+          b: _,
+          c,
+          d: d,
+          e: _,
+          f: [!g, ...rest],
+          h: {i, k},
+          "A complex string!": j
+        } ~%} {{ g }} {{ i }} {%~ with _ ~%} fail {%~ /match ~%}
+    `
+    let props = dict([
+      ("a", J.stringArray(["pass", "pass"])),
+      ("b", J.parseExn(`{"key": "pass", "key2": "pass"}`)),
+      ("c", J.parseExn(`{"x": "fail"}`)),
+      ("d", J.stringArray(["pass", "pass", "pass"])),
+      (
+        "e",
+        J.parseExn(`{
               "a": true,
               "b": false,
               "c": null,
               "d": 1,
               "e": 100.5,
               "f": [
-                "g",
+                "pass",
                 null
               ],
               "h": {
-                "i": "j",
+                "i": "pass",
                 "k": null
               },
               "A complex string!": true
-            }
-      `),
+            }`),
       ),
-    ).toEqual(
-      #Ok([
-        ("a", json("true")),
-        ("c", json("null")),
-        ("d", json("1")),
-        ("g", json(`"g"`)),
-        ("i", json(`"j"`)),
-        ("j", json("true")),
-        ("k", json("null")),
-        ("rest", json("[null]")),
-      ]),
-    )
+    ])
+    let r = render(src, props, [])
+    expect.value(r).toEqual(#ok("pass pass pass pass pass pass pass pass pass pass"))
   })
 })
 
 describe("Multiple patterns and data", ({test, _}) => {
   test("Two bindings", ({expect, _}) => {
-    expect.value(patternTest(parseString("a, 1"), NonEmpty(json("0"), [json("1")]))).toEqual(
-      #Ok([("a", json("0"))]),
-    )
+    let src = `{% match a, b with 1, x ~%} {{ x }} {%~ with _, _ %} fail {% /match %}`
+    let props = dict([("a", J.number(1.0)), ("b", J.string("pass"))])
+    let r = render(src, props, [])
+    expect.value(r).toEqual(#ok("pass"))
   })
 
   test("Three bindings", ({expect, _}) => {
-    expect.value(
-      patternTest(parseString("100, a, b"), NonEmpty(json("100"), [json("true"), json("false")])),
-    ).toEqual(#Ok([("a", json("true")), ("b", json("false"))]))
-    expect.value(
-      patternTest(
-        parseString("100, true, true"),
-        NonEmpty(json("100"), [json("true"), json("false")]),
-      ),
-    ).toEqual(#NoMatch)
+    let src = `
+      {%~ match a, b, c with 100, x, y ~%} {{ x }} {{ y }} {%~ with _, _, _ %} fail {% /match ~%}
+      {%~ match a, b, c with 100, "fail", y ~%} {{ y }} {%~ with _, _, _ %} pass {%~ /match ~%}
+    `
+    let props = dict([("a", J.number(100.0)), ("b", J.string("pass")), ("c", J.string("pass"))])
+    let r = render(src, props, [])
+    expect.value(r).toEqual(#ok("pass pass pass"))
   })
 
   test("Complex", ({expect, _}) => {
-    expect.value(
-      patternTest(
-        parseString("{a: true} , {b: false} , [c]"),
-        NonEmpty(json(`{"a": true}`), [json(`{"b": false}`), json("[true]")]),
-      ),
-    ).toEqual(#Ok([("c", json("true"))]))
+    let src = `
+      {%~ match a, b, c with {a: true}, {b: false}, [c] ~%} {{ c }} {%~ with _, _, _ %} fail {% /match ~%}
+    `
+    let props = dict([
+      ("a", J.parseExn(`{"a": true}`)),
+      ("b", J.parseExn(`{"b": false}`)),
+      ("c", J.stringArray(["pass"])),
+    ])
+    let r = render(src, props, [])
+    expect.value(r).toEqual(#ok("pass"))
   })
 })
 
-let parseString = source => {
-  let tokens = Lexer.make(~name="", "{% " ++ source ++ " %}")
-  Lexer.popExn(tokens)->ignore // skip the opening string
-  let NonEmpty.NonEmpty(result, _) = Compile.Pattern.make(tokens)
-  result
-}
-
-describe("Encoding to JSON", ({test, _}) => {
-  let props = Js.Dict.fromArray([
-    ("a", Js.Json.number(1.0)),
-    ("b", Js.Json.string("b")),
-    ("rest", Js.Json.booleanArray([true, false])),
-  ])
-
-  test("Encoding", ({expect, _}) => {
-    expect.value(
-      parseString(`
-          {
-            a,
-            b,
-            c: [],
-            d: {},
-            e: [1, 2],
-            f: {g: 1},
-            h: [true, false, null, ...rest],
-            i: ["j"]
-          }`)->Pattern.toJson(~props, ~stack=list{}),
-    ).toEqual(
-      #ok(
-        json(`
-          {
-            "a": 1.0,
-            "b": "b",
-            "c": [],
-            "d": {},
-            "e": [1, 2],
-            "f": {"g": 1},
-            "h": [true, false, null, true, false],
-            "i": ["j"]
-            }`),
-      ),
-    )
-  })
-
-  test("Encoding errors", ({expect, _}) => {
-    let pattern = parseString(`[a, ...b]`)
-    expect.value(pattern->Pattern.toJson(~props, ~stack=list{})).toEqual(
-      #errors([
-        {
-          message: `"b" is type array but the data is type string.`,
-          kind: #Type,
-          location: Some({character: 4}),
-          path: [],
-          exn: None,
-        },
-      ]),
-    )
-    let pattern = parseString(`c`)
-    expect.value(pattern->Pattern.toJson(~props, ~stack=list{})).toEqual(
-      #errors([
-        {
-          message: `Binding "c" does not exist.`,
-          kind: #Render,
-          location: Some({character: 4}),
-          path: [],
-          exn: None,
-        },
-      ]),
-    )
+describe("Constructing patterns to match", ({test, _}) => {
+  test("Constructing null patterns", ({expect, _}) => {
+    let src = `
+      {%~ match null with null ~%} pass {%~ with !_ %} fail {% /match ~%}
+      {%~ match !1 with null %} fail {% with !1 %} pass {%~ with _ %} fail {% /match ~%}
+    `
+    let r = render(src, Js.Dict.empty(), [])
+    expect.value(r).toEqual(#ok("pass pass"))
   })
 })

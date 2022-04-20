@@ -1,17 +1,9 @@
 {*
-  Copyright 2021 John Jackson
+  Copyright (c) 2022 John Jackson.
 
-  Licensed under the Apache License, Version 2.0 (the "License");
-  you may not use this file except in compliance with the License.
-  You may obtain a copy of the License at
-
-      http://www.apache.org/licenses/LICENSE-2.0
-
-  Unless required by applicable law or agreed to in writing, software
-  distributed under the License is distributed on an "AS IS" BASIS,
-  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-  See the License for the specific language governing permissions and
-  limitations under the License.
+  This Source Code Form is subject to the terms of the Mozilla Public
+  License, v. 2.0. If a copy of the MPL was not distributed with this
+  file, You can obtain one at http://mozilla.org/MPL/2.0/.
 *}
 {%~ match site with {url: siteUrl} ~%}
 <!DOCTYPE html>
@@ -19,7 +11,7 @@
   <head>
     <title>{{ title }}</title>
     {% match description with null %} <!-- no description -->
-    {% with description %}
+    {% with !description %}
       <meta name="description" content="{{ description }}" />
     {% /match %}
     <meta
@@ -84,10 +76,10 @@
             <h1>{{ title }}</h1>
           </header>
         {%~ /match ~%}
-        {{ &content ? Children }}
+        {{ Children }}
         {%~ match next
            with null ~%} {* nothing! *}
-        {%~ with {text, url} ~%}
+        {%~ with !{text, url} ~%}
           <nav class="next">
             <h2 class="next__header">Next:</h2>
             <a href="{{ siteUrl }}{{ url }}" class="next__url">{{ text }}</a>
@@ -95,7 +87,12 @@
         {%~ /match %}
       </article>
     </main>
-    {%~ Footer name="John Jackson" link="https://johnridesa.bike" siteUrl /~%}
+    {%~ Footer
+        name="John Jackson"
+        link=!"https://johnridesa.bike"
+        siteUrl
+        year=null
+    /~%}
   </body>
 </html>
 {%~ /match ~%}

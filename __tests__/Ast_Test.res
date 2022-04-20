@@ -1,20 +1,15 @@
 /**
-   Copyright 2021 John Jackson
+  Copyright (c) 2022 John Jackson.
 
-   Licensed under the Apache License, Version 2.0 (the "License");
-   you may not use this file except in compliance with the License.
-   You may obtain a copy of the License at
-
-       http://www.apache.org/licenses/LICENSE-2.0
-
-   Unless required by applicable law or agreed to in writing, software
-   distributed under the License is distributed on an "AS IS" BASIS,
-   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-   See the License for the specific language governing permissions and
-   limitations under the License.
+  This Source Code Form is subject to the terms of the Mozilla Public
+  License, v. 2.0. If a copy of the MPL was not distributed with this
+  file, You can obtain one at http://mozilla.org/MPL/2.0/.
 */
 
 open TestFramework
+
+module MapString = Belt.Map.String
+module P = Parser.Pattern
 
 describe("Lexer", ({test, _}) => {
   test("Tokens are generated correctly", ({expect, _}) => {
@@ -40,7 +35,9 @@ describe("Lexer", ({test, _}) => {
 {{ \t a
 }}
 {* {q*r *}
-{{ S }}`
+{% match t with (1.5, "2") %}
+  {{ S }}
+{% /match %}`
       ->Lexer.make(~name="")
       ->Lexer.debugToArray,
     ).toMatchSnapshot()
@@ -50,106 +47,185 @@ describe("Lexer", ({test, _}) => {
 describe("Patterns", ({test, _}) => {
   let parseString = source => {
     let tokens = Lexer.make("{% " ++ source ++ "%}", ~name="")
-    Lexer.popExn(tokens)->ignore // Skip the opening string
-    Compile.Pattern.make(tokens)
+    Lexer.pop(tokens)->ignore // Skip the opening string
+    Parser.Pattern.make(tokens)
   }
 
   test("Enums", ({expect, _}) => {
-    expect.value(parseString("null")).toEqual(NonEmpty(#Null(Loc(3)), []))
-    expect.value(parseString("false")).toEqual(NonEmpty(#False(Loc(3)), []))
-    expect.value(parseString("true")).toEqual(NonEmpty(#True(Loc(3)), []))
+    expect.value(parseString("null")).toEqual(NonEmpty.one(P.UNullable(Debug.make("", 3), None)))
+    expect.value(parseString("!a")).toEqual(
+      NonEmpty.one(P.UNullable(Debug.make("", 3), Some(UBinding(Debug.make("", 4), "a")))),
+    )
+    expect.value(parseString("false")).toEqual(NonEmpty.one(P.UBool(Debug.make("", 3), 0)))
+    expect.value(parseString("true")).toEqual(NonEmpty.one(P.UBool(Debug.make("", 3), 1)))
   })
 
   test("Numbers", ({expect, _}) => {
-    expect.value(parseString("1")).toEqual(NonEmpty(#Number(Loc(3), 1.0), []))
-    expect.value(parseString("12345")).toEqual(NonEmpty(#Number(Loc(3), 12345.0), []))
-    expect.value(parseString("1234.5")).toEqual(NonEmpty(#Number(Loc(3), 1234.5), []))
-    expect.value(parseString("-12345")).toEqual(NonEmpty(#Number(Loc(3), -12345.0), []))
-    expect.value(parseString("1e+1")).toEqual(NonEmpty(#Number(Loc(3), 10.0), []))
-    expect.value(parseString("-1E+1")).toEqual(NonEmpty(#Number(Loc(3), -10.0), []))
+    expect.value(parseString("1")).toEqual(NonEmpty.one(P.UInt(Debug.make("", 3), 1)))
+    expect.value(parseString("1.")).toEqual(NonEmpty.one(P.UFloat(Debug.make("", 3), 1.0)))
+    expect.value(parseString("12345")).toEqual(NonEmpty.one(P.UInt(Debug.make("", 3), 12345)))
+    expect.value(parseString("1234.5")).toEqual(NonEmpty.one(P.UFloat(Debug.make("", 3), 1234.5)))
+    expect.value(parseString("-12345")).toEqual(NonEmpty.one(P.UInt(Debug.make("", 3), -12345)))
+    expect.value(parseString("1e+1")).toEqual(NonEmpty.one(P.UInt(Debug.make("", 3), 10)))
+    expect.value(parseString("-1E+1")).toEqual(NonEmpty.one(P.UInt(Debug.make("", 3), -10)))
+    expect.value(parseString("175.0e-2")).toEqual(NonEmpty.one(P.UFloat(Debug.make("", 3), 1.75)))
+    expect.value(parseString("175e-2")).toEqual(NonEmpty.one(P.UInt(Debug.make("", 3), 1)))
   })
 
   test("Strings", ({expect, _}) => {
-    expect.value(parseString(`"a"`)).toEqual(NonEmpty(#String(Loc(3), "a"), []))
-    expect.value(parseString(`"a b c"`)).toEqual(NonEmpty(#String(Loc(3), "a b c"), []))
+    expect.value(parseString(`"a"`)).toEqual(NonEmpty.one(P.UString(Debug.make("", 3), "a")))
+    expect.value(parseString(`"a b c"`)).toEqual(
+      NonEmpty.one(P.UString(Debug.make("", 3), "a b c")),
+    )
     expect.value(parseString("\"a says \\\"b\\\" to c\"")).toEqual(
-      NonEmpty(#String(Loc(3), `a says "b" to c`), []),
+      NonEmpty.one(P.UString(Debug.make("", 3), `a says "b" to c`)),
     )
   })
 
   test("Bindings", ({expect, _}) => {
-    expect.value(parseString("a")).toEqual(NonEmpty(#Binding(Loc(3), "a"), []))
-    expect.value(parseString("_")).toEqual(NonEmpty(#Binding(Loc(3), "_"), []))
-    expect.value(parseString("abc123")).toEqual(NonEmpty(#Binding(Loc(3), "abc123"), []))
-    expect.value(parseString("a_")).toEqual(NonEmpty(#Binding(Loc(3), "a_"), []))
+    expect.value(parseString("a")).toEqual(NonEmpty.one(P.UBinding(Debug.make("", 3), "a")))
+    expect.value(parseString("_")).toEqual(NonEmpty.one(P.UBinding(Debug.make("", 3), "_")))
+    expect.value(parseString("abc123")).toEqual(
+      NonEmpty.one(P.UBinding(Debug.make("", 3), "abc123")),
+    )
+    expect.value(parseString("a_")).toEqual(NonEmpty.one(P.UBinding(Debug.make("", 3), "a_")))
   })
 
   test("Arrays", ({expect, _}) => {
-    expect.value(parseString("[]")).toEqual(NonEmpty(#Array(Loc(3), []), []))
-    expect.value(parseString("[1]")).toEqual(NonEmpty(#Array(Loc(3), [#Number(Loc(4), 1.0)]), []))
-    expect.value(parseString("[null]")).toEqual(NonEmpty(#Array(Loc(3), [#Null(Loc(4))]), []))
-    expect.value(parseString(`["a"]`)).toEqual(NonEmpty(#Array(Loc(3), [#String(Loc(4), "a")]), []))
+    expect.value(parseString("[]")).toEqual(NonEmpty.one(P.UList(Debug.make("", 3), [], None)))
+    expect.value(parseString("[1]")).toEqual(
+      NonEmpty.one(P.UList(Debug.make("", 3), [P.UInt(Debug.make("", 4), 1)], None)),
+    )
+    expect.value(parseString("[null]")).toEqual(
+      NonEmpty.one(P.UList(Debug.make("", 3), [P.UNullable(Debug.make("", 4), None)], None)),
+    )
+    expect.value(parseString(`["a"]`)).toEqual(
+      NonEmpty.one(P.UList(Debug.make("", 3), [P.UString(Debug.make("", 4), "a")], None)),
+    )
     expect.value(parseString(`[1, "a", null]`)).toEqual(
-      NonEmpty(#Array(Loc(3), [#Number(Loc(4), 1.0), #String(Loc(7), "a"), #Null(Loc(12))]), []),
+      NonEmpty.one(
+        P.UList(
+          Debug.make("", 3),
+          [
+            P.UInt(Debug.make("", 4), 1),
+            P.UString(Debug.make("", 7), "a"),
+            P.UNullable(Debug.make("", 12), None),
+          ],
+          None,
+        ),
+      ),
     )
     expect.value(parseString(`["b", x]`)).toEqual(
-      NonEmpty(#Array(Loc(3), [#String(Loc(4), "b"), #Binding(Loc(9), "x")]), []),
+      NonEmpty.one(
+        P.UList(
+          Debug.make("", 3),
+          [P.UString(Debug.make("", 4), "b"), P.UBinding(Debug.make("", 9), "x")],
+          None,
+        ),
+      ),
     )
     expect.value(parseString(`["b", ...x]`)).toEqual(
-      NonEmpty(#ArrayWithTailBinding(Loc(3), [#String(Loc(4), "b")], #Binding(Loc(12), "x")), []),
+      NonEmpty.one(
+        P.UList(
+          Debug.make("", 3),
+          [P.UString(Debug.make("", 4), "b")],
+          Some(UBinding(Debug.make("", 12), "x")),
+        ),
+      ),
     )
     expect.value(parseString(`[["b", 1], x]`)).toEqual(
-      NonEmpty(
-        #Array(
-          Loc(3),
-          [#Array(Loc(4), [#String(Loc(5), "b"), #Number(Loc(10), 1.0)]), #Binding(Loc(14), "x")],
+      NonEmpty.one(
+        P.UList(
+          Debug.make("", 3),
+          [
+            P.UList(
+              Debug.make("", 4),
+              [P.UString(Debug.make("", 5), "b"), P.UInt(Debug.make("", 10), 1)],
+              None,
+            ),
+            P.UBinding(Debug.make("", 14), "x"),
+          ],
+          None,
         ),
-        [],
       ),
     )
     expect.value(parseString("[[], x]")).toEqual(
-      NonEmpty(#Array(Loc(3), [#Array(Loc(4), []), #Binding(Loc(8), "x")]), []),
+      NonEmpty.one(
+        P.UList(
+          Debug.make("", 3),
+          [P.UList(Debug.make("", 4), [], None), P.UBinding(Debug.make("", 8), "x")],
+          None,
+        ),
+      ),
     )
   })
 
   test("Objects", ({expect, _}) => {
-    expect.value(parseString("{}")).toEqual(NonEmpty(#Object(Loc(3), []), []))
+    expect.value(parseString("{}")).toEqual(
+      NonEmpty.one(P.URecord(Debug.make("", 3), None, MapString.empty)),
+    )
     expect.value(parseString("{pun}")).toEqual(
-      NonEmpty(#Object(Loc(3), [("pun", #Binding(Loc(4), "pun"))]), []),
+      NonEmpty.one(
+        P.URecord(
+          Debug.make("", 3),
+          None,
+          MapString.fromArray([("pun", P.UBinding(Debug.make("", 4), "pun"))]),
+        ),
+      ),
     )
     expect.value(parseString("{pun1, pun2}")).toEqual(
-      NonEmpty(
-        #Object(Loc(3), [("pun1", #Binding(Loc(4), "pun1")), ("pun2", #Binding(Loc(10), "pun2"))]),
-        [],
+      NonEmpty.one(
+        P.URecord(
+          Debug.make("", 3),
+          None,
+          MapString.empty
+          ->MapString.set("pun1", P.UBinding(Debug.make("", 4), "pun1"))
+          ->MapString.set("pun2", P.UBinding(Debug.make("", 10), "pun2")),
+        ),
       ),
     )
     expect.value(parseString("{a: b}")).toEqual(
-      NonEmpty(#Object(Loc(3), [("a", #Binding(Loc(7), "b"))]), []),
+      NonEmpty.one(
+        P.URecord(
+          Debug.make("", 3),
+          None,
+          MapString.fromArray([("a", P.UBinding(Debug.make("", 7), "b"))]),
+        ),
+      ),
     )
     expect.value(parseString("{a: b, c: d}")).toEqual(
-      NonEmpty(#Object(Loc(3), [("a", #Binding(Loc(7), "b")), ("c", #Binding(Loc(13), "d"))]), []),
+      NonEmpty.one(
+        P.URecord(
+          Debug.make("", 3),
+          None,
+          MapString.empty
+          ->MapString.set("a", P.UBinding(Debug.make("", 7), "b"))
+          ->MapString.set("c", P.UBinding(Debug.make("", 13), "d")),
+        ),
+      ),
     )
     expect.value(parseString(`{"#illegal": legal, "<%name%>": name}`)).toEqual(
-      NonEmpty(
-        #Object(
-          Loc(3),
-          [("#illegal", #Binding(Loc(16), "legal")), ("<%name%>", #Binding(Loc(35), "name"))],
+      NonEmpty.one(
+        P.URecord(
+          Debug.make("", 3),
+          None,
+          MapString.empty
+          ->MapString.set("#illegal", P.UBinding(Debug.make("", 16), "legal"))
+          ->MapString.set("<%name%>", P.UBinding(Debug.make("", 35), "name")),
         ),
-        [],
       ),
     )
     expect.value(parseString(`{a: 1.5, b: "b", c: null, d}`)).toEqual(
-      NonEmpty(
-        #Object(
-          Loc(3),
-          [
-            ("a", #Number(Loc(7), 1.5)),
-            ("b", #String(Loc(15), "b")),
-            ("c", #Null(Loc(23))),
-            ("d", #Binding(Loc(29), "d")),
-          ],
+      NonEmpty.one(
+        P.URecord(
+          Debug.make("", 3),
+          None,
+          MapString.empty
+          ->MapString.set("a", P.UFloat(Debug.make("", 7), 1.5))
+          ->MapString.set("b", P.UString(Debug.make("", 15), "b"))
+          ->MapString.set("c", P.UNullable(Debug.make("", 23), None))
+          ->MapString.set("d", P.UBinding(Debug.make("", 29), "d")),
         ),
-        [],
       ),
     )
     let result = parseString(`
@@ -168,38 +244,44 @@ describe("Patterns", ({test, _}) => {
   e: e
 }`)
     expect.value(result).toEqual(
-      NonEmpty(
-        #Object(
-          Loc(4),
-          [
-            ("a", #Binding(Loc(11), "bindingA")),
-            ("b", #Number(Loc(26), 1.5)),
-            (
-              "c",
-              #ArrayWithTailBinding(
-                Loc(36),
-                [#String(Loc(41), "item1"), #Binding(Loc(54), "bindingC")],
-                #Binding(Loc(71), "rest"),
-              ),
+      NonEmpty.one(
+        P.URecord(
+          Debug.make("", 4),
+          None,
+          MapString.empty
+          ->MapString.set("a", P.UBinding(Debug.make("", 11), "bindingA"))
+          ->MapString.set("b", P.UFloat(Debug.make("", 26), 1.5))
+          ->MapString.set(
+            "c",
+            P.UList(
+              Debug.make("", 36),
+              [P.UString(Debug.make("", 41), "item1"), P.UBinding(Debug.make("", 54), "bindingC")],
+              Some(UBinding(Debug.make("", 71), "rest")),
             ),
-            (
-              "d",
-              #Object(
-                Loc(86),
-                [("<% illegal %>", #Null(Loc(109))), ("d", #Binding(Loc(122), "bindingD"))],
-              ),
+          )
+          ->MapString.set(
+            "d",
+            P.URecord(
+              Debug.make("", 86),
+              None,
+              MapString.empty
+              ->MapString.set("<% illegal %>", P.UNullable(Debug.make("", 109), None))
+              ->MapString.set("d", P.UBinding(Debug.make("", 122), "bindingD")),
             ),
-            ("e", #Binding(Loc(141), "e")),
-          ],
+          )
+          ->MapString.set("e", P.UBinding(Debug.make("", 141), "e")),
         ),
-        [],
       ),
     )
   })
 
   test("Multiple patterns", ({expect, _}) => {
     expect.value(parseString(`true, "a", b`)).toEqual(
-      NonEmpty(#True(Loc(3)), [#String(Loc(9), "a"), #Binding(Loc(14), "b")]),
+      NonEmpty.fromArrayExn([
+        P.UBool(Debug.make("", 3), 1),
+        P.UString(Debug.make("", 9), "a"),
+        P.UBinding(Debug.make("", 14), "b"),
+      ]),
     )
   })
 })
@@ -207,33 +289,30 @@ describe("Patterns", ({test, _}) => {
 describe("Parser", ({test, _}) => {
   test("Basic syntax", ({expect, _}) => {
     expect.value(
-      Compile.makeAstInternalExn(
+      Lexer.make(
         ~name="",
         `
 a
 {* b *}
 {{ c }}
 {{ "d" }}
-{{ 1.5 }}
 {{ &e }}
 f`,
-      ),
+      )->Parser.make,
     ).toEqual([
-      Text("\na\n", NoTrim),
-      Text("\n", NoTrim),
-      Echo(Loc(13), NonEmpty(Binding(Loc(14), "c", Escape), [])),
-      Text("\n", NoTrim),
-      Echo(Loc(21), NonEmpty(String("d", Escape), [])),
-      Text("\n", NoTrim),
-      Echo(Loc(31), NonEmpty(Number(1.5, Escape), [])),
-      Text("\n", NoTrim),
-      Echo(Loc(41), NonEmpty(Binding(Loc(43), "e", NoEscape), [])),
-      Text("\nf", NoTrim),
+      UText("\na\n", NoTrim),
+      UText("\n", NoTrim),
+      UEcho(Debug.make("", 13), [], EBinding(Debug.make("", 14), "c", Escape)),
+      UText("\n", NoTrim),
+      UEcho(Debug.make("", 21), [], EString(Debug.make("", 22), "d", Escape)),
+      UText("\n", NoTrim),
+      UEcho(Debug.make("", 31), [], EBinding(Debug.make("", 33), "e", NoEscape)),
+      UText("\nf", NoTrim),
     ])
   })
   test("Matching", ({expect, _}) => {
     expect.value(
-      Compile.makeAstInternalExn(
+      Lexer.make(
         ~name="",
         `
 {% match a
@@ -251,13 +330,16 @@ f`,
 {% with false, _ %}
   h
 {% /match %}
+{% match tuple, dict with (i, "j"), <k: l> %}
+  m
+{% /match %}
 `,
-      ),
+      )->Parser.make,
     ).toMatchSnapshot()
   })
   test("Mapping", ({expect, _}) => {
     expect.value(
-      Compile.makeAstInternalExn(
+      Lexer.make(
         ~name="",
         `
 {% map a with {b} %}
@@ -269,16 +351,16 @@ f`,
 {% with {d: false, f} %}
   {{ f }}
 {% /map %}
-{% map g with {h}, index %}
-  {{ index }} {{ g }}
+{% map g with {h}, i %}
+  {{ i }} {{ j }}
 {% /map %}
 `,
-      ),
+      )->Parser.make,
     ).toMatchSnapshot()
   })
   test("Components", ({expect, _}) => {
     expect.value(
-      Compile.makeAstInternalExn(
+      Lexer.make(
         ~name="",
         `
 {% A
@@ -294,17 +376,17 @@ f`,
    {% L m={n: o, p: [q], r} / %}
 {% /A %}
 `,
-      ),
+      )->Parser.make,
     ).toMatchSnapshot()
   })
 })
 
 describe("Components", ({test, _}) => {
   test("Components are only compiled once", ({expect, _}) => {
-    let a = Source.string(~name="A", "{% B /%}")
-    let b = Source.string(~name="B", "{% C /%}")
-    let c = Source.string(~name="C", "c")
-    let d = Source.string(~name="D", "{% C /%}")
+    let a = Source.src(~name="A", "{% B /%}")
+    let b = Source.src(~name="B", "{% C /%}")
+    let c = Source.src(~name="C", "c")
+    let d = Source.src(~name="D", "{% C /%}")
     let result = Compile.Components.make([a, b, c, d])
     // This assertion doesn't really check that the test worked.
     // It exists for code coverage.

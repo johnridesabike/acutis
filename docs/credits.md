@@ -1,7 +1,7 @@
 ---
 title: Acutis credits
 showTitle: true
-layout: layout.acutis
+layout: main.acutis
 next: null
 ---
 The Acutis software and this website was created by [John Jackson][1]. It's

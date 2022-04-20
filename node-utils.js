@@ -1,23 +1,15 @@
 /**
- *    Copyright 2021 John Jackson
- *
- *   Licensed under the Apache License, Version 2.0 (the "License");
- *   you may not use this file except in compliance with the License.
- *   You may obtain a copy of the License at
- *
- *       http://www.apache.org/licenses/LICENSE-2.0
- *
- *   Unless required by applicable law or agreed to in writing, software
- *   distributed under the License is distributed on an "AS IS" BASIS,
- *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *   See the License for the specific language governing permissions and
- *   limitations under the License.
- */
+  Copyright (c) 2022 John Jackson.
+
+  This Source Code Form is subject to the terms of the Mozilla Public
+  License, v. 2.0. If a copy of the MPL was not distributed with this
+  file, You can obtain one at http://mozilla.org/MPL/2.0/.
+*/
 
 const util = require("util");
 const fs = require("fs");
 const path = require("path");
-const Acutis = require("./lib/js/src/AcutisJs");
+const { Source } = require("./lib/js/src/AcutisJs");
 
 const readFile = util.promisify(fs.readFile);
 
@@ -26,6 +18,12 @@ function filenameToComponent(file) {
   const firstChar = basename.charAt(0).toUpperCase();
   const rest = basename.slice(1);
   return firstChar + rest;
+}
+
+async function loadSrc(filePath) {
+  const name = filenameToComponent(filePath);
+  const src = await readFile(filePath, "utf-8");
+  return [name, src];
 }
 
 async function loadTemplate(fileName) {
@@ -37,10 +35,9 @@ async function loadTemplate(fileName) {
       const jsmodule = await import(filePath);
       return jsmodule.default;
     default:
-      const name = filenameToComponent(filePath);
-      const src = await readFile(filePath, "utf-8");
-      return Acutis.Source.string(name, src);
+      const [name, src] = await loadSrc(filePath);
+      return Source.src(name, src);
   }
 }
 
-module.exports = { loadTemplate, filenameToComponent };
+module.exports = { loadTemplate, loadSrc, filenameToComponent };

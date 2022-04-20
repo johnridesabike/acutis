@@ -19,7 +19,7 @@
   "sources": [
     {
       "dir": "src",
-      "public": ["Acutis_Types", "Compile", "Environment", "Result", "Source"]
+      "public": ["Compile", "Result", "Source", "Render"]
     },
     {
       "dir": "__tests__",

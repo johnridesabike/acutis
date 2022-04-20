@@ -9,7 +9,6 @@ can run in a browser or in Node.
 Acutis is a small, personal project and is not stable yet. Use Acutis if you
 want to experiment with a different kind of template language.
 
-
 ```acutis
 <h1> Blog posts for {{ siteTitle }} </h1>
 {% map blogPosts with {image, title, date, excerpt, author: {name}} %}
@@ -18,7 +17,7 @@ want to experiment with a different kind of template language.
       {% match image
          with null %}
         {* no image *}
-      {% with {src, alt} %}
+      {% with !{src, alt} %}
         <img src="{{ src }}" alt="{{ alt }}" />
       {% /match %}
       <h2> {{ title }} </h2>
@@ -59,16 +58,10 @@ yarn test
 ```
 
 ## License
-    Copyright 2021 John Jackson
 
-    Licensed under the Apache License, Version 2.0 (the "License");
-    you may not use this file except in compliance with the License.
-    You may obtain a copy of the License at
- 
-        http://www.apache.org/licenses/LICENSE-2.0
+    Copyright (c) 2022 John Jackson.
 
-    Unless required by applicable law or agreed to in writing, software
-    distributed under the License is distributed on an "AS IS" BASIS,
-    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-    See the License for the specific language governing permissions and
-    limitations under the License.
+    This Source Code Form is subject to the terms of the Mozilla Public
+    License, v. 2.0. If a copy of the MPL was not distributed with this
+    file, You can obtain one at http://mozilla.org/MPL/2.0/.
+

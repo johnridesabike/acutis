@@ -1,18 +1,10 @@
 /**
- *    Copyright 2021 John Jackson
- *
- *   Licensed under the Apache License, Version 2.0 (the "License");
- *   you may not use this file except in compliance with the License.
- *   You may obtain a copy of the License at
- *
- *       http://www.apache.org/licenses/LICENSE-2.0
- *
- *   Unless required by applicable law or agreed to in writing, software
- *   distributed under the License is distributed on an "AS IS" BASIS,
- *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *   See the License for the specific language governing permissions and
- *   limitations under the License.
- */
+  Copyright (c) 2022 John Jackson.
+
+  This Source Code Form is subject to the terms of the Mozilla Public
+  License, v. 2.0. If a copy of the MPL was not distributed with this
+  file, You can obtain one at http://mozilla.org/MPL/2.0/.
+*/
 
 @import "normalize.css";
 @import "prismjs/themes/prism.css";
@@ -92,9 +84,13 @@ code[class*="language-"] {
   font-family: var(--font-family-mono);
 }
 
-p code,
-li code {
+/* Use Prism colors for inline code. */
+code:not([class*="language-"]) {
   white-space: nowrap;
+  color: #000;
+  background-color: #f5f2f0;
+  text-shadow: 0 1px #fff;
+  padding: 0 0.125em;
 }
 
 blockquote {
@@ -196,7 +192,6 @@ li::marker {
   text-align: center;
   font-family: var(--font-family-mono);
   font-size: 0.8em;
-  width: 20ch;
 }
 
 .site-header__nav-list {
@@ -207,7 +202,6 @@ li::marker {
 .site-header__nav li {
   margin-left: 1.5em;
   margin-bottom: 0.5em;
-  margin-top: 0.5em;
 }
 
 .site-header__nav a {

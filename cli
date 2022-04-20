@@ -1,25 +1,17 @@
 #!/usr/bin/env node
 /**
- *    Copyright 2021 John Jackson
- *
- *   Licensed under the Apache License, Version 2.0 (the "License");
- *   you may not use this file except in compliance with the License.
- *   You may obtain a copy of the License at
- *
- *       http://www.apache.org/licenses/LICENSE-2.0
- *
- *   Unless required by applicable law or agreed to in writing, software
- *   distributed under the License is distributed on an "AS IS" BASIS,
- *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *   See the License for the specific language governing permissions and
- *   limitations under the License.
- */
+  Copyright (c) 2022 John Jackson.
+
+  This Source Code Form is subject to the terms of the Mozilla Public
+  License, v. 2.0. If a copy of the MPL was not distributed with this
+  file, You can obtain one at http://mozilla.org/MPL/2.0/.
+*/
 
 const util = require("util");
 const fs = require("fs");
 const minimist = require("minimist");
-const { Compile, Environment, Result } = require("./lib/js/src/AcutisJs");
-const { loadTemplate } = require("./node-utils");
+const { Compile, Render, Result } = require("./lib/js/src/AcutisJs");
+const { loadTemplate, loadSrc } = require("./node-utils");
 const { version } = require("./package.json");
 const { stdin } = process;
 
@@ -85,20 +77,21 @@ Examples:
 } else {
   (async function () {
     try {
+      const firstFile = args._.shift();
       const files = await Promise.all(args._.map(loadTemplate));
       const json = await (args.data ? readFile(args.data) : getStdin());
       const props = json === "" ? {} : JSON.parse(json);
-      const firstFile = files.shift();
       const components = Result.getOrElse(
         Compile.Components.make(files),
         onError
       );
+      const [name, src] = await loadSrc(firstFile);
       const template = Result.getOrElse(
-        Compile.make(firstFile, components),
+        Compile.make(name, src, components),
         onError
       );
-      const env = args.async ? Environment.async : Environment.sync;
-      const result = await template(env, props, {});
+      const renderFn = args.async ? Render.async : Render.sync;
+      const result = await renderFn(template, props);
       const output = Result.getOrElse(result, onError);
       if (args.output) {
         await writeFile(args.output, output, "utf8");

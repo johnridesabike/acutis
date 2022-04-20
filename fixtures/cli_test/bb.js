@@ -1,8 +1,8 @@
-const { Source } = require("../../");
+const { Source, Typescheme } = require("../../");
 
-module.exports = Source.funcWithString(
+module.exports = Source.fn(
   "Bb",
-  "B: {{ name }}",
-  (ast) => (env, { name }, children) =>
-    env.render(ast, { name: name.toUpperCase() }, children)
+  Typescheme.make([["name", Typescheme.string()]]),
+  Typescheme.Child.make([]),
+  (Env, { name }, _children) => Env.return_("B: " + name.toUpperCase())
 );
