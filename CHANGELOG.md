@@ -1,5 +1,28 @@
 # Changelog
 
+## Unreleased
+
+- Acutis is now statically typed. This breaks all older templates.
+- Added types:
+  - Tuple.
+  - Dictionary.
+  - Enum.
+  - Tagged union.
+  - Unknown.
+- Changed types:
+  - Numbers are now either integers or floating points.
+  - Boolean is a type of enum.
+  - Records and lists (formerly called arrays) behave differently than before.
+  - Nullable behaves more like an "option" type.
+- Added syntax for new types.
+- A new function `map_dict` now compliments the list `map`.
+- Changed how external template functions work.
+- Pattern matching compiles into decision trees.
+- JavaScript API has almost completely changed.
+- Changed license to MPL.
+- There are many more changes than I can list here. See the updated docs for
+  more information.
+
 ## 0.13.0
 
 - Breaking change: invalid string escape sequences are now compile errors.
@@ -34,7 +57,7 @@
 - `Compile.make` now takes a `Source.t.` type.
 - New `Compile.fromArray` creates a string map for components.
 - Removed documentation for `Compile.makeAst`.
-- Rescript: Added a `public` configuration to only export selected modules.
+- ReScript: Added a `public` configuration to only export selected modules.
 - Some public API functions changed from uncurried to curried[^1]:
   - `Source.func` function argument.
   - `Source.funcWithString` function argument.
@@ -49,8 +72,8 @@
 - Upgraded ReScript compiler to 9.0.
 - Added ReScript standard library as a dependency.
 - Removed JavaScript bundles. We now publish the compiled ReScript directly.
-- Dropped Node 10 from testing and `package.json` engines. However, nothing
-  else has changed yet that should stop Node 10 from working.
+- Dropped Node 10 from testing and `package.json` engines. However, nothing else
+  has changed yet that should stop Node 10 from working.
 
 ## 0.8.0
 
@@ -67,7 +90,7 @@
 ## 0.6.0
 
 - Added nullish coalescing to `{{ echo }}` and `raw` statements.
-- Rescript: Changed namespace to `AcutisLang`.
+- ReScript: Changed namespace to `AcutisLang`.
 - Added `exports` field to package.json
 - Removed prebundled IIFE files.
 - Minified all bundled files.
@@ -100,8 +123,8 @@
 ## 0.4.0
 
 - Changed output from ReScript stdlib result type to a polymorphic variant.
-- Removed JavaScript `result` function in favor of directly accessing the
-  data structure.
+- Removed JavaScript `result` function in favor of directly accessing the data
+  structure.
 - Made the `exn` field in the error record more type-safe by hiding its
   contents.
 
@@ -110,10 +133,10 @@
 - Rewrote error handling.
   - Exceptions are no longer thrown.
   - Errors are more readable.
-  - Rendered template output is returned in a ReScript result data type,
-    which either contains the compiled output or an array of errors.
-  - A JavaScript `result` function can convert the output into a format
-    friendly for JavaScript environments.
+  - Rendered template output is returned in a ReScript result data type, which
+    either contains the compiled output or an array of errors.
+  - A JavaScript `result` function can convert the output into a format friendly
+    for JavaScript environments.
 - Improved detecting and reporting bad AST input.
 - CLI: Added option to print errors with `console.table`.
 
