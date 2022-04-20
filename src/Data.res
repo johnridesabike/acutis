@@ -1,5 +1,5 @@
 /**
-  Copyright (c) 2021 John Jackson.
+  Copyright (c) 2022 John Jackson.
 
   This Source Code Form is subject to the terms of the Mozilla Public
   License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -77,7 +77,7 @@ type rec t =
 
 module Stack = {
   let nullable = "nullable"
-  let array = "array" // add index later?
+  let array = i => "index: " ++ Int.toString(i)
   let obj_key = s => "key: " ++ s
 }
 
@@ -162,7 +162,7 @@ and list = (~stack, j, ty) =>
     let l = ref(PNull)
     for i in Array.size(a) - 1 downto 0 {
       let x = Array.getUnsafe(a, i)
-      l := PArray([make(x, ty, ~stack), l.contents])
+      l := PArray([make(x, ty, ~stack=list{Stack.array(i), ...stack}), l.contents])
     }
     l.contents
   | None => raise(Exit(Debug.decodeError(Ty.list(ty), j, Ty.toString, ~stack)))
@@ -173,7 +173,10 @@ and dict = (~stack, j, ty) =>
   switch Json.decodeObject(j) {
   | Some(obj) =>
     let keys = Dict.entries(obj)
-    let dict = Array.mapU(keys, (. (k, v)) => (k, make(v, ty, ~stack)))
+    let dict = Array.mapU(keys, (. (k, v)) => (
+      k,
+      make(v, ty, ~stack=list{Stack.obj_key(k), ...stack}),
+    ))
     PDict(MapString.fromArray(dict))
   | None => raise(Exit(Debug.decodeError(Ty.dict(ty), j, Ty.toString, ~stack)))
   }
@@ -182,7 +185,11 @@ and dict = (~stack, j, ty) =>
 and tuple = (~stack, j, tys) =>
   switch Json.decodeArray(j) {
   | Some(arr) =>
-    PArray(Array.zipByU(tys, arr, (. ty, j) => make(j, ty, ~stack=list{Stack.array, ...stack})))
+    let arr =
+      Array.zip(arr, tys)->Array.mapWithIndexU((. i, (j, ty)) =>
+        make(j, ty, ~stack=list{Stack.array(i), ...stack})
+      )
+    PArray(arr)
   | None => raise(Exit(Debug.decodeError(Ty.tuple(tys), j, Ty.toString, ~stack)))
   }
 

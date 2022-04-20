@@ -1,5 +1,5 @@
 /**
-  Copyright (c) 2021 John Jackson.
+  Copyright (c) 2022 John Jackson.
 
   This Source Code Form is subject to the terms of the Mozilla Public
   License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -83,6 +83,7 @@ let union_boolean: (string, ~f: array<(string, ty)>, ~t: array<(string, ty)>) =>
 let make: array<(string, ty)> => t
 
 let toString: ty => string
+let toString2: t => string
 
 module Child: {
   type ty

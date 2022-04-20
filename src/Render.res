@@ -1,5 +1,5 @@
 /**
-  Copyright (c) 2021 John Jackson.
+  Copyright (c) 2022 John Jackson.
 
   This Source Code Form is subject to the terms of the Mozilla Public
   License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -246,6 +246,10 @@ let make = (type a, env: Source.env<a>, {Compile.nodes: nodes, name, prop_types}
     Env.render(. make(~nodes, ~props, ~children=MapString.empty, ~env, ~stack=list{name}))
   } catch {
   | Debug.Exit(e) => Env.error_internal(. [e])
+  /* If the error came from JS, then re-raise it. ReScript automatically wraps JS errors in its own
+    variant structure, so we need to destructure it first.
+    For example, Eleventy uses its own errors for control flow which can raise during Data.make.*/
+  | Js.Exn.Error(e) => raise(Obj.magic(e))
   }
 }
 

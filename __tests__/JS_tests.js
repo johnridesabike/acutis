@@ -1,5 +1,5 @@
 /**
-  Copyright (c) 2021 John Jackson.
+  Copyright (c) 2022 John Jackson.
 
   This Source Code Form is subject to the terms of the Mozilla Public
   License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -19,7 +19,7 @@ describe("The JS interface works as expected", () => {
           kind: "Compile",
           message: `An exception was thrown while compiling template "X." This is probably due to malformed input.`,
           exn: {
-            RE_EXN_ID: "Caml_js_exceptions.Error/2",
+            RE_EXN_ID: "Caml_js_exceptions.Error/1",
             _1: new TypeError("src.str.charAt is not a function"),
           },
           stack: [],

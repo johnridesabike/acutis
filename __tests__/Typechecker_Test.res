@@ -1,5 +1,5 @@
 /**
-  Copyright (c) 2021 John Jackson.
+  Copyright (c) 2022 John Jackson.
 
   This Source Code Form is subject to the terms of the Mozilla Public
   License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -50,6 +50,7 @@ describe("match", ({test, _}) => {
     let bindings = get_types(src)
     expect.value(bindings).toEqual([("a", `?int`)])
   })
+
   test("Typechecker nested", ({expect, _}) => {
     let src = `
     {% match a with {b} %}
@@ -65,6 +66,43 @@ describe("match", ({test, _}) => {
     `
     let bindingsGlobal = get_types(src)
     expect.value(bindingsGlobal).toEqual([("a", `{"b": {"c": ?int}, "d": echoable}`)])
+  })
+
+  test("Typechecker update context", ({expect, _}) => {
+    let src = `
+    {%~ match collections with {frontPage} ~%}
+      {%~ match frontPage with [{data: {isoDate}}] ~%} 
+        <updated>
+          {{ isoDate }}
+        </updated>
+      {%~ with _ %} {* Nothing! *}
+      {%~ /match ~%}
+      {% map frontPage with
+         {
+           templateContent,
+           data: {title, isoDate, page: {excerpt}, pub: {@pub: true, absoluteUrl}}
+          }
+        ~%}
+        <entry>
+          <title>{{ title }}</title>
+          <link href="{{ absoluteUrl }}" />
+          <updated>{{ isoDate }}</updated>
+          <id>{{ absoluteUrl }}</id>
+          <summary type="html">{{ excerpt }}</summary>
+          <content type="html">{{ templateContent }}</content>
+        </entry>
+      {% with {data: {pub: {@pub: false}} } %} {* Nothing! *}
+      {%~ /map %}
+    {%~ /match ~%}
+    </feed>
+  `
+    let bindingsGlobal = get_types(src)
+    expect.value(bindingsGlobal).toEqual([
+      (
+        "collections",
+        `{"frontPage": [{"data": {"isoDate": echoable, "page": {"excerpt": echoable}, "pub": {@"pub": false} | {@"pub": true, "absoluteUrl": echoable}, "title": echoable}, "templateContent": echoable}]}`,
+      ),
+    ])
   })
 
   test("Typechecker multiple patterns", ({expect, _}) => {
@@ -147,6 +185,15 @@ describe("enums", ({test, _}) => {
     `
     let bindings = get_types(src)
     expect.value(bindings).toEqual([("a", `@"a" | @"b" | @"c" | ...`), ("b", "@1 | @2 | @3 | ...")])
+  })
+
+  test("wildcards open nested enums", ({expect, _}) => {
+    let src = `
+    {% match a with <k: @"a"> %} {% with <k: @"b"> %} {% with _ %} {% /match %}
+    {% map [<k: @"c">, a] with _ %} {% /map %}
+    `
+    let bindings = get_types(src)
+    expect.value(bindings).toEqual([("a", `<@"a" | @"b" | @"c" | ...>`)])
   })
 
   test("closed enums work", ({expect, _}) => {
@@ -250,6 +297,16 @@ describe("Tagged unions", ({test, _}) => {
       ),
     ])
   })
+
+  test("wildcards open nested tagged unions", ({expect, _}) => {
+    let src = `
+    {% match a with <k: {@tag: "a"}> %} {% with <k: {@tag: @"b"}> %} {% with _ %} {% /match %}
+    {% map [<k: {@tag: "c"}>, a] with _ %} {% /map %}
+    `
+    let bindings = get_types(src)
+    expect.value(bindings).toEqual([("a", `<{@"tag": "a"} | {@"tag": "b"} | {@"tag": "c"} | ...>`)])
+  })
+
   test("Closed unions work", ({expect, _}) => {
     let src = `
     {% match a
@@ -310,6 +367,7 @@ describe("Tagged unions", ({test, _}) => {
       ("b", `{@"tag": 0, "b": int} | {@"tag": 1, "c": echoable}`),
     ])
   })
+
   test("Booleans", ({expect, _}) => {
     let src = `
     {% match a with {@tag: true, b} %} {{ b }} {% /match %}

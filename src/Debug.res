@@ -1,5 +1,5 @@
 /**
-  Copyright (c) 2021 John Jackson.
+  Copyright (c) 2022 John Jackson.
 
   This Source Code Form is subject to the terms of the Mozilla Public
   License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -329,7 +329,7 @@ let decodeError = (~stack, a, b, f) => {
     kind: #Render,
     exn: None,
     location: None,
-    stack: List.toArray(stack),
+    stack: List.toArray(stack)->Array.reverse,
   }
 }
 
@@ -338,7 +338,7 @@ let decodeErrorMissingKey = (~stack, k) => {
   kind: #Render,
   exn: None,
   location: None,
-  stack: List.toArray(stack),
+  stack: List.toArray(stack)->Array.reverse,
 }
 
 let uncaughtComponentError = (t, ~name, ~stack, e) => {

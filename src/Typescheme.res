@@ -1,5 +1,5 @@
 /**
-  Copyright (c) 2021 John Jackson.
+  Copyright (c) 2022 John Jackson.
 
   This Source Code Form is subject to the terms of the Mozilla Public
   License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -212,6 +212,8 @@ let rec toString = x =>
   }
 
 and record_rows_toString = a => Array.joinWithU(a, ", ", (. (k, v)) => `"${k}": ${toString(v)}`)
+
+let toString2 = t => t->MapString.toArray->record_rows_toString
 
 module Child = {
   type ty' = Child | NullableChild

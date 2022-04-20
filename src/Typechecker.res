@@ -1,5 +1,5 @@
 /**
-  Copyright (c) 2021 John Jackson.
+  Copyright (c) 2022 John Jackson.
 
   This Source Code Form is subject to the terms of the Mozilla Public
   License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -205,13 +205,15 @@ and unify_record = (a, b, aty, bty, mode, debug) =>
     }
   }
 
-let open_rows_bool_union_aux = (. ty) =>
+let rec open_rows_bool_union_aux = (. ty) =>
   switch ty {
   | None => Some(ref(MapString.empty))
-  | Some(_) as m => m
+  | Some(ty) as x =>
+    MapString.forEachU(ty.contents, (. _, v) => open_rows(v))
+    x
   }
 
-let open_rows = ty =>
+and open_rows = ty =>
   switch ty.contents {
   | Ty.Enum(ty) =>
     switch ty.extra {
@@ -226,9 +228,19 @@ let open_rows = ty =>
         ->MapInt.updateU(0, open_rows_bool_union_aux)
         ->MapInt.updateU(1, open_rows_bool_union_aux),
       )
-    | _ => ty.row = Open
+    | (_, Int(cases)) =>
+      MapInt.forEachU(cases, (. _, v) => MapString.forEachU(v.contents, (. _, v) => open_rows(v)))
+      ty.row = Open
+    | (_, String(cases)) =>
+      MapString.forEachU(cases, (. _, v) =>
+        MapString.forEachU(v.contents, (. _, v) => open_rows(v))
+      )
+      ty.row = Open
     }
-  | _ => ()
+  | Tuple(a) => Array.forEach(a, open_rows)
+  | Record(ty) => MapString.forEachU(ty.contents, (. _, v) => open_rows(v))
+  | Nullable(ty) | List(ty) | Dict(ty, _) => open_rows(ty)
+  | Unknown | Int | Float | String | Echo => ()
   }
 
 module Pattern = {
@@ -551,9 +563,9 @@ let unify_child = (a, b, debug) =>
     raise(Exit(Debug.childTypeMismatch(debug, a, b, Ty.Child.toString)))
   }
 
-type root = [#Root | #Component]
-
 module Context = {
+  type root = [#Root | #Component]
+
   type t = {
     global: ref<MapString.t<Ty.ty>>,
     scope: MapString.t<Ty.ty>,
@@ -568,15 +580,17 @@ module Context = {
     root: root,
   }
 
+  let get = (scope, global, k) =>
+    switch MapString.get(scope, k) {
+    | None => MapString.get(global.contents, k)
+    | Some(_) as x => x
+    }
+
   @raises(Exit)
   let update = ({scope, global, _}, . k, v, debug) =>
-    switch MapString.get(scope, k) {
-    | None =>
-      switch MapString.get(global.contents, k) {
-      | None => global := MapString.set(global.contents, k, v)
-      | Some(v') => unify(v, v', Construct_var, debug)
-      }
-    | Some(v') => unify(v', v, Construct_var, debug)
+    switch get(scope, global, k) {
+    | None => global := MapString.set(global.contents, k, v)
+    | Some(v') => unify(v, v', Construct_var, debug)
     }
 
   @raises(Exit)
@@ -589,7 +603,7 @@ module Context = {
           switch v' {
           | None => Some(v)
           | Some(v') as r =>
-            unify_child(v', v, debug)
+            unify_child(v, v', debug)
             r
           }
         )
@@ -734,13 +748,12 @@ and makeNodes = (nodes, ctx, g) =>
     | UComponent(debug, comp, props, children) =>
       let (propTypes, propTypesChildren) = getTypes(Utils.Dagmap.get(g, comp, debug))
       let propTypes = Ty.internal_copy_record(propTypes) // The original should not mutate.
-      let props = Pattern.make_record(
-        props,
-        propTypes,
-        debug,
-        ~f=Context.update(ctx),
-        Construct_literal,
-      )
+      let props = MapString.mergeU(props, propTypes, (. _, prop, ty) =>
+        switch (prop, ty) {
+        | (None, Some({contents: Ty.Nullable(_)})) => Some(Parser.Pattern.UNullable(debug, None))
+        | (prop, _) => prop
+        }
+      )->Pattern.make_record(propTypes, debug, ~f=Context.update(ctx), Construct_literal)
       let children = MapString.mergeU(children, propTypesChildren, (. k, c, ty) =>
         switch (c, ty) {
         | (None, None) => None
