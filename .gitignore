@@ -1,6 +1,15 @@
 *.swp
+lib/bs/
+lib/js/__tests__/
+lib/es6/__tests__/
+*.cmi
+*.cmj
+*.cmt
+*.cmti
+*.ast
+*.d
+*.iast
 .DS_Store
-lib/
 .vscode/
 coverage/
 .merlin
