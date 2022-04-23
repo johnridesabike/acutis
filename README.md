@@ -2,12 +2,12 @@
 
 ## Acutis language
 
-Acutis is a template language for building documents. It features strong
-typing, pattern matching, template components, and asynchronous templates. It
-can run in a browser or in Node.
+Acutis is a template language for building documents. It features static typing,
+pattern matching, template components, and asynchronous templates. It can run in
+a browser or in Node.
 
-Acutis is a small, personal project and is not stable yet. Use Acutis if you
-want to experiment with a different kind of template language.
+Acutis is a small, personal project and is not stable. Use Acutis if you want to
+experiment with a different kind of template language.
 
 ```acutis
 <h1> Blog posts for {{ siteTitle }} </h1>
@@ -64,4 +64,3 @@ yarn test
     This Source Code Form is subject to the terms of the Mozilla Public
     License, v. 2.0. If a copy of the MPL was not distributed with this
     file, You can obtain one at http://mozilla.org/MPL/2.0/.
-

@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.14.0
 
 - Acutis is now statically typed. This breaks all older templates.
 - Added types:
