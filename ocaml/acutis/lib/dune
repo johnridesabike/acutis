@@ -1,2 +1,12 @@
 (library
- (name acutis))
+ (name acutis)
+ (libraries menhirLib)
+ (preprocess
+   (pps ppx_deriving.show ppx_deriving.eq)))
+
+(menhir
+ (modules parser)
+ (flags --strict --explain --dump --exn-carries-state)
+ (infer true))
+
+(ocamllex lexer)

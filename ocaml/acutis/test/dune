@@ -1,2 +1,4 @@
 (test
- (name acutis))
+ (name parser_test)
+ (libraries alcotest acutis))
+

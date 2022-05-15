@@ -1,4 +1,6 @@
 (executable
- (public_name acutis)
  (name main)
+ (modes js)
+ (js_of_ocaml (flags (--opt=3)))
  (libraries acutis))
+
