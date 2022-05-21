@@ -9,25 +9,12 @@
 (**************************************************************************)
 
 open Utils
+module F = Format
 module Ty = Typescheme
 module V = Ty.Variant
 
-type e =
-  | Type_mismatch of Ty.ty * Ty.ty
-  | Tuple_size of Ty.ty list * Ty.ty list
-  | Cant_narrow
-  | Bad_union_tag
-  | Underscore_in_construct
-  | Missing_record_field
-  | Child_type_mismatch
-  | Child_not_allowed_in_root
-  | Name_bound_multiple
-  | Var_missing of string
-  | Pattern_number_mismatch
-  | Nullable_echo_literal
-
-exception Type_error of e
-exception Clash
+exception Type_error of string
+exception Clash of string
 
 (*
   When we unify a type during destructuring, we expand any structural types
@@ -46,52 +33,54 @@ type mode =
   | Construct_literal (* Record a is narrowed to a subset of a and b. *)
   | Construct_var (* Record a expands into b only. *)
 
+let show_mode = function
+  | Destructure_expand -> "destructure"
+  | Construct_literal -> "construct_literal"
+  | Construct_var -> "construct_var"
+
 let unify_enum_cases _ a b =
   match (a, b) with
   | V.String a, V.String b -> V.String (SetString.union a b)
   | Int a, Int b -> Int (SetInt.union a b)
-  | _ -> raise Clash
+  | _ -> raise (Clash "unify_enum_cases")
 
 let subset_enum_cases _ a b =
   let success =
     match (a, b) with
-    | V.String a, V.String b -> SetString.subset a b
-    | Int a, Int b -> SetInt.subset a b
+    | V.String a, V.String b -> SetString.subset b a
+    | Int a, Int b -> SetInt.subset b a
     | _ -> false
   in
-  if not success then raise Clash
+  if not success then raise (Clash "subset_enum_cases")
 
 let unify_variant ~unify_cases ~subset_cases mode a b =
   match mode with
   | Destructure_expand ->
-      let () =
-        match (a.V.row, b.V.row) with
-        | Closed, Closed -> a.row <- Closed
-        | Open, _ | _, Open -> a.row <- Open
-      in
+      (match (a.V.row, b.V.row) with
+      | `Open, _ | _, `Open -> a.row <- `Open
+      | _ -> ());
       a.cases <- unify_cases mode a.cases b.cases
   | Construct_literal -> (
       match (a.row, b.row) with
-      | Open, (Closed | Open) -> a.cases <- unify_cases mode a.cases b.cases
-      | Closed, (Closed | Open) -> subset_cases mode a.cases b.cases)
+      | `Open, (`Closed | `Open) -> a.cases <- unify_cases mode a.cases b.cases
+      | `Closed, (`Closed | `Open) -> subset_cases mode a.cases b.cases)
   | Construct_var -> (
       match (a.row, b.row) with
-      | Closed, Closed -> subset_cases mode a.cases b.cases
-      | Open, Closed -> a.cases <- unify_cases mode a.cases b.cases
-      | Open, Open ->
+      | `Closed, `Closed -> subset_cases mode a.cases b.cases
+      | `Open, `Closed -> a.cases <- unify_cases mode a.cases b.cases
+      | `Open, `Open ->
           let cases = unify_cases mode a.cases b.cases in
           a.cases <- cases;
           b.cases <- cases
-      | Closed, Open -> raise Clash)
+      | `Closed, `Open -> raise (Clash "unify_variant"))
 
 let rec unify mode aty bty =
   match (!aty, !bty) with
   | Ty.Int, Ty.Int | Float, Float | String, String | Echo, Echo -> ()
-  | Unknown, t -> aty := t
-  | t, Unknown -> bty := t
   | Echo, ((Int | Float | String | Enum _) as t) -> aty := t
   | ((Int | Float | String | Enum _) as t), Echo -> bty := t
   | Nullable t1, Nullable t2 -> unify mode t1 t2
+  | List t1, List t2 -> unify mode t1 t2
   | Dict (t1, ks1), Dict (t2, ks2) ->
       let ks' = SetString.union !ks1 !ks2 in
       ks1 := ks';
@@ -99,7 +88,7 @@ let rec unify mode aty bty =
       unify mode t1 t2
   | Tuple t1, Tuple t2 -> (
       try List.iter2 (unify mode) t1 t2
-      with Invalid_argument _ -> raise (Type_error (Tuple_size (t1, t2))))
+      with Invalid_argument _ -> raise (Type_error "tuple size"))
   | Record a, Record b -> unify_record mode a b
   | Enum a, Enum b ->
       unify_variant ~unify_cases:unify_enum_cases
@@ -107,7 +96,25 @@ let rec unify mode aty bty =
   | Union (ka, a), Union (kb, b) when String.equal ka kb ->
       unify_variant ~unify_cases:unify_union_cases
         ~subset_cases:subset_union_cases mode a b
-  | _ -> raise Clash
+  | Unknown a, Enum b ->
+      (match mode with
+      | Destructure_expand -> (
+          match (!a, b.row) with
+          | `Open, _ | _, `Open -> b.row <- `Open
+          | _ -> ())
+      | _ -> ());
+      aty := !bty
+  | Unknown a, Union (_, b) ->
+      (match mode with
+      | Destructure_expand -> (
+          match (!a, b.row) with
+          | `Open, _ | _, `Open -> b.row <- `Open
+          | _ -> ())
+      | _ -> ());
+      aty := !bty
+  | Unknown _, t -> aty := t
+  | t, Unknown _ -> bty := t
+  | _ -> raise (Clash "unify")
 
 and unify_record mode a b =
   match mode with
@@ -126,7 +133,8 @@ and unify_record mode a b =
         | Some a, (Some b as x) ->
             unify mode a b;
             x
-        | x, None | None, x -> x
+        | (Some _ as x), None | None, (Some _ as x) -> x
+        | None, None -> None
       in
       b := MapString.merge f !a !b
   | Construct_literal ->
@@ -138,7 +146,7 @@ and unify_record mode a b =
         | _ -> None
       in
       let r = MapString.merge f !a !b in
-      if MapString.is_empty r then raise (Type_error Cant_narrow) else a := r
+      if MapString.is_empty r then raise (Type_error "can't narrow") else a := r
 
 and unify_union_cases mode a b =
   let f _ a b =
@@ -151,7 +159,7 @@ and unify_union_cases mode a b =
   match (a, b) with
   | V.String a, V.String b -> V.String (MapString.merge f a b)
   | Int a, Int b -> Int (MapInt.merge f a b)
-  | _ -> raise Clash
+  | _ -> raise (Clash "unify_union_cases")
 
 and subset_union_cases mode a b =
   let f _ a b =
@@ -160,16 +168,18 @@ and subset_union_cases mode a b =
     | (Some a as x), Some b ->
         unify_record mode a b;
         x
-    | None, Some _ -> raise Clash
+    | None, Some _ -> raise (Clash "subset_union_cases")
     | None, None -> None
   in
   match (a, b) with
   | V.String a, V.String b -> MapString.merge f a b |> ignore
   | Int a, Int b -> MapInt.merge f a b |> ignore
-  | _ -> raise Clash
+  | _ -> raise (Clash "subset_union_cases")
 
 let unify mode a b =
-  try unify mode a b with Clash -> raise (Type_error (Type_mismatch (a, b)))
+  try unify mode a b
+  with Clash s ->
+    raise (Type_error ("type mismatch " ^ show_mode mode ^ " " ^ s))
 
 let rec open_rows_bool_union_aux = function
   | None -> Some (ref MapString.empty)
@@ -181,7 +191,7 @@ and open_rows ty =
   match !ty with
   | Ty.Enum ty -> (
       match ty.extra with
-      | Extra_none -> ty.row <- Open
+      | Extra_none -> ty.row <- `Open
       | Extra_bool -> ty.cases <- Ty.Enum.false_and_true_cases)
   | Union (_, ty) -> (
       match (ty.extra, ty.cases) with
@@ -192,16 +202,17 @@ and open_rows ty =
           MapInt.iter
             (fun _ v -> MapString.iter (fun _ v -> open_rows v) !v)
             cases;
-          ty.row <- Open
+          ty.row <- `Open
       | _, String cases ->
           MapString.iter
             (fun _ v -> MapString.iter (fun _ v -> open_rows v) !v)
             cases;
-          ty.row <- Open)
+          ty.row <- `Open)
   | Tuple a -> List.iter open_rows a
   | Record ty -> MapString.iter (fun _ v -> open_rows v) !ty
   | Nullable ty | List ty | Dict (ty, _) -> open_rows ty
-  | Unknown | Int | Float | String | Echo -> ()
+  | Unknown row -> row := `Open
+  | Int | Float | String | Echo -> ()
 
 module Pattern = struct
   type constant = TString of string | TInt of int | TFloat of float
@@ -224,7 +235,7 @@ module Pattern = struct
     | TInt i -> { V.cases = Int (MapInt.singleton i tyvars); row; extra }
     | TString s ->
         { V.cases = String (MapString.singleton s tyvars); row; extra }
-    | _ -> raise (Type_error Bad_union_tag)
+    | _ -> raise (Type_error "bad union tag")
 
   let unknown _ = Ty.unknown ()
 
@@ -254,8 +265,9 @@ module Pattern = struct
     | Enum_string s ->
         let new_enum =
           match mode with
-          | Destructure_expand -> Ty.Enum.string_singleton s Closed
-          | Construct_var | Construct_literal -> Ty.Enum.string_singleton s Open
+          | Destructure_expand -> Ty.Enum.string_singleton s `Closed
+          | Construct_var | Construct_literal ->
+              Ty.Enum.string_singleton s `Open
         in
         let new_ty = ref (Ty.Enum new_enum) in
         let enum = match !ty with Enum e -> e | _ -> new_enum in
@@ -264,8 +276,8 @@ module Pattern = struct
     | Enum_int i ->
         let new_enum =
           match mode with
-          | Destructure_expand -> Ty.Enum.int_singleton i Closed
-          | Construct_var | Construct_literal -> Ty.Enum.int_singleton i Open
+          | Destructure_expand -> Ty.Enum.int_singleton i `Closed
+          | Construct_var | Construct_literal -> Ty.Enum.int_singleton i `Open
         in
         let new_ty = ref (Ty.Enum new_enum) in
         let enum = match !ty with Enum e -> e | _ -> new_enum in
@@ -307,14 +319,14 @@ module Pattern = struct
         let new_tag_ty = Ty.unknown () in
         let row =
           match mode with
-          | Destructure_expand -> V.Closed
-          | Construct_literal | Construct_var -> Open
+          | Destructure_expand -> `Closed
+          | Construct_literal | Construct_var -> `Open
         in
         let tag, tag_extra =
           match make ~f mode new_tag_ty v with
           | TConst (tag, None) -> (tag, V.Extra_none)
           | TConst (tag, Some { extra; _ }) -> (tag, extra) (* booleans *)
-          | _ -> raise (Type_error Bad_union_tag)
+          | _ -> raise (Type_error "bad union tag")
         in
         let tyvars =
           match !ty with
@@ -349,13 +361,11 @@ module Pattern = struct
             open_rows ty;
             TAny
         | Construct_literal | Construct_var ->
-            raise (Type_error Underscore_in_construct))
+            raise (Type_error "underscore in construct"))
     | Var b ->
-        let () =
-          match mode with
-          | Destructure_expand -> open_rows ty
-          | Construct_literal | Construct_var -> ()
-        in
+        (match mode with
+        | Destructure_expand -> open_rows ty
+        | Construct_literal | Construct_var -> ());
         f b ty;
         TVar b
 
@@ -381,7 +391,7 @@ module Pattern = struct
         let f _ pat ty =
           match (pat, ty) with
           | Some pat, Some ty -> Some (make ~f mode ty pat)
-          | None, Some _ -> raise (Type_error Missing_record_field)
+          | None, Some _ -> raise (Type_error "missing record field")
           | Some _, None | None, None -> None
         in
         MapString.merge f m tyvars
@@ -395,67 +405,65 @@ module Pattern = struct
     in
     aux [] l
 
-  module F = Format
-
-  let pp_constant fmt (x, e) =
+  let pp_constant ppf (x, e) =
     match (x, e) with
-    | TInt 0, Some { V.extra = Extra_bool; _ } -> F.pp_print_string fmt "false"
-    | TInt _, Some { V.extra = Extra_bool; _ } -> F.pp_print_string fmt "true"
-    | TInt i, Some _ -> F.fprintf fmt "%@%i" i
-    | TInt i, None -> F.fprintf fmt "%i" i
-    | TString s, Some _ -> F.fprintf fmt "%@%S" s
-    | TString s, None -> F.fprintf fmt "%S" s
-    | TFloat f, _ -> F.pp_print_float fmt f
+    | TInt 0, Some { V.extra = Extra_bool; _ } -> F.pp_print_string ppf "false"
+    | TInt _, Some { V.extra = Extra_bool; _ } -> F.pp_print_string ppf "true"
+    | TInt i, Some _ -> F.fprintf ppf "%@%i" i
+    | TInt i, None -> F.fprintf ppf "%i" i
+    | TString s, Some _ -> F.fprintf ppf "%@%S" s
+    | TString s, None -> F.fprintf ppf "%S" s
+    | TFloat f, _ -> F.pp_print_float ppf f
 
-  let pp_sep_comma fmt () = F.fprintf fmt ",@ "
+  let pp_sep_comma ppf () = F.fprintf ppf ",@ "
 
-  let rec pp fmt = function
-    | TConst (x, e) -> pp_constant fmt (x, e)
+  let rec pp ppf = function
+    | TConst (x, e) -> pp_constant ppf (x, e)
     | TTuple t ->
-        F.fprintf fmt "(@[%a@])" (F.pp_print_list ~pp_sep:pp_sep_comma pp) t
+        F.fprintf ppf "(@[%a@])" (F.pp_print_list ~pp_sep:pp_sep_comma pp) t
     | TRecord (Some (k, tag, var), r, _) ->
-        F.fprintf fmt "{@[%@%S: %a, %a@]}" k pp_constant (tag, Some var)
+        F.fprintf ppf "{@[%@%S: %a, %a@]}" k pp_constant (tag, Some var)
           pp_bindings r
-    | TRecord (None, r, _) -> F.fprintf fmt "{@[%a@]}" pp_bindings r
-    | TDict (m, _) -> F.fprintf fmt "<%a>" pp_bindings m
-    | TVar v | TOptionalVar v -> F.pp_print_string fmt v
-    | TConstruct (TNullable, None) -> F.pp_print_string fmt "null"
-    | TConstruct (TNullable, Some x) -> F.fprintf fmt "!%a" pp x
-    | TConstruct (TList, None) -> F.pp_print_string fmt "[]"
+    | TRecord (None, r, _) -> F.fprintf ppf "{@[%a@]}" pp_bindings r
+    | TDict (m, _) -> F.fprintf ppf "<%a>" pp_bindings m
+    | TVar v | TOptionalVar v -> F.pp_print_string ppf v
+    | TConstruct (TNullable, None) -> F.pp_print_string ppf "null"
+    | TConstruct (TNullable, Some x) -> F.fprintf ppf "!%a" pp x
+    | TConstruct (TList, None) -> F.pp_print_string ppf "[]"
     | TConstruct (TList, Some l) ->
         let l, rest = to_list l in
-        F.fprintf fmt "[@[%a%a@]]"
+        F.fprintf ppf "[@[%a%a@]]"
           (F.pp_print_list ~pp_sep:pp_sep_comma pp)
           l
           (F.pp_print_option pp_rest)
           rest
-    | TAny -> F.pp_print_string fmt "_"
+    | TAny -> F.pp_print_string ppf "_"
 
-  and pp_key_values fmt (k, v) = F.fprintf fmt "%S: %a" k pp v
+  and pp_key_values ppf (k, v) = F.fprintf ppf "%S: %a" k pp v
 
-  and pp_bindings fmt m =
-    F.pp_print_list ~pp_sep:pp_sep_comma pp_key_values fmt
+  and pp_bindings ppf m =
+    F.pp_print_list ~pp_sep:pp_sep_comma pp_key_values ppf
       (MapString.bindings m)
 
-  and pp_rest fmt t = F.fprintf fmt ",@ ...%a" pp t
+  and pp_rest ppf t = F.fprintf ppf ",@ ...%a" pp t
 end
 
 type node =
   | TText of string * Ast.trim * Ast.trim
   | TEcho of Ast.echo list * Ast.echo
-  | TMatch of Pattern.t list * case list
-  | TMap_list of Pattern.t * case list
-  | TMap_dict of Pattern.t * case list
+  | TMatch of Pattern.t Nonempty.t * case Nonempty.t
+  | TMap_list of Pattern.t * case Nonempty.t
+  | TMap_dict of Pattern.t * case Nonempty.t
   | TComponent of string * Pattern.t MapString.t * child MapString.t
 
-and case = { pats : Pattern.t list list; nodes : nodes }
+and case = { pats : Pattern.t Nonempty.t Nonempty.t; nodes : nodes }
 and child = TChild_name of string | TChild_block of nodes
 and nodes = node list
 
 type t = { nodes : nodes; prop_types : Ty.t; child_types : Ty.Child.t }
 
 let unify_child a b =
-  if Ty.Child.equal_ty a b then () else raise (Type_error Child_type_mismatch)
+  if Ty.Child.equal_ty a b then () else raise (Type_error "child type mismatch")
 
 module Context = struct
   type root = [ `Root | `Component ]
@@ -487,7 +495,7 @@ module Context = struct
 
   let update_child { root; children; _ } (k, v) =
     match root with
-    | `Root -> raise (Type_error Child_not_allowed_in_root)
+    | `Root -> raise (Type_error "child not allowed in root")
     | `Component ->
         let f = function
           | None -> Some v
@@ -505,7 +513,7 @@ module Context = struct
           (Queue.fold
              (fun newscope (k, v) ->
                if MapString.mem k newscope then
-                 raise (Type_error Name_bound_multiple)
+                 raise (Type_error "name bound multiple")
                else MapString.add k v newscope)
              MapString.empty q)
           bindings')
@@ -517,13 +525,13 @@ module Context = struct
           Queue.fold
             (fun acc m ->
               MapString.merge
-                (fun k a b ->
+                (fun _ a b ->
                   match (a, b) with
                   | (Some a as a'), Some b ->
                       unify Construct_literal a b;
                       a'
                   | Some _, None | None, Some _ ->
-                      raise (Type_error (Var_missing k))
+                      raise (Type_error "var missing")
                   | None, None -> None)
                 acc m)
             hd bindings'
@@ -541,22 +549,24 @@ end
 
 let unify_match_cases pats tys ctx =
   try
-    List.map2 (Pattern.make ~f:(Context.update ctx) Construct_literal) tys pats
-  with Invalid_argument _ -> raise (Type_error Pattern_number_mismatch)
+    Nonempty.map2
+      (Pattern.make ~f:(Context.update ctx) Construct_literal)
+      tys pats
+  with Invalid_argument _ -> raise (Type_error "pattern number mismatch")
 
 let rec unify_echoes ctx default = function
   | [] -> (
       match default with
-      | Ast.Ech_var b -> Context.update ctx b (Ty.echo ())
+      | Ast.Ech_var (b, _) -> Context.update ctx b (Ty.echo ())
       | Ech_component c -> Context.update_child ctx (Ty.Child.child c)
       | Ech_string _ -> ())
-  | Ast.Ech_var b :: tl ->
+  | Ast.Ech_var (b, _) :: tl ->
       Context.update ctx b (Ty.nullable (Ty.echo ()));
       unify_echoes ctx default tl
   | Ech_component c :: tl ->
       Context.update_child ctx (Ty.Child.nullable c);
       unify_echoes ctx default tl
-  | Ech_string _ :: _ -> raise (Type_error Nullable_echo_literal)
+  | Ech_string _ :: _ -> raise (Type_error "nullable echo literal")
 
 let get_types = function
   | Source.Acutis (_, { prop_types; child_types; _ }) ->
@@ -564,39 +574,48 @@ let get_types = function
   | Function (_, props, children, _) -> (props, children)
 
 let add_default_wildcard cases =
-  let f = function [ hd ] -> [ hd; Ast.Pattern.Var "_" ] | pat -> pat in
-  List.map (fun case -> { case with Ast.pats = List.map f case.Ast.pats }) cases
+  let f = function
+    | Nonempty.[ h ] -> Nonempty.[ h; Ast.Pattern.Var "_" ]
+    | pat -> pat
+  in
+  Nonempty.map
+    (fun case -> { case with Ast.pats = Nonempty.map f case.Ast.pats })
+    cases
 
 let unify_map ~ty ~key (tys, cases) pat ctx =
   let hd_ty =
     match tys with
-    | [ hd; tl ] ->
+    | Nonempty.[ hd; tl ] ->
         unify Construct_literal (key ()) tl;
         ty hd
-    | _ -> raise (Type_error Pattern_number_mismatch)
+    | _ -> raise (Type_error "pattern number mismatch")
   in
   let p = Pattern.make ~f:(Context.update ctx) Construct_literal hd_ty pat in
   (p, cases)
 
 let rec make_cases ctx g cases =
-  let tys = (List.hd cases).Ast.pats |> List.hd |> List.map Pattern.unknown in
+  let tys =
+    (Nonempty.hd cases).Ast.pats |> Nonempty.hd |> Nonempty.map Pattern.unknown
+  in
+  (* Type-check all of the cases BEFORE running [make_nodes]. *)
   let cases =
     cases
-    |> List.map (fun { Ast.pats; nodes } ->
+    |> Nonempty.map (fun Ast.{ pats; nodes } ->
            let bindings_all = Queue.create () in
            let pats =
-             List.map
-               (fun ps ->
+             Nonempty.map
+               (fun pat ->
                  let bindings = Queue.create () in
                  Queue.add bindings bindings_all;
                  let f k v = Queue.add (k, v) bindings in
-                 try List.map2 (Pattern.make ~f Destructure_expand) tys ps
-                 with Invalid_argument _ -> failwith "pattern number mismatch")
+                 try Nonempty.map2 (Pattern.make ~f Destructure_expand) tys pat
+                 with Invalid_argument _ ->
+                   raise (Type_error "pattern number mismatch"))
                pats
            in
            let ctx = Context.add_scope bindings_all ctx in
            (pats, nodes, ctx))
-    |> List.map (fun (pats, nodes, ctx) ->
+    |> Nonempty.map (fun (pats, nodes, ctx) ->
            { pats; nodes = make_nodes ctx g nodes })
   in
   (tys, cases)
@@ -626,13 +645,14 @@ and make_nodes ctx g nodes =
         let f _ c ty =
           match (c, ty) with
           | None, Some ty ->
-              if Ty.Child.is_nullable ty then None else failwith "missing child"
+              if Ty.Child.is_nullable ty then None
+              else raise (Type_error "missing child")
           | Some (Ast.Child_name c), Some ty ->
               Context.update_child ctx (c, ty);
               Some (TChild_name c)
           | Some (Child_block nodes), Some _ ->
               Some (TChild_block (make_nodes ctx g nodes))
-          | Some _, None -> failwith "extra child"
+          | Some _, None -> raise (Type_error "extra child")
           | None, None -> None
         in
         let children =

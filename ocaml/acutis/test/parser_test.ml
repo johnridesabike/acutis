@@ -1,9 +1,9 @@
 open Acutis
 module F = Format
 
-let print_position fmt lexbuf =
+let print_position ppf lexbuf =
   let pos = lexbuf.Lexing.lex_curr_p in
-  F.fprintf fmt "%s:%d:%d" pos.pos_fname pos.pos_lnum
+  F.fprintf ppf "%s:%d:%d" pos.pos_fname pos.pos_lnum
     (pos.pos_cnum - pos.pos_bol + 1)
 
 let parse src =
@@ -18,35 +18,35 @@ let parse src =
 let check = Alcotest.(check (result (module Ast) string))
 
 let echoes () =
-  let src = {|{{ a }} {{ "b" }} {{ C }} {{ d ? E ? "f" }}|} in
-  check "Echoes"
+  let src = {|{{ a }} {{ "b" }} {{ C }} {{ &d ? E ? "f" }}|} in
+  check "Echoes parse correctly"
     (Ok
        [
          Text ("", No_trim, No_trim);
-         Echo ([], Ech_var "a");
+         Echo ([], Ech_var ("a", No_escape));
          Text (" ", No_trim, No_trim);
          Echo ([], Ech_string "b");
          Text (" ", No_trim, No_trim);
          Echo ([], Ech_component "C");
          Text (" ", No_trim, No_trim);
-         Echo ([ Ech_var "d"; Ech_component "E" ], Ech_string "f");
+         Echo ([ Ech_var ("d", Escape); Ech_component "E" ], Ech_string "f");
          Text ("", No_trim, No_trim);
        ])
     (parse src)
 
 let trim () =
   let src = {|{{~ a }} {{~ b }} {{ c ~}} {{~ d ~}}|} in
-  check "Trim"
+  check "Trim parses correctly"
     (Ok
        [
          Text ("", No_trim, Trim);
-         Echo ([], Ech_var "a");
+         Echo ([], Ech_var ("a", No_escape));
          Text (" ", No_trim, Trim);
-         Echo ([], Ech_var "b");
+         Echo ([], Ech_var ("b", No_escape));
          Text (" ", No_trim, No_trim);
-         Echo ([], Ech_var "c");
+         Echo ([], Ech_var ("c", No_escape));
          Text (" ", Trim, Trim);
-         Echo ([], Ech_var "d");
+         Echo ([], Ech_var ("d", No_escape));
          Text ("", Trim, No_trim);
        ])
     (parse src)
@@ -55,23 +55,23 @@ let comments () =
   let src = {|
   a {* {* *} *}b{*
   *} c|} in
-  check "Comments" (Ok [ Text ("\n  a b c", No_trim, No_trim) ]) (parse src)
+  check "Comments parse correctly"
+    (Ok [ Text ("\n  a b c", No_trim, No_trim) ])
+    (parse src)
 
 let matches () =
   let src =
-    {|
-  {% match a with 1 with 2 %}{% with 3 %} {% with _ %} {% /match %}
-  {% match b with c %}{% match d, e with f, g %} {% /match /match %}|}
+    {|{% match a with 1 with 2 %}{% with 3 %} {% with _ %} {% /match %}|}
   in
-  check "Matches"
+  check "Flat matches parse correctly"
     (Ok
        [
-         Text ("\n  ", No_trim, No_trim);
+         Text ("", No_trim, No_trim);
          Match
            ( [ Var "a" ],
              [
                {
-                 pats = [ [ Int 1 ]; [ Int 2 ] ];
+                 pats = [ [ Int 1 ]; [ Int 2 ]; ];
                  nodes = [ Text ("", No_trim, No_trim) ];
                };
                {
@@ -83,7 +83,16 @@ let matches () =
                  nodes = [ Text (" ", No_trim, No_trim) ];
                };
              ] );
-         Text ("\n  ", No_trim, No_trim);
+         Text ("", No_trim, No_trim);
+       ])
+    (parse src);
+  let src =
+    {|{% match b with c %}{% match d, e with f, g %} {% /match /match %}|}
+  in
+  check "Nested matches parse correctly"
+    (Ok
+       [
+         Text ("", No_trim, No_trim);
          Match
            ( [ Var "b" ],
              [
@@ -109,14 +118,12 @@ let matches () =
 
 let maps () =
   let src =
-    {|
-  {% map l with 1 with 2 %}{% with 3, i %} {% with _ %} {% /map %}
-  {% map_dict d with 1 with 2 %}{% with 3, k %} {% with _ %} {% /map %}|}
+    {|{% map l with 1 with 2 %}{% with 3, i %} {% with _ %} {% /map %}|}
   in
-  check "Maps"
+  check "Map list parses correctly"
     (Ok
        [
-         Text ("\n  ", No_trim, No_trim);
+         Text ("", No_trim, No_trim);
          Map_list
            ( Var "l",
              [
@@ -133,7 +140,16 @@ let maps () =
                  nodes = [ Text (" ", No_trim, No_trim) ];
                };
              ] );
-         Text ("\n  ", No_trim, No_trim);
+         Text ("", No_trim, No_trim);
+       ])
+    (parse src);
+  let src =
+    {|{% map_dict d with 1 with 2 %}{% with 3, k %} {% with _ %} {% /map %}|}
+  in
+  check "Map dict parses correctly"
+    (Ok
+       [
+         Text ("", No_trim, No_trim);
          Map_dict
            ( Var "d",
              [
@@ -156,21 +172,19 @@ let maps () =
 
 let components () =
   let src =
-    {|
-  {% Template
+    {|{% Template
     a=b
     c
     D=E
     F
     G=#%} {%/#
     H=#%}{% match a with b %} {% /match /#
-  /%}
-  {% Another %} {% /Another %}|}
+  /%}|}
   in
-  check "Components"
+  check "Component with props parses correctly"
     (Ok
        [
-         Text ("\n  ", No_trim, No_trim);
+         Text ("", No_trim, No_trim);
          Component
            ( "Template",
              Ast.Dict.(
@@ -195,9 +209,16 @@ let components () =
                                };
                              ] );
                        ])) );
-         Text ("\n  ", No_trim, No_trim);
+         Text ("", No_trim, No_trim);
+       ])
+    (parse src);
+  let src = {|{% Template %} {% /Template %}|} in
+  check "Component with implicit children parses correctly"
+    (Ok
+       [
+         Text ("", No_trim, No_trim);
          Component
-           ( "Another",
+           ( "Template",
              Ast.Dict.empty,
              Ast.Dict.singleton "Children"
                (Ast.Child_block [ Text (" ", No_trim, No_trim) ]) );
@@ -207,19 +228,12 @@ let components () =
 
 let patterns () =
   let src =
-    {|
-  {% match tuple with (1, 2.5, "a") %} {% with _ %} {% /match %}
-  {% match list
-      with [] %} {% with [!a, null] %} {% with [z, ...tl] %} {% /match %}
-  {% match record with {a, "!#%@": b} %} {% with _ %} {% /match %}
-  {% match enums with (@"a", @1, true, false) %} {% with _ %} {% /match %}
-  {% match tagged with {@tag: true, a} %} {% with {@tag: false} %} {% /match %}
-  {% match dict with <a: 1, b: 2> %} {% with _ %} {% /match %}|}
+    {|{% match tuple with (1, 2.5, "a") %} {% with _ %} {% /match %}|}
   in
-  check "Patterns"
+  check "Tuple patterns parse correctly"
     (Ok
        [
-         Text ("\n  ", No_trim, No_trim);
+         Text ("", No_trim, No_trim);
          Match
            ( [ Var "tuple" ],
              [
@@ -232,6 +246,17 @@ let patterns () =
                  nodes = [ Text (" ", No_trim, No_trim) ];
                };
              ] );
+         Text ("", No_trim, No_trim);
+       ])
+    (parse src);
+  let src =
+    {|
+  {% match list
+      with [] %} {% with [!a, null] %} {% with [z, ...tl] %} {% /match %}|}
+  in
+  check "List patterns parse correctly"
+    (Ok
+       [
          Text ("\n  ", No_trim, No_trim);
          Match
            ( [ Var "list" ],
@@ -254,7 +279,16 @@ let patterns () =
                  nodes = [ Text (" ", No_trim, No_trim) ];
                };
              ] );
-         Text ("\n  ", No_trim, No_trim);
+         Text ("", No_trim, No_trim);
+       ])
+    (parse src);
+  let src =
+    {|{% match record with {a, "!#%@": b} %} {% with _ %} {% /match %}|}
+  in
+  check "Record patterns parse correctly"
+    (Ok
+       [
+         Text ("", No_trim, No_trim);
          Match
            ( [ Var "record" ],
              [
@@ -277,7 +311,16 @@ let patterns () =
                  nodes = [ Text (" ", No_trim, No_trim) ];
                };
              ] );
-         Text ("\n  ", No_trim, No_trim);
+         Text ("", No_trim, No_trim);
+       ])
+    (parse src);
+  let src =
+    {|{% match enums with (@"a", @1, true, false) %} {% with _ %} {% /match %}|}
+  in
+  check "Enum patterns parse correctly"
+    (Ok
+       [
+         Text ("", No_trim, No_trim);
          Match
            ( [ Var "enums" ],
              [
@@ -291,6 +334,17 @@ let patterns () =
                  nodes = [ Text (" ", No_trim, No_trim) ];
                };
              ] );
+         Text ("", No_trim, No_trim);
+       ])
+    (parse src);
+  let src =
+    {|
+  {% match tagged with {@tag: true, a} %} {% with {@tag: false} %} {% /match %}
+  |}
+  in
+  check "Tagged union patterns parse correctly"
+    (Ok
+       [
          Text ("\n  ", No_trim, No_trim);
          Match
            ( [ Var "tagged" ],
@@ -315,6 +369,13 @@ let patterns () =
                };
              ] );
          Text ("\n  ", No_trim, No_trim);
+       ])
+    (parse src);
+  let src = {|{% match dict with <a: 1, b: 2> %} {% with _ %} {% /match %}|} in
+  check "Dictionary patterns parse correctly"
+    (Ok
+       [
+         Text ("", No_trim, No_trim);
          Match
            ( [ Var "dict" ],
              [
@@ -340,6 +401,40 @@ let patterns () =
        ])
     (parse src)
 
+let edge_cases () =
+  let src = {|{% match a with {a: {b}} %} {{ b }} {% /match %}|} in
+  check "Patterns with }} parse correctly"
+    (Ok
+       [
+         Text ("", No_trim, No_trim);
+         Match
+           ( [ Var "a" ],
+             [
+               {
+                 pats =
+                   [
+                     [
+                       Record
+                         (Untagged
+                            (Ast.Dict.singleton "a"
+                               (Ast.Pattern.Record
+                                  (Untagged
+                                     (Ast.Dict.singleton "b"
+                                        (Ast.Pattern.Var "b"))))));
+                     ];
+                   ];
+                 nodes =
+                   [
+                     Text (" ", No_trim, No_trim);
+                     Echo ([], Ech_var ("b", No_escape));
+                     Text (" ", No_trim, No_trim);
+                   ];
+               };
+             ] );
+         Text ("", No_trim, No_trim);
+       ])
+    (parse src)
+
 let () =
   let open Alcotest in
   run "Parser"
@@ -353,5 +448,6 @@ let () =
           test_case "Maps" `Quick maps;
           test_case "Components" `Quick components;
           test_case "Patterns" `Quick patterns;
+          test_case "Edge cases" `Quick edge_cases;
         ] );
     ]

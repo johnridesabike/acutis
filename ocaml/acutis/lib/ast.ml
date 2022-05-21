@@ -24,11 +24,11 @@ module Dict = struct
   let singleton = MapString.singleton
   let equal = MapString.equal
   let to_map m = m
-  let pp_sep_comma fmt () = F.fprintf fmt ",@ "
-  let pp_binding pp_v fmt (k, v) = F.fprintf fmt "@[%S:@ %a@]" k pp_v v
+  let pp_sep_comma ppf () = F.fprintf ppf ",@ "
+  let pp_binding pp_v ppf (k, v) = F.fprintf ppf "@[%S:@ %a@]" k pp_v v
 
-  let pp pp_v fmt m =
-    F.fprintf fmt "dict{@[%a@]}"
+  let pp pp_v ppf m =
+    F.fprintf ppf "dict{@[%a@]}"
       (F.pp_print_list ~pp_sep:pp_sep_comma (pp_binding pp_v))
       (MapString.bindings m)
 end
@@ -69,20 +69,23 @@ module Pattern = struct
   [@@deriving show, eq]
 end
 
+type trim = No_trim | Trim [@@deriving show, eq]
+type escape = No_escape | Escape [@@deriving show, eq]
 
-type trim = No_trim | Trim
-[@@deriving show, eq]
-type echo = Ech_var of string | Ech_string of string | Ech_component of string
+type echo =
+  | Ech_var of string * escape
+  | Ech_string of string
+  | Ech_component of string
 [@@deriving show, eq]
 
 type node =
   | Text of string * trim * trim
   | Echo of echo list * echo
-  | Match of Pattern.t list * case list
-  | Map_list of Pattern.t * case list
-  | Map_dict of Pattern.t * case list
+  | Match of Pattern.t Nonempty.t * case Nonempty.t
+  | Map_list of Pattern.t * case Nonempty.t
+  | Map_dict of Pattern.t * case Nonempty.t
   | Component of string * Pattern.t Dict.t * child Dict.t
 
-and case = { pats : Pattern.t list list; nodes : t }
+and case = { pats : Pattern.t Nonempty.t Nonempty.t; nodes : t }
 and child = Child_name of string | Child_block of t
 and t = node list [@@deriving show, eq]

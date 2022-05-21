@@ -14,7 +14,7 @@ module L = Lexing
 open Parser
 exception SyntaxError
 
-type mode = Text | Expr | Queue of token list * mode
+type mode = Text | Expr | Echo | Queue of token list * mode
 type state = mode ref
 
 let make_state () = ref Text
@@ -34,9 +34,9 @@ let float = digit* frac? exp?
 
 rule text state buf = parse
   | "{{"
-    { state := Queue ([ECHO_BEGIN], Expr); TEXT (B.contents buf) }
+    { state := Queue ([ECHO_BEGIN], Echo); TEXT (B.contents buf) }
   | "{{~"
-    { state := Queue ([TILDE_RIGHT; ECHO_BEGIN], Expr); TEXT (B.contents buf) }
+    { state := Queue ([TILDE_RIGHT; ECHO_BEGIN], Echo); TEXT (B.contents buf) }
   | "{%"
     { state := Queue ([], Expr); TEXT (B.contents buf) }
   | "{%~"
@@ -66,8 +66,6 @@ and comment depth = parse
 and expr state = parse
   | "%}"          { state := Text; text state (B.create 256) lexbuf }
   | "~%}"         { state := Text; TILDE_LEFT }
-  | "}}"          { state := Text; ECHO_END }
-  | "~}}"         { state := Queue ([TILDE_LEFT], Text); ECHO_END }
   | "match"       { MATCH }
   | "with"        { WITH }
   | "map"         { MAP }
@@ -97,8 +95,28 @@ and expr state = parse
   | '='           { EQUALS }
   | '#'           { HASH }
   | '!'           { EXCLAMATION }
-  | '?'           { QUESTION }
   | "..."         { ELLIPSIS }
+  | eof           { raise SyntaxError }
+  | _             { raise SyntaxError }
+
+(* Echo expressions are specialized to avoid confusion with }} in patterns. *)
+and echo state = parse
+  | "}}"          { state := Text; ECHO_END }
+  | "~}}"         { state := Queue ([TILDE_LEFT], Text); ECHO_END }
+  | "match"
+  | "with"
+  | "map"
+  | "map_dict"
+  | "null"
+  | "true"
+  | "false"       { raise SyntaxError }
+  | id            { ID (L.lexeme lexbuf) }
+  | component     { COMPONENT (L.lexeme lexbuf) }
+  | white         { echo state lexbuf }
+  | newline       { L.new_line lexbuf; echo state lexbuf }
+  | '"'           { read_string (B.create 16) lexbuf }
+  | '?'           { QUESTION }
+  | '&'           { AMPERSAND }
   | eof           { raise SyntaxError }
   | _             { raise SyntaxError }
 
@@ -121,6 +139,7 @@ let rec acutis state lexbuf =
   match !state with
   | Text -> text state (B.create 256) lexbuf
   | Expr -> expr state lexbuf
+  | Echo -> echo state lexbuf
   | Queue ([], state') ->
       state := state';
       acutis state lexbuf

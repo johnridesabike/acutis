@@ -27,6 +27,7 @@ open Ast
 %token BACKSLASH              (* / *)
 %token EQUALS                 (* = *)
 %token HASH                   (* # *)
+%token AMPERSAND              (* & *)
 %token EOF
 
 (* Pattern syntax *)
@@ -63,11 +64,9 @@ pattern:
   | AT; i = INT;                                { Enum_int i }
   | AT; s = STRING;                             { Enum_string s }
   | NULL;                                       { Nullable None }
-  | EXCLAMATION; pat = pattern;                 { Nullable (Some pat) }
-  | LEFT_BRACK; l = pattern_list; RIGHT_BRACK;  { let l, tl = l in List (l, tl)}
-  | LEFT_PAREN;
-    l = pattern_list_nonempty;
-    RIGHT_PAREN;                                { Tuple l }
+  | EXCLAMATION; p = pattern;                   { Nullable (Some p) }
+  | LEFT_BRACK; l = pattern_list; RIGHT_BRACK;  { l }
+  | LEFT_PAREN; l = tuple; RIGHT_PAREN;         { Tuple l }
   | LEFT_BRACE; r = record; RIGHT_BRACE;        { Record r }
   | LEFT_ANGLE; d = dict; RIGHT_ANGLE;          { Dict d }
 
@@ -94,27 +93,32 @@ dict:
     { let (k, v) = x in Dict.add k v m }
 
 pattern_list:
-  | tl = option(ELLIPSIS; p = pattern { p }); { ([], tl) }
+  | tl = option(ELLIPSIS; p = pattern { p });
+    { List ([], tl) }
   | l = pattern_list_nonempty; tl = option(COMMA; ELLIPSIS; p = pattern; { p });
-    { (l, tl) }
+    { Pattern.List (Nonempty.to_list l, tl) }
+
+tuple:
+  | (* empty *)                { [] }
+  | l = pattern_list_nonempty; { Nonempty.to_list l }
 
 (* Match & map rules *)
-%inline pattern_list_nonempty: l = rev_pattern_list_nonempty; { List.rev l }
-rev_pattern_list_nonempty:
-  | p = pattern;                                       { [p] }
-  | l = rev_pattern_list_nonempty; COMMA; p = pattern; { p :: l }
+%inline pattern_list_nonempty: l = pattern_list_nonempty_rev; { Nonempty.rev l }
+pattern_list_nonempty_rev:
+  | p = pattern;                                       { [ p ] }
+  | l = pattern_list_nonempty_rev; COMMA; p = pattern; { Nonempty.cons p l }
 
-%inline with_pats: l = rev_with_pats; { List.rev l }
-rev_with_pats:
-  | WITH; ps = pattern_list_nonempty;                    { [ps] }
-  | l = rev_with_pats; WITH; ps = pattern_list_nonempty; { ps :: l }
+with_pats: l = with_pats_rev; { Nonempty.rev l }
+with_pats_rev:
+  | WITH; ps = pattern_list_nonempty;                    { [ ps ] }
+  | l = with_pats_rev; WITH; ps = pattern_list_nonempty; { Nonempty.cons ps l }
 
-%inline cases: l = rev_cases; { List.rev l }
-rev_cases:
+cases: l = cases_rev; { Nonempty.rev l }
+cases_rev:
   | pats = with_pats; child = nodes;
-    { [{pats; nodes = child}] }
-  | l = rev_cases; pats = with_pats; child = nodes;
-    { {pats; nodes = child} :: l }
+    { [ {pats; nodes = child} ] }
+  | l = cases_rev; pats = with_pats; child = nodes;
+    { Nonempty.cons {pats; nodes = child} l }
 
 (* Component rules *)
 props:
@@ -131,17 +135,20 @@ props:
     { let (pats, childs) = p in (pats, Dict.add k (Child_name k) childs) }
 
 (* Echo rules *)
-echo:
-  | x = ID;         { Ech_var x }
-  | x = COMPONENT;  { Ech_component x }
-  | s = STRING;     { Ech_string s }
+escape:
+  | (* empty *) { No_escape }
+  | AMPERSAND;  { Escape }
 
-%inline echoes: e = rev_echoes; { let (l, last) = e in Echo (List.rev l, last) }
-rev_echoes:
-  | x = echo;
-    { ([], x) }
-  | echoes = rev_echoes; QUESTION; last = echo;
-    { let (tl, hd) = echoes in (hd :: tl, last) }
+echo:
+  | e = escape; x = ID; { Ech_var (x, e) }
+  | x = COMPONENT;      { Ech_component x }
+  | s = STRING;         { Ech_string s }
+
+echoes:
+  | l = echoes_rev; { let Nonempty.(last :: l) = l in Echo (List.rev l, last) }
+echoes_rev:
+  | x = echo;                               { [ x ] }
+  | l = echoes_rev; QUESTION; last = echo;  { Nonempty.cons last l }
 
 trim_left:
   | (* empty *)  { No_trim }
@@ -176,9 +183,9 @@ node:
       Component (x1, p, Dict.add "Children" children c)
     }
 
-%inline nodes: l = rev_nodes; { List.rev l }
-rev_nodes:
+nodes: l = nodes_rev; { List.rev l }
+nodes_rev:
   | n = text;                 { [n] }
-  | l = rev_nodes; n = node;  { n :: l }
+  | l = nodes_rev; n = node;  { n :: l }
 
 acutis: n = nodes; EOF; { n }

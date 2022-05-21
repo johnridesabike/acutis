@@ -11,7 +11,7 @@
 open Utils
 
 module Variant : sig
-  type row = Closed | Open
+  type row = [ `Closed | `Open ]
   type extra = Extra_none | Extra_bool
   type ('a, 'b) ty = Int of 'a | String of 'b
 
@@ -46,7 +46,8 @@ module Union : sig
 end
 
 type ty' =
-  | Unknown
+  (* This row is for unification with variant types during destructuring. *)
+  | Unknown of Variant.row ref
   | Int
   | Float
   | String
@@ -74,19 +75,27 @@ val list : ty -> ty
 val tuple : ty list -> ty
 val record : (string * ty) list -> ty
 val dict : ty -> ty
-val enum_int : int list -> ty
-val enum_string : string list -> ty
+val enum_int : Variant.row -> int list -> ty
+val enum_string : Variant.row -> string list -> ty
 val bool : unit -> ty
-val union_int : string -> (int * (string * ty) list) list -> ty
-val union_string : string -> (string * (string * ty) list) list -> ty
-val union_boolean : f:(string * ty) list -> t:(string * ty) list -> string -> ty
+val false_only : unit -> ty
+val true_only : unit -> ty
+val union_int : Variant.row -> string -> (int * (string * ty) list) list -> ty
+
+val union_string :
+  Variant.row -> string -> (string * (string * ty) list) list -> ty
+
+val union_boolean : string -> f:(string * ty) list -> t:(string * ty) list -> ty
+val union_false_only : string -> (string * ty) list -> ty
+val union_true_only : string -> (string * ty) list -> ty
 val make : (string * ty) list -> t
 
 (* Utilities *)
-val internal_record: ty MapString.t ref -> ty
-val internal_dict_keys: ty -> SetString.t ref -> ty
+val internal_record : ty MapString.t ref -> ty
+val internal_dict_keys : ty -> SetString.t ref -> ty
 val internal_copy_record : t -> t
 val pp_ty : Format.formatter -> ty -> unit
+val pp : Format.formatter -> t -> unit
 val show_ty : ty -> string
 val equal : t -> t -> bool
 

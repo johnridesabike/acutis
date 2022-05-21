@@ -33,12 +33,12 @@ end
 type node =
   | TText of string * Ast.trim * Ast.trim
   | TEcho of Ast.echo list * Ast.echo
-  | TMatch of Pattern.t list * case list
-  | TMap_list of Pattern.t * case list
-  | TMap_dict of Pattern.t * case list
+  | TMatch of Pattern.t Nonempty.t * case Nonempty.t
+  | TMap_list of Pattern.t * case Nonempty.t
+  | TMap_dict of Pattern.t * case Nonempty.t
   | TComponent of string * Pattern.t MapString.t * child MapString.t
 
-and case = { pats : Pattern.t list list; nodes : nodes }
+and case = { pats : Pattern.t Nonempty.t Nonempty.t; nodes : nodes }
 and child = TChild_name of string | TChild_block of nodes
 and nodes = node list
 

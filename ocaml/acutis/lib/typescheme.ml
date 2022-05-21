@@ -12,7 +12,7 @@ open Utils
 module F = Format
 
 module Variant = struct
-  type row = Closed | Open [@@deriving eq]
+  type row = [ `Closed | `Open ] [@@deriving eq]
   type extra = Extra_none | Extra_bool [@@deriving eq]
   type ('a, 'b) ty = Int of 'a | String of 'b [@@deriving eq]
 
@@ -23,18 +23,18 @@ module Variant = struct
   }
   [@@deriving eq]
 
-  let pp_row fmt = function
-    | Closed -> F.fprintf fmt ""
-    | Open -> F.fprintf fmt " | ..."
+  let pp_row ppf = function
+    | `Closed -> F.fprintf ppf ""
+    | `Open -> F.fprintf ppf "@ @[| ...@]"
 
-  let pp_bool fmt = function
-    | 0 -> F.fprintf fmt "false"
-    | _ -> F.fprintf fmt "true"
+  let pp_bool ppf = function
+    | 0 -> F.fprintf ppf "false"
+    | _ -> F.fprintf ppf "true"
 
-  let pp_types fmt = function
-    | `String s -> F.fprintf fmt "%S" s
-    | `Int i -> F.fprintf fmt "%i" i
-    | `Bool b -> pp_bool fmt b
+  let pp_types ppf = function
+    | `String s -> F.fprintf ppf "%S" s
+    | `Int i -> F.fprintf ppf "%i" i
+    | `Bool b -> pp_bool ppf b
 end
 
 module Enum = struct
@@ -57,13 +57,13 @@ module Enum = struct
   let true_only = Variant.Int (SetInt.singleton 1)
 
   let false_and_true () =
-    { Variant.cases = false_and_true_cases; row = Closed; extra = Extra_bool }
+    { Variant.cases = false_and_true_cases; row = `Closed; extra = Extra_bool }
 
   let true_only () =
-    { Variant.cases = true_only; row = Closed; extra = Extra_bool }
+    { Variant.cases = true_only; row = `Closed; extra = Extra_bool }
 
   let false_only () =
-    { Variant.cases = false_only; row = Closed; extra = Extra_bool }
+    { Variant.cases = false_only; row = `Closed; extra = Extra_bool }
 end
 
 module Union = struct
@@ -85,16 +85,30 @@ module Union = struct
       extra = Extra_none;
     }
 
-  let boolean ~f ~t row =
+  let boolean ~f ~t =
     {
       Variant.cases = Int (MapInt.singleton 0 f |> MapInt.add 1 t);
-      row;
+      row = `Closed;
+      extra = Extra_bool;
+    }
+
+  let false_only l =
+    {
+      Variant.cases = Int (MapInt.singleton 0 l);
+      row = `Closed;
+      extra = Extra_bool;
+    }
+
+  let true_only l =
+    {
+      Variant.cases = Int (MapInt.singleton 1 l);
+      row = `Closed;
       extra = Extra_bool;
     }
 end
 
 type ty' =
-  | Unknown
+  | Unknown of Variant.row ref
   | Int
   | Float
   | String
@@ -112,7 +126,7 @@ and ty = ty' ref [@@deriving eq]
 
 type t = ty MapString.t [@@deriving eq]
 
-let unknown () = ref Unknown
+let unknown () = ref (Unknown (ref `Closed))
 let int () = ref Int
 let float () = ref Float
 let string () = ref String
@@ -122,33 +136,41 @@ let list t = ref (List t)
 let tuple l = ref (Tuple l)
 let record l = ref (Record (ref (MapString.of_seq (List.to_seq l))))
 let dict t = ref (Dict (t, ref SetString.empty))
-let enum_int l = ref (Enum (Enum.int l Closed))
-let enum_string l = ref (Enum (Enum.string l Closed))
+let enum_int row l = ref (Enum (Enum.int l row))
+let enum_string row l = ref (Enum (Enum.string l row))
 let bool () = ref (Enum (Enum.false_and_true ()))
+let false_only () = ref (Enum (Enum.false_only ()))
+let true_only () = ref (Enum (Enum.true_only ()))
 
 let nested_lists_to_map l =
   List.map (fun (k, v) -> (k, ref (MapString.of_seq (List.to_seq v)))) l
 
-let union_int k l = ref (Union (k, Union.int (nested_lists_to_map l) Closed))
+let union_int row k l = ref (Union (k, Union.int (nested_lists_to_map l) row))
 
-let union_string k l =
-  ref (Union (k, Union.string (nested_lists_to_map l) Closed))
+let union_string row k l =
+  ref (Union (k, Union.string (nested_lists_to_map l) row))
 
-let union_boolean ~f ~t k =
+let union_boolean k ~f ~t =
   ref
     (Union
        ( k,
          Union.boolean
            ~f:(ref (MapString.of_seq (List.to_seq f)))
-           ~t:(ref (MapString.of_seq (List.to_seq t)))
-           Closed ))
+           ~t:(ref (MapString.of_seq (List.to_seq t))) ))
+
+let union_false_only k l =
+  ref (Union (k, Union.false_only (ref (MapString.of_seq (List.to_seq l)))))
+
+let union_true_only k l =
+  ref (Union (k, Union.true_only (ref (MapString.of_seq (List.to_seq l)))))
 
 let make l = l |> List.to_seq |> MapString.of_seq
 let internal_record m = ref (Record m)
 let internal_dict_keys t kys = ref (Dict (t, kys))
 
 let rec copy = function
-  | (Unknown | Int | Float | String | Echo) as x -> x
+  | (Int | Float | String | Echo) as x -> x
+  | Unknown r -> Unknown (ref !r)
   | Enum { cases; row; extra } -> Enum { cases; row; extra }
   | Nullable r -> Nullable (copy_ref r)
   | List r -> List (copy_ref r)
@@ -168,42 +190,40 @@ let rec copy = function
 and copy_ref r = ref (copy !r)
 and internal_copy_record m = MapString.map copy_ref m
 
-let pp_sep_comma fmt () = F.fprintf fmt ",@ "
-let pp_sep_pipe fmt () = F.fprintf fmt "@ |"
+let pp_sep_comma ppf () = F.fprintf ppf ",@ "
+let pp_sep_pipe ppf () = F.fprintf ppf "@ | "
 
-let rec pp_ty fmt t =
+let rec pp_ty ppf t =
   match !t with
-  | Unknown -> F.fprintf fmt "_"
-  | Int -> F.fprintf fmt "int"
-  | Float -> F.fprintf fmt "float"
-  | String -> F.fprintf fmt "string"
-  | Echo -> F.fprintf fmt "echoable"
+  | Unknown _ -> F.fprintf ppf "_"
+  | Int -> F.fprintf ppf "int"
+  | Float -> F.fprintf ppf "float"
+  | String -> F.fprintf ppf "string"
+  | Echo -> F.fprintf ppf "echoable"
   | Enum { cases; row; extra } -> (
       match cases with
       | String cases ->
-          F.fprintf fmt "%a%a"
-            (F.pp_print_list ~pp_sep:pp_sep_pipe (fun fmt s ->
-                 F.fprintf fmt "%@%S" s))
+          F.fprintf ppf "@[| %a@]@[%a@]"
+            (F.pp_print_list ~pp_sep:pp_sep_pipe (fun ppf s ->
+                 F.fprintf ppf "%@%S" s))
             (SetString.elements cases) Variant.pp_row row
       | Int cases -> (
           match extra with
           | Extra_none ->
-              F.fprintf fmt "%a%a"
-                (F.pp_print_list ~pp_sep:pp_sep_pipe (fun fmt i ->
-                     F.fprintf fmt "%@%i" i))
+              F.fprintf ppf "@[| %a@]@[%a@]"
+                (F.pp_print_list ~pp_sep:pp_sep_pipe (fun ppf i ->
+                     F.fprintf ppf "%@%i" i))
                 (SetInt.elements cases) Variant.pp_row row
           | Extra_bool ->
-              F.fprintf fmt "%a%a"
+              F.fprintf ppf "@[| %a@]@[%a@]"
                 (F.pp_print_list ~pp_sep:pp_sep_pipe Variant.pp_bool)
                 (SetInt.elements cases) Variant.pp_row row))
-  | Nullable x ->
-      F.fprintf fmt "?";
-      pp_ty fmt x
-  | List l -> F.fprintf fmt "[%a]" pp_ty l
-  | Dict (t, _) -> F.fprintf fmt "<%a>" pp_ty t
+  | Nullable x -> F.fprintf ppf "?%a" pp_ty x
+  | List l -> F.fprintf ppf "[@[@,@[%a@]@,]@]" pp_ty l
+  | Dict (t, _) -> F.fprintf ppf "<@[%a@]>" pp_ty t
   | Tuple l ->
-      F.fprintf fmt "(%a)" (F.pp_print_list ~pp_sep:pp_sep_comma pp_ty) l
-  | Record r -> F.fprintf fmt "{%a}" pp_record_rows (MapString.bindings !r)
+      F.fprintf ppf "(@[%a@])" (F.pp_print_list ~pp_sep:pp_sep_comma pp_ty) l
+  | Record r -> F.fprintf ppf "{@[%a@]}" pp_record_rows (MapString.bindings !r)
   | Union (key, { cases; extra; row }) ->
       let cases =
         match cases with
@@ -218,18 +238,26 @@ let rec pp_ty fmt t =
                 m |> MapInt.bindings
                 |> List.map (fun (tag, m) -> (`Bool tag, m)))
       in
-      F.fprintf fmt "%a%a"
+      F.fprintf ppf "@[| %a@]@[%a@]"
         (F.pp_print_list ~pp_sep:pp_sep_pipe (pp_union_cases key))
         cases Variant.pp_row row
 
-and pp_union_cases key fmt (tag, m) =
+and pp_union_cases key ppf (tag, m) =
   let rows = MapString.bindings !m in
-  F.fprintf fmt "{@%S: %a %a}" key Variant.pp_types tag pp_record_rows rows
+  F.fprintf ppf "@[{@,@[%S: %a,@ %a@]@,}@]" key Variant.pp_types tag
+    pp_record_rows rows
 
-and pp_record_rows fmt l =
+and pp_record_rows ppf l =
   F.pp_print_list ~pp_sep:pp_sep_comma
-    (fun fmt (k, v) -> F.fprintf fmt "%S: %a" k pp_ty v)
-    fmt l
+    (fun ppf (k, v) -> F.fprintf ppf "%S:@ @[%a@]" k pp_ty v)
+    ppf l
+
+let pp_binding ppf (k, v) = F.fprintf ppf "@[%S =@ @[%a@]@]" k pp_ty v
+
+let pp ppf m =
+  F.fprintf ppf "@[%a@]"
+    (F.pp_print_list pp_binding ~pp_sep:pp_sep_comma)
+    (MapString.bindings m)
 
 let show_ty ty =
   pp_ty F.str_formatter ty;
