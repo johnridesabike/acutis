@@ -28,6 +28,39 @@ exception Clash of string
   records and open enums in the variable's type.
 *)
 
+let rec open_rows_bool_union_aux = function
+  | None -> Some (ref MapString.empty)
+  | Some ty as x ->
+      MapString.iter (fun _ v -> open_rows v) !ty;
+      x
+
+and open_rows ty =
+  match !ty with
+  | Ty.Enum ty -> (
+      match ty.extra with
+      | Extra_none -> ty.row <- `Open
+      | Extra_bool -> ty.cases <- Ty.Enum.false_and_true_cases)
+  | Union (_, ty) -> (
+      match (ty.extra, ty.cases) with
+      | Extra_bool, Int cases ->
+          let f = open_rows_bool_union_aux in
+          ty.cases <- Int (cases |> MapInt.update 0 f |> MapInt.update 1 f)
+      | _, Int cases ->
+          MapInt.iter
+            (fun _ v -> MapString.iter (fun _ v -> open_rows v) !v)
+            cases;
+          ty.row <- `Open
+      | _, String cases ->
+          MapString.iter
+            (fun _ v -> MapString.iter (fun _ v -> open_rows v) !v)
+            cases;
+          ty.row <- `Open)
+  | Tuple a -> List.iter open_rows a
+  | Record ty -> MapString.iter (fun _ v -> open_rows v) !ty
+  | Nullable ty | List ty | Dict (ty, _) -> open_rows ty
+  | Unknown row -> row := `Open
+  | Int | Float | String | Echo -> ()
+
 type mode =
   | Destructure_expand (* Record a and b both take on each other's fields. *)
   | Construct_literal (* Record a is narrowed to a subset of a and b. *)
@@ -124,7 +157,10 @@ and unify_record mode a b =
         | (Some a as x), Some b ->
             unify mode a b;
             x
-        | x, None | None, x -> x
+        | None, (Some b as x) ->
+            open_rows b;
+            x
+        | x, None -> x
       in
       a := MapString.merge f !a !b
   | Construct_var ->
@@ -180,39 +216,6 @@ let unify mode a b =
   try unify mode a b
   with Clash s ->
     raise (Type_error ("type mismatch " ^ show_mode mode ^ " " ^ s))
-
-let rec open_rows_bool_union_aux = function
-  | None -> Some (ref MapString.empty)
-  | Some ty as x ->
-      MapString.iter (fun _ v -> open_rows v) !ty;
-      x
-
-and open_rows ty =
-  match !ty with
-  | Ty.Enum ty -> (
-      match ty.extra with
-      | Extra_none -> ty.row <- `Open
-      | Extra_bool -> ty.cases <- Ty.Enum.false_and_true_cases)
-  | Union (_, ty) -> (
-      match (ty.extra, ty.cases) with
-      | Extra_bool, Int cases ->
-          let f = open_rows_bool_union_aux in
-          ty.cases <- Int (cases |> MapInt.update 0 f |> MapInt.update 1 f)
-      | _, Int cases ->
-          MapInt.iter
-            (fun _ v -> MapString.iter (fun _ v -> open_rows v) !v)
-            cases;
-          ty.row <- `Open
-      | _, String cases ->
-          MapString.iter
-            (fun _ v -> MapString.iter (fun _ v -> open_rows v) !v)
-            cases;
-          ty.row <- `Open)
-  | Tuple a -> List.iter open_rows a
-  | Record ty -> MapString.iter (fun _ v -> open_rows v) !ty
-  | Nullable ty | List ty | Dict (ty, _) -> open_rows ty
-  | Unknown row -> row := `Open
-  | Int | Float | String | Echo -> ()
 
 module Pattern = struct
   type constant = TString of string | TInt of int | TFloat of float

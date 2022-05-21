@@ -142,6 +142,15 @@ let open_enums () =
   in
   check "Wildcards will open enums nested inside other types"
     (Ok Ty.(make [ ("a", dict (enum_string `Open [ "a"; "b"; "c" ])) ]))
+    (get_types src);
+  let src =
+    {|
+    {% match a with {a: 1} %}{% with {b: @1} %}{% with {a: _} %}{% /match %}|}
+  in
+  check "The row is opened for variants in newly inferred record fields"
+    (Ok
+       Ty.(
+         make [ ("a", record [ ("a", int ()); ("b", enum_int `Open [ 1 ]) ]) ]))
     (get_types src)
 
 let closed_enums () =
