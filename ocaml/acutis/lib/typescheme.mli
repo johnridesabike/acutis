@@ -13,6 +13,10 @@ open Utils
 module Variant : sig
   type row = [ `Closed | `Open ]
   type extra = Extra_none | Extra_bool
+
+  val equal_extra : extra -> extra -> bool
+  val pp_extra : Format.formatter -> extra -> unit
+
   type ('a, 'b) ty = Int of 'a | String of 'b
 
   type ('a, 'b) t = {
@@ -38,11 +42,14 @@ module Enum : sig
   val false_and_true : unit -> t
   val true_only : unit -> t
   val false_only : unit -> t
+  val equal : t -> t -> bool
 end
 
 module Union : sig
   type 'a t =
     ('a MapString.t ref MapInt.t, 'a MapString.t ref MapString.t) Variant.t
+
+  val equal : ('a -> 'a -> bool) -> 'a t -> 'a t -> bool
 end
 
 type ty' =
@@ -97,6 +104,7 @@ val internal_copy_record : t -> t
 val pp_ty : Format.formatter -> ty -> unit
 val pp : Format.formatter -> t -> unit
 val show_ty : ty -> string
+val equal_ty : ty -> ty -> bool
 val equal : t -> t -> bool
 
 module Child : sig

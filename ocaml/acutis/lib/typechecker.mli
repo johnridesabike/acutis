@@ -12,7 +12,13 @@ open Utils
 
 module Pattern : sig
   type constant = TString of string | TInt of int | TFloat of float
+
+  val equal_constant : constant -> constant -> bool
+
   type construct = TList | TNullable
+  val pp_construct: Format.formatter -> construct -> unit
+
+  val equal_construct : construct -> construct -> bool
 
   type t =
     | TConst of constant * Typescheme.Enum.t option
@@ -28,6 +34,7 @@ module Pattern : sig
     | TAny
 
   val pp : Format.formatter -> t -> unit
+  val equal : t -> t -> bool
 end
 
 type node =

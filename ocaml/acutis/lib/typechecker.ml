@@ -129,22 +129,9 @@ let rec unify mode aty bty =
   | Union (ka, a), Union (kb, b) when String.equal ka kb ->
       unify_variant ~unify_cases:unify_union_cases
         ~subset_cases:subset_union_cases mode a b
-  | Unknown a, Enum b ->
-      (match mode with
-      | Destructure_expand -> (
-          match (!a, b.row) with
-          | `Open, _ | _, `Open -> b.row <- `Open
-          | _ -> ())
-      | _ -> ());
-      aty := !bty
-  | Unknown a, Union (_, b) ->
-      (match mode with
-      | Destructure_expand -> (
-          match (!a, b.row) with
-          | `Open, _ | _, `Open -> b.row <- `Open
-          | _ -> ())
-      | _ -> ());
-      aty := !bty
+  | Unknown { contents = `Open }, t ->
+      open_rows bty;
+      aty := t
   | Unknown _, t -> aty := t
   | t, Unknown _ -> bty := t
   | _ -> raise (Clash "unify")
@@ -154,12 +141,12 @@ and unify_record mode a b =
   | Destructure_expand ->
       let f _ a b =
         match (a, b) with
-        | (Some a as x), Some b ->
+        | (Some a as a'), Some b ->
             unify mode a b;
-            x
-        | None, (Some b as x) ->
+            a'
+        | None, Some b ->
             open_rows b;
-            x
+            Some b
         | x, None -> x
       in
       a := MapString.merge f !a !b
@@ -219,7 +206,9 @@ let unify mode a b =
 
 module Pattern = struct
   type constant = TString of string | TInt of int | TFloat of float
-  type construct = TList | TNullable
+  [@@deriving eq]
+
+  type construct = TList | TNullable [@@deriving eq, show]
 
   type t =
     | TConst of constant * Ty.Enum.t option
@@ -233,6 +222,7 @@ module Pattern = struct
     | TVar of string
     | TOptionalVar of string
     | TAny
+  [@@deriving eq]
 
   let make_enum_aux extra row tyvars = function
     | TInt i -> { V.cases = Int (MapInt.singleton i tyvars); row; extra }
@@ -445,8 +435,7 @@ module Pattern = struct
   and pp_key_values ppf (k, v) = F.fprintf ppf "%S: %a" k pp v
 
   and pp_bindings ppf m =
-    F.pp_print_list ~pp_sep:pp_sep_comma pp_key_values ppf
-      (MapString.bindings m)
+    F.pp_print_seq ~pp_sep:pp_sep_comma pp_key_values ppf (MapString.to_seq m)
 
   and pp_rest ppf t = F.fprintf ppf ",@ ...%a" pp t
 end

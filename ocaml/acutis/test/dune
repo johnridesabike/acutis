@@ -1,4 +1,4 @@
 (tests
- (names parser_test typechecker_test)
+ (names parser_test typechecker_test matching_test)
  (libraries alcotest acutis))
 

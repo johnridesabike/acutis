@@ -13,7 +13,7 @@ module F = Format
 
 module Variant = struct
   type row = [ `Closed | `Open ] [@@deriving eq]
-  type extra = Extra_none | Extra_bool [@@deriving eq]
+  type extra = Extra_none | Extra_bool [@@deriving eq, show]
   type ('a, 'b) ty = Int of 'a | String of 'b [@@deriving eq]
 
   type ('a, 'b) t = {
@@ -223,32 +223,29 @@ let rec pp_ty ppf t =
   | Dict (t, _) -> F.fprintf ppf "<@[%a@]>" pp_ty t
   | Tuple l ->
       F.fprintf ppf "(@[%a@])" (F.pp_print_list ~pp_sep:pp_sep_comma pp_ty) l
-  | Record r -> F.fprintf ppf "{@[%a@]}" pp_record_rows (MapString.bindings !r)
+  | Record r -> F.fprintf ppf "{@[%a@]}" pp_record_rows (MapString.to_seq !r)
   | Union (key, { cases; extra; row }) ->
       let cases =
         match cases with
         | String m ->
-            m |> MapString.bindings
-            |> List.map (fun (tag, m) -> (`String tag, m))
+            m |> MapString.to_seq |> Seq.map (fun (tag, m) -> (`String tag, m))
         | Int m -> (
             match extra with
             | Extra_none ->
-                m |> MapInt.bindings |> List.map (fun (tag, m) -> (`Int tag, m))
+                m |> MapInt.to_seq |> Seq.map (fun (tag, m) -> (`Int tag, m))
             | Extra_bool ->
-                m |> MapInt.bindings
-                |> List.map (fun (tag, m) -> (`Bool tag, m)))
+                m |> MapInt.to_seq |> Seq.map (fun (tag, m) -> (`Bool tag, m)))
       in
       F.fprintf ppf "@[| %a@]@[%a@]"
-        (F.pp_print_list ~pp_sep:pp_sep_pipe (pp_union_cases key))
+        (F.pp_print_seq ~pp_sep:pp_sep_pipe (pp_union_cases key))
         cases Variant.pp_row row
 
 and pp_union_cases key ppf (tag, m) =
-  let rows = MapString.bindings !m in
   F.fprintf ppf "@[{@,@[%S: %a,@ %a@]@,}@]" key Variant.pp_types tag
-    pp_record_rows rows
+    pp_record_rows (MapString.to_seq !m)
 
 and pp_record_rows ppf l =
-  F.pp_print_list ~pp_sep:pp_sep_comma
+  F.pp_print_seq ~pp_sep:pp_sep_comma
     (fun ppf (k, v) -> F.fprintf ppf "%S:@ @[%a@]" k pp_ty v)
     ppf l
 
@@ -256,8 +253,8 @@ let pp_binding ppf (k, v) = F.fprintf ppf "@[%S =@ @[%a@]@]" k pp_ty v
 
 let pp ppf m =
   F.fprintf ppf "@[%a@]"
-    (F.pp_print_list pp_binding ~pp_sep:pp_sep_comma)
-    (MapString.bindings m)
+    (F.pp_print_seq pp_binding ~pp_sep:pp_sep_comma)
+    (MapString.to_seq m)
 
 let show_ty ty =
   pp_ty F.str_formatter ty;

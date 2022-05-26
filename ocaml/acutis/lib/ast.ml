@@ -23,14 +23,8 @@ module Dict = struct
   let empty = MapString.empty
   let singleton = MapString.singleton
   let equal = MapString.equal
+  let pp = MapString.pp
   let to_map m = m
-  let pp_sep_comma ppf () = F.fprintf ppf ",@ "
-  let pp_binding pp_v ppf (k, v) = F.fprintf ppf "@[%S:@ %a@]" k pp_v v
-
-  let pp pp_v ppf m =
-    F.fprintf ppf "dict{@[%a@]}"
-      (F.pp_print_list ~pp_sep:pp_sep_comma (pp_binding pp_v))
-      (MapString.bindings m)
 end
 
 module Record = struct

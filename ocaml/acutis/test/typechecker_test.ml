@@ -11,22 +11,21 @@ let print_position ppf lexbuf =
 let parse src =
   let state = Lexer.make_state () in
   let lexbuf = Lexing.from_string src in
-  try Ok (Parser.acutis (Lexer.acutis state) lexbuf) with
-  | Lexer.SyntaxError ->
-      Error (F.asprintf "Lexer.SyntaxError %a" print_position lexbuf)
-  | Parser.Error i ->
-      Error (F.asprintf "Parser.Error %i %a" i print_position lexbuf)
+  try Parser.acutis (Lexer.acutis state) lexbuf with
+  | Lexer.SyntaxError as e ->
+      F.printf "Lexer.SyntaxError %a" print_position lexbuf;
+      raise e
+  | Parser.Error i as e ->
+      F.printf "Parser.Error %i %a" i print_position lexbuf;
+      raise e
 
-let check = Alcotest.(check (result (module Typescheme) string))
-
-let get_types src =
-  parse src
-  |> Result.map (fun ast -> (Typechecker.make MapString.empty ast).prop_types)
+let check = Alcotest.(check (module Typescheme))
+let get_types src = (parse src |> Typechecker.make MapString.empty).prop_types
 
 let echoes () =
   let src = {|{{ a }} {{ "b" }} {{ c ? "d" }}|} in
   check "Echoes typecheck correctly"
-    (Ok Ty.(make [ ("a", echo ()); ("c", nullable (echo ())) ]))
+    Ty.(make [ ("a", echo ()); ("c", nullable (echo ())) ])
     (get_types src)
 
 let nullables () =
@@ -36,10 +35,8 @@ let nullables () =
   {% match b with !!"b" %} {% with null %} {% with !_ %} {% /match %}|}
   in
   check "Nullables typecheck correctly"
-    (Ok
-       Ty.(
-         make
-           [ ("a", nullable (int ())); ("b", nullable (nullable (string ()))) ]))
+    Ty.(
+      make [ ("a", nullable (int ())); ("b", nullable (nullable (string ()))) ])
     (get_types src)
 
 let nested () =
@@ -50,15 +47,13 @@ let nested () =
     {% /match %}|}
   in
   check "Nested patterns typecheck correctly"
-    (Ok
-       Ty.(
-         make
-           [
-             ( "a",
-               record
-                 [ ("b", record [ ("c", nullable (int ())) ]); ("d", echo ()) ]
-             );
-           ]))
+    Ty.(
+      make
+        [
+          ( "a",
+            record
+              [ ("b", record [ ("c", nullable (int ())) ]); ("d", echo ()) ] );
+        ])
     (get_types src);
   let src =
     {|
@@ -68,13 +63,12 @@ let nested () =
     {% /match %}|}
   in
   check "Multiple patterns typecheck correctly"
-    (Ok
-       Ty.(
-         make
-           [
-             ("a", record [ ("c", nullable (record [ ("d", int ()) ])) ]);
-             ("b", int ());
-           ]))
+    Ty.(
+      make
+        [
+          ("a", record [ ("c", nullable (record [ ("d", int ()) ])) ]);
+          ("b", int ());
+        ])
     (get_types src)
 
 let constructing () =
@@ -87,35 +81,33 @@ let constructing () =
       {% /map %}|}
   in
   check "Type narrowing works"
-    (Ok
-       Ty.(
-         make
-           [
-             ("x", record [ ("a", string ()); ("b", echo ()) ]);
-             ("y", record [ ("a", string ()); ("c", echo ()) ]);
-             ("z", record [ ("a", string ()) ]);
-           ]))
+    Ty.(
+      make
+        [
+          ("x", record [ ("a", string ()); ("b", echo ()) ]);
+          ("y", record [ ("a", string ()); ("c", echo ()) ]);
+          ("z", record [ ("a", string ()) ]);
+        ])
     (get_types src);
   let src =
     {|{% match a with [{a: 1}, c, {b: "b"}] %} {% with _ %} {% /match %}|}
   in
   check "Inferrence works for nested types (1)"
-    (Ok Ty.(make [ ("a", list (record [ ("a", int ()); ("b", string ()) ])) ]))
+    Ty.(make [ ("a", list (record [ ("a", int ()); ("b", string ()) ])) ])
     (get_types src);
   let src =
     {|{% match a with [{@tag: 0, a: 1}, c, {@tag: 1, b: "b"}] %}
       {% with _ %} {% /match %}|}
   in
   check "Inferrence works for nested types (2)"
-    (Ok
-       Ty.(
-         make
-           [
-             ( "a",
-               list
-                 (union_int `Open "tag"
-                    [ (0, [ ("a", int ()) ]); (1, [ ("b", string ()) ]) ]) );
-           ]))
+    Ty.(
+      make
+        [
+          ( "a",
+            list
+              (union_int `Open "tag"
+                 [ (0, [ ("a", int ()) ]); (1, [ ("b", string ()) ]) ]) );
+        ])
     (get_types src)
 
 let open_enums () =
@@ -127,13 +119,12 @@ let open_enums () =
     {% map [@3, b] with _ %} {% /map %}|}
   in
   check "Open enums are inferred correctly"
-    (Ok
-       Ty.(
-         make
-           [
-             ("a", enum_string `Open [ "a"; "b"; "c" ]);
-             ("b", enum_int `Open [ 1; 2; 3 ]);
-           ]))
+    Ty.(
+      make
+        [
+          ("a", enum_string `Open [ "a"; "b"; "c" ]);
+          ("b", enum_int `Open [ 1; 2; 3 ]);
+        ])
     (get_types src);
   let src =
     {|
@@ -141,16 +132,14 @@ let open_enums () =
     {% map [<k: @"c">, a] with _ %} {% /map %}|}
   in
   check "Wildcards will open enums nested inside other types"
-    (Ok Ty.(make [ ("a", dict (enum_string `Open [ "a"; "b"; "c" ])) ]))
+    Ty.(make [ ("a", dict (enum_string `Open [ "a"; "b"; "c" ])) ])
     (get_types src);
   let src =
     {|
     {% match a with {a: 1} %}{% with {b: @1} %}{% with {a: _} %}{% /match %}|}
   in
   check "The row is opened for variants in newly inferred record fields"
-    (Ok
-       Ty.(
-         make [ ("a", record [ ("a", int ()); ("b", enum_int `Open [ 1 ]) ]) ]))
+    Ty.(make [ ("a", record [ ("a", int ()); ("b", enum_int `Open [ 1 ]) ]) ])
     (get_types src)
 
 let closed_enums () =
@@ -162,13 +151,12 @@ let closed_enums () =
     {% match b with @3 %} {% with _ %} {% /match %}|}
   in
   check "Closed enums are inferred corerctly"
-    (Ok
-       Ty.(
-         make
-           [
-             ("a", enum_string `Closed [ "a"; "b" ]);
-             ("b", enum_int `Closed [ 1; 2 ]);
-           ]))
+    Ty.(
+      make
+        [
+          ("a", enum_string `Closed [ "a"; "b" ]);
+          ("b", enum_int `Closed [ 1; 2 ]);
+        ])
     (get_types src);
   let src =
     {|
@@ -181,17 +169,16 @@ let closed_enums () =
   |}
   in
   check "Closed enums are inferred correctly (nested in constructs)"
-    (Ok
-       Ty.(
-         make
-           [
-             ("a", enum_string `Closed [ "a"; "b" ]);
-             ("b", enum_string `Open [ "a"; "b"; "c"; "d" ]);
-             ("c", enum_int `Closed [ 1; 2 ]);
-             ("d", enum_int `Open [ 1; 2; 3; 4 ]);
-             ("e", record [ ("a", enum_string `Closed [ "a"; "b" ]) ]);
-             ("f", record [ ("a", enum_int `Closed [ 1; 2 ]) ]);
-           ]))
+    Ty.(
+      make
+        [
+          ("a", enum_string `Closed [ "a"; "b" ]);
+          ("b", enum_string `Open [ "a"; "b"; "c"; "d" ]);
+          ("c", enum_int `Closed [ 1; 2 ]);
+          ("d", enum_int `Open [ 1; 2; 3; 4 ]);
+          ("e", record [ ("a", enum_string `Closed [ "a"; "b" ]) ]);
+          ("f", record [ ("a", enum_int `Closed [ 1; 2 ]) ]);
+        ])
     (get_types src);
   let src =
     {|
@@ -203,17 +190,16 @@ let closed_enums () =
     {% map [{a: @3}, e, f] with _ %} {% /map %}|}
   in
   check "Closed enums are inferred correctly (created nested in constructs)"
-    (Ok
-       Ty.(
-         make
-           [
-             ("a", enum_string `Closed [ "a"; "b" ]);
-             ("b", enum_int `Closed [ 1; 2 ]);
-             ("c", record [ ("a", enum_string `Closed [ "a"; "b" ]) ]);
-             ("d", record [ ("a", enum_string `Open [ "a"; "b"; "c" ]) ]);
-             ("e", record [ ("a", enum_int `Closed [ 1; 2 ]) ]);
-             ("f", record [ ("a", enum_int `Open [ 1; 2; 3 ]) ]);
-           ]))
+    Ty.(
+      make
+        [
+          ("a", enum_string `Closed [ "a"; "b" ]);
+          ("b", enum_int `Closed [ 1; 2 ]);
+          ("c", record [ ("a", enum_string `Closed [ "a"; "b" ]) ]);
+          ("d", record [ ("a", enum_string `Open [ "a"; "b"; "c" ]) ]);
+          ("e", record [ ("a", enum_int `Closed [ 1; 2 ]) ]);
+          ("f", record [ ("a", enum_int `Open [ 1; 2; 3 ]) ]);
+        ])
     (get_types src)
 
 let boolean_enums () =
@@ -225,15 +211,14 @@ let boolean_enums () =
     {% match d with true %} {% with _ %} {% /match %}|}
   in
   check "Booleans are inferred correctly"
-    (Ok
-       Ty.(
-         make
-           [
-             ("a", true_only ());
-             ("b", false_only ());
-             ("c", bool ());
-             ("d", bool ());
-           ]))
+    Ty.(
+      make
+        [
+          ("a", true_only ());
+          ("b", false_only ());
+          ("c", bool ());
+          ("d", bool ());
+        ])
     (get_types src)
 
 let open_unions () =
@@ -255,24 +240,23 @@ let open_unions () =
   |}
   in
   check "Open tagged unions are inferred correctly"
-    (Ok
-       Ty.(
-         make
-           [
-             ( "a",
-               union_string `Open "tag"
-                 [ ("a", [ ("b", echo ()) ]); ("b", [ ("b", int ()) ]) ] );
-             ( "b",
-               union_int `Open "tag"
-                 [ (0, [ ("b", echo ()) ]); (1, [ ("b", int ()) ]) ] );
-             ( "c",
-               union_string `Open "tag"
-                 [
-                   ("a", [ ("b", echo ()) ]);
-                   ("b", [ ("b", int ()) ]);
-                   ("c", [ ("b", float ()) ]);
-                 ] );
-           ]))
+    Ty.(
+      make
+        [
+          ( "a",
+            union_string `Open "tag"
+              [ ("a", [ ("b", echo ()) ]); ("b", [ ("b", int ()) ]) ] );
+          ( "b",
+            union_int `Open "tag"
+              [ (0, [ ("b", echo ()) ]); (1, [ ("b", int ()) ]) ] );
+          ( "c",
+            union_string `Open "tag"
+              [
+                ("a", [ ("b", echo ()) ]);
+                ("b", [ ("b", int ()) ]);
+                ("c", [ ("b", float ()) ]);
+              ] );
+        ])
     (get_types src);
   let src =
     {|
@@ -283,15 +267,13 @@ let open_unions () =
     {% map [<k: {@tag: "c"}>, a] with _ %} {% /map %}|}
   in
   check "Wildcards open nested tagged unions"
-    (Ok
-       Ty.(
-         make
-           [
-             ( "a",
-               dict
-                 (union_string `Open "tag" [ ("a", []); ("b", []); ("c", []) ])
-             );
-           ]))
+    Ty.(
+      make
+        [
+          ( "a",
+            dict (union_string `Open "tag" [ ("a", []); ("b", []); ("c", []) ])
+          );
+        ])
     (get_types src)
 
 let closed_unions () =
@@ -311,17 +293,16 @@ let closed_unions () =
     {% match b with {@tag: "a", b: 2} %} {% with _ %} {% /match %}|}
   in
   check "Closed unions are inferred correctly"
-    (Ok
-       Ty.(
-         make
-           [
-             ( "a",
-               union_int `Closed "tag"
-                 [ (1, [ ("b", string ()) ]); (2, [ ("b", int ()) ]) ] );
-             ( "b",
-               union_string `Closed "tag"
-                 [ ("a", [ ("b", int ()) ]); ("b", [ ("b", string ()) ]) ] );
-           ]))
+    Ty.(
+      make
+        [
+          ( "a",
+            union_int `Closed "tag"
+              [ (1, [ ("b", string ()) ]); (2, [ ("b", int ()) ]) ] );
+          ( "b",
+            union_string `Closed "tag"
+              [ ("a", [ ("b", int ()) ]); ("b", [ ("b", string ()) ]) ] );
+        ])
     (get_types src);
   let src =
     {|
@@ -341,33 +322,32 @@ let closed_unions () =
     {% map [{@tag: 2, b: 1.5}, {@tag: 3, b: [1]}, c, d] with _ %} {% /map %}|}
   in
   check "Mixing open and closed unions works correctly"
-    (Ok
-       Ty.(
-         make
-           [
-             ( "a",
-               union_string `Closed "tag"
-                 [ ("a", [ ("b", int ()) ]); ("b", [ ("b", string ()) ]) ] );
-             ( "b",
-               union_string `Open "tag"
-                 [
-                   ("a", [ ("b", int ()) ]);
-                   ("b", [ ("b", string ()) ]);
-                   ("c", [ ("b", float ()) ]);
-                   ("d", [ ("b", list (int ())) ]);
-                 ] );
-             ( "c",
-               union_int `Closed "tag"
-                 [ (0, [ ("b", int ()) ]); (1, [ ("b", string ()) ]) ] );
-             ( "d",
-               union_int `Open "tag"
-                 [
-                   (0, [ ("b", int ()) ]);
-                   (1, [ ("b", string ()) ]);
-                   (2, [ ("b", float ()) ]);
-                   (3, [ ("b", list (int ())) ]);
-                 ] );
-           ]))
+    Ty.(
+      make
+        [
+          ( "a",
+            union_string `Closed "tag"
+              [ ("a", [ ("b", int ()) ]); ("b", [ ("b", string ()) ]) ] );
+          ( "b",
+            union_string `Open "tag"
+              [
+                ("a", [ ("b", int ()) ]);
+                ("b", [ ("b", string ()) ]);
+                ("c", [ ("b", float ()) ]);
+                ("d", [ ("b", list (int ())) ]);
+              ] );
+          ( "c",
+            union_int `Closed "tag"
+              [ (0, [ ("b", int ()) ]); (1, [ ("b", string ()) ]) ] );
+          ( "d",
+            union_int `Open "tag"
+              [
+                (0, [ ("b", int ()) ]);
+                (1, [ ("b", string ()) ]);
+                (2, [ ("b", float ()) ]);
+                (3, [ ("b", list (int ())) ]);
+              ] );
+        ])
     (get_types src)
 
 let boolean_unions () =
@@ -380,17 +360,14 @@ let boolean_unions () =
     {% match d with {@tag: true, b} %} {{ b }} {% with _ %} {% /match %}|}
   in
   check "Boolean unions work"
-    (Ok
-       Ty.(
-         make
-           [
-             ("a", union_true_only "tag" [ ("b", echo ()) ]);
-             ("b", union_false_only "tag" [ ("b", echo ()) ]);
-             ( "c",
-               union_boolean "tag" ~f:[ ("c", echo ()) ] ~t:[ ("b", echo ()) ]
-             );
-             ("d", union_boolean "tag" ~f:[] ~t:[ ("b", echo ()) ]);
-           ]))
+    Ty.(
+      make
+        [
+          ("a", union_true_only "tag" [ ("b", echo ()) ]);
+          ("b", union_false_only "tag" [ ("b", echo ()) ]);
+          ("c", union_boolean "tag" ~f:[ ("c", echo ()) ] ~t:[ ("b", echo ()) ]);
+          ("d", union_boolean "tag" ~f:[] ~t:[ ("b", echo ()) ]);
+        ])
     (get_types src)
 
 let other_cases () =
@@ -421,40 +398,57 @@ let other_cases () =
     {%~ /match ~%}|}
   in
   check "The typechecker's update context works"
-    (Ok
-       Ty.(
-         make
-           [
-             ( "collections",
-               record
-                 [
-                   ( "frontPage",
-                     list
-                       (record
-                          [
-                            ("templateContent", echo ());
-                            ( "data",
-                              record
-                                [
-                                  ("isoDate", echo ());
-                                  ("page", record [ ("excerpt", echo ()) ]);
-                                  ( "pub",
-                                    union_boolean "pub" ~f:[]
-                                      ~t:[ ("absoluteUrl", echo ()) ] );
-                                  ("title", echo ());
-                                ] );
-                          ]) );
-                 ] );
-           ]))
+    Ty.(
+      make
+        [
+          ( "collections",
+            record
+              [
+                ( "frontPage",
+                  list
+                    (record
+                       [
+                         ("templateContent", echo ());
+                         ( "data",
+                           record
+                             [
+                               ("isoDate", echo ());
+                               ("page", record [ ("excerpt", echo ()) ]);
+                               ( "pub",
+                                 union_boolean "pub" ~f:[]
+                                   ~t:[ ("absoluteUrl", echo ()) ] );
+                               ("title", echo ());
+                             ] );
+                       ]) );
+              ] );
+        ])
     (get_types src)
 
 let pathologic () =
-  let src = {|{% match a with _ %} {% with @"a" %} {% /match %}|} in
+  let src =
+    {|{% match a with _ %} {% with @"a" %} {% /match %}
+      {% match b with {a: _} %} {% with {a: @1 } %} {% /match %}|}
+  in
   check "Enums that come after variables are open"
-    (Ok Ty.(make [ ("a", enum_string `Open [ "a" ]) ]))
+    Ty.(
+      make
+        [
+          ("a", enum_string `Open [ "a" ]);
+          ("b", record [ ("a", enum_int `Open [ 1 ]) ]);
+        ])
     (get_types src)
 
-(* Add tests for components *)
+let components () =
+  let a =
+    Source.src ~name:"A"
+      {|{% map a with x %} {{ x }} {% /map %}
+       {% map b with x %} {{ x }} {% /map %}|}
+  in
+  let src = {|{% A a=[1, a] b=["b", b] /%}|} in
+  let r = Compile.make (Compile.Components.make [ a ]) src in
+  check "Components infer correctly."
+    Ty.(make [ ("a", int ()); ("b", string ()) ])
+    r.prop_types
 
 let () =
   let open Alcotest in
@@ -479,6 +473,7 @@ let () =
           test_case "Closed unions" `Quick closed_unions;
           test_case "Boolean unions" `Quick boolean_unions;
         ] );
+      ("Components", [ test_case "Components" `Quick components ]);
       ( "Other cases",
         [
           test_case "Other cases" `Quick other_cases;
