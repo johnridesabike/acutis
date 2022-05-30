@@ -79,27 +79,27 @@ let basic_tree () =
          extra = Extra_none;
          cases =
            {
-             data = PInt 0;
+             data = `Int 0;
              if_match = End { names = MS.empty; exit = e 0 };
              next_case =
                Some
                  {
-                   data = PInt 10;
+                   data = `Int 10;
                    if_match = End { names = MS.empty; exit = e 0 };
                    next_case =
                      Some
                        {
-                         data = PInt 15;
+                         data = `Int 15;
                          if_match = End { names = MS.empty; exit = e 1 };
                          next_case =
                            Some
                              {
-                               data = PInt 20;
+                               data = `Int 20;
                                if_match = End { names = MS.empty; exit = e 0 };
                                next_case =
                                  Some
                                    {
-                                     data = PInt 30;
+                                     data = `Int 30;
                                      if_match =
                                        End { names = MS.empty; exit = e 0 };
                                      next_case = None;
@@ -127,14 +127,14 @@ let basic_tree () =
   let exit_4 = { exit = e 4; names = map [ ("a", 2); ("b", 3); ("c", 4) ] } in
   let int_21 =
     {
-      data = PInt 21;
+      data = `Int 21;
       if_match =
         Switch
           {
             key = 2;
             ids = set [ 4 ];
             extra = Extra_none;
-            cases = { data = PInt 22; if_match = End exit_1; next_case = None };
+            cases = { data = `Int 22; if_match = End exit_1; next_case = None };
             wildcard = Some (End exit_4);
           };
       next_case = None;
@@ -142,23 +142,23 @@ let basic_tree () =
   in
   let int_11 =
     {
-      data = PInt 11;
+      data = `Int 11;
       if_match =
         Switch
           {
             key = 2;
             ids = set [ 4 ];
             extra = Extra_none;
-            cases = { data = PInt 12; if_match = End exit_0; next_case = None };
+            cases = { data = `Int 12; if_match = End exit_0; next_case = None };
             wildcard = Some (End exit_4);
           };
       next_case = Some int_21;
     }
   in
-  let int_42 = { data = PInt 42; if_match = End exit_3; next_case = None } in
+  let int_42 = { data = `Int 42; if_match = End exit_3; next_case = None } in
   let int_31 =
     {
-      data = PInt 31;
+      data = `Int 31;
       if_match =
         Switch
           {
@@ -166,7 +166,7 @@ let basic_tree () =
             ids = set [ 4 ];
             extra = Extra_none;
             cases =
-              { data = PInt 32; if_match = End exit_2; next_case = Some int_42 };
+              { data = `Int 32; if_match = End exit_2; next_case = Some int_42 };
             wildcard = Some (End exit_4);
           };
       next_case = None;
@@ -175,7 +175,7 @@ let basic_tree () =
   let wildcard_2 = Wildcard { key = 2; ids = set [ 4 ]; child = End exit_4 } in
   let int_30 =
     {
-      data = PInt 30;
+      data = `Int 30;
       if_match =
         Switch
           {
@@ -184,7 +184,7 @@ let basic_tree () =
             extra = Extra_none;
             cases =
               {
-                data = PInt 21;
+                data = `Int 21;
                 if_match =
                   Switch
                     {
@@ -193,7 +193,7 @@ let basic_tree () =
                       extra = Extra_none;
                       cases =
                         {
-                          data = PInt 22;
+                          data = `Int 22;
                           if_match = End exit_1;
                           next_case = Some int_42;
                         };
@@ -223,7 +223,7 @@ let basic_tree () =
          extra = Extra_none;
          cases =
            {
-             data = PInt 10;
+             data = `Int 10;
              if_match =
                Switch
                  {
@@ -270,17 +270,17 @@ let nests_merge () =
         extra = Extra_none;
         cases =
           {
-            data = PInt 12;
+            data = `Int 12;
             if_match = End exit_0;
             next_case =
               Some
                 {
-                  data = PInt 22;
+                  data = `Int 22;
                   if_match = End exit_1;
                   next_case =
                     Some
                       {
-                        data = PInt 32;
+                        data = `Int 32;
                         if_match = End exit_2;
                         next_case = None;
                       };
@@ -290,7 +290,7 @@ let nests_merge () =
       }
   in
   let int_12_exit_0 =
-    Matching.{ data = PInt 12; if_match = End exit_0; next_case = None }
+    Matching.{ data = `Int 12; if_match = End exit_0; next_case = None }
   in
   let int_12_exit_3 =
     Matching.(
@@ -323,7 +323,7 @@ let nests_merge () =
                         extra = Extra_none;
                         cases =
                           {
-                            data = PInt 20;
+                            data = `Int 20;
                             if_match =
                               Switch
                                 {
@@ -332,7 +332,7 @@ let nests_merge () =
                                   extra = Extra_none;
                                   cases =
                                     {
-                                      data = PInt 21;
+                                      data = `Int 21;
                                       if_match = End if_int_21;
                                       next_case = None;
                                     };
@@ -383,10 +383,10 @@ let nests_merge_wildcards () =
         extra = Extra_none;
         cases =
           {
-            data = PInt 40;
+            data = `Int 40;
             if_match = End exit_1;
             next_case =
-              Some { data = PInt 41; if_match = End exit_0; next_case = None };
+              Some { data = `Int 41; if_match = End exit_0; next_case = None };
           };
         wildcard = Some (End exit_2);
       }
@@ -397,7 +397,7 @@ let nests_merge_wildcards () =
         key = 1;
         ids = SI.empty;
         extra = Extra_none;
-        cases = { data = PInt 30; if_match = End int_40; next_case = None };
+        cases = { data = `Int 30; if_match = End int_40; next_case = None };
         wildcard = None;
       }
   in
@@ -423,7 +423,7 @@ let nests_merge_wildcards () =
                            extra = Extra_none;
                            cases =
                              {
-                               data = PInt 10;
+                               data = `Int 10;
                                if_match =
                                  Switch
                                    {
@@ -432,7 +432,7 @@ let nests_merge_wildcards () =
                                      extra = Extra_none;
                                      cases =
                                        {
-                                         data = PInt 20;
+                                         data = `Int 20;
                                          if_match = End int_30;
                                          next_case = None;
                                        };
@@ -452,7 +452,7 @@ let nests_merge_wildcards () =
                   ids = set [ 2 ];
                   extra = Extra_none;
                   cases =
-                    { data = PInt 41; if_match = End exit_0; next_case = None };
+                    { data = `Int 41; if_match = End exit_0; next_case = None };
                   wildcard = Some (End exit_2);
                 });
        })
@@ -525,13 +525,13 @@ let lists () =
   let exit_2 = { names = MS.empty; exit = e 2 } in
   let exit_3 = { names = map [ ("y", 1) ]; exit = e 3 } in
   let exit_4 = { names = MS.empty; exit = e 4 } in
-  let int_42 = { data = PInt 42; if_match = End exit_3; next_case = None } in
+  let int_42 = { data = `Int 42; if_match = End exit_3; next_case = None } in
   let int_22 =
-    { data = PInt 22; if_match = End exit_1; next_case = Some int_42 }
+    { data = `Int 22; if_match = End exit_1; next_case = Some int_42 }
   in
   let int_11 =
     {
-      data = PInt 11;
+      data = `Int 11;
       if_match =
         Construct
           {
@@ -549,7 +549,7 @@ let lists () =
                            extra = Extra_none;
                            cases =
                              {
-                               data = PInt 12;
+                               data = `Int 12;
                                if_match = End exit_0;
                                next_case = Some int_22;
                              };
@@ -579,7 +579,7 @@ let lists () =
   in
   let int_10 =
     {
-      data = PInt 10;
+      data = `Int 10;
       if_match =
         Construct
           {
@@ -610,7 +610,7 @@ let lists () =
       next_case =
         Some
           {
-            data = PInt 30;
+            data = `Int 30;
             if_match =
               Construct
                 {
@@ -627,7 +627,7 @@ let lists () =
                               extra = Extra_none;
                               cases =
                                 {
-                                  data = PInt 32;
+                                  data = `Int 32;
                                   if_match = End exit_2;
                                   next_case = Some int_42;
                                 };
@@ -714,7 +714,7 @@ let records_sort () =
                   extra = Extra_none;
                   cases =
                     {
-                      data = PInt 10;
+                      data = `Int 10;
                       if_match =
                         Switch
                           {
@@ -723,7 +723,7 @@ let records_sort () =
                             extra = Extra_none;
                             cases =
                               {
-                                data = PInt 11;
+                                data = `Int 11;
                                 if_match =
                                   End
                                     (Switch
@@ -733,7 +733,7 @@ let records_sort () =
                                          extra = Extra_none;
                                          cases =
                                            {
-                                             data = PInt 12;
+                                             data = `Int 12;
                                              if_match = End exit_0;
                                              next_case = None;
                                            };
@@ -746,7 +746,7 @@ let records_sort () =
                       next_case =
                         Some
                           {
-                            data = PInt 20;
+                            data = `Int 20;
                             if_match =
                               Switch
                                 {
@@ -755,7 +755,7 @@ let records_sort () =
                                   extra = Extra_none;
                                   cases =
                                     {
-                                      data = PInt 21;
+                                      data = `Int 21;
                                       if_match =
                                         End
                                           (Switch
@@ -765,7 +765,7 @@ let records_sort () =
                                                extra = Extra_none;
                                                cases =
                                                  {
-                                                   data = PInt 22;
+                                                   data = `Int 22;
                                                    if_match = End exit_1;
                                                    next_case = None;
                                                  };
@@ -815,7 +815,7 @@ let records_expand () =
                   extra = Extra_none;
                   cases =
                     {
-                      data = PInt 20;
+                      data = `Int 20;
                       if_match =
                         Switch
                           {
@@ -824,7 +824,7 @@ let records_expand () =
                             extra = Extra_none;
                             cases =
                               {
-                                data = PInt 10;
+                                data = `Int 10;
                                 if_match =
                                   Wildcard
                                     {
@@ -854,7 +854,7 @@ let records_expand () =
                            extra = Extra_none;
                            cases =
                              {
-                               data = PInt 10;
+                               data = `Int 10;
                                if_match =
                                  Wildcard
                                    {
@@ -873,7 +873,7 @@ let records_expand () =
                                     extra = Extra_none;
                                     cases =
                                       {
-                                        data = PInt 30;
+                                        data = `Int 30;
                                         if_match = End (End exit_2);
                                         next_case = None;
                                       };

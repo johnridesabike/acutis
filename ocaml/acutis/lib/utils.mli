@@ -36,7 +36,7 @@ end
 module DagMap : sig
   type ('a, 'b) t
 
-  val make : f:('a -> ('a, 'b) t -> 'b) -> 'a MapString.t -> ('a, 'b) t
+  val make : f:(('a, 'b) t -> 'a -> 'b) -> 'a MapString.t -> ('a, 'b) t
   (** Use [get] inside the [f] callback. *)
 
   val prelinked : 'a MapString.t -> ('a, 'a) t

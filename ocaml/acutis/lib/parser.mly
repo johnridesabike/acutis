@@ -136,8 +136,8 @@ props:
 
 (* Echo rules *)
 escape:
-  | (* empty *) { No_escape }
-  | AMPERSAND;  { Escape }
+  | (* empty *) { Escape }
+  | AMPERSAND;  { No_escape }
 
 echo:
   | e = escape; x = ID; { Ech_var (x, e) }
@@ -171,7 +171,7 @@ node:
     { Match (pats, child) }
   | MAP; pat = pattern; child = cases; BACKSLASH; MAP;
     { Map_list (pat, child) }
-  | MAP_DICT; pat = pattern; child = cases; BACKSLASH; MAP;
+  | MAP_DICT; pat = pattern; child = cases; BACKSLASH; MAP_DICT;
     { Map_dict (pat, child) }
   | x = COMPONENT; p = props; BACKSLASH;
     { let (p, c) = p in Component (x, p, c) }

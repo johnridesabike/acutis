@@ -12,7 +12,7 @@ open Utils
 type 'a node =
   | Text of string
   | Echo of Ast.echo list * Ast.echo
-  | Match of Typechecker.Pattern.t Nonempty.t * 'a nodes Matching.t
+  | Match of Typechecker.Pattern.t array * 'a nodes Matching.t
   | Map_list of Typechecker.Pattern.t * 'a nodes Matching.t
   | Map_dict of Typechecker.Pattern.t * 'a nodes Matching.t
   | Component of 'a * Typechecker.Pattern.t MapString.t * 'a child MapString.t

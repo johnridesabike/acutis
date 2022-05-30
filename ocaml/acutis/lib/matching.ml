@@ -575,7 +575,7 @@ let of_const key data if_match enum =
     {
       key;
       ids = SetInt.empty;
-      cases = { data = Const.of_tpat data; if_match; next_case = None };
+      cases = { data; if_match; next_case = None };
       extra =
         (match enum with
         | Some { Ty.Variant.row = `Closed; _ } -> Extra_enum_closed
@@ -835,8 +835,7 @@ module ParMatch = struct
                   | { flag = Partial; pats; next } ->
                       {
                         flag = Partial;
-                        pats =
-                          (kf key, TConst (Const.to_tpat data, None)) :: pats;
+                        pats = (kf key, TConst (data, None)) :: pats;
                         next;
                       }
                   | { flag = Exhaustive; pats; next } -> (

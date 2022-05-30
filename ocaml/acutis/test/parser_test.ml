@@ -24,13 +24,13 @@ let echoes () =
   check "Echoes parse correctly"
     [
       Text ("", No_trim, No_trim);
-      Echo ([], Ech_var ("a", No_escape));
+      Echo ([], Ech_var ("a", Escape));
       Text (" ", No_trim, No_trim);
       Echo ([], Ech_string "b");
       Text (" ", No_trim, No_trim);
       Echo ([], Ech_component "C");
       Text (" ", No_trim, No_trim);
-      Echo ([ Ech_var ("d", Escape); Ech_component "E" ], Ech_string "f");
+      Echo ([ Ech_var ("d", No_escape); Ech_component "E" ], Ech_string "f");
       Text ("", No_trim, No_trim);
     ]
     (parse src)
@@ -40,13 +40,13 @@ let trim () =
   check "Trim parses correctly"
     [
       Text ("", No_trim, Trim);
-      Echo ([], Ech_var ("a", No_escape));
+      Echo ([], Ech_var ("a", Escape));
       Text (" ", No_trim, Trim);
-      Echo ([], Ech_var ("b", No_escape));
+      Echo ([], Ech_var ("b", Escape));
       Text (" ", No_trim, No_trim);
-      Echo ([], Ech_var ("c", No_escape));
+      Echo ([], Ech_var ("c", Escape));
       Text (" ", Trim, Trim);
-      Echo ([], Ech_var ("d", No_escape));
+      Echo ([], Ech_var ("d", Escape));
       Text ("", Trim, No_trim);
     ]
     (parse src)
@@ -132,7 +132,7 @@ let maps () =
     ]
     (parse src);
   let src =
-    {|{% map_dict d with 1 with 2 %}{% with 3, k %} {% with _ %} {% /map %}|}
+    {|{% map_dict d with 1 with 2 %}{% with 3, k %} {% with _ %} {% /map_dict %}|}
   in
   check "Map dict parses correctly"
     [
@@ -385,7 +385,7 @@ let edge_cases () =
               nodes =
                 [
                   Text (" ", No_trim, No_trim);
-                  Echo ([], Ech_var ("b", No_escape));
+                  Echo ([], Ech_var ("b", Escape));
                   Text (" ", No_trim, No_trim);
                 ];
             };

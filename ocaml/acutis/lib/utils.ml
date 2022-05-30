@@ -106,10 +106,10 @@ module DagMap = struct
     mutable notlinked : 'a MapString.t;
     mutable linked : 'b MapString.t;
     stack : string list;
-    f : 'a -> ('a, 'b) t -> 'b;
+    f : ('a, 'b) t -> 'a -> 'b;
   }
 
-  let id a _ = a
+  let id _ a = a
   let key (k, _) = k
 
   let make ~f m =
@@ -132,7 +132,7 @@ module DagMap = struct
         | Some x ->
             (* Remove it form the unlinked map so a cycle isn't possible. *)
             g.notlinked <- MapString.remove k g.notlinked;
-            let x = g.f x { g with stack = k :: g.stack } in
+            let x = g.f { g with stack = k :: g.stack } x in
             g.linked <- MapString.add k x g.linked;
             x
         | None ->
@@ -146,7 +146,7 @@ module DagMap = struct
       | Some x ->
           g.notlinked <- MapString.remove k g.notlinked;
           g.linked <-
-            MapString.add k (g.f x { g with stack = k :: g.stack }) g.linked
+            MapString.add k (g.f { g with stack = k :: g.stack } x) g.linked
       | None -> () (* It was already processed by a dependent. *)
     in
     List.iter f g.queue;

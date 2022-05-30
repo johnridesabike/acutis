@@ -13,7 +13,7 @@ open Utils
 type 'a node =
   | Text of string
   | Echo of Ast.echo list * Ast.echo
-  | Match of Typechecker.Pattern.t Nonempty.t * 'a nodes Matching.t
+  | Match of Typechecker.Pattern.t array * 'a nodes Matching.t
   | Map_list of Typechecker.Pattern.t * 'a nodes Matching.t
   | Map_dict of Typechecker.Pattern.t * 'a nodes Matching.t
   | Component of 'a * Typechecker.Pattern.t MapString.t * 'a child MapString.t
@@ -28,7 +28,8 @@ let rec make_nodes =
     | TText (s, No_trim, Trim) -> Text (StringExtra.rtrim s)
     | TText (s, Trim, Trim) -> Text (String.trim s)
     | TEcho (nullables, default) -> Echo (nullables, default)
-    | TMatch (pats, cases) -> Match (pats, make_match cases)
+    | TMatch (hd :: tl, cases) ->
+        Match (Array.of_list (hd :: tl), make_match cases)
     | TMap_list (pat, cases) -> Map_list (pat, make_match cases)
     | TMap_dict (pat, cases) -> Map_dict (pat, make_match cases)
     | TComponent (name, props, children) ->
@@ -115,8 +116,7 @@ let rec link_nodes graph nodes =
   in
   List.map f nodes
 
-let link_src nodes graph =
-  match nodes with
+let link_src graph = function
   | Source.Acutis (name, nodes) -> Acutis (name, link_nodes graph nodes)
   | Function (name, props, _, f) -> Function (name, props, f)
 
@@ -124,5 +124,5 @@ let make components src =
   let nodes = parse_string src in
   let ast = Typechecker.make components.Components.typed nodes in
   let g = DagMap.make ~f:link_src components.optimized in
-  let nodes = make_nodes ast in
-  { prop_types = ast.Typechecker.prop_types; nodes = link_nodes g nodes }
+  let nodes = make_nodes ast |> link_nodes g in
+  { prop_types = ast.prop_types; nodes }

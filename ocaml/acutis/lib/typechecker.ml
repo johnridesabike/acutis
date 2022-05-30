@@ -205,7 +205,7 @@ let unify mode a b =
     raise (Type_error ("type mismatch " ^ show_mode mode ^ " " ^ s))
 
 module Pattern = struct
-  type constant = TString of string | TInt of int | TFloat of float
+  type constant = [ `Int of int | `String of string | `Float of float ]
   [@@deriving eq]
 
   type construct = TList | TNullable [@@deriving eq, show]
@@ -225,8 +225,8 @@ module Pattern = struct
   [@@deriving eq]
 
   let make_enum_aux extra row tyvars = function
-    | TInt i -> { V.cases = Int (MapInt.singleton i tyvars); row; extra }
-    | TString s ->
+    | `Int i -> { V.cases = Int (MapInt.singleton i tyvars); row; extra }
+    | `String s ->
         { V.cases = String (MapString.singleton s tyvars); row; extra }
     | _ -> raise (Type_error "bad union tag")
 
@@ -235,13 +235,13 @@ module Pattern = struct
   let rec make ~f mode ty = function
     | Ast.Pattern.Int i ->
         unify mode ty (Ty.int ());
-        TConst (TInt i, None)
+        TConst (`Int i, None)
     | String s ->
         unify mode ty (Ty.string ());
-        TConst (TString s, None)
+        TConst (`String s, None)
     | Float f ->
         unify mode ty (Ty.float ());
-        TConst (TFloat f, None)
+        TConst (`Float f, None)
     | Bool b ->
         let new_enum =
           match mode with
@@ -254,7 +254,7 @@ module Pattern = struct
         let new_ty = ref (Ty.Enum new_enum) in
         let enum = match !ty with Enum e -> e | _ -> new_enum in
         unify mode ty new_ty;
-        TConst (TInt b, Some enum)
+        TConst (`Int b, Some enum)
     | Enum_string s ->
         let new_enum =
           match mode with
@@ -265,7 +265,7 @@ module Pattern = struct
         let new_ty = ref (Ty.Enum new_enum) in
         let enum = match !ty with Enum e -> e | _ -> new_enum in
         unify mode ty new_ty;
-        TConst (TString s, Some enum)
+        TConst (`String s, Some enum)
     | Enum_int i ->
         let new_enum =
           match mode with
@@ -275,7 +275,7 @@ module Pattern = struct
         let new_ty = ref (Ty.Enum new_enum) in
         let enum = match !ty with Enum e -> e | _ -> new_enum in
         unify mode ty new_ty;
-        TConst (TInt i, Some enum)
+        TConst (`Int i, Some enum)
     | Nullable pat ->
         let tyvar = match !ty with Nullable ty -> ty | _ -> Ty.unknown () in
         let pat =
@@ -326,8 +326,8 @@ module Pattern = struct
           | Union (_, enum) -> (
               let tyvars =
                 match (tag, enum) with
-                | TInt i, { cases = Int cases; _ } -> MapInt.find_opt i cases
-                | TString s, { cases = String cases; _ } ->
+                | `Int i, { cases = Int cases; _ } -> MapInt.find_opt i cases
+                | `String s, { cases = String cases; _ } ->
                     MapString.find_opt s cases
                 | _ -> None
               in
@@ -400,13 +400,13 @@ module Pattern = struct
 
   let pp_constant ppf (x, e) =
     match (x, e) with
-    | TInt 0, Some { V.extra = Extra_bool; _ } -> F.pp_print_string ppf "false"
-    | TInt _, Some { V.extra = Extra_bool; _ } -> F.pp_print_string ppf "true"
-    | TInt i, Some _ -> F.fprintf ppf "%@%i" i
-    | TInt i, None -> F.fprintf ppf "%i" i
-    | TString s, Some _ -> F.fprintf ppf "%@%S" s
-    | TString s, None -> F.fprintf ppf "%S" s
-    | TFloat f, _ -> F.pp_print_float ppf f
+    | `Int 0, Some { V.extra = Extra_bool; _ } -> F.pp_print_string ppf "false"
+    | `Int _, Some { V.extra = Extra_bool; _ } -> F.pp_print_string ppf "true"
+    | `Int i, Some _ -> F.fprintf ppf "%@%i" i
+    | `Int i, None -> F.fprintf ppf "%i" i
+    | `String s, Some _ -> F.fprintf ppf "%@%S" s
+    | `String s, None -> F.fprintf ppf "%S" s
+    | `Float f, _ -> F.pp_print_float ppf f
 
   let pp_sep_comma ppf () = F.fprintf ppf ",@ "
 
@@ -675,8 +675,7 @@ let make root g ast =
   let nodes = make_nodes ctx g ast in
   { nodes; prop_types = !(ctx.global); child_types = !(ctx.children) }
 
-let make_src x g =
-  match x with
+let make_src g = function
   | Source.Acutis (name, ast) -> Source.src ~name (make `Component g ast)
   | Function (name, p, c, f) -> Source.fn ~name p c f
 

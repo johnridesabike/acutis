@@ -7,18 +7,28 @@
 (*  file, You can obtain one at http://mozilla.org/MPL/2.0/.              *)
 (*                                                                        *)
 (**************************************************************************)
+open Utils
+
+type json =
+  [ `Null
+  | `Bool of bool
+  | `Int of int
+  | `Float of float
+  | `String of string
+  | `Assoc of (string * json) list
+  | `List of json list ]
+[@@deriving show]
+
+type 'a fn = (string * json) list -> 'a MapString.t -> 'a
 
 module type Env = sig
   type t
-  type e
 
   val return : string -> t
-  val error : string -> t
+  val render : t Queue.t -> t
 end
 
 type 'a env = (module Env with type t = 'a)
-
-type 'a fn = Fn of 'a
 
 type ('a, 'b) t =
   | Acutis of string * 'a

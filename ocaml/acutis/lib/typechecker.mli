@@ -11,7 +11,7 @@
 open Utils
 
 module Pattern : sig
-  type constant = TString of string | TInt of int | TFloat of float
+  type constant = [ `Int of int | `String of string | `Float of float ]
 
   val equal_constant : constant -> constant -> bool
 
