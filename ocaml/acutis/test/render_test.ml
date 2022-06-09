@@ -7,7 +7,7 @@ let render ?(components = []) src json =
   let json =
     match Yojson.Basic.from_string json with `Assoc l -> l | _ -> assert false
   in
-  let temp = Compile.(make (Components.make components) src) in
+  let temp = Compile.(make ~filename:"" (Components.make components) src) in
   Render.sync temp json
 
 let basic () =

@@ -8,6 +8,22 @@
 (*                                                                        *)
 (**************************************************************************)
 
+module Pp = struct
+  open Format
+
+  let sep_comma ppf () = fprintf ppf ",@ "
+
+  (* Sync with lexer*)
+  let id_start_char = function 'a' .. 'z' | '_' -> true | _ -> false
+
+  let id_char = function
+    | 'a' .. 'z' | 'A' .. 'Z' | '0' .. '9' | '_' -> true
+    | _ -> false
+
+  let is_id s = id_start_char s.[0] && String.for_all id_char s
+  let field ppf k = if is_id k then fprintf ppf "%s" k else fprintf ppf "%S" k
+end
+
 module type MAP = sig
   include Map.S
 
@@ -16,9 +32,7 @@ module type MAP = sig
 end
 
 let pp_bindings pp_k pp_v ppf (k, v) =
-  Format.fprintf ppf "@[%a@ -> %a@]" pp_k k pp_v v
-
-let pp_sep ppf () = Format.fprintf ppf ",@ "
+  Format.fprintf ppf "@[%a@ -> @[%a@]@]" pp_k k pp_v v
 
 module MapString = struct
   include Map.Make (String)
@@ -27,7 +41,7 @@ module MapString = struct
 
   let pp pp_a ppf m =
     Format.fprintf ppf "MapString.[@[@,%a@,@]]"
-      (Format.pp_print_seq ~pp_sep (pp_bindings pp_key pp_a))
+      (Format.pp_print_seq ~pp_sep:Pp.sep_comma (pp_bindings pp_key pp_a))
       (to_seq m)
 end
 
@@ -38,7 +52,7 @@ module MapInt = struct
 
   let pp pp_a ppf m =
     Format.fprintf ppf "MapInt.[@[@,%a@,@]]"
-      (Format.pp_print_seq ~pp_sep (pp_bindings pp_key pp_a))
+      (Format.pp_print_seq ~pp_sep:Pp.sep_comma (pp_bindings pp_key pp_a))
       (to_seq m)
 end
 
@@ -56,7 +70,7 @@ module SetString = struct
 
   let pp ppf s =
     Format.fprintf ppf "SetString.[@[@,%a@,@]]"
-      (Format.pp_print_seq ~pp_sep pp_elt)
+      (Format.pp_print_seq ~pp_sep:Pp.sep_comma pp_elt)
       (to_seq s)
 end
 
@@ -67,7 +81,7 @@ module SetInt = struct
 
   let pp ppf s =
     Format.fprintf ppf "SetString.[@[@,%a@,@]]"
-      (Format.pp_print_seq ~pp_sep pp_elt)
+      (Format.pp_print_seq ~pp_sep:Pp.sep_comma pp_elt)
       (to_seq s)
 end
 
@@ -98,57 +112,4 @@ module StringExtra = struct
 
   let ltrim s = drop_while is_space s
   let rtrim s = rdrop_while is_space s
-end
-
-module DagMap = struct
-  type ('a, 'b) t = {
-    queue : string list;
-    mutable notlinked : 'a MapString.t;
-    mutable linked : 'b MapString.t;
-    stack : string list;
-    f : ('a, 'b) t -> 'a -> 'b;
-  }
-
-  let id _ a = a
-  let key (k, _) = k
-
-  let make ~f m =
-    {
-      queue = MapString.bindings m |> List.map key;
-      notlinked = m;
-      linked = MapString.empty;
-      stack = [];
-      f;
-    }
-
-  let prelinked m =
-    { queue = []; notlinked = MapString.empty; linked = m; stack = []; f = id }
-
-  let get k g =
-    match MapString.find_opt k g.linked with
-    | Some x -> x (* It was linked already in a previous search. *)
-    | None -> (
-        match MapString.find_opt k g.notlinked with
-        | Some x ->
-            (* Remove it form the unlinked map so a cycle isn't possible. *)
-            g.notlinked <- MapString.remove k g.notlinked;
-            let x = g.f { g with stack = k :: g.stack } x in
-            g.linked <- MapString.add k x g.linked;
-            x
-        | None ->
-            (* It is either being linked (in a cycle) or it doesn't exist. *)
-            if List.exists (String.equal k) g.stack then failwith "cycle"
-            else failwith "missing")
-
-  let link_all g =
-    let f k =
-      match MapString.find_opt k g.notlinked with
-      | Some x ->
-          g.notlinked <- MapString.remove k g.notlinked;
-          g.linked <-
-            MapString.add k (g.f { g with stack = k :: g.stack } x) g.linked
-      | None -> () (* It was already processed by a dependent. *)
-    in
-    List.iter f g.queue;
-    g.linked
 end

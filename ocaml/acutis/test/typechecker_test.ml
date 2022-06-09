@@ -1,26 +1,13 @@
 open Acutis
-open Utils
+open StdlibExtra
 module F = Format
 module Ty = Typescheme
 
-let print_position ppf lexbuf =
-  let pos = lexbuf.Lexing.lex_curr_p in
-  F.fprintf ppf "%s:%d:%d" pos.pos_fname pos.pos_lnum
-    (pos.pos_cnum - pos.pos_bol + 1)
-
-let parse src =
-  let state = Lexer.make_state () in
-  let lexbuf = Lexing.from_string src in
-  try Parser.acutis (Lexer.acutis state) lexbuf with
-  | Lexer.SyntaxError as e ->
-      F.printf "Lexer.SyntaxError %a" print_position lexbuf;
-      raise e
-  | Parser.Error i as e ->
-      F.printf "Parser.Error %i %a" i print_position lexbuf;
-      raise e
-
+let parse = Compile.parse_string
 let check = Alcotest.(check (module Typescheme))
-let get_types src = (parse src |> Typechecker.make MapString.empty).prop_types
+
+let get_types src =
+  (parse ~filename:"<test>" src |> Typechecker.make MapString.empty).prop_types
 
 let echoes () =
   let src = {|{{ a }} {{ "b" }} {{ c ? "d" }}|} in
@@ -445,7 +432,7 @@ let components () =
        {% map b with x %} {{ x }} {% /map %}|}
   in
   let src = {|{% A a=[1, a] b=["b", b] /%}|} in
-  let r = Compile.make (Compile.Components.make [ a ]) src in
+  let r = Compile.make ~filename:"<test>" (Compile.Components.make [ a ]) src in
   check "Components infer correctly."
     Ty.(make [ ("a", int ()); ("b", string ()) ])
     r.prop_types

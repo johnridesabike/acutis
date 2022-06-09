@@ -8,7 +8,7 @@
 (*                                                                        *)
 (**************************************************************************)
 
-open Utils
+open StdlibExtra
 module TPat = Typechecker.Pattern
 module Ty = Typescheme
 module Const = Data.Const
@@ -152,7 +152,7 @@ let rec rev_cases ?tail t =
   If a tree cannot merge with another tree, then we throw that tree away.
   If an entire tree failed to merge, then we know its pattern was redundant.
 *)
-exception MergeFail
+exception Merge_fail
 
 (*
   We sort the data for easier analysis.
@@ -180,12 +180,12 @@ let rec merge_testcases_aux :
   else if cmp = 0 then
     try
       let tail =
-        { original with if_match = merge original.if_match if_match n }
+        { original with if_match = merge n original.if_match if_match }
       in
       match init with
       | None -> Some tail
       | Some init -> Some (rev_cases ~tail init)
-    with MergeFail -> None
+    with Merge_fail -> None
   else
     let init = { original with next_case = init } in
     match original.next_case with
@@ -230,8 +230,8 @@ and merge_testcases_into_wildcard :
     (a, k) switchcase option =
  fun ?init wildcard t n ->
   let init =
-    try Some { t with if_match = merge wildcard t.if_match n; next_case = init }
-    with MergeFail -> init
+    try Some { t with if_match = merge n wildcard t.if_match; next_case = init }
+    with Merge_fail -> init
   in
   match (t.next_case, init) with
   | None, None -> None
@@ -253,8 +253,8 @@ and expand_wildcard_into_testcases :
     (a, k) switchcase =
  fun ?init { data; if_match; next_case } wildcard n ->
   let init =
-    try { data; if_match = merge if_match wildcard n; next_case = init }
-    with MergeFail -> { data; if_match; next_case = init }
+    try { data; if_match = merge n if_match wildcard; next_case = init }
+    with Merge_fail -> { data; if_match; next_case = init }
   in
   match next_case with
   | None -> rev_cases init
@@ -279,7 +279,7 @@ and expand_wildcard_after_nest :
     (a, ka) tree =
  fun a na ~wildcard nb ->
   match (a, na, nb) with
-  | End a, S n, Z -> ( try End (merge a wildcard n) with MergeFail -> End a)
+  | End a, S n, Z -> ( try End (merge n a wildcard) with Merge_fail -> End a)
   | End a, S na, S nb -> End (expand_wildcard_after_nest a na ~wildcard nb)
   | Nest a, na, nb ->
       let child =
@@ -339,7 +339,7 @@ and merge_wildcard_after_nest :
     (b, kb) tree =
  fun ~wildcard na b nb ->
   match (b, na, nb) with
-  | End b, Z, S n -> End (merge wildcard b n)
+  | End b, Z, S n -> End (merge n wildcard b)
   | End b, S na, S nb -> End (merge_wildcard_after_nest ~wildcard na b nb)
   | Nest b, na, nb ->
       let child =
@@ -356,18 +356,18 @@ and merge_wildcard_after_nest :
         | None -> Ok None
         | Some c -> (
             try Ok (Some (merge_wildcard_after_nest ~wildcard na c nb))
-            with MergeFail -> Error None)
+            with Merge_fail -> Error None)
       in
       let cons =
         match b.cons with
         | None -> Ok None
         | Some c -> (
             try Ok (Some (merge_wildcard_after_nest ~wildcard na c nb))
-            with MergeFail -> Error None)
+            with Merge_fail -> Error None)
       in
       match (nil, cons) with
       | Error _, Error _ | Ok None, Error None | Error None, Ok None ->
-          raise MergeFail
+          raise_notrace Merge_fail
       | Ok nil, Ok cons | Ok nil, Error cons | Error nil, Ok cons ->
           Construct { b with nil; cons })
   | Wildcard b, na, nb ->
@@ -379,7 +379,7 @@ and merge_wildcard_after_nest :
         | None -> None
         | Some b -> (
             try Some (merge_wildcard_after_nest ~wildcard na b nb)
-            with MergeFail -> None)
+            with Merge_fail -> None)
       in
       let rec aux init case =
         let init =
@@ -388,29 +388,29 @@ and merge_wildcard_after_nest :
               merge_wildcard_after_nest ~wildcard na case.if_match nb
             in
             Some { case with if_match; next_case = init }
-          with MergeFail -> init
+          with Merge_fail -> init
         in
         match (case.next_case, init) with
-        | None, None -> raise MergeFail
+        | None, None -> raise_notrace Merge_fail
         | None, Some init ->
             Switch { b with cases = rev_cases init; wildcard = wildcard' }
         | Some a, init -> aux init a
       in
       aux None b.cases
 
-and merge : type a k. (a, k) tree -> (a, k) tree -> (a, leaf) nat -> (a, k) tree
+and merge : type a k. (a, leaf) nat -> (a, k) tree -> (a, k) tree -> (a, k) tree
     =
- fun a b n ->
+ fun n a b ->
   match (a, b) with
   | End a, End b -> (
-      match n with Z -> raise MergeFail | S n -> End (merge a b n))
+      match n with Z -> raise_notrace Merge_fail | S n -> End (merge n a b))
   | Wildcard a, Wildcard b ->
       let ids = SetInt.union a.ids b.ids in
-      let child = merge a.child b.child n in
+      let child = merge n a.child b.child in
       Wildcard { a with ids; child }
   | Wildcard a, Nest b ->
       let wildcard =
-        match b.wildcard with None -> a.child | Some b -> merge a.child b n
+        match b.wildcard with None -> a.child | Some b -> merge n a.child b
       in
       let child =
         match b.child with
@@ -426,28 +426,28 @@ and merge : type a k. (a, k) tree -> (a, k) tree -> (a, leaf) nat -> (a, k) tree
         match b.nil with
         | None -> Ok (Some a.child)
         | Some b -> (
-            try Ok (Some (merge a.child b n)) with MergeFail -> Error None)
+            try Ok (Some (merge n a.child b)) with Merge_fail -> Error None)
       in
       let cons =
         match b.cons with
         | None -> Ok (Some a')
         | Some b -> (
-            try Ok (Some (merge a' b n)) with MergeFail -> Error None)
+            try Ok (Some (merge n a' b)) with Merge_fail -> Error None)
       in
       let ids = SetInt.union a.ids b.ids in
       match (nil, cons) with
       | Error _, Error _ | Ok None, Error None | Error None, Ok None ->
-          raise MergeFail
+          raise_notrace Merge_fail
       | Ok nil, Ok cons | Error nil, Ok cons | Ok nil, Error cons ->
           Construct { b with ids; nil; cons })
   | Wildcard a, Switch b ->
       let cases =
         match merge_testcases_into_wildcard a.child b.cases n with
-        | None -> raise MergeFail
+        | None -> raise_notrace Merge_fail
         | Some c -> c
       in
       let wildcard =
-        match b.wildcard with None -> a.child | Some b -> merge a.child b n
+        match b.wildcard with None -> a.child | Some b -> merge n a.child b
       in
       let ids = SetInt.union a.ids b.ids in
       Switch { b with ids; cases; wildcard = Some wildcard }
@@ -456,18 +456,18 @@ and merge : type a k. (a, k) tree -> (a, k) tree -> (a, leaf) nat -> (a, k) tree
         match (a.wildcard, b.wildcard) with
         | None, None -> None
         | Some x, None | None, Some x -> Some x
-        | Some a, Some b -> Some (merge a b n)
+        | Some a, Some b -> Some (merge n a b)
       in
       let child =
         match (a.child, b.child) with
         | IntKeys a, IntKeys b -> (
-            let child = merge a b (S n) in
+            let child = merge (S n) a b in
             match wildcard with
             | None -> IntKeys child
             | Some wildcard ->
                 IntKeys (merge_wildcard_after_nest ~wildcard Z child (S n)))
         | StringKeys a, StringKeys b -> (
-            let child = merge a b (S n) in
+            let child = merge (S n) a b in
             match wildcard with
             | None -> StringKeys child
             | Some wildcard ->
@@ -486,7 +486,7 @@ and merge : type a k. (a, k) tree -> (a, k) tree -> (a, leaf) nat -> (a, k) tree
             IntKeys (expand_wildcard_after_nest child (S n) ~wildcard:b.child Z)
       in
       let wildcard =
-        match a.wildcard with None -> b.child | Some a -> merge a b.child n
+        match a.wildcard with None -> b.child | Some a -> merge n a b.child
       in
       let ids = SetInt.union a.ids b.ids in
       Nest { a with ids; child; wildcard = Some wildcard }
@@ -494,16 +494,16 @@ and merge : type a k. (a, k) tree -> (a, k) tree -> (a, leaf) nat -> (a, k) tree
       let nil =
         match a.nil with
         | None -> Ok b.child
-        | Some a -> ( try Ok (merge a b.child n) with MergeFail -> Error a)
+        | Some a -> ( try Ok (merge n a b.child) with Merge_fail -> Error a)
       in
       let cons =
         match a.cons with
         | None -> Ok b'
-        | Some a -> ( try Ok (merge a b' n) with MergeFail -> Error a)
+        | Some a -> ( try Ok (merge n a b') with Merge_fail -> Error a)
       in
       let ids = SetInt.union a.ids b.ids in
       match (nil, cons) with
-      | Error _, Error _ -> raise MergeFail
+      | Error _, Error _ -> raise_notrace Merge_fail
       | Ok nil, Ok cons | Ok nil, Error cons | Error nil, Ok cons ->
           Construct { a with ids; nil = Some nil; cons = Some cons })
   | Construct a, Construct b ->
@@ -511,19 +511,19 @@ and merge : type a k. (a, k) tree -> (a, k) tree -> (a, leaf) nat -> (a, k) tree
         match (a.nil, b.nil) with
         | None, None -> None
         | Some x, None | None, Some x -> Some x
-        | Some a, Some b -> Some (merge a b n)
+        | Some a, Some b -> Some (merge n a b)
       in
       let cons =
         match (a.cons, b.cons) with
         | None, None -> None
         | Some x, None | None, Some x -> Some x
-        | Some a, Some b -> Some (merge a b n)
+        | Some a, Some b -> Some (merge n a b)
       in
       let ids = SetInt.union a.ids b.ids in
       Construct { a with ids; nil; cons }
   | Switch a, Wildcard b ->
       let wildcard =
-        match a.wildcard with None -> b.child | Some a -> merge a b.child n
+        match a.wildcard with None -> b.child | Some a -> merge n a b.child
       in
       let cases = expand_wildcard_into_testcases a.cases b.child n in
       let ids = SetInt.union a.ids b.ids in
@@ -533,19 +533,19 @@ and merge : type a k. (a, k) tree -> (a, k) tree -> (a, leaf) nat -> (a, k) tree
         match (a.wildcard, b.wildcard) with
         | None, None -> None
         | Some x, None | None, Some x -> Some x
-        | Some a, Some b -> Some (merge a b n)
+        | Some a, Some b -> Some (merge n a b)
       in
       let bcases =
         match a.wildcard with
         | Some wildcard -> (
             match merge_testcases_into_wildcard wildcard b.cases n with
             | Some cases -> cases
-            | None -> raise MergeFail)
+            | None -> raise_notrace Merge_fail)
         | None -> b.cases
       in
       let cases =
         match merge_testcases a.cases bcases n false with
-        | None -> raise MergeFail
+        | None -> raise_notrace Merge_fail
         | Some cases -> cases
       in
       let cases =
@@ -561,6 +561,8 @@ and merge : type a k. (a, k) tree -> (a, k) tree -> (a, leaf) nat -> (a, k) tree
   | (Switch _ | Nest _ | Construct _ | Wildcard _), End _
   | End _, (Switch _ | Nest _ | Construct _ | Wildcard _) ->
       assert false
+
+let merge = merge Z
 
 (*
   To turn a typed pattern into a tree (albiet a single-branch of tree), we use
@@ -588,7 +590,7 @@ let rec of_tpat :
     =
  fun ~key b k -> function
   | TPat.TAny -> Wildcard { ids = SetInt.empty; key; child = k b }
-  | TVar x | TOptionalVar x ->
+  | TVar x ->
       let id = b.next_id () in
       let b = { b with names = MapString.add x id b.names } in
       Wildcard { ids = SetInt.singleton id; key; child = k b }
@@ -675,11 +677,10 @@ let of_nonempty ~exit next_id Nonempty.(hd :: tl) =
 
 let rec make_case ~exit next_id tree = function
   | [] -> tree
-  | ps :: l -> (
+  | (loc, ps) :: l ->
       let b = of_nonempty ~exit next_id ps in
-      match merge tree b Z with
-      | tree -> make_case ~exit next_id tree l
-      | exception MergeFail -> failwith "unused case")
+      let tree = try merge tree b with Merge_fail -> Error.unused_case loc in
+      make_case ~exit next_id tree l
 
 let make Nonempty.(Typechecker.{ pats; nodes } :: tl_cases) =
   let exitq = Queue.create () in
@@ -691,7 +692,7 @@ let make Nonempty.(Typechecker.{ pats; nodes } :: tl_cases) =
     id
   in
   let hd_tree =
-    let (hd_pats :: tl_pats) = pats in
+    let ((_, hd_pats) :: tl_pats) = pats in
     Queue.add nodes exitq;
     let exit = Queue.length exitq - 1 in
     let hd_tree = of_nonempty ~exit next_id hd_pats in
@@ -699,15 +700,15 @@ let make Nonempty.(Typechecker.{ pats; nodes } :: tl_cases) =
   in
   let rec aux tree = function
     | [] -> { tree; exits = exitq |> Queue.to_seq |> Array.of_seq }
-    | Typechecker.{ pats = hd_pats :: tl_pats; nodes } :: l -> (
+    | Typechecker.{ pats = (loc, hd_pats) :: tl_pats; nodes } :: l ->
         Queue.add nodes exitq;
         let exit = Queue.length exitq - 1 in
         let hd_tree = of_nonempty ~exit next_id hd_pats in
-        match merge tree hd_tree Z with
-        | tree ->
-            let tree = make_case ~exit next_id tree tl_pats in
-            aux tree l
-        | exception MergeFail -> failwith "unused case")
+        let tree =
+          try merge tree hd_tree with Merge_fail -> Error.unused_case loc
+        in
+        let tree = make_case ~exit next_id tree tl_pats in
+        aux tree l
   in
   aux hd_tree tl_cases
 
@@ -717,14 +718,12 @@ module ParMatch = struct
 
   let values l = List.map (fun (_, v) -> v) l
   let to_keyvalues l = l |> List.to_seq |> MapString.of_seq
-  let pp_sep ppf () = Format.fprintf ppf ",@ "
-  let pp_pats ppf l = Format.pp_print_list ~pp_sep TPat.pp ppf l
+  let pp_pats ppf l = Format.pp_print_list ~pp_sep:Pp.sep_comma TPat.pp ppf l
   let key_str = Fun.id
   let key_int _ = ""
 
   let exhaustive key { pats; flag; next } =
-    let pat = match key with "" -> TPat.TAny | k -> TVar k in
-    { flag; next; pats = (key, pat) :: pats }
+    { flag; next; pats = (key, TAny) :: pats }
 
   let rec check : 'a 'k. ('k -> string) -> ('a, 'k) tree -> 'a t =
    fun kf -> function
@@ -851,9 +850,8 @@ module ParMatch = struct
                 aux cases))
 end
 
-let partial_match_check tree =
+let partial_match_check loc tree =
   match ParMatch.check ParMatch.key_int tree with
   | { flag = Exhaustive; _ } -> ()
   | { flag = Partial; pats; _ } ->
-      Format.printf "%a" ParMatch.pp_pats (ParMatch.values pats);
-      failwith "partial match"
+      Error.parmatch loc ParMatch.pp_pats (ParMatch.values pats)

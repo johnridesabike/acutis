@@ -8,7 +8,7 @@
 (*                                                                        *)
 (**************************************************************************)
 
-open Utils
+open StdlibExtra
 
 module Variant : sig
   type row = [ `Closed | `Open ]
@@ -71,6 +71,8 @@ and ty = ty' ref
 
 type t = ty MapString.t
 
+val record_internal : t ref -> ty
+
 (* Public API for declaring type schemes: *)
 val unknown : unit -> ty
 val int : unit -> ty
@@ -103,7 +105,6 @@ val internal_dict_keys : ty -> SetString.t ref -> ty
 val internal_copy_record : t -> t
 val pp_ty : Format.formatter -> ty -> unit
 val pp : Format.formatter -> t -> unit
-val show_ty : ty -> string
 val equal_ty : ty -> ty -> bool
 val equal : t -> t -> bool
 
@@ -117,5 +118,5 @@ module Child : sig
   val is_nullable : ty -> bool
   val equal_ty : ty -> ty -> bool
   val equal : t -> t -> bool
-  val show_ty : ty -> string
+  val pp_ty : Format.formatter -> ty -> unit
 end

@@ -8,7 +8,7 @@
 (*                                                                        *)
 (**************************************************************************)
 
-open Utils
+open StdlibExtra
 
 let rec test_case ~wildcard data case =
   if Data.Const.equal data case.Matching.data then Some case.if_match
@@ -104,14 +104,14 @@ let escape esc str =
   match esc with Ast.Escape -> escape_aux str | No_escape -> str
 
 let echo_not_null props children return = function
-  | Ast.Ech_var (var, esc) ->
+  | Typechecker.Ech_var (var, esc) ->
       let x = MapString.find var props in
       return (escape esc (Data.to_string x))
   | Ech_component child -> MapString.find child children
   | Ech_string s -> return s
 
 let echo_nullable props children return = function
-  | Ast.Ech_var (var, esc) -> (
+  | Typechecker.Ech_var (var, esc) -> (
       match Data.nullable (MapString.find var props) with
       | None -> None
       | Some x -> Some (return (escape esc (Data.to_string x))))

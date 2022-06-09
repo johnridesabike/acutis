@@ -1,26 +1,10 @@
 open Acutis
-open Utils
-module F = Format
+open StdlibExtra
 module Ty = Typescheme
 module MS = MapString
 module SI = SetInt
 
-let print_position ppf lexbuf =
-  let pos = lexbuf.Lexing.lex_curr_p in
-  F.fprintf ppf "%s:%d:%d" pos.pos_fname pos.pos_lnum
-    (pos.pos_cnum - pos.pos_bol + 1)
-
-let parse src =
-  let state = Lexer.make_state () in
-  let lexbuf = Lexing.from_string src in
-  try Parser.acutis (Lexer.acutis state) lexbuf with
-  | Lexer.SyntaxError as e ->
-      F.printf "Lexer.SyntaxError %a" print_position lexbuf;
-      raise e
-  | Parser.Error i as e ->
-      F.printf "Parser.Error %i %a" i print_position lexbuf;
-      raise e
-
+let parse = Compile.parse_string
 let pp_tree = Matching.pp_tree Matching.pp_leaf Format.pp_print_int
 let equal_tree = Matching.equal_tree Matching.equal_leaf Int.equal
 let check = Alcotest.(check (testable pp_tree equal_tree))
@@ -31,7 +15,7 @@ let get_tree_aux acc = function
   | _ -> acc
 
 let get_tree nodes = List.fold_left get_tree_aux None nodes |> Option.get
-let get_tree src = parse src |> make_nodes |> get_tree
+let get_tree src = parse ~filename:"" src |> make_nodes |> get_tree
 let e = Matching.Exit.unsafe_key
 let map l = l |> List.to_seq |> MS.of_seq
 let set = SI.of_list
@@ -39,7 +23,7 @@ let set = SI.of_list
 let basic_tree () =
   let open Matching in
   let src = {|{% match a with !a %} {% with null %} {% /match %}|} in
-  check "Blah"
+  check "Basic tree"
     (Construct
        {
          key = 0;

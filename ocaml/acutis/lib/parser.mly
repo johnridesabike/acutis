@@ -55,48 +55,55 @@ open Ast
 
 (* Pattern rules *)
 pattern:
-  | x = ID;                                     { Var x }
-  | TRUE;                                       { Bool 1 }
-  | FALSE;                                      { Bool 0 }
-  | i = INT;                                    { Int i }
-  | i = FLOAT;                                  { Float i }
-  | s = STRING;                                 { String s }
-  | AT; i = INT;                                { Enum_int i }
-  | AT; s = STRING;                             { Enum_string s }
-  | NULL;                                       { Nullable None }
-  | EXCLAMATION; p = pattern;                   { Nullable (Some p) }
+  | x = ID;                                     { Var ($loc, x) }
+  | TRUE;                                       { Bool ($loc, 1) }
+  | FALSE;                                      { Bool ($loc, 0) }
+  | i = INT;                                    { Int ($loc, i) }
+  | i = FLOAT;                                  { Float ($loc, i) }
+  | s = STRING;                                 { String ($loc, s) }
+  | AT; i = INT;                                { Enum_int ($loc, i) }
+  | AT; s = STRING;                             { Enum_string ($loc, s) }
+  | NULL;                                       { Nullable ($loc, None) }
+  | EXCLAMATION; p = pattern;                   { Nullable ($loc, Some p) }
   | LEFT_BRACK; l = pattern_list; RIGHT_BRACK;  { l }
-  | LEFT_PAREN; l = tuple; RIGHT_PAREN;         { Tuple l }
-  | LEFT_BRACE; r = record; RIGHT_BRACE;        { Record r }
-  | LEFT_ANGLE; d = dict; RIGHT_ANGLE;          { Dict d }
+  | LEFT_PAREN; l = tuple; RIGHT_PAREN;         { Tuple ($loc, l) }
+  | LEFT_BRACE; r = record; RIGHT_BRACE;        { Record ($loc, r) }
+  | LEFT_ANGLE; d = dict; RIGHT_ANGLE;          { Dict ($loc, d) }
+
+record_tag:
+  | (* empty *) { `Notag }
+  | AT;         { `Tag }
+
+record_key:
+  | k = ID; | k = STRING; { k }
 
 record_field:
-  | t = boption(AT); k = ID; COLON; v = pattern;
-  | t = boption(AT); k = STRING; COLON; v = pattern; { (t, k, v) }
-  | t = boption(AT); k = ID;                         { (t, k, Pattern.Var k ) }
+  | t = record_tag; k = record_key; COLON; v = pattern;
+    { (t, k, v) }
+  | t = record_tag; k = ID;
+    { (t, k, Pattern.Var ($loc, k) ) }
 
 record:
   | x = record_field;
     { let (t, k, v) = x in Record.singleton t k v }
   | m = record; COMMA; x = record_field;
-    { let (t, k, v) = x in Record.add t k v m }
+    { let (t, k, v) = x in Record.add $loc t k v m }
 
 dict_field:
-  | k = ID; COLON; v = pattern;
-  | k = STRING; COLON; v = pattern; { (k, v) }
-  | k = ID;                         { (k, Pattern.Var k ) }
+  | k = record_key; COLON; v = pattern; { (k, v) }
+  | k = ID;                             { (k, Pattern.Var ($loc, k) ) }
 
 dict:
   | x = dict_field;
     { let (k, v) = x in Dict.singleton k v }
   | m = dict; COMMA; x = dict_field;
-    { let (k, v) = x in Dict.add k v m }
+    { let (k, v) = x in Dict.add $loc k v m }
 
 pattern_list:
   | tl = option(ELLIPSIS; p = pattern { p });
-    { List ([], tl) }
+    { List ($loc, [], tl) }
   | l = pattern_list_nonempty; tl = option(COMMA; ELLIPSIS; p = pattern; { p });
-    { Pattern.List (Nonempty.to_list l, tl) }
+    { Pattern.List ($loc, Nonempty.to_list l, tl) }
 
 tuple:
   | (* empty *)                { [] }
@@ -110,8 +117,10 @@ pattern_list_nonempty_rev:
 
 with_pats: l = with_pats_rev; { Nonempty.rev l }
 with_pats_rev:
-  | WITH; ps = pattern_list_nonempty;                    { [ ps ] }
-  | l = with_pats_rev; WITH; ps = pattern_list_nonempty; { Nonempty.cons ps l }
+  | WITH; ps = pattern_list_nonempty;
+    { [ ($loc, ps) ] }
+  | l = with_pats_rev; WITH; ps = pattern_list_nonempty;
+    { Nonempty.cons ($loc, ps) l }
 
 cases: l = cases_rev; { Nonempty.rev l }
 cases_rev:
@@ -124,15 +133,24 @@ cases_rev:
 props:
   | (* empty *) { (Dict.empty, Dict.empty) }
   | p = props; k = ID; EQUALS; v = pattern;
-    { let (pats, childs) = p in (Dict.add k v pats, childs) }
+    { let (pats, childs) = p in (Dict.add $loc k v pats, childs) }
   | p = props; k = ID;
-    { let (pats, childs) = p in (Dict.add k (Pattern.Var k) pats, childs) }
+    {
+      let (pats, childs) = p in
+      (Dict.add $loc k (Pattern.Var ($loc, k)) pats, childs)
+    }
   | p = props; k = COMPONENT; EQUALS; HASH; v = nodes; BACKSLASH; HASH;
-    { let (pats, childs) = p in (pats, Dict.add k (Child_block v) childs) }
+    { let (pats, childs) = p in (pats, Dict.add $loc k (Child_block v) childs) }
   | p = props; k = COMPONENT; EQUALS; v = COMPONENT;
-    { let (pats, childs) = p in (pats, Dict.add k (Child_name v) childs) }
+    {
+      let (pats, childs) = p in
+      (pats, Dict.add $loc k (Child_name ($loc, v)) childs)
+    }
   | p = props; k = COMPONENT;
-    { let (pats, childs) = p in (pats, Dict.add k (Child_name k) childs) }
+    {
+      let (pats, childs) = p in
+      (pats, Dict.add $loc k (Child_name ($loc, k)) childs)
+    }
 
 (* Echo rules *)
 escape:
@@ -140,9 +158,9 @@ escape:
   | AMPERSAND;  { No_escape }
 
 echo:
-  | e = escape; x = ID; { Ech_var (x, e) }
-  | x = COMPONENT;      { Ech_component x }
-  | s = STRING;         { Ech_string s }
+  | e = escape; x = ID; { Ech_var ($loc, x, e) }
+  | x = COMPONENT;      { Ech_component ($loc, x) }
+  | s = STRING;         { Ech_string ($loc, s) }
 
 echoes:
   | l = echoes_rev; { let Nonempty.(last :: l) = l in Echo (List.rev l, last) }
@@ -168,19 +186,18 @@ node:
   | ECHO_BEGIN; e = echoes; ECHO_END;
     { e }
   | MATCH; pats = pattern_list_nonempty; child = cases; BACKSLASH; MATCH;
-    { Match (pats, child) }
+    { Match ($loc, pats, child) }
   | MAP; pat = pattern; child = cases; BACKSLASH; MAP;
-    { Map_list (pat, child) }
+    { Map_list ($loc, pat, child) }
   | MAP_DICT; pat = pattern; child = cases; BACKSLASH; MAP_DICT;
-    { Map_dict (pat, child) }
+    { Map_dict ($loc, pat, child) }
   | x = COMPONENT; p = props; BACKSLASH;
-    { let (p, c) = p in Component (x, p, c) }
+    { let (p, c) = p in Component ($loc, x, x, p, c) }
   | x1 = COMPONENT; p = props; n = nodes; BACKSLASH; x2 = COMPONENT;
     {
-      assert (String.equal x1 x2);
       let (p, c) = p in
       let children = Child_block n in
-      Component (x1, p, Dict.add "Children" children c)
+      Component ($loc, x1, x2, p, Dict.add $loc "Children" children c)
     }
 
 nodes: l = nodes_rev; { List.rev l }

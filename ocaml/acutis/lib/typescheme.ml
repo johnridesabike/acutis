@@ -8,7 +8,7 @@
 (*                                                                        *)
 (**************************************************************************)
 
-open Utils
+open StdlibExtra
 module F = Format
 
 module Variant = struct
@@ -126,6 +126,7 @@ and ty = ty' ref [@@deriving eq]
 
 type t = ty MapString.t [@@deriving eq]
 
+let record_internal r = ref (Record r)
 let unknown () = ref (Unknown (ref `Closed))
 let int () = ref Int
 let float () = ref Float
@@ -134,7 +135,7 @@ let echo () = ref Echo
 let nullable t = ref (Nullable t)
 let list t = ref (List t)
 let tuple l = ref (Tuple l)
-let record l = ref (Record (ref (MapString.of_seq (List.to_seq l))))
+let record l = record_internal (ref (MapString.of_seq (List.to_seq l)))
 let dict t = ref (Dict (t, ref SetString.empty))
 let enum_int row l = ref (Enum (Enum.int l row))
 let enum_string row l = ref (Enum (Enum.string l row))
@@ -190,16 +191,15 @@ let rec copy = function
 and copy_ref r = ref (copy !r)
 and internal_copy_record m = MapString.map copy_ref m
 
-let pp_sep_comma ppf () = F.fprintf ppf ",@ "
 let pp_sep_pipe ppf () = F.fprintf ppf "@ | "
 
 let rec pp_ty ppf t =
   match !t with
-  | Unknown _ -> F.fprintf ppf "_"
-  | Int -> F.fprintf ppf "int"
-  | Float -> F.fprintf ppf "float"
-  | String -> F.fprintf ppf "string"
-  | Echo -> F.fprintf ppf "echoable"
+  | Unknown _ -> F.pp_print_string ppf "_"
+  | Int -> F.pp_print_string ppf "int"
+  | Float -> F.pp_print_string ppf "float"
+  | String -> F.pp_print_string ppf "string"
+  | Echo -> F.pp_print_string ppf "echoable"
   | Enum { cases; row; extra } -> (
       match cases with
       | String cases ->
@@ -222,8 +222,8 @@ let rec pp_ty ppf t =
   | List l -> F.fprintf ppf "[@[@,@[%a@]@,]@]" pp_ty l
   | Dict (t, _) -> F.fprintf ppf "<@[%a@]>" pp_ty t
   | Tuple l ->
-      F.fprintf ppf "(@[%a@])" (F.pp_print_list ~pp_sep:pp_sep_comma pp_ty) l
-  | Record r -> F.fprintf ppf "{@[%a@]}" pp_record_rows (MapString.to_seq !r)
+      F.fprintf ppf "(@[%a@])" (F.pp_print_list ~pp_sep:Pp.sep_comma pp_ty) l
+  | Record r -> pp_record ppf !r
   | Union (key, { cases; extra; row }) ->
       let cases =
         match cases with
@@ -241,32 +241,41 @@ let rec pp_ty ppf t =
         cases Variant.pp_row row
 
 and pp_union_cases key ppf (tag, m) =
-  F.fprintf ppf "@[{@,@[%S: %a,@ %a@]@,}@]" key Variant.pp_types tag
-    pp_record_rows (MapString.to_seq !m)
+  F.fprintf ppf "@[{@,@[@@%a:@ %a" Pp.field key Variant.pp_types tag;
+  if not (MapString.is_empty !m) then
+    F.fprintf ppf ",@ %a" pp_record_rows (MapString.to_seq !m);
+  F.fprintf ppf "@]@,}@]"
 
 and pp_record_rows ppf l =
-  F.pp_print_seq ~pp_sep:pp_sep_comma
-    (fun ppf (k, v) -> F.fprintf ppf "%S:@ @[%a@]" k pp_ty v)
+  F.pp_print_seq ~pp_sep:Pp.sep_comma
+    (fun ppf (k, v) -> F.fprintf ppf "%a:@ @[%a@]" Pp.field k pp_ty v)
     ppf l
+
+and pp_record ppf r =
+  F.fprintf ppf "{@[%a@]}" pp_record_rows (MapString.to_seq r)
 
 let pp_binding ppf (k, v) = F.fprintf ppf "@[%S =@ @[%a@]@]" k pp_ty v
 
 let pp ppf m =
   F.fprintf ppf "@[%a@]"
-    (F.pp_print_seq pp_binding ~pp_sep:pp_sep_comma)
+    (F.pp_print_seq pp_binding ~pp_sep:Pp.sep_comma)
     (MapString.to_seq m)
 
-let show_ty ty =
-  pp_ty F.str_formatter ty;
-  F.flush_str_formatter ()
-
 module Child = struct
-  type ty' = Child | NullableChild [@@deriving eq, show]
-  type ty = ty' ref [@@deriving eq, show]
-  type t = ty MapString.t [@@deriving eq]
+  type ty' = Child | Nullable_child
+  type ty = ty' ref
 
+  let equal_ty a b = !a = !b
+
+  type t = ty MapString.t
+
+  let equal a b = MapString.equal equal_ty a b
   let make l = l |> List.to_seq |> MapString.of_seq
   let child x = (x, ref Child)
-  let nullable x = (x, ref NullableChild)
-  let is_nullable t = match !t with NullableChild -> true | Child -> false
+  let nullable x = (x, ref Nullable_child)
+  let is_nullable t = match !t with Nullable_child -> true | Child -> false
+
+  let pp_ty ppf = function
+    | { contents = Child } -> F.pp_print_string ppf "child"
+    | { contents = Nullable_child } -> F.pp_print_string ppf "nullable child"
 end

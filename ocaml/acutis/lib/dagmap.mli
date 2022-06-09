@@ -10,24 +10,11 @@
 
 open StdlibExtra
 
-module Const : sig
-  type t = [ `Int of int | `String of string | `Float of float ]
+type ('a, 'b) t
 
-  val equal : t -> t -> bool
-  val compare : t -> t -> int
-  val pp : Format.formatter -> t -> unit
-end
+val make : f:(('a, 'b) t -> 'a -> 'b) -> 'a MapString.t -> ('a, 'b) t
+(** Use [get] inside the [f] callback. *)
 
-type t
-
-val make : Typescheme.t -> (string * Source.json) list -> t MapString.t
-val constant : t -> Const.t
-val tuple : t -> t array
-val dict : t -> t MapString.t
-val is_null : t -> bool
-val nullable : t -> t option
-val of_pattern : vars:t MapString.t -> Typechecker.Pattern.t -> t
-val iter_list : (index:t -> t -> unit) -> t -> unit
-val iter_dict : (index:t -> t -> unit) -> t -> unit
-val to_string : t -> string
-val to_json : Typescheme.t -> t MapString.t -> (string * Source.json) list
+val prelinked : 'a MapString.t -> ('a, 'a) t
+val get : string -> ('a, 'b) t -> 'b
+val link_all : ('a, 'b) t -> 'b MapString.t

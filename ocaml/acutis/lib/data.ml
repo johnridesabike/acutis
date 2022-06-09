@@ -8,7 +8,7 @@
 (*                                                                        *)
 (**************************************************************************)
 
-open Utils
+open StdlibExtra
 module Ty = Typescheme
 
 module Const = struct
@@ -33,90 +33,116 @@ type t =
   | Dict of t MapString.t
   | Const of Const.t * Ty.Variant.extra
 
-let boolean cases j =
+module Stack = struct
+  type t = Nullable | Index of int | Key of string
+
+  open Format
+
+  let pp ppf = function
+    | Nullable -> fprintf ppf "nullable"
+    | Index i -> fprintf ppf "@[index: %i@]" i
+    | Key s -> fprintf ppf "@[key: %S@]" s
+
+  let pp_sep ppf () = fprintf ppf " ->@ "
+
+  let pp ppf t =
+    fprintf ppf "@[[@,%a]@]" (pp_print_list ~pp_sep pp) (List.rev t)
+end
+
+let decode_error = Error.decode Stack.pp
+
+let boolean ty stack cases j =
   let i =
     match j with
     | `Bool false -> 0
     | `Bool true -> 1
-    | _ -> failwith "decode error"
+    | j -> decode_error stack ty j
   in
   if SetInt.mem i cases then Const (`Int i, Extra_bool)
-  else failwith "decode error"
+  else Error.bad_enum Stack.pp stack ty j
 
-let string cases = function
-  | `String s as x -> (
+let string ty stack cases = function
+  | `String s as j -> (
       match cases with
-      | None -> Const (x, Extra_none)
+      | None -> Const (j, Extra_none)
       | Some cases ->
-          if SetString.mem s cases then Const (x, Extra_none)
-          else failwith "decode error")
-  | _ -> failwith "decode error"
+          if SetString.mem s cases then Const (j, Extra_none)
+          else Error.bad_enum Stack.pp stack ty j)
+  | j -> decode_error stack ty j
 
-let int cases = function
-  | `Int i as x -> (
+let int ty stack cases = function
+  | `Int i as j -> (
       match cases with
-      | None -> Const (x, Extra_none)
+      | None -> Const (j, Extra_none)
       | Some cases ->
-          if SetInt.mem i cases then Const (x, Extra_none)
-          else failwith "decode error")
-  | _ -> failwith "decode error"
+          if SetInt.mem i cases then Const (j, Extra_none)
+          else Error.bad_enum Stack.pp stack ty j)
+  | j -> decode_error stack ty j
 
-let float = function
+let float stack = function
   | `Float _ as x -> Const (x, Extra_none)
   | `Int i -> Const (`Float (float_of_int i), Extra_none)
-  | _ -> failwith "decode error"
+  | j -> decode_error stack (Ty.float ()) j
 
-let echo = function
+let echo stack = function
   | (`String _ | `Int _ | `Float _) as x -> Const (x, Extra_none)
   | `Bool false -> Const (`Int 0, Extra_bool)
   | `Bool true -> Const (`Int 1, Extra_bool)
-  | _ -> failwith "decode error"
+  | j -> decode_error stack (Ty.echo ()) j
 
 let some x = Array [| x |]
 
-let rec nullable ty = function `Null -> Null | j -> some (make ty j)
+let rec nullable stack ty = function
+  | `Null -> Null
+  | j -> some (make (Stack.Nullable :: stack) ty j)
 
-and list ty = function
-  | `List l ->
-      let rec aux acc = function
-        | [] -> acc
-        | hd :: tl -> aux (Array [| make ty hd; acc |]) tl
-      in
-      aux Null (List.rev l)
-  | _ -> failwith "decode error"
+(** Make this tail recursive. *)
+and list_aux stack ty i = function
+  | [] -> Null
+  | hd :: tl ->
+      Array [| make (Index i :: stack) ty hd; list_aux stack ty (succ i) tl |]
 
-and dict ty = function
+and list stack ty = function
+  | `List l -> list_aux stack ty 0 l
+  | j -> decode_error stack (Ty.list ty) j
+
+and dict stack ty = function
   | `Assoc l ->
-      let dict = l |> List.to_seq |> Seq.map (fun (k, v) -> (k, make ty v)) in
+      let dict =
+        l |> List.to_seq
+        |> Seq.map (fun (k, v) -> (k, make (Key k :: stack) ty v))
+      in
       Dict (MapString.of_seq dict)
-  | _ -> failwith "decode error"
+  | j -> decode_error stack (Ty.dict ty) j
 
-and tuple tys = function
-  | `List l ->
+and tuple ty stack tys = function
+  | `List l as j ->
       let l =
-        try List.map2 make tys l
-        with Invalid_argument _ -> failwith "decode error"
+        try
+          List.map2 (fun ty x -> (ty, x)) tys l
+          |> List.mapi (fun i (ty, x) -> make (Index i :: stack) ty x)
+        with Invalid_argument _ -> decode_error stack ty j
       in
       Array (Array.of_list l)
-  | _ -> failwith "decode error"
+  | j -> decode_error stack (Ty.tuple tys) j
 
-and record_aux tys j =
+and record_aux stack tys j =
   let f k ty =
     match (ty, MapString.find_opt k j) with
     | { contents = Ty.Nullable _ | Unknown _ }, None -> Null
-    | ty, Some j -> make ty j
-    | _ -> failwith ("missing key: " ^ k)
+    | ty, Some j -> make (Key k :: stack) ty j
+    | _ -> Error.missing_key Stack.pp stack (Ty.record_internal (ref tys)) k
   in
   MapString.mapi f tys
 
-and record tys = function
+and record stack tys = function
   | `Assoc l ->
       let map = l |> List.to_seq |> MapString.of_seq in
-      Dict (record_aux !tys map)
-  | _ -> failwith "decode error"
+      Dict (record_aux stack !tys map)
+  | j -> decode_error stack (Ty.record_internal tys) j
 
-and union key cases extra = function
-  | `Assoc l -> (
+and union stack ty key cases extra = function
+  | `Assoc l as j -> (
       let map = l |> List.to_seq |> MapString.of_seq in
       try
         let tag = MapString.find key map in
@@ -132,33 +158,35 @@ and union key cases extra = function
               (Const (x, extra), MapInt.find tag map)
           | (`String tag as x), String map, Extra_none ->
               (Const (x, extra), MapString.find tag map)
-          | _ -> failwith "decode error"
+          | _ -> raise Not_found
         in
-        let r = record_aux !tys map in
+        let r = record_aux stack !tys map in
         Dict (MapString.add key tag r)
-      with Not_found -> failwith "decode error")
-  | _ -> failwith "decode error"
+      with Not_found -> decode_error stack ty j)
+  | j -> decode_error stack ty j
 
-and make ty j =
+and make stack ty j =
   match !ty with
   | Ty.Unknown _ -> Unknown j
-  | Nullable ty -> nullable ty j
-  | Enum { extra = Extra_bool; cases = Int cases; _ } -> boolean cases j
-  | String | Enum { row = `Open; cases = String _; _ } -> string None j
-  | Enum { row = `Closed; cases = String cases; _ } -> string (Some cases) j
-  | Int | Enum { row = `Open; cases = Int _; _ } -> int None j
-  | Enum { row = `Closed; cases = Int cases; _ } -> int (Some cases) j
-  | Float -> float j
-  | Echo -> echo j
-  | List ty -> list ty j
-  | Dict (ty, _) -> dict ty j
-  | Tuple tys -> tuple tys j
-  | Record tys -> record tys j
-  | Union (key, { cases; extra; _ }) -> union key cases extra j
+  | Nullable ty -> nullable stack ty j
+  | Enum { extra = Extra_bool; cases = Int cases; _ } ->
+      boolean ty stack cases j
+  | String | Enum { row = `Open; cases = String _; _ } -> string ty stack None j
+  | Enum { row = `Closed; cases = String cases; _ } ->
+      string ty stack (Some cases) j
+  | Int | Enum { row = `Open; cases = Int _; _ } -> int ty stack None j
+  | Enum { row = `Closed; cases = Int cases; _ } -> int ty stack (Some cases) j
+  | Float -> float stack j
+  | Echo -> echo stack j
+  | List ty -> list stack ty j
+  | Dict (ty, _) -> dict stack ty j
+  | Tuple tys -> tuple ty stack tys j
+  | Record tys -> record stack tys j
+  | Union (key, { cases; extra; _ }) -> union stack ty key cases extra j
 
 let make tys l =
   let map = l |> List.to_seq |> MapString.of_seq in
-  record_aux tys map
+  record_aux [] tys map
 
 let constant = function Const (x, _) -> x | _ -> assert false
 let tuple = function Array t -> t | _ -> assert false
@@ -174,7 +202,7 @@ let rec of_pattern ~vars = function
   | Typechecker.Pattern.TConst (x, Some { extra = Extra_bool; _ }) ->
       Const (x, Extra_bool)
   | TConst (x, _) -> Const (x, Extra_none)
-  | TOptionalVar x | TVar x -> MapString.find x vars
+  | TVar x -> MapString.find x vars
   | TConstruct (_, Some x) -> of_pattern ~vars x
   | TConstruct (_, None) -> Null
   | TTuple l ->

@@ -7,11 +7,11 @@
 (*  file, You can obtain one at http://mozilla.org/MPL/2.0/.              *)
 (*                                                                        *)
 (**************************************************************************)
-open Utils
+open StdlibExtra
 
 type 'a node =
   | Text of string
-  | Echo of Ast.echo list * Ast.echo
+  | Echo of Typechecker.echo list * Typechecker.echo
   | Match of Typechecker.Pattern.t array * 'a nodes Matching.t
   | Map_list of Typechecker.Pattern.t * 'a nodes Matching.t
   | Map_dict of Typechecker.Pattern.t * 'a nodes Matching.t
@@ -28,11 +28,23 @@ type 'a template =
   | Acutis of string * 'a template nodes
   | Function of string * Typescheme.t * 'a Source.fn
 
+val parse_string : filename:string -> string -> Ast.t
+(**
+   @raises [Error.Error] on syntax error.
+*)
+
 module Components : sig
   type 'a t
 
   val empty : 'a t
+
   val make : (string, 'a Source.fn) Source.t list -> 'a t
+  (**
+    @raises [Error.Error] on syntax error.
+  *)
 end
 
-val make : 'a Components.t -> string -> 'a template t
+val make : filename:string -> 'a Components.t -> string -> 'a template t
+(**
+   @raises [Error.Error] on syntax error.
+*)

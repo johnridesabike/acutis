@@ -8,11 +8,11 @@
 (*                                                                        *)
 (**************************************************************************)
 
-open Utils
+open StdlibExtra
 
 type 'a node =
   | Text of string
-  | Echo of Ast.echo list * Ast.echo
+  | Echo of Typechecker.echo list * Typechecker.echo
   | Match of Typechecker.Pattern.t array * 'a nodes Matching.t
   | Map_list of Typechecker.Pattern.t * 'a nodes Matching.t
   | Map_dict of Typechecker.Pattern.t * 'a nodes Matching.t
@@ -28,19 +28,19 @@ let rec make_nodes =
     | TText (s, No_trim, Trim) -> Text (StringExtra.rtrim s)
     | TText (s, Trim, Trim) -> Text (String.trim s)
     | TEcho (nullables, default) -> Echo (nullables, default)
-    | TMatch (hd :: tl, cases) ->
-        Match (Array.of_list (hd :: tl), make_match cases)
-    | TMap_list (pat, cases) -> Map_list (pat, make_match cases)
-    | TMap_dict (pat, cases) -> Map_dict (pat, make_match cases)
+    | TMatch (loc, hd :: tl, cases) ->
+        Match (Array.of_list (hd :: tl), make_match loc cases)
+    | TMap_list (loc, pat, cases) -> Map_list (pat, make_match loc cases)
+    | TMap_dict (loc, pat, cases) -> Map_dict (pat, make_match loc cases)
     | TComponent (name, props, children) ->
         let children = MapString.map make_children children in
         Component (name, props, children)
   in
   fun l -> List.map f l
 
-and make_match cases =
+and make_match loc cases =
   let Matching.{ tree; exits } = Matching.make cases in
-  Matching.partial_match_check tree;
+  Matching.partial_match_check loc tree;
   let exits = Matching.Exit.map make_nodes exits in
   { tree; exits }
 
@@ -56,10 +56,13 @@ type 'a template =
   | Acutis of string * 'a template nodes
   | Function of string * Typescheme.t * 'a Source.fn
 
-let parse_string src =
+let parse_string ~filename src =
   let state = Lexer.make_state () in
   let lexbuf = Lexing.from_string src in
-  Parser.acutis (Lexer.acutis state) lexbuf
+  lexbuf.lex_curr_p <- { lexbuf.lex_curr_p with pos_fname = filename };
+  try Parser.acutis (Lexer.acutis state) lexbuf with
+  | Lexer.Error -> Error.lex_error lexbuf
+  | Parser.Error i -> Error.parse_error i lexbuf
 
 module Components = struct
   type 'a t = {
@@ -72,11 +75,11 @@ module Components = struct
   let rec make_aux_parse m = function
     | [] -> m
     | Source.Acutis (name, src) :: l ->
-        if MapString.mem name m then failwith "duplicate comp name";
-        let c = Source.src ~name (parse_string src) in
+        if MapString.mem name m then Error.duplicate_name name;
+        let c = Source.src ~name (parse_string ~filename:name src) in
         make_aux_parse (MapString.add name c m) l
     | Function (name, p, c, f) :: l ->
-        if MapString.mem name m then failwith "duplicate comp name";
+        if MapString.mem name m then Error.duplicate_name name;
         make_aux_parse (MapString.add name (Source.fn ~name p c f) m) l
 
   let make_aux_optimize _ v optimized =
@@ -111,7 +114,7 @@ let rec link_nodes graph nodes =
           | Child_block nodes -> Child_block (link_nodes graph nodes)
         in
         let children = MapString.map f children in
-        let data = DagMap.get name graph in
+        let data = Dagmap.get name graph in
         Component (data, props, children)
   in
   List.map f nodes
@@ -120,9 +123,9 @@ let link_src graph = function
   | Source.Acutis (name, nodes) -> Acutis (name, link_nodes graph nodes)
   | Function (name, props, _, f) -> Function (name, props, f)
 
-let make components src =
-  let nodes = parse_string src in
+let make ~filename components src =
+  let nodes = parse_string ~filename src in
   let ast = Typechecker.make components.Components.typed nodes in
-  let g = DagMap.make ~f:link_src components.optimized in
+  let g = Dagmap.make ~f:link_src components.optimized in
   let nodes = make_nodes ast |> link_nodes g in
   { prop_types = ast.prop_types; nodes }

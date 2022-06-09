@@ -1,36 +1,24 @@
 open Acutis
 module F = Format
 
-let print_position ppf lexbuf =
-  let pos = lexbuf.Lexing.lex_curr_p in
-  F.fprintf ppf "%s:%d:%d" pos.pos_fname pos.pos_lnum
-    (pos.pos_cnum - pos.pos_bol + 1)
-
-let parse src =
-  let state = Lexer.make_state () in
-  let lexbuf = Lexing.from_string src in
-  try Parser.acutis (Lexer.acutis state) lexbuf with
-  | Lexer.SyntaxError as e ->
-      F.printf "Lexer.SyntaxError %a" print_position lexbuf;
-      raise e
-  | Parser.Error i as e ->
-      F.printf "Parser.Error %i %a" i print_position lexbuf;
-      raise e
-
+let parse = Compile.parse_string ~filename:"<test>"
 let check = Alcotest.(check (module Ast))
+let loc = (Lexing.dummy_pos, Lexing.dummy_pos)
 
 let echoes () =
   let src = {|{{ a }} {{ "b" }} {{ C }} {{ &d ? E ? "f" }}|} in
   check "Echoes parse correctly"
     [
       Text ("", No_trim, No_trim);
-      Echo ([], Ech_var ("a", Escape));
+      Echo ([], Ech_var (loc, "a", Escape));
       Text (" ", No_trim, No_trim);
-      Echo ([], Ech_string "b");
+      Echo ([], Ech_string (loc, "b"));
       Text (" ", No_trim, No_trim);
-      Echo ([], Ech_component "C");
+      Echo ([], Ech_component (loc, "C"));
       Text (" ", No_trim, No_trim);
-      Echo ([ Ech_var ("d", No_escape); Ech_component "E" ], Ech_string "f");
+      Echo
+        ( [ Ech_var (loc, "d", No_escape); Ech_component (loc, "E") ],
+          Ech_string (loc, "f") );
       Text ("", No_trim, No_trim);
     ]
     (parse src)
@@ -40,13 +28,13 @@ let trim () =
   check "Trim parses correctly"
     [
       Text ("", No_trim, Trim);
-      Echo ([], Ech_var ("a", Escape));
+      Echo ([], Ech_var (loc, "a", Escape));
       Text (" ", No_trim, Trim);
-      Echo ([], Ech_var ("b", Escape));
+      Echo ([], Ech_var (loc, "b", Escape));
       Text (" ", No_trim, No_trim);
-      Echo ([], Ech_var ("c", Escape));
+      Echo ([], Ech_var (loc, "c", Escape));
       Text (" ", Trim, Trim);
-      Echo ([], Ech_var ("d", Escape));
+      Echo ([], Ech_var (loc, "d", Escape));
       Text ("", Trim, No_trim);
     ]
     (parse src)
@@ -67,14 +55,21 @@ let matches () =
     [
       Text ("", No_trim, No_trim);
       Match
-        ( [ Var "a" ],
+        ( loc,
+          [ Var (loc, "a") ],
           [
             {
-              pats = [ [ Int 1 ]; [ Int 2 ] ];
+              pats = [ (loc, [ Int (loc, 1) ]); (loc, [ Int (loc, 2) ]) ];
               nodes = [ Text ("", No_trim, No_trim) ];
             };
-            { pats = [ [ Int 3 ] ]; nodes = [ Text (" ", No_trim, No_trim) ] };
-            { pats = [ [ Var "_" ] ]; nodes = [ Text (" ", No_trim, No_trim) ] };
+            {
+              pats = [ (loc, [ Int (loc, 3) ]) ];
+              nodes = [ Text (" ", No_trim, No_trim) ];
+            };
+            {
+              pats = [ (loc, [ Var (loc, "_") ]) ];
+              nodes = [ Text (" ", No_trim, No_trim) ];
+            };
           ] );
       Text ("", No_trim, No_trim);
     ]
@@ -86,18 +81,20 @@ let matches () =
     [
       Text ("", No_trim, No_trim);
       Match
-        ( [ Var "b" ],
+        ( loc,
+          [ Var (loc, "b") ],
           [
             {
-              pats = [ [ Var "c" ] ];
+              pats = [ (loc, [ Var (loc, "c") ]) ];
               nodes =
                 [
                   Text ("", No_trim, No_trim);
                   Match
-                    ( [ Var "d"; Var "e" ],
+                    ( loc,
+                      [ Var (loc, "d"); Var (loc, "e") ],
                       [
                         {
-                          pats = [ [ Var "f"; Var "g" ] ];
+                          pats = [ (loc, [ Var (loc, "f"); Var (loc, "g") ]) ];
                           nodes = [ Text (" ", No_trim, No_trim) ];
                         };
                       ] );
@@ -116,17 +113,21 @@ let maps () =
     [
       Text ("", No_trim, No_trim);
       Map_list
-        ( Var "l",
+        ( loc,
+          Var (loc, "l"),
           [
             {
-              pats = [ [ Int 1 ]; [ Int 2 ] ];
+              pats = [ (loc, [ Int (loc, 1) ]); (loc, [ Int (loc, 2) ]) ];
               nodes = [ Text ("", No_trim, No_trim) ];
             };
             {
-              pats = [ [ Int 3; Var "i" ] ];
+              pats = [ (loc, [ Int (loc, 3); Var (loc, "i") ]) ];
               nodes = [ Text (" ", No_trim, No_trim) ];
             };
-            { pats = [ [ Var "_" ] ]; nodes = [ Text (" ", No_trim, No_trim) ] };
+            {
+              pats = [ (loc, [ Var (loc, "_") ]) ];
+              nodes = [ Text (" ", No_trim, No_trim) ];
+            };
           ] );
       Text ("", No_trim, No_trim);
     ]
@@ -138,17 +139,21 @@ let maps () =
     [
       Text ("", No_trim, No_trim);
       Map_dict
-        ( Var "d",
+        ( loc,
+          Var (loc, "d"),
           [
             {
-              pats = [ [ Int 1 ]; [ Int 2 ] ];
+              pats = [ (loc, [ Int (loc, 1) ]); (loc, [ Int (loc, 2) ]) ];
               nodes = [ Text ("", No_trim, No_trim) ];
             };
             {
-              pats = [ [ Int 3; Var "k" ] ];
+              pats = [ (loc, [ Int (loc, 3); Var (loc, "k") ]) ];
               nodes = [ Text (" ", No_trim, No_trim) ];
             };
-            { pats = [ [ Var "_" ] ]; nodes = [ Text (" ", No_trim, No_trim) ] };
+            {
+              pats = [ (loc, [ Var (loc, "_") ]) ];
+              nodes = [ Text (" ", No_trim, No_trim) ];
+            };
           ] );
       Text ("", No_trim, No_trim);
     ]
@@ -169,25 +174,27 @@ let components () =
     [
       Text ("", No_trim, No_trim);
       Component
-        ( "Template",
+        (loc, "Template",
+          "Template",
           Ast.Dict.(
             empty
-            |> add "a" (Ast.Pattern.Var "b")
-            |> add "c" (Ast.Pattern.Var "c")),
+            |> add loc "a" (Ast.Pattern.Var (loc, "b"))
+            |> add loc "c" (Ast.Pattern.Var (loc, "c"))),
           Ast.Dict.(
             empty
-            |> add "D" (Ast.Child_name "E")
-            |> add "F" (Ast.Child_name "F")
-            |> add "G" (Ast.Child_block [ Text (" ", No_trim, No_trim) ])
-            |> add "H"
+            |> add loc "D" (Ast.Child_name (loc, "E"))
+            |> add loc "F" (Ast.Child_name (loc, "F"))
+            |> add loc "G" (Ast.Child_block [ Text (" ", No_trim, No_trim) ])
+            |> add loc "H"
                  (Ast.Child_block
                     [
                       Text ("", No_trim, No_trim);
                       Match
-                        ( [ Var "a" ],
+                        ( loc,
+                          [ Var (loc, "a") ],
                           [
                             {
-                              pats = [ [ Var "b" ] ];
+                              pats = [ (loc, [ Var (loc, "b") ]) ];
                               nodes = [ Text (" ", No_trim, No_trim) ];
                             };
                           ] );
@@ -200,7 +207,8 @@ let components () =
     [
       Text ("", No_trim, No_trim);
       Component
-        ( "Template",
+        (loc, "Template",
+          "Template",
           Ast.Dict.empty,
           Ast.Dict.singleton "Children"
             (Ast.Child_block [ Text (" ", No_trim, No_trim) ]) );
@@ -216,13 +224,26 @@ let patterns () =
     [
       Text ("", No_trim, No_trim);
       Match
-        ( [ Var "tuple" ],
+        ( loc,
+          [ Var (loc, "tuple") ],
           [
             {
-              pats = [ [ Tuple [ Int 1; Float 2.5; String "a" ] ] ];
+              pats =
+                [
+                  ( loc,
+                    [
+                      Tuple
+                        ( loc,
+                          [ Int (loc, 1); Float (loc, 2.5); String (loc, "a") ]
+                        );
+                    ] );
+                ];
               nodes = [ Text (" ", No_trim, No_trim) ];
             };
-            { pats = [ [ Var "_" ] ]; nodes = [ Text (" ", No_trim, No_trim) ] };
+            {
+              pats = [ (loc, [ Var (loc, "_") ]) ];
+              nodes = [ Text (" ", No_trim, No_trim) ];
+            };
           ] );
       Text ("", No_trim, No_trim);
     ]
@@ -236,21 +257,36 @@ let patterns () =
     [
       Text ("\n  ", No_trim, No_trim);
       Match
-        ( [ Var "list" ],
+        ( loc,
+          [ Var (loc, "list") ],
           [
             {
-              pats = [ [ List ([], None) ] ];
+              pats = [ (loc, [ List (loc, [], None) ]) ];
               nodes = [ Text (" ", No_trim, No_trim) ];
             };
             {
               pats =
                 [
-                  [ List ([ Nullable (Some (Var "a")); Nullable None ], None) ];
+                  ( loc,
+                    [
+                      List
+                        ( loc,
+                          [
+                            Nullable (loc, Some (Var (loc, "a")));
+                            Nullable (loc, None);
+                          ],
+                          None );
+                    ] );
                 ];
               nodes = [ Text (" ", No_trim, No_trim) ];
             };
             {
-              pats = [ [ List ([ Var "z" ], Some (Var "tl")) ] ];
+              pats =
+                [
+                  ( loc,
+                    [ List (loc, [ Var (loc, "z") ], Some (Var (loc, "tl"))) ]
+                  );
+                ];
               nodes = [ Text (" ", No_trim, No_trim) ];
             };
           ] );
@@ -264,23 +300,29 @@ let patterns () =
     [
       Text ("", No_trim, No_trim);
       Match
-        ( [ Var "record" ],
+        ( loc,
+          [ Var (loc, "record") ],
           [
             {
               pats =
                 [
-                  [
-                    Record
-                      (Untagged
-                         Ast.Dict.(
-                           empty
-                           |> add "a" (Ast.Pattern.Var "a")
-                           |> add "!#%@" (Ast.Pattern.Var "b")));
-                  ];
+                  ( loc,
+                    [
+                      Record
+                        ( loc,
+                          Untagged
+                            Ast.Dict.(
+                              empty
+                              |> add loc "a" (Ast.Pattern.Var (loc, "a"))
+                              |> add loc "!#%@" (Ast.Pattern.Var (loc, "b"))) );
+                    ] );
                 ];
               nodes = [ Text (" ", No_trim, No_trim) ];
             };
-            { pats = [ [ Var "_" ] ]; nodes = [ Text (" ", No_trim, No_trim) ] };
+            {
+              pats = [ (loc, [ Var (loc, "_") ]) ];
+              nodes = [ Text (" ", No_trim, No_trim) ];
+            };
           ] );
       Text ("", No_trim, No_trim);
     ]
@@ -292,14 +334,30 @@ let patterns () =
     [
       Text ("", No_trim, No_trim);
       Match
-        ( [ Var "enums" ],
+        ( loc,
+          [ Var (loc, "enums") ],
           [
             {
               pats =
-                [ [ Tuple [ Enum_string "a"; Enum_int 1; Bool 1; Bool 0 ] ] ];
+                [
+                  ( loc,
+                    [
+                      Tuple
+                        ( loc,
+                          [
+                            Enum_string (loc, "a");
+                            Enum_int (loc, 1);
+                            Bool (loc, 1);
+                            Bool (loc, 0);
+                          ] );
+                    ] );
+                ];
               nodes = [ Text (" ", No_trim, No_trim) ];
             };
-            { pats = [ [ Var "_" ] ]; nodes = [ Text (" ", No_trim, No_trim) ] };
+            {
+              pats = [ (loc, [ Var (loc, "_") ]) ];
+              nodes = [ Text (" ", No_trim, No_trim) ];
+            };
           ] );
       Text ("", No_trim, No_trim);
     ]
@@ -313,23 +371,33 @@ let patterns () =
     [
       Text ("\n  ", No_trim, No_trim);
       Match
-        ( [ Var "tagged" ],
+        ( loc,
+          [ Var (loc, "tagged") ],
           [
             {
               pats =
                 [
-                  [
-                    Record
-                      (Tagged
-                         ( "tag",
-                           Bool 1,
-                           Ast.Dict.(empty |> add "a" (Ast.Pattern.Var "a")) ));
-                  ];
+                  ( loc,
+                    [
+                      Record
+                        ( loc,
+                          Tagged
+                            ( "tag",
+                              Bool (loc, 1),
+                              Ast.Dict.singleton "a"
+                                (Ast.Pattern.Var (loc, "a")) ) );
+                    ] );
                 ];
               nodes = [ Text (" ", No_trim, No_trim) ];
             };
             {
-              pats = [ [ Record (Tagged ("tag", Bool 0, Ast.Dict.empty)) ] ];
+              pats =
+                [
+                  ( loc,
+                    [
+                      Record (loc, Tagged ("tag", Bool (loc, 0), Ast.Dict.empty));
+                    ] );
+                ];
               nodes = [ Text (" ", No_trim, No_trim) ];
             };
           ] );
@@ -341,22 +409,28 @@ let patterns () =
     [
       Text ("", No_trim, No_trim);
       Match
-        ( [ Var "dict" ],
+        ( loc,
+          [ Var (loc, "dict") ],
           [
             {
               pats =
                 [
-                  [
-                    Dict
-                      Ast.Dict.(
-                        empty
-                        |> add "a" (Ast.Pattern.Int 1)
-                        |> add "b" (Ast.Pattern.Int 2));
-                  ];
+                  ( loc,
+                    [
+                      Dict
+                        ( loc,
+                          Ast.Dict.(
+                            empty
+                            |> add loc "a" (Ast.Pattern.Int (loc, 1))
+                            |> add loc "b" (Ast.Pattern.Int (loc, 2))) );
+                    ] );
                 ];
               nodes = [ Text (" ", No_trim, No_trim) ];
             };
-            { pats = [ [ Var "_" ] ]; nodes = [ Text (" ", No_trim, No_trim) ] };
+            {
+              pats = [ (loc, [ Var (loc, "_") ]) ];
+              nodes = [ Text (" ", No_trim, No_trim) ];
+            };
           ] );
       Text ("", No_trim, No_trim);
     ]
@@ -368,24 +442,29 @@ let edge_cases () =
     [
       Text ("", No_trim, No_trim);
       Match
-        ( [ Var "a" ],
+        ( loc,
+          [ Var (loc, "a") ],
           [
             {
               pats =
                 [
-                  [
-                    Record
-                      (Untagged
-                         (Ast.Dict.singleton "a"
-                            (Ast.Pattern.Record
-                               (Untagged
-                                  (Ast.Dict.singleton "b" (Ast.Pattern.Var "b"))))));
-                  ];
+                  ( loc,
+                    [
+                      Record
+                        ( loc,
+                          Untagged
+                            (Ast.Dict.singleton "a"
+                               (Ast.Pattern.Record
+                                  ( loc,
+                                    Untagged
+                                      (Ast.Dict.singleton "b"
+                                         (Ast.Pattern.Var (loc, "b"))) ))) );
+                    ] );
                 ];
               nodes =
                 [
                   Text (" ", No_trim, No_trim);
-                  Echo ([], Ech_var ("b", Escape));
+                  Echo ([], Ech_var (loc, "b", Escape));
                   Text (" ", No_trim, No_trim);
                 ];
             };

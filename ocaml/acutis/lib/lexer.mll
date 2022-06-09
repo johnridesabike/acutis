@@ -12,7 +12,7 @@
 module B = Buffer
 module L = Lexing
 open Parser
-exception SyntaxError
+exception Error
 
 type mode = Text | Expr | Echo | Queue of token list * mode
 type state = mode ref
@@ -30,7 +30,7 @@ let digit = ['0'-'9']
 let int = '-'? digit digit*
 let frac = '.' digit*
 let exp = ['e' 'E'] ['-' '+']? digit+
-let float = digit* frac? exp?
+let float = digit+ frac? exp?
 
 rule text state buf = parse
   | "{{"
@@ -60,7 +60,7 @@ and comment depth = parse
   | "{*"          { comment (succ depth) lexbuf }
   | "*}"          { if depth = 0 then () else comment (pred depth) lexbuf }
   | newline       { L.new_line lexbuf; comment depth lexbuf }
-  | eof           { raise SyntaxError }
+  | eof           { raise Error }
   | _             { comment depth lexbuf }
 
 and expr state = parse
@@ -96,8 +96,8 @@ and expr state = parse
   | '#'           { HASH }
   | '!'           { EXCLAMATION }
   | "..."         { ELLIPSIS }
-  | eof           { raise SyntaxError }
-  | _             { raise SyntaxError }
+  | eof           { raise Error }
+  | _             { raise Error }
 
 (* Echo expressions are specialized to avoid confusion with }} in patterns. *)
 and echo state = parse
@@ -109,7 +109,7 @@ and echo state = parse
   | "map_dict"
   | "null"
   | "true"
-  | "false"       { raise SyntaxError }
+  | "false"       { raise Error }
   | id            { ID (L.lexeme lexbuf) }
   | component     { COMPONENT (L.lexeme lexbuf) }
   | white         { echo state lexbuf }
@@ -117,8 +117,8 @@ and echo state = parse
   | '"'           { read_string (B.create 16) lexbuf }
   | '?'           { QUESTION }
   | '&'           { AMPERSAND }
-  | eof           { raise SyntaxError }
-  | _             { raise SyntaxError }
+  | eof           { raise Error }
+  | _             { raise Error }
 
 and read_string buf =
   parse
@@ -131,8 +131,8 @@ and read_string buf =
   | '\\' 'r'      { B.add_char buf '\r'; read_string buf lexbuf }
   | '\\' 't'      { B.add_char buf '\t'; read_string buf lexbuf }
   | [^ '"' '\\']+ { B.add_string buf (L.lexeme lexbuf); read_string buf lexbuf }
-  | eof           { raise SyntaxError }
-  | _             { raise SyntaxError }
+  | eof           { raise Error }
+  | _             { raise Error }
 
 {
 let rec acutis state lexbuf =

@@ -8,6 +8,13 @@
 (*                                                                        *)
 (**************************************************************************)
 
+module Pp : sig
+  open Format
+
+  val sep_comma : formatter -> unit -> unit
+  val field : formatter -> string -> unit
+end
+
 module type MAP = sig
   include Map.S
 
@@ -31,15 +38,4 @@ module SetInt : SET with type elt = int
 module StringExtra : sig
   val ltrim : string -> string
   val rtrim : string -> string
-end
-
-module DagMap : sig
-  type ('a, 'b) t
-
-  val make : f:(('a, 'b) t -> 'a -> 'b) -> 'a MapString.t -> ('a, 'b) t
-  (** Use [get] inside the [f] callback. *)
-
-  val prelinked : 'a MapString.t -> ('a, 'a) t
-  val get : string -> ('a, 'b) t -> 'b
-  val link_all : ('a, 'b) t -> 'b MapString.t
 end
