@@ -126,7 +126,8 @@ and ty = ty' ref [@@deriving eq]
 
 type t = ty MapString.t [@@deriving eq]
 
-let record_internal r = ref (Record r)
+let internal_record m = ref (Record m)
+let internal_dict_keys t kys = ref (Dict (t, kys))
 let unknown () = ref (Unknown (ref `Closed))
 let int () = ref Int
 let float () = ref Float
@@ -135,7 +136,7 @@ let echo () = ref Echo
 let nullable t = ref (Nullable t)
 let list t = ref (List t)
 let tuple l = ref (Tuple l)
-let record l = record_internal (ref (MapString.of_seq (List.to_seq l)))
+let record l = internal_record (ref (MapString.of_seq (List.to_seq l)))
 let dict t = ref (Dict (t, ref SetString.empty))
 let enum_int row l = ref (Enum (Enum.int l row))
 let enum_string row l = ref (Enum (Enum.string l row))
@@ -166,8 +167,6 @@ let union_true_only k l =
   ref (Union (k, Union.true_only (ref (MapString.of_seq (List.to_seq l)))))
 
 let make l = l |> List.to_seq |> MapString.of_seq
-let internal_record m = ref (Record m)
-let internal_dict_keys t kys = ref (Dict (t, kys))
 
 let rec copy = function
   | (Int | Float | String | Echo) as x -> x

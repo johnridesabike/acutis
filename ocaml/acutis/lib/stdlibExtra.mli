@@ -54,3 +54,16 @@ module StringExtra : sig
   val ltrim : string -> string
   val rtrim : string -> string
 end
+
+module Nonempty : sig
+  type 'a t = ( :: ) of 'a * 'a list
+
+  val to_list : 'a t -> 'a list
+  val cons : 'a -> 'a t -> 'a t
+  val hd : 'a t -> 'a
+  val rev : 'a t -> 'a t
+  val map : ('a -> 'b) -> 'a t -> 'b t
+  val map2 : ('a -> 'b -> 'c) -> 'a t -> 'b t -> 'c t
+  val equal : ('a -> 'a -> bool) -> 'a t -> 'a t -> bool
+  val pp : (Format.formatter -> 'a -> unit) -> Format.formatter -> 'a t -> unit
+end

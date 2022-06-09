@@ -71,8 +71,6 @@ and ty = ty' ref
 
 type t = ty MapString.t
 
-val record_internal : t ref -> ty
-
 (* Public API for declaring type schemes: *)
 val unknown : unit -> ty
 val int : unit -> ty

@@ -131,7 +131,7 @@ and record_aux stack tys j =
     match (ty, MapString.find_opt k j) with
     | { contents = Ty.Nullable _ | Unknown _ }, None -> Null
     | ty, Some j -> make (Key k :: stack) ty j
-    | _ -> Error.missing_key Stack.pp stack (Ty.record_internal (ref tys)) k
+    | _ -> Error.missing_key Stack.pp stack (Ty.internal_record (ref tys)) k
   in
   MapString.mapi f tys
 
@@ -139,7 +139,7 @@ and record stack tys = function
   | `Assoc l ->
       let map = l |> List.to_seq |> MapString.of_seq in
       Dict (record_aux stack !tys map)
-  | j -> decode_error stack (Ty.record_internal tys) j
+  | j -> decode_error stack (Ty.internal_record tys) j
 
 and union stack ty key cases extra = function
   | `Assoc l as j -> (
