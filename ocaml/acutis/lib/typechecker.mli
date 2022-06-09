@@ -44,16 +44,12 @@ type echo =
 type node =
   | TText of string * Ast.trim * Ast.trim
   | TEcho of echo list * echo
-  | TMatch of Error.loc * Pattern.t Nonempty.t * case Nonempty.t
-  | TMap_list of Error.loc * Pattern.t * case Nonempty.t
-  | TMap_dict of Error.loc * Pattern.t * case Nonempty.t
+  | TMatch of Loc.t * Pattern.t Nonempty.t * case Nonempty.t
+  | TMap_list of Loc.t * Pattern.t * case Nonempty.t
+  | TMap_dict of Loc.t * Pattern.t * case Nonempty.t
   | TComponent of string * Pattern.t MapString.t * child MapString.t
 
-and case = {
-  pats : (Error.loc * Pattern.t Nonempty.t) Nonempty.t;
-  nodes : nodes;
-}
-
+and case = { pats : (Loc.t * Pattern.t Nonempty.t) Nonempty.t; nodes : nodes }
 and child = TChild_name of string | TChild_block of nodes
 and nodes = node list
 

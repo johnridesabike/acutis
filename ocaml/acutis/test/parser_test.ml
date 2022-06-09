@@ -3,7 +3,7 @@ module F = Format
 
 let parse = Compile.parse_string ~filename:"<test>"
 let check = Alcotest.(check (module Ast))
-let loc = (Lexing.dummy_pos, Lexing.dummy_pos)
+let loc = StdlibExtra.Loc.dummy
 
 let echoes () =
   let src = {|{{ a }} {{ "b" }} {{ C }} {{ &d ? E ? "f" }}|} in
@@ -174,7 +174,8 @@ let components () =
     [
       Text ("", No_trim, No_trim);
       Component
-        (loc, "Template",
+        ( loc,
+          "Template",
           "Template",
           Ast.Dict.(
             empty
@@ -207,7 +208,8 @@ let components () =
     [
       Text ("", No_trim, No_trim);
       Component
-        (loc, "Template",
+        ( loc,
+          "Template",
           "Template",
           Ast.Dict.empty,
           Ast.Dict.singleton "Children"

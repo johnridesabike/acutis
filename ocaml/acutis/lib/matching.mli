@@ -104,4 +104,4 @@ type 'a t = { tree : (leaf, int) tree; exits : 'a Exit.t }
 val equal_leaf : leaf -> leaf -> bool
 val pp_leaf : Format.formatter -> leaf -> unit
 val make : Typechecker.case Nonempty.t -> Typechecker.nodes t
-val partial_match_check : Error.loc -> ('a, int) tree -> unit
+val partial_match_check : Loc.t -> ('a, int) tree -> unit

@@ -12,7 +12,22 @@ module Pp : sig
   open Format
 
   val sep_comma : formatter -> unit -> unit
+  (** Outputs [,@ ]. *)
+
   val field : formatter -> string -> unit
+  (** Outputs either [field] or ["string field"] depending on whether the field
+      name is a valid identifier. *)
+end
+
+module Loc : sig
+  type t = Lexing.position * Lexing.position
+
+  val dummy : t
+  val pp : Format.formatter -> t -> unit
+
+  val equal : t -> t -> bool
+  (** Always returns [true]. Do not use location information to test
+      equivalency. *)
 end
 
 module type MAP = sig

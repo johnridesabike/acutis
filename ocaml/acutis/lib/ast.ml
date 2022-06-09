@@ -11,12 +11,6 @@
 open StdlibExtra
 module F = Format
 
-type loc = Error.loc
-
-let dummy_loc = (Lexing.dummy_pos, Lexing.dummy_pos)
-let pp_loc ppf _ = Format.fprintf ppf "<loc>"
-let equal_loc _ _ = true (* Do not use location for equality in testing. *)
-
 module Dict = struct
   type 'a t = 'a MapString.t
 
@@ -57,22 +51,22 @@ end
 
 module Pattern = struct
   type t =
-    | Var of loc * string
-    | Bool of loc * int
-    | Int of loc * int
-    | Float of loc * float
-    | String of loc * string
-    | Nullable of loc * t option
-    | Enum_string of loc * string
-    | Enum_int of loc * int
-    | List of loc * t list * t option
-    | Tuple of loc * t list
-    | Record of loc * t Record.t
-    | Dict of loc * t Dict.t
+    | Var of Loc.t * string
+    | Bool of Loc.t * int
+    | Int of Loc.t * int
+    | Float of Loc.t * float
+    | String of Loc.t * string
+    | Nullable of Loc.t * t option
+    | Enum_string of Loc.t * string
+    | Enum_int of Loc.t * int
+    | List of Loc.t * t list * t option
+    | Tuple of Loc.t * t list
+    | Record of Loc.t * t Record.t
+    | Dict of Loc.t * t Dict.t
   [@@deriving show, eq]
 
   (*
-  let loc = function
+  let Loc.t = function
     | Var (l, _)
     | Bool (l, _)
     | Int (l, _)
@@ -93,19 +87,19 @@ type trim = No_trim | Trim [@@deriving show, eq]
 type escape = No_escape | Escape [@@deriving show, eq]
 
 type echo =
-  | Ech_var of loc * string * escape
-  | Ech_component of loc * string
-  | Ech_string of loc * string
+  | Ech_var of Loc.t * string * escape
+  | Ech_component of Loc.t * string
+  | Ech_string of Loc.t * string
 [@@deriving show, eq]
 
 type node =
   | Text of string * trim * trim
   | Echo of echo list * echo
-  | Match of loc * Pattern.t Nonempty.t * case Nonempty.t
-  | Map_list of loc * Pattern.t * case Nonempty.t
-  | Map_dict of loc * Pattern.t * case Nonempty.t
-  | Component of loc * string * string * Pattern.t Dict.t * child Dict.t
+  | Match of Loc.t * Pattern.t Nonempty.t * case Nonempty.t
+  | Map_list of Loc.t * Pattern.t * case Nonempty.t
+  | Map_dict of Loc.t * Pattern.t * case Nonempty.t
+  | Component of Loc.t * string * string * Pattern.t Dict.t * child Dict.t
 
-and case = { pats : (loc * Pattern.t Nonempty.t) Nonempty.t; nodes : t }
-and child = Child_name of loc * string | Child_block of t
+and case = { pats : (Loc.t * Pattern.t Nonempty.t) Nonempty.t; nodes : t }
+and child = Child_name of Loc.t * string | Child_block of t
 and t = node list [@@deriving show, eq]

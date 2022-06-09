@@ -1,9 +1,3 @@
 (tests
- (names
-   parser_test
-   typechecker_test
-   matching_test
-   render_test
-   error_test)
+ (names parser_test typechecker_test matching_test render_test error_test)
  (libraries acutis alcotest yojson))
-

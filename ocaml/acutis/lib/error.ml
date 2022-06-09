@@ -15,8 +15,6 @@ let text = F.pp_print_text
 
 exception Error of string
 
-type loc = Lexing.position * Lexing.position
-
 let column pos = pos.Lexing.pos_cnum - pos.pos_bol + 1
 
 let print_pos ppf pos =

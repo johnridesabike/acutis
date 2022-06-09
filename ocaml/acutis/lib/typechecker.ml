@@ -450,16 +450,12 @@ type echo =
 type node =
   | TText of string * Ast.trim * Ast.trim
   | TEcho of echo list * echo
-  | TMatch of Error.loc * Pattern.t Nonempty.t * case Nonempty.t
-  | TMap_list of Error.loc * Pattern.t * case Nonempty.t
-  | TMap_dict of Error.loc * Pattern.t * case Nonempty.t
+  | TMatch of Loc.t * Pattern.t Nonempty.t * case Nonempty.t
+  | TMap_list of Loc.t * Pattern.t * case Nonempty.t
+  | TMap_dict of Loc.t * Pattern.t * case Nonempty.t
   | TComponent of string * Pattern.t MapString.t * child MapString.t
 
-and case = {
-  pats : (Error.loc * Pattern.t Nonempty.t) Nonempty.t;
-  nodes : nodes;
-}
-
+and case = { pats : (Loc.t * Pattern.t Nonempty.t) Nonempty.t; nodes : nodes }
 and child = TChild_name of string | TChild_block of nodes
 and nodes = node list
 
@@ -582,7 +578,7 @@ let get_types = function
 let add_default_wildcard cases =
   let f = function
     | loc, Nonempty.[ h ] ->
-        (loc, Nonempty.[ h; Ast.Pattern.Var (Ast.dummy_loc, "_") ])
+        (loc, Nonempty.[ h; Ast.Pattern.Var (Loc.dummy, "_") ])
     | pat -> pat
   in
   Nonempty.map
@@ -643,7 +639,7 @@ and make_nodes ctx g nodes =
         let missing_to_nullable _ ty prop =
           match (prop, ty) with
           | None, Some { contents = Ty.Nullable _ } ->
-              Some (Ast.Pattern.Nullable (Ast.dummy_loc, None))
+              Some (Ast.Pattern.Nullable (Loc.dummy, None))
           | prop, _ -> prop
         in
         let props =

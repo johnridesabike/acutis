@@ -24,6 +24,14 @@ module Pp = struct
   let field ppf k = if is_id k then fprintf ppf "%s" k else fprintf ppf "%S" k
 end
 
+module Loc = struct
+  type t = Lexing.position * Lexing.position
+
+  let dummy = (Lexing.dummy_pos, Lexing.dummy_pos)
+  let pp ppf _ = Format.fprintf ppf "<loc>"
+  let equal _ _ = true (* Do not use location for equality in testing. *)
+end
+
 module type MAP = sig
   include Map.S
 
