@@ -18,7 +18,12 @@ module Const : sig
   val pp : Format.formatter -> t -> unit
 end
 
-type t
+type t =
+  | Unknown of Source.json
+  | Null
+  | Array of t array
+  | Dict of t MapString.t
+  | Const of Const.t * Typescheme.Variant.extra
 
 val make : Typescheme.t -> (string * Source.json) list -> t MapString.t
 val constant : t -> Const.t
