@@ -2,10 +2,8 @@ open Acutis
 
 let render ?(json = "{}") src () =
   let temp = Compile.(make ~filename:"<test>" Components.empty src) in
-  let json =
-    match Yojson.Basic.from_string json with `Assoc l -> l | _ -> assert false
-  in
-  ignore @@ Render.sync temp json
+  let json = Yojson.Basic.from_string json in
+  ignore @@ Render.json temp json
 
 exception Error = Error.Error
 

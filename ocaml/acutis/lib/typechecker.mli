@@ -60,7 +60,6 @@ type t = {
 }
 
 val make_components :
-  (Ast.t, 'a Source.fn) Source.t MapString.t ->
-  (t, 'a Source.fn) Source.t MapString.t
+  (Ast.t, 'a) Source.t MapString.t -> (t, 'a) Source.t MapString.t
 
-val make : (t, 'a Source.fn) Source.t MapString.t -> Ast.t -> t
+val make : (t, 'a) Source.t MapString.t -> Ast.t -> t

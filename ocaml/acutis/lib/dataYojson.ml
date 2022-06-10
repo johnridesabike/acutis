@@ -27,73 +27,78 @@ module Stack = struct
     fprintf ppf "@[[@,%a]@]" (pp_print_list ~pp_sep pp) (List.rev t)
 end
 
-let decode_error = Error.decode Stack.pp
+type t =
+  [ `Null
+  | `Bool of bool
+  | `Int of int
+  | `Float of float
+  | `String of string
+  | `Assoc of (string * t) list
+  | `List of t list ]
 
-type t = (string * Source.json) list
+let pp_json = Yojson.Basic.pretty_print ~std:false
+let decode_error = Error.decode Stack.pp pp_json
 
 let boolean ty stack cases j =
   let i =
     match j with
     | `Bool false -> 0
     | `Bool true -> 1
-    | j -> decode_error stack ty j
+    | j -> decode_error ty stack j
   in
-  if SetInt.mem i cases then Data.Const (`Int i, Extra_bool)
-  else Error.bad_enum Stack.pp stack ty j
+  if SetInt.mem i cases then Data.const (`Int i) Extra_bool
+  else Error.bad_enum Stack.pp pp_json ty stack j
 
 let string ty stack cases = function
   | `String s as j -> (
       match cases with
-      | None -> Data.Const (j, Extra_none)
+      | None -> Data.const j Extra_none
       | Some cases ->
-          if SetString.mem s cases then Const (j, Extra_none)
-          else Error.bad_enum Stack.pp stack ty j)
-  | j -> decode_error stack ty j
+          if SetString.mem s cases then Data.const j Extra_none
+          else Error.bad_enum Stack.pp pp_json ty stack j)
+  | j -> decode_error ty stack j
 
 let int ty stack cases = function
   | `Int i as j -> (
       match cases with
-      | None -> Data.Const (j, Extra_none)
+      | None -> Data.const j Extra_none
       | Some cases ->
-          if SetInt.mem i cases then Const (j, Extra_none)
-          else Error.bad_enum Stack.pp stack ty j)
-  | j -> decode_error stack ty j
+          if SetInt.mem i cases then Data.const j Extra_none
+          else Error.bad_enum Stack.pp pp_json ty stack j)
+  | j -> decode_error ty stack j
 
 let float stack = function
-  | `Float _ as x -> Data.Const (x, Extra_none)
-  | `Int i -> Const (`Float (float_of_int i), Extra_none)
-  | j -> decode_error stack (Ty.float ()) j
+  | `Float _ as x -> Data.const x Extra_none
+  | `Int i -> Data.const (`Float (float_of_int i)) Extra_none
+  | j -> decode_error (Ty.float ()) stack j
 
 let echo stack = function
-  | (`String _ | `Int _ | `Float _) as x -> Data.Const (x, Extra_none)
-  | `Bool false -> Const (`Int 0, Extra_bool)
-  | `Bool true -> Const (`Int 1, Extra_bool)
-  | j -> decode_error stack (Ty.echo ()) j
-
-let some x = Data.Array [| x |]
+  | (`String _ | `Int _ | `Float _) as x -> Data.const x Extra_none
+  | `Bool false -> Data.const (`Int 0) Extra_bool
+  | `Bool true -> Data.const (`Int 1) Extra_bool
+  | j -> decode_error (Ty.echo ()) stack j
 
 let rec nullable stack ty = function
-  | `Null -> Data.Null
-  | j -> some (make (Stack.Nullable :: stack) ty j)
-
-(** Make this tail recursive. *)
-and list_aux stack ty i = function
-  | [] -> Data.Null
-  | hd :: tl ->
-      Array [| make (Index i :: stack) ty hd; list_aux stack ty (succ i) tl |]
+  | `Null -> Data.null
+  | j -> Data.some (make (Stack.Nullable :: stack) ty j)
 
 and list stack ty = function
-  | `List l -> list_aux stack ty 0 l
-  | j -> decode_error stack (Ty.list ty) j
+  | `List l ->
+      let rec aux i acc = function
+        | [] -> Data.list_rev acc
+        | hd :: tl ->
+            let acc = Data.list_cons (make (Index i :: stack) ty hd) acc in
+            aux (succ i) acc tl
+      in
+      aux 0 Data.list_empty l
+  | j -> decode_error (Ty.list ty) stack j
 
 and dict stack ty = function
   | `Assoc l ->
-      let dict =
-        l |> List.to_seq
-        |> Seq.map (fun (k, v) -> (k, make (Key k :: stack) ty v))
-      in
-      Data.Dict (MapString.of_seq dict)
-  | j -> decode_error stack (Ty.dict ty) j
+      l |> List.to_seq
+      |> Seq.map (fun (k, v) -> (k, make (Key k :: stack) ty v))
+      |> MapString.of_seq |> Data.dict
+  | j -> decode_error (Ty.dict ty) stack j
 
 and tuple ty stack tys = function
   | `List l as j ->
@@ -101,15 +106,15 @@ and tuple ty stack tys = function
         try
           List.map2 (fun ty x -> (ty, x)) tys l
           |> List.mapi (fun i (ty, x) -> make (Index i :: stack) ty x)
-        with Invalid_argument _ -> decode_error stack ty j
+        with Invalid_argument _ -> decode_error ty stack j
       in
-      Data.Array (Array.of_list l)
-  | j -> decode_error stack (Ty.tuple tys) j
+      Data.tuple (Array.of_list l)
+  | j -> decode_error (Ty.tuple tys) stack j
 
 and record_aux stack tys j =
   let f k ty =
     match (ty, MapString.find_opt k j) with
-    | { contents = Ty.Nullable _ | Unknown _ }, None -> Data.Null
+    | { contents = Ty.Nullable _ | Unknown _ }, None -> Data.null
     | ty, Some j -> make (Key k :: stack) ty j
     | _ -> Error.missing_key Stack.pp stack (Ty.internal_record (ref tys)) k
   in
@@ -118,8 +123,8 @@ and record_aux stack tys j =
 and record stack tys = function
   | `Assoc l ->
       let map = l |> List.to_seq |> MapString.of_seq in
-      Data.Dict (record_aux stack !tys map)
-  | j -> decode_error stack (Ty.internal_record tys) j
+      Data.dict (record_aux stack !tys map)
+  | j -> decode_error (Ty.internal_record tys) stack j
 
 and union stack ty key cases extra = function
   | `Assoc l as j -> (
@@ -130,24 +135,24 @@ and union stack ty key cases extra = function
           match (tag, cases, extra) with
           | `Bool false, Ty.Variant.Int map, Ty.Variant.Extra_bool ->
               let tag = 0 in
-              (Data.Const (`Int tag, extra), MapInt.find tag map)
+              (Data.const (`Int tag) extra, MapInt.find tag map)
           | `Bool true, Int map, Extra_bool ->
               let tag = 1 in
-              (Const (`Int tag, extra), MapInt.find tag map)
+              (Data.const (`Int tag) extra, MapInt.find tag map)
           | (`Int tag as x), Int map, Extra_none ->
-              (Const (x, extra), MapInt.find tag map)
+              (Data.const x extra, MapInt.find tag map)
           | (`String tag as x), String map, Extra_none ->
-              (Const (x, extra), MapString.find tag map)
+              (Data.const x extra, MapString.find tag map)
           | _ -> raise Not_found
         in
         let r = record_aux stack !tys map in
-        Data.Dict (MapString.add key tag r)
-      with Not_found -> decode_error stack ty j)
-  | j -> decode_error stack ty j
+        Data.dict (MapString.add key tag r)
+      with Not_found -> decode_error ty stack j)
+  | j -> decode_error ty stack j
 
 and make stack ty j =
   match !ty with
-  | Ty.Unknown _ -> Unknown j
+  | Ty.Unknown _ -> Data.unknown j
   | Nullable ty -> nullable stack ty j
   | Enum { extra = Extra_bool; cases = Int cases; _ } ->
       boolean ty stack cases j
@@ -164,9 +169,11 @@ and make stack ty j =
   | Record tys -> record stack tys j
   | Union (key, { cases; extra; _ }) -> union stack ty key cases extra j
 
-let to_data tys l =
-  let map = l |> List.to_seq |> MapString.of_seq in
-  record_aux [] tys map
+let to_data tys = function
+  | `Assoc l ->
+      let map = l |> List.to_seq |> MapString.of_seq in
+      record_aux [] tys map
+  | j -> decode_error (Ty.internal_record (ref tys)) [] j
 
 let rec record_to_json ty t =
   let f _ ty t =
@@ -221,4 +228,4 @@ and to_json ty t =
       `Assoc ((k, tag) :: l)
   | _ -> assert false
 
-let of_data = record_to_json
+let of_data tys j = `Assoc (record_to_json tys j)

@@ -26,7 +26,7 @@ type 'a t = { prop_types : Typescheme.t; nodes : 'a nodes }
 
 type 'a template =
   | Acutis of string * 'a template nodes
-  | Function of string * Typescheme.t * 'a Source.fn
+  | Function of string * Typescheme.t * 'a
 
 val parse_string : filename:string -> string -> Ast.t
 (**
@@ -38,7 +38,7 @@ module Components : sig
 
   val empty : 'a t
 
-  val make : (string, 'a Source.fn) Source.t list -> 'a t
+  val make : (string, 'a) Source.t list -> 'a t
   (**
     @raises [Error.Error] on syntax error.
   *)

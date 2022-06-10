@@ -26,17 +26,17 @@ let array_get i a =
 let rec make_match :
           'a 'args 'key.
           'args ->
-          ('key -> 'args -> Data.t option) ->
-          Data.t MapInt.t ->
+          ('key -> 'args -> 'data Data.t option) ->
+          'data Data.t MapInt.t ->
           ('a, 'key) Matching.tree ->
-          (Data.t MapInt.t * 'a) option =
+          ('data Data.t MapInt.t * 'a) option =
  fun args get vars -> function
   | End x -> Some (vars, x)
   | Switch { key; cases; wildcard; ids; _ } -> (
       match get key args with
       | Some data -> (
           let vars = bind_names data ids vars in
-          let data = Data.constant data in
+          let data = Data.get_const data in
           match test_case ~wildcard data cases with
           | Some tree -> make_match args get vars tree
           | None -> None)
@@ -63,10 +63,10 @@ let rec make_match :
           let result =
             match child with
             | IntKeys child ->
-                let tuple = Data.tuple data in
+                let tuple = Data.get_tuple data in
                 make_match tuple array_get vars child
             | StringKeys child ->
-                let dict = Data.dict data in
+                let dict = Data.get_dict data in
                 make_match dict MapString.find_opt vars child
           in
           match result with
@@ -112,7 +112,7 @@ let echo_not_null props children return = function
 
 let echo_nullable props children return = function
   | Typechecker.Ech_var (var, esc) -> (
-      match Data.nullable (MapString.find var props) with
+      match Data.get_nullable (MapString.find var props) with
       | None -> None
       | Some x -> Some (return (escape esc (Data.to_string x))))
   | Ech_component child -> MapString.find_opt child children
@@ -133,12 +133,31 @@ let map_merge =
   in
   fun a b -> MapString.merge f a b
 
+let rec pattern_to_data ~vars = function
+  | Typechecker.Pattern.TConst (x, Some { extra = Extra_bool; _ }) ->
+      Data.const x Extra_bool
+  | TConst (x, _) -> Data.const x Extra_none
+  | TVar x -> MapString.find x vars
+  | TConstruct (_, Some x) -> pattern_to_data ~vars x
+  | TConstruct (_, None) -> Data.null
+  | TTuple l ->
+      let a = l |> Array.of_list |> Array.map (pattern_to_data ~vars) in
+      Data.tuple a
+  | TRecord (Some (k, v, { extra; _ }), x, _) ->
+      x
+      |> MapString.map (pattern_to_data ~vars)
+      |> MapString.add k (Data.const v extra)
+      |> Data.dict
+  | TRecord (None, x, _) | TDict (x, _) ->
+      Data.dict (MapString.map (pattern_to_data ~vars) x)
+  | TAny -> assert false
+
 let rec make :
-    type a.
-    nodes:a Compile.template Compile.nodes ->
-    vars:Data.t MapString.t ->
+    type a data.
+    nodes:(data -> a MapString.t -> a) Compile.template Compile.nodes ->
+    vars:data Data.t MapString.t ->
     children:a MapString.t ->
-    env:a Source.env ->
+    env:(a, data) Source.env ->
     a Queue.t =
  fun ~nodes ~vars ~children ~env ->
   let queue = Queue.create () in
@@ -148,7 +167,7 @@ let rec make :
         Queue.add (echo vars children Env.return default nullables) queue
     | Text s -> Queue.add (Env.return s) queue
     | Match (args, tree) -> (
-        let args = Array.map (Data.of_pattern ~vars) args in
+        let args = Array.map (pattern_to_data ~vars) args in
         match make_match args tree with
         | None -> assert false
         | Some (vars', nodes) ->
@@ -156,7 +175,7 @@ let rec make :
             let result = make ~nodes ~vars ~children ~env in
             Queue.transfer result queue)
     | Map_list (arg, tree) ->
-        let l = Data.of_pattern ~vars arg in
+        let l = pattern_to_data ~vars arg in
         let f ~index arg =
           match make_match [| arg; index |] tree with
           | None -> assert false
@@ -167,7 +186,7 @@ let rec make :
         in
         Data.iter_list f l
     | Map_dict (arg, tree) ->
-        let l = Data.of_pattern ~vars arg in
+        let l = pattern_to_data ~vars arg in
         let f ~index arg =
           match make_match [| arg; index |] tree with
           | None -> assert false
@@ -185,32 +204,37 @@ let rec make :
           | Child_name child -> MapString.find child children
         in
         let children = MapString.map f comp_children in
-        let vars = MapString.map (Data.of_pattern ~vars) comp_vars in
+        let vars = MapString.map (pattern_to_data ~vars) comp_vars in
         match data with
         | Acutis (_, nodes) ->
             let result = make ~nodes ~vars ~children ~env in
             Queue.transfer result queue
         | Function (_, prop_types, f) ->
-            let result = f (Data.to_json prop_types vars) children in
+            let result = f (Env.export_data prop_types vars) children in
             Queue.add result queue)
   in
   List.iter f nodes;
   queue
 
-let make (type a) (env : a Source.env) Compile.{ nodes; prop_types } props =
+let make (type a data) (env : (a, data) Source.env)
+    Compile.{ nodes; prop_types } props =
   let (module Env) = env in
-  let vars = Data.make prop_types props in
+  let vars = Env.parse_data prop_types props in
   make ~nodes ~vars ~children:MapString.empty ~env |> Env.render
 
-module Sync = struct
+module Json = struct
   type t = string
+  type data = DataYojson.t
 
   let return s = s
 
   let render queue =
-    let b = Buffer.create 256 in
+    let b = Buffer.create 1024 in
     Queue.iter (Buffer.add_string b) queue;
     Buffer.contents b
+
+  let parse_data = DataYojson.to_data
+  let export_data = DataYojson.of_data
 end
 
-let sync = make (module Sync)
+let json = make (module Json)

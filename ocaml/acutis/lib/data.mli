@@ -18,21 +18,27 @@ module Const : sig
   val pp : Format.formatter -> t -> unit
 end
 
-type t =
-  | Unknown of Source.json
+type 'a t = private
+  | Unknown of 'a
   | Null
-  | Array of t array
-  | Dict of t MapString.t
+  | Array of 'a t array
+  | Dict of 'a t MapString.t
   | Const of Const.t * Typescheme.Variant.extra
 
-val make : Typescheme.t -> (string * Source.json) list -> t MapString.t
-val constant : t -> Const.t
-val tuple : t -> t array
-val dict : t -> t MapString.t
-val is_null : t -> bool
-val nullable : t -> t option
-val of_pattern : vars:t MapString.t -> Typechecker.Pattern.t -> t
-val iter_list : (index:t -> t -> unit) -> t -> unit
-val iter_dict : (index:t -> t -> unit) -> t -> unit
-val to_string : t -> string
-val to_json : Typescheme.t -> t MapString.t -> (string * Source.json) list
+val unknown : 'a -> 'a t
+val null : _ t
+val const : Const.t -> Typescheme.Variant.extra -> _ t
+val some : 'a t -> 'a t
+val dict : 'a t MapString.t -> 'a t
+val tuple : 'a t array -> 'a t
+val get_const : _ t -> Const.t
+val get_tuple : 'a t -> 'a t array
+val get_dict : 'a t -> 'a t MapString.t
+val is_null : 'a t -> bool
+val list_cons : 'a t -> 'a t -> 'a t
+val list_rev : 'a t -> 'a t
+val list_empty : 'a t
+val get_nullable : 'a t -> 'a t option
+val iter_list : (index:'a t -> 'a t -> unit) -> 'a t -> unit
+val iter_dict : (index:'a t -> 'a t -> unit) -> 'a t -> unit
+val to_string : 'a t -> string

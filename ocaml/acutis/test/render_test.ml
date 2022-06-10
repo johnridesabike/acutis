@@ -4,11 +4,9 @@ module F = Format
 let check = Alcotest.(check string)
 
 let render ?(components = []) src json =
-  let json =
-    match Yojson.Basic.from_string json with `Assoc l -> l | _ -> assert false
-  in
+  let json = Yojson.Basic.from_string json in
   let temp = Compile.(make ~filename:"" (Components.make components) src) in
-  Render.sync temp json
+  Render.json temp json
 
 let basic () =
   let props = {|{

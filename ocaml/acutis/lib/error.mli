@@ -48,10 +48,20 @@ val missing_component : string list -> string -> _
 
 (* Decode errors *)
 val decode :
-  (Format.formatter -> 'a -> unit) -> 'a -> Typescheme.ty -> Yojson.Basic.t -> _
+  (Format.formatter -> 'stack -> unit) ->
+  (Format.formatter -> 'data -> unit) ->
+  Typescheme.ty ->
+  'stack ->
+  'data ->
+  _
 
 val missing_key :
   (Format.formatter -> 'a -> unit) -> 'a -> Typescheme.ty -> string -> _
 
 val bad_enum :
-  (Format.formatter -> 'a -> unit) -> 'a -> Typescheme.ty -> Yojson.Basic.t -> _
+  (Format.formatter -> 'stack -> unit) ->
+  (Format.formatter -> 'data -> unit) ->
+  Typescheme.ty ->
+  'stack ->
+  'data ->
+  _

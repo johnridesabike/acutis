@@ -10,7 +10,14 @@
 
 open StdlibExtra
 
-type t = (string * Source.json) list
+type t =
+  [ `Null
+  | `Bool of bool
+  | `Int of int
+  | `Float of float
+  | `String of string
+  | `Assoc of (string * t) list
+  | `List of t list ]
 
-val to_data : Typescheme.t -> t -> Data.t MapString.t
-val of_data : Typescheme.t -> Data.t MapString.t -> t
+val to_data : Typescheme.t -> t -> t Data.t MapString.t
+val of_data : Typescheme.t -> t Data.t MapString.t -> t

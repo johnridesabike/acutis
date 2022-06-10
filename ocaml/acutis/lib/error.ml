@@ -179,30 +179,25 @@ let missing_component stack name =
   raise @@ Error s
 
 (* Decode errors *)
-let pp stack_pp stack ty mess =
+let pp pp_stack stack ty mess =
   F.asprintf
     "@[<v>@[Decode error.@]@,\
      @[Stack:@ @[%a@]@]@,\
      @[Expected type:@ @[%a@]@]@,\
      @[%t@]"
-    stack_pp stack Typescheme.pp_ty ty mess
+    pp_stack stack Typescheme.pp_ty ty mess
 
-let decode stack_pp stack ty json =
-  let f =
-    F.dprintf "Received value:@ @[%a@]"
-      (Yojson.Basic.pretty_print ~std:false)
-      json
-  in
-  raise @@ Error (pp stack_pp stack ty f)
+let decode pp_stack pp_data ty stack data =
+  let f = F.dprintf "Received value:@ @[%a@]" pp_data data in
+  raise @@ Error (pp pp_stack stack ty f)
 
-let missing_key stack_pp stack ty key =
+let missing_key pp_stack stack ty key =
   let f = F.dprintf "%a%S" text "Input is missing key: " key in
-  raise @@ Error (pp stack_pp stack ty f)
+  raise @@ Error (pp pp_stack stack ty f)
 
-let bad_enum stack_pp stack ty json =
+let bad_enum pp_stack pp_data ty stack data =
   let f =
     F.dprintf "%a@[%a@]" text "This type does not allow the given value: "
-      (Yojson.Basic.pretty_print ~std:false)
-      json
+      pp_data data
   in
-  raise @@ Error (pp stack_pp stack ty f)
+  raise @@ Error (pp pp_stack stack ty f)

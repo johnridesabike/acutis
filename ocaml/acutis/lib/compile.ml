@@ -54,7 +54,7 @@ type 'a t = { prop_types : Typescheme.t; nodes : 'a nodes }
 
 type 'a template =
   | Acutis of string * 'a template nodes
-  | Function of string * Typescheme.t * 'a Source.fn
+  | Function of string * Typescheme.t * 'a
 
 let parse_string ~filename src =
   let state = Lexer.make_state () in
@@ -66,8 +66,8 @@ let parse_string ~filename src =
 
 module Components = struct
   type 'a t = {
-    typed : (Typechecker.t, 'a Source.fn) Source.t MapString.t;
-    optimized : (string nodes, 'a Source.fn) Source.t MapString.t;
+    typed : (Typechecker.t, 'a) Source.t MapString.t;
+    optimized : (string nodes, 'a) Source.t MapString.t;
   }
 
   let empty = { typed = MapString.empty; optimized = MapString.empty }

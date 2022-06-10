@@ -9,21 +9,15 @@
 (**************************************************************************)
 open StdlibExtra
 
-module type Env = sig
-  type t
-  type data
+val make :
+  ('result, 'data) Source.env ->
+  ('data -> 'result MapString.t -> 'result) Compile.template Compile.t ->
+  'data ->
+  'result
 
-  val return : string -> t
-  val render : t Queue.t -> t
-  val parse_data : Typescheme.t -> data -> data Data.t MapString.t
-  val export_data : Typescheme.t -> data Data.t MapString.t -> data
-end
+module Json : Source.Env with type t = string and type data = DataYojson.t
 
-type ('a, 'b) env = (module Env with type t = 'a and type data = 'b)
-
-type ('a, 'b) t =
-  | Acutis of string * 'a
-  | Function of string * Typescheme.t * Typescheme.Child.t * 'b
-
-let src ~name src = Acutis (name, src)
-let fn ~name props children f = Function (name, props, children, f)
+val json :
+  (Json.data -> Json.t MapString.t -> Json.t) Compile.template Compile.t ->
+  Json.data ->
+  Json.t
