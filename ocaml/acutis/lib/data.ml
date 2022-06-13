@@ -15,15 +15,13 @@ module Const = struct
   type t = [ `Int of int | `String of string | `Float of float ]
   [@@deriving eq, ord, show]
 
-  let to_string t extra =
-    match t with
-    | `String s -> s
-    | `Float n -> Float.to_string n
-    | `Int i -> (
-        match (i, extra) with
-        | i, Ty.Variant.Extra_none -> Int.to_string i
-        | 0, Extra_bool -> "false"
-        | _, Extra_bool -> "true")
+  let to_string (t : t) (extra : Ty.Variant.extra) =
+    match (t, extra) with
+    | `Int 0, `Extra_bool -> "false"
+    | _, `Extra_bool -> "true"
+    | `String s, _ -> s
+    | `Float n, _ -> Printf.sprintf "%g" n
+    | `Int i, _ -> string_of_int i
 end
 
 type 'a t =
@@ -63,7 +61,7 @@ let iter_list f l =
   let rec aux i = function
     | Null -> ()
     | Array [| hd; tl |] ->
-        f ~index:(Const (`Int i, Extra_none)) hd;
+        f ~index:(Const (`Int i, `Extra_none)) hd;
         aux (succ i) tl
     | _ -> assert false
   in
@@ -71,7 +69,7 @@ let iter_list f l =
 
 let iter_dict f = function
   | Dict m ->
-      MapString.iter (fun k v -> f ~index:(Const (`String k, Extra_none)) v) m
+      MapString.iter (fun k v -> f ~index:(Const (`String k, `Extra_none)) v) m
   | _ -> assert false
 
 let to_string = function

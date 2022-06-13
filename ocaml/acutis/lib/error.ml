@@ -179,25 +179,41 @@ let missing_component stack name =
   raise @@ Error s
 
 (* Decode errors *)
-let pp pp_stack stack ty mess =
+module DecodeStack = struct
+  type t = Nullable | Index of int | Key of string
+
+  open Format
+
+  let pp ppf = function
+    | Nullable -> fprintf ppf "nullable"
+    | Index i -> fprintf ppf "@[index: %i@]" i
+    | Key s -> fprintf ppf "@[key: %S@]" s
+
+  let pp_sep ppf () = fprintf ppf " ->@ "
+
+  let pp ppf t =
+    fprintf ppf "@[[@,%a]@]" (pp_print_list ~pp_sep pp) (List.rev t)
+end
+
+let pp stack ty mess =
   F.asprintf
     "@[<v>@[Decode error.@]@,\
      @[Stack:@ @[%a@]@]@,\
      @[Expected type:@ @[%a@]@]@,\
      @[%t@]"
-    pp_stack stack Typescheme.pp_ty ty mess
+    DecodeStack.pp stack Typescheme.pp_ty ty mess
 
-let decode pp_stack pp_data ty stack data =
+let decode pp_data ty stack data =
   let f = F.dprintf "Received value:@ @[%a@]" pp_data data in
-  raise @@ Error (pp pp_stack stack ty f)
+  raise @@ Error (pp stack ty f)
 
-let missing_key pp_stack stack ty key =
+let missing_key stack ty key =
   let f = F.dprintf "%a%S" text "Input is missing key: " key in
-  raise @@ Error (pp pp_stack stack ty f)
+  raise @@ Error (pp stack ty f)
 
-let bad_enum pp_stack pp_data ty stack data =
+let bad_enum pp_data ty stack data =
   let f =
     F.dprintf "%a@[%a@]" text "This type does not allow the given value: "
       pp_data data
   in
-  raise @@ Error (pp pp_stack stack ty f)
+  raise @@ Error (pp stack ty f)

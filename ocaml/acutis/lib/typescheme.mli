@@ -12,7 +12,7 @@ open StdlibExtra
 
 module Variant : sig
   type row = [ `Closed | `Open ]
-  type extra = Extra_none | Extra_bool
+  type extra = [ `Extra_none | `Extra_bool ]
 
   val equal_extra : extra -> extra -> bool
   val pp_extra : Format.formatter -> extra -> unit

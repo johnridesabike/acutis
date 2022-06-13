@@ -134,9 +134,9 @@ let map_merge =
   fun a b -> MapString.merge f a b
 
 let rec pattern_to_data ~vars = function
-  | Typechecker.Pattern.TConst (x, Some { extra = Extra_bool; _ }) ->
-      Data.const x Extra_bool
-  | TConst (x, _) -> Data.const x Extra_none
+  | Typechecker.Pattern.TConst (x, Some { extra = `Extra_bool; _ }) ->
+      Data.const x `Extra_bool
+  | TConst (x, _) -> Data.const x `Extra_none
   | TVar x -> MapString.find x vars
   | TConstruct (_, Some x) -> pattern_to_data ~vars x
   | TConstruct (_, None) -> Data.null
@@ -157,9 +157,10 @@ let rec make :
     nodes:(data -> a MapString.t -> a) Compile.template Compile.nodes ->
     vars:data Data.t MapString.t ->
     children:a MapString.t ->
-    env:(a, data) Source.env ->
+    env:a Source.env ->
+    encode:(Typescheme.t -> data Data.t MapString.t -> data) ->
     a Queue.t =
- fun ~nodes ~vars ~children ~env ->
+ fun ~nodes ~vars ~children ~env ~encode ->
   let queue = Queue.create () in
   let (module Env) = env in
   let f = function
@@ -172,7 +173,7 @@ let rec make :
         | None -> assert false
         | Some (vars', nodes) ->
             let vars = map_merge vars vars' in
-            let result = make ~nodes ~vars ~children ~env in
+            let result = make ~nodes ~vars ~children ~env ~encode in
             Queue.transfer result queue)
     | Map_list (arg, tree) ->
         let l = pattern_to_data ~vars arg in
@@ -181,7 +182,7 @@ let rec make :
           | None -> assert false
           | Some (vars', nodes) ->
               let vars = map_merge vars vars' in
-              let result = make ~nodes ~vars ~children ~env in
+              let result = make ~nodes ~vars ~children ~env ~encode in
               Queue.transfer result queue
         in
         Data.iter_list f l
@@ -192,14 +193,14 @@ let rec make :
           | None -> assert false
           | Some (vars', nodes) ->
               let vars = map_merge vars vars' in
-              let result = make ~nodes ~vars ~children ~env in
+              let result = make ~nodes ~vars ~children ~env ~encode in
               Queue.transfer result queue
         in
         Data.iter_dict f l
     | Component (data, comp_vars, comp_children) -> (
         let f = function
           | Compile.Child_block nodes ->
-              let result = make ~nodes ~vars ~children ~env in
+              let result = make ~nodes ~vars ~children ~env ~encode in
               Env.render result
           | Child_name child -> MapString.find child children
         in
@@ -207,24 +208,25 @@ let rec make :
         let vars = MapString.map (pattern_to_data ~vars) comp_vars in
         match data with
         | Acutis (_, nodes) ->
-            let result = make ~nodes ~vars ~children ~env in
+            let result = make ~nodes ~vars ~children ~env ~encode in
             Queue.transfer result queue
         | Function (_, prop_types, f) ->
-            let result = f (Env.export_data prop_types vars) children in
+            let result = f (encode prop_types vars) children in
             Queue.add result queue)
   in
   List.iter f nodes;
   queue
 
-let make (type a data) (env : (a, data) Source.env)
+let make (type data a) (data : data Source.data) (env : a Source.env)
     Compile.{ nodes; prop_types } props =
   let (module Env) = env in
-  let vars = Env.parse_data prop_types props in
-  make ~nodes ~vars ~children:MapString.empty ~env |> Env.render
+  let (module Data) = data in
+  let vars = Data.decode prop_types props in
+  make ~nodes ~vars ~children:MapString.empty ~env ~encode:Data.encode
+  |> Env.render
 
-module Json = struct
+module Sync = struct
   type t = string
-  type data = DataYojson.t
 
   let return s = s
 
@@ -232,9 +234,6 @@ module Json = struct
     let b = Buffer.create 1024 in
     Queue.iter (Buffer.add_string b) queue;
     Buffer.contents b
-
-  let parse_data = DataYojson.to_data
-  let export_data = DataYojson.of_data
 end
 
-let json = make (module Json)
+let sync : string Source.env = (module Sync)

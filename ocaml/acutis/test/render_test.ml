@@ -6,7 +6,7 @@ let check = Alcotest.(check string)
 let render ?(components = []) src json =
   let json = Yojson.Basic.from_string json in
   let temp = Compile.(make ~filename:"" (Components.make components) src) in
-  Render.json temp json
+  Render.(make (module DataYojson) (module Sync) temp json)
 
 let basic () =
   let props = {|{

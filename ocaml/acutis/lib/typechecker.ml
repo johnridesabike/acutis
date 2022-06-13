@@ -37,11 +37,11 @@ and open_rows ty =
   match !ty with
   | Ty.Enum ty -> (
       match ty.extra with
-      | Extra_none -> ty.row <- `Open
-      | Extra_bool -> ty.cases <- Ty.Enum.false_and_true_cases)
+      | `Extra_none -> ty.row <- `Open
+      | `Extra_bool -> ty.cases <- Ty.Enum.false_and_true_cases)
   | Union (_, ty) -> (
       match (ty.extra, ty.cases) with
-      | Extra_bool, Int cases ->
+      | `Extra_bool, Int cases ->
           let f = open_rows_bool_union_aux in
           ty.cases <- Int (cases |> MapInt.update 0 f |> MapInt.update 1 f)
       | _, Int cases ->
@@ -307,7 +307,7 @@ module Pattern = struct
         in
         let tag, tag_extra =
           match make ~f mode new_tag_ty v with
-          | TConst (((`Int _ | `String _) as tag), None) -> (tag, V.Extra_none)
+          | TConst (((`Int _ | `String _) as tag), None) -> (tag, `Extra_none)
           | TConst (((`Int _ | `String _) as tag), Some { extra; _ }) ->
               (tag, extra) (* booleans *)
           | _ -> Error.bad_union_tag loc new_tag_ty
@@ -397,14 +397,14 @@ module Pattern = struct
 
   let pp_constant_enum ppf x c =
     match (x, c) with
-    | { V.extra = Extra_bool; _ }, `Int 0 -> F.pp_print_string ppf "false"
-    | { V.extra = Extra_bool; _ }, `Int _ -> F.pp_print_string ppf "true"
+    | { V.extra = `Extra_bool; _ }, `Int 0 -> F.pp_print_string ppf "false"
+    | { V.extra = `Extra_bool; _ }, `Int _ -> F.pp_print_string ppf "true"
     | _, c -> F.fprintf ppf "%@%a" pp_constant c
 
   let pp_constant_union ppf x c =
     match (x, c) with
-    | { V.extra = Extra_bool; _ }, `Int 0 -> F.pp_print_string ppf "false"
-    | { V.extra = Extra_bool; _ }, `Int _ -> F.pp_print_string ppf "true"
+    | { V.extra = `Extra_bool; _ }, `Int 0 -> F.pp_print_string ppf "false"
+    | { V.extra = `Extra_bool; _ }, `Int _ -> F.pp_print_string ppf "true"
     | _, c -> pp_constant ppf c
 
   let rec pp ppf = function

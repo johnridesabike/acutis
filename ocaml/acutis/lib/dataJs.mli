@@ -9,15 +9,9 @@
 (**************************************************************************)
 
 open StdlibExtra
+open Js_of_ocaml
 
-type t =
-  [ `Null
-  | `Bool of bool
-  | `Int of int
-  | `Float of float
-  | `String of string
-  | `Assoc of (string * t) list
-  | `List of t list ]
+type t = Js.Unsafe.any
 
 val decode : Typescheme.t -> t -> t Data.t MapString.t
 val encode : Typescheme.t -> t Data.t MapString.t -> t

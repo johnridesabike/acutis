@@ -11,15 +11,21 @@ open StdlibExtra
 
 module type Env = sig
   type t
-  type data
 
   val return : string -> t
   val render : t Queue.t -> t
-  val parse_data : Typescheme.t -> data -> data Data.t MapString.t
-  val export_data : Typescheme.t -> data Data.t MapString.t -> data
 end
 
-type ('a, 'b) env = (module Env with type t = 'a and type data = 'b)
+type 'a env = (module Env with type t = 'a)
+
+module type Data = sig
+  type t
+
+  val decode : Typescheme.t -> t -> t Data.t MapString.t
+  val encode : Typescheme.t -> t Data.t MapString.t -> t
+end
+
+type 'a data = (module Data with type t = 'a)
 
 type ('a, 'b) t =
   | Acutis of string * 'a

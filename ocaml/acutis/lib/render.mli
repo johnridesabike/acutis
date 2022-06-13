@@ -10,14 +10,12 @@
 open StdlibExtra
 
 val make :
-  ('result, 'data) Source.env ->
+  'data Source.data ->
+  'result Source.env ->
   ('data -> 'result MapString.t -> 'result) Compile.template Compile.t ->
   'data ->
   'result
 
-module Json : Source.Env with type t = string and type data = DataYojson.t
+module Sync : Source.Env with type t = string
 
-val json :
-  (Json.data -> Json.t MapString.t -> Json.t) Compile.template Compile.t ->
-  Json.data ->
-  Json.t
+val sync : string Source.env

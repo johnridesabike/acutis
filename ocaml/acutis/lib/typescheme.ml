@@ -13,7 +13,7 @@ module F = Format
 
 module Variant = struct
   type row = [ `Closed | `Open ] [@@deriving eq]
-  type extra = Extra_none | Extra_bool [@@deriving eq, show]
+  type extra = [ `Extra_none | `Extra_bool ] [@@deriving eq, show]
   type ('a, 'b) ty = Int of 'a | String of 'b [@@deriving eq]
 
   type ('a, 'b) t = {
@@ -41,29 +41,29 @@ module Enum = struct
   type t = (SetInt.t, SetString.t) Variant.t [@@deriving eq]
 
   let string l row =
-    { Variant.cases = String (SetString.of_list l); row; extra = Extra_none }
+    { Variant.cases = String (SetString.of_list l); row; extra = `Extra_none }
 
   let string_singleton s row =
-    { Variant.cases = String (SetString.singleton s); row; extra = Extra_none }
+    { Variant.cases = String (SetString.singleton s); row; extra = `Extra_none }
 
   let int l row =
-    { Variant.cases = Int (SetInt.of_list l); row; extra = Extra_none }
+    { Variant.cases = Int (SetInt.of_list l); row; extra = `Extra_none }
 
   let int_singleton i row =
-    { Variant.cases = Int (SetInt.singleton i); row; extra = Extra_none }
+    { Variant.cases = Int (SetInt.singleton i); row; extra = `Extra_none }
 
   let false_and_true_cases = Variant.Int (SetInt.of_list [ 0; 1 ])
   let false_only = Variant.Int (SetInt.singleton 0)
   let true_only = Variant.Int (SetInt.singleton 1)
 
   let false_and_true () =
-    { Variant.cases = false_and_true_cases; row = `Closed; extra = Extra_bool }
+    { Variant.cases = false_and_true_cases; row = `Closed; extra = `Extra_bool }
 
   let true_only () =
-    { Variant.cases = true_only; row = `Closed; extra = Extra_bool }
+    { Variant.cases = true_only; row = `Closed; extra = `Extra_bool }
 
   let false_only () =
-    { Variant.cases = false_only; row = `Closed; extra = Extra_bool }
+    { Variant.cases = false_only; row = `Closed; extra = `Extra_bool }
 end
 
 module Union = struct
@@ -75,35 +75,35 @@ module Union = struct
     {
       Variant.cases = String (MapString.of_seq (List.to_seq l));
       row;
-      extra = Extra_none;
+      extra = `Extra_none;
     }
 
   let int l row =
     {
       Variant.cases = Int (MapInt.of_seq (List.to_seq l));
       row;
-      extra = Extra_none;
+      extra = `Extra_none;
     }
 
   let boolean ~f ~t =
     {
       Variant.cases = Int (MapInt.singleton 0 f |> MapInt.add 1 t);
       row = `Closed;
-      extra = Extra_bool;
+      extra = `Extra_bool;
     }
 
   let false_only l =
     {
       Variant.cases = Int (MapInt.singleton 0 l);
       row = `Closed;
-      extra = Extra_bool;
+      extra = `Extra_bool;
     }
 
   let true_only l =
     {
       Variant.cases = Int (MapInt.singleton 1 l);
       row = `Closed;
-      extra = Extra_bool;
+      extra = `Extra_bool;
     }
 end
 
@@ -208,12 +208,12 @@ let rec pp_ty ppf t =
             (SetString.elements cases) Variant.pp_row row
       | Int cases -> (
           match extra with
-          | Extra_none ->
+          | `Extra_none ->
               F.fprintf ppf "@[| %a@]@[%a@]"
                 (F.pp_print_list ~pp_sep:pp_sep_pipe (fun ppf i ->
                      F.fprintf ppf "%@%i" i))
                 (SetInt.elements cases) Variant.pp_row row
-          | Extra_bool ->
+          | `Extra_bool ->
               F.fprintf ppf "@[| %a@]@[%a@]"
                 (F.pp_print_list ~pp_sep:pp_sep_pipe Variant.pp_bool)
                 (SetInt.elements cases) Variant.pp_row row))
@@ -230,9 +230,9 @@ let rec pp_ty ppf t =
             m |> MapString.to_seq |> Seq.map (fun (tag, m) -> (`String tag, m))
         | Int m -> (
             match extra with
-            | Extra_none ->
+            | `Extra_none ->
                 m |> MapInt.to_seq |> Seq.map (fun (tag, m) -> (`Int tag, m))
-            | Extra_bool ->
+            | `Extra_bool ->
                 m |> MapInt.to_seq |> Seq.map (fun (tag, m) -> (`Bool tag, m)))
       in
       F.fprintf ppf "@[| %a@]@[%a@]"

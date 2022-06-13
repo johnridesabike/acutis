@@ -47,21 +47,22 @@ val cycle : string list -> _
 val missing_component : string list -> string -> _
 
 (* Decode errors *)
+module DecodeStack : sig
+  type t = Nullable | Index of int | Key of string
+end
+
 val decode :
-  (Format.formatter -> 'stack -> unit) ->
   (Format.formatter -> 'data -> unit) ->
   Typescheme.ty ->
-  'stack ->
+  DecodeStack.t list ->
   'data ->
   _
 
-val missing_key :
-  (Format.formatter -> 'a -> unit) -> 'a -> Typescheme.ty -> string -> _
+val missing_key : DecodeStack.t list -> Typescheme.ty -> string -> _
 
 val bad_enum :
-  (Format.formatter -> 'stack -> unit) ->
   (Format.formatter -> 'data -> unit) ->
   Typescheme.ty ->
-  'stack ->
+  DecodeStack.t list ->
   'data ->
   _

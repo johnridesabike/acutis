@@ -64,23 +64,6 @@ module Pattern = struct
     | Record of Loc.t * t Record.t
     | Dict of Loc.t * t Dict.t
   [@@deriving show, eq]
-
-  (*
-  let Loc.t = function
-    | Var (l, _)
-    | Bool (l, _)
-    | Int (l, _)
-    | Float (l, _)
-    | String (l, _)
-    | Nullable (l, _)
-    | Enum_string (l, _)
-    | Enum_int (l, _)
-    | List (l, _, _)
-    | Tuple (l, _)
-    | Record (l, _)
-    | Dict (l, _) ->
-        l
-        *)
 end
 
 type trim = No_trim | Trim [@@deriving show, eq]
