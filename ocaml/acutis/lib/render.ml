@@ -143,6 +143,7 @@ end
 
 module Make (M : MONAD) (D : DATA) = struct
   type t = string M.t
+  type data = D.t
 
   let ( let* ) = M.bind
 

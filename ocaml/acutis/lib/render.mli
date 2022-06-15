@@ -24,7 +24,8 @@ end
 
 module Make (M : MONAD) (D : DATA) : sig
   type t = string M.t
+  type data = D.t
 
   val make :
-    (D.t -> t Map.Make(String).t -> t) Compile.template Compile.t -> D.t -> t
+    (data -> t Map.Make(String).t -> t) Compile.template Compile.t -> data -> t
 end
