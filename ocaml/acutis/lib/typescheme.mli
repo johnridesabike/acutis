@@ -96,6 +96,7 @@ val union_boolean : string -> f:(string * ty) list -> t:(string * ty) list -> ty
 val union_false_only : string -> (string * ty) list -> ty
 val union_true_only : string -> (string * ty) list -> ty
 val make : (string * ty) list -> t
+val empty : t
 
 (* Utilities *)
 val internal_record : ty MapString.t ref -> ty
@@ -117,4 +118,5 @@ module Child : sig
   val equal_ty : ty -> ty -> bool
   val equal : t -> t -> bool
   val pp_ty : Format.formatter -> ty -> unit
+  val empty : t
 end

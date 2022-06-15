@@ -84,8 +84,7 @@ let make_match args Matching.{ tree; exits } =
       Some (bindings, Matching.Exit.get exits exit)
   | None -> None
 
-let escape_aux str =
-  let b = Buffer.create (String.length str) in
+let escape_aux b str =
   let f = function
     | '&' -> Buffer.add_string b "&amp;"
     | '"' -> Buffer.add_string b "&quot;"
@@ -97,33 +96,12 @@ let escape_aux str =
     | '=' -> Buffer.add_string b "&#x3D;"
     | c -> Buffer.add_char b c
   in
-  String.iter f str;
-  Buffer.contents b
+  String.iter f str
 
-let escape esc str =
-  match esc with Ast.Escape -> escape_aux str | No_escape -> str
-
-let echo_not_null props children return = function
-  | Typechecker.Ech_var (var, esc) ->
-      let x = MapString.find var props in
-      return (escape esc (Data.to_string x))
-  | Ech_component child -> MapString.find child children
-  | Ech_string s -> return s
-
-let echo_nullable props children return = function
-  | Typechecker.Ech_var (var, esc) -> (
-      match Data.get_nullable (MapString.find var props) with
-      | None -> None
-      | Some x -> Some (return (escape esc (Data.to_string x))))
-  | Ech_component child -> MapString.find_opt child children
-  | Ech_string s -> Some (return s)
-
-let rec echo props children return default = function
-  | [] -> echo_not_null props children return default
-  | hd :: tl -> (
-      match echo_nullable props children return hd with
-      | Some x -> x
-      | None -> echo props children return default tl)
+let echo_var b esc str =
+  match esc with
+  | Ast.Escape -> escape_aux b str
+  | No_escape -> Buffer.add_string b str
 
 let map_merge =
   let f _ a b =
@@ -152,88 +130,124 @@ let rec pattern_to_data ~vars = function
       Data.dict (MapString.map (pattern_to_data ~vars) x)
   | TAny -> assert false
 
-let rec make :
-    type a data.
-    nodes:(data -> a MapString.t -> a) Compile.template Compile.nodes ->
-    vars:data Data.t MapString.t ->
-    children:a MapString.t ->
-    env:a Source.env ->
-    encode:(Typescheme.t -> data Data.t MapString.t -> data) ->
-    a Queue.t =
- fun ~nodes ~vars ~children ~env ~encode ->
-  let queue = Queue.create () in
-  let (module Env) = env in
-  let f = function
-    | Compile.Echo (nullables, default) ->
-        Queue.add (echo vars children Env.return default nullables) queue
-    | Text s -> Queue.add (Env.return s) queue
-    | Match (args, tree) -> (
-        let args = Array.map (pattern_to_data ~vars) args in
-        match make_match args tree with
-        | None -> assert false
-        | Some (vars', nodes) ->
-            let vars = map_merge vars vars' in
-            let result = make ~nodes ~vars ~children ~env ~encode in
-            Queue.transfer result queue)
-    | Map_list (arg, tree) ->
-        let l = pattern_to_data ~vars arg in
-        let f ~index arg =
-          match make_match [| arg; index |] tree with
-          | None -> assert false
-          | Some (vars', nodes) ->
-              let vars = map_merge vars vars' in
-              let result = make ~nodes ~vars ~children ~env ~encode in
-              Queue.transfer result queue
-        in
-        Data.iter_list f l
-    | Map_dict (arg, tree) ->
-        let l = pattern_to_data ~vars arg in
-        let f ~index arg =
-          match make_match [| arg; index |] tree with
-          | None -> assert false
-          | Some (vars', nodes) ->
-              let vars = map_merge vars vars' in
-              let result = make ~nodes ~vars ~children ~env ~encode in
-              Queue.transfer result queue
-        in
-        Data.iter_dict f l
-    | Component (data, comp_vars, comp_children) -> (
-        let f = function
-          | Compile.Child_block nodes ->
-              let result = make ~nodes ~vars ~children ~env ~encode in
-              Env.render result
-          | Child_name child -> MapString.find child children
-        in
-        let children = MapString.map f comp_children in
-        let vars = MapString.map (pattern_to_data ~vars) comp_vars in
-        match data with
-        | Acutis (_, nodes) ->
-            let result = make ~nodes ~vars ~children ~env ~encode in
-            Queue.transfer result queue
-        | Function (_, prop_types, f) ->
-            let result = f (encode prop_types vars) children in
-            Queue.add result queue)
-  in
-  List.iter f nodes;
-  queue
+module type MONAD = sig
+  type 'a t
 
-let make (type data a) (data : data Source.data) (env : a Source.env)
-    Compile.{ nodes; prop_types } props =
-  let (module Env) = env in
-  let (module Data) = data in
-  let vars = Data.decode prop_types props in
-  make ~nodes ~vars ~children:MapString.empty ~env ~encode:Data.encode
-  |> Env.render
-
-module Sync = struct
-  type t = string
-
-  let return s = s
-
-  let render queue =
-    let b = Buffer.create 1024 in
-    Queue.iter (Buffer.add_string b) queue;
-    Buffer.contents b
+  val return : 'a -> 'a t
+  val bind : 'a t -> ('a -> 'b t) -> 'b t
 end
 
-let sync : string Source.env = (module Sync)
+module type DATA = sig
+  type t
+
+  val decode : Typescheme.t -> t -> t Data.t MapString.t
+  val encode : Typescheme.t -> t Data.t MapString.t -> t
+end
+
+module Make (M : MONAD) (D : DATA) = struct
+  type t = string M.t
+
+  let ( let* ) = M.bind
+
+  let echo_not_null b props children = function
+    | Typechecker.Ech_var (var, esc) ->
+        MapString.find var props |> Data.to_string |> echo_var b esc;
+        M.return b
+    | Ech_component child ->
+        let* child = MapString.find child children in
+        Buffer.add_string b child;
+        M.return b
+    | Ech_string s ->
+        Buffer.add_string b s;
+        M.return b
+
+  let echo_nullable b props children = function
+    | Typechecker.Ech_var (var, esc) -> (
+        match Data.get_nullable (MapString.find var props) with
+        | None -> None
+        | Some x ->
+            echo_var b esc (Data.to_string x);
+            Some (M.return b))
+    | Ech_component child -> (
+        match MapString.find_opt child children with
+        | None -> None
+        | Some child ->
+            let b =
+              let* child in
+              Buffer.add_string b child;
+              M.return b
+            in
+            Some b)
+    | Ech_string s ->
+        Buffer.add_string b s;
+        Some (M.return b)
+
+  let rec echo b props children default = function
+    | [] -> echo_not_null b props children default
+    | hd :: tl -> (
+        match echo_nullable b props children hd with
+        | Some x -> x
+        | None -> echo b props children default tl)
+
+  let rec make b ~nodes ~vars ~children =
+    let f b = function
+      | Compile.Echo (nullables, default) ->
+          let* b in
+          echo b vars children default nullables
+      | Text s ->
+          let* b in
+          Buffer.add_string b s;
+          M.return b
+      | Match (args, tree) -> (
+          let args = Array.map (pattern_to_data ~vars) args in
+          match make_match args tree with
+          | None -> assert false
+          | Some (vars', nodes) ->
+              let vars = map_merge vars vars' in
+              make b ~nodes ~vars ~children)
+      | Map_list (arg, tree) ->
+          let l = pattern_to_data ~vars arg in
+          let f ~index b arg =
+            match make_match [| arg; index |] tree with
+            | None -> assert false
+            | Some (vars', nodes) ->
+                let vars = map_merge vars vars' in
+                make b ~nodes ~vars ~children
+          in
+          Data.fold_list f b l
+      | Map_dict (arg, tree) ->
+          let l = pattern_to_data ~vars arg in
+          let f ~index b arg =
+            match make_match [| arg; index |] tree with
+            | None -> assert false
+            | Some (vars', nodes) ->
+                let vars = map_merge vars vars' in
+                make b ~nodes ~vars ~children
+          in
+          Data.fold_dict f b l
+      | Component (data, comp_vars, comp_children) -> (
+          let f = function
+            | Compile.Child_block nodes ->
+                let b = M.return (Buffer.create 1024) in
+                let* result = make b ~nodes ~vars ~children in
+                M.return (Buffer.contents result)
+            | Child_name child -> MapString.find child children
+          in
+          let children = MapString.map f comp_children in
+          let vars = MapString.map (pattern_to_data ~vars) comp_vars in
+          match data with
+          | Compile.Acutis (_, nodes) -> make b ~nodes ~vars ~children
+          | Function (_, prop_types, f) ->
+              let* b in
+              let* result = f (D.encode prop_types vars) children in
+              Buffer.add_string b result;
+              M.return b)
+    in
+    List.fold_left f b nodes
+
+  let make Compile.{ nodes; prop_types } props =
+    let b = M.return (Buffer.create 1024) in
+    let vars = D.decode prop_types props in
+    let* result = make b ~nodes ~vars ~children:MapString.empty in
+    Buffer.contents result |> M.return
+end

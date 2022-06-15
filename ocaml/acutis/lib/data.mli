@@ -39,6 +39,6 @@ val list_cons : 'a t -> 'a t -> 'a t
 val list_rev : 'a t -> 'a t
 val list_empty : 'a t
 val get_nullable : 'a t -> 'a t option
-val iter_list : (index:'a t -> 'a t -> unit) -> 'a t -> unit
-val iter_dict : (index:'a t -> 'a t -> unit) -> 'a t -> unit
+val fold_list : (index:'a t -> 'b -> 'a t -> 'b) -> 'b -> 'a t -> 'b
+val fold_dict : (index:'a t -> 'b -> 'a t -> 'b) -> 'b -> 'a t -> 'b
 val to_string : 'a t -> string

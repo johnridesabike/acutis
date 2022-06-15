@@ -57,19 +57,21 @@ let get_nullable = function
   | Array [| t |] -> Some t
   | _ -> assert false
 
-let iter_list f l =
-  let rec aux i = function
-    | Null -> ()
+let fold_list f acc l =
+  let rec aux i acc = function
+    | Null -> acc
     | Array [| hd; tl |] ->
-        f ~index:(Const (`Int i, `Extra_none)) hd;
-        aux (succ i) tl
+        let acc = f ~index:(Const (`Int i, `Extra_none)) acc hd in
+        aux (succ i) acc tl
     | _ -> assert false
   in
-  aux 0 l
+  aux 0 acc l
 
-let iter_dict f = function
+let fold_dict f acc = function
   | Dict m ->
-      MapString.iter (fun k v -> f ~index:(Const (`String k, `Extra_none)) v) m
+      MapString.fold
+        (fun k v acc -> f ~index:(Const (`String k, `Extra_none)) acc v)
+        m acc
   | _ -> assert false
 
 let to_string = function

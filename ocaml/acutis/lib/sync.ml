@@ -7,9 +7,8 @@
 (*  file, You can obtain one at http://mozilla.org/MPL/2.0/.              *)
 (*                                                                        *)
 (**************************************************************************)
-type ('a, 'b) t =
-  | Acutis of string * 'a
-  | Function of string * Typescheme.t * Typescheme.Child.t * 'b
 
-let src ~name src = Acutis (name, src)
-let fn ~name props children f = Function (name, props, children, f)
+type 'a t = 'a
+
+let return a = a
+let bind a f = f a

@@ -10,6 +10,7 @@
 
 open Js_of_ocaml
 open Acutis
+module RenderJs = Render.Make (Sync) (DataJs)
 
 let _ =
   Js.export_all
@@ -18,5 +19,5 @@ let _ =
          Compile.make ~filename:"test" Compile.Components.empty
            (Js.to_string src)
 
-       method lol template json = Render.json template json
+       method lol template json = RenderJs.make template json
     end)

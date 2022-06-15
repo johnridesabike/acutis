@@ -9,13 +9,22 @@
 (**************************************************************************)
 open StdlibExtra
 
-val make :
-  'data Source.data ->
-  'result Source.env ->
-  ('data -> 'result MapString.t -> 'result) Compile.template Compile.t ->
-  'data ->
-  'result
+module type MONAD = sig
+  type 'a t
 
-module Sync : Source.Env with type t = string
+  val return : 'a -> 'a t
+  val bind : 'a t -> ('a -> 'b t) -> 'b t
+end
 
-val sync : string Source.env
+module type DATA = sig
+  type t
+
+  val decode : Typescheme.t -> t -> t Data.t MapString.t
+  val encode : Typescheme.t -> t Data.t MapString.t -> t
+end
+
+module Make (M : MONAD) (D : DATA) : sig
+  type t = string M.t
+
+  val make : (D.t -> t MapString.t -> t) Compile.template Compile.t -> D.t -> t
+end

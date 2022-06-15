@@ -3,10 +3,12 @@ module F = Format
 
 let check = Alcotest.(check string)
 
+module RenderSync = Render.Make (Sync) (DataYojson)
+
 let render ?(components = []) src json =
   let json = Yojson.Basic.from_string json in
   let temp = Compile.(make ~filename:"" (Components.make components) src) in
-  Render.(make (module DataYojson) (module Sync) temp json)
+  RenderSync.make temp json
 
 let basic () =
   let props = {|{

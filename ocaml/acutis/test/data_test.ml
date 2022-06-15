@@ -4,14 +4,17 @@ open Js_of_ocaml
 
 let check = Alcotest.(check string)
 
+module RenderJson = Render.Make (Sync) (DataYojson)
+module RenderJs = Render.Make (Sync) (DataJs)
+
 let render_js ?(components = []) src js =
   let temp = Compile.(make ~filename:"" (Components.make components) src) in
-  Render.(make (module DataJs) (module Sync) temp (Js.Unsafe.inject js))
+  RenderJs.make temp (Js.Unsafe.inject js)
 
 let render_yojson ?(components = []) src json =
   let json = Yojson.Basic.from_string json in
   let temp = Compile.(make ~filename:"" (Components.make components) src) in
-  Render.(make (module DataYojson) (module Sync) temp json)
+  RenderJson.make temp json
 
 let records () =
   let props_js =

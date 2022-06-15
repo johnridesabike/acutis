@@ -1,9 +1,10 @@
 open Acutis
+module RenderSync = Render.Make (Sync) (DataYojson)
 
 let render ?(json = "{}") src () =
   let temp = Compile.(make ~filename:"<test>" Components.empty src) in
   let json = Yojson.Basic.from_string json in
-  ignore @@ Render.(make (module DataYojson) (module Sync) temp json)
+  ignore @@ RenderSync.make temp json
 
 exception Error = Error.Error
 

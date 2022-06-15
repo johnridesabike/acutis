@@ -7,9 +7,10 @@
 (*  file, You can obtain one at http://mozilla.org/MPL/2.0/.              *)
 (*                                                                        *)
 (**************************************************************************)
-type ('a, 'b) t =
-  | Acutis of string * 'a
-  | Function of string * Typescheme.t * Typescheme.Child.t * 'b
 
-let src ~name src = Acutis (name, src)
-let fn ~name props children f = Function (name, props, children, f)
+(** This is an unboxed "monad" for synchronous code. *)
+
+type 'a t = 'a
+
+val return : 'a -> 'a t
+val bind : 'a t -> ('a -> 'b t) -> 'b t

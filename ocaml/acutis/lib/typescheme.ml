@@ -167,6 +167,7 @@ let union_true_only k l =
   ref (Union (k, Union.true_only (ref (MapString.of_seq (List.to_seq l)))))
 
 let make l = l |> List.to_seq |> MapString.of_seq
+let empty = MapString.empty
 
 let rec copy = function
   | (Int | Float | String | Echo) as x -> x
@@ -277,4 +278,6 @@ module Child = struct
   let pp_ty ppf = function
     | { contents = Child } -> F.pp_print_string ppf "child"
     | { contents = Nullable_child } -> F.pp_print_string ppf "nullable child"
+
+  let empty = MapString.empty
 end
