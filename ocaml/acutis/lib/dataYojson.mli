@@ -8,8 +8,6 @@
 (*                                                                        *)
 (**************************************************************************)
 
-open StdlibExtra
-
 type t =
   [ `Null
   | `Bool of bool
@@ -19,5 +17,5 @@ type t =
   | `Assoc of (string * t) list
   | `List of t list ]
 
-val decode : Typescheme.t -> t -> t Data.t MapString.t
-val encode : Typescheme.t -> t Data.t MapString.t -> t
+val decode : Typescheme.t -> t -> t Data.t Map.Make(String).t
+val encode : Typescheme.t -> t Data.t Map.Make(String).t -> t

@@ -16,7 +16,10 @@ type 'a node =
   | Match of Typechecker.Pattern.t array * 'a nodes Matching.t
   | Map_list of Typechecker.Pattern.t * 'a nodes Matching.t
   | Map_dict of Typechecker.Pattern.t * 'a nodes Matching.t
-  | Component of 'a * Typechecker.Pattern.t MapString.t * 'a child MapString.t
+  | Component of
+      'a
+      * Typechecker.Pattern.t Map.Make(String).t
+      * 'a child Map.Make(String).t
 
 and 'a child = Child_name of string | Child_block of 'a nodes
 and 'a nodes = 'a node list
@@ -66,8 +69,8 @@ let parse_string ~filename src =
 
 module Components = struct
   type 'a t = {
-    typed : (Typechecker.t, 'a) Source.t MapString.t;
-    optimized : (string nodes, 'a) Source.t MapString.t;
+    typed : (Typechecker.t, 'a) Source.t Map.Make(String).t;
+    optimized : (string nodes, 'a) Source.t Map.Make(String).t;
   }
 
   let empty = { typed = MapString.empty; optimized = MapString.empty }

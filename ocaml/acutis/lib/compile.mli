@@ -7,7 +7,6 @@
 (*  file, You can obtain one at http://mozilla.org/MPL/2.0/.              *)
 (*                                                                        *)
 (**************************************************************************)
-open StdlibExtra
 
 type 'a node =
   | Text of string
@@ -15,7 +14,10 @@ type 'a node =
   | Match of Typechecker.Pattern.t array * 'a nodes Matching.t
   | Map_list of Typechecker.Pattern.t * 'a nodes Matching.t
   | Map_dict of Typechecker.Pattern.t * 'a nodes Matching.t
-  | Component of 'a * Typechecker.Pattern.t MapString.t * 'a child MapString.t
+  | Component of
+      'a
+      * Typechecker.Pattern.t Map.Make(String).t
+      * 'a child Map.Make(String).t
 
 and 'a child = Child_name of string | Child_block of 'a nodes
 and 'a nodes = 'a node list

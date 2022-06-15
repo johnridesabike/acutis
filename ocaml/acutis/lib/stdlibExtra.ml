@@ -8,10 +8,30 @@
 (*                                                                        *)
 (**************************************************************************)
 
+module MapString = Map.Make (String)
+module MapInt = Map.Make (Int)
+module SetString = Set.Make (String)
+module SetInt = Set.Make (Int)
+
 module Pp = struct
   open Format
 
   let sep_comma ppf () = fprintf ppf ",@ "
+
+  let bindings pp_k pp_v ppf (k, v) =
+    fprintf ppf "@[%a@ -> @[%a@]@]" pp_k k pp_v v
+
+  let string_key ppf (k : string) = fprintf ppf "%S" k
+
+  let map_string pp_a ppf m =
+    fprintf ppf "MapString.[@[@,%a@,@]]"
+      (pp_print_seq ~pp_sep:sep_comma (bindings string_key pp_a))
+      (MapString.to_seq m)
+
+  let set_int ppf s =
+    fprintf ppf "SetString.[@[@,%a@,@]]"
+      (pp_print_seq ~pp_sep:sep_comma pp_print_int)
+      (SetInt.to_seq s)
 
   (* Sync with lexer*)
   let id_start_char = function 'a' .. 'z' | '_' -> true | _ -> false
@@ -30,65 +50,6 @@ module Loc = struct
   let dummy = (Lexing.dummy_pos, Lexing.dummy_pos)
   let pp ppf _ = Format.fprintf ppf "<loc>"
   let equal _ _ = true (* Do not use location for equality in testing. *)
-end
-
-module type MAP = sig
-  include Map.S
-
-  val pp : (Format.formatter -> 'a -> unit) -> Format.formatter -> 'a t -> unit
-end
-
-let pp_bindings pp_k pp_v ppf (k, v) =
-  Format.fprintf ppf "@[%a@ -> @[%a@]@]" pp_k k pp_v v
-
-module MapString = struct
-  include Map.Make (String)
-
-  let pp_key ppf k = Format.fprintf ppf "%S" k
-
-  let pp pp_a ppf m =
-    Format.fprintf ppf "MapString.[@[@,%a@,@]]"
-      (Format.pp_print_seq ~pp_sep:Pp.sep_comma (pp_bindings pp_key pp_a))
-      (to_seq m)
-end
-
-module MapInt = struct
-  include Map.Make (Int)
-
-  let pp_key = Format.pp_print_int
-
-  let pp pp_a ppf m =
-    Format.fprintf ppf "MapInt.[@[@,%a@,@]]"
-      (Format.pp_print_seq ~pp_sep:Pp.sep_comma (pp_bindings pp_key pp_a))
-      (to_seq m)
-end
-
-module type SET = sig
-  include Set.S
-
-  val pp : Format.formatter -> t -> unit
-end
-
-module SetString = struct
-  include Set.Make (String)
-
-  let pp_elt ppf e = Format.fprintf ppf "%S" e
-
-  let pp ppf s =
-    Format.fprintf ppf "SetString.[@[@,%a@,@]]"
-      (Format.pp_print_seq ~pp_sep:Pp.sep_comma pp_elt)
-      (to_seq s)
-end
-
-module SetInt = struct
-  include Set.Make (Int)
-
-  let pp_elt = Format.pp_print_int
-
-  let pp ppf s =
-    Format.fprintf ppf "SetString.[@[@,%a@,@]]"
-      (Format.pp_print_seq ~pp_sep:Pp.sep_comma pp_elt)
-      (to_seq s)
 end
 
 module StringExtra = struct

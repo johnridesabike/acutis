@@ -267,7 +267,7 @@ module Child = struct
 
   let equal_ty a b = !a = !b
 
-  type t = ty MapString.t
+  type t = ty Map.Make(String).t
 
   let equal a b = MapString.equal equal_ty a b
   let make l = l |> List.to_seq |> MapString.of_seq

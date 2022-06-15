@@ -59,7 +59,7 @@ type ('leaf, 'key) tree =
  *)
   | Switch of {
       key : 'key;
-      ids : SetInt.t;
+      ids : SetInt.t; [@printer Pp.set_int]
       cases : ('leaf, 'key) switchcase;
       extra : extra_switch_info;
       wildcard : ('leaf, 'key) tree option;
@@ -69,7 +69,7 @@ type ('leaf, 'key) tree =
  *)
   | Nest of {
       key : 'key;
-      ids : SetInt.t;
+      ids : SetInt.t; [@printer Pp.set_int]
       child : ('leaf, 'key) nest;
       wildcard : ('leaf, 'key) tree option;
       extra : extra_nest_info;
@@ -83,7 +83,7 @@ type ('leaf, 'key) tree =
  *)
   | Construct of {
       key : 'key;
-      ids : SetInt.t;
+      ids : SetInt.t; [@printer Pp.set_int]
       nil : ('leaf, 'key) tree option;
       cons : ('leaf, 'key) tree option;
       extra : TPat.construct;
@@ -91,7 +91,11 @@ type ('leaf, 'key) tree =
   (*
     Wildcards simply point to the next node in the tree.
  *)
-  | Wildcard of { key : 'key; ids : SetInt.t; child : ('leaf, 'key) tree }
+  | Wildcard of {
+      key : 'key;
+      ids : SetInt.t; [@printer Pp.set_int]
+      child : ('leaf, 'key) tree;
+    }
   | End of 'leaf
 
 and ('leaf, 'key) nest =
@@ -127,7 +131,12 @@ module Exit = struct
   let unsafe_key i = i
 end
 
-type leaf = { names : int MapString.t; exit : Exit.key } [@@deriving eq, show]
+type leaf = {
+  names : int MapString.t; [@printer Pp.map_string Format.pp_print_int]
+  exit : Exit.key;
+}
+[@@deriving eq, show]
+
 type 'a t = { tree : (leaf, int) tree; exits : 'a Exit.t }
 
 (*
@@ -569,7 +578,7 @@ let merge = merge Z
   CPS as an easy way deal with the nested data type.
 *)
 
-type bindings = { next_id : unit -> int; names : int MapString.t }
+type bindings = { next_id : unit -> int; names : int Map.Make(String).t }
 type ('a, 'k) cont = bindings -> ('a, 'k) tree
 
 let of_const key data if_match enum =

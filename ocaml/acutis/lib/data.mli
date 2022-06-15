@@ -8,8 +8,6 @@
 (*                                                                        *)
 (**************************************************************************)
 
-open StdlibExtra
-
 module Const : sig
   type t = [ `Int of int | `String of string | `Float of float ]
 
@@ -22,18 +20,18 @@ type 'a t = private
   | Unknown of 'a
   | Null
   | Array of 'a t array
-  | Dict of 'a t MapString.t
+  | Dict of 'a t Map.Make(String).t
   | Const of Const.t * Typescheme.Variant.extra
 
 val unknown : 'a -> 'a t
 val null : _ t
 val const : Const.t -> Typescheme.Variant.extra -> _ t
 val some : 'a t -> 'a t
-val dict : 'a t MapString.t -> 'a t
+val dict : 'a t Map.Make(String).t -> 'a t
 val tuple : 'a t array -> 'a t
 val get_const : _ t -> Const.t
 val get_tuple : 'a t -> 'a t array
-val get_dict : 'a t -> 'a t MapString.t
+val get_dict : 'a t -> 'a t Map.Make(String).t
 val is_null : 'a t -> bool
 val list_cons : 'a t -> 'a t -> 'a t
 val list_rev : 'a t -> 'a t

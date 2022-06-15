@@ -8,11 +8,24 @@
 (*                                                                        *)
 (**************************************************************************)
 
+module MapInt : module type of Map.Make (Int)
+module MapString : module type of Map.Make (String)
+module SetInt : module type of Set.Make (Int)
+module SetString : module type of Set.Make (String)
+
 module Pp : sig
   open Format
 
   val sep_comma : formatter -> unit -> unit
   (** Outputs [,@ ]. *)
+
+  val map_string :
+    (Format.formatter -> 'a -> unit) ->
+    Format.formatter ->
+    'a Map.Make(String).t ->
+    unit
+
+  val set_int : Format.formatter -> Set.Make(Int).t -> unit
 
   val field : formatter -> string -> unit
   (** Outputs either [field] or ["string field"] depending on whether the field
@@ -29,24 +42,6 @@ module Loc : sig
   (** Always returns [true]. Do not use location information to test
       equivalency. *)
 end
-
-module type MAP = sig
-  include Map.S
-
-  val pp : (Format.formatter -> 'a -> unit) -> Format.formatter -> 'a t -> unit
-end
-
-module MapString : MAP with type key = string
-module MapInt : MAP with type key = int
-
-module type SET = sig
-  include Set.S
-
-  val pp : Format.formatter -> t -> unit
-end
-
-module SetString : SET with type elt = string
-module SetInt : SET with type elt = int
 
 module StringExtra : sig
   val ltrim : string -> string

@@ -7,7 +7,6 @@
 (*  file, You can obtain one at http://mozilla.org/MPL/2.0/.              *)
 (*                                                                        *)
 (**************************************************************************)
-open StdlibExtra
 
 module type MONAD = sig
   type 'a t
@@ -19,12 +18,13 @@ end
 module type DATA = sig
   type t
 
-  val decode : Typescheme.t -> t -> t Data.t MapString.t
-  val encode : Typescheme.t -> t Data.t MapString.t -> t
+  val decode : Typescheme.t -> t -> t Data.t Map.Make(String).t
+  val encode : Typescheme.t -> t Data.t Map.Make(String).t -> t
 end
 
 module Make (M : MONAD) (D : DATA) : sig
   type t = string M.t
 
-  val make : (D.t -> t MapString.t -> t) Compile.template Compile.t -> D.t -> t
+  val make :
+    (D.t -> t Map.Make(String).t -> t) Compile.template Compile.t -> D.t -> t
 end

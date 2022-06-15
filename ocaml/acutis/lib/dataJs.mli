@@ -8,10 +8,9 @@
 (*                                                                        *)
 (**************************************************************************)
 
-open StdlibExtra
 open Js_of_ocaml
 
 type t = Js.Unsafe.any
 
-val decode : Typescheme.t -> t -> t Data.t MapString.t
-val encode : Typescheme.t -> t Data.t MapString.t -> t
+val decode : Typescheme.t -> t -> t Data.t Map.Make(String).t
+val encode : Typescheme.t -> t Data.t Map.Make(String).t -> t

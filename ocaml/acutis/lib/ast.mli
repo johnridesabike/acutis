@@ -15,7 +15,7 @@ module Dict : sig
   val empty : _ t
   val add : Loc.t -> string -> 'a -> 'a t -> 'a t
   val singleton : string -> 'a -> 'a t
-  val to_map : 'a t -> 'a StdlibExtra.MapString.t
+  val to_map : 'a t -> 'a Map.Make(String).t
 end
 
 module Record : sig
