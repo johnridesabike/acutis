@@ -33,7 +33,6 @@ end
 module type MAP = sig
   include Map.S
 
-  val pp_key : Format.formatter -> key -> unit
   val pp : (Format.formatter -> 'a -> unit) -> Format.formatter -> 'a t -> unit
 end
 
@@ -43,7 +42,6 @@ module MapInt : MAP with type key = int
 module type SET = sig
   include Set.S
 
-  val pp_elt : Format.formatter -> elt -> unit
   val pp : Format.formatter -> t -> unit
 end
 

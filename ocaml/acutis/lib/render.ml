@@ -84,23 +84,20 @@ let make_match args Matching.{ tree; exits } =
       Some (bindings, Matching.Exit.get exits exit)
   | None -> None
 
-let escape_aux b str =
-  let f = function
-    | '&' -> Buffer.add_string b "&amp;"
-    | '"' -> Buffer.add_string b "&quot;"
-    | '\'' -> Buffer.add_string b "&apos;"
-    | '>' -> Buffer.add_string b "&gt;"
-    | '<' -> Buffer.add_string b "&lt;"
-    | '/' -> Buffer.add_string b "&#x2F;"
-    | '`' -> Buffer.add_string b "&#x60;"
-    | '=' -> Buffer.add_string b "&#x3D;"
-    | c -> Buffer.add_char b c
-  in
-  String.iter f str
+let escape b = function
+  | '&' -> Buffer.add_string b "&amp;"
+  | '"' -> Buffer.add_string b "&quot;"
+  | '\'' -> Buffer.add_string b "&apos;"
+  | '>' -> Buffer.add_string b "&gt;"
+  | '<' -> Buffer.add_string b "&lt;"
+  | '/' -> Buffer.add_string b "&#x2F;"
+  | '`' -> Buffer.add_string b "&#x60;"
+  | '=' -> Buffer.add_string b "&#x3D;"
+  | c -> Buffer.add_char b c
 
 let echo_var b esc str =
   match esc with
-  | Ast.Escape -> escape_aux b str
+  | Ast.Escape -> String.iter (escape b) str
   | No_escape -> Buffer.add_string b str
 
 let map_merge =
@@ -189,7 +186,7 @@ module Make (M : MONAD) (D : DATA) = struct
         | Some x -> x
         | None -> echo b props children default tl)
 
-  let rec make b ~nodes ~vars ~children =
+  let rec make b nodes vars children =
     let f b = function
       | Compile.Echo (nullables, default) ->
           let* b in
@@ -204,7 +201,7 @@ module Make (M : MONAD) (D : DATA) = struct
           | None -> assert false
           | Some (vars', nodes) ->
               let vars = map_merge vars vars' in
-              make b ~nodes ~vars ~children)
+              make b nodes vars children)
       | Map_list (arg, tree) ->
           let l = pattern_to_data ~vars arg in
           let f ~index b arg =
@@ -212,7 +209,7 @@ module Make (M : MONAD) (D : DATA) = struct
             | None -> assert false
             | Some (vars', nodes) ->
                 let vars = map_merge vars vars' in
-                make b ~nodes ~vars ~children
+                make b nodes vars children
           in
           Data.fold_list f b l
       | Map_dict (arg, tree) ->
@@ -222,24 +219,24 @@ module Make (M : MONAD) (D : DATA) = struct
             | None -> assert false
             | Some (vars', nodes) ->
                 let vars = map_merge vars vars' in
-                make b ~nodes ~vars ~children
+                make b nodes vars children
           in
           Data.fold_dict f b l
       | Component (data, comp_vars, comp_children) -> (
           let f = function
             | Compile.Child_block nodes ->
                 let b = M.return (Buffer.create 1024) in
-                let* result = make b ~nodes ~vars ~children in
+                let* result = make b nodes vars children in
                 M.return (Buffer.contents result)
             | Child_name child -> MapString.find child children
           in
           let children = MapString.map f comp_children in
           let vars = MapString.map (pattern_to_data ~vars) comp_vars in
           match data with
-          | Compile.Acutis (_, nodes) -> make b ~nodes ~vars ~children
+          | Compile.Acutis (_, nodes) -> make b nodes vars children
           | Function (_, prop_types, f) ->
-              let* b in
               let* result = f (D.encode prop_types vars) children in
+              let* b in
               Buffer.add_string b result;
               M.return b)
     in
@@ -248,6 +245,6 @@ module Make (M : MONAD) (D : DATA) = struct
   let make Compile.{ nodes; prop_types } props =
     let b = M.return (Buffer.create 1024) in
     let vars = D.decode prop_types props in
-    let* result = make b ~nodes ~vars ~children:MapString.empty in
+    let* result = make b nodes vars MapString.empty in
     Buffer.contents result |> M.return
 end

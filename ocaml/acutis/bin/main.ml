@@ -10,14 +10,25 @@
 
 open Js_of_ocaml
 open Acutis
-module RenderJs = Render.Make (Sync) (DataJs)
 
-let _ =
+module Promise_with_fixed_bind = struct
+  type 'a t = 'a Promise.t
+
+  let return = Promise.return
+  let bind = Promise.Syntax.( let* )
+end
+
+module RenderJs = Render.Make (Promise_with_fixed_bind) (DataJs)
+
+let () =
   Js.export_all
     (object%js
        method lmao src =
          Compile.make ~filename:"test" Compile.Components.empty
            (Js.to_string src)
 
-       method lol template json = RenderJs.make template json
+       method lol template json =
+         let open Promise.Syntax in
+         let+ result = RenderJs.make template json in
+         Js.string result
     end)
