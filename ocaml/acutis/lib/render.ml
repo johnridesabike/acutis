@@ -27,9 +27,9 @@ let rec make_match :
           'a 'args 'key.
           'args ->
           ('key -> 'args -> 'data Data.t option) ->
-          'data Data.t Map.Make(Int).t ->
+          'data Data.t MapInt.t ->
           ('a, 'key) Matching.tree ->
-          ('data Data.t Map.Make(Int).t * 'a) option =
+          ('data Data.t MapInt.t * 'a) option =
  fun args get vars -> function
   | End x -> Some (vars, x)
   | Switch { key; cases; wildcard; ids; _ } -> (
@@ -137,13 +137,14 @@ end
 module type DATA = sig
   type t
 
-  val decode : Typescheme.t -> t -> t Data.t Map.Make(String).t
-  val encode : Typescheme.t -> t Data.t Map.Make(String).t -> t
+  val decode : Typescheme.t -> t -> t Data.t MapString.t
+  val encode : Typescheme.t -> t Data.t MapString.t -> t
 end
 
 module Make (M : MONAD) (D : DATA) = struct
   type t = string M.t
   type data = D.t
+  type component = data -> t MapString.t -> t
 
   let ( let* ) = M.bind
 

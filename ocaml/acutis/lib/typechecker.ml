@@ -453,8 +453,7 @@ type node =
   | TMatch of Loc.t * Pattern.t Nonempty.t * case Nonempty.t
   | TMap_list of Loc.t * Pattern.t * case Nonempty.t
   | TMap_dict of Loc.t * Pattern.t * case Nonempty.t
-  | TComponent of
-      string * Pattern.t Map.Make(String).t * child Map.Make(String).t
+  | TComponent of string * Pattern.t MapString.t * child MapString.t
 
 and case = { pats : (Loc.t * Pattern.t Nonempty.t) Nonempty.t; nodes : nodes }
 and child = TChild_name of string | TChild_block of nodes
@@ -469,9 +468,9 @@ module Context = struct
   type root = [ `Root | `Component ]
 
   type t = {
-    global : Ty.ty Map.Make(String).t ref;
-    scope : Ty.ty Map.Make(String).t;
-    children : Ty.Child.ty Map.Make(String).t ref;
+    global : Ty.ty MapString.t ref;
+    scope : Ty.ty MapString.t;
+    children : Ty.Child.ty MapString.t ref;
     root : root;
   }
 

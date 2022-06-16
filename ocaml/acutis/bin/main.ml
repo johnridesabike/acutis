@@ -10,6 +10,7 @@
 
 open Js_of_ocaml
 open Acutis
+open StdlibExtra
 
 module Promise_with_fixed_bind = struct
   type 'a t = 'a Promise.t
@@ -20,15 +21,33 @@ end
 
 module RenderJs = Render.Make (Promise_with_fixed_bind) (DataJs)
 
+let map_to_js_aux (k, p) =
+  let p = p |> Promise.map Js.string |> Js.Unsafe.inject in
+  (k, p)
+
+let map_to_js m =
+  m |> MapString.to_seq |> Seq.map map_to_js_aux |> Array.of_seq
+  |> Js.Unsafe.obj
+
 let () =
   Js.export_all
     (object%js
-       method lmao src =
-         Compile.make ~filename:"test" Compile.Components.empty
-           (Js.to_string src)
+       method src name src =
+         Source.src ~name:(Js.to_string name) (Js.to_string src)
 
-       method lol template json =
-         let open Promise.Syntax in
-         let+ result = RenderJs.make template json in
-         Js.string result
+       method fn name ty children fn =
+         let fn : RenderJs.component =
+          fun data children ->
+           Js.Unsafe.fun_call fn [| data; map_to_js children |]
+         in
+         Source.fn ~name:(Js.to_string name) ty children fn
+
+       method components a =
+         a |> Js.to_array |> Array.to_list |> Compile.Components.make
+
+       method compile filename components src =
+         Compile.make ~filename components (Js.to_string src)
+
+       method render template js =
+         RenderJs.make template js |> Promise.map Js.string
     end)

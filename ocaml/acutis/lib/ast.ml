@@ -12,7 +12,7 @@ open StdlibExtra
 module F = Format
 
 module Dict = struct
-  type 'a t = 'a Map.Make(String).t
+  type 'a t = 'a MapString.t
 
   let fail_if_dup_key loc k m =
     if MapString.mem k m then Error.dup_record_key loc k

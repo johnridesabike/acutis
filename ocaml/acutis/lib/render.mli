@@ -8,6 +8,8 @@
 (*                                                                        *)
 (**************************************************************************)
 
+open StdlibExtra
+
 module type MONAD = sig
   type 'a t
 
@@ -18,14 +20,14 @@ end
 module type DATA = sig
   type t
 
-  val decode : Typescheme.t -> t -> t Data.t Map.Make(String).t
-  val encode : Typescheme.t -> t Data.t Map.Make(String).t -> t
+  val decode : Typescheme.t -> t -> t Data.t MapString.t
+  val encode : Typescheme.t -> t Data.t MapString.t -> t
 end
 
 module Make (M : MONAD) (D : DATA) : sig
   type t = string M.t
   type data = D.t
+  type component = data -> t MapString.t -> t
 
-  val make :
-    (data -> t Map.Make(String).t -> t) Compile.template Compile.t -> data -> t
+  val make : component Compile.template Compile.t -> data -> t
 end

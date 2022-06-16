@@ -8,16 +8,15 @@
 (*                                                                        *)
 (**************************************************************************)
 
+open StdlibExtra
+
 type 'a node =
   | Text of string
   | Echo of Typechecker.echo list * Typechecker.echo
   | Match of Typechecker.Pattern.t array * 'a nodes Matching.t
   | Map_list of Typechecker.Pattern.t * 'a nodes Matching.t
   | Map_dict of Typechecker.Pattern.t * 'a nodes Matching.t
-  | Component of
-      'a
-      * Typechecker.Pattern.t Map.Make(String).t
-      * 'a child Map.Make(String).t
+  | Component of 'a * Typechecker.Pattern.t MapString.t * 'a child MapString.t
 
 and 'a child = Child_name of string | Child_block of 'a nodes
 and 'a nodes = 'a node list

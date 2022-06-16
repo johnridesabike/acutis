@@ -8,6 +8,8 @@
 (*                                                                        *)
 (**************************************************************************)
 
+open StdlibExtra
+
 module Variant : sig
   type row = [ `Closed | `Open ]
   type extra = [ `Extra_none | `Extra_bool ]
@@ -30,13 +32,13 @@ module Variant : sig
 end
 
 module Enum : sig
-  type t = (Set.Make(Int).t, Set.Make(String).t) Variant.t
+  type t = (SetInt.t, SetString.t) Variant.t
 
   val string : string list -> Variant.row -> t
   val string_singleton : string -> Variant.row -> t
   val int : int list -> Variant.row -> t
   val int_singleton : int -> Variant.row -> t
-  val false_and_true_cases : (Set.Make(Int).t, _) Variant.ty
+  val false_and_true_cases : (SetInt.t, _) Variant.ty
   val false_and_true : unit -> t
   val true_only : unit -> t
   val false_only : unit -> t
@@ -45,9 +47,7 @@ end
 
 module Union : sig
   type 'a t =
-    ( 'a Map.Make(String).t ref Map.Make(Int).t,
-      'a Map.Make(String).t ref Map.Make(String).t )
-    Variant.t
+    ('a MapString.t ref MapInt.t, 'a MapString.t ref MapString.t) Variant.t
 
   val equal : ('a -> 'a -> bool) -> 'a t -> 'a t -> bool
 end
@@ -62,14 +62,14 @@ type ty' =
   | Nullable of ty
   | List of ty
   | Tuple of ty list
-  | Record of ty Map.Make(String).t ref
-  | Dict of ty * Set.Make(String).t ref
+  | Record of ty MapString.t ref
+  | Dict of ty * SetString.t ref
   | Enum of Enum.t
   | Union of string * ty Union.t
 
 and ty = ty' ref
 
-type t = ty Map.Make(String).t
+type t = ty MapString.t
 
 (* Public API for declaring type schemes: *)
 val unknown : unit -> ty
@@ -99,8 +99,8 @@ val make : (string * ty) list -> t
 val empty : t
 
 (* Utilities *)
-val internal_record : ty Map.Make(String).t ref -> ty
-val internal_dict_keys : ty -> Set.Make(String).t ref -> ty
+val internal_record : ty MapString.t ref -> ty
+val internal_dict_keys : ty -> SetString.t ref -> ty
 val internal_copy_record : t -> t
 val pp_ty : Format.formatter -> ty -> unit
 val pp : Format.formatter -> t -> unit
@@ -109,7 +109,7 @@ val equal : t -> t -> bool
 
 module Child : sig
   type ty
-  type t = ty Map.Make(String).t
+  type t = ty MapString.t
 
   val make : (string * ty) list -> t
   val child : string -> string * ty

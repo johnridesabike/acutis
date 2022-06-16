@@ -26,9 +26,9 @@ module Pattern : sig
     | TTuple of t list
     | TRecord of
         (string * constant * Typescheme.ty Typescheme.Union.t) option
-        * t Map.Make(String).t
-        * Typescheme.ty Map.Make(String).t ref
-    | TDict of t Map.Make(String).t * Set.Make(String).t ref
+        * t MapString.t
+        * Typescheme.ty MapString.t ref
+    | TDict of t MapString.t * SetString.t ref
     | TVar of string
     | TAny
 
@@ -47,7 +47,7 @@ type node =
   | TMatch of Loc.t * Pattern.t Nonempty.t * case Nonempty.t
   | TMap_list of Loc.t * Pattern.t * case Nonempty.t
   | TMap_dict of Loc.t * Pattern.t * case Nonempty.t
-  | TComponent of string * Pattern.t Map.Make(String).t * child Map.Make(String).t
+  | TComponent of string * Pattern.t MapString.t * child MapString.t
 
 and case = { pats : (Loc.t * Pattern.t Nonempty.t) Nonempty.t; nodes : nodes }
 and child = TChild_name of string | TChild_block of nodes
@@ -60,6 +60,6 @@ type t = {
 }
 
 val make_components :
-  (Ast.t, 'a) Source.t Map.Make(String).t -> (t, 'a) Source.t Map.Make(String).t
+  (Ast.t, 'a) Source.t MapString.t -> (t, 'a) Source.t MapString.t
 
-val make : (t, 'a) Source.t Map.Make(String).t -> Ast.t -> t
+val make : (t, 'a) Source.t MapString.t -> Ast.t -> t

@@ -578,7 +578,7 @@ let merge = merge Z
   CPS as an easy way deal with the nested data type.
 *)
 
-type bindings = { next_id : unit -> int; names : int Map.Make(String).t }
+type bindings = { next_id : unit -> int; names : int MapString.t }
 type ('a, 'k) cont = bindings -> ('a, 'k) tree
 
 let of_const key data if_match enum =

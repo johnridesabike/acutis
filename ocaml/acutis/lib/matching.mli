@@ -26,7 +26,7 @@ type ('leaf, 'key) tree =
  *)
   | Switch of {
       key : 'key;
-      ids : Set.Make(Int).t;
+      ids : SetInt.t;
       cases : ('leaf, 'key) switchcase;
       extra : extra_switch_info;
       wildcard : ('leaf, 'key) tree option;
@@ -36,7 +36,7 @@ type ('leaf, 'key) tree =
  *)
   | Nest of {
       key : 'key;
-      ids : Set.Make(Int).t;
+      ids : SetInt.t;
       child : ('leaf, 'key) nest;
       wildcard : ('leaf, 'key) tree option;
       extra : extra_nest_info;
@@ -50,7 +50,7 @@ type ('leaf, 'key) tree =
  *)
   | Construct of {
       key : 'key;
-      ids : Set.Make(Int).t;
+      ids : SetInt.t;
       nil : ('leaf, 'key) tree option;
       cons : ('leaf, 'key) tree option;
       extra : Typechecker.Pattern.construct;
@@ -60,7 +60,7 @@ type ('leaf, 'key) tree =
  *)
   | Wildcard of {
       key : 'key;
-      ids : Set.Make(Int).t;
+      ids : SetInt.t;
       child : ('leaf, 'key) tree;
     }
   | End of 'leaf
@@ -102,7 +102,7 @@ module Exit : sig
   val unsafe_key : int -> key
 end
 
-type leaf = { names : int Map.Make(String).t; exit : Exit.key }
+type leaf = { names : int MapString.t; exit : Exit.key }
 type 'a t = { tree : (leaf, int) tree; exits : 'a Exit.t }
 
 val equal_leaf : leaf -> leaf -> bool

@@ -4,6 +4,10 @@ default: build
 build:
 	dune build
 
+.PHONY: build-release
+build-release:
+	dune build --profile=release
+
 .PHONY: watch
 watch:
 	dune build --watch

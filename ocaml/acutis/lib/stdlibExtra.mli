@@ -22,10 +22,10 @@ module Pp : sig
   val map_string :
     (Format.formatter -> 'a -> unit) ->
     Format.formatter ->
-    'a Map.Make(String).t ->
+    'a MapString.t ->
     unit
 
-  val set_int : Format.formatter -> Set.Make(Int).t -> unit
+  val set_int : Format.formatter -> SetInt.t -> unit
 
   val field : formatter -> string -> unit
   (** Outputs either [field] or ["string field"] depending on whether the field
