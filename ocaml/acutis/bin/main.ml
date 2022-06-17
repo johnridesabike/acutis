@@ -19,35 +19,127 @@ module Promise_with_fixed_bind = struct
   let bind = Promise.Syntax.( let* )
 end
 
-module RenderJs = Render.Make (Promise_with_fixed_bind) (DataJs)
+module RenderAsync = Render.Make (Promise_with_fixed_bind) (DataJs)
+module RenderSync = Render.Make (Sync) (DataJs)
 
-let map_to_js_aux (k, p) =
+let child_async (k, p) =
   let p = p |> Promise.map Js.string |> Js.Unsafe.inject in
   (k, p)
 
-let map_to_js m =
-  m |> MapString.to_seq |> Seq.map map_to_js_aux |> Array.of_seq
-  |> Js.Unsafe.obj
+let child_sync (k, v) = (k, Js.Unsafe.coerce (Js.string v))
+
+let map_to_js f m =
+  m |> MapString.to_seq |> Seq.map f |> Array.of_seq |> Js.Unsafe.obj
 
 let () =
-  Js.export_all
+  Js.export "Compile"
     (object%js
        method src name src =
-         Source.src ~name:(Js.to_string name) (Js.to_string src)
+         Compile.Components.src ~name:(Js.to_string name) (Js.to_string src)
+
+       method fnAsync name ty children fn =
+         let fn : RenderAsync.component =
+          fun data children ->
+           Js.Unsafe.fun_call fn [| data; map_to_js child_async children |]
+         in
+         Compile.Components.fn ~name:(Js.to_string name) ty children fn
 
        method fn name ty children fn =
-         let fn : RenderJs.component =
+         let fn : RenderSync.component =
           fun data children ->
-           Js.Unsafe.fun_call fn [| data; map_to_js children |]
+           Js.Unsafe.fun_call fn [| data; map_to_js child_sync children |]
          in
-         Source.fn ~name:(Js.to_string name) ty children fn
+         Compile.Components.fn ~name:(Js.to_string name) ty children fn
 
        method components a =
          a |> Js.to_array |> Array.to_list |> Compile.Components.make
 
-       method compile filename components src =
-         Compile.make ~filename components (Js.to_string src)
+       method make fname components src =
+         Compile.make ~filename:(Js.to_string fname) components
+           (Js.to_string src)
+    end)
 
-       method render template js =
-         RenderJs.make template js |> Promise.map Js.string
+let () =
+  Js.export "Render"
+    (object%js
+       method async template js =
+         RenderAsync.make template js |> Promise.map Js.string
+
+       method sync template js = RenderSync.make template js |> Js.string
+    end)
+
+let () =
+  let open Typescheme in
+  let key_values v =
+    v |> Js.to_array
+    |> Array.map (fun (k, v) ->
+           let k = Js.to_string k in
+           (k, v))
+    |> Array.to_list
+  in
+  let int_of_number x = x |> Js.float_of_number |> int_of_float in
+  Js.export "Typescheme"
+    (object%js
+       val variantOpen = `Open
+       val variantClosed = `Closed
+       val empty = empty
+       method make a = a |> key_values |> make
+       method unknown = unknown
+       method int = int
+       method float = float
+       method string = string
+       method echo = echo
+       method nullable = nullable
+       method list = list
+       method tuple a = a |> Js.to_array |> Array.to_list |> tuple
+
+       method record a =
+         a |> Js.to_array |> Array.to_seq
+         |> Seq.map (fun (k, v) -> (Js.to_string k, v))
+         |> List.of_seq |> record
+
+       method dict = dict
+
+       method enumInt r a =
+         a |> Js.to_array |> Array.map int_of_number |> Array.to_list
+         |> enum_int r
+
+       method enumString r a =
+         a |> Js.to_array |> Array.map Js.to_string |> Array.to_list
+         |> enum_string r
+
+       method bool = bool
+       method falseOnly = false_only
+       method trueOnly = true_only
+
+       method unionInt r k a =
+         a |> Js.to_array
+         |> Array.map (fun (i, v) -> (int_of_number i, key_values v))
+         |> Array.to_list
+         |> union_int r (Js.to_string k)
+
+       method unionString r k a =
+         a |> Js.to_array
+         |> Array.map (fun (s, v) -> (Js.to_string s, key_values v))
+         |> Array.to_list
+         |> union_string r (Js.to_string k)
+
+       method unionBoolean k f t =
+         let f = key_values f in
+         let t = key_values t in
+         union_boolean (Js.to_string k) ~f ~t
+
+       method unionTrueOnly k t =
+         union_true_only (Js.to_string k) (key_values t)
+
+       method unionFalseOnly k f =
+         union_false_only (Js.to_string k) (key_values f)
+    end);
+  let open Child in
+  Js.export "TypeschemeChildren"
+    (object%js
+       val empty = empty
+       method make a = a |> key_values |> make
+       method child s = child (Js.to_string s)
+       method nullable s = nullable (Js.to_string s)
     end)

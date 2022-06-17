@@ -23,29 +23,25 @@ and 'a nodes = 'a node list
 
 val make_nodes : Typechecker.t -> string nodes
 
-type 'a t = { prop_types : Typescheme.t; nodes : 'a nodes }
-
-type 'a template =
-  | Acutis of string * 'a template nodes
-  | Function of string * Typescheme.t * 'a
+type 'a template = Src of 'a template nodes | Fun of Typescheme.t * 'a
+type 'a t = { prop_types : Typescheme.t; nodes : 'a template nodes }
 
 val parse_string : filename:string -> string -> Ast.t
-(**
-   @raises [Error.Error] on syntax error.
-*)
 
 module Components : sig
+  type ('a, 'b) source =
+    [ `Src of string * 'a
+    | `Fun of string * Typescheme.t * Typescheme.Child.t * 'b ]
+
+  val src : name:string -> string -> (string, _) source
+
+  val fn :
+    name:string -> Typescheme.t -> Typescheme.Child.t -> 'a -> (_, 'a) source
+
   type 'a t
 
   val empty : 'a t
-
-  val make : (string, 'a) Source.t list -> 'a t
-  (**
-    @raises [Error.Error] on syntax error.
-  *)
+  val make : (string, 'a) source list -> 'a t
 end
 
-val make : filename:string -> 'a Components.t -> string -> 'a template t
-(**
-   @raises [Error.Error] on syntax error.
-*)
+val make : filename:string -> 'a Components.t -> string -> 'a t

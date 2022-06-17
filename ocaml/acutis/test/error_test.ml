@@ -272,7 +272,7 @@ let type_error_record () =
         Expected: {a: _, b: _}\n\
         Received: {a: _}")
     (render "{% match {a: 1} with {a, b} %} {% /match %}");
-  let comps = Compile.Components.make [ Source.src ~name:"A" "{{ a }}" ] in
+  let comps = Compile.Components.(make [ src ~name:"A" "{{ a }}" ]) in
   check_raises "Records with missing fields (Component)"
     (Error
        "File <test>, 1:4-1:7\n\
@@ -413,7 +413,7 @@ let component_typechecker () =
         Type error.\n\
         Children are not allowed in the root template.")
     (render "{{ A }}");
-  let a = Source.src ~name:"A" "{{ B }}" in
+  let a = Compile.Components.src ~name:"A" "{{ B }}" in
   let components = Compile.Components.make [ a ] in
   let src = "{% A /%}" in
   check_raises "Missing children are reported."
@@ -432,11 +432,11 @@ let component_typechecker () =
         Expected: `child`\n\
         Received: `nullable child`") (fun () ->
       ignore
-      @@ Compile.Components.make
-           [
-             Source.src ~name:"Z" "{{ A }}";
-             Source.src ~name:"Y" "{{ A ? z }} {% Z A / %}";
-           ])
+      @@ Compile.Components.(
+           make
+             [
+               src ~name:"Z" "{{ A }}"; src ~name:"Y" "{{ A ? z }} {% Z A / %}";
+             ]))
 
 let matching_unused () =
   let open Alcotest in
@@ -565,10 +565,10 @@ let parmatch () =
 
 let component_graph () =
   let open Alcotest in
-  let a = Source.src ~name:"A" "{% B /%}" in
-  let b = Source.src ~name:"B" "{% C /%}" in
-  let c = Source.src ~name:"C" "{% D /%}" in
-  let d = Source.src ~name:"D" "{% B /%}" in
+  let a = Compile.Components.src ~name:"A" "{% B /%}" in
+  let b = Compile.Components.src ~name:"B" "{% C /%}" in
+  let c = Compile.Components.src ~name:"C" "{% D /%}" in
+  let d = Compile.Components.src ~name:"D" "{% B /%}" in
   check_raises "Cyclic dependencies are reported."
     (Error "Dependency cycle detected.\nA -> B -> C -> D -> B") (fun () ->
       ignore @@ Compile.Components.make [ a; b; c; d ]);

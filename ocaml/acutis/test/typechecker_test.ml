@@ -427,7 +427,7 @@ let pathologic () =
 
 let components () =
   let a =
-    Source.src ~name:"A"
+    Compile.Components.src ~name:"A"
       {|{% map a with x %} {{ x }} {% /map %}
        {% map b with x %} {{ x }} {% /map %}|}
   in

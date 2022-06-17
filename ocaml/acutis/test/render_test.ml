@@ -37,7 +37,9 @@ let whitespace () =
     "{% match a with {b: {c}} ~%}\n\t  _ {{~ c ~}} _\t \r  {%~ /match %}"
   in
   check "Whitespace control works (1)" "_hi_" (render src props);
-  let oh_hai = Source.src ~name:"OhHai" "{{ Children }} Oh hai {{ name }}." in
+  let oh_hai =
+    Compile.Components.src ~name:"OhHai" "{{ Children }} Oh hai {{ name }}."
+  in
   let src =
     {|{% OhHai name="Mark" ~%} I did not. {%~ /OhHai %}
       {%~ OhHai name="Lisa" Children=#%} Cheep cheep cheep. {%~/# / %}|}
@@ -48,7 +50,7 @@ let whitespace () =
 
 let nullish_coalescing () =
   let props = {|{"b": "b", "c": "c"}|} in
-  let comp = Source.src ~name:"Comp" {|{{ a ? b ? C ? Z }}|} in
+  let comp = Compile.Components.src ~name:"Comp" {|{{ a ? b ? C ? Z }}|} in
   let src =
     {|{{ a ? b ? c }} {% Comp b Z=#%}z{%/# / %} {% Comp Z=#%}z{%/# / %}|}
   in
@@ -105,24 +107,26 @@ let map_dict () =
     (render src props)
 
 let nullable_props () =
-  let a = Source.src ~name:"A" {|{{ x ? "fail" }} {{ y ? "pass"}}|} in
+  let a =
+    Compile.Components.src ~name:"A" {|{{ x ? "fail" }} {{ y ? "pass"}}|}
+  in
   let src = {|{% A x=!"pass" / %}|} in
   check "Nullable props default to null" "pass pass"
     (render ~components:[ a ] src "{}")
 
 let default_children () =
-  let a = Source.src ~name:"A" "{{ Children }}" in
+  let a = Compile.Components.src ~name:"A" "{{ Children }}" in
   let src = "{% A ~%} a {%~ /A %} {% A Children=#~%} b {%~/# / %}" in
   check "The default [Children] child works" "a b"
     (render ~components:[ a ] src "{}")
 
 let template_sections () =
-  let x = Source.src ~name:"X" "{{ PassthroughChild }}" in
-  let y = Source.src ~name:"Y" "{% X PassthroughChild=A / %}" in
+  let x = Compile.Components.src ~name:"X" "{{ PassthroughChild }}" in
+  let y = Compile.Components.src ~name:"Y" "{% X PassthroughChild=A / %}" in
   let src = "{% Y A=#~%} a {%~/# / %}" in
   check "Children are passed correctly" "a"
     (render ~components:[ x; y ] src "{}");
-  let y = Source.src ~name:"Y" "{% X PassthroughChild / %}" in
+  let y = Compile.Components.src ~name:"Y" "{% X PassthroughChild / %}" in
   let src = "{% Y PassthroughChild=#~%} a {%~/# / %}" in
   check "Children are passed correctly (with punning)" "a"
     (render ~components:[ x; y ] src "{}")

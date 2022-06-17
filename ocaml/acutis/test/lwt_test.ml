@@ -13,14 +13,16 @@ let render ?(components = []) src json =
 
 let basic _ () =
   let a =
-    Source.fn ~name:"Slow" Typescheme.empty Typescheme.Child.empty (fun _ _ ->
-        let* () = Lwt_unix.sleep 0.25 in
-        Lwt.return "Short sleep.")
+    Compile.Components.fn ~name:"Slow" Typescheme.empty Typescheme.Child.empty
+      (fun _ _ ->
+        let+ () = Lwt_unix.sleep 0.05 in
+        "Short sleep.")
   in
   let b =
-    Source.fn ~name:"Slower" Typescheme.empty Typescheme.Child.empty (fun _ _ ->
-        let* () = Lwt_unix.sleep 0.5 in
-        Lwt.return "Long sleep.")
+    Compile.Components.fn ~name:"Slower" Typescheme.empty Typescheme.Child.empty
+      (fun _ _ ->
+        let+ () = Lwt_unix.sleep 0.1 in
+        "Long sleep.")
   in
   let src = "Before. {% Slower / %} {% Slow / %} After." in
   let+ result = render ~components:[ a; b ] src "{}" in

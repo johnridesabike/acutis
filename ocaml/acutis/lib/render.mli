@@ -24,10 +24,13 @@ module type DATA = sig
   val encode : Typescheme.t -> t Data.t MapString.t -> t
 end
 
-module Make (M : MONAD) (D : DATA) : sig
-  type t = string M.t
-  type data = D.t
+module type S = sig
+  type t
+  type data
   type component = data -> t MapString.t -> t
 
-  val make : component Compile.template Compile.t -> data -> t
+  val make : component Compile.t -> data -> t
 end
+
+module Make (M : MONAD) (D : DATA) :
+  S with type t = string M.t and type data = D.t

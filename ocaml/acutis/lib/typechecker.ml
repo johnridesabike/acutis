@@ -570,10 +570,13 @@ let make_default_echo ctx = function
       Ech_component c
   | Ech_string (_, s) -> Ech_string s
 
+type ('a, 'b) source =
+  [ `Src of string * 'a
+  | `Fun of string * Typescheme.t * Typescheme.Child.t * 'b ]
+
 let get_types = function
-  | Source.Acutis (_, { prop_types; child_types; _ }) ->
-      (prop_types, child_types)
-  | Function (_, props, children, _) -> (props, children)
+  | `Src (_, { prop_types; child_types; _ }) -> (prop_types, child_types)
+  | `Fun (_, props, children, _) -> (props, children)
 
 let add_default_wildcard cases =
   let f = function
@@ -693,8 +696,8 @@ let make root g ast =
   { nodes; prop_types = !(ctx.global); child_types = !(ctx.children) }
 
 let make_src g = function
-  | Source.Acutis (name, ast) -> Source.src ~name (make `Component g ast)
-  | Function (name, p, c, f) -> Source.fn ~name p c f
+  | `Src (name, ast) -> `Src (name, make `Component g ast)
+  | `Fun (name, p, c, f) -> `Fun (name, p, c, f)
 
 let make_components m = m |> Dagmap.make ~f:make_src |> Dagmap.link_all
 let make components ast = make `Root (Dagmap.prelinked components) ast

@@ -50,11 +50,8 @@ and make_children = function
 
 let make_nodes Typechecker.{ nodes; _ } = make_nodes nodes
 
-type 'a t = { prop_types : Typescheme.t; nodes : 'a nodes }
-
-type 'a template =
-  | Acutis of string * 'a template nodes
-  | Function of string * Typescheme.t * 'a
+type 'a template = Src of 'a template nodes | Fun of Typescheme.t * 'a
+type 'a t = { prop_types : Typescheme.t; nodes : 'a template nodes }
 
 let parse_string ~filename src =
   let state = Lexer.make_state () in
@@ -65,29 +62,36 @@ let parse_string ~filename src =
   | Parser.Error i -> Error.parse_error i lexbuf
 
 module Components = struct
+  type ('a, 'b) source =
+    [ `Src of string * 'a
+    | `Fun of string * Typescheme.t * Typescheme.Child.t * 'b ]
+
+  let src ~name src = `Src (name, src)
+  let fn ~name props children f = `Fun (name, props, children, f)
+
   type 'a t = {
-    typed : (Typechecker.t, 'a) Source.t MapString.t;
-    optimized : (string nodes, 'a) Source.t MapString.t;
+    typed : (Typechecker.t, 'a) source MapString.t;
+    optimized : (string nodes, 'a) source MapString.t;
   }
 
   let empty = { typed = MapString.empty; optimized = MapString.empty }
 
   let rec make_aux_parse m = function
     | [] -> m
-    | Source.Acutis (name, src) :: l ->
+    | `Src (name, src) :: l ->
         if MapString.mem name m then Error.duplicate_name name;
-        let c = Source.src ~name (parse_string ~filename:name src) in
+        let c = `Src (name, parse_string ~filename:name src) in
         make_aux_parse (MapString.add name c m) l
-    | Function (name, p, c, f) :: l ->
+    | `Fun (name, p, c, f) :: l ->
         if MapString.mem name m then Error.duplicate_name name;
-        make_aux_parse (MapString.add name (Source.fn ~name p c f) m) l
+        make_aux_parse (MapString.add name (`Fun (name, p, c, f)) m) l
 
   let make_aux_optimize _ v optimized =
     match v with
-    | Source.Acutis (name, src) ->
-        MapString.add name (Source.src ~name (make_nodes src)) optimized
-    | Function (name, p, c, f) ->
-        MapString.add name (Source.fn ~name p c f) optimized
+    | `Src (name, src) ->
+        MapString.add name (`Src (name, make_nodes src)) optimized
+    | `Fun (name, p, c, f) ->
+        MapString.add name (`Fun (name, p, c, f)) optimized
 
   let make l =
     let untyped = make_aux_parse MapString.empty l in
@@ -120,8 +124,8 @@ let rec link_nodes graph nodes =
   List.map f nodes
 
 let link_src graph = function
-  | Source.Acutis (name, nodes) -> Acutis (name, link_nodes graph nodes)
-  | Function (name, props, _, f) -> Function (name, props, f)
+  | `Src (_, nodes) -> Src (link_nodes graph nodes)
+  | `Fun (_, props, _, f) -> Fun (props, f)
 
 let make ~filename components src =
   let nodes = parse_string ~filename src in

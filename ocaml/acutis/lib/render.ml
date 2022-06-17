@@ -141,6 +141,14 @@ module type DATA = sig
   val encode : Typescheme.t -> t Data.t MapString.t -> t
 end
 
+module type S = sig
+  type t
+  type data
+  type component = data -> t MapString.t -> t
+
+  val make : component Compile.t -> data -> t
+end
+
 module Make (M : MONAD) (D : DATA) = struct
   type t = string M.t
   type data = D.t
@@ -235,8 +243,8 @@ module Make (M : MONAD) (D : DATA) = struct
           let children = MapString.map f comp_children in
           let vars = MapString.map (pattern_to_data ~vars) comp_vars in
           match data with
-          | Compile.Acutis (_, nodes) -> make b nodes vars children
-          | Function (_, prop_types, f) ->
+          | Compile.Src nodes -> make b nodes vars children
+          | Fun (prop_types, f) ->
               let* result = f (D.encode prop_types vars) children in
               let* b in
               Buffer.add_string b result;

@@ -59,7 +59,11 @@ type t = {
   child_types : Typescheme.Child.t;
 }
 
-val make_components :
-  (Ast.t, 'a) Source.t MapString.t -> (t, 'a) Source.t MapString.t
+type ('a, 'b) source =
+  [ `Src of string * 'a
+  | `Fun of string * Typescheme.t * Typescheme.Child.t * 'b ]
 
-val make : (t, 'a) Source.t MapString.t -> Ast.t -> t
+val make_components :
+  (Ast.t, 'a) source MapString.t -> (t, 'a) source MapString.t
+
+val make : (t, 'a) source MapString.t -> Ast.t -> t
