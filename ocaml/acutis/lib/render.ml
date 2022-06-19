@@ -180,7 +180,7 @@ module Make (M : MONAD) (D : DATA) = struct
         | None -> None
         | Some child ->
             let b =
-              let* child in
+              let* child = child in
               Buffer.add_string b child;
               M.return b
             in
@@ -199,10 +199,10 @@ module Make (M : MONAD) (D : DATA) = struct
   let rec make b nodes vars children =
     let f b = function
       | Compile.Echo (nullables, default) ->
-          let* b in
+          let* b = b in
           echo b vars children default nullables
       | Text s ->
-          let* b in
+          let* b = b in
           Buffer.add_string b s;
           M.return b
       | Match (args, tree) -> (
@@ -246,7 +246,7 @@ module Make (M : MONAD) (D : DATA) = struct
           | Compile.Src nodes -> make b nodes vars children
           | Fun (prop_types, f) ->
               let* result = f (D.encode prop_types vars) children in
-              let* b in
+              let* b = b in
               Buffer.add_string b result;
               M.return b)
     in

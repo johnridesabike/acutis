@@ -10,9 +10,19 @@ homepage: "https://github.com/username/reponame"
 doc: "https://url/to/documentation"
 bug-reports: "https://github.com/username/reponame/issues"
 depends: [
-  "ocaml"
+  "ocaml" {>= "4.14"}
   "dune" {>= "3.1"}
-  "odoc" {with-doc}
+  "odoc"
+  "yojson"
+  "js_of_ocaml"
+  "js_of_ocaml-compiler"
+  "js_of_ocaml-ppx"
+  "ppx_deriving"
+  "menhir"
+  "promise_jsoo" {build}
+  "alcotest" {with-test}
+  "alcotest-lwt" {with-test}
+  "lwt" {with-test}
 ]
 build: [
   ["dune" "subst"] {dev}

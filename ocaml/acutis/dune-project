@@ -19,7 +19,20 @@
  (name acutis)
  (synopsis "A short synopsis")
  (description "A longer description")
- (depends ocaml dune)
+ (depends
+   (ocaml (>= 4.14))
+   dune
+   odoc
+   yojson
+   js_of_ocaml
+   js_of_ocaml-compiler
+   js_of_ocaml-ppx
+   ppx_deriving
+   menhir
+   (promise_jsoo :build)
+   (alcotest :with-test)
+   (alcotest-lwt :with-test)
+   (lwt :with-test))
  (tags
   (topics "to describe" your project))
  (allow_empty))
