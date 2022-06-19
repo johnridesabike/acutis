@@ -52,71 +52,65 @@ module Union : sig
   val equal : ('a -> 'a -> bool) -> 'a t -> 'a t -> bool
 end
 
-type ty' =
+type ty =
   (* This row is for unification with variant types during destructuring. *)
   | Unknown of Variant.row ref
   | Int
   | Float
   | String
   | Echo
-  | Nullable of ty
-  | List of ty
-  | Tuple of ty list
-  | Record of ty MapString.t ref
-  | Dict of ty * SetString.t ref
+  | Nullable of t
+  | List of t
+  | Tuple of t list
+  | Record of t MapString.t ref
+  | Dict of t * SetString.t ref
   | Enum of Enum.t
-  | Union of string * ty Union.t
+  | Union of string * t Union.t
 
-and ty = ty' ref
-
-type t = ty MapString.t
+and t = ty ref
 
 (* Public API for declaring type schemes: *)
-val unknown : unit -> ty
-val int : unit -> ty
-val float : unit -> ty
-val string : unit -> ty
-val echo : unit -> ty
-val nullable : ty -> ty
-val list : ty -> ty
-val tuple : ty list -> ty
-val record : (string * ty) list -> ty
-val dict : ty -> ty
-val enum_int : Variant.row -> int list -> ty
-val enum_string : Variant.row -> string list -> ty
-val bool : unit -> ty
-val false_only : unit -> ty
-val true_only : unit -> ty
-val union_int : Variant.row -> string -> (int * (string * ty) list) list -> ty
+val unknown : unit -> t
+val int : unit -> t
+val float : unit -> t
+val string : unit -> t
+val echo : unit -> t
+val nullable : t -> t
+val list : t -> t
+val tuple : t list -> t
+val record : (string * t) list -> t
+val dict : t -> t
+val enum_int : Variant.row -> int list -> t
+val enum_string : Variant.row -> string list -> t
+val bool : unit -> t
+val false_only : unit -> t
+val true_only : unit -> t
+val union_int : Variant.row -> string -> (int * (string * t) list) list -> t
 
 val union_string :
-  Variant.row -> string -> (string * (string * ty) list) list -> ty
+  Variant.row -> string -> (string * (string * t) list) list -> t
 
-val union_boolean : string -> f:(string * ty) list -> t:(string * ty) list -> ty
-val union_false_only : string -> (string * ty) list -> ty
-val union_true_only : string -> (string * ty) list -> ty
-val make : (string * ty) list -> t
-val empty : t
+val union_boolean : string -> f:(string * t) list -> t:(string * t) list -> t
+val union_false_only : string -> (string * t) list -> t
+val union_true_only : string -> (string * t) list -> t
+val make : (string * t) list -> t MapString.t
+val empty : t MapString.t
 
 (* Utilities *)
-val internal_record : ty MapString.t ref -> ty
-val internal_dict_keys : ty -> SetString.t ref -> ty
-val internal_copy_record : t -> t
-val pp_ty : Format.formatter -> ty -> unit
+val internal_record : t MapString.t ref -> t
+val internal_dict_keys : t -> SetString.t ref -> t
+val internal_copy_record : t MapString.t -> t MapString.t
 val pp : Format.formatter -> t -> unit
-val equal_ty : ty -> ty -> bool
 val equal : t -> t -> bool
 
 module Child : sig
-  type ty
-  type t = ty MapString.t
+  type t
 
-  val make : (string * ty) list -> t
-  val child : string -> string * ty
-  val nullable : string -> string * ty
-  val is_nullable : ty -> bool
-  val equal_ty : ty -> ty -> bool
+  val make : (string * t) list -> t MapString.t
+  val child : string -> string * t
+  val nullable : string -> string * t
+  val is_nullable : t -> bool
   val equal : t -> t -> bool
-  val pp_ty : Format.formatter -> ty -> unit
-  val empty : t
+  val pp : Format.formatter -> t -> unit
+  val empty : t MapString.t
 end

@@ -58,11 +58,7 @@ type ('leaf, 'key) tree =
   (*
     Wildcards simply point to the next node in the tree.
  *)
-  | Wildcard of {
-      key : 'key;
-      ids : SetInt.t;
-      child : ('leaf, 'key) tree;
-    }
+  | Wildcard of { key : 'key; ids : SetInt.t; child : ('leaf, 'key) tree }
   | End of 'leaf
 
 and ('leaf, 'key) nest =

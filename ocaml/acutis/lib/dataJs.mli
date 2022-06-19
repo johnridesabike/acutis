@@ -13,5 +13,5 @@ open Js_of_ocaml
 
 type t = Js.Unsafe.any
 
-val decode : Typescheme.t -> t -> t Data.t MapString.t
-val encode : Typescheme.t -> t Data.t MapString.t -> t
+val decode : Typescheme.t MapString.t -> t -> t Data.t MapString.t
+val encode : Typescheme.t MapString.t -> t Data.t MapString.t -> t

@@ -207,9 +207,9 @@ module Pattern = struct
     | TConstruct of construct * t option
     | TTuple of t list
     | TRecord of
-        (string * constant * Ty.ty Ty.Union.t) option
+        (string * constant * Ty.t Ty.Union.t) option
         * t MapString.t
-        * Ty.ty MapString.t ref
+        * Ty.t MapString.t ref
     | TDict of t MapString.t * SetString.t ref
     | TVar of string
     | TAny
@@ -459,18 +459,22 @@ and case = { pats : (Loc.t * Pattern.t Nonempty.t) Nonempty.t; nodes : nodes }
 and child = TChild_name of string | TChild_block of nodes
 and nodes = node list
 
-type t = { nodes : nodes; prop_types : Ty.t; child_types : Ty.Child.t }
+type t = {
+  nodes : nodes;
+  prop_types : Ty.t MapString.t;
+  child_types : Ty.Child.t MapString.t;
+}
 
 let unify_child loc a b =
-  if Ty.Child.equal_ty a b then () else Error.child_type_mismatch loc a b
+  if Ty.Child.equal a b then () else Error.child_type_mismatch loc a b
 
 module Context = struct
   type root = [ `Root | `Component ]
 
   type t = {
-    global : Ty.ty MapString.t ref;
-    scope : Ty.ty MapString.t;
-    children : Ty.Child.ty MapString.t ref;
+    global : Ty.t MapString.t ref;
+    scope : Ty.t MapString.t;
+    children : Ty.Child.t MapString.t ref;
     root : root;
   }
 
@@ -572,7 +576,7 @@ let make_default_echo ctx = function
 
 type ('a, 'b) source =
   [ `Src of string * 'a
-  | `Fun of string * Typescheme.t * Typescheme.Child.t * 'b ]
+  | `Fun of string * Ty.t MapString.t * Ty.Child.t MapString.t * 'b ]
 
 let get_types = function
   | `Src (_, { prop_types; child_types; _ }) -> (prop_types, child_types)

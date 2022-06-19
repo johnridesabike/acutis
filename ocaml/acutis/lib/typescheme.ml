@@ -107,24 +107,22 @@ module Union = struct
     }
 end
 
-type ty' =
+type ty =
   | Unknown of Variant.row ref
   | Int
   | Float
   | String
   | Echo
-  | Nullable of ty
-  | List of ty
-  | Tuple of ty list
-  | Record of ty MapString.t ref
-  | Dict of ty * SetString.t ref
+  | Nullable of t
+  | List of t
+  | Tuple of t list
+  | Record of t MapString.t ref
+  | Dict of t * SetString.t ref
   | Enum of Enum.t
-  | Union of string * ty Union.t
+  | Union of string * t Union.t
 [@@deriving eq]
 
-and ty = ty' ref [@@deriving eq]
-
-type t = ty MapString.t [@@deriving eq]
+and t = ty ref [@@deriving eq]
 
 let internal_record m = ref (Record m)
 let internal_dict_keys t kys = ref (Dict (t, kys))
@@ -193,7 +191,7 @@ and internal_copy_record m = MapString.map copy_ref m
 
 let pp_sep_pipe ppf () = F.fprintf ppf "@ | "
 
-let rec pp_ty ppf t =
+let rec pp ppf t =
   match !t with
   | Unknown _ -> F.pp_print_string ppf "_"
   | Int -> F.pp_print_string ppf "int"
@@ -218,11 +216,11 @@ let rec pp_ty ppf t =
               F.fprintf ppf "@[| %a@]@[%a@]"
                 (F.pp_print_list ~pp_sep:pp_sep_pipe Variant.pp_bool)
                 (SetInt.elements cases) Variant.pp_row row))
-  | Nullable x -> F.fprintf ppf "?%a" pp_ty x
-  | List l -> F.fprintf ppf "[@[@,@[%a@]@,]@]" pp_ty l
-  | Dict (t, _) -> F.fprintf ppf "<@[%a@]>" pp_ty t
+  | Nullable x -> F.fprintf ppf "?%a" pp x
+  | List l -> F.fprintf ppf "[@[@,@[%a@]@,]@]" pp l
+  | Dict (t, _) -> F.fprintf ppf "<@[%a@]>" pp t
   | Tuple l ->
-      F.fprintf ppf "(@[%a@])" (F.pp_print_list ~pp_sep:Pp.sep_comma pp_ty) l
+      F.fprintf ppf "(@[%a@])" (F.pp_print_list ~pp_sep:Pp.sep_comma pp) l
   | Record r -> pp_record ppf !r
   | Union (key, { cases; extra; row }) ->
       let cases =
@@ -248,34 +246,23 @@ and pp_union_cases key ppf (tag, m) =
 
 and pp_record_rows ppf l =
   F.pp_print_seq ~pp_sep:Pp.sep_comma
-    (fun ppf (k, v) -> F.fprintf ppf "%a:@ @[%a@]" Pp.field k pp_ty v)
+    (fun ppf (k, v) -> F.fprintf ppf "%a:@ @[%a@]" Pp.field k pp v)
     ppf l
 
 and pp_record ppf r =
   F.fprintf ppf "{@[%a@]}" pp_record_rows (MapString.to_seq r)
 
-let pp_binding ppf (k, v) = F.fprintf ppf "@[%S =@ @[%a@]@]" k pp_ty v
-
-let pp ppf m =
-  F.fprintf ppf "@[%a@]"
-    (F.pp_print_seq pp_binding ~pp_sep:Pp.sep_comma)
-    (MapString.to_seq m)
-
 module Child = struct
-  type ty' = Child | Nullable_child
-  type ty = ty' ref
+  type ty = Child | Nullable_child
+  type t = ty ref
 
-  let equal_ty a b = !a = !b
-
-  type t = ty MapString.t
-
-  let equal a b = MapString.equal equal_ty a b
+  let equal a b = !a = !b
   let make l = l |> List.to_seq |> MapString.of_seq
   let child x = (x, ref Child)
   let nullable x = (x, ref Nullable_child)
   let is_nullable t = match !t with Nullable_child -> true | Child -> false
 
-  let pp_ty ppf = function
+  let pp ppf = function
     | { contents = Child } -> F.pp_print_string ppf "child"
     | { contents = Nullable_child } -> F.pp_print_string ppf "nullable child"
 

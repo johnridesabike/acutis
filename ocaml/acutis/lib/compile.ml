@@ -50,8 +50,11 @@ and make_children = function
 
 let make_nodes Typechecker.{ nodes; _ } = make_nodes nodes
 
-type 'a template = Src of 'a template nodes | Fun of Typescheme.t * 'a
-type 'a t = { prop_types : Typescheme.t; nodes : 'a template nodes }
+type 'a template =
+  | Src of 'a template nodes
+  | Fun of Typescheme.t MapString.t * 'a
+
+type 'a t = { prop_types : Typescheme.t MapString.t; nodes : 'a template nodes }
 
 let parse_string ~filename src =
   let state = Lexer.make_state () in
@@ -64,7 +67,9 @@ let parse_string ~filename src =
 module Components = struct
   type ('a, 'b) source =
     [ `Src of string * 'a
-    | `Fun of string * Typescheme.t * Typescheme.Child.t * 'b ]
+    | `Fun of
+      string * Typescheme.t MapString.t * Typescheme.Child.t MapString.t * 'b
+    ]
 
   let src ~name src = `Src (name, src)
   let fn ~name props children f = `Fun (name, props, children, f)

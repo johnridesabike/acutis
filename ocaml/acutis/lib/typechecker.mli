@@ -25,9 +25,9 @@ module Pattern : sig
     | TConstruct of construct * t option
     | TTuple of t list
     | TRecord of
-        (string * constant * Typescheme.ty Typescheme.Union.t) option
+        (string * constant * Typescheme.t Typescheme.Union.t) option
         * t MapString.t
-        * Typescheme.ty MapString.t ref
+        * Typescheme.t MapString.t ref
     | TDict of t MapString.t * SetString.t ref
     | TVar of string
     | TAny
@@ -55,13 +55,14 @@ and nodes = node list
 
 type t = {
   nodes : nodes;
-  prop_types : Typescheme.t;
-  child_types : Typescheme.Child.t;
+  prop_types : Typescheme.t MapString.t;
+  child_types : Typescheme.Child.t MapString.t;
 }
 
 type ('a, 'b) source =
   [ `Src of string * 'a
-  | `Fun of string * Typescheme.t * Typescheme.Child.t * 'b ]
+  | `Fun of
+    string * Typescheme.t MapString.t * Typescheme.Child.t MapString.t * 'b ]
 
 val make_components :
   (Ast.t, 'a) source MapString.t -> (t, 'a) source MapString.t

@@ -4,7 +4,13 @@ module F = Format
 module Ty = Typescheme
 
 let parse = Compile.parse_string
-let check = Alcotest.(check (module Typescheme))
+
+let check =
+  Alcotest.(
+    check
+      (testable
+         (Pp.map_string Typescheme.pp)
+         (MapString.equal Typescheme.equal)))
 
 let get_types src =
   (parse ~filename:"<test>" src |> Typechecker.make MapString.empty).prop_types

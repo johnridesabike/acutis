@@ -23,20 +23,29 @@ and 'a nodes = 'a node list
 
 val make_nodes : Typechecker.t -> string nodes
 
-type 'a template = Src of 'a template nodes | Fun of Typescheme.t * 'a
-type 'a t = { prop_types : Typescheme.t; nodes : 'a template nodes }
+type 'a template =
+  | Src of 'a template nodes
+  | Fun of Typescheme.t MapString.t * 'a
+
+type 'a t = { prop_types : Typescheme.t MapString.t; nodes : 'a template nodes }
 
 val parse_string : filename:string -> string -> Ast.t
 
 module Components : sig
   type ('a, 'b) source =
     [ `Src of string * 'a
-    | `Fun of string * Typescheme.t * Typescheme.Child.t * 'b ]
+    | `Fun of
+      string * Typescheme.t MapString.t * Typescheme.Child.t MapString.t * 'b
+    ]
 
-  val src : name:string -> string -> (string, _) source
+  val src : name:string -> string -> (string, 'a) source
 
   val fn :
-    name:string -> Typescheme.t -> Typescheme.Child.t -> 'a -> (_, 'a) source
+    name:string ->
+    Typescheme.t MapString.t ->
+    Typescheme.Child.t MapString.t ->
+    'a ->
+    (_, 'a) source
 
   type 'a t
 

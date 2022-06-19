@@ -20,8 +20,8 @@ end
 module type DATA = sig
   type t
 
-  val decode : Typescheme.t -> t -> t Data.t MapString.t
-  val encode : Typescheme.t -> t Data.t MapString.t -> t
+  val decode : Typescheme.t MapString.t -> t -> t Data.t MapString.t
+  val encode : Typescheme.t MapString.t -> t Data.t MapString.t -> t
 end
 
 module type S = sig

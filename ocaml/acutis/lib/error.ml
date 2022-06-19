@@ -54,7 +54,7 @@ let mismatch a b t =
   F.dprintf
     "@[<v>@[Type mismatch.@]@ @[Expected:@ @[<hov 2>%a@]@]@ @[Received:@ \
      @[<hov 2>%a@]@]%t@]"
-    Typescheme.pp_ty a Typescheme.pp_ty b t
+    Typescheme.pp a Typescheme.pp b t
 
 let type_mismatch loc a b =
   raise @@ Error (pp_ty loc (mismatch a b (F.dprintf "")))
@@ -63,14 +63,14 @@ let bad_union_tag loc ty =
   let f =
     F.dprintf "@[<v>@[%a@]@ @[Received:@ @[<hov 2>%a@]@]@]" text
       "Only `int`, `string`, and `boolean` types may be union tags."
-      Typescheme.pp_ty ty
+      Typescheme.pp ty
   in
   raise @@ Error (pp_ty loc f)
 
 let missing_field loc key ty =
   let f =
     F.dprintf "This is missing key@ `%a`@ of type@ @[%a@]" Pp.field key
-      Typescheme.pp_ty ty
+      Typescheme.pp ty
   in
   raise @@ Error (pp_ty loc f)
 
@@ -83,7 +83,7 @@ let child_type_mismatch loc a b =
     F.dprintf
       "@[<v>@[Child type mismatch.@]@ @[Expected:@ @[<hov 2>`%a`@]@]@ \
        @[Received:@ @[<hov 2>`%a`@]@]@]"
-      Typescheme.Child.pp_ty a Typescheme.Child.pp_ty b
+      Typescheme.Child.pp a Typescheme.Child.pp b
   in
   raise @@ Error (pp_ty loc f)
 
@@ -201,7 +201,7 @@ let pp stack ty mess =
      @[Stack:@ @[%a@]@]@,\
      @[Expected type:@ @[%a@]@]@,\
      @[%t@]"
-    DecodeStack.pp stack Typescheme.pp_ty ty mess
+    DecodeStack.pp stack Typescheme.pp ty mess
 
 let decode pp_data ty stack data =
   let f = F.dprintf "Received value:@ @[%a@]" pp_data data in

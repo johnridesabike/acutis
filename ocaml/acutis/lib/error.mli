@@ -19,14 +19,11 @@ val dup_record_key : Loc.t -> string -> _
 val extra_record_tag : Loc.t -> _
 
 (* Type errors *)
-val type_mismatch : Loc.t -> Typescheme.ty -> Typescheme.ty -> _
-val bad_union_tag : Loc.t -> Typescheme.ty -> _
-val missing_field : Loc.t -> string -> Typescheme.ty -> _
+val type_mismatch : Loc.t -> Typescheme.t -> Typescheme.t -> _
+val bad_union_tag : Loc.t -> Typescheme.t -> _
+val missing_field : Loc.t -> string -> Typescheme.t -> _
 val underscore_in_construct : Loc.t -> _
-
-val child_type_mismatch :
-  Loc.t -> Typescheme.Child.ty -> Typescheme.Child.ty -> _
-
+val child_type_mismatch : Loc.t -> Typescheme.Child.t -> Typescheme.Child.t -> _
 val name_bound_too_many : Loc.t -> string -> _
 val var_missing : Loc.t -> string -> _
 val pat_num_mismatch : Loc.t -> _
@@ -53,16 +50,16 @@ end
 
 val decode :
   (Format.formatter -> 'data -> unit) ->
-  Typescheme.ty ->
+  Typescheme.t ->
   DecodeStack.t list ->
   'data ->
   _
 
-val missing_key : DecodeStack.t list -> Typescheme.ty -> string -> _
+val missing_key : DecodeStack.t list -> Typescheme.t -> string -> _
 
 val bad_enum :
   (Format.formatter -> 'data -> unit) ->
-  Typescheme.ty ->
+  Typescheme.t ->
   DecodeStack.t list ->
   'data ->
   _
