@@ -34,14 +34,12 @@ end
 module Enum : sig
   type t = (SetInt.t, SetString.t) Variant.t
 
-  val string : string list -> Variant.row -> t
   val string_singleton : string -> Variant.row -> t
-  val int : int list -> Variant.row -> t
   val int_singleton : int -> Variant.row -> t
   val false_and_true_cases : (SetInt.t, _) Variant.ty
   val false_and_true : unit -> t
-  val true_only : unit -> t
   val false_only : unit -> t
+  val true_only : unit -> t
   val equal : t -> t -> bool
 end
 
@@ -49,6 +47,10 @@ module Union : sig
   type 'a t =
     ('a MapString.t ref MapInt.t, 'a MapString.t ref MapString.t) Variant.t
 
+  val int_singleton :
+    int -> 'a MapString.t ref -> Variant.row -> Variant.extra -> 'a t
+
+  val string_singleton : string -> 'a MapString.t ref -> Variant.row -> 'a t
   val equal : ('a -> 'a -> bool) -> 'a t -> 'a t -> bool
 end
 
@@ -82,7 +84,7 @@ val record : (string * t) list -> t
 val dict : t -> t
 val enum_int : Variant.row -> int list -> t
 val enum_string : Variant.row -> string list -> t
-val bool : unit -> t
+val boolean : unit -> t
 val false_only : unit -> t
 val true_only : unit -> t
 val union_int : Variant.row -> string -> (int * (string * t) list) list -> t

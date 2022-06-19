@@ -38,73 +38,67 @@ module Variant = struct
 end
 
 module Enum = struct
+  open Variant
+
   type t = (SetInt.t, SetString.t) Variant.t [@@deriving eq]
 
   let string l row =
-    { Variant.cases = String (SetString.of_list l); row; extra = `Extra_none }
+    { cases = String (SetString.of_list l); row; extra = `Extra_none }
 
   let string_singleton s row =
-    { Variant.cases = String (SetString.singleton s); row; extra = `Extra_none }
+    { cases = String (SetString.singleton s); row; extra = `Extra_none }
 
-  let int l row =
-    { Variant.cases = Int (SetInt.of_list l); row; extra = `Extra_none }
+  let int l row = { cases = Int (SetInt.of_list l); row; extra = `Extra_none }
 
   let int_singleton i row =
-    { Variant.cases = Int (SetInt.singleton i); row; extra = `Extra_none }
+    { cases = Int (SetInt.singleton i); row; extra = `Extra_none }
 
-  let false_and_true_cases = Variant.Int (SetInt.of_list [ 0; 1 ])
-  let false_only = Variant.Int (SetInt.singleton 0)
-  let true_only = Variant.Int (SetInt.singleton 1)
+  let false_and_true_cases = Int (SetInt.of_list [ 0; 1 ])
+  let false_only = Int (SetInt.singleton 0)
+  let true_only = Int (SetInt.singleton 1)
 
   let false_and_true () =
-    { Variant.cases = false_and_true_cases; row = `Closed; extra = `Extra_bool }
+    { cases = false_and_true_cases; row = `Closed; extra = `Extra_bool }
 
-  let true_only () =
-    { Variant.cases = true_only; row = `Closed; extra = `Extra_bool }
-
-  let false_only () =
-    { Variant.cases = false_only; row = `Closed; extra = `Extra_bool }
+  let true_only () = { cases = true_only; row = `Closed; extra = `Extra_bool }
+  let false_only () = { cases = false_only; row = `Closed; extra = `Extra_bool }
 end
 
 module Union = struct
+  open Variant
+
   type 'a t =
     ('a MapString.t ref MapInt.t, 'a MapString.t ref MapString.t) Variant.t
   [@@deriving eq]
 
+  let int_singleton i x row extra =
+    { cases = Int (MapInt.singleton i x); row; extra }
+
+  let string_singleton s x row =
+    { cases = String (MapString.singleton s x); row; extra = `Extra_none }
+
   let string l row =
     {
-      Variant.cases = String (MapString.of_seq (List.to_seq l));
+      cases = String (MapString.of_seq (List.to_seq l));
       row;
       extra = `Extra_none;
     }
 
   let int l row =
-    {
-      Variant.cases = Int (MapInt.of_seq (List.to_seq l));
-      row;
-      extra = `Extra_none;
-    }
+    { cases = Int (MapInt.of_seq (List.to_seq l)); row; extra = `Extra_none }
 
   let boolean ~f ~t =
     {
-      Variant.cases = Int (MapInt.singleton 0 f |> MapInt.add 1 t);
+      cases = Int (MapInt.singleton 0 f |> MapInt.add 1 t);
       row = `Closed;
       extra = `Extra_bool;
     }
 
   let false_only l =
-    {
-      Variant.cases = Int (MapInt.singleton 0 l);
-      row = `Closed;
-      extra = `Extra_bool;
-    }
+    { cases = Int (MapInt.singleton 0 l); row = `Closed; extra = `Extra_bool }
 
   let true_only l =
-    {
-      Variant.cases = Int (MapInt.singleton 1 l);
-      row = `Closed;
-      extra = `Extra_bool;
-    }
+    { cases = Int (MapInt.singleton 1 l); row = `Closed; extra = `Extra_bool }
 end
 
 type ty =
@@ -138,7 +132,7 @@ let record l = internal_record (ref (MapString.of_seq (List.to_seq l)))
 let dict t = ref (Dict (t, ref SetString.empty))
 let enum_int row l = ref (Enum (Enum.int l row))
 let enum_string row l = ref (Enum (Enum.string l row))
-let bool () = ref (Enum (Enum.false_and_true ()))
+let boolean () = ref (Enum (Enum.false_and_true ()))
 let false_only () = ref (Enum (Enum.false_only ()))
 let true_only () = ref (Enum (Enum.true_only ()))
 

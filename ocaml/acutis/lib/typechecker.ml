@@ -215,11 +215,6 @@ module Pattern = struct
     | TAny
   [@@deriving eq]
 
-  let make_enum_aux extra row tyvars = function
-    | `Int i -> { V.cases = Int (MapInt.singleton i tyvars); row; extra }
-    | `String s ->
-        { V.cases = String (MapString.singleton s tyvars); row; extra }
-
   let unknown _ = Ty.unknown ()
 
   let rec make ~f mode ty = function
@@ -325,7 +320,11 @@ module Pattern = struct
               match tyvars with Some tv -> tv | None -> new_tyvars)
           | _ -> new_tyvars
         in
-        let new_enum = make_enum_aux tag_extra row new_tyvars tag in
+        let new_enum =
+          match tag with
+          | `Int i -> Ty.Union.int_singleton i tyvars row tag_extra
+          | `String s -> Ty.Union.string_singleton s tyvars row
+        in
         unify loc mode ty (ref (Ty.Union (k, new_enum)));
         let r = make_record ~f loc mode !tyvars m in
         TRecord (Some (k, tag, new_enum), r, tyvars)

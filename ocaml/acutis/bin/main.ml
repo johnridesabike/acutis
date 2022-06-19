@@ -94,9 +94,9 @@ let () =
        method tuple a = a |> Js.to_array |> Array.to_list |> tuple
 
        method record a =
-         a |> Js.to_array |> Array.to_seq
-         |> Seq.map (fun (k, v) -> (Js.to_string k, v))
-         |> List.of_seq |> record
+         a |> Js.to_array
+         |> Array.map (fun (k, v) -> (Js.to_string k, v))
+         |> Array.to_list |> record
 
        method dict = dict
 
@@ -108,7 +108,7 @@ let () =
          a |> Js.to_array |> Array.map Js.to_string |> Array.to_list
          |> enum_string r
 
-       method bool = bool
+       method boolean = boolean
        method falseOnly = false_only
        method trueOnly = true_only
 

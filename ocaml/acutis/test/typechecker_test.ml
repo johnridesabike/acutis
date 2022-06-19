@@ -209,8 +209,8 @@ let boolean_enums () =
         [
           ("a", true_only ());
           ("b", false_only ());
-          ("c", bool ());
-          ("d", bool ());
+          ("c", boolean ());
+          ("d", boolean ());
         ])
     (get_types src)
 
