@@ -8,16 +8,15 @@
 (*                                                                        *)
 (**************************************************************************)
 
-(** This converts JSON strings to and from {!Data.t}. *)
+(** This handles lists with at least one item. *)
 
-type t =
-  [ `Null
-  | `Bool of bool
-  | `Int of int
-  | `Float of float
-  | `String of string
-  | `Assoc of (string * t) list
-  | `List of t list ]
+type 'a t = ( :: ) of 'a * 'a list
 
-val decode : Typescheme.t Map.String.t -> t -> t Data.t Map.String.t
-val encode : Typescheme.t Map.String.t -> t Data.t Map.String.t -> t
+val to_list : 'a t -> 'a list
+val cons : 'a -> 'a t -> 'a t
+val hd : 'a t -> 'a
+val rev : 'a t -> 'a t
+val map : ('a -> 'b) -> 'a t -> 'b t
+val map2 : ('a -> 'b -> 'c) -> 'a t -> 'b t -> 'c t
+val equal : ('a -> 'a -> bool) -> 'a t -> 'a t -> bool
+val pp : (Format.formatter -> 'a -> unit) -> Format.formatter -> 'a t -> unit

@@ -8,7 +8,8 @@
 (*                                                                        *)
 (**************************************************************************)
 
-open StdlibExtra
+
+(** This is the main runtime module. *)
 
 module type MONAD = sig
   type 'a t
@@ -20,14 +21,14 @@ end
 module type DATA = sig
   type t
 
-  val decode : Typescheme.t MapString.t -> t -> t Data.t MapString.t
-  val encode : Typescheme.t MapString.t -> t Data.t MapString.t -> t
+  val decode : Typescheme.t Map.String.t -> t -> t Data.t Map.String.t
+  val encode : Typescheme.t Map.String.t -> t Data.t Map.String.t -> t
 end
 
 module type S = sig
   type t
   type data
-  type component = data -> t MapString.t -> t
+  type component = data -> t Map.String.t -> t
 
   val make : component Compile.t -> data -> t
 end

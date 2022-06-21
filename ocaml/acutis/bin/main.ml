@@ -10,7 +10,6 @@
 
 open Js_of_ocaml
 open Acutis
-open StdlibExtra
 
 module Promise_with_fixed_bind = struct
   type 'a t = 'a Promise.t
@@ -29,7 +28,7 @@ let child_async (k, p) =
 let child_sync (k, v) = (k, Js.Unsafe.coerce (Js.string v))
 
 let map_to_js f m =
-  m |> MapString.to_seq |> Seq.map f |> Array.of_seq |> Js.Unsafe.obj
+  m |> Map.String.to_seq |> Seq.map f |> Array.of_seq |> Js.Unsafe.obj
 
 let () =
   Js.export "Compile"

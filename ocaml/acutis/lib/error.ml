@@ -8,7 +8,6 @@
 (*                                                                        *)
 (**************************************************************************)
 
-open StdlibExtra
 module F = Format
 
 let text = F.pp_print_text

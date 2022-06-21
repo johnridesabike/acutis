@@ -8,16 +8,7 @@
 (*                                                                        *)
 (**************************************************************************)
 
-(** This converts JSON strings to and from {!Data.t}. *)
+(** Predefined set modules. *)
 
-type t =
-  [ `Null
-  | `Bool of bool
-  | `Int of int
-  | `Float of float
-  | `String of string
-  | `Assoc of (string * t) list
-  | `List of t list ]
-
-val decode : Typescheme.t Map.String.t -> t -> t Data.t Map.String.t
-val encode : Typescheme.t Map.String.t -> t Data.t Map.String.t -> t
+module Int = Stdlib.Set.Make (Int)
+module String = Stdlib.Set.Make (String)

@@ -8,7 +8,6 @@
 (*                                                                        *)
 (**************************************************************************)
 
-open StdlibExtra
 module Ty = Typescheme
 
 type t =
@@ -30,7 +29,7 @@ let boolean ty stack cases j =
     | `Bool true -> 1
     | j -> decode_error ty stack j
   in
-  if SetInt.mem i cases then Data.const (`Int i) `Extra_bool
+  if Set.Int.mem i cases then Data.const (`Int i) `Extra_bool
   else Error.bad_enum pp ty stack j
 
 let string ty stack cases = function
@@ -38,7 +37,7 @@ let string ty stack cases = function
       match cases with
       | None -> Data.const j `Extra_none
       | Some cases ->
-          if SetString.mem s cases then Data.const j `Extra_none
+          if Set.String.mem s cases then Data.const j `Extra_none
           else Error.bad_enum pp ty stack j)
   | j -> decode_error ty stack j
 
@@ -47,7 +46,7 @@ let int ty stack cases = function
       match cases with
       | None -> Data.const j `Extra_none
       | Some cases ->
-          if SetInt.mem i cases then Data.const j `Extra_none
+          if Set.Int.mem i cases then Data.const j `Extra_none
           else Error.bad_enum pp ty stack j)
   | j -> decode_error ty stack j
 
@@ -81,7 +80,7 @@ and dict stack ty = function
   | `Assoc l ->
       l |> List.to_seq
       |> Seq.map (fun (k, v) -> (k, make (Key k :: stack) ty v))
-      |> MapString.of_seq |> Data.dict
+      |> Map.String.of_seq |> Data.dict
   | j -> decode_error (Ty.dict ty) stack j
 
 and tuple ty stack tys = function
@@ -96,41 +95,41 @@ and tuple ty stack tys = function
 
 and record_aux stack tys j =
   let f k ty =
-    match (ty, MapString.find_opt k j) with
+    match (ty, Map.String.find_opt k j) with
     | { contents = Ty.Nullable _ | Unknown _ }, None -> Data.null
     | ty, Some j -> make (Key k :: stack) ty j
     | _ -> Error.missing_key stack (Ty.internal_record (ref tys)) k
   in
-  MapString.mapi f tys
+  Map.String.mapi f tys
 
 and record stack tys = function
   | `Assoc l ->
-      let map = l |> List.to_seq |> MapString.of_seq in
+      let map = l |> List.to_seq |> Map.String.of_seq in
       Data.dict (record_aux stack !tys map)
   | j -> decode_error (Ty.internal_record tys) stack j
 
 and union stack ty key cases extra = function
   | `Assoc l as j ->
-      let map = l |> List.to_seq |> MapString.of_seq in
+      let map = l |> List.to_seq |> Map.String.of_seq in
       let tag, tys =
         try
-          let tag = MapString.find key map in
+          let tag = Map.String.find key map in
           match (tag, cases, extra) with
           | `Bool false, Ty.Variant.Int map, `Extra_bool ->
               let tag = 0 in
-              (Data.const (`Int tag) extra, MapInt.find tag map)
+              (Data.const (`Int tag) extra, Map.Int.find tag map)
           | `Bool true, Int map, `Extra_bool ->
               let tag = 1 in
-              (Data.const (`Int tag) extra, MapInt.find tag map)
+              (Data.const (`Int tag) extra, Map.Int.find tag map)
           | (`Int tag as x), Int map, `Extra_none ->
-              (Data.const x extra, MapInt.find tag map)
+              (Data.const x extra, Map.Int.find tag map)
           | (`String tag as x), String map, `Extra_none ->
-              (Data.const x extra, MapString.find tag map)
+              (Data.const x extra, Map.String.find tag map)
           | _ -> raise Not_found
         with Not_found -> decode_error ty stack j
       in
       let r = record_aux stack !tys map in
-      Data.dict (MapString.add key tag r)
+      Data.dict (Map.String.add key tag r)
   | j -> decode_error ty stack j
 
 and make stack ty j =
@@ -154,7 +153,7 @@ and make stack ty j =
 
 let decode tys = function
   | `Assoc l ->
-      let map = l |> List.to_seq |> MapString.of_seq in
+      let map = l |> List.to_seq |> Map.String.of_seq in
       record_aux [] tys map
   | j -> decode_error (Ty.internal_record (ref tys)) [] j
 
@@ -162,7 +161,7 @@ let rec record_to_json ty t =
   let f _ ty t =
     match (ty, t) with Some ty, Some t -> Some (to_json ty t) | _ -> None
   in
-  let l = MapString.merge f ty t |> MapString.bindings in
+  let l = Map.String.merge f ty t |> Map.String.bindings in
   l
 
 and to_json ty t =
@@ -188,15 +187,15 @@ and to_json ty t =
       let l = a |> Array.to_list |> List.map2 to_json tys in
       `List l
   | Dict (ty, _), Dict m ->
-      let l = m |> MapString.map (to_json ty) |> MapString.bindings in
+      let l = m |> Map.String.map (to_json ty) |> Map.String.bindings in
       `Assoc l
   | Record tys, Dict m -> `Assoc (record_to_json !tys m)
   | Union (k, { cases; _ }), Dict m ->
-      let tag = MapString.find k m in
+      let tag = Map.String.find k m in
       let record_tys =
         match (cases, tag) with
-        | Int m, Const (`Int i, _) -> MapInt.find i m
-        | String m, Const (`String s, _) -> MapString.find s m
+        | Int m, Const (`Int i, _) -> Map.Int.find i m
+        | String m, Const (`String s, _) -> Map.String.find s m
         | _ -> assert false
       in
       let tag =

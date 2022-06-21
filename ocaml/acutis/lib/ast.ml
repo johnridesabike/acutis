@@ -8,22 +8,21 @@
 (*                                                                        *)
 (**************************************************************************)
 
-open StdlibExtra
 module F = Format
 
 module Dict = struct
-  type 'a t = 'a MapString.t
+  type 'a t = 'a Map.String.t
 
   let fail_if_dup_key loc k m =
-    if MapString.mem k m then Error.dup_record_key loc k
+    if Map.String.mem k m then Error.dup_record_key loc k
 
   let add loc k v m =
     fail_if_dup_key loc k m;
-    MapString.add k v m
+    Map.String.add k v m
 
-  let empty = MapString.empty
-  let singleton = MapString.singleton
-  let equal = MapString.equal
+  let empty = Map.String.empty
+  let singleton = Map.String.singleton
+  let equal = Map.String.equal
   let pp = Pp.map_string
   let to_map m = m
 end

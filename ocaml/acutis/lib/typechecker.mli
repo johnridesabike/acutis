@@ -8,7 +8,7 @@
 (*                                                                        *)
 (**************************************************************************)
 
-open StdlibExtra
+(** This type-checks the untyped {!Ast.t} and constructs and typed tree. *)
 
 module Pattern : sig
   type constant = [ `Int of int | `String of string | `Float of float ]
@@ -26,9 +26,9 @@ module Pattern : sig
     | TTuple of t list
     | TRecord of
         (string * constant * Typescheme.t Typescheme.Union.t) option
-        * t MapString.t
-        * Typescheme.t MapString.t ref
-    | TDict of t MapString.t * SetString.t ref
+        * t Map.String.t
+        * Typescheme.t Map.String.t ref
+    | TDict of t Map.String.t * Set.String.t ref
     | TVar of string
     | TAny
 
@@ -47,7 +47,7 @@ type node =
   | TMatch of Loc.t * Pattern.t Nonempty.t * case Nonempty.t
   | TMap_list of Loc.t * Pattern.t * case Nonempty.t
   | TMap_dict of Loc.t * Pattern.t * case Nonempty.t
-  | TComponent of string * Pattern.t MapString.t * child MapString.t
+  | TComponent of string * Pattern.t Map.String.t * child Map.String.t
 
 and case = { pats : (Loc.t * Pattern.t Nonempty.t) Nonempty.t; nodes : nodes }
 and child = TChild_name of string | TChild_block of nodes
@@ -55,16 +55,17 @@ and nodes = node list
 
 type t = {
   nodes : nodes;
-  prop_types : Typescheme.t MapString.t;
-  child_types : Typescheme.Child.t MapString.t;
+  prop_types : Typescheme.t Map.String.t;
+  child_types : Typescheme.Child.t Map.String.t;
 }
 
 type ('a, 'b) source =
   [ `Src of string * 'a
   | `Fun of
-    string * Typescheme.t MapString.t * Typescheme.Child.t MapString.t * 'b ]
+    string * Typescheme.t Map.String.t * Typescheme.Child.t Map.String.t * 'b
+  ]
 
 val make_components :
-  (Ast.t, 'a) source MapString.t -> (t, 'a) source MapString.t
+  (Ast.t, 'a) source Map.String.t -> (t, 'a) source Map.String.t
 
-val make : root:string -> (t, 'a) source MapString.t -> Ast.t -> t
+val make : root:string -> (t, 'a) source Map.String.t -> Ast.t -> t

@@ -8,16 +8,21 @@
 (*                                                                        *)
 (**************************************************************************)
 
-(** This converts JSON strings to and from {!Data.t}. *)
+(** This contains helpers for [Format] functions. *)
 
-type t =
-  [ `Null
-  | `Bool of bool
-  | `Int of int
-  | `Float of float
-  | `String of string
-  | `Assoc of (string * t) list
-  | `List of t list ]
+open Format
 
-val decode : Typescheme.t Map.String.t -> t -> t Data.t Map.String.t
-val encode : Typescheme.t Map.String.t -> t Data.t Map.String.t -> t
+val sep_comma : formatter -> unit -> unit
+(** Outputs [,@ ]. *)
+
+val map_string :
+  (Format.formatter -> 'a -> unit) ->
+  Format.formatter ->
+  'a Map.String.t ->
+  unit
+
+val set_int : Format.formatter -> Set.Int.t -> unit
+
+val field : formatter -> string -> unit
+(** Outputs either [field] or ["string field"] depending on whether the field
+      name is a valid identifier. *)

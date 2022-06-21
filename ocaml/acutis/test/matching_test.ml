@@ -1,8 +1,7 @@
 open Acutis
-open StdlibExtra
 module Ty = Typescheme
-module MS = MapString
-module SI = SetInt
+module MS = Map.String
+module SI = Set.Int
 
 let parse = Compile.parse_string
 let pp_tree = Matching.pp_tree Matching.pp_leaf Format.pp_print_int

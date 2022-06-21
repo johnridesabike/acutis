@@ -8,7 +8,34 @@
 (*                                                                        *)
 (**************************************************************************)
 
-open StdlibExtra
+module StringExtra = struct
+  (* The [ltrim] and [rtrim] functions are vendored from the Containers library.
+     https://github.com/c-cube/ocaml-containers/blob/70703b351235b563f060ef494461e678e896da49/src/core/CCString.ml
+  *)
+  module S = String
+
+  let drop_while f s =
+    let i = ref 0 in
+    while !i < S.length s && f (S.unsafe_get s !i) do
+      incr i
+    done;
+    if !i > 0 then S.sub s !i (S.length s - !i) else s
+
+  let rdrop_while f s =
+    let i = ref (S.length s - 1) in
+    while !i >= 0 && f (S.unsafe_get s !i) do
+      decr i
+    done;
+    if !i < S.length s - 1 then S.sub s 0 (!i + 1) else s
+
+  (* notion of whitespace for trim *)
+  let is_space = function
+    | ' ' | '\012' | '\n' | '\r' | '\t' -> true
+    | _ -> false
+
+  let ltrim s = drop_while is_space s
+  let rtrim s = rdrop_while is_space s
+end
 
 type 'a node =
   | Text of string
@@ -16,7 +43,7 @@ type 'a node =
   | Match of Typechecker.Pattern.t array * 'a nodes Matching.t
   | Map_list of Typechecker.Pattern.t * 'a nodes Matching.t
   | Map_dict of Typechecker.Pattern.t * 'a nodes Matching.t
-  | Component of 'a * Typechecker.Pattern.t MapString.t * 'a child MapString.t
+  | Component of 'a * Typechecker.Pattern.t Map.String.t * 'a child Map.String.t
 
 and 'a child = Child_name of string | Child_block of 'a nodes
 and 'a nodes = 'a node list
@@ -33,7 +60,7 @@ let rec make_nodes =
     | TMap_list (loc, pat, cases) -> Map_list (pat, make_match loc cases)
     | TMap_dict (loc, pat, cases) -> Map_dict (pat, make_match loc cases)
     | TComponent (name, props, children) ->
-        let children = MapString.map make_children children in
+        let children = Map.String.map make_children children in
         Component (name, props, children)
   in
   fun l -> List.map f l
@@ -52,9 +79,12 @@ let make_nodes Typechecker.{ nodes; _ } = make_nodes nodes
 
 type 'a template =
   | Src of 'a template nodes
-  | Fun of Typescheme.t MapString.t * 'a
+  | Fun of Typescheme.t Map.String.t * 'a
 
-type 'a t = { prop_types : Typescheme.t MapString.t; nodes : 'a template nodes }
+type 'a t = {
+  prop_types : Typescheme.t Map.String.t;
+  nodes : 'a template nodes;
+}
 
 let parse_string ~filename src =
   let state = Lexer.make_state () in
@@ -68,40 +98,40 @@ module Components = struct
   type ('a, 'b) source =
     [ `Src of string * 'a
     | `Fun of
-      string * Typescheme.t MapString.t * Typescheme.Child.t MapString.t * 'b
+      string * Typescheme.t Map.String.t * Typescheme.Child.t Map.String.t * 'b
     ]
 
   let src ~name src = `Src (name, src)
   let fn ~name props children f = `Fun (name, props, children, f)
 
   type 'a t = {
-    typed : (Typechecker.t, 'a) source MapString.t;
-    optimized : (string nodes, 'a) source MapString.t;
+    typed : (Typechecker.t, 'a) source Map.String.t;
+    optimized : (string nodes, 'a) source Map.String.t;
   }
 
-  let empty = { typed = MapString.empty; optimized = MapString.empty }
+  let empty = { typed = Map.String.empty; optimized = Map.String.empty }
 
   let rec make_aux_parse m = function
     | [] -> m
     | `Src (name, src) :: l ->
-        if MapString.mem name m then Error.duplicate_name name;
+        if Map.String.mem name m then Error.duplicate_name name;
         let c = `Src (name, parse_string ~filename:name src) in
-        make_aux_parse (MapString.add name c m) l
+        make_aux_parse (Map.String.add name c m) l
     | `Fun (name, p, c, f) :: l ->
-        if MapString.mem name m then Error.duplicate_name name;
-        make_aux_parse (MapString.add name (`Fun (name, p, c, f)) m) l
+        if Map.String.mem name m then Error.duplicate_name name;
+        make_aux_parse (Map.String.add name (`Fun (name, p, c, f)) m) l
 
   let make_aux_optimize _ v optimized =
     match v with
     | `Src (name, src) ->
-        MapString.add name (`Src (name, make_nodes src)) optimized
+        Map.String.add name (`Src (name, make_nodes src)) optimized
     | `Fun (name, p, c, f) ->
-        MapString.add name (`Fun (name, p, c, f)) optimized
+        Map.String.add name (`Fun (name, p, c, f)) optimized
 
   let make l =
-    let untyped = make_aux_parse MapString.empty l in
+    let untyped = make_aux_parse Map.String.empty l in
     let typed = Typechecker.make_components untyped in
-    let optimized = MapString.fold make_aux_optimize typed MapString.empty in
+    let optimized = Map.String.fold make_aux_optimize typed Map.String.empty in
     { typed; optimized }
 end
 
@@ -122,7 +152,7 @@ let rec link_nodes graph nodes =
           | Child_name _ as child -> child
           | Child_block nodes -> Child_block (link_nodes graph nodes)
         in
-        let children = MapString.map f children in
+        let children = Map.String.map f children in
         let data = Dagmap.get name graph in
         Component (data, props, children)
   in

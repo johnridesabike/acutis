@@ -8,44 +8,9 @@
 (*                                                                        *)
 (**************************************************************************)
 
-open StdlibExtra
 module TPat = Typechecker.Pattern
 module Ty = Typescheme
 module Const = Data.Const
-
-(*
-  Every pattern represents a one-dimensional path across a multi-dimensional
-  data structure. A list of patterns is a two-dimensional matrix of paths. In
-  order to transverse these paths efficiently, we need to combine them into a
-  tree.
-
-  We take advantage of a few properties that can make our tree simpler. We only
-  test discrete static values, integers, strings, etc. We sort record fields
-  and replace ommited fields with wildcards, so every pattern "lines up" with
-  the others. We also sort the tested values (the integers, strings, etc.).
-
-  Every node has a set of integer "IDs." These keep track of bindings. If a
-  pattern has a binding, then we store that binding's ID in its node. Due to
-  merging and expanding trees, nodes can have multiple IDs. Each leaf contains
-  a map of binding names to their IDs. This is necessary because multiple
-  patterns may merge that use different or overlapping binding names.
-
-  The most complicated part of this tree is how we handle wildcards. When we
-  merge trees, each wildcard "expands" into its joining node. All of the nodes
-  that come after the wildcard will also expand into all of the nodes after the
-  other node. This has tradeoffs. One advantage is that we can guarantee that
-  every node is only visited once at runtime. One disadvantage is that some
-  patterns may produce extremely large trees.
-
-  One feature that this structure gives us is that redundant patterns are
-  automatically detected because merging them with an existing tree fails.
-The tree type is a polymorphic "nested" type. Each tree can use itself as its own type variable, i.e. tree<tree<'a>>. This allows the end nodes to be fully polymorphic. They can either lead to a leaf or back to their containing tree.
-  This nesting corresponds to the nesting of patterns.
-
-  Nested types are simple to create, but complicated to manipulate. Functions
-  cannot consume these types under normal polymorphism rules. We need to use
-  explicitly polymorphic type annotations and GADTs.
-*)
 
 type extra_nest_info = Tuple | Dict | Record | Union of Ty.Variant.extra
 [@@deriving eq, show]
@@ -53,47 +18,30 @@ type extra_nest_info = Tuple | Dict | Record | Union of Ty.Variant.extra
 type extra_switch_info = Extra_none | Extra_enum_closed [@@deriving eq, show]
 
 type ('leaf, 'key) tree =
-  (*
-    A Switch represents a list of discreet values to test (i.e., 1, "a", etc.).
-    If none of the values match the input, then the wildcard is used.
- *)
   | Switch of {
       key : 'key;
-      ids : SetInt.t; [@printer Pp.set_int]
+      ids : Set.Int.t; [@printer Pp.set_int]
       cases : ('leaf, 'key) switchcase;
       extra : extra_switch_info;
       wildcard : ('leaf, 'key) tree option;
     }
-  (*
-    A Nest represents a structure such as tuple or a record.
- *)
   | Nest of {
       key : 'key;
-      ids : SetInt.t; [@printer Pp.set_int]
+      ids : Set.Int.t; [@printer Pp.set_int]
       child : ('leaf, 'key) nest;
       wildcard : ('leaf, 'key) tree option;
       extra : extra_nest_info;
     }
-  (*
-    A Construct represents one of the built-in variant types: lists and
-    nullables.
-    nil represents an empty list or a null value. It is like a wildcard in that
-    it always points to the *next* node, whatever that may be.
-    cons always either points to a wildcard node or a Nest + Tuple node.
- *)
   | Construct of {
       key : 'key;
-      ids : SetInt.t; [@printer Pp.set_int]
+      ids : Set.Int.t; [@printer Pp.set_int]
       nil : ('leaf, 'key) tree option;
       cons : ('leaf, 'key) tree option;
       extra : TPat.construct;
     }
-  (*
-    Wildcards simply point to the next node in the tree.
- *)
   | Wildcard of {
       key : 'key;
-      ids : SetInt.t; [@printer Pp.set_int]
+      ids : Set.Int.t; [@printer Pp.set_int]
       child : ('leaf, 'key) tree;
     }
   | End of 'leaf
@@ -132,7 +80,7 @@ module Exit = struct
 end
 
 type leaf = {
-  names : int MapString.t; [@printer Pp.map_string Format.pp_print_int]
+  names : int Map.String.t; [@printer Pp.map_string Format.pp_print_int]
   exit : Exit.key;
 }
 [@@deriving eq, show]
@@ -414,7 +362,7 @@ and merge : type a k. (a, leaf) nat -> (a, k) tree -> (a, k) tree -> (a, k) tree
   | End a, End b -> (
       match n with Z -> raise_notrace Merge_fail | S n -> End (merge n a b))
   | Wildcard a, Wildcard b ->
-      let ids = SetInt.union a.ids b.ids in
+      let ids = Set.Int.union a.ids b.ids in
       let child = merge n a.child b.child in
       Wildcard { a with ids; child }
   | Wildcard a, Nest b ->
@@ -428,7 +376,7 @@ and merge : type a k. (a, leaf) nat -> (a, k) tree -> (a, k) tree -> (a, k) tree
         | StringKeys c ->
             StringKeys (merge_wildcard_after_nest ~wildcard:a.child Z c (S n))
       in
-      let ids = SetInt.union a.ids b.ids in
+      let ids = Set.Int.union a.ids b.ids in
       Nest { b with ids; child; wildcard = Some wildcard }
   | (Wildcard a as a'), Construct b -> (
       let nil =
@@ -443,7 +391,7 @@ and merge : type a k. (a, leaf) nat -> (a, k) tree -> (a, k) tree -> (a, k) tree
         | Some b -> (
             try Ok (Some (merge n a' b)) with Merge_fail -> Error None)
       in
-      let ids = SetInt.union a.ids b.ids in
+      let ids = Set.Int.union a.ids b.ids in
       match (nil, cons) with
       | Error _, Error _ | Ok None, Error None | Error None, Ok None ->
           raise_notrace Merge_fail
@@ -458,7 +406,7 @@ and merge : type a k. (a, leaf) nat -> (a, k) tree -> (a, k) tree -> (a, k) tree
       let wildcard =
         match b.wildcard with None -> a.child | Some b -> merge n a.child b
       in
-      let ids = SetInt.union a.ids b.ids in
+      let ids = Set.Int.union a.ids b.ids in
       Switch { b with ids; cases; wildcard = Some wildcard }
   | Nest a, Nest b ->
       let wildcard =
@@ -483,7 +431,7 @@ and merge : type a k. (a, leaf) nat -> (a, k) tree -> (a, k) tree -> (a, k) tree
                 StringKeys (merge_wildcard_after_nest ~wildcard Z child (S n)))
         | _ -> assert false
       in
-      let ids = SetInt.union a.ids b.ids in
+      let ids = Set.Int.union a.ids b.ids in
       Nest { a with ids; child; wildcard }
   | Nest a, Wildcard b ->
       let child =
@@ -497,7 +445,7 @@ and merge : type a k. (a, leaf) nat -> (a, k) tree -> (a, k) tree -> (a, k) tree
       let wildcard =
         match a.wildcard with None -> b.child | Some a -> merge n a b.child
       in
-      let ids = SetInt.union a.ids b.ids in
+      let ids = Set.Int.union a.ids b.ids in
       Nest { a with ids; child; wildcard = Some wildcard }
   | Construct a, (Wildcard b as b') -> (
       let nil =
@@ -510,7 +458,7 @@ and merge : type a k. (a, leaf) nat -> (a, k) tree -> (a, k) tree -> (a, k) tree
         | None -> Ok b'
         | Some a -> ( try Ok (merge n a b') with Merge_fail -> Error a)
       in
-      let ids = SetInt.union a.ids b.ids in
+      let ids = Set.Int.union a.ids b.ids in
       match (nil, cons) with
       | Error _, Error _ -> raise_notrace Merge_fail
       | Ok nil, Ok cons | Ok nil, Error cons | Error nil, Ok cons ->
@@ -528,14 +476,14 @@ and merge : type a k. (a, leaf) nat -> (a, k) tree -> (a, k) tree -> (a, k) tree
         | Some x, None | None, Some x -> Some x
         | Some a, Some b -> Some (merge n a b)
       in
-      let ids = SetInt.union a.ids b.ids in
+      let ids = Set.Int.union a.ids b.ids in
       Construct { a with ids; nil; cons }
   | Switch a, Wildcard b ->
       let wildcard =
         match a.wildcard with None -> b.child | Some a -> merge n a b.child
       in
       let cases = expand_wildcard_into_testcases a.cases b.child n in
-      let ids = SetInt.union a.ids b.ids in
+      let ids = Set.Int.union a.ids b.ids in
       Switch { a with ids; cases; wildcard = Some wildcard }
   | Switch a, Switch b ->
       let wildcard =
@@ -562,7 +510,7 @@ and merge : type a k. (a, leaf) nat -> (a, k) tree -> (a, k) tree -> (a, k) tree
         | None -> cases
         | Some wildcard -> expand_wildcard_into_testcases cases wildcard n
       in
-      let ids = SetInt.union a.ids b.ids in
+      let ids = Set.Int.union a.ids b.ids in
       Switch { a with ids; cases; wildcard }
   | Switch _, (Nest _ | Construct _)
   | Construct _, (Switch _ | Nest _)
@@ -578,14 +526,14 @@ let merge = merge Z
   CPS as an easy way deal with the nested data type.
 *)
 
-type bindings = { next_id : unit -> int; names : int MapString.t }
+type bindings = { next_id : unit -> int; names : int Map.String.t }
 type ('a, 'k) cont = bindings -> ('a, 'k) tree
 
 let of_const key data if_match enum =
   Switch
     {
       key;
-      ids = SetInt.empty;
+      ids = Set.Int.empty;
       cases = { data; if_match; next_case = None };
       extra =
         (match enum with
@@ -598,30 +546,42 @@ let rec of_tpat :
           'a 'k. key:'k -> bindings -> ('a, 'k) cont -> TPat.t -> ('a, 'k) tree
     =
  fun ~key b k -> function
-  | TPat.TAny -> Wildcard { ids = SetInt.empty; key; child = k b }
+  | TPat.TAny -> Wildcard { ids = Set.Int.empty; key; child = k b }
   | TVar x ->
       let id = b.next_id () in
-      let b = { b with names = MapString.add x id b.names } in
-      Wildcard { ids = SetInt.singleton id; key; child = k b }
+      let b = { b with names = Map.String.add x id b.names } in
+      Wildcard { ids = Set.Int.singleton id; key; child = k b }
   | TConstruct (kind, Some cons) ->
       let child = of_tpat ~key b k cons in
       Construct
-        { key; ids = SetInt.empty; extra = kind; nil = None; cons = Some child }
+        {
+          key;
+          ids = Set.Int.empty;
+          extra = kind;
+          nil = None;
+          cons = Some child;
+        }
   | TConstruct (kind, None) ->
       Construct
-        { key; ids = SetInt.empty; extra = kind; nil = Some (k b); cons = None }
+        {
+          key;
+          ids = Set.Int.empty;
+          extra = kind;
+          nil = Some (k b);
+          cons = None;
+        }
   | TConst (data, enum) -> of_const key data (k b) enum
   | TTuple l ->
       let child = IntKeys (of_list ~key:0 b (fun b -> End (k b)) l) in
-      Nest { key; ids = SetInt.empty; child; wildcard = None; extra = Tuple }
+      Nest { key; ids = Set.Int.empty; child; wildcard = None; extra = Tuple }
   | TRecord (tag, m, tys) ->
       (* We need to expand the map to include all of its type's keys. *)
       let l =
-        MapString.merge
+        Map.String.merge
           (fun _k _ty p ->
             match p with None -> Some TPat.TAny | Some p -> Some p)
           !tys m
-        |> MapString.to_seq
+        |> Map.String.to_seq
       in
       let child = of_keyvalues b (fun b -> End (k b)) l in
       let child, extra =
@@ -633,7 +593,7 @@ let rec of_tpat :
       Nest
         {
           key;
-          ids = SetInt.empty;
+          ids = Set.Int.empty;
           child = StringKeys child;
           wildcard = None;
           extra;
@@ -641,22 +601,22 @@ let rec of_tpat :
   | TDict (m, kys) ->
       (* We need to expand the map to include all of its type's keys. *)
       let l =
-        !kys |> SetString.to_seq
+        !kys |> Set.String.to_seq
         |> Seq.map (fun key -> (key, TPat.TAny))
-        |> MapString.of_seq
-        |> MapString.merge
+        |> Map.String.of_seq
+        |> Map.String.merge
              (fun _ p kpat ->
                match (p, kpat) with
                | Some p, _ | None, Some p -> Some p
                | None, None -> None)
              m
-        |> MapString.to_seq
+        |> Map.String.to_seq
       in
       let child = of_keyvalues b (fun b -> End (k b)) l in
       Nest
         {
           key;
-          ids = SetInt.empty;
+          ids = Set.Int.empty;
           child = StringKeys child;
           wildcard = None;
           extra = Dict;
@@ -682,7 +642,7 @@ and of_keyvalues :
 let of_nonempty ~exit next_id Nonempty.(hd :: tl) =
   let k { names; _ } = End { names; exit } in
   let k b = of_list ~key:1 b k tl in
-  of_tpat ~key:0 { next_id; names = MapString.empty } k hd
+  of_tpat ~key:0 { next_id; names = Map.String.empty } k hd
 
 let rec make_case ~exit next_id tree = function
   | [] -> tree
@@ -726,7 +686,7 @@ module ParMatch = struct
   type 'a t = { flag : flag; pats : (string * TPat.t) list; next : 'a }
 
   let values l = List.map (fun (_, v) -> v) l
-  let to_keyvalues l = l |> List.to_seq |> MapString.of_seq
+  let to_keyvalues l = l |> List.to_seq |> Map.String.of_seq
   let pp_pats ppf l = Format.pp_print_list ~pp_sep:Pp.sep_comma TPat.pp ppf l
   let key_str = Fun.id
   let key_int _ = ""
@@ -767,7 +727,7 @@ module ParMatch = struct
                   match extra with
                   | Tuple -> TPat.TTuple (values pats)
                   | Record ->
-                      TRecord (None, to_keyvalues pats, ref MapString.empty)
+                      TRecord (None, to_keyvalues pats, ref Map.String.empty)
                   | Union extra -> (
                       match pats with
                       | (k, TConst (v, _)) :: pats ->
@@ -776,17 +736,17 @@ module ParMatch = struct
                                 ( k,
                                   v,
                                   {
-                                    cases = String MapString.empty;
+                                    cases = String Map.String.empty;
                                     row = `Closed;
                                     extra;
                                   } ),
                               to_keyvalues pats,
-                              ref MapString.empty )
+                              ref Map.String.empty )
                           (* If the child (tag) was not a constant, then it was
                              a TAny and we report the entire union pattern as a
                              TAny. *)
                       | _ -> TAny)
-                  | Dict -> TDict (to_keyvalues pats, ref SetString.empty)
+                  | Dict -> TDict (to_keyvalues pats, ref Set.String.empty)
                 in
                 let { pats; next; _ } = check kf next in
                 { next; flag = Partial; pats = (kf key, nest) :: pats }))

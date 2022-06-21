@@ -8,7 +8,6 @@
 (*                                                                        *)
 (**************************************************************************)
 
-open StdlibExtra
 open Js_of_ocaml
 module Ty = Typescheme
 
@@ -53,7 +52,7 @@ let boolean ty stack cases j =
   match classify j with
   | Js_bool b ->
       let i = match b with false -> 0 | true -> 1 in
-      if SetInt.mem i cases then Data.const (`Int i) `Extra_bool
+      if Set.Int.mem i cases then Data.const (`Int i) `Extra_bool
       else Error.bad_enum pp ty stack j
   | _ -> decode_error ty stack j
 
@@ -63,7 +62,7 @@ let string ty stack cases j =
       match cases with
       | None -> Data.const (`String s) `Extra_none
       | Some cases ->
-          if SetString.mem s cases then Data.const (`String s) `Extra_none
+          if Set.String.mem s cases then Data.const (`String s) `Extra_none
           else Error.bad_enum pp ty stack j)
   | _ -> decode_error ty stack j
 
@@ -74,7 +73,7 @@ let int ty stack cases j =
       match cases with
       | None -> Data.const (`Int i) `Extra_none
       | Some cases ->
-          if SetInt.mem i cases then Data.const (`Int i) `Extra_none
+          if Set.Int.mem i cases then Data.const (`Int i) `Extra_none
           else Error.bad_enum pp ty stack j)
   | _ -> decode_error ty stack j
 
@@ -114,7 +113,7 @@ and dict stack ty j =
   | Js_object o ->
       o
       |> Seq.map (fun (k, v) -> (k, make (Key k :: stack) ty v))
-      |> MapString.of_seq |> Data.dict
+      |> Map.String.of_seq |> Data.dict
   | _ -> decode_error (Ty.dict ty) stack j
 
 and tuple ty stack tys j =
@@ -130,42 +129,42 @@ and tuple ty stack tys j =
 
 and record_aux stack tys j =
   let f k ty =
-    match (ty, MapString.find_opt k j) with
+    match (ty, Map.String.find_opt k j) with
     | { contents = Ty.Nullable _ | Unknown _ }, None -> Data.null
     | ty, Some j -> make (Key k :: stack) ty j
     | _ -> Error.missing_key stack (Ty.internal_record (ref tys)) k
   in
-  MapString.mapi f tys
+  Map.String.mapi f tys
 
 and record stack tys j =
   match classify j with
-  | Js_object o -> o |> MapString.of_seq |> record_aux stack !tys |> Data.dict
+  | Js_object o -> o |> Map.String.of_seq |> record_aux stack !tys |> Data.dict
   | _ -> decode_error (Ty.internal_record tys) stack j
 
 and union stack ty key cases extra j =
   match classify j with
   | Js_object o ->
-      let map = MapString.of_seq o in
+      let map = Map.String.of_seq o in
       let tag, tys =
         try
-          let tag = MapString.find key map in
+          let tag = Map.String.find key map in
           match (classify tag, cases, extra) with
           | Js_bool false, Ty.Variant.Int map, `Extra_bool ->
               let tag = 0 in
-              (Data.const (`Int tag) extra, MapInt.find tag map)
+              (Data.const (`Int tag) extra, Map.Int.find tag map)
           | Js_bool true, Int map, `Extra_bool ->
               let tag = 1 in
-              (Data.const (`Int tag) extra, MapInt.find tag map)
+              (Data.const (`Int tag) extra, Map.Int.find tag map)
           | Js_float tag, Int map, `Extra_none ->
               let tag = int_of_float tag in
-              (Data.const (`Int tag) extra, MapInt.find tag map)
+              (Data.const (`Int tag) extra, Map.Int.find tag map)
           | Js_string tag, String map, `Extra_none ->
-              (Data.const (`String tag) extra, MapString.find tag map)
+              (Data.const (`String tag) extra, Map.String.find tag map)
           | _ -> raise Not_found
         with Not_found -> decode_error ty stack j
       in
       let r = record_aux stack !tys map in
-      Data.dict (MapString.add key tag r)
+      Data.dict (Map.String.add key tag r)
   | _ -> decode_error ty stack j
 
 and make stack ty j =
@@ -190,7 +189,7 @@ and make stack ty j =
 let decode tys j =
   match classify j with
   | Js_object o ->
-      let map = MapString.of_seq o in
+      let map = Map.String.of_seq o in
       record_aux [] tys map
   | _ -> decode_error (Ty.internal_record (ref tys)) [] j
 
@@ -200,7 +199,7 @@ let rec record_to_js ty t =
   let f _ ty t =
     match (ty, t) with Some ty, Some t -> Some (to_js ty t) | _ -> None
   in
-  let l = MapString.merge f ty t |> MapString.bindings in
+  let l = Map.String.merge f ty t |> Map.String.bindings in
   l
 
 and to_js ty t =
@@ -227,16 +226,15 @@ and to_js ty t =
       a |> Array.map2 to_js (Array.of_list tys) |> Js.array |> coerce
   | Dict (ty, _), Dict m ->
       m
-      |> MapString.map (to_js ty)
-      |> MapString.to_seq |> Array.of_seq |> Js.Unsafe.obj
-  | Record tys, Dict m ->
-      record_to_js !tys m |> Array.of_list |> Js.Unsafe.obj
+      |> Map.String.map (to_js ty)
+      |> Map.String.to_seq |> Array.of_seq |> Js.Unsafe.obj
+  | Record tys, Dict m -> record_to_js !tys m |> Array.of_list |> Js.Unsafe.obj
   | Union (k, { cases; _ }), Dict m ->
-      let tag = MapString.find k m in
+      let tag = Map.String.find k m in
       let record_tys =
         match (cases, tag) with
-        | Int m, Const (`Int i, _) -> MapInt.find i m
-        | String m, Const (`String s, _) -> MapString.find s m
+        | Int m, Const (`Int i, _) -> Map.Int.find i m
+        | String m, Const (`String s, _) -> Map.String.find s m
         | _ -> assert false
       in
       let tag =

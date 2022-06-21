@@ -8,7 +8,6 @@
 (*                                                                        *)
 (**************************************************************************)
 
-open StdlibExtra
 module Ty = Typescheme
 
 module Const = struct
@@ -28,7 +27,7 @@ type 'a t =
   | Unknown of 'a
   | Null
   | Array of 'a t array
-  | Dict of 'a t MapString.t
+  | Dict of 'a t Map.String.t
   | Const of Const.t * Ty.Variant.extra
 
 let unknown x = Unknown x
@@ -69,7 +68,7 @@ let fold_list f acc l =
 
 let fold_dict f acc = function
   | Dict m ->
-      MapString.fold
+      Map.String.fold
         (fun k v acc -> f ~index:(Const (`String k, `Extra_none)) acc v)
         m acc
   | _ -> assert false

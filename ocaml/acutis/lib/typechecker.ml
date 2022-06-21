@@ -8,7 +8,6 @@
 (*                                                                        *)
 (**************************************************************************)
 
-open StdlibExtra
 module F = Format
 module Ty = Typescheme
 module V = Ty.Variant
@@ -28,9 +27,9 @@ exception Clash
 *)
 
 let rec open_rows_bool_union_aux = function
-  | None -> Some (ref MapString.empty)
+  | None -> Some (ref Map.String.empty)
   | Some ty as x ->
-      MapString.iter (fun _ v -> open_rows v) !ty;
+      Map.String.iter (fun _ v -> open_rows v) !ty;
       x
 
 and open_rows ty =
@@ -43,19 +42,19 @@ and open_rows ty =
       match (ty.extra, ty.cases) with
       | `Extra_bool, Int cases ->
           let f = open_rows_bool_union_aux in
-          ty.cases <- Int (cases |> MapInt.update 0 f |> MapInt.update 1 f)
+          ty.cases <- Int (cases |> Map.Int.update 0 f |> Map.Int.update 1 f)
       | _, Int cases ->
-          MapInt.iter
-            (fun _ v -> MapString.iter (fun _ v -> open_rows v) !v)
+          Map.Int.iter
+            (fun _ v -> Map.String.iter (fun _ v -> open_rows v) !v)
             cases;
           ty.row <- `Open
       | _, String cases ->
-          MapString.iter
-            (fun _ v -> MapString.iter (fun _ v -> open_rows v) !v)
+          Map.String.iter
+            (fun _ v -> Map.String.iter (fun _ v -> open_rows v) !v)
             cases;
           ty.row <- `Open)
   | Tuple a -> List.iter open_rows a
-  | Record ty -> MapString.iter (fun _ v -> open_rows v) !ty
+  | Record ty -> Map.String.iter (fun _ v -> open_rows v) !ty
   | Nullable ty | List ty | Dict (ty, _) -> open_rows ty
   | Unknown row -> row := `Open
   | Int | Float | String | Echo -> ()
@@ -67,15 +66,15 @@ type mode =
 
 let unify_enum_cases _ a b =
   match (a, b) with
-  | V.String a, V.String b -> V.String (SetString.union a b)
-  | Int a, Int b -> Int (SetInt.union a b)
+  | V.String a, V.String b -> V.String (Set.String.union a b)
+  | Int a, Int b -> Int (Set.Int.union a b)
   | _ -> raise_notrace Clash
 
 let subset_enum_cases _ a b =
   let success =
     match (a, b) with
-    | V.String a, V.String b -> SetString.subset b a
-    | Int a, Int b -> SetInt.subset b a
+    | V.String a, V.String b -> Set.String.subset b a
+    | Int a, Int b -> Set.Int.subset b a
     | _ -> false
   in
   if not success then raise_notrace Clash
@@ -109,7 +108,7 @@ let rec unify mode aty bty =
   | Nullable t1, Nullable t2 -> unify mode t1 t2
   | List t1, List t2 -> unify mode t1 t2
   | Dict (t1, ks1), Dict (t2, ks2) ->
-      let ks' = SetString.union !ks1 !ks2 in
+      let ks' = Set.String.union !ks1 !ks2 in
       ks1 := ks';
       ks2 := ks';
       unify mode t1 t2
@@ -143,7 +142,7 @@ and unify_record mode a b =
             Some b
         | x, None -> x
       in
-      a := MapString.merge f !a !b
+      a := Map.String.merge f !a !b
   | Construct_var ->
       let f _ a b =
         match (a, b) with
@@ -153,7 +152,7 @@ and unify_record mode a b =
         | (Some _ as x), None | None, (Some _ as x) -> x
         | None, None -> None
       in
-      b := MapString.merge f !a !b
+      b := Map.String.merge f !a !b
   | Construct_literal ->
       let f _ a b =
         match (a, b) with
@@ -163,7 +162,7 @@ and unify_record mode a b =
         | Some _, None -> raise_notrace Clash
         | None, _ -> None
       in
-      a := MapString.merge f !a !b
+      a := Map.String.merge f !a !b
 
 and unify_union_cases mode a b =
   let f _ a b =
@@ -174,8 +173,8 @@ and unify_union_cases mode a b =
     | x, None | None, x -> x
   in
   match (a, b) with
-  | V.String a, V.String b -> V.String (MapString.merge f a b)
-  | Int a, Int b -> Int (MapInt.merge f a b)
+  | V.String a, V.String b -> V.String (Map.String.merge f a b)
+  | Int a, Int b -> Int (Map.Int.merge f a b)
   | _ -> raise_notrace Clash
 
 and subset_union_cases mode a b =
@@ -189,8 +188,8 @@ and subset_union_cases mode a b =
     | None, None -> None
   in
   match (a, b) with
-  | V.String a, V.String b -> MapString.merge f a b |> ignore
-  | Int a, Int b -> MapInt.merge f a b |> ignore
+  | V.String a, V.String b -> Map.String.merge f a b |> ignore
+  | Int a, Int b -> Map.Int.merge f a b |> ignore
   | _ -> raise_notrace Clash
 
 let unify loc mode a b =
@@ -208,9 +207,9 @@ module Pattern = struct
     | TTuple of t list
     | TRecord of
         (string * constant * Ty.t Ty.Union.t) option
-        * t MapString.t
-        * Ty.t MapString.t ref
-    | TDict of t MapString.t * SetString.t ref
+        * t Map.String.t
+        * Ty.t Map.String.t ref
+    | TDict of t Map.String.t * Set.String.t ref
     | TVar of string
     | TAny
   [@@deriving eq]
@@ -286,14 +285,14 @@ module Pattern = struct
         TTuple (List.map2 (make ~f mode) tyvars l)
     | Record (loc, Untagged m) ->
         let m = Ast.Dict.to_map m in
-        let new_tyvars = m |> MapString.map unknown |> ref in
+        let new_tyvars = m |> Map.String.map unknown |> ref in
         let tyvars = match !ty with Record tys -> tys | _ -> new_tyvars in
         unify loc mode ty (Ty.internal_record new_tyvars);
         let r = make_record ~f loc mode !tyvars m in
         TRecord (None, r, tyvars)
     | Record (loc, Tagged (k, v, m)) ->
         let m = Ast.Dict.to_map m in
-        let new_tyvars = m |> MapString.map unknown |> ref in
+        let new_tyvars = m |> Map.String.map unknown |> ref in
         let new_tag_ty = Ty.unknown () in
         let row =
           match mode with
@@ -312,9 +311,9 @@ module Pattern = struct
           | Union (_, enum) -> (
               let tyvars =
                 match (tag, enum) with
-                | `Int i, { cases = Int cases; _ } -> MapInt.find_opt i cases
+                | `Int i, { cases = Int cases; _ } -> Map.Int.find_opt i cases
                 | `String s, { cases = String cases; _ } ->
-                    MapString.find_opt s cases
+                    Map.String.find_opt s cases
                 | _ -> None
               in
               match tyvars with Some tv -> tv | None -> new_tyvars)
@@ -329,14 +328,14 @@ module Pattern = struct
         let r = make_record ~f loc mode !tyvars m in
         TRecord (Some (k, tag, new_enum), r, tyvars)
     | Dict (loc, m) ->
-        let new_kys = ref SetString.empty in
+        let new_kys = ref Set.String.empty in
         let tyvar, kys =
           match !ty with
           | Dict (ty, ks) -> (ty, ks)
           | _ -> (Ty.unknown (), new_kys)
         in
         unify loc mode ty (Ty.internal_dict_keys tyvar new_kys);
-        let d = m |> Ast.Dict.to_map |> MapString.map (make ~f mode tyvar) in
+        let d = m |> Ast.Dict.to_map |> Map.String.map (make ~f mode tyvar) in
         TDict (d, kys)
     | Var (loc, "_") -> (
         match mode with
@@ -369,7 +368,7 @@ module Pattern = struct
           | None, Some _ -> Some TAny
           | None, None -> None
         in
-        MapString.merge f m tyvars
+        Map.String.merge f m tyvars
     | Construct_var | Construct_literal ->
         let f k pat ty =
           match (pat, ty) with
@@ -377,7 +376,7 @@ module Pattern = struct
           | None, Some ty -> Error.missing_field loc k ty (* for components *)
           | _ -> None
         in
-        MapString.merge f m tyvars
+        Map.String.merge f m tyvars
 
   let to_list l =
     let rec aux acc = function
@@ -436,7 +435,7 @@ module Pattern = struct
     | v -> F.fprintf ppf "%a: %a" Pp.field k pp v
 
   and pp_bindings ppf m =
-    F.pp_print_seq ~pp_sep:Pp.sep_comma pp_key_values ppf (MapString.to_seq m)
+    F.pp_print_seq ~pp_sep:Pp.sep_comma pp_key_values ppf (Map.String.to_seq m)
 
   and pp_rest ppf t = F.fprintf ppf ",@ ...%a" pp t
 end
@@ -452,7 +451,7 @@ type node =
   | TMatch of Loc.t * Pattern.t Nonempty.t * case Nonempty.t
   | TMap_list of Loc.t * Pattern.t * case Nonempty.t
   | TMap_dict of Loc.t * Pattern.t * case Nonempty.t
-  | TComponent of string * Pattern.t MapString.t * child MapString.t
+  | TComponent of string * Pattern.t Map.String.t * child Map.String.t
 
 and case = { pats : (Loc.t * Pattern.t Nonempty.t) Nonempty.t; nodes : nodes }
 and child = TChild_name of string | TChild_block of nodes
@@ -460,8 +459,8 @@ and nodes = node list
 
 type t = {
   nodes : nodes;
-  prop_types : Ty.t MapString.t;
-  child_types : Ty.Child.t MapString.t;
+  prop_types : Ty.t Map.String.t;
+  child_types : Ty.Child.t Map.String.t;
 }
 
 let unify_child loc a b =
@@ -471,28 +470,28 @@ module Context = struct
   type root = [ `Root | `Component ]
 
   type t = {
-    global : Ty.t MapString.t ref;
-    scope : Ty.t MapString.t;
-    children : Ty.Child.t MapString.t ref;
+    global : Ty.t Map.String.t ref;
+    scope : Ty.t Map.String.t;
+    children : Ty.Child.t Map.String.t ref;
     root : root;
   }
 
   let make root =
     {
-      global = ref MapString.empty;
-      scope = MapString.empty;
-      children = ref MapString.empty;
+      global = ref Map.String.empty;
+      scope = Map.String.empty;
+      children = ref Map.String.empty;
       root;
     }
 
   let get k scope global =
-    match MapString.find_opt k scope with
-    | None -> MapString.find_opt k !global
+    match Map.String.find_opt k scope with
+    | None -> Map.String.find_opt k !global
     | Some _ as x -> x
 
   let update { scope; global; _ } loc k v =
     match get k scope global with
-    | None -> global := MapString.add k v !global
+    | None -> global := Map.String.add k v !global
     | Some v' -> unify loc Construct_var v v'
 
   let update_child loc { root; children; _ } (k, v) =
@@ -505,7 +504,7 @@ module Context = struct
               unify_child loc v v';
               r
         in
-        children := MapString.update k f !children
+        children := Map.String.update k f !children
 
   let add_scope bindings ctx =
     let bindings' = Queue.create () in
@@ -514,9 +513,9 @@ module Context = struct
         Queue.add
           (Queue.fold
              (fun newscope (loc, k, v) ->
-               if MapString.mem k newscope then Error.name_bound_too_many loc k
-               else MapString.add k (loc, v) newscope)
-             MapString.empty q)
+               if Map.String.mem k newscope then Error.name_bound_too_many loc k
+               else Map.String.add k (loc, v) newscope)
+             Map.String.empty q)
           bindings')
       bindings;
     match Queue.take_opt bindings' with
@@ -525,7 +524,7 @@ module Context = struct
         let newscope =
           Queue.fold
             (fun acc m ->
-              MapString.merge
+              Map.String.merge
                 (fun k a b ->
                   match (a, b) with
                   | (Some (loc, a) as a'), Some (_, b) ->
@@ -538,7 +537,7 @@ module Context = struct
             hd bindings'
         in
         let scope =
-          MapString.merge
+          Map.String.merge
             (fun _ a b ->
               match (a, b) with
               | None, None -> None
@@ -575,7 +574,7 @@ let make_default_echo ctx = function
 
 type ('a, 'b) source =
   [ `Src of string * 'a
-  | `Fun of string * Ty.t MapString.t * Ty.Child.t MapString.t * 'b ]
+  | `Fun of string * Ty.t Map.String.t * Ty.Child.t Map.String.t * 'b ]
 
 let get_types = function
   | `Src (_, { prop_types; child_types; _ }) -> (prop_types, child_types)
@@ -650,7 +649,7 @@ and make_nodes ctx g nodes =
         in
         let props =
           props |> Ast.Dict.to_map
-          |> MapString.merge missing_to_nullable prop_types
+          |> Map.String.merge missing_to_nullable prop_types
           |> Pattern.make_record ~f:(Context.update ctx) loc Construct_literal
                prop_types
         in
@@ -668,7 +667,7 @@ and make_nodes ctx g nodes =
           | None, None -> None
         in
         let children =
-          MapString.merge f (Ast.Dict.to_map children) prop_types_child
+          Map.String.merge f (Ast.Dict.to_map children) prop_types_child
         in
         TComponent (comp, props, children)
     | Match (loc, pats, cases) ->

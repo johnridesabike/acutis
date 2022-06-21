@@ -8,16 +8,14 @@
 (*                                                                        *)
 (**************************************************************************)
 
-(** This converts JSON strings to and from {!Data.t}. *)
+(** This defines the locations of expressions in a source file. *)
 
-type t =
-  [ `Null
-  | `Bool of bool
-  | `Int of int
-  | `Float of float
-  | `String of string
-  | `Assoc of (string * t) list
-  | `List of t list ]
+type t = Lexing.position * Lexing.position
+(** This type is equivalent to Menhir's [$loc] keyword. *)
 
-val decode : Typescheme.t Map.String.t -> t -> t Data.t Map.String.t
-val encode : Typescheme.t Map.String.t -> t Data.t Map.String.t -> t
+val dummy : t
+val pp : Format.formatter -> t -> unit
+
+val equal : t -> t -> bool
+(** Always returns [true]. Do not use location information to test
+      equivalency. *)

@@ -8,7 +8,8 @@
 (*                                                                        *)
 (**************************************************************************)
 
-open StdlibExtra
+(** This orchestrates the {!Lexer}, {!Parser}, {!Typechecker}, and {!Matching}
+    to produce the final template. *)
 
 type 'a node =
   | Text of string
@@ -16,7 +17,7 @@ type 'a node =
   | Match of Typechecker.Pattern.t array * 'a nodes Matching.t
   | Map_list of Typechecker.Pattern.t * 'a nodes Matching.t
   | Map_dict of Typechecker.Pattern.t * 'a nodes Matching.t
-  | Component of 'a * Typechecker.Pattern.t MapString.t * 'a child MapString.t
+  | Component of 'a * Typechecker.Pattern.t Map.String.t * 'a child Map.String.t
 
 and 'a child = Child_name of string | Child_block of 'a nodes
 and 'a nodes = 'a node list
@@ -25,9 +26,12 @@ val make_nodes : Typechecker.t -> string nodes
 
 type 'a template =
   | Src of 'a template nodes
-  | Fun of Typescheme.t MapString.t * 'a
+  | Fun of Typescheme.t Map.String.t * 'a
 
-type 'a t = { prop_types : Typescheme.t MapString.t; nodes : 'a template nodes }
+type 'a t = {
+  prop_types : Typescheme.t Map.String.t;
+  nodes : 'a template nodes;
+}
 
 val parse_string : filename:string -> string -> Ast.t
 
@@ -35,15 +39,15 @@ module Components : sig
   type ('a, 'b) source =
     [ `Src of string * 'a
     | `Fun of
-      string * Typescheme.t MapString.t * Typescheme.Child.t MapString.t * 'b
+      string * Typescheme.t Map.String.t * Typescheme.Child.t Map.String.t * 'b
     ]
 
   val src : name:string -> string -> (string, 'a) source
 
   val fn :
     name:string ->
-    Typescheme.t MapString.t ->
-    Typescheme.Child.t MapString.t ->
+    Typescheme.t Map.String.t ->
+    Typescheme.Child.t Map.String.t ->
     'a ->
     (_, 'a) source
 

@@ -1,5 +1,4 @@
 open Acutis
-open StdlibExtra
 module F = Format
 module Ty = Typescheme
 
@@ -10,11 +9,11 @@ let check =
     check
       (testable
          (Pp.map_string Typescheme.pp)
-         (MapString.equal Typescheme.equal)))
+         (Map.String.equal Typescheme.equal)))
 
 let get_types src =
   (parse ~filename:"<test>" src
-  |> Typechecker.make ~root:"<test>" MapString.empty)
+  |> Typechecker.make ~root:"<test>" Map.String.empty)
     .prop_types
 
 let echoes () =

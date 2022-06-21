@@ -8,12 +8,10 @@
 (*                                                                        *)
 (**************************************************************************)
 
-open StdlibExtra
-
 type ('a, 'b) t = {
   queue : string list;
-  mutable notlinked : 'a MapString.t;
-  mutable linked : 'b MapString.t;
+  mutable notlinked : 'a Map.String.t;
+  mutable linked : 'b Map.String.t;
   stack : string list;
   f : ('a, 'b) t -> 'a -> 'b;
 }
@@ -23,9 +21,9 @@ let key (k, _) = k
 
 let make ~f ?root m =
   {
-    queue = MapString.bindings m |> List.map key;
+    queue = Map.String.bindings m |> List.map key;
     notlinked = m;
-    linked = MapString.empty;
+    linked = Map.String.empty;
     stack = (match root with Some s -> [ s ] | None -> []);
     f;
   }
@@ -33,22 +31,22 @@ let make ~f ?root m =
 let prelinked root m =
   {
     queue = [];
-    notlinked = MapString.empty;
+    notlinked = Map.String.empty;
     linked = m;
     stack = [ root ];
     f = id;
   }
 
 let get k g =
-  match MapString.find_opt k g.linked with
+  match Map.String.find_opt k g.linked with
   | Some x -> x (* It was linked already in a previous search. *)
   | None -> (
-      match MapString.find_opt k g.notlinked with
+      match Map.String.find_opt k g.notlinked with
       | Some x ->
           (* Remove it form the unlinked map so a cycle isn't possible. *)
-          g.notlinked <- MapString.remove k g.notlinked;
+          g.notlinked <- Map.String.remove k g.notlinked;
           let x = g.f { g with stack = k :: g.stack } x in
-          g.linked <- MapString.add k x g.linked;
+          g.linked <- Map.String.add k x g.linked;
           x
       | None ->
           (* It is either being linked (in a cycle) or it doesn't exist. *)
@@ -57,11 +55,11 @@ let get k g =
 
 let link_all g =
   let f k =
-    match MapString.find_opt k g.notlinked with
+    match Map.String.find_opt k g.notlinked with
     | Some x ->
-        g.notlinked <- MapString.remove k g.notlinked;
+        g.notlinked <- Map.String.remove k g.notlinked;
         g.linked <-
-          MapString.add k (g.f { g with stack = k :: g.stack } x) g.linked
+          Map.String.add k (g.f { g with stack = k :: g.stack } x) g.linked
     | None -> () (* It was already processed by a dependent. *)
   in
   List.iter f g.queue;

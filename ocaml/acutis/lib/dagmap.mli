@@ -8,14 +8,15 @@
 (*                                                                        *)
 (**************************************************************************)
 
-open StdlibExtra
+(** This is a utility to help {!Typechecker} and {!Compile} enforce that
+ templates form a directed acyclic graph. *)
 
 type ('a, 'b) t
 
 val make :
-  f:(('a, 'b) t -> 'a -> 'b) -> ?root:string -> 'a MapString.t -> ('a, 'b) t
-(** Use [get] inside the [f] callback. *)
+  f:(('a, 'b) t -> 'a -> 'b) -> ?root:string -> 'a Map.String.t -> ('a, 'b) t
+(** Use {!get} inside the [f] callback. *)
 
-val prelinked : string -> 'a MapString.t -> ('a, 'a) t
+val prelinked : string -> 'a Map.String.t -> ('a, 'a) t
 val get : string -> ('a, 'b) t -> 'b
-val link_all : ('a, 'b) t -> 'b MapString.t
+val link_all : ('a, 'b) t -> 'b Map.String.t

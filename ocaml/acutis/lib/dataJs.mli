@@ -8,10 +8,9 @@
 (*                                                                        *)
 (**************************************************************************)
 
-open StdlibExtra
-open Js_of_ocaml
+(** This converts JavaScript values to and from {!Data.t}. *)
 
-type t = Js.Unsafe.any
+type t = Js_of_ocaml.Js.Unsafe.any
 
-val decode : Typescheme.t MapString.t -> t -> t Data.t MapString.t
-val encode : Typescheme.t MapString.t -> t Data.t MapString.t -> t
+val decode : Typescheme.t Map.String.t -> t -> t Data.t Map.String.t
+val encode : Typescheme.t Map.String.t -> t Data.t Map.String.t -> t

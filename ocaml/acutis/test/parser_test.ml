@@ -3,7 +3,7 @@ module F = Format
 
 let parse = Compile.parse_string ~filename:"<test>"
 let check = Alcotest.(check (module Ast))
-let loc = StdlibExtra.Loc.dummy
+let loc = Loc.dummy
 
 let echoes () =
   let src = {|{{ a }} {{ "b" }} {{ C }} {{ &d ? E ? "f" }}|} in

@@ -8,16 +8,8 @@
 (*                                                                        *)
 (**************************************************************************)
 
-(** This converts JSON strings to and from {!Data.t}. *)
+type t = Lexing.position * Lexing.position
 
-type t =
-  [ `Null
-  | `Bool of bool
-  | `Int of int
-  | `Float of float
-  | `String of string
-  | `Assoc of (string * t) list
-  | `List of t list ]
-
-val decode : Typescheme.t Map.String.t -> t -> t Data.t Map.String.t
-val encode : Typescheme.t Map.String.t -> t Data.t Map.String.t -> t
+let dummy = (Lexing.dummy_pos, Lexing.dummy_pos)
+let pp ppf _ = Format.fprintf ppf "<loc>"
+let equal _ _ = true (* Do not use location for equality in testing. *)
