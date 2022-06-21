@@ -12,9 +12,10 @@ open StdlibExtra
 
 type ('a, 'b) t
 
-val make : f:(('a, 'b) t -> 'a -> 'b) -> 'a MapString.t -> ('a, 'b) t
+val make :
+  f:(('a, 'b) t -> 'a -> 'b) -> ?root:string -> 'a MapString.t -> ('a, 'b) t
 (** Use [get] inside the [f] callback. *)
 
-val prelinked : 'a MapString.t -> ('a, 'a) t
+val prelinked : string -> 'a MapString.t -> ('a, 'a) t
 val get : string -> ('a, 'b) t -> 'b
 val link_all : ('a, 'b) t -> 'b MapString.t

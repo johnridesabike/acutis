@@ -13,7 +13,9 @@ let check =
          (MapString.equal Typescheme.equal)))
 
 let get_types src =
-  (parse ~filename:"<test>" src |> Typechecker.make MapString.empty).prop_types
+  (parse ~filename:"<test>" src
+  |> Typechecker.make ~root:"<test>" MapString.empty)
+    .prop_types
 
 let echoes () =
   let src = {|{{ a }} {{ "b" }} {{ c ? "d" }}|} in

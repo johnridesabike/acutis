@@ -194,7 +194,7 @@ let decode tys j =
       record_aux [] tys map
   | _ -> decode_error (Ty.internal_record (ref tys)) [] j
 
-let inject : 'a Js.t -> t = Js.Unsafe.inject
+let coerce = Js.Unsafe.coerce
 
 let rec record_to_js ty t =
   let f _ ty t =
@@ -206,31 +206,31 @@ let rec record_to_js ty t =
 and to_js ty t =
   match (!ty, t) with
   | _, Data.Unknown j -> j
-  | _, Const (`Float f, _) -> Js.number_of_float f |> inject
-  | _, Const (`String s, _) -> Js.string s |> inject
+  | _, Const (`Float f, _) -> Js.number_of_float f |> coerce
+  | _, Const (`String s, _) -> Js.string s |> coerce
   | (Ty.Enum { extra = `Extra_bool; _ } | Echo), Const (`Int 0, `Extra_bool) ->
-      Js._false |> inject
+      Js._false |> coerce
   | (Ty.Enum { extra = `Extra_bool; _ } | Echo), Const (`Int _, `Extra_bool) ->
-      Js._true |> inject
+      Js._true |> coerce
   | (Enum _ | Int | Echo), Const (`Int i, _) ->
-      i |> float_of_int |> Js.number_of_float |> inject
+      i |> float_of_int |> Js.number_of_float |> coerce
   | Nullable _, Null -> Js.null |> Js.Unsafe.inject
   | Nullable ty, Array [| t |] -> to_js ty t
   | List ty, t ->
       let rec aux acc = function
-        | Data.Null -> acc |> List.rev |> Array.of_list |> Js.array |> inject
+        | Data.Null -> acc |> List.rev |> Array.of_list |> Js.array |> coerce
         | Array [| hd; tl |] -> aux (to_js ty hd :: acc) tl
         | _ -> assert false
       in
       aux [] t
   | Tuple tys, Array a ->
-      a |> Array.map2 to_js (Array.of_list tys) |> Js.array |> inject
+      a |> Array.map2 to_js (Array.of_list tys) |> Js.array |> coerce
   | Dict (ty, _), Dict m ->
       m
       |> MapString.map (to_js ty)
-      |> MapString.to_seq |> Array.of_seq |> Js.array |> inject
+      |> MapString.to_seq |> Array.of_seq |> Js.Unsafe.obj
   | Record tys, Dict m ->
-      record_to_js !tys m |> Array.of_list |> Js.array |> inject
+      record_to_js !tys m |> Array.of_list |> Js.Unsafe.obj
   | Union (k, { cases; _ }), Dict m ->
       let tag = MapString.find k m in
       let record_tys =
@@ -241,15 +241,15 @@ and to_js ty t =
       in
       let tag =
         match tag with
-        | Const (`String s, _) -> Js.string s |> inject
-        | Const (`Int 0, `Extra_bool) -> Js._false |> inject
-        | Const (`Int _, `Extra_bool) -> Js._true |> inject
+        | Const (`String s, _) -> Js.string s |> coerce
+        | Const (`Int 0, `Extra_bool) -> Js._false |> coerce
+        | Const (`Int _, `Extra_bool) -> Js._true |> coerce
         | Const (`Int i, `Extra_none) ->
-            i |> float_of_int |> Js.number_of_float |> inject
+            i |> float_of_int |> Js.number_of_float |> coerce
         | _ -> assert false
       in
       let l = record_to_js !record_tys m in
-      (k, tag) :: l |> Array.of_list |> Js.array |> inject
+      (k, tag) :: l |> Array.of_list |> Js.Unsafe.obj
   | _ -> assert false
 
-let encode tys j = record_to_js tys j |> Array.of_list |> Js.array |> inject
+let encode tys j = record_to_js tys j |> Array.of_list |> Js.Unsafe.obj

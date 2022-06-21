@@ -21,17 +21,23 @@ type ('a, 'b) t = {
 let id _ a = a
 let key (k, _) = k
 
-let make ~f m =
+let make ~f ?root m =
   {
     queue = MapString.bindings m |> List.map key;
     notlinked = m;
     linked = MapString.empty;
-    stack = [];
+    stack = (match root with Some s -> [ s ] | None -> []);
     f;
   }
 
-let prelinked m =
-  { queue = []; notlinked = MapString.empty; linked = m; stack = []; f = id }
+let prelinked root m =
+  {
+    queue = [];
+    notlinked = MapString.empty;
+    linked = m;
+    stack = [ root ];
+    f = id;
+  }
 
 let get k g =
   match MapString.find_opt k g.linked with

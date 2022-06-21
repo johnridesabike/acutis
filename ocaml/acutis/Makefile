@@ -1,15 +1,15 @@
-default: build
-
-.PHONY: build
-build:
-	dune build
+default: build-release
 
 .PHONY: build-release
 build-release:
 	dune build --profile=release
 
-.PHONY: watch
-watch:
+.PHONY: build
+build:
+	dune build
+
+.PHONY: build-watch
+build-watch:
 	dune build --watch
 
 .PHONY: test
@@ -23,5 +23,14 @@ test-watch:
 .PHONY: clean
 	dune clean
 
+.PHONY: format
 format:
 	dune build --auto-promote @fmt
+
+.PHONY: docs
+docs:
+	dune build @doc
+
+.PHONY: docs-watch
+docs-watch:
+	dune build @doc --watch

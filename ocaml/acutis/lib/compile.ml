@@ -134,7 +134,7 @@ let link_src graph = function
 
 let make ~filename components src =
   let nodes = parse_string ~filename src in
-  let ast = Typechecker.make components.Components.typed nodes in
-  let g = Dagmap.make ~f:link_src components.optimized in
+  let ast = Typechecker.make ~root:filename components.Components.typed nodes in
+  let g = Dagmap.make ~f:link_src ~root:filename components.optimized in
   let nodes = make_nodes ast |> link_nodes g in
   { prop_types = ast.prop_types; nodes }

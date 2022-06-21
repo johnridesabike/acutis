@@ -8,7 +8,9 @@ let parse = Compile.parse_string
 let pp_tree = Matching.pp_tree Matching.pp_leaf Format.pp_print_int
 let equal_tree = Matching.equal_tree Matching.equal_leaf Int.equal
 let check = Alcotest.(check (testable pp_tree equal_tree))
-let make_nodes ast = Typechecker.make MS.empty ast |> Compile.make_nodes
+
+let make_nodes ast =
+  Typechecker.make ~root:"<test>" MS.empty ast |> Compile.make_nodes
 
 let get_tree_aux acc = function
   | Compile.Match (_, { tree; _ }) -> Some tree

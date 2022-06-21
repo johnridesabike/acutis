@@ -10,20 +10,17 @@ const path = require("path");
 const fs = require("fs");
 const util = require("util");
 const fastGlob = require("fast-glob");
-const { Compile, Render, Result, Source } = require("../../");
+const {
+  Compile,
+  Render,
+  Utils,
+} = require("../../ocaml/acutis/_build/default/bin/main.bc.js");
 const { filenameToComponent } = require("../../node-utils");
 
 const readFile = util.promisify(fs.readFile);
 
-function onComponentsError(e) {
-  console.error(e);
-  throw new Error(
-    "I couldn't compile Acutis components due to the previous errors."
-  );
-}
-
 module.exports = function (eleventyConfig, config) {
-  let components = Compile.Components.empty();
+  let components = Compile.components([]);
   eleventyConfig.addTemplateFormats("acutis");
   eleventyConfig.addExtension("acutis", {
     read: true,
@@ -39,30 +36,36 @@ module.exports = function (eleventyConfig, config) {
         files.map(async (fileName) => {
           const str = await readFile(fileName, "utf-8");
           const name = filenameToComponent(fileName);
-          return Source.src(name, str);
+          return Compile.src(name, str);
         })
       );
-      const componentsResult = Compile.Components.make([
-        ...queue,
-        ...config.components,
-      ]);
-      components = Result.getOrElse(componentsResult, onComponentsError);
+      try {
+        components = Compile.components([...queue, ...config.components]);
+      } catch (e) {
+        if (Utils.isError(e)) {
+          Utils.logError(e);
+        } else {
+          throw e;
+        }
+      }
     },
     compile: function (str, inputPath) {
-      function onError(e) {
-        console.error(e);
-        throw new Error(
-          `I couldn't render ${inputPath} due to the previous errors.`
-        );
+      try {
+        const template = Compile.make(inputPath, components, str);
+        return async function (data) {
+          return Render.async(template, data);
+        };
+      } catch (e) {
+        if (Utils.isError(e)) {
+          Utils.logError(e);
+          return function (data) {
+            return "error";
+          };
+        } else {
+          console.log(e);
+          throw e;
+        }
       }
-      const template = Result.getOrElse(
-        Compile.make(inputPath, str, components),
-        onError
-      );
-      return async function (data) {
-        const result = await Render.async(template, data);
-        return Result.getOrElse(result, onError);
-      };
     },
   });
 };

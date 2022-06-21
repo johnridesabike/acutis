@@ -575,6 +575,8 @@ let component_graph () =
   check_raises "Missing components are reported."
     (Error "Missing template: D.\nRequired by: C.") (fun () ->
       ignore @@ Compile.Components.make [ a; b; c ]);
+  check_raises "Missing components are reported (by root)."
+    (Error "Missing template: A.\nRequired by: <test>.") (render "{% A /%}");
   check_raises "Duplicate names are reported."
     (Error "Compile error.\nThere are multiple components with name `A`.")
     (fun () -> ignore @@ Compile.Components.make [ a; b; a ])

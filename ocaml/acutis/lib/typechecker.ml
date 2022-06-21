@@ -703,4 +703,6 @@ let make_src g = function
   | `Fun (name, p, c, f) -> `Fun (name, p, c, f)
 
 let make_components m = m |> Dagmap.make ~f:make_src |> Dagmap.link_all
-let make components ast = make `Root (Dagmap.prelinked components) ast
+
+let make ~root components ast =
+  make `Root (Dagmap.prelinked root components) ast

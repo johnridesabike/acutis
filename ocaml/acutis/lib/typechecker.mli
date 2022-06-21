@@ -67,4 +67,4 @@ type ('a, 'b) source =
 val make_components :
   (Ast.t, 'a) source MapString.t -> (t, 'a) source MapString.t
 
-val make : (t, 'a) source MapString.t -> Ast.t -> t
+val make : root:string -> (t, 'a) source MapString.t -> Ast.t -> t

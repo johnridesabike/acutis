@@ -6,38 +6,42 @@
   file, You can obtain one at http://mozilla.org/MPL/2.0/.
 */
 
-const { Source, Typescheme } = require("../../");
+const {
+  Compile,
+  Typescheme,
+  TypeschemeChildren,
+} = require("../../ocaml/acutis/_build/default/bin/main.bc.js");
 const site = require("../_data/site");
 
 module.exports = [
-  Source.fn(
+  Compile.fnAsync(
     "Log",
-    Typescheme.make([["val", Typescheme.unknown()]]),
-    Typescheme.Child.make([]),
-    (Env, props, _children) => {
+    Typescheme.make([["val", Typescheme.unknown(0)]]),
+    TypeschemeChildren.make([]),
+    (props, _children) => {
       console.log(props);
-      return Env.return_("");
+      return Promise.resolve("");
     }
   ),
-  Source.fn(
+  Compile.fnAsync(
     "Debugger",
-    Typescheme.make([["val", Typescheme.unknown()]]),
-    Typescheme.Child.make([]),
-    (Env, _props, _children) => {
+    Typescheme.make([["val", Typescheme.unknown(0)]]),
+    TypeschemeChildren.make([]),
+    (_props, _children) => {
       debugger;
-      return Env.return_("");
+      return Promise.resolve("");
     }
   ),
-  Source.fn(
+  Compile.fnAsync(
     "Footer",
     Typescheme.make([
-      ["year", Typescheme.nullable(Typescheme.string())],
-      ["link", Typescheme.nullable(Typescheme.string())],
-      ["name", Typescheme.string()],
-      ["siteUrl", Typescheme.string()],
+      ["year", Typescheme.nullable(Typescheme.string(0))],
+      ["link", Typescheme.nullable(Typescheme.string(0))],
+      ["name", Typescheme.string(0)],
+      ["siteUrl", Typescheme.string(0)],
     ]),
-    Typescheme.Child.make([]),
-    (Env, props, _children) => {
+    TypeschemeChildren.make([]),
+    (props, _children) => {
       if (!props.year) {
         props.year = new Date().getFullYear();
       }
@@ -47,7 +51,7 @@ module.exports = [
       } else {
         link = `<a href="${props.link}">${props.name}</a>`;
       }
-      return Env.return_(`
+      return Promise.resolve(`
         <footer class="footer">
           <p>
             Published in ${props.year} by ${link}.
@@ -58,18 +62,17 @@ module.exports = [
         </footer>`);
     }
   ),
-  Source.fn(
+  Compile.fnAsync(
     "Link",
     Typescheme.make([
-      ["path", Typescheme.string()],
-      ["page", Typescheme.record([["url", Typescheme.string()]])],
+      ["path", Typescheme.string(0)],
+      ["page", Typescheme.record([["url", Typescheme.string(0)]])],
     ]),
-    Typescheme.Child.make([Typescheme.Child.child("Children")]),
-    (Env, { path, page }, { Children }) => {
+    TypeschemeChildren.make([TypeschemeChildren.child("Children")]),
+    ({ path, page }, { Children }) => {
       const current = path === page.url ? "true" : "false";
       const href = site.url + path;
-      return Env.map(
-        Children,
+      return Children.then(
         (Children) =>
           `<a href="${href}" aria-current="${current}">${Children}</a>`
       );
