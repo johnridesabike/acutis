@@ -29,7 +29,7 @@ let basic_tree () =
        {
          key = 0;
          ids = SI.empty;
-         extra = TNullable;
+         debug = TNullable;
          nil = Some (End { names = MS.empty; exit = e 1 });
          cons =
            Some
@@ -37,9 +37,9 @@ let basic_tree () =
                 {
                   key = 0;
                   ids = SI.empty;
-                  extra = Tuple;
+                  debug = Tuple;
                   child =
-                    IntKeys
+                    Int_keys
                       (Wildcard
                          {
                            key = 0;
@@ -61,7 +61,7 @@ let basic_tree () =
        {
          key = 0;
          ids = SI.empty;
-         extra = Extra_none;
+         row = `Open;
          cases =
            {
              data = `Int 0;
@@ -118,7 +118,7 @@ let basic_tree () =
           {
             key = 2;
             ids = set [ 4 ];
-            extra = Extra_none;
+            row = `Open;
             cases = { data = `Int 22; if_match = End exit_1; next_case = None };
             wildcard = Some (End exit_4);
           };
@@ -133,7 +133,7 @@ let basic_tree () =
           {
             key = 2;
             ids = set [ 4 ];
-            extra = Extra_none;
+            row = `Open;
             cases = { data = `Int 12; if_match = End exit_0; next_case = None };
             wildcard = Some (End exit_4);
           };
@@ -149,7 +149,7 @@ let basic_tree () =
           {
             key = 2;
             ids = set [ 4 ];
-            extra = Extra_none;
+            row = `Open;
             cases =
               { data = `Int 32; if_match = End exit_2; next_case = Some int_42 };
             wildcard = Some (End exit_4);
@@ -166,7 +166,7 @@ let basic_tree () =
           {
             key = 1;
             ids = set [ 1; 3 ];
-            extra = Extra_none;
+            row = `Open;
             cases =
               {
                 data = `Int 21;
@@ -175,7 +175,7 @@ let basic_tree () =
                     {
                       key = 2;
                       ids = set [ 4 ];
-                      extra = Extra_none;
+                      row = `Open;
                       cases =
                         {
                           data = `Int 22;
@@ -192,7 +192,7 @@ let basic_tree () =
                    {
                      key = 2;
                      ids = set [ 4 ];
-                     extra = Extra_none;
+                     row = `Open;
                      cases = int_42;
                      wildcard = Some (End exit_4);
                    });
@@ -205,7 +205,7 @@ let basic_tree () =
        {
          key = 0;
          ids = set [ 0; 2 ];
-         extra = Extra_none;
+         row = `Open;
          cases =
            {
              data = `Int 10;
@@ -214,7 +214,7 @@ let basic_tree () =
                  {
                    key = 1;
                    ids = set [ 3 ];
-                   extra = Extra_none;
+                   row = `Open;
                    cases = int_11;
                    wildcard = Some wildcard_2;
                  };
@@ -226,7 +226,7 @@ let basic_tree () =
                 {
                   key = 1;
                   ids = set [ 3 ];
-                  extra = Extra_none;
+                  row = `Open;
                   cases = int_21;
                   wildcard = Some wildcard_2;
                 });
@@ -252,7 +252,7 @@ let nests_merge () =
       {
         key = 2;
         ids = SI.empty;
-        extra = Extra_none;
+        row = `Open;
         cases =
           {
             data = `Int 12;
@@ -283,7 +283,7 @@ let nests_merge () =
         {
           key = 2;
           ids = SI.empty;
-          extra = Extra_none;
+          row = `Open;
           cases = int_12_exit_0;
           wildcard = Some (End exit_3);
         })
@@ -298,14 +298,14 @@ let nests_merge () =
              {
                key = 1;
                ids = SI.empty;
-               extra = Tuple;
+               debug = Tuple;
                child =
-                 IntKeys
+                 Int_keys
                    (Switch
                       {
                         key = 0;
                         ids = SI.empty;
-                        extra = Extra_none;
+                        row = `Open;
                         cases =
                           {
                             data = `Int 20;
@@ -314,7 +314,7 @@ let nests_merge () =
                                 {
                                   key = 1;
                                   ids = SI.empty;
-                                  extra = Extra_none;
+                                  row = `Open;
                                   cases =
                                     {
                                       data = `Int 21;
@@ -340,7 +340,7 @@ let nests_merge () =
                       {
                         key = 2;
                         ids = SI.empty;
-                        extra = Extra_none;
+                        row = `Open;
                         cases = int_12_exit_0;
                         wildcard = None;
                       });
@@ -365,7 +365,7 @@ let nests_merge_wildcards () =
       {
         key = 1;
         ids = set [ 2 ];
-        extra = Extra_none;
+        row = `Open;
         cases =
           {
             data = `Int 40;
@@ -381,7 +381,7 @@ let nests_merge_wildcards () =
       {
         key = 1;
         ids = SI.empty;
-        extra = Extra_none;
+        row = `Open;
         cases = { data = `Int 30; if_match = End int_40; next_case = None };
         wildcard = None;
       }
@@ -391,21 +391,21 @@ let nests_merge_wildcards () =
        {
          key = 0;
          ids = set [ 0; 1 ];
-         extra = Tuple;
+         debug = Tuple;
          child =
-           IntKeys
+           Int_keys
              (Nest
                 {
                   key = 0;
                   ids = SI.empty;
-                  extra = Tuple;
+                  debug = Tuple;
                   child =
-                    IntKeys
+                    Int_keys
                       (Switch
                          {
                            key = 0;
                            ids = SI.empty;
-                           extra = Extra_none;
+                           row = `Open;
                            cases =
                              {
                                data = `Int 10;
@@ -414,7 +414,7 @@ let nests_merge_wildcards () =
                                    {
                                      key = 1;
                                      ids = SI.empty;
-                                     extra = Extra_none;
+                                     row = `Open;
                                      cases =
                                        {
                                          data = `Int 20;
@@ -435,7 +435,7 @@ let nests_merge_wildcards () =
                 {
                   key = 1;
                   ids = set [ 2 ];
-                  extra = Extra_none;
+                  row = `Open;
                   cases =
                     { data = `Int 41; if_match = End exit_0; next_case = None };
                   wildcard = Some (End exit_2);
@@ -460,7 +460,7 @@ let lists () =
        {
          key = 0;
          ids = SI.empty;
-         extra = TList;
+         debug = TList;
          nil = Some (End exit_0);
          cons =
            Some
@@ -468,9 +468,9 @@ let lists () =
                 {
                   key = 0;
                   ids = SI.empty;
-                  extra = Tuple;
+                  debug = Tuple;
                   child =
-                    IntKeys
+                    Int_keys
                       (Wildcard
                          {
                            key = 0;
@@ -480,7 +480,7 @@ let lists () =
                                {
                                  key = 1;
                                  ids = set [ 2 ];
-                                 extra = TList;
+                                 debug = TList;
                                  nil = Some (End (End exit_1));
                                  cons =
                                    Some
@@ -522,7 +522,7 @@ let lists () =
           {
             key = 1;
             ids = set [ 0 ];
-            extra = TList;
+            debug = TList;
             nil =
               Some
                 (End
@@ -531,7 +531,7 @@ let lists () =
                          {
                            key = 1;
                            ids = SI.empty;
-                           extra = Extra_none;
+                           row = `Open;
                            cases =
                              {
                                data = `Int 12;
@@ -553,7 +553,7 @@ let lists () =
                                {
                                  key = 1;
                                  ids = SI.empty;
-                                 extra = Extra_none;
+                                 row = `Open;
                                  cases = int_22;
                                  wildcard = Some (End exit_4);
                                }));
@@ -570,21 +570,21 @@ let lists () =
           {
             key = 1;
             ids = SI.empty;
-            extra = TList;
+            debug = TList;
             cons =
               Some
                 (Nest
                    {
                      key = 1;
                      ids = SI.empty;
-                     extra = Tuple;
+                     debug = Tuple;
                      child =
-                       IntKeys
+                       Int_keys
                          (Switch
                             {
                               key = 0;
                               ids = SI.empty;
-                              extra = Extra_none;
+                              row = `Open;
                               cases = int_11;
                               wildcard = None;
                             });
@@ -601,7 +601,7 @@ let lists () =
                 {
                   key = 1;
                   ids = SI.empty;
-                  extra = TList;
+                  debug = TList;
                   nil =
                     Some
                       (End
@@ -609,7 +609,7 @@ let lists () =
                             {
                               key = 1;
                               ids = SI.empty;
-                              extra = Extra_none;
+                              row = `Open;
                               cases =
                                 {
                                   data = `Int 32;
@@ -629,21 +629,21 @@ let lists () =
        {
          key = 0;
          ids = set [ 1 ];
-         extra = TList;
+         debug = TList;
          cons =
            Some
              (Nest
                 {
                   key = 0;
                   ids = set [ 1 ];
-                  extra = Tuple;
+                  debug = Tuple;
                   child =
-                    IntKeys
+                    Int_keys
                       (Switch
                          {
                            key = 0;
                            ids = SI.empty;
-                           extra = Extra_none;
+                           row = `Open;
                            cases = int_10;
                            wildcard = None;
                          });
@@ -653,7 +653,7 @@ let lists () =
                          {
                            key = 1;
                            ids = SI.empty;
-                           extra = Extra_none;
+                           row = `Open;
                            cases = int_42;
                            wildcard = Some (End exit_4);
                          });
@@ -664,7 +664,7 @@ let lists () =
                 {
                   key = 1;
                   ids = SI.empty;
-                  extra = Extra_none;
+                  row = `Open;
                   cases = int_42;
                   wildcard = Some (End exit_4);
                 });
@@ -689,14 +689,14 @@ let records_sort () =
        {
          key = 0;
          ids = SI.empty;
-         extra = Record;
+         debug = Record;
          child =
-           StringKeys
+           String_keys
              (Switch
                 {
                   key = "a";
                   ids = SI.empty;
-                  extra = Extra_none;
+                  row = `Open;
                   cases =
                     {
                       data = `Int 10;
@@ -705,7 +705,7 @@ let records_sort () =
                           {
                             key = "b";
                             ids = SI.empty;
-                            extra = Extra_none;
+                            row = `Open;
                             cases =
                               {
                                 data = `Int 11;
@@ -715,7 +715,7 @@ let records_sort () =
                                        {
                                          key = 1;
                                          ids = SI.empty;
-                                         extra = Extra_none;
+                                         row = `Open;
                                          cases =
                                            {
                                              data = `Int 12;
@@ -737,7 +737,7 @@ let records_sort () =
                                 {
                                   key = "b";
                                   ids = SI.empty;
-                                  extra = Extra_none;
+                                  row = `Open;
                                   cases =
                                     {
                                       data = `Int 21;
@@ -747,7 +747,7 @@ let records_sort () =
                                              {
                                                key = 1;
                                                ids = SI.empty;
-                                               extra = Extra_none;
+                                               row = `Open;
                                                cases =
                                                  {
                                                    data = `Int 22;
@@ -790,14 +790,14 @@ let records_expand () =
        {
          key = 0;
          ids = set [ 0 ];
-         extra = Record;
+         debug = Record;
          child =
-           StringKeys
+           String_keys
              (Switch
                 {
                   key = "a";
                   ids = SI.empty;
-                  extra = Extra_none;
+                  row = `Open;
                   cases =
                     {
                       data = `Int 20;
@@ -806,7 +806,7 @@ let records_expand () =
                           {
                             key = "b";
                             ids = SI.empty;
-                            extra = Extra_none;
+                            row = `Open;
                             cases =
                               {
                                 data = `Int 10;
@@ -836,7 +836,7 @@ let records_expand () =
                          {
                            key = "b";
                            ids = SI.empty;
-                           extra = Extra_none;
+                           row = `Open;
                            cases =
                              {
                                data = `Int 10;
@@ -855,7 +855,7 @@ let records_expand () =
                                   {
                                     key = "c";
                                     ids = SI.empty;
-                                    extra = Extra_none;
+                                    row = `Open;
                                     cases =
                                       {
                                         data = `Int 30;

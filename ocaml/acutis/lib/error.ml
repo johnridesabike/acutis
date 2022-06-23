@@ -28,8 +28,6 @@ let pp_lexbuf ~kind mess lexbuf =
   let pos = lexbuf.lex_curr_p in
   pp ~kind (start, pos) mess
 
-(* Lexing and Parsing errors. *)
-
 let lex_error =
   let f = F.dprintf "" in
   fun lexbuf -> raise @@ Error (pp_lexbuf ~kind:"Syntax error" f lexbuf)
@@ -45,7 +43,6 @@ let dup_record_key loc key =
 let extra_record_tag =
   let f ppf = text ppf "This tagged record has multiple tags." in
   fun loc -> raise @@ Error (pp ~kind:"Parse error" loc f)
-(* Type errors *)
 
 let pp_ty = pp ~kind:"Type error"
 
@@ -137,7 +134,6 @@ let component_name_mismatch loc a b =
   in
   raise @@ Error (pp_ty loc f)
 
-(* Matching errors *)
 let pp_match = pp ~kind:"Matching error"
 
 let unused_case loc =
@@ -153,7 +149,6 @@ let parmatch loc pp_pat pat =
   in
   raise @@ Error (pp_match loc f)
 
-(* Dag errors *)
 let duplicate_name s =
   let s =
     F.asprintf "Compile error.@ There are multiple components with name `%s`." s
@@ -177,7 +172,6 @@ let missing_component stack name =
   in
   raise @@ Error s
 
-(* Decode errors *)
 module DecodeStack = struct
   type t = Nullable | Index of int | Key of string
 

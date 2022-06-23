@@ -11,7 +11,8 @@
 (** This defines the types (integer, record, etc.). *)
 
 module Variant : sig
-  (** This is a common structure shared by {!Enum} and {!Union}. *)
+  (** This is a common structure shared by {!module-Enum} and {!module-Union}.
+   *)
 
   type row = [ `Closed | `Open ]
   type extra = [ `Extra_none | `Extra_bool ]
@@ -58,7 +59,7 @@ end
 
 type ty =
   | Unknown of Variant.row ref
-      (** This row is for unification with variant types during destructuring. *)
+      (** The row is for unification with variant types during destructuring. *)
   | Int
   | Float
   | String
@@ -68,16 +69,16 @@ type ty =
   | Tuple of t list
   | Record of t Map.String.t ref
   | Dict of t * Set.String.t ref
-      (** The string set tracks which keys have been used, so they can build
+      (** The set tracks which keys have been used, so they can build
           pattern-matching decision trees. *)
   | Enum of Enum.t
   | Union of string * t Union.t
 
 and t = ty ref
 
-val unknown : unit -> t
 (** {1 Public API for declaring type schemes.} *)
 
+val unknown : unit -> t
 val int : unit -> t
 val float : unit -> t
 val string : unit -> t
@@ -103,14 +104,6 @@ val union_true_only : string -> (string * t) list -> t
 val make : (string * t) list -> t Map.String.t
 val empty : t Map.String.t
 
-val internal_record : t Map.String.t ref -> t
-(** {0 Internal utilities.} *)
-
-val internal_dict_keys : t -> Set.String.t ref -> t
-val internal_copy_record : t Map.String.t -> t Map.String.t
-val pp : Format.formatter -> t -> unit
-val equal : t -> t -> bool
-
 module Child : sig
   (** This defines the types of children. (They're either null or not null.) *)
 
@@ -124,3 +117,11 @@ module Child : sig
   val pp : Format.formatter -> t -> unit
   val empty : t Map.String.t
 end
+
+(** {1 Internal utilities.} *)
+
+val internal_record : t Map.String.t ref -> t
+val internal_dict_keys : t -> Set.String.t ref -> t
+val internal_copy_record : t Map.String.t -> t Map.String.t
+val pp : Format.formatter -> t -> unit
+val equal : t -> t -> bool

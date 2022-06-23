@@ -11,15 +11,18 @@
 (** This handles all of the error messages. *)
 
 exception Error of string
+(** Every function in this module raises this exception. *)
 
 (** {1 Lexing and Parsing errors.} *)
+
 val lex_error : Lexing.lexbuf -> _
 val parse_error : int -> Lexing.lexbuf -> _
 val dup_record_key : Loc.t -> string -> _
 val extra_record_tag : Loc.t -> _
+val type_mismatch : Loc.t -> Typescheme.t -> Typescheme.t -> _
 
 (** {1 Type errors.} *)
-val type_mismatch : Loc.t -> Typescheme.t -> Typescheme.t -> _
+
 val bad_union_tag : Loc.t -> Typescheme.t -> _
 val missing_field : Loc.t -> string -> Typescheme.t -> _
 val underscore_in_construct : Loc.t -> _
@@ -33,17 +36,20 @@ val extra_child : Loc.t -> comp:string -> child:string -> _
 val missing_child : Loc.t -> string -> _
 val child_in_root : Loc.t -> _
 val component_name_mismatch : Loc.t -> string -> string -> _
+val unused_case : Loc.t -> _
 
 (** {1 Matching errors.} *)
-val unused_case : Loc.t -> _
-val parmatch : Loc.t -> (Format.formatter -> 'a -> unit) -> 'a -> _
 
-(** {1 Dag errors.} *)
+val parmatch : Loc.t -> (Format.formatter -> 'a -> unit) -> 'a -> _
 val duplicate_name : string -> _
+
+(** {1 DAG errors.} *)
+
 val cycle : string list -> _
 val missing_component : string list -> string -> _
 
 (** {1 Decode errors.} *)
+
 module DecodeStack : sig
   type t = Nullable | Index of int | Key of string
 end

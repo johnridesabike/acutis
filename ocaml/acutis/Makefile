@@ -21,6 +21,7 @@ test-watch:
 	dune build @runtest --watch
 
 .PHONY: clean
+clean:
 	dune clean
 
 .PHONY: format

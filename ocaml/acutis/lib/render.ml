@@ -60,10 +60,10 @@ let rec make_match :
           let vars = bind_names data ids vars in
           let result =
             match child with
-            | IntKeys child ->
+            | Int_keys child ->
                 let tuple = Data.get_tuple data in
                 make_match tuple array_get vars child
-            | StringKeys child ->
+            | String_keys child ->
                 let dict = Data.get_dict data in
                 make_match dict Map.String.find_opt vars child
           in
