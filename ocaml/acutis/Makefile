@@ -2,36 +2,44 @@ default: build-release
 
 .PHONY: build-release
 build-release:
-	dune build --profile=release
+	opam exec -- dune build --profile=release
 
 .PHONY: build
 build:
-	dune build
+	opam exec -- dune build
 
 .PHONY: build-watch
 build-watch:
-	dune build --watch
+	opam exec -- dune build --watch
 
 .PHONY: test
 test:
-	dune build @runtest
+	opam exec -- dune build @runtest
 
 .PHONY: test-watch
 test-watch:
-	dune build @runtest --watch
+	opam exec -- dune build @runtest --watch
 
 .PHONY: clean
 clean:
-	dune clean
+	opam exec -- dune clean
 
 .PHONY: format
 format:
-	dune build --auto-promote @fmt
+	opam exec -- dune build --auto-promote @fmt
 
 .PHONY: docs
 docs:
-	dune build @doc
+	opam exec -- dune build @doc
 
 .PHONY: docs-watch
 docs-watch:
-	dune build @doc --watch
+	opam exec -- dune build @doc --watch
+
+.PHONY: dev-switch
+dev-switch:
+	opam switch create .
+
+.PHONY: install
+install:
+	opam install . --deps-only --with-test --with-doc
