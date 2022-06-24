@@ -1,6 +1,5 @@
 *.swp
 .DS_Store
-lib/
 .vscode/
 coverage/
 .merlin
@@ -9,5 +8,4 @@ node_modules
 docs/_site/
 .bsb.lock
 _build/
-!ocaml/acutis/lib
 _opam/
