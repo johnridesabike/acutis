@@ -20,9 +20,9 @@ depends: [
   "js_of_ocaml-ppx" {>= "4.0"}
   "ppx_deriving" {>= "5.2.1"}
   "menhir" {= "20220210"}
-  "promise_jsoo" {"0.3.1" >= build}
-  "alcotest" {"1.5" >= with-test}
-  "alcotest-lwt" {"1.5" >= with-test}
+  "promise_jsoo" {>= "0.3.1"}
+  "alcotest" {>= "1.5"}
+  "alcotest-lwt" {>= "1.5"}
   "lwt" {"5.5" >= with-test}
 ]
 build: [

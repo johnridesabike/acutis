@@ -38,8 +38,4 @@ docs-watch:
 
 .PHONY: dev-switch
 dev-switch:
-	opam switch create .
-
-.PHONY: install
-install:
-	opam install . --deps-only --with-test --with-doc
+	opam switch create . --deps-only --with-test --with-doc
