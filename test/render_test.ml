@@ -3,7 +3,7 @@ module F = Format
 
 let check = Alcotest.(check string)
 
-module RenderSync = Render.Make (Sync) (DataYojson)
+module RenderSync = Render.Make (Sync) (Acutis_data_json.Data)
 
 let render ?(components = []) src json =
   let json = Yojson.Basic.from_string json in

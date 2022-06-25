@@ -1,6 +1,5 @@
 (library
  (public_name acutis)
- (libraries menhirLib yojson js_of_ocaml)
  (preprocess
   (pps ppx_deriving.show ppx_deriving.eq ppx_deriving.ord)))
 

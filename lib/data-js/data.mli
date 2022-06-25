@@ -8,16 +8,11 @@
 (*                                                                        *)
 (**************************************************************************)
 
-(** This converts JSON strings to and from {!Data.t}. *)
+(** This converts JavaScript values to and from {!Data.t}. *)
 
-type t =
-  [ `Null
-  | `Bool of bool
-  | `Int of int
-  | `Float of float
-  | `String of string
-  | `Assoc of (string * t) list
-  | `List of t list ]
+open Acutis
+
+type t = Js_of_ocaml.Js.Unsafe.any
 
 val decode : Typescheme.t Map.String.t -> t -> t Data.t Map.String.t
 val encode : Typescheme.t Map.String.t -> t Data.t Map.String.t -> t

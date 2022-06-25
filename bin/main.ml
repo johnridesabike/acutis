@@ -18,8 +18,8 @@ module Promise_with_fixed_bind = struct
   let bind = Promise.Syntax.( let* )
 end
 
-module RenderSync = Render.Make (Sync) (DataJs)
-module RenderAsync = Render.Make (Promise_with_fixed_bind) (DataJs)
+module RenderSync = Render.Make (Sync) (Acutis_data_js.Data)
+module RenderAsync = Render.Make (Promise_with_fixed_bind) (Acutis_data_js.Data)
 
 let child_async (k, p) =
   let p = p |> Promise.map Js.string |> Js.Unsafe.inject in

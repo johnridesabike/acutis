@@ -4,8 +4,8 @@ open Js_of_ocaml
 
 let check = Alcotest.(check string)
 
-module RenderJson = Render.Make (Sync) (DataYojson)
-module RenderJs = Render.Make (Sync) (DataJs)
+module RenderJson = Render.Make (Sync) (Acutis_data_json.Data)
+module RenderJs = Render.Make (Sync) (Acutis_data_js.Data)
 
 let render_js ?(components = []) src js =
   let temp = Compile.(make ~filename:"" (Components.make components) src) in
