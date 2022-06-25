@@ -32,6 +32,6 @@ jobs:
         uses: ocaml/setup-ocaml@v2
         with:
           ocaml-compiler: ${{ matrix.ocaml-compiler }}
-      - run: make dev-switch
+      - run: make dev-install
       - run: make build
       - run: make test

@@ -39,3 +39,7 @@ docs-watch:
 .PHONY: dev-switch
 dev-switch:
 	opam switch create . --deps-only --with-test --with-doc
+
+.PHONY: dev-install
+dev-install:
+	opam install . --deps-only --with-test --with-doc
