@@ -161,6 +161,8 @@ let () =
     (object%js
        method isError e = match e with Error.Error _ -> true | _ -> false
 
-       method logError e =
-         match e with Error.Error s -> print_endline s | _ -> ()
+       method getError e =
+         match e with
+         | Error.Error s -> Js.Opt.return (Js.string s)
+         | _ -> Js.Opt.empty
     end)

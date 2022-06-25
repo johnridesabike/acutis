@@ -14,7 +14,7 @@ const {
   Compile,
   Render,
   Utils,
-} = require("../../ocaml/acutis/_build/default/bin/main.bc.js");
+} = require("../../_build/default/bin/main.bc.js");
 const { filenameToComponent } = require("../../node-utils");
 
 const readFile = util.promisify(fs.readFile);
@@ -43,7 +43,7 @@ module.exports = function (eleventyConfig, config) {
         components = Compile.components([...queue, ...config.components]);
       } catch (e) {
         if (Utils.isError(e)) {
-          Utils.logError(e);
+          cosole.error(Utils.getError(e));
         } else {
           throw e;
         }
@@ -57,7 +57,7 @@ module.exports = function (eleventyConfig, config) {
         };
       } catch (e) {
         if (Utils.isError(e)) {
-          Utils.logError(e);
+          cosole.error(Utils.getError(e));
           return function (data) {
             return "error";
           };

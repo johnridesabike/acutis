@@ -9,7 +9,7 @@
 const util = require("util");
 const fs = require("fs");
 const path = require("path");
-const { Source } = require("./lib/js/src/AcutisJs");
+const { Compile } = "../../_build/default/bin/main.bc.js";
 
 const readFile = util.promisify(fs.readFile);
 
@@ -36,7 +36,7 @@ async function loadTemplate(fileName) {
       return jsmodule.default;
     default:
       const [name, src] = await loadSrc(filePath);
-      return Source.src(name, src);
+      return Compile.src(name, src);
   }
 }
 

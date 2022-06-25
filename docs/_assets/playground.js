@@ -6,8 +6,6 @@
   file, You can obtain one at http://mozilla.org/MPL/2.0/.
 */
 
-import { Compile, Render, Result } from "./../../lib/es6/src/AcutisJs.mjs";
-
 window.onload = function playground(_event) {
   var propsText = document.getElementById("props");
   var sourceText = document.getElementById("source");
@@ -61,23 +59,23 @@ window.onload = function playground(_event) {
   var resultText = document.getElementById("result");
 
   function render(_event) {
+    let result;
     try {
       var props = JSON.parse(propsText.value);
-      var template = Compile.make(
-        "Playground",
-        sourceText.value,
-        Compile.Components.empty()
+      var template = globalThis.Compile.make(
+        "<playground>",
+        globalThis.Compile.components([]),
+        sourceText.value
       );
-      var result = Result.flatMap(template, (template) =>
-        Render.sync(template, props)
-      );
-      resultText.value = Result.getOrElse(
-        result,
-        (errors) => "Errors:\n" + JSON.stringify(errors, null, 2)
-      );
+      result = globalThis.Render.sync(template, props);
     } catch (e) {
-      resultText.value = e.message;
+      if (globalThis.Utils.isError(e)) {
+        result = globalThis.Utils.getError(e);
+      } else {
+        result = e.message;
+      }
     }
+    resultText.value = result;
     setClean(propsIsDirty);
     setClean(sourceIsDirty);
   }

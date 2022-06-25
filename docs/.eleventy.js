@@ -23,6 +23,7 @@ module.exports = (eleventyConfig) => {
   eleventyConfig.addPlugin(acutis, { components: acutisComponents });
   eleventyConfig.addPassthroughCopy({
     "_assets/playground.js": "playground.js",
+    "../_build/default/bin/main.bc.js": "acutis.js"
   });
   eleventyConfig.addPassthroughCopy("icon.svg");
   eleventyConfig.addPassthroughCopy("favicon.ico");

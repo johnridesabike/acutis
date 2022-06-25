@@ -8,15 +8,13 @@
   "scripts": {
     "build": "NODE_ENV=production concurrently yarn:build:*",
     "build:11ty": "eleventy",
-    "build:js": "node scripts/bundle.js",
-    "build:postcss": "postcss _assets/style.css -d _site/ --config=scripts",
+    "build:postcss": "postcss _assets/style.css -d _site/",
     "clean": "rm -r _site",
     "deploy": "gh-pages -d _site",
     "predeploy": "yarn clean && yarn build",
-    "prestart": "yarn build:js",
     "start": "concurrently yarn:start:*",
     "start:11ty": "eleventy --serve",
-    "start:postcss": "postcss _assets/style.css -d _site/ -w --config=scripts"
+    "start:postcss": "postcss _assets/style.css -d _site/ -w"
   },
   "dependencies": {},
   "devDependencies": {
@@ -24,7 +22,6 @@
     "@11ty/eleventy-plugin-syntaxhighlight": "^4.0.0",
     "concurrently": "^7.1.0",
     "cssnano": "^5.1.7",
-    "esbuild": "^0.14.36",
     "fast-glob": "^3.2.11",
     "gh-pages": "^3.2.3",
     "markdown-it": "^12.3.2",

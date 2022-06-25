@@ -10,7 +10,7 @@ const {
   Compile,
   Typescheme,
   TypeschemeChildren,
-} = require("../../ocaml/acutis/_build/default/bin/main.bc.js");
+} = require("../../_build/default/bin/main.bc.js");
 const site = require("../_data/site");
 
 module.exports = [

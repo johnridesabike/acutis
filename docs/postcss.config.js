@@ -6,14 +6,10 @@
   file, You can obtain one at http://mozilla.org/MPL/2.0/.
 */
 
-const path = require("path");
-
 module.exports = () => ({
   plugins: [
     require("postcss-import"),
-    require("postcss-custom-properties")({
-      importFrom: path.join("_assets", "style.css"),
-    }),
+    require("postcss-custom-properties")(),
     require("cssnano"),
   ],
 });
