@@ -35,7 +35,8 @@
    (promise_jsoo (>= 0.3.1))
    (alcotest (>= 1.5))
    (alcotest-lwt (>= 1.5))
-   (lwt (>= 5.5)))
+   (lwt (>= 5.5))
+   ocaml-lsp-server)
  (tags
   (template language)))
 

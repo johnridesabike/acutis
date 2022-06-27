@@ -23,6 +23,7 @@ depends: [
   "alcotest" {>= "1.5"}
   "alcotest-lwt" {>= "1.5"}
   "lwt" {>= "5.5"}
+  "ocaml-lsp-server"
 ]
 build: [
   ["dune" "subst"] {dev}
