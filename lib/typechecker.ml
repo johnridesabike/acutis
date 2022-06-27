@@ -14,7 +14,7 @@ module V = Ty.Variant
 
 exception Clash
 
-(*
+(**
   When we unify a type during destructuring, we expand any structural types
   (records, enums).
 
@@ -448,9 +448,9 @@ type echo =
 type node =
   | TText of string * Ast.trim * Ast.trim
   | TEcho of echo list * echo
-  | TMatch of Loc.t * Pattern.t Nonempty.t * case Nonempty.t
-  | TMap_list of Loc.t * Pattern.t * case Nonempty.t
-  | TMap_dict of Loc.t * Pattern.t * case Nonempty.t
+  | TMatch of Loc.t * Pattern.t Nonempty.t * Ty.t Nonempty.t * case Nonempty.t
+  | TMap_list of Loc.t * Pattern.t * Ty.t Nonempty.t * case Nonempty.t
+  | TMap_dict of Loc.t * Pattern.t * Ty.t Nonempty.t * case Nonempty.t
   | TComponent of string * Pattern.t Map.String.t * child Map.String.t
 
 and case = { pats : (Loc.t * Pattern.t Nonempty.t) Nonempty.t; nodes : nodes }
@@ -599,7 +599,7 @@ let unify_map ~ty ~key loc (tys, cases) pat ctx =
     | _ -> Error.map_pat_num_mismatch loc
   in
   let p = Pattern.make ~f:(Context.update ctx) Construct_literal hd_ty pat in
-  (p, cases)
+  (p, tys, cases)
 
 let rec make_cases ctx g cases =
   let tys =
@@ -676,19 +676,19 @@ and make_nodes ctx g nodes =
           try unify_match_cases pats tys ctx
           with Invalid_argument _ -> Error.pat_num_mismatch loc
         in
-        TMatch (loc, patterns, cases)
+        TMatch (loc, patterns, tys, cases)
     | Map_list (loc, pattern, cases) ->
         let cases = add_default_wildcard cases |> make_cases ctx g in
-        let pattern, cases =
+        let pattern, ty, cases =
           unify_map ~ty:Ty.list ~key:Ty.int loc cases pattern ctx
         in
-        TMap_list (loc, pattern, cases)
+        TMap_list (loc, pattern, ty, cases)
     | Map_dict (loc, pattern, cases) ->
         let cases = add_default_wildcard cases |> make_cases ctx g in
-        let pattern, cases =
+        let pattern, ty, cases =
           unify_map ~ty:Ty.dict ~key:Ty.string loc cases pattern ctx
         in
-        TMap_dict (loc, pattern, cases)
+        TMap_dict (loc, pattern, ty, cases)
   in
   List.map f nodes
 

@@ -44,9 +44,10 @@ type echo =
 type node =
   | TText of string * Ast.trim * Ast.trim
   | TEcho of echo list * echo
-  | TMatch of Loc.t * Pattern.t Nonempty.t * case Nonempty.t
-  | TMap_list of Loc.t * Pattern.t * case Nonempty.t
-  | TMap_dict of Loc.t * Pattern.t * case Nonempty.t
+  | TMatch of
+      Loc.t * Pattern.t Nonempty.t * Typescheme.t Nonempty.t * case Nonempty.t
+  | TMap_list of Loc.t * Pattern.t * Typescheme.t Nonempty.t * case Nonempty.t
+  | TMap_dict of Loc.t * Pattern.t * Typescheme.t Nonempty.t * case Nonempty.t
   | TComponent of string * Pattern.t Map.String.t * child Map.String.t
 
 and case = { pats : (Loc.t * Pattern.t Nonempty.t) Nonempty.t; nodes : nodes }

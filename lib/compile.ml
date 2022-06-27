@@ -55,19 +55,21 @@ let rec make_nodes =
     | TText (s, No_trim, Trim) -> Text (StringExtra.rtrim s)
     | TText (s, Trim, Trim) -> Text (String.trim s)
     | TEcho (nullables, default) -> Echo (nullables, default)
-    | TMatch (loc, hd :: tl, cases) ->
-        Match (Array.of_list (hd :: tl), make_match loc cases)
-    | TMap_list (loc, pat, cases) -> Map_list (pat, make_match loc cases)
-    | TMap_dict (loc, pat, cases) -> Map_dict (pat, make_match loc cases)
+    | TMatch (loc, hd :: tl, tys, cases) ->
+        Match (Array.of_list (hd :: tl), make_match loc tys cases)
+    | TMap_list (loc, pat, tys, cases) ->
+        Map_list (pat, make_match loc tys cases)
+    | TMap_dict (loc, pat, tys, cases) ->
+        Map_dict (pat, make_match loc tys cases)
     | TComponent (name, props, children) ->
         let children = Map.String.map make_children children in
         Component (name, props, children)
   in
   fun l -> List.map f l
 
-and make_match loc cases =
+and make_match loc tys cases =
   let Matching.{ tree; exits } = Matching.make cases in
-  Matching.partial_match_check loc tree;
+  Matching.partial_match_check loc (Nonempty.to_list tys) tree;
   let exits = Matching.Exit.map make_nodes exits in
   { tree; exits }
 

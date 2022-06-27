@@ -12,16 +12,15 @@ module TPat = Typechecker.Pattern
 module Ty = Typescheme
 module Const = Data.Const
 
-type debug_nest_info = Tuple | Dict | Record | Union of Ty.Variant.extra
-[@@deriving eq, show]
+type debug_nest_info = Not_dict | Dict [@@deriving eq, show]
 
 type ('leaf, 'key) tree =
   | Switch of {
       key : 'key;
       ids : Set.Int.t; [@printer Pp.set_int]
       cases : ('leaf, 'key) switchcase;
-      row : [ `Open | `Closed ];
       wildcard : ('leaf, 'key) tree option;
+      row : [ `Open | `Closed ];
     }
   | Nest of {
       key : 'key;
@@ -35,7 +34,6 @@ type ('leaf, 'key) tree =
       ids : Set.Int.t; [@printer Pp.set_int]
       nil : ('leaf, 'key) tree option;
       cons : ('leaf, 'key) tree option;
-      debug : TPat.construct;
     }
   | Wildcard of {
       key : 'key;
@@ -520,29 +518,16 @@ let rec of_tpat :
       let id = b.next_id () in
       let b = { b with names = Map.String.add x id b.names } in
       Wildcard { ids = Set.Int.singleton id; key; child = k b }
-  | TConstruct (kind, Some cons) ->
+  | TConstruct (_, Some cons) ->
       let child = of_tpat ~key b k cons in
-      Construct
-        {
-          key;
-          ids = Set.Int.empty;
-          debug = kind;
-          nil = None;
-          cons = Some child;
-        }
-  | TConstruct (kind, None) ->
-      Construct
-        {
-          key;
-          ids = Set.Int.empty;
-          debug = kind;
-          nil = Some (k b);
-          cons = None;
-        }
+      Construct { key; ids = Set.Int.empty; nil = None; cons = Some child }
+  | TConstruct (_, None) ->
+      Construct { key; ids = Set.Int.empty; nil = Some (k b); cons = None }
   | TConst (data, enum) -> of_const key data (k b) enum
   | TTuple l ->
       let child = Int_keys (of_list ~key:0 b (fun b -> End (k b)) l) in
-      Nest { key; ids = Set.Int.empty; child; wildcard = None; debug = Tuple }
+      Nest
+        { key; ids = Set.Int.empty; child; wildcard = None; debug = Not_dict }
   | TRecord (tag, m, tys) ->
       (* We need to expand the map to include all of its type's keys. *)
       let l =
@@ -556,8 +541,8 @@ let rec of_tpat :
       let child, debug =
         match tag with
         | Some (key, data, union) ->
-            (of_const key data child (Some union), Union union.extra)
-        | None -> (child, Record)
+            (of_const key data child (Some union), Not_dict)
+        | None -> (child, Not_dict)
       in
       Nest
         {
@@ -651,145 +636,155 @@ let make Nonempty.(Typechecker.{ pats; nodes } :: tl_cases) =
   aux hd_tree tl_cases
 
 module ParMatch = struct
-  type flag = Partial | Exhaustive
-  type 'a t = { flag : flag; pats : (string * TPat.t) list; next : 'a }
+  (** Searches a given tree to find an example of a missing branch. If found,
+      the match is partial. *)
 
-  let values l = List.map (fun (_, v) -> v) l
-  let to_keyvalues l = l |> List.to_seq |> Map.String.of_seq
-  let pp_pats ppf l = Format.pp_print_list ~pp_sep:Pp.sep_comma TPat.pp ppf l
-  let key_str = Fun.id
-  let key_int _ = ""
+  (** Represents a path through a tree. This is an intermediary structure which
+      we later convert into a proper pattern.*)
+  type t = Any | Const of Const.t | Nil | Cons of t | Nest of t list
 
-  let exhaustive key { pats; flag; next } =
-    { flag; next; pats = (key, TAny) :: pats }
+  let rec to_pat ty path =
+    match (!ty, path) with
+    | Ty.Enum ty, Const c -> TPat.TConst (c, Some ty)
+    | _, Const c -> TConst (c, None)
+    | Tuple tys, Nest path -> TTuple (to_list tys path)
+    | List ty, path -> to_list_pat ty path
+    | Nullable ty, Cons (Nest [ path ]) ->
+        TConstruct (TNullable, Some (to_pat ty path))
+    | Nullable _, Cons Any -> TConstruct (TNullable, Some TAny)
+    | Nullable _, Nil -> TConstruct (TNullable, None)
+    | Record tys, Nest path ->
+        let s = Map.String.to_seq !tys in
+        TRecord (None, to_map Map.String.empty s path, tys)
+    | Union (key, ({ cases; _ } as ty)), Nest (Const c :: path) -> (
+        let key = Some (key, c, ty) in
+        match (cases, c) with
+        | Int m, `Int i ->
+            let tys = Map.Int.find i m in
+            let s = Map.String.to_seq !tys in
+            TRecord (key, to_map Map.String.empty s path, tys)
+        | String m, `String s ->
+            let tys = Map.String.find s m in
+            let s = Map.String.to_seq !tys in
+            TRecord (key, to_map Map.String.empty s path, tys)
+        | _ -> assert false)
+    | _ -> TAny
 
-  let rec check : 'a 'k. ('k -> string) -> ('a, 'k) tree -> 'a t =
-   fun kf -> function
-    | End next -> { next; flag = Exhaustive; pats = [] }
-    | Wildcard { key; child; _ } -> exhaustive (kf key) (check kf child)
-    | Nest { key; child; wildcard; debug; _ } -> (
-        (* Either the child _or_ the wildcard can be exhaustive.
-           A nest filled with exhaustive patterns e.g. tuple (_, _, _) can lead
-           to an exhaustive path even if it's paired with a wildcard _ that
+  and to_list_pat ty = function
+    | Cons (Nest [ hd; tl ]) ->
+        TConstruct (TList, Some (TTuple [ to_pat ty hd; to_list_pat ty tl ]))
+    | Cons Any -> TConstruct (TList, Some TAny)
+    | Nil -> TConstruct (TList, None)
+    | _ -> TAny
+
+  and to_list tys path = List.map2 to_pat tys path
+
+  and to_map acc tys path =
+    match (tys (), path) with
+    | Cons ((key, ty), tys), hd :: path ->
+        let pat = to_pat ty hd in
+        let acc = Map.String.add key pat acc in
+        to_map acc tys path
+    | _ -> acc
+
+  let pp tys ppf l =
+    Format.pp_print_list ~pp_sep:Pp.sep_comma TPat.pp ppf (to_list tys l)
+
+  module List = struct
+    (** A list indexed by its length. We describe length in terms of
+        nested trees. This is useful to eliminate one case where we parse a nest
+        and want to guarantee that the list returned will not be empty. *)
+    type (_, _) t =
+      | [] : ('a, leaf) t
+      | ( :: ) : 'a * ('a, 'n) t -> ('a, ('n, 'k) tree) t
+  end
+
+  type result = Partial | Exhaustive
+
+  type 'a check = {
+    result : result;
+    pats : t list;
+    after_nest : (t list, 'a) List.t;
+  }
+
+  let exhaustive c = { c with pats = Any :: c.pats }
+
+  let rec check : type a k. (a, leaf) nat -> (a, k) tree -> a check =
+   fun n tree ->
+    match (n, tree) with
+    | Z, End _ -> { result = Exhaustive; pats = []; after_nest = [] }
+    | S n, End tree ->
+        let x = check n tree in
+        { x with pats = []; after_nest = x.pats :: x.after_nest }
+    | n, Wildcard { child; _ } -> exhaustive (check n child)
+    | n, Nest { child; wildcard; debug; _ } -> (
+        (* Either the child OR the wildcard can be exhaustive.
+           A nest filled with exhaustive patterns, e.g. tuple (_, _, _), can
+           lead to an exhaustive path even if it's paired with a wildcard _ that
            doesn't. (In which case, the wildcard is redundant and will never be
            used.) *)
-        let result =
+        let r =
           match child with
-          | Int_keys child -> check key_int child
-          | String_keys child -> check key_str child
+          | Int_keys c -> check (S n) c
+          | String_keys c -> check (S n) c
         in
-        match result with
-        | { flag = Exhaustive; next; _ } -> (
+        match r with
+        | { result = Exhaustive; pats; after_nest = hd :: tl } -> (
             match debug with
-            | Tuple | Record | Union _ -> exhaustive (kf key) (check kf next)
+            | Not_dict ->
+                { result = Exhaustive; pats = Nest pats :: hd; after_nest = tl }
             | Dict -> (
+                (* Dicts always require a wildcard. *)
                 match wildcard with
-                | Some wildcard -> exhaustive (kf key) (check kf wildcard)
+                | Some wildcard -> exhaustive (check n wildcard)
                 | None ->
-                    let { pats; next; _ } = check kf next in
-                    { next; flag = Partial; pats = (kf key, TAny) :: pats }))
-        | { flag = Partial; pats; next } -> (
+                    { result = Partial; pats = Any :: hd; after_nest = tl }))
+        | { result = Partial; pats; after_nest = hd :: tl } -> (
             match wildcard with
-            | Some wildcard -> exhaustive (kf key) (check kf wildcard)
+            | Some wildcard -> exhaustive (check n wildcard)
             | None ->
-                let nest =
-                  match debug with
-                  | Tuple -> TPat.TTuple (values pats)
-                  | Record ->
-                      TRecord (None, to_keyvalues pats, ref Map.String.empty)
-                  | Union extra -> (
-                      match pats with
-                      | (k, TConst (v, _)) :: pats ->
-                          TRecord
-                            ( Some
-                                ( k,
-                                  v,
-                                  {
-                                    cases = String Map.String.empty;
-                                    row = `Closed;
-                                    extra;
-                                  } ),
-                              to_keyvalues pats,
-                              ref Map.String.empty )
-                          (* If the child (tag) was not a constant, then it was
-                             a TAny and we report the entire union pattern as a
-                             TAny. *)
-                      | _ -> TAny)
-                  | Dict -> TDict (to_keyvalues pats, ref Set.String.empty)
+                { result = Partial; pats = Nest pats :: hd; after_nest = tl }))
+    | n, Construct { nil = None; cons = Some cons; _ } ->
+        let r = check n cons in
+        let pats = match r.pats with _ :: pats -> Nil :: pats | [] -> [] in
+        { r with result = Partial; pats }
+    | n, Construct { nil = Some nil; cons = None; _ } ->
+        let result = check n nil in
+        { result with result = Partial; pats = Cons Any :: result.pats }
+    | n, Construct { nil = Some nil; cons = Some cons; _ } -> (
+        match check n nil with
+        | { result = Exhaustive; _ } -> (
+            match check n cons with
+            | { result = Exhaustive; _ } as r -> r
+            | { result = Partial; pats; after_nest } ->
+                let pats =
+                  match pats with hd :: tl -> Cons hd :: tl | [] -> []
                 in
-                let { pats; next; _ } = check kf next in
-                { next; flag = Partial; pats = (kf key, nest) :: pats }))
-    | Construct { key; debug; nil; cons; _ } -> (
-        match (nil, cons) with
-        | None, Some cons ->
-            let { pats; next; _ } = check kf cons in
-            {
-              flag = Partial;
-              pats =
-                (match pats with
-                | _ :: pats -> (kf key, TConstruct (debug, None)) :: pats
-                | _ -> assert false);
-              next;
-            }
-        | Some nil, None ->
-            let { pats; next; _ } = check kf nil in
-            {
-              flag = Partial;
-              pats = (kf key, TConstruct (debug, Some TAny)) :: pats;
-              next;
-            }
-        | Some nil, Some cons -> (
-            match check kf nil with
-            | { flag = Exhaustive; _ } -> (
-                match check kf cons with
-                | { flag = Exhaustive; _ } as x -> x
-                | { flag = Partial; pats; next } ->
-                    let pats =
-                      match pats with
-                      | (key, cons) :: pats ->
-                          (key, TPat.TConstruct (debug, Some cons)) :: pats
-                      | _ -> assert false
-                    in
-                    { pats; next; flag = Partial })
-            | { flag = Partial; pats; next } ->
-                {
-                  flag = Partial;
-                  pats = (kf key, TPat.TConstruct (debug, None)) :: pats;
-                  next;
-                })
-        | None, None -> assert false)
-    | Switch { key; cases; wildcard; row; _ } -> (
-        match wildcard with
-        | Some wildcard -> exhaustive (kf key) (check kf wildcard)
-        | None -> (
-            match row with
-            | `Open ->
-                let { pats; next; _ } = check kf cases.if_match in
-                { flag = Partial; pats = (kf key, TAny) :: pats; next }
-            | `Closed ->
-                let rec aux { data; if_match; next_case } =
-                  match check kf if_match with
-                  | { flag = Partial; pats; next } ->
-                      {
-                        flag = Partial;
-                        pats = (kf key, TConst (data, None)) :: pats;
-                        next;
-                      }
-                  | { flag = Exhaustive; pats; next } -> (
-                      match next_case with
-                      | None ->
-                          {
-                            next;
-                            flag = Exhaustive;
-                            pats = (kf key, TAny) :: pats;
-                          }
-                      | Some case -> aux case)
-                in
-                aux cases))
+                { pats; result = Partial; after_nest })
+        | { result = Partial; pats; after_nest } ->
+            { result = Partial; pats = Nil :: pats; after_nest })
+    | _, Construct { nil = None; cons = None; _ } -> assert false
+    | n, Switch { wildcard = Some wildcard; _ } -> exhaustive (check n wildcard)
+    | n, Switch { cases; wildcard = None; row = `Open; _ } ->
+        let r = check n cases.if_match in
+        { r with result = Partial; pats = Any :: r.pats }
+    | n, Switch { cases; wildcard = None; row = `Closed; _ } ->
+        let rec aux { data; if_match; next_case } =
+          match check n if_match with
+          | { result = Partial; pats; after_nest } ->
+              { result = Partial; pats = Const data :: pats; after_nest }
+          | { result = Exhaustive; pats; after_nest } -> (
+              match next_case with
+              | None ->
+                  { result = Exhaustive; pats = Const data :: pats; after_nest }
+              | Some case -> aux case)
+        in
+        aux cases
+
+  let check = check Z
 end
 
-let partial_match_check loc tree =
-  match ParMatch.check ParMatch.key_int tree with
-  | { flag = Exhaustive; _ } -> ()
-  | { flag = Partial; pats; _ } ->
-      Error.parmatch loc ParMatch.pp_pats (ParMatch.values pats)
+let partial_match_check loc tys tree =
+  match ParMatch.check tree with
+  | { result = Exhaustive; _ } -> ()
+  | { result = Partial; pats; _ } -> Error.parmatch loc (ParMatch.pp tys) pats

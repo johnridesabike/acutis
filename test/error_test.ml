@@ -490,7 +490,7 @@ let parmatch () =
         is not matched:\n\
         [_, ..._]")
     (render "{% match a with [] with [_] %} {% /match %}");
-  check_raises "Partial matching with lists (1)."
+  check_raises "Partial matching with lists (2)."
     (Error
        "File <test>, 1:4-1:33\n\
         Matching error.\n\
@@ -499,6 +499,42 @@ let parmatch () =
         is not matched:\n\
         []")
     (render "{% match a with [_] %} {% /match %}");
+  check_raises "Partial matching with Nullables (1)."
+    (Error
+       "File <test>, 1:4-1:34\n\
+        Matching error.\n\
+        This pattern-matching is not exhaustive. Here's an example of a \
+        pattern which\n\
+        is not matched:\n\
+        !_")
+    (render "{% match a with null %} {% /match %}");
+  check_raises "Partial matching with Nullables (2)."
+    (Error
+       "File <test>, 1:4-1:32\n\
+        Matching error.\n\
+        This pattern-matching is not exhaustive. Here's an example of a \
+        pattern which\n\
+        is not matched:\n\
+        null")
+    (render "{% match a with !_ %} {% /match %}");
+  check_raises "Partial matching with Nullables (3)."
+    (Error
+       "File <test>, 1:4-1:48\n\
+        Matching error.\n\
+        This pattern-matching is not exhaustive. Here's an example of a \
+        pattern which\n\
+        is not matched:\n\
+        !_")
+    (render "{% match a with !1 %} {% with null %} {% /match %}");
+  check_raises "Partial matching with enums nested in nullables."
+    (Error
+       "File <test>, 1:4-1:58\n\
+        Matching error.\n\
+        This pattern-matching is not exhaustive. Here's an example of a \
+        pattern which\n\
+        is not matched:\n\
+        !@1, _")
+    (render "{% match a, b with !@1, 2 %} {% with null, _ %} {% /match %}");
   check_raises "Partial matching with records."
     (Error
        "File <test>, 1:4-1:56\n\

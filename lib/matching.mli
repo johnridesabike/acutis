@@ -174,19 +174,15 @@ v}
 
 (** {1 Type definitions.}*)
 
-type debug_nest_info =
-  | Tuple
-  | Dict
-  | Record
-  | Union of Typescheme.Variant.extra
+type debug_nest_info = Not_dict | Dict
 
 type ('leaf, 'key) tree =
   | Switch of {
       key : 'key;
       ids : Set.Int.t;
       cases : ('leaf, 'key) switchcase;
-      row : [ `Open | `Closed ];
       wildcard : ('leaf, 'key) tree option;
+      row : [ `Open | `Closed ];
     }
       (** A Switch represents a list of discreet values to test (i.e., [1],
           ["a"], etc.). If none of the values match the input, then the wildcard
@@ -203,7 +199,6 @@ type ('leaf, 'key) tree =
       ids : Set.Int.t;
       nil : ('leaf, 'key) tree option;
       cons : ('leaf, 'key) tree option;
-      debug : Typechecker.Pattern.construct;
     }
       (** A Construct represents one of the built-in variant types: lists and 
           nullables. [nil] represents an empty list or a null value. It is like
@@ -252,7 +247,7 @@ type 'a t = { tree : (leaf, int) tree; exits : 'a Exit.t }
 
 val make : Typechecker.case Nonempty.t -> Typechecker.nodes t
 
-val partial_match_check : Loc.t -> (_, int) tree -> unit
+val partial_match_check : Loc.t -> Typescheme.t list -> (leaf, int) tree -> unit
 (** Searches the tree for a counter-example to prove it does not cover
     a case. Raises {!Error.Error} if one is found. *)
 

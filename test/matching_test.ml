@@ -29,7 +29,6 @@ let basic_tree () =
        {
          key = 0;
          ids = SI.empty;
-         debug = TNullable;
          nil = Some (End { names = MS.empty; exit = e 1 });
          cons =
            Some
@@ -37,7 +36,7 @@ let basic_tree () =
                 {
                   key = 0;
                   ids = SI.empty;
-                  debug = Tuple;
+                  debug = Not_dict;
                   child =
                     Int_keys
                       (Wildcard
@@ -237,11 +236,11 @@ let nests_merge () =
   let open Matching in
   let src =
     {|{% match a,        b,  c
-       with  _,        _, 12 %}
-    {% with  _, (20, 21), 22 %}
-    {% with  _, (20, 21), 32 %}
-    {% with  _, ( _,  _),  _ %}
-    {% /match %}|}
+         with  _,        _, 12 %}
+      {% with  _, (20, 21), 22 %}
+      {% with  _, (20, 21), 32 %}
+      {% with  _, ( _,  _),  _ %}
+      {% /match %}|}
   in
   let exit_0 = { names = MS.empty; exit = e 0 } in
   let exit_1 = { names = MS.empty; exit = e 1 } in
@@ -298,7 +297,7 @@ let nests_merge () =
              {
                key = 1;
                ids = SI.empty;
-               debug = Tuple;
+               debug = Not_dict;
                child =
                  Int_keys
                    (Switch
@@ -391,14 +390,14 @@ let nests_merge_wildcards () =
        {
          key = 0;
          ids = set [ 0; 1 ];
-         debug = Tuple;
+         debug = Not_dict;
          child =
            Int_keys
              (Nest
                 {
                   key = 0;
                   ids = SI.empty;
-                  debug = Tuple;
+                  debug = Not_dict;
                   child =
                     Int_keys
                       (Switch
@@ -460,7 +459,6 @@ let lists () =
        {
          key = 0;
          ids = SI.empty;
-         debug = TList;
          nil = Some (End exit_0);
          cons =
            Some
@@ -468,7 +466,7 @@ let lists () =
                 {
                   key = 0;
                   ids = SI.empty;
-                  debug = Tuple;
+                  debug = Not_dict;
                   child =
                     Int_keys
                       (Wildcard
@@ -480,7 +478,6 @@ let lists () =
                                {
                                  key = 1;
                                  ids = set [ 2 ];
-                                 debug = TList;
                                  nil = Some (End (End exit_1));
                                  cons =
                                    Some
@@ -522,7 +519,6 @@ let lists () =
           {
             key = 1;
             ids = set [ 0 ];
-            debug = TList;
             nil =
               Some
                 (End
@@ -570,14 +566,13 @@ let lists () =
           {
             key = 1;
             ids = SI.empty;
-            debug = TList;
             cons =
               Some
                 (Nest
                    {
                      key = 1;
                      ids = SI.empty;
-                     debug = Tuple;
+                     debug = Not_dict;
                      child =
                        Int_keys
                          (Switch
@@ -601,7 +596,6 @@ let lists () =
                 {
                   key = 1;
                   ids = SI.empty;
-                  debug = TList;
                   nil =
                     Some
                       (End
@@ -629,14 +623,13 @@ let lists () =
        {
          key = 0;
          ids = set [ 1 ];
-         debug = TList;
          cons =
            Some
              (Nest
                 {
                   key = 0;
                   ids = set [ 1 ];
-                  debug = Tuple;
+                  debug = Not_dict;
                   child =
                     Int_keys
                       (Switch
@@ -689,7 +682,7 @@ let records_sort () =
        {
          key = 0;
          ids = SI.empty;
-         debug = Record;
+         debug = Not_dict;
          child =
            String_keys
              (Switch
@@ -790,7 +783,7 @@ let records_expand () =
        {
          key = 0;
          ids = set [ 0 ];
-         debug = Record;
+         debug = Not_dict;
          child =
            String_keys
              (Switch
