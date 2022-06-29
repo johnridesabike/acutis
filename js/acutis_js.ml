@@ -33,30 +33,31 @@ let map_to_js f m =
 let () =
   Js.export "Compile"
     (object%js
-       method src name src =
-         Compile.Components.src ~name:(Js.to_string name) (Js.to_string src)
+       method fromString name src =
+         Compile.Components.parse_string ~name:(Js.to_string name)
+           (Js.to_string src)
 
-       method fnAsync name ty children fn =
+       method fromFunAsync name ty children fn =
          let fn : RenderAsync.component =
           fun data children ->
            Js.Unsafe.fun_call fn [| data; map_to_js child_async children |]
            |> Promise.map Js.to_string
          in
-         Compile.Components.fn ~name:(Js.to_string name) ty children fn
+         Compile.Components.from_fun ~name:(Js.to_string name) ty children fn
 
-       method fn name ty children fn =
+       method fromFun name ty children fn =
          let fn : RenderSync.component =
           fun data children ->
            Js.Unsafe.fun_call fn [| data; map_to_js child_sync children |]
            |> Js.to_string
          in
-         Compile.Components.fn ~name:(Js.to_string name) ty children fn
+         Compile.Components.from_fun ~name:(Js.to_string name) ty children fn
 
        method components a =
          a |> Js.to_array |> Array.to_list |> Compile.Components.make
 
        method make fname components src =
-         Compile.make ~filename:(Js.to_string fname) components
+         Compile.from_string ~name:(Js.to_string fname) components
            (Js.to_string src)
     end)
 

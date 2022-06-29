@@ -15,3 +15,6 @@
  (names lwt_test)
  (modules lwt_test)
  (libraries acutis acutis_data_json alcotest yojson lwt alcotest-lwt))
+
+(cram
+ (deps %{bin:acutis}))

@@ -8,19 +8,19 @@ module RenderLwt = Render.Make (Lwt) (Acutis_data_json.Data)
 
 let render ?(components = []) src json =
   let json = Yojson.Basic.from_string json in
-  let temp = Compile.(make ~filename:"" (Components.make components) src) in
+  let temp = Compile.(from_string ~name:"" (Components.make components) src) in
   RenderLwt.make temp json
 
 let basic _ () =
   let a =
-    Compile.Components.fn ~name:"Slow" Typescheme.empty Typescheme.Child.empty
-      (fun _ _ ->
+    Compile.Components.from_fun ~name:"Slow" Typescheme.empty
+      Typescheme.Child.empty (fun _ _ ->
         let+ () = Lwt_unix.sleep 0.05 in
         "Short sleep.")
   in
   let b =
-    Compile.Components.fn ~name:"Slower" Typescheme.empty Typescheme.Child.empty
-      (fun _ _ ->
+    Compile.Components.from_fun ~name:"Slower" Typescheme.empty
+      Typescheme.Child.empty (fun _ _ ->
         let+ () = Lwt_unix.sleep 0.1 in
         "Long sleep.")
   in

@@ -14,7 +14,7 @@ const {
   Compile,
   Render,
   Utils,
-} = require("../../_build/default/bin/main.bc.js");
+} = require("../../_build/default/js/acutis_js.bc.js");
 const { filenameToComponent } = require("../../node-utils");
 
 const readFile = util.promisify(fs.readFile);
@@ -36,7 +36,7 @@ module.exports = function (eleventyConfig, config) {
         files.map(async (fileName) => {
           const str = await readFile(fileName, "utf-8");
           const name = filenameToComponent(fileName);
-          return Compile.src(name, str);
+          return Compile.fromString(name, str);
         })
       );
       try {

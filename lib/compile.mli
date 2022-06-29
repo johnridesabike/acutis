@@ -11,6 +11,8 @@
 (** This orchestrates the {!Lexer}, {!Parser}, {!Typechecker}, and {!Matching}
     to produce the final template. *)
 
+val parse : name:string -> Lexing.lexbuf -> Ast.t
+
 type 'a node =
   | Text of string
   | Echo of Typechecker.echo list * Typechecker.echo
@@ -22,8 +24,6 @@ type 'a node =
 and 'a child = Child_name of string | Child_block of 'a nodes
 and 'a nodes = 'a node list
 
-val make_nodes : Typechecker.t -> string nodes
-
 type 'a template =
   | Src of 'a template nodes
   | Fun of Typescheme.t Map.String.t * 'a
@@ -33,28 +33,25 @@ type 'a t = {
   nodes : 'a template nodes;
 }
 
-val parse_string : filename:string -> string -> Ast.t
-
 module Components : sig
-  type ('a, 'b) source =
-    [ `Src of string * 'a
-    | `Fun of
-      string * Typescheme.t Map.String.t * Typescheme.Child.t Map.String.t * 'b
-    ]
+  type 'a source
 
-  val src : name:string -> string -> (string, 'a) source
+  val parse_string : name:string -> string -> _ source
+  val parse_channel : name:string -> in_channel -> _ source
 
-  val fn :
+  val from_fun :
     name:string ->
     Typescheme.t Map.String.t ->
     Typescheme.Child.t Map.String.t ->
     'a ->
-    (_, 'a) source
+    'a source
 
   type 'a t
 
-  val empty : 'a t
-  val make : (string, 'a) source list -> 'a t
+  val empty : _ t
+  val make : 'a source list -> 'a t
 end
 
-val make : filename:string -> 'a Components.t -> string -> 'a t
+val make : name:string -> 'a Components.t -> Lexing.lexbuf -> 'a t
+val from_string : name:string -> 'a Components.t -> string -> 'a t
+val from_channel : name:string -> 'a Components.t -> in_channel -> 'a t

@@ -8,6 +8,13 @@
 (*                                                                        *)
 (**************************************************************************)
 
+let parse ~name lexbuf =
+  let state = Lexer.make_state () in
+  lexbuf.Lexing.lex_curr_p <- { lexbuf.Lexing.lex_curr_p with pos_fname = name };
+  try Parser.acutis (Lexer.acutis state) lexbuf with
+  | Lexer.Error -> Error.lex_error lexbuf
+  | Parser.Error i -> Error.parse_error i lexbuf
+
 module StringExtra = struct
   (* The [ltrim] and [rtrim] functions are vendored from the Containers library.
      https://github.com/c-cube/ocaml-containers/blob/70703b351235b563f060ef494461e678e896da49/src/core/CCString.ml
@@ -88,27 +95,19 @@ type 'a t = {
   nodes : 'a template nodes;
 }
 
-let parse_string ~filename src =
-  let state = Lexer.make_state () in
-  let lexbuf = Lexing.from_string src in
-  lexbuf.lex_curr_p <- { lexbuf.lex_curr_p with pos_fname = filename };
-  try Parser.acutis (Lexer.acutis state) lexbuf with
-  | Lexer.Error -> Error.lex_error lexbuf
-  | Parser.Error i -> Error.parse_error i lexbuf
-
 module Components = struct
-  type ('a, 'b) source =
-    [ `Src of string * 'a
-    | `Fun of
-      string * Typescheme.t Map.String.t * Typescheme.Child.t Map.String.t * 'b
-    ]
+  type 'a source = (Ast.t, 'a) Typechecker.source
 
-  let src ~name src = `Src (name, src)
-  let fn ~name props children f = `Fun (name, props, children, f)
+  let parse_string ~name src = `Src (name, parse ~name (Lexing.from_string src))
+
+  let parse_channel ~name src =
+    `Src (name, parse ~name (Lexing.from_channel src))
+
+  let from_fun ~name props children f = `Fun (name, props, children, f)
 
   type 'a t = {
-    typed : (Typechecker.t, 'a) source Map.String.t;
-    optimized : (string nodes, 'a) source Map.String.t;
+    typed : (Typechecker.t, 'a) Typechecker.source Map.String.t;
+    optimized : (string nodes, 'a) Typechecker.source Map.String.t;
   }
 
   let empty = { typed = Map.String.empty; optimized = Map.String.empty }
@@ -117,7 +116,7 @@ module Components = struct
     | [] -> m
     | `Src (name, src) :: l ->
         if Map.String.mem name m then Error.duplicate_name name;
-        let c = `Src (name, parse_string ~filename:name src) in
+        let c = `Src (name, src) in
         make_aux_parse (Map.String.add name c m) l
     | `Fun (name, p, c, f) :: l ->
         if Map.String.mem name m then Error.duplicate_name name;
@@ -164,9 +163,15 @@ let link_src graph = function
   | `Src (_, nodes) -> Src (link_nodes graph nodes)
   | `Fun (_, props, _, f) -> Fun (props, f)
 
-let make ~filename components src =
-  let nodes = parse_string ~filename src in
-  let ast = Typechecker.make ~root:filename components.Components.typed nodes in
-  let g = Dagmap.make ~f:link_src ~root:filename components.optimized in
+let make ~name components src =
+  let nodes = parse ~name src in
+  let ast = Typechecker.make ~root:name components.Components.typed nodes in
+  let g = Dagmap.make ~f:link_src ~root:name components.optimized in
   let nodes = make_nodes ast |> link_nodes g in
   { prop_types = ast.prop_types; nodes }
+
+let from_string ~name components src =
+  make ~name components (Lexing.from_string src)
+
+let from_channel ~name components src =
+  make ~name components (Lexing.from_channel src)

@@ -8,12 +8,12 @@ module RenderJson = Render.Make (Sync) (Acutis_data_json.Data)
 module RenderJs = Render.Make (Sync) (Acutis_data_js.Data)
 
 let render_js ?(components = []) src js =
-  let temp = Compile.(make ~filename:"" (Components.make components) src) in
+  let temp = Compile.(from_string ~name:"" (Components.make components) src) in
   RenderJs.make temp (Js.Unsafe.inject js)
 
 let render_yojson ?(components = []) src json =
   let json = Yojson.Basic.from_string json in
-  let temp = Compile.(make ~filename:"" (Components.make components) src) in
+  let temp = Compile.(from_string ~name:"" (Components.make components) src) in
   RenderJson.make temp json
 
 let records () =

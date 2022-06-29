@@ -7,7 +7,7 @@ module RenderSync = Render.Make (Sync) (Acutis_data_json.Data)
 
 let render ?(components = []) src json =
   let json = Yojson.Basic.from_string json in
-  let temp = Compile.(make ~filename:"" (Components.make components) src) in
+  let temp = Compile.(from_string ~name:"" (Components.make components) src) in
   RenderSync.make temp json
 
 let basic () =
@@ -38,7 +38,8 @@ let whitespace () =
   in
   check "Whitespace control works (1)" "_hi_" (render src props);
   let oh_hai =
-    Compile.Components.src ~name:"OhHai" "{{ Children }} Oh hai {{ name }}."
+    Compile.Components.parse_string ~name:"OhHai"
+      "{{ Children }} Oh hai {{ name }}."
   in
   let src =
     {|{% OhHai name="Mark" ~%} I did not. {%~ /OhHai %}
@@ -50,7 +51,9 @@ let whitespace () =
 
 let nullish_coalescing () =
   let props = {|{"b": "b", "c": "c"}|} in
-  let comp = Compile.Components.src ~name:"Comp" {|{{ a ? b ? C ? Z }}|} in
+  let comp =
+    Compile.Components.parse_string ~name:"Comp" {|{{ a ? b ? C ? Z }}|}
+  in
   let src =
     {|{{ a ? b ? c }} {% Comp b Z=#%}z{%/# / %} {% Comp Z=#%}z{%/# / %}|}
   in
@@ -108,25 +111,30 @@ let map_dict () =
 
 let nullable_props () =
   let a =
-    Compile.Components.src ~name:"A" {|{{ x ? "fail" }} {{ y ? "pass"}}|}
+    Compile.Components.parse_string ~name:"A"
+      {|{{ x ? "fail" }} {{ y ? "pass"}}|}
   in
   let src = {|{% A x=!"pass" / %}|} in
   check "Nullable props default to null" "pass pass"
     (render ~components:[ a ] src "{}")
 
 let default_children () =
-  let a = Compile.Components.src ~name:"A" "{{ Children }}" in
+  let a = Compile.Components.parse_string ~name:"A" "{{ Children }}" in
   let src = "{% A ~%} a {%~ /A %} {% A Children=#~%} b {%~/# / %}" in
   check "The default [Children] child works" "a b"
     (render ~components:[ a ] src "{}")
 
 let template_sections () =
-  let x = Compile.Components.src ~name:"X" "{{ PassthroughChild }}" in
-  let y = Compile.Components.src ~name:"Y" "{% X PassthroughChild=A / %}" in
+  let x = Compile.Components.parse_string ~name:"X" "{{ PassthroughChild }}" in
+  let y =
+    Compile.Components.parse_string ~name:"Y" "{% X PassthroughChild=A / %}"
+  in
   let src = "{% Y A=#~%} a {%~/# / %}" in
   check "Children are passed correctly" "a"
     (render ~components:[ x; y ] src "{}");
-  let y = Compile.Components.src ~name:"Y" "{% X PassthroughChild / %}" in
+  let y =
+    Compile.Components.parse_string ~name:"Y" "{% X PassthroughChild / %}"
+  in
   let src = "{% Y PassthroughChild=#~%} a {%~/# / %}" in
   check "Children are passed correctly (with punning)" "a"
     (render ~components:[ x; y ] src "{}")

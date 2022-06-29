@@ -3,20 +3,22 @@ module Ty = Typescheme
 module MS = Map.String
 module SI = Set.Int
 
-let parse = Compile.parse_string
 let pp_tree = Matching.pp_tree Matching.pp_leaf Format.pp_print_int
 let equal_tree = Matching.equal_tree Matching.equal_leaf Int.equal
 let check = Alcotest.(check (testable pp_tree equal_tree))
-
-let make_nodes ast =
-  Typechecker.make ~root:"<test>" MS.empty ast |> Compile.make_nodes
 
 let get_tree_aux acc = function
   | Compile.Match (_, { tree; _ }) -> Some tree
   | _ -> acc
 
-let get_tree nodes = List.fold_left get_tree_aux None nodes |> Option.get
-let get_tree src = parse ~filename:"" src |> make_nodes |> get_tree
+let nodes x = x.Compile.nodes
+
+let get_tree src =
+  Compile.(from_string ~name:"" Components.empty src)
+  |> nodes
+  |> List.fold_left get_tree_aux None
+  |> Option.get
+
 let e = Matching.Exit.unsafe_key
 let map l = l |> List.to_seq |> MS.of_seq
 let set = SI.of_list

@@ -2,7 +2,7 @@ open Acutis
 module F = Format
 module Ty = Typescheme
 
-let parse = Compile.parse_string
+let parse src = Compile.parse (Lexing.from_string src)
 
 let check =
   Alcotest.(
@@ -12,8 +12,7 @@ let check =
          (Map.String.equal Typescheme.equal)))
 
 let get_types src =
-  (parse ~filename:"<test>" src
-  |> Typechecker.make ~root:"<test>" Map.String.empty)
+  (parse ~name:"<test>" src |> Typechecker.make ~root:"<test>" Map.String.empty)
     .prop_types
 
 let echoes () =
@@ -434,12 +433,14 @@ let pathologic () =
 
 let components () =
   let a =
-    Compile.Components.src ~name:"A"
+    Compile.Components.parse_string ~name:"A"
       {|{% map a with x %} {{ x }} {% /map %}
        {% map b with x %} {{ x }} {% /map %}|}
   in
   let src = {|{% A a=[1, a] b=["b", b] /%}|} in
-  let r = Compile.make ~filename:"<test>" (Compile.Components.make [ a ]) src in
+  let r =
+    Compile.from_string ~name:"<test>" (Compile.Components.make [ a ]) src
+  in
   check "Components infer correctly."
     Ty.(make [ ("a", int ()); ("b", string ()) ])
     r.prop_types

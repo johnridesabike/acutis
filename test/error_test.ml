@@ -2,7 +2,7 @@ open Acutis
 module RenderSync = Render.Make (Sync) (Acutis_data_json.Data)
 
 let render ?(json = "{}") src () =
-  let temp = Compile.(make ~filename:"<test>" Components.empty src) in
+  let temp = Compile.(from_string ~name:"<test>" Components.empty src) in
   let json = Yojson.Basic.from_string json in
   ignore @@ RenderSync.make temp json
 
@@ -272,13 +272,13 @@ let type_error_record () =
         Expected: {a: _, b: _}\n\
         Received: {a: _}")
     (render "{% match {a: 1} with {a, b} %} {% /match %}");
-  let comps = Compile.Components.(make [ src ~name:"A" "{{ a }}" ]) in
+  let comps = Compile.Components.(make [ parse_string ~name:"A" "{{ a }}" ]) in
   check_raises "Records with missing fields (Component)"
     (Error
        "File <test>, 1:4-1:7\n\
         Type error.\n\
         This is missing key `a` of type echoable") (fun () ->
-      ignore @@ Compile.make ~filename:"<test>" comps "{% A / %}")
+      ignore @@ Compile.from_string ~name:"<test>" comps "{% A / %}")
 
 let type_error_enum () =
   let open Alcotest in
@@ -413,17 +413,17 @@ let component_typechecker () =
         Type error.\n\
         Children are not allowed in the root template.")
     (render "{{ A }}");
-  let a = Compile.Components.src ~name:"A" "{{ B }}" in
+  let a = Compile.Components.parse_string ~name:"A" "{{ B }}" in
   let components = Compile.Components.make [ a ] in
   let src = "{% A /%}" in
   check_raises "Missing children are reported."
     (Error "File <test>, 1:4-1:7\nType error.\nMissing child: B.") (fun () ->
-      ignore @@ Compile.make ~filename:"<test>" components src);
+      ignore @@ Compile.from_string ~name:"<test>" components src);
   let src = "{% A B=#%}{%/# C=#%}{%/# /%}" in
   check_raises "Extra children are reported."
     (Error
        "File <test>, 1:4-1:27\nType error.\nComponent A does not allow child C.")
-    (fun () -> ignore @@ Compile.make ~filename:"<test>" components src);
+    (fun () -> ignore @@ Compile.from_string ~name:"<test>" components src);
   check_raises "Child type mismatch."
     (Error
        "File Y, 1:17-1:19\n\
@@ -435,7 +435,8 @@ let component_typechecker () =
       @@ Compile.Components.(
            make
              [
-               src ~name:"Z" "{{ A }}"; src ~name:"Y" "{{ A ? z }} {% Z A / %}";
+               parse_string ~name:"Z" "{{ A }}";
+               parse_string ~name:"Y" "{{ A ? z }} {% Z A / %}";
              ]))
 
 let matching_unused () =
@@ -601,10 +602,10 @@ let parmatch () =
 
 let component_graph () =
   let open Alcotest in
-  let a = Compile.Components.src ~name:"A" "{% B /%}" in
-  let b = Compile.Components.src ~name:"B" "{% C /%}" in
-  let c = Compile.Components.src ~name:"C" "{% D /%}" in
-  let d = Compile.Components.src ~name:"D" "{% B /%}" in
+  let a = Compile.Components.parse_string ~name:"A" "{% B /%}" in
+  let b = Compile.Components.parse_string ~name:"B" "{% C /%}" in
+  let c = Compile.Components.parse_string ~name:"C" "{% D /%}" in
+  let d = Compile.Components.parse_string ~name:"D" "{% B /%}" in
   check_raises "Cyclic dependencies are reported."
     (Error "Dependency cycle detected.\nA -> B -> C -> D -> B") (fun () ->
       ignore @@ Compile.Components.make [ a; b; c; d ]);

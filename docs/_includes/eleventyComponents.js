@@ -10,11 +10,11 @@ const {
   Compile,
   Typescheme,
   TypeschemeChildren,
-} = require("../../_build/default/bin/main.bc.js");
+} = require("../../_build/default/js/acutis_js.bc.js");
 const site = require("../_data/site");
 
 module.exports = [
-  Compile.fnAsync(
+  Compile.fromFunAsync(
     "Log",
     Typescheme.make([["val", Typescheme.unknown(0)]]),
     TypeschemeChildren.make([]),
@@ -23,7 +23,7 @@ module.exports = [
       return Promise.resolve("");
     }
   ),
-  Compile.fnAsync(
+  Compile.fromFunAsync(
     "Debugger",
     Typescheme.make([["val", Typescheme.unknown(0)]]),
     TypeschemeChildren.make([]),
@@ -32,7 +32,7 @@ module.exports = [
       return Promise.resolve("");
     }
   ),
-  Compile.fnAsync(
+  Compile.fromFunAsync(
     "Footer",
     Typescheme.make([
       ["year", Typescheme.nullable(Typescheme.string(0))],
@@ -62,7 +62,7 @@ module.exports = [
         </footer>`);
     }
   ),
-  Compile.fnAsync(
+  Compile.fromFunAsync(
     "Link",
     Typescheme.make([
       ["path", Typescheme.string(0)],
