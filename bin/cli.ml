@@ -12,21 +12,22 @@ open Acutis
 module Render = Render.Make (Sync) (Acutis_data_json.Data)
 
 let usage_msg =
-  {|Usage:
+  {|Parse and execute Acutis language templates.
+
+Usage:
   acutis [options] [template] [...templates]
 
 Options:|}
 
-let doc_data = " The path to the JSON data file. Default: stdin."
+let doc_data = " The path to a JSON data file. Default: stdin."
 let arg_data = ref None
-let data_final = ref (`Assoc [])
 let set_arg_data s = arg_data := Some s
 let doc_output = " The path to write the output. Default: stdout."
 let arg_output = ref None
 let set_arg_output s = arg_output := Some s
 let templates = Queue.create ()
 let set_templates fname = Queue.add fname templates
-let doc_version = " Show the version and exit."
+let doc_version = " Show the version number and exit."
 
 let version () =
   Format.printf "Version: %s\n"
@@ -36,13 +37,12 @@ let version () =
   exit 0
 
 let args =
-  Arg.
+  Arg.align
     [
       ("--data", String set_arg_data, doc_data);
       ("--output", String set_arg_output, doc_output);
       ("--version", Unit version, doc_version);
     ]
-  |> Arg.align
 
 let fname_to_component s =
   let s = String.capitalize_ascii s in
@@ -54,20 +54,16 @@ let () =
   try
     Arg.parse args set_templates usage_msg;
 
-    let name =
-      match Queue.take_opt templates with
-      | None ->
-          raise_notrace (Error.Acutis_error "You need to provide a template.")
-      | Some fname -> fname
-    in
+    let name = Queue.take templates in
 
-    (data_final :=
-       match !arg_data with
-       | None ->
-           if Unix.isatty Unix.stdin then print_endline "Enter JSON data:";
-           Yojson.Basic.from_channel stdin
-       | Some fname ->
-           In_channel.with_open_text fname (Yojson.Basic.from_channel ~fname));
+    let data =
+      match !arg_data with
+      | None ->
+          if Unix.isatty Unix.stdin then print_endline "Enter JSON data:";
+          Yojson.Basic.from_channel stdin
+      | Some fname ->
+          In_channel.with_open_text fname (Yojson.Basic.from_channel ~fname)
+    in
 
     let components =
       templates
@@ -84,7 +80,7 @@ let () =
       In_channel.with_open_text name (Compile.from_channel ~name components)
     in
 
-    let result = Render.make template !data_final in
+    let result = Render.make template data in
 
     match !arg_output with
     | None -> Out_channel.output_string stdout result
@@ -93,10 +89,13 @@ let () =
           with_open_text fname (fun chan -> output_string chan result))
   with
   | Error.Acutis_error e ->
-      Format.eprintf "@[<v>@[Action failed due to this error:@]@,%s@,@]" e;
+      Format.eprintf "@[<v>@[Compiler error:@]@,%s@,@]" e;
       exit 1
   | Yojson.Json_error s ->
       Format.eprintf "@[<v>@[Error decoding JSON input:@]@,%s@,@]" s;
+      exit 1
+  | Queue.Empty ->
+      Format.eprintf "Error: You need to provide a template.@,";
       exit 1
   | Sys_error s ->
       Format.eprintf "@[<v>@[System error:@]@,%s@,@]" s;
