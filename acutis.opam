@@ -5,7 +5,7 @@ synopsis: "A declarative template language"
 maintainer: ["John Jackson"]
 authors: ["John Jackson"]
 license: "MPL-2.0"
-tags: ["template" "language"]
+tags: ["template" "language" "parser" "interpreter"]
 homepage: "https://github.com/johnridesabike/acutis"
 doc: "https://johnridesa.bike/acutis/"
 bug-reports: "https://github.com/johnridesabike/acutis/issues"

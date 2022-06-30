@@ -38,7 +38,7 @@
    (lwt (>= 5.5))
    ocaml-lsp-server)
  (tags
-  (template language)))
+  (template language parser interpreter)))
 
 (package
  (name acutis_data_json)
