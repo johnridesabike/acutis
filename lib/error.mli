@@ -10,7 +10,7 @@
 
 (** This handles all of the error messages. *)
 
-exception Error of string
+exception Acutis_error of string
 (** Every function in this module raises this exception. *)
 
 (** {1 Lexing and Parsing errors.} *)

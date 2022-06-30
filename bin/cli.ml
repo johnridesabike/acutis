@@ -56,7 +56,8 @@ let () =
 
     let name =
       match Queue.take_opt templates with
-      | None -> raise_notrace (Error.Error "You need to provide a template.")
+      | None ->
+          raise_notrace (Error.Acutis_error "You need to provide a template.")
       | Some fname -> fname
     in
 
@@ -91,7 +92,7 @@ let () =
         Out_channel.(
           with_open_text fname (fun chan -> output_string chan result))
   with
-  | Error.Error e ->
+  | Error.Acutis_error e ->
       Format.eprintf "@[<v>@[Action failed due to this error:@]@,%s@,@]" e;
       exit 1
   | Yojson.Json_error s ->

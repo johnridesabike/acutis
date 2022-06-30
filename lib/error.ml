@@ -12,7 +12,7 @@ module F = Format
 
 let text = F.pp_print_text
 
-exception Error of string
+exception Acutis_error of string
 
 let column pos = pos.Lexing.pos_cnum - pos.pos_bol + 1
 
@@ -30,19 +30,19 @@ let pp_lexbuf ~kind mess lexbuf =
 
 let lex_error =
   let f = F.dprintf "" in
-  fun lexbuf -> raise @@ Error (pp_lexbuf ~kind:"Syntax error" f lexbuf)
+  fun lexbuf -> raise @@ Acutis_error (pp_lexbuf ~kind:"Syntax error" f lexbuf)
 
 let parse_error i lexbuf =
   let f = F.dprintf "%i" i in
-  raise @@ Error (pp_lexbuf ~kind:"Parse error" f lexbuf)
+  raise @@ Acutis_error (pp_lexbuf ~kind:"Parse error" f lexbuf)
 
 let dup_record_key loc key =
   let f = F.dprintf "Duplicate@ field %S." key in
-  raise @@ Error (pp ~kind:"Parse error" loc f)
+  raise @@ Acutis_error (pp ~kind:"Parse error" loc f)
 
 let extra_record_tag =
   let f ppf = text ppf "This tagged record has multiple tags." in
-  fun loc -> raise @@ Error (pp ~kind:"Parse error" loc f)
+  fun loc -> raise @@ Acutis_error (pp ~kind:"Parse error" loc f)
 
 let pp_ty = pp ~kind:"Type error"
 
@@ -53,7 +53,7 @@ let mismatch a b t =
     Typescheme.pp a Typescheme.pp b t
 
 let type_mismatch loc a b =
-  raise @@ Error (pp_ty loc (mismatch a b (F.dprintf "")))
+  raise @@ Acutis_error (pp_ty loc (mismatch a b (F.dprintf "")))
 
 let bad_union_tag loc ty =
   let f =
@@ -61,18 +61,18 @@ let bad_union_tag loc ty =
       "Only `int`, `string`, and `boolean` types may be union tags."
       Typescheme.pp ty
   in
-  raise @@ Error (pp_ty loc f)
+  raise @@ Acutis_error (pp_ty loc f)
 
 let missing_field loc key ty =
   let f =
     F.dprintf "This is missing key@ `%a`@ of type@ @[%a@]" Pp.field key
       Typescheme.pp ty
   in
-  raise @@ Error (pp_ty loc f)
+  raise @@ Acutis_error (pp_ty loc f)
 
 let underscore_in_construct =
   let f ppf = text ppf "Underscore (`_`) is not a valid name." in
-  fun loc -> raise @@ Error (pp_ty loc f)
+  fun loc -> raise @@ Acutis_error (pp_ty loc f)
 
 let child_type_mismatch loc a b =
   let f =
@@ -81,25 +81,25 @@ let child_type_mismatch loc a b =
        @[Received:@ @[<hov 2>`%a`@]@]@]"
       Typescheme.Child.pp a Typescheme.Child.pp b
   in
-  raise @@ Error (pp_ty loc f)
+  raise @@ Acutis_error (pp_ty loc f)
 
 let name_bound_too_many loc s =
   let f =
     F.dprintf "%a`%s`%a" text "The name " s text
       " is already bound in this pattern."
   in
-  raise @@ Error (pp_ty loc f)
+  raise @@ Acutis_error (pp_ty loc f)
 
 let var_missing loc v =
   let f =
     F.dprintf "%a`%s`%a" text "Variable " v text
       " must occur in each `with` pattern."
   in
-  raise @@ Error (pp_ty loc f)
+  raise @@ Acutis_error (pp_ty loc f)
 
 let pat_num_mismatch =
   let f ppf = text ppf "Pattern count mismatch." in
-  fun loc -> raise @@ Error (pp_ty loc f)
+  fun loc -> raise @@ Acutis_error (pp_ty loc f)
 
 let map_pat_num_mismatch =
   let f ppf =
@@ -107,23 +107,23 @@ let map_pat_num_mismatch =
       "Expressions `map` and `map_dict` can only have one or two patterns for \
        each `with` expression."
   in
-  fun loc -> raise @@ Error (pp_ty loc f)
+  fun loc -> raise @@ Acutis_error (pp_ty loc f)
 
 let echo_nullable_literal =
   let f ppf = text ppf "Echoed string literals cannot appear before a ?." in
-  fun loc -> raise @@ Error (pp_ty loc f)
+  fun loc -> raise @@ Acutis_error (pp_ty loc f)
 
 let extra_child loc ~comp ~child =
   let f = F.dprintf "Component %s does not allow child %s." comp child in
-  raise @@ Error (pp_ty loc f)
+  raise @@ Acutis_error (pp_ty loc f)
 
 let missing_child loc s =
   let f = F.dprintf "Missing child: %s." s in
-  raise @@ Error (pp_ty loc f)
+  raise @@ Acutis_error (pp_ty loc f)
 
 let child_in_root loc =
   let f ppf = text ppf "Children are not allowed in the root template." in
-  raise @@ Error (pp_ty loc f)
+  raise @@ Acutis_error (pp_ty loc f)
 
 let component_name_mismatch loc a b =
   let f =
@@ -132,13 +132,13 @@ let component_name_mismatch loc a b =
        %s.@]@]"
       a b
   in
-  raise @@ Error (pp_ty loc f)
+  raise @@ Acutis_error (pp_ty loc f)
 
 let pp_match = pp ~kind:"Matching error"
 
 let unused_case loc =
   let f = F.dprintf "This match case is unused." in
-  raise @@ Error (pp_match loc f)
+  raise @@ Acutis_error (pp_match loc f)
 
 let parmatch loc pp_pat pat =
   let f =
@@ -147,13 +147,13 @@ let parmatch loc pp_pat pat =
        which is not matched:"
       pp_pat pat
   in
-  raise @@ Error (pp_match loc f)
+  raise @@ Acutis_error (pp_match loc f)
 
 let duplicate_name s =
   let s =
     F.asprintf "Compile error.@ There are multiple components with name `%s`." s
   in
-  raise @@ Error s
+  raise @@ Acutis_error s
 
 let pp_sep ppf () = F.fprintf ppf " ->@ "
 
@@ -163,14 +163,14 @@ let cycle stack =
       (F.pp_print_list ~pp_sep F.pp_print_string)
       (List.rev stack)
   in
-  raise @@ Error s
+  raise @@ Acutis_error s
 
 let missing_component stack name =
   let s =
     F.asprintf "@[<v>@[Missing template:@ %s.@]@,@[Required by:@ %s.@]" name
       (List.hd stack)
   in
-  raise @@ Error s
+  raise @@ Acutis_error s
 
 module DecodeStack = struct
   type t = Nullable | Index of int | Key of string
@@ -198,15 +198,15 @@ let pp stack ty mess =
 
 let decode pp_data ty stack data =
   let f = F.dprintf "Received value:@ @[%a@]" pp_data data in
-  raise @@ Error (pp stack ty f)
+  raise @@ Acutis_error (pp stack ty f)
 
 let missing_key stack ty key =
   let f = F.dprintf "%a%S" text "Input is missing key: " key in
-  raise @@ Error (pp stack ty f)
+  raise @@ Acutis_error (pp stack ty f)
 
 let bad_enum pp_data ty stack data =
   let f =
     F.dprintf "%a@[%a@]" text "This type does not allow the given value: "
       pp_data data
   in
-  raise @@ Error (pp stack ty f)
+  raise @@ Acutis_error (pp stack ty f)

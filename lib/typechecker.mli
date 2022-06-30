@@ -61,10 +61,9 @@ type t = {
 }
 
 type ('a, 'b) source =
-  [ `Src of string * 'a
-  | `Fun of
-    string * Typescheme.t Map.String.t * Typescheme.Child.t Map.String.t * 'b
-  ]
+  | Src of string * 'a
+  | Fun of
+      string * Typescheme.t Map.String.t * Typescheme.Child.t Map.String.t * 'b
 
 val make_components :
   (Ast.t, 'a) source Map.String.t -> (t, 'a) source Map.String.t

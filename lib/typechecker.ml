@@ -573,12 +573,12 @@ let make_default_echo ctx = function
   | Ech_string (_, s) -> Ech_string s
 
 type ('a, 'b) source =
-  [ `Src of string * 'a
-  | `Fun of string * Ty.t Map.String.t * Ty.Child.t Map.String.t * 'b ]
+  | Src of string * 'a
+  | Fun of string * Ty.t Map.String.t * Ty.Child.t Map.String.t * 'b
 
 let get_types = function
-  | `Src (_, { prop_types; child_types; _ }) -> (prop_types, child_types)
-  | `Fun (_, props, children, _) -> (props, children)
+  | Src (_, { prop_types; child_types; _ }) -> (prop_types, child_types)
+  | Fun (_, props, children, _) -> (props, children)
 
 let add_default_wildcard cases =
   let f = function
@@ -698,8 +698,8 @@ let make root g ast =
   { nodes; prop_types = !(ctx.global); child_types = !(ctx.children) }
 
 let make_src g = function
-  | `Src (name, ast) -> `Src (name, make `Component g ast)
-  | `Fun (name, p, c, f) -> `Fun (name, p, c, f)
+  | Src (name, ast) -> Src (name, make `Component g ast)
+  | Fun (name, p, c, f) -> Fun (name, p, c, f)
 
 let make_components m = m |> Dagmap.make ~f:make_src |> Dagmap.link_all
 

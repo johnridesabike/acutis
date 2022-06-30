@@ -96,42 +96,44 @@ type 'a t = {
 }
 
 module Components = struct
-  type 'a source = (Ast.t, 'a) Typechecker.source
+  module T = Typechecker
 
-  let parse_string ~name src = `Src (name, parse ~name (Lexing.from_string src))
+  type 'a source = (Ast.t, 'a) T.source
+
+  let parse_string ~name src = T.Src (name, parse ~name (Lexing.from_string src))
 
   let parse_channel ~name src =
-    `Src (name, parse ~name (Lexing.from_channel src))
+    T.Src (name, parse ~name (Lexing.from_channel src))
 
-  let from_fun ~name props children f = `Fun (name, props, children, f)
+  let from_fun ~name props children f = T.Fun (name, props, children, f)
 
   type 'a t = {
-    typed : (Typechecker.t, 'a) Typechecker.source Map.String.t;
-    optimized : (string nodes, 'a) Typechecker.source Map.String.t;
+    typed : (T.t, 'a) T.source Map.String.t;
+    optimized : (string nodes, 'a) T.source Map.String.t;
   }
 
   let empty = { typed = Map.String.empty; optimized = Map.String.empty }
 
   let rec make_aux_parse m = function
     | [] -> m
-    | `Src (name, src) :: l ->
+    | T.Src (name, src) :: l ->
         if Map.String.mem name m then Error.duplicate_name name;
-        let c = `Src (name, src) in
+        let c = T.Src (name, src) in
         make_aux_parse (Map.String.add name c m) l
-    | `Fun (name, p, c, f) :: l ->
+    | Fun (name, p, c, f) :: l ->
         if Map.String.mem name m then Error.duplicate_name name;
-        make_aux_parse (Map.String.add name (`Fun (name, p, c, f)) m) l
+        make_aux_parse (Map.String.add name (T.Fun (name, p, c, f)) m) l
 
   let make_aux_optimize _ v optimized =
     match v with
-    | `Src (name, src) ->
-        Map.String.add name (`Src (name, make_nodes src)) optimized
-    | `Fun (name, p, c, f) ->
-        Map.String.add name (`Fun (name, p, c, f)) optimized
+    | T.Src (name, src) ->
+        Map.String.add name (T.Src (name, make_nodes src)) optimized
+    | Fun (name, p, c, f) ->
+        Map.String.add name (T.Fun (name, p, c, f)) optimized
 
   let make l =
     let untyped = make_aux_parse Map.String.empty l in
-    let typed = Typechecker.make_components untyped in
+    let typed = T.make_components untyped in
     let optimized = Map.String.fold make_aux_optimize typed Map.String.empty in
     { typed; optimized }
 end
@@ -160,8 +162,8 @@ let rec link_nodes graph nodes =
   List.map f nodes
 
 let link_src graph = function
-  | `Src (_, nodes) -> Src (link_nodes graph nodes)
-  | `Fun (_, props, _, f) -> Fun (props, f)
+  | Typechecker.Src (_, nodes) -> Src (link_nodes graph nodes)
+  | Fun (_, props, _, f) -> Fun (props, f)
 
 let make ~name components src =
   let nodes = parse ~name src in
