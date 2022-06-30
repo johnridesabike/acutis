@@ -160,10 +160,11 @@ let () =
 let () =
   Js.export "Utils"
     (object%js
-       method isError e = match e with Error.Error _ -> true | _ -> false
+       method isError e =
+         match e with Error.Acutis_error _ -> true | _ -> false
 
        method getError e =
          match e with
-         | Error.Error s -> Js.Opt.return (Js.string s)
+         | Error.Acutis_error s -> Js.Opt.return (Js.string s)
          | _ -> Js.Opt.empty
     end)
