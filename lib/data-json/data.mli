@@ -12,7 +12,7 @@
 
 open Acutis
 
-type !'a map = 'a Stdlib.Map.Make(String).t
+type 'a map = 'a Stdlib.Map.Make(String).t
 
 type t =
   [ `Null

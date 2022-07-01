@@ -25,13 +25,13 @@ end
 
 type 'a t =
   | Unknown of 'a
-  | Null
+  | Nil
   | Array of 'a t array
   | Dict of 'a t Map.String.t
   | Const of Const.t * Ty.Variant.extra
 
 let unknown x = Unknown x
-let null = Null
+let null = Nil
 let const x e = Const (x, e)
 let some x = Array [| x |]
 let dict m = Dict m
@@ -43,22 +43,22 @@ let list_rev =
     | Array [| hd; tl |] -> aux (Array [| hd; acc |]) tl
     | _ -> acc
   in
-  fun l -> aux Null l
+  fun l -> aux Nil l
 
-let list_empty = Null
+let list_empty = Nil
 let get_const = function Const (x, _) -> x | _ -> assert false
 let get_tuple = function Array t -> t | _ -> assert false
 let get_dict = function Dict t -> t | _ -> assert false
-let is_null = function Null -> true | _ -> false
+let is_null = function Nil -> true | _ -> false
 
 let get_nullable = function
-  | Null -> None
+  | Nil -> None
   | Array [| t |] -> Some t
   | _ -> assert false
 
 let fold_list f acc l =
   let rec aux i acc = function
-    | Null -> acc
+    | Nil -> acc
     | Array [| hd; tl |] ->
         let acc = f ~index:(Const (`Int i, `Extra_none)) acc hd in
         aux (succ i) acc tl

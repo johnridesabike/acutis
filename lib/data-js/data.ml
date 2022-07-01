@@ -12,7 +12,7 @@ open Acutis
 open Js_of_ocaml
 module Ty = Typescheme
 
-type !'a map = 'a Stdlib.Map.Make(String).t
+type 'a map = 'a Stdlib.Map.Make(String).t
 type t = Js.Unsafe.any
 
 let stringify (j : t) =
@@ -215,11 +215,11 @@ and to_js ty t =
       Js._true |> coerce
   | (Enum _ | Int | Echo), Const (`Int i, _) ->
       i |> float_of_int |> Js.number_of_float |> coerce
-  | Nullable _, Null -> Js.null |> Js.Unsafe.inject
+  | Nullable _, Nil -> Js.null |> Js.Unsafe.inject
   | Nullable ty, Array [| t |] -> to_js ty t
   | List ty, t ->
       let rec aux acc = function
-        | Data.Null -> acc |> List.rev |> Array.of_list |> Js.array |> coerce
+        | Data.Nil -> acc |> List.rev |> Array.of_list |> Js.array |> coerce
         | Array [| hd; tl |] -> aux (to_js ty hd :: acc) tl
         | _ -> assert false
       in

@@ -22,7 +22,7 @@ end
 type 'a t = private
   | Unknown of 'a
       (** Any values without a concrete type are preserved as-is. *)
-  | Null  (** Represents both [null] and [[]]. *)
+  | Nil  (** Represents both [null] and [[]]. *)
   | Array of 'a t array  (** Tuples are compiled to arrays. *)
   | Dict of 'a t Map.String.t
       (** Records and dictionaries are compiled to string maps. *)

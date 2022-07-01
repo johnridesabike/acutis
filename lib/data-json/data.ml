@@ -11,7 +11,7 @@
 open Acutis
 module Ty = Typescheme
 
-type !'a map = 'a Stdlib.Map.Make(String).t
+type 'a map = 'a Stdlib.Map.Make(String).t
 
 type t =
   [ `Null
@@ -177,11 +177,11 @@ and to_json ty t =
   | (Ty.Enum { extra = `Extra_bool; _ } | Echo), Const (`Int _, `Extra_bool) ->
       `Bool true
   | (Enum _ | Int | Echo), Const (`Int i, _) -> `Int i
-  | Nullable _, Null -> `Null
+  | Nullable _, Nil -> `Null
   | Nullable ty, Array [| t |] -> to_json ty t
   | List ty, t ->
       let rec aux acc = function
-        | Data.Null -> `List (List.rev acc)
+        | Data.Nil -> `List (List.rev acc)
         | Array [| hd; tl |] -> aux (to_json ty hd :: acc) tl
         | _ -> assert false
       in
