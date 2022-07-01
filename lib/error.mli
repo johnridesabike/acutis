@@ -8,7 +8,7 @@
 (*                                                                        *)
 (**************************************************************************)
 
-(** This handles all of the error messages. *)
+(** All of the error messages. *)
 
 exception Acutis_error of string
 (** Every function in this module raises this exception. *)

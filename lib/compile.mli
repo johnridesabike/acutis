@@ -8,10 +8,11 @@
 (*                                                                        *)
 (**************************************************************************)
 
-(** This orchestrates the {!Lexer}, {!Parser}, {!Typechecker}, and {!Matching}
+(** Orchestrate the {!Lexer}, {!Parser}, {!Typechecker}, and {!Matching}
     to produce the final template. *)
 
 val parse : name:string -> Lexing.lexbuf -> Ast.t
+(** @raise Error.Acutis_error *)
 
 type 'a node =
   | Text of string
@@ -37,7 +38,12 @@ module Components : sig
   type 'a source
 
   val parse_string : name:string -> string -> _ source
+  (** Parses the input but doesn't type-check yet.
+      @raise Error.Acutis_error *)
+
   val parse_channel : name:string -> in_channel -> _ source
+  (** Parses the input but doesn't type-check yet.
+      @raise Error.Acutis_error *)
 
   val from_fun :
     name:string ->
@@ -49,7 +55,10 @@ module Components : sig
   type 'a t
 
   val empty : _ t
+
   val make : 'a source list -> 'a t
+  (** Type-checks and optimizes the components.
+      @raise Error.Acutis_error *)
 end
 
 val make : name:string -> 'a Components.t -> Lexing.lexbuf -> 'a t

@@ -31,8 +31,8 @@ open Ast
 %token EOF
 
 (* Pattern syntax *)
-%token <string> ID
-%token <string> COMPONENT
+%token <string> ID            (* e.g. acutis *)
+%token <string> COMPONENT     (* e.g. Acutis *)
 %token NULL                   (* null *)
 %token EXCLAMATION            (* ! *)
 %token TRUE                   (* true *)
@@ -53,7 +53,8 @@ open Ast
 
 %%
 
-(* Pattern rules *)
+(** Pattern rules *)
+
 pattern:
   | x = ID;                                     { Var ($loc, x) }
   | TRUE;                                       { Bool ($loc, 1) }
@@ -109,7 +110,8 @@ tuple:
   | (* empty *)                { [] }
   | l = pattern_list_nonempty; { Nonempty.to_list l }
 
-(* Match & map rules *)
+(** Match & map rules *)
+
 %inline pattern_list_nonempty: l = pattern_list_nonempty_rev; { Nonempty.rev l }
 pattern_list_nonempty_rev:
   | p = pattern;                                       { [ p ] }
@@ -129,7 +131,8 @@ cases_rev:
   | l = cases_rev; pats = with_pats; child = nodes;
     { Nonempty.cons {pats; nodes = child} l }
 
-(* Component rules *)
+(** Component rules *)
+
 props:
   | (* empty *) { (Dict.empty, Dict.empty) }
   | p = props; k = ID; EQUALS; v = pattern;
@@ -152,7 +155,8 @@ props:
       (pats, Dict.add $loc k (Child_name ($loc, k)) childs)
     }
 
-(* Echo rules *)
+(** Echo rules *)
+
 escape:
   | (* empty *) { Escape }
   | AMPERSAND;  { No_escape }
@@ -179,7 +183,8 @@ trim_right:
 text:
   | l = trim_left; txt = TEXT; r = trim_right; { Text (txt, l, r) }
 
-(* Putting it all together *)
+(** Putting it all together *)
+
 node:
   | txt = text;
     { txt }

@@ -12,6 +12,7 @@ open Acutis
 open Js_of_ocaml
 module Ty = Typescheme
 
+type !'a map = 'a Stdlib.Map.Make(String).t
 type t = Js.Unsafe.any
 
 let stringify (j : t) =

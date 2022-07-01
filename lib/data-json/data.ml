@@ -11,6 +11,8 @@
 open Acutis
 module Ty = Typescheme
 
+type !'a map = 'a Stdlib.Map.Make(String).t
+
 type t =
   [ `Null
   | `Bool of bool

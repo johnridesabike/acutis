@@ -8,7 +8,7 @@
 (*                                                                        *)
 (**************************************************************************)
 
-(** This is an unboxed "monad" for synchronous code. *)
+(** An unboxed "monad" for synchronous code. *)
 
 type 'a t = 'a
 

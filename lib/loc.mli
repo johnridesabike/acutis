@@ -8,7 +8,7 @@
 (*                                                                        *)
 (**************************************************************************)
 
-(** This defines the locations of expressions in a source file. *)
+(** Define the locations of expressions in a source file. *)
 
 type t = Lexing.position * Lexing.position
 (** This type is equivalent to Menhir's [$loc] keyword. *)

@@ -8,7 +8,7 @@
 (*                                                                        *)
 (**************************************************************************)
 
-(** This type-checks the untyped {!Ast.t} and constructs and typed tree. *)
+(** Type-checks the untyped {!Ast.t} and constructs a typed tree. *)
 
 module Pattern : sig
   type constant = [ `Int of int | `String of string | `Float of float ]

@@ -8,11 +8,12 @@
 (*                                                                        *)
 (**************************************************************************)
 
-(** This converts JavaScript values to and from {!Data.t}. *)
+(** Converts JavaScript values to and from {!Acutis.Data.t}. *)
 
 open Acutis
 
+type !'a map = 'a Stdlib.Map.Make(String).t
 type t = Js_of_ocaml.Js.Unsafe.any
 
-val decode : Typescheme.t Map.String.t -> t -> t Data.t Map.String.t
-val encode : Typescheme.t Map.String.t -> t Data.t Map.String.t -> t
+val decode : Typescheme.t map -> t -> t Data.t map
+val encode : Typescheme.t map -> t Data.t map -> t

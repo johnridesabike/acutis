@@ -8,11 +8,11 @@
 (*                                                                        *)
 (**************************************************************************)
 
-(** This defines the types (integer, record, etc.). *)
+(** Defines the types (integer, record, etc.). *)
 
 module Variant : sig
   (** This is a common structure shared by {!module-Enum} and {!module-Union}.
-   *)
+      *)
 
   type row = [ `Closed | `Open ]
   type extra = [ `Extra_none | `Extra_bool ]

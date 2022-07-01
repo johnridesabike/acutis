@@ -36,10 +36,6 @@ let const x e = Const (x, e)
 let some x = Array [| x |]
 let dict m = Dict m
 let tuple a = Array a
-let get_const = function Const (x, _) -> x | _ -> assert false
-let get_tuple = function Array t -> t | _ -> assert false
-let get_dict = function Dict t -> t | _ -> assert false
-let is_null = function Null -> true | _ -> false
 let list_cons hd tl = Array [| hd; tl |]
 
 let list_rev =
@@ -50,6 +46,10 @@ let list_rev =
   fun l -> aux Null l
 
 let list_empty = Null
+let get_const = function Const (x, _) -> x | _ -> assert false
+let get_tuple = function Array t -> t | _ -> assert false
+let get_dict = function Dict t -> t | _ -> assert false
+let is_null = function Null -> true | _ -> false
 
 let get_nullable = function
   | Null -> None

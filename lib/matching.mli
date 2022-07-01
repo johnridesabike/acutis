@@ -8,7 +8,7 @@
 (*                                                                        *)
 (**************************************************************************)
 
-(** This compiles patterns into decision trees. *)
+(** Compile patterns into decision trees. *)
 
 (** Every pattern represents a one-dimensional path across a multi-dimensional
     data structure. A list of patterns is a two-dimensional matrix of paths. In
@@ -16,39 +16,32 @@
     tree.
 
     We take advantage of a few properties that can make our tree simpler. We
-    only test discrete static values, integers, strings, etc. We sort record
-    fields and replace ommited fields with wildcards, so every pattern "lines
-    up" with the others. We also sort the tested values (the integers, strings,
-    etc.).
+    only test discrete static values: integers, strings, etc. We sort record
+    fields and replace omitted fields with wildcards, so every pattern "lines
+    up" with the others in 2D space. We also sort the tested values (the
+    integers, strings, etc.).
 
-    Every node has a set of integer "IDs." These keep track of bindings. If a
-    pattern has a binding, then we store that binding's ID in its node. Due to
-    merging and expanding trees, nodes can have multiple IDs. Each leaf contains
-    a map of binding names to their IDs. This is necessary because multiple
-    patterns may merge that use different or overlapping binding names.
+    Every node has a set of integer "IDs." These keep track of which values
+    could potentially be bound to an identifier. Due to the merging and
+    expanding of trees, nodes can have multiple IDs. Each leaf contains a map of
+    binding names to their IDs. This is necessary because multiple patterns may
+    merge that use different or overlapping binding names.
 
-    The most complicated part of this tree is how we handle wildcards. When we
-    merge trees, each wildcard "expands" into its joining node. All of the nodes
-    that come after the wildcard will also expand into all of the nodes after
-    the other node. This has tradeoffs. One advantage is that we can guarantee
-    that every node is only visited once at runtime. One disadvantage is that
-    some patterns may produce extremely large trees.
+    The most complicated part is how we handle wildcards. When we merge trees,
+    each wildcard "expands" into its joining node. All of the nodes that come
+    after the wildcard will also expand into all of the nodes after the other
+    node. This has trade-offs. One advantage is that we can guarantee that every
+    node is only visited once at runtime. One disadvantage is that some patterns
+    may produce extremely large trees.
 
-    One feature that this structure gives us is that redundant patterns are
-    automatically detected because merging them with an existing tree fails. The
-    tree type is a polymorphic "nested" type. Each tree can use itself as its
-    own type variable, i.e. ['a tree tree]. This allows the end nodes to be
-    fully polymorphic. They can either lead to a leaf or back to their
-    containing tree. This nesting corresponds to the nesting of patterns.
-  
-    Nested types are simple to create, but complicated to manipulate. Functions
-    cannot consume these types under normal polymorphism rules. We need to use
-    explicitly polymorphic type annotations and GADTs. *)
+    Detecting redundant patterns is "free" with this strategy because merging a
+    redundant tree always fails.
+*)
 
 (** {1 Example patterns and their resulting trees.}
 
     Here are a few example patterns juxtaposed with the trees they produce. The
-    trees are written in pesudo-code, since the real trees are much more
+    trees are written in pseudo-code, since the real trees are much more
     verbose.
 
     {2 A basic list of integers.}
@@ -176,6 +169,15 @@ v}
 
 type debug_nest_info = Not_dict | Dict
 
+(** This is a polymorphic "nested data type." Each tree can use itself as its
+    own type variable, i.e. [(('a, 'key) tree, 'key) tree]. This allows the
+    [End] nodes to be fully polymorphic. They can either lead to a {!leaf} or
+    back to their containing tree. This type nesting corresponds to the nesting
+    of physical patterns.
+
+    Nested types are simple to create, but complicated to manipulate. Functions
+    cannot consume these types under normal polymorphism rules. We need to use
+    explicitly polymorphic type annotations and GADTs. *)
 type ('leaf, 'key) tree =
   | Switch of {
       key : 'key;
@@ -208,10 +210,6 @@ type ('leaf, 'key) tree =
       (** Wildcards simply point to the next node in the tree.*)
   | End of 'leaf
 
-(** A nest creates a "nested data type," a {!tree} with another [tree] defined
- as its own ['leaf] type parameter. The [tree] parameter represents the base
- tree that contains this new tree. When the new tree ends, we return to the
- base tree. *)
 and ('leaf, 'key) nest =
   | Int_keys of (('leaf, 'key) tree, int) tree
   | String_keys of (('leaf, 'key) tree, string) tree
@@ -227,7 +225,7 @@ and ('leaf, 'key) switchcase = {
 module Exit : sig
   (** Each "exit" is given an integer key which we can use to look up the AST
       nodes to follow after the tree. We use integers as a level of indirection
-      because exits can be copied when trees expand, and we don't want to
+      because exits can be copied when trees merge, and we don't want to
       duplicate entire ASTs. *)
 
   type key
@@ -249,7 +247,7 @@ val make : Typechecker.case Nonempty.t -> Typechecker.nodes t
 
 val partial_match_check : Loc.t -> Typescheme.t list -> (leaf, int) tree -> unit
 (** Searches the tree for a counter-example to prove it does not cover
-    a case. Raises {!Error.Error} if one is found. *)
+    a case. Raises {!Error.Acutis_error} if it finds one. *)
 
 (** {1 Functions for tests.} *)
 

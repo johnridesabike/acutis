@@ -8,9 +8,11 @@
 (*                                                                        *)
 (**************************************************************************)
 
-(** This converts JSON strings to and from {!Data.t}. *)
+(** Converts JSON strings to and from {!Acutis.Data.t}. *)
 
 open Acutis
+
+type !'a map = 'a Stdlib.Map.Make(String).t
 
 type t =
   [ `Null
@@ -21,5 +23,5 @@ type t =
   | `Assoc of (string * t) list
   | `List of t list ]
 
-val decode : Typescheme.t Map.String.t -> t -> t Data.t Map.String.t
-val encode : Typescheme.t Map.String.t -> t Data.t Map.String.t -> t
+val decode : Typescheme.t map -> t -> t Data.t map
+val encode : Typescheme.t map -> t Data.t map -> t

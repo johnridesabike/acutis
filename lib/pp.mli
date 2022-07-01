@@ -8,7 +8,7 @@
 (*                                                                        *)
 (**************************************************************************)
 
-(** This contains helpers for [Format] functions. *)
+(** Helpers for [Format] functions. *)
 
 open Format
 
@@ -20,9 +20,11 @@ val map_string :
   Format.formatter ->
   'a Map.String.t ->
   unit
+(** The function that [Stdlib.Map.S] is missing. *)
 
 val set_int : Format.formatter -> Set.Int.t -> unit
+(** The function that [Stdlib.Int.S] is missing. *)
 
 val field : formatter -> string -> unit
-(** Outputs either [field] or ["string field"] depending on whether the field
-      name is a valid identifier. *)
+(** Outputs either [field] or ["string field"] depending on whether the input is
+    a valid identifier. *)
