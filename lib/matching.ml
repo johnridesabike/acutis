@@ -558,12 +558,7 @@ let rec of_tpat :
         !kys |> Set.String.to_seq
         |> Seq.map (fun key -> (key, TPat.TAny))
         |> Map.String.of_seq
-        |> Map.String.merge
-             (fun _ p kpat ->
-               match (p, kpat) with
-               | Some p, _ | None, Some p -> Some p
-               | None, None -> None)
-             m
+        |> Map.String.union (fun _ p _ -> Some p) m
         |> Map.String.to_seq
       in
       let child = of_keyvalues b (fun b -> End (k b)) l in

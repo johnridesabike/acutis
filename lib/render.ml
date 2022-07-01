@@ -99,12 +99,8 @@ let echo_var b esc str =
   | No_escape -> Buffer.add_string b str
 
 let map_merge =
-  let f _ a b =
-    match (a, b) with
-    | None, None -> None
-    | _, (Some _ as x) | (Some _ as x), None -> x
-  in
-  fun a b -> Map.String.merge f a b
+  let f _ _ b = Some b in
+  fun a b -> Map.String.union f a b
 
 let rec pattern_to_data ~vars = function
   | Typechecker.Pattern.TConst (x, Some { extra = `Extra_bool; _ }) ->

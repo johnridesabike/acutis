@@ -145,14 +145,10 @@ and unify_record mode a b =
       a := Map.String.merge f !a !b
   | Construct_var ->
       let f _ a b =
-        match (a, b) with
-        | Some a, (Some b as x) ->
-            unify mode a b;
-            x
-        | (Some _ as x), None | None, (Some _ as x) -> x
-        | None, None -> None
+        unify mode a b;
+        Some b
       in
-      b := Map.String.merge f !a !b
+      b := Map.String.union f !a !b
   | Construct_literal ->
       let f _ a b =
         match (a, b) with
@@ -166,15 +162,12 @@ and unify_record mode a b =
 
 and unify_union_cases mode a b =
   let f _ a b =
-    match (a, b) with
-    | (Some a as x), Some b ->
-        unify_record mode a b;
-        x
-    | x, None | None, x -> x
+    unify_record mode a b;
+    Some a
   in
   match (a, b) with
-  | V.String a, V.String b -> V.String (Map.String.merge f a b)
-  | Int a, Int b -> Int (Map.Int.merge f a b)
+  | V.String a, V.String b -> V.String (Map.String.union f a b)
+  | Int a, Int b -> Int (Map.Int.union f a b)
   | _ -> raise_notrace Clash
 
 and subset_union_cases mode a b =
