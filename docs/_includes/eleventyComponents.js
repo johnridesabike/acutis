@@ -16,7 +16,7 @@ const site = require("../_data/site");
 module.exports = [
   Compile.fromFunAsync(
     "Log",
-    Typescheme.make([["val", Typescheme.unknown(0)]]),
+    Typescheme.make([["val", Typescheme.unknown()]]),
     TypeschemeChildren.make([]),
     (props, _children) => {
       console.log(props);
@@ -25,7 +25,7 @@ module.exports = [
   ),
   Compile.fromFunAsync(
     "Debugger",
-    Typescheme.make([["val", Typescheme.unknown(0)]]),
+    Typescheme.make([["val", Typescheme.unknown()]]),
     TypeschemeChildren.make([]),
     (_props, _children) => {
       debugger;
@@ -35,10 +35,10 @@ module.exports = [
   Compile.fromFunAsync(
     "Footer",
     Typescheme.make([
-      ["year", Typescheme.nullable(Typescheme.string(0))],
-      ["link", Typescheme.nullable(Typescheme.string(0))],
-      ["name", Typescheme.string(0)],
-      ["siteUrl", Typescheme.string(0)],
+      ["year", Typescheme.nullable(Typescheme.string())],
+      ["link", Typescheme.nullable(Typescheme.string())],
+      ["name", Typescheme.string()],
+      ["siteUrl", Typescheme.string()],
     ]),
     TypeschemeChildren.make([]),
     (props, _children) => {
@@ -65,8 +65,8 @@ module.exports = [
   Compile.fromFunAsync(
     "Link",
     Typescheme.make([
-      ["path", Typescheme.string(0)],
-      ["page", Typescheme.record([["url", Typescheme.string(0)]])],
+      ["path", Typescheme.string()],
+      ["page", Typescheme.record([["url", Typescheme.string()]])],
     ]),
     TypeschemeChildren.make([TypeschemeChildren.child("Children")]),
     ({ path, page }, { Children }) => {

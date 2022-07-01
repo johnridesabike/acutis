@@ -91,11 +91,11 @@ let () =
        val variantClosed = `Closed
        val empty = empty
        method make a = a |> key_values |> make
-       method unknown () = unknown ()
-       method int () = int ()
-       method float () = float ()
-       method string () = string ()
-       method echo () = echo ()
+       method unknown = unknown ()
+       method int = int ()
+       method float = float ()
+       method string = string ()
+       method echo = echo ()
        method nullable t = nullable t
        method list t = list t
        method tuple a = a |> Js.to_array |> Array.to_list |> tuple
@@ -117,9 +117,9 @@ let () =
          a |> Js.to_array |> Array.map Js.to_string |> Array.to_list
          |> enum_string r
 
-       method boolean () = boolean ()
-       method falseOnly () = false_only ()
-       method trueOnly () = true_only ()
+       method boolean = boolean ()
+       method falseOnly = false_only ()
+       method trueOnly = true_only ()
 
        method unionInt r k a =
          a |> Js.to_array
