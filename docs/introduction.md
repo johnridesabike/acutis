@@ -8,59 +8,56 @@ next:
   url: /manual/
 ---
 
-You can integrate Acutis with your existing build process through its [API].
-There aren't any configuration files or starter projects yet.
+Acutis is written in [OCaml], and familiarity with the OCaml toolchain is a
+prerequisite for using it. It also comes with a JavaScript API to use in web or
+Node.js projects.
 
-To start quickly experimenting with it without a build system, you can use the
-[CLI].
+[ocaml]: https://ocaml.org/
+
+Beware: both the OCaml and JavaScript API are unstable and experimental!
+
+[The OCaml API is documented here](../api/).
+
+You can also use the [CLI](<#acutis-command-line-interface-(cli)>).
 
 ## Why Acutis?
 
-Use Acutis if you want to experiment with a different kind of template language.
+Acutis is an experiment with a new kind of template language.
 
-I created Acutis because there were specific language features I wanted in my
-templates, and a few features I didn't want. I was inspired by the functional,
-component-based design in React as well as the pattern-matching abilities in
-ReScript (and OCaml, and all of the other languages in that family).
+I created Acutis because there were specific language and toolchain features I
+wanted in my templates that I couldn't find in existing projects. I was inspired
+by the declarative, component-based design in React as well as the
+pattern-matching abilities in OCaml.
 
 ## What state is it in?
 
-Acutis is young software. In the "make it work, make it right, make it fast"
-order, it's just at the end of the "make it work" stage. I'm the only person who
-uses it who I know of.
+Acutis is young software. I'm currently the only person who uses it. Also, I
+haven't developed any editor tooling for it yet. Use it if you don't mind
+getting your getting your hands dirty.
 
-Also, I haven't developed any editor tooling for it yet.
+## Installation: OPAM
 
-## Installation
+The OCaml package manager, OPAM, can install Acutis by using the URL to its git
+repository.
 
-Acutis is available through npm. You can install it locally for a project:
+```shell
+opam pin https://github.com/johnridesabike/acutis.git
+```
+
+## Installation: JavaScript
+
+The JavaScript API is available through npm.
 
 ```shell
 npm install acutis-lang
 ```
 
-Or globally:
-
-```shell
-npm install -g acutis-lang
-```
-
-If you're using it in a ReScript project, then add it to the dependencies in
-your `bsconfig.json` file.
-
-```json
-{
-  "bs-dependencies": ["acutis-lang"]
-}
-```
-
-⚠️ Acutis requires ReScript compiler version 9.0 or higher.
-
 ## Editor plugin
 
 ### VS Code
 
-You can enable syntax highlighting with [the VS Code extension.][vscode]
+You can enable syntax highlighting with
+[the VS Code extension](https://marketplace.visualstudio.com/items?itemName=jbpjackson.acutis-vscode).
 
 ## Examples
 
@@ -68,9 +65,31 @@ You can enable syntax highlighting with [the VS Code extension.][vscode]
 - [The Acutis CLI][2].
 
 [1]: https://github.com/johnridesabike/acutis/tree/master/docs
-[2]: https://github.com/johnridesabike/acutis/blob/master/cli
-[api]: ../api/
-[cli]: ../api/#acutis-command-line-interface-(cli)
+[2]: https://github.com/johnridesabike/acutis/blob/master/bin/cli.ml
 [eleventy]: https://www.11ty.dev/
-[vscode]:
-  https://marketplace.visualstudio.com/items?itemName=jbpjackson.acutis-vscode
+
+## Acutis command line interface (CLI)
+
+If you install Acutis through OPAM, then it comes with a command line tool
+called `acutis`. This accepts JSON data and a list of template filenames, and it
+prints the rendered output.
+
+```shell
+acutis index.acutis src/**/*.acutis < data.json > dist/index.html
+```
+
+Full options:
+
+```txt
+Parse and execute Acutis language templates.
+
+Usage:
+  acutis [options] [template] [...templates]
+
+Options:
+  --data     The path to a JSON data file. Default: stdin.
+  --output   The path to write the output. Default: stdout.
+  --version  Show the version number and exit.
+  -help      Display this list of options
+  --help     Display this list of options
+```

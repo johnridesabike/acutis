@@ -36,6 +36,12 @@ docs:
 docs-watch:
 	opam exec -- dune build @doc --watch
 
+.PHONY: docs-site
+docs-site:
+	opam exec -- dune build @doc
+	opam exec -- dune build --profile=release
+	cd docs && npm run build
+
 .PHONY: dev-switch
 dev-switch:
 	opam switch create . --deps-only --with-test --with-doc

@@ -21,9 +21,10 @@ module.exports = (eleventyConfig) => {
     init: ({ Prism }) => acutisSyntax(Prism),
   });
   eleventyConfig.addPlugin(acutis, { components: acutisComponents });
+  eleventyConfig.addPassthroughCopy("playground.js");
+  eleventyConfig.addPassthroughCopy({ "../_build/default/_doc/_html": "api" });
   eleventyConfig.addPassthroughCopy({
-    "_assets/playground.js": "playground.js",
-    "../_build/default/bin/main.bc.js": "acutis.js"
+    "../_build/default/js/acutis_js.bc.js": "acutis.js",
   });
   eleventyConfig.addPassthroughCopy("icon.svg");
   eleventyConfig.addPassthroughCopy("favicon.ico");

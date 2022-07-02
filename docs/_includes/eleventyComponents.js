@@ -6,11 +6,7 @@
   file, You can obtain one at http://mozilla.org/MPL/2.0/.
 */
 
-const {
-  Compile,
-  Typescheme,
-  TypeschemeChildren,
-} = require("../../_build/default/js/acutis_js.bc.js");
+const { Compile, Typescheme, TypeschemeChildren } = require("../../");
 const site = require("../_data/site");
 
 module.exports = [

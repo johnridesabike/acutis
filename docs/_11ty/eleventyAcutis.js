@@ -10,11 +10,7 @@ const path = require("path");
 const fs = require("fs");
 const util = require("util");
 const fastGlob = require("fast-glob");
-const {
-  Compile,
-  Render,
-  Utils,
-} = require("../../_build/default/js/acutis_js.bc.js");
+const { Compile, Render, Utils } = require("../../");
 const { filenameToComponent } = require("../../node-utils");
 
 const readFile = util.promisify(fs.readFile);
@@ -32,18 +28,18 @@ module.exports = function (eleventyConfig, config) {
         "**/*.acutis"
       );
       const files = await fastGlob(glob);
-      const queue = await Promise.all(
-        files.map(async (fileName) => {
-          const str = await readFile(fileName, "utf-8");
-          const name = filenameToComponent(fileName);
-          return Compile.fromString(name, str);
-        })
-      );
       try {
+        const queue = await Promise.all(
+          files.map(async (fileName) => {
+            const str = await readFile(fileName, "utf-8");
+            const name = filenameToComponent(fileName);
+            return Compile.fromString(name, str);
+          })
+        );
         components = Compile.components([...queue, ...config.components]);
       } catch (e) {
         if (Utils.isError(e)) {
-          cosole.error(Utils.getError(e));
+          console.error(Utils.getError(e));
         } else {
           throw e;
         }
@@ -52,12 +48,12 @@ module.exports = function (eleventyConfig, config) {
     compile: function (str, inputPath) {
       try {
         const template = Compile.make(inputPath, components, str);
-        return async function (data) {
+        return function (data) {
           return Render.async(template, data);
         };
       } catch (e) {
         if (Utils.isError(e)) {
-          cosole.error(Utils.getError(e));
+          console.error(Utils.getError(e));
           return function (data) {
             return "error";
           };

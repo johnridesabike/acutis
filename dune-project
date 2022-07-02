@@ -21,7 +21,7 @@
 
 (package
  (name acutis)
- (synopsis "A declarative template language")
+ (synopsis "A declarative, type-safe template language")
  (depends
    (ocaml (>= 4.14))
    dune
