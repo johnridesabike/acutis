@@ -125,7 +125,7 @@ let type_error_echo () =
   let open Alcotest in
   check_raises "Echoed string literals cannot appear before a ?."
     (E
-       "File <test>, 1:7-1:8\n\
+       "File <test>, 1:4-1:8\n\
         Type error.\n\
         Echoed string literals cannot appear before a ?.")
     (render {|{{ "ab" ? "cd" }}|})

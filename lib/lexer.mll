@@ -79,7 +79,7 @@ and expr state = parse
   | component     { COMPONENT (L.lexeme lexbuf) }
   | white         { expr state lexbuf }
   | newline       { L.new_line lexbuf; expr state lexbuf }
-  | '"'           { read_string (B.create 16) lexbuf }
+  | '"'           { string lexbuf.lex_start_p (B.create 16) lexbuf }
   | '['           { LEFT_BRACK }
   | ']'           { RIGHT_BRACK }
   | '{'           { LEFT_BRACE }
@@ -114,23 +114,23 @@ and echo state = parse
   | component     { COMPONENT (L.lexeme lexbuf) }
   | white         { echo state lexbuf }
   | newline       { L.new_line lexbuf; echo state lexbuf }
-  | '"'           { read_string (B.create 16) lexbuf }
+  | '"'           { string lexbuf.lex_start_p (B.create 16) lexbuf }
   | '?'           { QUESTION }
   | '&'           { AMPERSAND }
   | eof           { raise Error }
   | _             { raise Error }
 
-and read_string buf =
+and string pos buf =
   parse
-  | '"'           { STRING (B.contents buf) }
-  | '\\' '/'      { B.add_char buf '/'; read_string buf lexbuf }
-  | '\\' '\\'     { B.add_char buf '\\'; read_string buf lexbuf }
-  | '\\' 'b'      { B.add_char buf '\b'; read_string buf lexbuf }
-  | '\\' 'f'      { B.add_char buf '\012'; read_string buf lexbuf }
-  | '\\' 'n'      { B.add_char buf '\n'; read_string buf lexbuf }
-  | '\\' 'r'      { B.add_char buf '\r'; read_string buf lexbuf }
-  | '\\' 't'      { B.add_char buf '\t'; read_string buf lexbuf }
-  | [^ '"' '\\']+ { B.add_string buf (L.lexeme lexbuf); read_string buf lexbuf }
+  | '"'           { lexbuf.lex_start_p <- pos; STRING (B.contents buf) }
+  | '\\' '/'      { B.add_char buf '/'; string pos buf lexbuf }
+  | '\\' '\\'     { B.add_char buf '\\'; string pos buf lexbuf }
+  | '\\' 'b'      { B.add_char buf '\b'; string pos buf lexbuf }
+  | '\\' 'f'      { B.add_char buf '\012'; string pos buf lexbuf }
+  | '\\' 'n'      { B.add_char buf '\n'; string pos buf lexbuf }
+  | '\\' 'r'      { B.add_char buf '\r'; string pos buf lexbuf }
+  | '\\' 't'      { B.add_char buf '\t'; string pos buf lexbuf }
+  | [^ '"' '\\']+ { B.add_string buf (L.lexeme lexbuf); string pos buf lexbuf }
   | eof           { raise Error }
   | _             { raise Error }
 
