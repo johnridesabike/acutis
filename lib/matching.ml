@@ -101,12 +101,12 @@ exception Merge_fail
 let rec merge_testcases_aux :
     type a k.
     ?init:(a, k) switchcase ->
+    (a, leaf) nat ->
     (a, k) switchcase ->
     Const.t ->
     (a, k) tree ->
-    (a, leaf) nat ->
     (a, k) switchcase option =
- fun ?init original data if_match n ->
+ fun ?init n original data if_match ->
   let cmp = Const.compare data original.data in
   if cmp < 0 then
     let tail = { data; if_match; next_case = Some original } in
@@ -126,29 +126,29 @@ let rec merge_testcases_aux :
     let init = { original with next_case = init } in
     match original.next_case with
     | None -> Some (rev_cases ~tail:{ data; if_match; next_case = None } init)
-    | Some original -> merge_testcases_aux ~init original data if_match n
+    | Some original -> merge_testcases_aux ~init n original data if_match
 
 (** When merging a and b, we take each value from b and try to merge it with the
     items in a. At least one value must merge in order to be considered a
     success. *)
 and merge_testcases :
     type a k.
-    (a, k) switchcase ->
-    (a, k) switchcase ->
     (a, leaf) nat ->
+    (a, k) switchcase ->
+    (a, k) switchcase ->
     bool ->
     (a, k) switchcase option =
- fun original { data; if_match; next_case } n success ->
-  match merge_testcases_aux original data if_match n with
+ fun n original { data; if_match; next_case } success ->
+  match merge_testcases_aux n original data if_match with
   | Some result -> (
       match next_case with
       | None -> Some result
-      | Some b -> merge_testcases result b n true)
+      | Some b -> merge_testcases n result b true)
   | None -> (
       match (next_case, success) with
       | None, false -> None
       | None, true -> Some original
-      | Some b, success -> merge_testcases original b n success)
+      | Some b, success -> merge_testcases n original b success)
 
 (** When we merge a list of values with a wildcard, some of them may not merge
     successfully. As long as at least one merges, then this function succeeds.
@@ -157,11 +157,11 @@ and merge_testcases :
 and merge_testcases_into_wildcard :
     type a k.
     ?init:(a, k) switchcase ->
+    (a, leaf) nat ->
     (a, k) tree ->
     (a, k) switchcase ->
-    (a, leaf) nat ->
     (a, k) switchcase option =
- fun ?init wildcard t n ->
+ fun ?init n wildcard t ->
   let init =
     try Some { t with if_match = merge n wildcard t.if_match; next_case = init }
     with Merge_fail -> init
@@ -169,7 +169,7 @@ and merge_testcases_into_wildcard :
   match (t.next_case, init) with
   | None, None -> None
   | None, Some init -> Some (rev_cases init)
-  | Some t, init -> merge_testcases_into_wildcard ?init wildcard t n
+  | Some t, init -> merge_testcases_into_wildcard ?init n wildcard t
 
 (** When we expand a wildcard into a list of test values, we merge it with each
     child and ignore any errors. Merge failures are replaced by their unmerged
@@ -177,18 +177,18 @@ and merge_testcases_into_wildcard :
 and expand_wildcard_into_testcases :
     type a k.
     ?init:(a, k) switchcase ->
+    (a, leaf) nat ->
     (a, k) switchcase ->
     (a, k) tree ->
-    (a, leaf) nat ->
     (a, k) switchcase =
- fun ?init { data; if_match; next_case } wildcard n ->
+ fun ?init n { data; if_match; next_case } wildcard ->
   let init =
     try { data; if_match = merge n if_match wildcard; next_case = init }
     with Merge_fail -> { data; if_match; next_case = init }
   in
   match next_case with
   | None -> rev_cases init
-  | Some a -> expand_wildcard_into_testcases ~init a wildcard n
+  | Some a -> expand_wildcard_into_testcases ~init n a wildcard
 
 (** When we expand a wildcard into a nest, we need to expand all of the
     wildcard's child nodes after the nest's child nodes.  We need a second [nat]
@@ -197,48 +197,48 @@ and expand_wildcard_into_testcases :
     expansion succeeds or not. If it fails, we just keep the original tree.*)
 and expand_wildcard_after_nest :
     type a b ka kb.
-    (a, ka) tree ->
     (a, leaf) nat ->
-    wildcard:(b, kb) tree ->
     (a, (b, kb) tree) nat ->
+    (a, ka) tree ->
+    wildcard:(b, kb) tree ->
     (a, ka) tree =
- fun a na ~wildcard nb ->
+ fun na nb a ~wildcard ->
   match (a, na, nb) with
   | End a, S n, Z -> ( try End (merge n a wildcard) with Merge_fail -> End a)
-  | End a, S na, S nb -> End (expand_wildcard_after_nest a na ~wildcard nb)
+  | End a, S na, S nb -> End (expand_wildcard_after_nest na nb a ~wildcard)
   | Nest a, na, nb ->
       let child =
         match a.child with
         | Int_keys c ->
-            Int_keys (expand_wildcard_after_nest c (S na) ~wildcard (S nb))
+            Int_keys (expand_wildcard_after_nest (S na) (S nb) c ~wildcard)
         | String_keys c ->
-            String_keys (expand_wildcard_after_nest c (S na) ~wildcard (S nb))
+            String_keys (expand_wildcard_after_nest (S na) (S nb) c ~wildcard)
       in
       Nest { a with child }
   | Construct a, na, nb ->
       let nil =
         match a.nil with
         | None -> None
-        | Some c -> Some (expand_wildcard_after_nest c na ~wildcard nb)
+        | Some c -> Some (expand_wildcard_after_nest na nb c ~wildcard)
       in
       let cons =
         match a.cons with
         | None -> None
-        | Some c -> Some (expand_wildcard_after_nest c na ~wildcard nb)
+        | Some c -> Some (expand_wildcard_after_nest na nb c ~wildcard)
       in
       Construct { a with nil; cons }
   | Wildcard a, na, nb ->
       Wildcard
-        { a with child = expand_wildcard_after_nest a.child na ~wildcard nb }
+        { a with child = expand_wildcard_after_nest na nb a.child ~wildcard }
   | Switch a, na, nb ->
       let wildcard' =
         match a.wildcard with
         | None -> None
-        | Some a -> Some (expand_wildcard_after_nest a na ~wildcard nb)
+        | Some a -> Some (expand_wildcard_after_nest na nb a ~wildcard)
       in
       let rec aux init case =
         let if_match =
-          expand_wildcard_after_nest case.if_match na ~wildcard nb
+          expand_wildcard_after_nest na nb case.if_match ~wildcard
         in
         let init = { case with if_match; next_case = init } in
         match case.next_case with
@@ -253,22 +253,22 @@ and expand_wildcard_after_nest :
     succesfully. Unsuccesful paths are filtered out. *)
 and merge_wildcard_after_nest :
     type a b ka kb.
-    wildcard:(a, ka) tree ->
     (b, (a, ka) tree) nat ->
-    (b, kb) tree ->
     (b, leaf) nat ->
+    wildcard:(a, ka) tree ->
+    (b, kb) tree ->
     (b, kb) tree =
- fun ~wildcard na b nb ->
+ fun na nb ~wildcard b ->
   match (b, na, nb) with
   | End b, Z, S n -> End (merge n wildcard b)
-  | End b, S na, S nb -> End (merge_wildcard_after_nest ~wildcard na b nb)
+  | End b, S na, S nb -> End (merge_wildcard_after_nest na nb ~wildcard b)
   | Nest b, na, nb ->
       let child =
         match b.child with
         | Int_keys c ->
-            Int_keys (merge_wildcard_after_nest ~wildcard (S na) c (S nb))
+            Int_keys (merge_wildcard_after_nest (S na) (S nb) ~wildcard c)
         | String_keys c ->
-            String_keys (merge_wildcard_after_nest ~wildcard (S na) c (S nb))
+            String_keys (merge_wildcard_after_nest (S na) (S nb) ~wildcard c)
       in
       Nest { b with child }
   | Construct b, na, nb -> (
@@ -278,14 +278,14 @@ and merge_wildcard_after_nest :
         match b.nil with
         | None -> Ok None
         | Some c -> (
-            try Ok (Some (merge_wildcard_after_nest ~wildcard na c nb))
+            try Ok (Some (merge_wildcard_after_nest na nb ~wildcard c))
             with Merge_fail -> Error None)
       in
       let cons =
         match b.cons with
         | None -> Ok None
         | Some c -> (
-            try Ok (Some (merge_wildcard_after_nest ~wildcard na c nb))
+            try Ok (Some (merge_wildcard_after_nest na nb ~wildcard c))
             with Merge_fail -> Error None)
       in
       match (nil, cons) with
@@ -295,7 +295,7 @@ and merge_wildcard_after_nest :
           Construct { b with nil; cons })
   | Wildcard b, na, nb ->
       Wildcard
-        { b with child = merge_wildcard_after_nest ~wildcard na b.child nb }
+        { b with child = merge_wildcard_after_nest na nb ~wildcard b.child }
   | Switch b, na, nb ->
       (* At least one branch must successfully merge. Unsuccessful
           mergers are discarded either way. *)
@@ -303,14 +303,14 @@ and merge_wildcard_after_nest :
         match b.wildcard with
         | None -> None
         | Some b -> (
-            try Some (merge_wildcard_after_nest ~wildcard na b nb)
+            try Some (merge_wildcard_after_nest na nb ~wildcard b)
             with Merge_fail -> None)
       in
       let rec aux init case =
         let init =
           try
             let if_match =
-              merge_wildcard_after_nest ~wildcard na case.if_match nb
+              merge_wildcard_after_nest na nb ~wildcard case.if_match
             in
             Some { case with if_match; next_case = init }
           with Merge_fail -> init
@@ -340,9 +340,9 @@ and merge : type a k. (a, leaf) nat -> (a, k) tree -> (a, k) tree -> (a, k) tree
       let child =
         match b.child with
         | Int_keys c ->
-            Int_keys (merge_wildcard_after_nest ~wildcard:a.child Z c (S n))
+            Int_keys (merge_wildcard_after_nest Z (S n) ~wildcard:a.child c)
         | String_keys c ->
-            String_keys (merge_wildcard_after_nest ~wildcard:a.child Z c (S n))
+            String_keys (merge_wildcard_after_nest Z (S n) ~wildcard:a.child c)
       in
       let ids = Set.Int.union a.ids b.ids in
       Nest { b with ids; child; wildcard = Some wildcard }
@@ -368,7 +368,7 @@ and merge : type a k. (a, leaf) nat -> (a, k) tree -> (a, k) tree -> (a, k) tree
       | Ok nil, Ok cons | Error nil, Ok cons | Ok nil, Error cons ->
           Construct { b with ids; nil; cons })
   | Wildcard a, Switch b -> (
-      match merge_testcases_into_wildcard a.child b.cases n with
+      match merge_testcases_into_wildcard n a.child b.cases with
       | None -> raise_notrace Merge_fail
       | Some cases ->
           let wildcard =
@@ -385,20 +385,16 @@ and merge : type a k. (a, leaf) nat -> (a, k) tree -> (a, k) tree -> (a, k) tree
         | Some x, None | None, Some x -> Some x
         | Some a, Some b -> Some (merge n a b)
       in
+      let f a b =
+        let child = merge (S n) a b in
+        match wildcard with
+        | None -> child
+        | Some wildcard -> merge_wildcard_after_nest Z (S n) ~wildcard child
+      in
       let child =
         match (a.child, b.child) with
-        | Int_keys a, Int_keys b -> (
-            let child = merge (S n) a b in
-            match wildcard with
-            | None -> Int_keys child
-            | Some wildcard ->
-                Int_keys (merge_wildcard_after_nest ~wildcard Z child (S n)))
-        | String_keys a, String_keys b -> (
-            let child = merge (S n) a b in
-            match wildcard with
-            | None -> String_keys child
-            | Some wildcard ->
-                String_keys (merge_wildcard_after_nest ~wildcard Z child (S n)))
+        | Int_keys a, Int_keys b -> Int_keys (f a b)
+        | String_keys a, String_keys b -> String_keys (f a b)
         | _ -> assert false
       in
       let ids = Set.Int.union a.ids b.ids in
@@ -408,10 +404,10 @@ and merge : type a k. (a, leaf) nat -> (a, k) tree -> (a, k) tree -> (a, k) tree
         match a.child with
         | String_keys child ->
             String_keys
-              (expand_wildcard_after_nest child (S n) ~wildcard:b.child Z)
+              (expand_wildcard_after_nest (S n) Z child ~wildcard:b.child)
         | Int_keys child ->
             Int_keys
-              (expand_wildcard_after_nest child (S n) ~wildcard:b.child Z)
+              (expand_wildcard_after_nest (S n) Z child ~wildcard:b.child)
       in
       let wildcard =
         match a.wildcard with None -> b.child | Some a -> merge n a b.child
@@ -453,7 +449,7 @@ and merge : type a k. (a, leaf) nat -> (a, k) tree -> (a, k) tree -> (a, k) tree
       let wildcard =
         match a.wildcard with None -> b.child | Some a -> merge n a b.child
       in
-      let cases = expand_wildcard_into_testcases a.cases b.child n in
+      let cases = expand_wildcard_into_testcases n a.cases b.child in
       let ids = Set.Int.union a.ids b.ids in
       Switch { a with ids; cases; wildcard = Some wildcard }
   | Switch a, Switch b ->
@@ -466,20 +462,20 @@ and merge : type a k. (a, leaf) nat -> (a, k) tree -> (a, k) tree -> (a, k) tree
       let bcases =
         match a.wildcard with
         | Some wildcard -> (
-            match merge_testcases_into_wildcard wildcard b.cases n with
+            match merge_testcases_into_wildcard n wildcard b.cases with
             | Some cases -> cases
             | None -> raise_notrace Merge_fail)
         | None -> b.cases
       in
       let cases =
-        match merge_testcases a.cases bcases n false with
+        match merge_testcases n a.cases bcases false with
         | None -> raise_notrace Merge_fail
         | Some cases -> cases
       in
       let cases =
         match b.wildcard with
         | None -> cases
-        | Some wildcard -> expand_wildcard_into_testcases cases wildcard n
+        | Some wildcard -> expand_wildcard_into_testcases n cases wildcard
       in
       let ids = Set.Int.union a.ids b.ids in
       Switch { a with ids; cases; wildcard }
