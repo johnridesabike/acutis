@@ -33,7 +33,12 @@ let lex_error =
   fun lexbuf -> raise @@ Acutis_error (pp_lexbuf ~kind:"Syntax error" f lexbuf)
 
 let parse_error i lexbuf =
-  let f = F.dprintf "%i" i in
+  let f =
+    try
+      let mess = ParserMessages.message i in
+      fun ppf -> text ppf mess
+    with Not_found -> F.dprintf "%s" "Unexpected token."
+  in
   raise @@ Acutis_error (pp_lexbuf ~kind:"Parse error" f lexbuf)
 
 let dup_record_key loc key =

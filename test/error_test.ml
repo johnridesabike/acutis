@@ -18,11 +18,7 @@ let illegal_chars () =
     (E "File <test>, 1:12-1:13\nSyntax error.\n") (render "{% match a %%}");
   check_raises "Illegal character 4" (E "File <test>, 1:6-1:7\nSyntax error.\n")
     (render "{{ b %}");
-  check_raises "Illegal character 5"
-    (E "File <test>, 1:6-1:7\nParse error.\n92") (render "{{ a b }}");
-  check_raises "Illegal character 6"
-    (E "File <test>, 1:4-1:5\nParse error.\n86") (render "{{ ? }}");
-  check_raises "Illegal character 7" (E "File <test>, 1:6-1:7\nSyntax error.\n")
+  check_raises "Illegal character 5" (E "File <test>, 1:6-1:7\nSyntax error.\n")
     (render "{{ a }%}")
 
 let illegal_names () =
@@ -33,13 +29,7 @@ let illegal_names () =
     (E "File <test>, 1:4-1:9\nSyntax error.\n") (render "{{ false }}");
   check_raises "Illegal name: echo true"
     (E "File <test>, 1:4-1:8\nSyntax error.\n") (render "{{ true }}");
-  check_raises "Illegal name: match Abc"
-    (E "File <test>, 1:17-1:20\nParse error.\n63")
-    (render "{% match a with Abc %} {% /match %}");
-  check_raises "Illegal name: match null"
-    (E "File <test>, 1:18-1:22\nParse error.\n14")
-    (render "{% match a with {null} %} {% /match %}");
-  check_raises "Illegal name: match null"
+  check_raises "Illegal name: _"
     (E
        "File <test>, 1:9-1:10\n\
         Type error.\n\
@@ -60,6 +50,233 @@ let illegal_escape () =
   check_raises "Illegal escape sequence"
     (E "File <test>, 1:5-1:6\nSyntax error.\n") (render {|{{ "\a" }}|})
 
+let parser_errors () =
+  let open Alcotest in
+  check_raises "Missing a closing component name"
+    (E "File <test>, 1:19-1:20\nParse error.\nExpected a component name.\n")
+    (render "{% A %} abcd {% / a %}");
+
+  check_raises "Unclosed components (this one is confusing.)"
+    (E "File <test>, 1:16-1:16\nParse error.\nUnclosed component.\n")
+    (render "{% A /A %} abcd");
+
+  check_raises "Unexpected tokens (1)"
+    (E
+       "File <test>, 1:4-1:5\n\
+        Parse error.\n\
+        Expected `match`, `map`, `map_dict`, or a component name.\n")
+    (render "{% a %}");
+  check_raises "Unexpected tokens (2)"
+    (E
+       "File <test>, 1:5-1:6\n\
+        Parse error.\n\
+        Expected `match`, `map`, `map_dict`, or a component name.\n")
+    (render "{%~ a %}");
+  check_raises "Unexpected tokens (3)"
+    (E
+       "File <test>, 1:5-1:9\n\
+        Parse error.\n\
+        Expected `match`, `map`, `map_dict`, or a component name.\n")
+    (render "{%~ with %}");
+  check_raises "Unexpected tokens (inside # blocks)"
+    (E
+       "File <test>, 1:20-1:24\n\
+        Parse error.\n\
+        Expected `/#`, `match`, `map`, `map_dict`, or a component name.\n")
+    (render "{% A A=#%} abcd {% with /A %}");
+
+  check_raises "Bad pattern (1)"
+    (E "File <test>, 1:10-1:13\nParse error.\nThis is not a valid pattern.\n")
+    (render "{% match ABC with a %} {% /match %}");
+  check_raises "Bad pattern (2)"
+    (E "File <test>, 1:11-1:14\nParse error.\nThis is not a valid pattern.\n")
+    (render "{% match !ABC with a %} {% /match %}");
+  check_raises "Bad pattern (3)"
+    (E "File <test>, 1:11-1:14\nParse error.\nThis is not a valid pattern.\n")
+    (render "{% match !ABC with a %} {% /match %}");
+  check_raises "Bad pattern (4)"
+    (E "File <test>, 1:11-1:14\nParse error.\nThis is not a valid pattern.\n")
+    (render "{% match @ABC with a %} {% /match %}");
+  check_raises "Bad pattern (5)"
+    (E "File <test>, 1:13-1:16\nParse error.\nThis is not a valid pattern.\n")
+    (render "{% match a, ABC with a %} {% /match %}");
+  check_raises "Bad pattern (6)"
+    (E "File <test>, 1:13-1:16\nParse error.\nThis is not a valid pattern.\n")
+    (render "{% map_dict ABC with a %} {% /map_dict %}");
+  check_raises "Bad pattern (7)"
+    (E "File <test>, 1:8-1:11\nParse error.\nThis is not a valid pattern.\n")
+    (render "{% map ABC with a %} {% /map %}");
+  check_raises "Unclosed { (8)"
+    (E "File <test>, 1:14-1:18\nParse error.\nThis is not a valid pattern.\n")
+    (render "{% match {a: with %} {% /match %}");
+  check_raises "Bad pattern (9)"
+    (E "File <test>, 1:12-1:16\nParse error.\nThis is not a valid pattern.\n")
+    (render "{% match ( with %} {% /match %}");
+  check_raises "Bad pattern (10)"
+    (E "File <test>, 1:12-1:16\nParse error.\nThis is not a valid pattern.\n")
+    (render "{% match [ with %} {% /match %}");
+  check_raises "Bad pattern (11)"
+    (E "File <test>, 1:15-1:19\nParse error.\nThis is not a valid pattern.\n")
+    (render "{% match [... with %} {% /match %}");
+  check_raises "Bad pattern (12)"
+    (E "File <test>, 1:14-1:18\nParse error.\nThis is not a valid pattern.\n")
+    (render "{% match [a, with %} {% /match %}");
+  check_raises "Bad pattern (13)"
+    (E "File <test>, 1:18-1:22\nParse error.\nThis is not a valid pattern.\n")
+    (render "{% match [a, ... with %} {% /match %}");
+  check_raises "Unclosed < (4)"
+    (E "File <test>, 1:14-1:18\nParse error.\nThis is not a valid pattern.\n")
+    (render "{% match <a: with %} {% /match %}");
+  check_raises "Illegal pattern after with (1)"
+    (E "File <test>, 1:17-1:20\nParse error.\nThis is not a valid pattern.\n")
+    (render "{% match a with Abc %} {% /match %}");
+  check_raises "Illegal pattern after with (2)"
+    (E "File <test>, 1:24-1:27\nParse error.\nThis is not a valid pattern.\n")
+    (render "{% match a with x with Abc %} {% /match %}");
+  check_raises "Bad pattern (14)"
+    (E "File <test>, 1:4-1:5\nParse error.\nThis is not a valid pattern.\n")
+    (render "{{ ? }}");
+  check_raises "Bad pattern (15)"
+    (E "File <test>, 1:5-1:6\nParse error.\nThis is not a valid pattern.\n")
+    (render "{{ &A }}");
+  check_raises "Bad pattern (16)"
+    (E "File <test>, 1:8-1:9\nParse error.\nThis is not a valid pattern.\n")
+    (render "{{ a ? ? }}");
+  check_raises "Bad pattern (17)"
+    (E "File <test>, 1:8-1:11\nParse error.\nThis is not a valid pattern.\n")
+    (render "{% Z a=ABC / %}");
+
+  check_raises "Bad prop (1)"
+    (E
+       "File <test>, 1:6-1:10\n\
+        Parse error.\n\
+        This is not a valid component prop.\n")
+    (render "{% Z null=1 / %}");
+  check_raises "Bad prop (2)"
+    (E
+       "File <test>, 1:8-1:9\n\
+        Parse error.\n\
+        This is not a valid component prop.\n")
+    (render "{% A a # %}");
+  check_raises "Bad prop (3)"
+    (E
+       "File <test>, 1:8-1:9\n\
+        Parse error.\n\
+        This is not a valid component prop.\n")
+    (render "{% A B # %}");
+
+  check_raises "Invalid component name"
+    (E
+       "File <test>, 1:8-1:9\n\
+        Parse error.\n\
+        Expected a component name or a text block.\n")
+    (render "{% Z A=1 / %}");
+
+  check_raises "Illegal field name (1)"
+    (E "File <test>, 1:12-1:16\nParse error.\nThis is not a valid field name.\n")
+    (render "{% match { with %} {% /match %}");
+  check_raises "Illegal field name (2)"
+    (E "File <test>, 1:13-1:17\nParse error.\nThis is not a valid field name.\n")
+    (render "{% match {@ with %} {% /match %}");
+  check_raises "Illegal field name (3)"
+    (E "File <test>, 1:14-1:18\nParse error.\nThis is not a valid field name.\n")
+    (render "{% match {a, with %} {% /match %}");
+  check_raises "Illegal field name (4)"
+    (E "File <test>, 1:12-1:16\nParse error.\nThis is not a valid field name.\n")
+    (render "{% match < with %} {% /match %}");
+  check_raises "Illegal field name (5)"
+    (E "File <test>, 1:14-1:18\nParse error.\nThis is not a valid field name.\n")
+    (render "{% match <a, with %} {% /match %}");
+
+  check_raises "Unclosed { (1)"
+    (E "File <test>, 1:13-1:17\nParse error.\nExpected `,`, `:`, or `}`.\n")
+    (render "{% match {a with %} {% /match %}");
+  check_raises "Unclosed { (2)"
+    (E "File <test>, 1:15-1:19\nParse error.\nExpected `:`.\n")
+    (render "{% match {\"a\" with %} {% /match %}");
+  check_raises "Unclosed { (2)"
+    (E "File <test>, 1:15-1:19\nParse error.\nExpected `,` or `}`.\n")
+    (render "{% match {a:0 with %} {% /match %}");
+
+  check_raises "Unclosed ("
+    (E "File <test>, 1:13-1:17\nParse error.\nExpected `,` or `)`.\n")
+    (render "{% match (a with %} {% /match %}");
+
+  check_raises "Unclosed [ (1)"
+    (E "File <test>, 1:13-1:17\nParse error.\nExpected `,`, `...`, or `]`.\n")
+    (render "{% match [a with %} {% /match %}");
+  check_raises "Unclosed [ (2)"
+    (E "File <test>, 1:19-1:23\nParse error.\nExpected `]`.\n")
+    (render "{% match [a, ...b with %} {% /match %}");
+
+  check_raises "Unclosed < (1)"
+    (E "File <test>, 1:13-1:17\nParse error.\nExpected `,`, `:`, or `>`.\n")
+    (render "{% match <a with %} {% /match %}");
+  check_raises "Unclosed < (2)"
+    (E "File <test>, 1:15-1:19\nParse error.\nExpected `:`.\n")
+    (render "{% match <\"a\" with %} {% /match %}");
+  check_raises "Unclosed < (3)"
+    (E "File <test>, 1:15-1:19\nParse error.\nExpected `,` or `>`.\n")
+    (render "{% match <a:0 with %} {% /match %}");
+
+  check_raises "Missing commas in match/map patterns (1)"
+    (E
+       "File <test>, 1:12-1:13\n\
+        Parse error.\n\
+        Sequential patterns must be separated by a `,`.\n")
+    (render "{% match a b with a b %} {% /match %}");
+  check_raises "Missing commas in match/map patterns (2)"
+    (E
+       "File <test>, 1:19-1:20\n\
+        Parse error.\n\
+        Sequential patterns must be separated by a `,`.\n")
+    (render "{% match a with a b %} {% /match %}");
+  check_raises "Missing commas in match/map patterns (3)"
+    (E
+       "File <test>, 1:26-1:27\n\
+        Parse error.\n\
+        Sequential patterns must be separated by a `,`.\n")
+    (render "{% match a with a with a b %} {% /match %}");
+  check_raises "Missing commas in match/map patterns (4)"
+    (E
+       "File <test>, 1:15-1:16\n\
+        Parse error.\n\
+        Sequential patterns must be separated by a `,`.\n")
+    (render "{% map_dict a b with a %} {% /map_dict %}");
+  check_raises "Missing commas in match/map patterns (5)"
+    (E
+       "File <test>, 1:10-1:11\n\
+        Parse error.\n\
+        Sequential patterns must be separated by a `,`.\n")
+    (render "{% map a b with a %} {% /map %}");
+
+  check_raises "Unmatched match"
+    (E
+       "File <test>, 1:26-1:26\n\
+        Parse error.\n\
+        Unclosed block. Expected a `{% /` somewhere.\n")
+    (render "{% match x with true %} b");
+
+  check_raises "Missing /match"
+    (E "File <test>, 1:26-1:29\nParse error.\nExpected `/match`.\n")
+    (render "{% match x with x %} {% /map %}");
+  check_raises "Missing /map"
+    (E "File <test>, 1:24-1:29\nParse error.\nExpected `/map`.\n")
+    (render "{% map x with x %} {% /match %}");
+  check_raises "Missing /map_dict"
+    (E "File <test>, 1:29-1:32\nParse error.\nExpected `/map_dict`.\n")
+    (render "{% map_dict x with x %} {% /map %}");
+  check_raises "Unseparated echoes"
+    (E "File <test>, 1:6-1:7\nParse error.\nExpected either a `?` or `}}`.\n")
+    (render "{{ a b }}");
+
+  check_raises "# Blocks must contain text"
+    (E "File <test>, 1:10-1:13\nParse error.\nExpected `%}`.\n")
+    (render "{% A A=# abc /# / %}");
+  check_raises "Unterminated # blocks"
+    (E "File <test>, 1:24-1:24\nParse error.\nExpected `/#`.\n")
+    (render "{% A A=#%} abcd {% / %}")
+
 let dup_record_field () =
   let open Alcotest in
   check_raises "Duplicate field"
@@ -77,23 +294,6 @@ let dup_record_field () =
         Parse error.\n\
         This tagged record has multiple tags.")
     (render {|{% match a with {@a: 0, @b: "a"} %} {% with _ %} {% /match %}|})
-
-let bad_ast () =
-  let open Alcotest in
-  check_raises "Unmatched match" (E "File <test>, 1:26-1:26\nParse error.\n70")
-    (render "{% match x with true %} b");
-  check_raises "Unmatched map" (E "File <test>, 1:29-1:29\nParse error.\n70")
-    (render "{% map x with {y} %} {{ y }}");
-  check_raises "Invalid child" (E "File <test>, 1:8-1:9\nParse error.\n104")
-    (render "{% Z A=1 / %}");
-  check_raises "Bad binding name" (E "File <test>, 1:6-1:10\nParse error.\n99")
-    (render "{% Z null=1 / %}");
-  check_raises "Invalid statements" (E "File <test>, 1:4-1:5\nParse error.\n3")
-    (render "{% a %}");
-  check_raises "You can't unescape children"
-    (E "File <test>, 1:5-1:6\nParse error.\n90") (render "{{ &A }}");
-  check_raises "Components without implicit Children end"
-    (E "File <test>, 1:16-1:16\nParse error.\n111") (render "{% A /A %} abcd")
 
 let pat_count_mismatch () =
   let open Alcotest in
@@ -703,8 +903,8 @@ let () =
           test_case "Illegal names" `Quick illegal_names;
           test_case "Unterminated sections" `Quick unterminated;
           test_case "Illegal escape sequences" `Quick illegal_escape;
-          test_case "Bad ASTs" `Quick bad_ast;
           test_case "Duplicate fields" `Quick dup_record_field;
+          test_case "Parser errors" `Quick parser_errors;
         ] );
       ( "Type clash",
         [

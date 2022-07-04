@@ -1,0 +1,151 @@
+############################################################################
+#                                                                          #
+#                    Copyright (c) 2022 John Jackson.                      #
+#                                                                          #
+#   This Source Code Form is subject to the terms of the Mozilla Public    #
+#   License, v. 2.0. If a copy of the MPL was not distributed with this    #
+#   file, You can obtain one at http://mozilla.org/MPL/2.0/.               #
+#                                                                          #
+############################################################################
+
+# Map incorrect sentences to appropriate error messages.
+#
+# In general, but not always:
+# MATCH represents either MATCH, MAP, or MAP_DICT.
+# NULL represents any pattern.
+# WITH represents any unexpected token.
+
+acutis: WITH
+acutis: TILDE_LEFT WITH
+
+Unexpected token.
+
+acutis: TEXT COMPONENT TEXT BACKSLASH WITH
+
+Expected a component name.
+
+acutis: TEXT COMPONENT TEXT WITH
+
+Unclosed component.
+
+acutis: TEXT WITH
+acutis: TEXT NULL
+acutis: TEXT TILDE_RIGHT NULL
+
+Expected `match`, `map`, `map_dict`, or a component name.
+
+acutis: TEXT COMPONENT COMPONENT EQUALS HASH TEXT WITH
+
+Expected `/#`, `match`, `map`, `map_dict`, or a component name.
+
+acutis: TEXT MATCH WITH
+acutis: TEXT MATCH EXCLAMATION WITH
+acutis: TEXT MATCH AT WITH
+acutis: TEXT MATCH NULL COMMA WITH
+acutis: TEXT MAP_DICT WITH
+acutis: TEXT MAP WITH
+acutis: TEXT MATCH LEFT_BRACE ID COLON WITH
+acutis: TEXT MATCH LEFT_PAREN WITH
+acutis: TEXT MATCH LEFT_BRACK WITH
+acutis: TEXT MATCH LEFT_BRACK ELLIPSIS WITH
+acutis: TEXT MATCH LEFT_BRACK NULL COMMA WITH
+acutis: TEXT MATCH LEFT_BRACK NULL COMMA ELLIPSIS WITH
+acutis: TEXT MATCH LEFT_ANGLE ID COLON WITH
+acutis: TEXT MATCH NULL WITH WITH
+acutis: TEXT MATCH NULL WITH NULL WITH WITH
+acutis: TEXT ECHO_BEGIN WITH
+acutis: TEXT ECHO_BEGIN AMPERSAND WITH
+acutis: TEXT ECHO_BEGIN ID QUESTION WITH
+acutis: TEXT COMPONENT ID EQUALS WITH
+
+This is not a valid pattern.
+
+acutis: TEXT COMPONENT WITH
+acutis: TEXT COMPONENT ID WITH
+acutis: TEXT COMPONENT COMPONENT WITH
+
+This is not a valid component prop.
+
+acutis: TEXT COMPONENT COMPONENT EQUALS WITH
+
+Expected a component name or a text block.
+
+acutis: TEXT MATCH LEFT_BRACE WITH
+acutis: TEXT MATCH LEFT_BRACE AT WITH
+acutis: TEXT MATCH LEFT_BRACE ID COMMA WITH
+acutis: TEXT MATCH LEFT_ANGLE WITH
+acutis: TEXT MATCH LEFT_ANGLE ID COMMA WITH
+
+This is not a valid field name.
+
+acutis: TEXT MATCH LEFT_BRACE ID WITH
+
+Expected `,`, `:`, or `}`.
+
+acutis: TEXT MATCH LEFT_BRACE STRING WITH
+
+Expected `:`.
+
+acutis: TEXT MATCH LEFT_BRACE ID COLON NULL WITH
+
+Expected `,` or `}`.
+
+acutis: TEXT MATCH LEFT_PAREN NULL WITH
+
+Expected `,` or `)`.
+
+acutis: TEXT MATCH LEFT_BRACK NULL WITH
+
+Expected `,`, `...`, or `]`.
+
+acutis: TEXT MATCH LEFT_BRACK ELLIPSIS NULL WITH
+
+Expected `]`.
+
+acutis: TEXT MATCH LEFT_ANGLE ID WITH
+
+Expected `,`, `:`, or `>`.
+
+acutis: TEXT MATCH LEFT_ANGLE STRING WITH
+
+Expected `:`.
+
+acutis: TEXT MATCH LEFT_ANGLE ID COLON NULL WITH
+
+Expected `,` or `>`.
+
+acutis: TEXT MATCH NULL NULL
+acutis: TEXT MATCH NULL WITH NULL NULL
+acutis: TEXT MATCH NULL WITH NULL WITH NULL NULL
+acutis: TEXT MAP_DICT NULL NULL
+acutis: TEXT MAP NULL NULL
+
+Sequential patterns must be separated by a `,`.
+
+acutis: TEXT MATCH NULL WITH NULL TEXT EOF
+
+Unclosed block. Expected a `{% /` somewhere.
+
+acutis: TEXT MATCH NULL WITH NULL TEXT BACKSLASH WITH
+
+Expected `/match`.
+
+acutis: TEXT MAP NULL WITH NULL TEXT BACKSLASH WITH
+
+Expected `/map`.
+
+acutis: TEXT MAP_DICT NULL WITH NULL TEXT BACKSLASH WITH
+
+Expected `/map_dict`.
+
+acutis: TEXT ECHO_BEGIN ID WITH
+
+Expected either a `?` or `}}`.
+
+acutis: TEXT COMPONENT COMPONENT EQUALS HASH WITH
+
+Expected `%}`.
+
+acutis: TEXT COMPONENT COMPONENT EQUALS HASH TEXT BACKSLASH WITH
+
+Expected `/#`.
