@@ -125,7 +125,7 @@ let echo stack j =
 let rec nullable stack ty j =
   match classify j with
   | Js_null -> Data.null
-  | _ -> Data.some (make (Error.DecodeStack.Nullable :: stack) ty j)
+  | _ -> Data.some (make (Error.DecodePath.Nullable :: stack) ty j)
 
 and list stack ty j =
   match classify j with

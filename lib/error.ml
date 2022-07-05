@@ -177,29 +177,30 @@ let missing_component stack name =
   in
   raise @@ Acutis_error s
 
-module DecodeStack = struct
+module DecodePath = struct
   type t = Nullable | Index of int | Key of string
 
   open Format
 
   let pp ppf = function
     | Nullable -> fprintf ppf "nullable"
-    | Index i -> fprintf ppf "@[index: %i@]" i
-    | Key s -> fprintf ppf "@[key: %S@]" s
+    | Index i -> pp_print_int ppf i
+    | Key s -> fprintf ppf "%S" s
 
-  let pp_sep ppf () = fprintf ppf " ->@ "
+  let pp_sep ppf () = fprintf ppf "@ -> "
 
-  let pp ppf t =
-    fprintf ppf "@[[@,%a]@]" (pp_print_list ~pp_sep pp) (List.rev t)
+  let pp ppf = function
+    | [] -> fprintf ppf "input"
+    | t -> fprintf ppf "input@ -> %a" (pp_print_list ~pp_sep pp) (List.rev t)
 end
 
 let pp stack ty mess =
   F.asprintf
     "@[<v>@[Decode error.@]@,\
-     @[Stack:@ @[%a@]@]@,\
-     @[Expected type:@ @[%a@]@]@,\
+     @[Path: @[%a@]@]@,\
+     @[Expected type: @[%a@]@]@,\
      @[%t@]"
-    DecodeStack.pp stack Typescheme.pp ty mess
+    DecodePath.pp stack Typescheme.pp ty mess
 
 let decode pp_data ty stack data =
   let f = F.dprintf "Received value:@ @[%a@]" pp_data data in

@@ -66,7 +66,7 @@ let echo stack = function
 
 let rec nullable stack ty = function
   | `Null -> Data.null
-  | j -> Data.some (make (Error.DecodeStack.Nullable :: stack) ty j)
+  | j -> Data.some (make (Error.DecodePath.Nullable :: stack) ty j)
 
 and list stack ty = function
   | `List l ->

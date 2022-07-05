@@ -818,7 +818,7 @@ let decode_mismatch () =
   check_raises "Basic type mismatch."
     (E
        "Decode error.\n\
-        Stack: [key: \"a\" -> key: \"b\"]\n\
+        Path: input -> \"a\" -> \"b\"\n\
         Expected type: echoable\n\
         Received value: []")
     (render "{% match a with {b} %} {{ b }} {% /match %}"
@@ -827,35 +827,35 @@ let decode_mismatch () =
   check_raises "Map type mismatch (1)."
     (E
        "Decode error.\n\
-        Stack: [key: \"a\"]\n\
+        Path: input -> \"a\"\n\
         Expected type: [{a: echoable}]\n\
         Received value: \"a\"")
     (render "{% map a with {a} %}{{ a }}{% /map %}" ~json);
   check_raises "Map type mismatch (2)."
     (E
        "Decode error.\n\
-        Stack: [key: \"a\"]\n\
+        Path: input -> \"a\"\n\
         Expected type: [int]\n\
         Received value: \"a\"")
     (render "{% map [1, 2, ...a] with a %}{{ a }}{% /map %}" ~json);
   check_raises "Missing bindings are reported"
     (E
        "Decode error.\n\
-        Stack: []\n\
+        Path: input\n\
         Expected type: {z: echoable}\n\
         Input is missing key: \"z\"")
     (render "{{ z }}" ~json);
   check_raises "Bad enums are reported: boolean."
     (E
        "Decode error.\n\
-        Stack: [key: \"b\"]\n\
+        Path: input -> \"b\"\n\
         Expected type: | false\n\
         This type does not allow the given value: true")
     (render "{% match b with false %} {% /match %}" ~json);
   check_raises "Bad enums are reported: int."
     (E
        "Decode error.\n\
-        Stack: [key: \"a\"]\n\
+        Path: input -> \"a\"\n\
         Expected type: | @1 | @2\n\
         This type does not allow the given value: 3")
     (render "{% match a with @1 %} {% with @2 %} {% /match %}"
@@ -863,7 +863,7 @@ let decode_mismatch () =
   check_raises "Bad enums are reported: int."
     (E
        "Decode error.\n\
-        Stack: [key: \"a\"]\n\
+        Path: input -> \"a\"\n\
         Expected type: | @\"a\" | @\"b\"\n\
         This type does not allow the given value: \"c\"")
     (render "{% match a with @\"a\" %} {% with @\"b\" %} {% /match %}"
@@ -871,7 +871,7 @@ let decode_mismatch () =
   check_raises "Tuple size mismatch."
     (E
        "Decode error.\n\
-        Stack: [key: \"a\"]\n\
+        Path: input -> \"a\"\n\
         Expected type: (echoable, echoable)\n\
         Received value: [ \"a\" ]")
     (render "{% match a with (a, b) %} {{ a }} {{ b }} {% /match %}"
@@ -879,7 +879,7 @@ let decode_mismatch () =
   check_raises "Bad unions are reported (1)."
     (E
        "Decode error.\n\
-        Stack: [key: \"a\"]\n\
+        Path: input -> \"a\"\n\
         Expected type: | {@tag: 1, a: echoable}\n\
         Received value: { \"tag\": \"a\", \"a\": \"a\" }")
     (render "{% match a with {@tag: 1, a} %} {{ a }} {% /match %}"
@@ -887,11 +887,28 @@ let decode_mismatch () =
   check_raises "Bad unions are reported (2)."
     (E
        "Decode error.\n\
-        Stack: [key: \"a\"]\n\
+        Path: input -> \"a\"\n\
         Expected type: | {@tag: 1, a: echoable}\n\
         Received value: { \"tag\": 2, \"a\": \"a\" }")
     (render "{% match a with {@tag: 1, a} %} {{ a }} {% /match %}"
-       ~json:{|{"a": {"tag": 2, "a": "a"}}|})
+       ~json:{|{"a": {"tag": 2, "a": "a"}}|});
+  check_raises "Looong paths format correctly."
+    (E
+       "Decode error.\n\
+        Path: input -> \"abc\" -> \"def\" -> \"ghi\" -> \"jkl\" -> \"mno\" -> \
+        \"pqr\" -> \"stu\"\n\
+       \      -> \"vwx\" -> \"yz\"\n\
+        Expected type: int\n\
+        Received value: \"a\"")
+    (render
+       "{% match abc\n\
+        with {def: {ghi: {jkl: {mno: {pqr: {stu: {vwx: {yz: 1}}}}}}}} %}\n\
+        {% with _ %} {% /match %}"
+       ~json:
+         {|{"abc":
+              {"def": {"ghi": {"jkl": {"mno": {"pqr": {"stu": {"vwx":
+                {"yz": "a"}}}}}}}}
+            }|})
 
 let () =
   let open Alcotest in
