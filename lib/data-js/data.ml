@@ -16,17 +16,53 @@ type 'a map = 'a Stdlib.Map.Make(String).t
 type t = Js.Unsafe.any
 
 let stringify (j : t) =
-  Js.Unsafe.meth_call Js._JSON "stringify" [| j |] |> Js.to_string
+  match Js.to_string (Js.typeof j) with
+  | "undefined" -> "undefined"
+  | _ -> Js._JSON##stringify j |> Js.to_string
 
 let pp ppf j = Format.pp_print_string ppf (stringify j)
 let decode_error = Error.decode pp
+
+module Table : sig
+  (** When we convert JavaScript objects into Acutis records, we cannot convert
+      every value at once, e.g. by mapping the result of [Js.object_keys].
+
+      JavaScript objects may use getter functions for accessing values, and
+      those can cause side-effects.
+
+      By only accessing the precise values that we need, we avoid triggering
+      unexpected behavior. *)
+
+  type t
+
+  val unsafe_of_js : Js.Unsafe.any -> t
+  val find_exn : string -> t -> Js.Unsafe.any
+  val find_opt : string -> t -> Js.Unsafe.any option
+  val to_seq : t -> (string * Js.Unsafe.any) Seq.t
+end = struct
+  type t = Js.Unsafe.any
+
+  let unsafe_of_js j = j
+  let get : t -> Js.js_string Js.t -> Js.Unsafe.any Js.Optdef.t = Js.Unsafe.get
+  let unsafe_get : t -> Js.js_string Js.t -> Js.Unsafe.any = Js.Unsafe.get
+
+  let find_exn k m =
+    let r = get m (Js.string k) in
+    Js.Optdef.get r (fun () -> raise Not_found)
+
+  let find_opt k m = get m (Js.string k) |> Js.Optdef.to_option
+
+  let to_seq m =
+    let f s = (Js.to_string s, unsafe_get m s) in
+    Js.object_keys m |> Js.to_array |> Array.to_seq |> Seq.map f
+end
 
 type tagged =
   | Js_null
   | Js_bool of bool
   | Js_string of string
   | Js_float of float
-  | Js_object of (string * t) Seq.t
+  | Js_object of Table.t
   | Js_array of t array
 
 let classify j =
@@ -34,21 +70,14 @@ let classify j =
   | "string" -> Js_string (Js.Unsafe.coerce j |> Js.to_string)
   | "number" -> Js_float (Js.Unsafe.coerce j |> Js.float_of_number)
   | "boolean" -> Js_bool (Js.Unsafe.coerce j |> Js.to_bool)
+  | "undefined" -> Js_null
   | _ -> (
       match Js.Opt.to_option (Js.some j) with
       | None -> Js_null
       | Some j ->
           if Js.instanceof j Js.array_empty then
             Js_array (Js.Unsafe.coerce j |> Js.to_array)
-          else
-            let f s =
-              let s = Js.to_string s in
-              (s, Js.Unsafe.get j s)
-            in
-            let seq =
-              Js.object_keys j |> Js.to_array |> Array.to_seq |> Seq.map f
-            in
-            Js_object seq)
+          else Js_object (Table.unsafe_of_js j))
 
 let boolean ty stack cases j =
   match classify j with
@@ -113,7 +142,7 @@ and list stack ty j =
 and dict stack ty j =
   match classify j with
   | Js_object o ->
-      o
+      o |> Table.to_seq
       |> Seq.map (fun (k, v) -> (k, make (Key k :: stack) ty v))
       |> Map.String.of_seq |> Data.dict
   | _ -> decode_error (Ty.dict ty) stack j
@@ -131,7 +160,7 @@ and tuple ty stack tys j =
 
 and record_aux stack tys j =
   let f k ty =
-    match (ty, Map.String.find_opt k j) with
+    match (ty, Table.find_opt k j) with
     | { contents = Ty.Nullable _ | Unknown _ }, None -> Data.null
     | ty, Some j -> make (Key k :: stack) ty j
     | _ -> Error.missing_key stack (Ty.internal_record (ref tys)) k
@@ -140,16 +169,15 @@ and record_aux stack tys j =
 
 and record stack tys j =
   match classify j with
-  | Js_object o -> o |> Map.String.of_seq |> record_aux stack !tys |> Data.dict
+  | Js_object o -> record_aux stack !tys o |> Data.dict
   | _ -> decode_error (Ty.internal_record tys) stack j
 
 and union stack ty key cases extra j =
   match classify j with
   | Js_object o ->
-      let map = Map.String.of_seq o in
       let tag, tys =
         try
-          let tag = Map.String.find key map in
+          let tag = Table.find_exn key o in
           match (classify tag, cases, extra) with
           | Js_bool false, Ty.Variant.Int map, `Extra_bool ->
               let tag = 0 in
@@ -165,7 +193,7 @@ and union stack ty key cases extra j =
           | _ -> raise Not_found
         with Not_found -> decode_error ty stack j
       in
-      let r = record_aux stack !tys map in
+      let r = record_aux stack !tys o in
       Data.dict (Map.String.add key tag r)
   | _ -> decode_error ty stack j
 
@@ -190,9 +218,7 @@ and make stack ty j =
 
 let decode tys j =
   match classify j with
-  | Js_object o ->
-      let map = Map.String.of_seq o in
-      record_aux [] tys map
+  | Js_object o -> record_aux [] tys o
   | _ -> decode_error (Ty.internal_record (ref tys)) [] j
 
 let coerce = Js.Unsafe.coerce
