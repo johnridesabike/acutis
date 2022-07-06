@@ -12,14 +12,14 @@ bug-reports: "https://github.com/johnridesabike/acutis/issues"
 depends: [
   "dune" {>= "3.3"}
   "ocaml" {>= "4.14"}
-  "ocamlformat" {= "0.22.4"}
-  "odoc" {>= "2.1"}
-  "ppx_deriving" {>= "5.2.1"}
   "menhir" {= "20220210"}
-  "alcotest" {>= "1.5"}
-  "alcotest-lwt" {>= "1.5"}
-  "lwt" {>= "5.5"}
-  "ocaml-lsp-server"
+  "ppx_deriving" {>= "5.2.1"}
+  "ocamlformat" {dev & = "0.22.4"}
+  "ocaml-lsp-server" {dev}
+  "alcotest" {with-test & >= "1.5"}
+  "alcotest-lwt" {with-test & >= "1.5"}
+  "lwt" {with-test & >= "5.5"}
+  "odoc" {with-doc}
 ]
 build: [
   ["dune" "subst"] {dev}

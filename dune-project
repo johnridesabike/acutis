@@ -24,14 +24,13 @@
  (synopsis "A declarative, type-safe template language")
  (depends
    (ocaml (>= 4.14))
-   (ocamlformat (= 0.22.4))
-   (odoc (>= 2.1))
-   (ppx_deriving (>= 5.2.1))
    (menhir (= 20220210))
-   (alcotest (>= 1.5))
-   (alcotest-lwt (>= 1.5))
-   (lwt (>= 5.5))
-   ocaml-lsp-server)
+   (ppx_deriving (>= 5.2.1))
+   (ocamlformat (and :dev (= 0.22.4)))
+   (ocaml-lsp-server :dev)
+   (alcotest (and :with-test (>= 1.5)))
+   (alcotest-lwt (and :with-test (>= 1.5)))
+   (lwt (and :with-test (>= 5.5))))
  (tags
   (template language parser interpreter)))
 
