@@ -45,10 +45,7 @@ let args =
     ]
 
 let fname_to_component s =
-  let s = String.capitalize_ascii s in
-  match Filename.chop_suffix_opt ~suffix:".acutis" s with
-  | None -> s
-  | Some s -> s
+  s |> Filename.basename |> Filename.remove_extension |> String.capitalize_ascii
 
 let () =
   try
