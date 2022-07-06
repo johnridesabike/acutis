@@ -5,21 +5,19 @@ synopsis: "A declarative, type-safe template language"
 maintainer: ["John Jackson"]
 authors: ["John Jackson"]
 license: "MPL-2.0"
-tags: ["template" "language" "parser" "interpreter"]
 homepage: "https://github.com/johnridesabike/acutis"
 doc: "https://johnridesa.bike/acutis/"
 bug-reports: "https://github.com/johnridesabike/acutis/issues"
 depends: [
   "ocaml" {>= "4.14"}
   "dune" {>= "3.3"}
-  "ocamlformat" {= "0.22.4"}
-  "odoc" {>= "2.1"}
-  "ppx_deriving" {>= "5.2.1"}
-  "menhir" {= "20220210"}
-  "alcotest" {>= "1.5"}
-  "alcotest-lwt" {>= "1.5"}
-  "lwt" {>= "5.5"}
-  "ocaml-lsp-server"
+  "acutis" {= version}
+  "acutis_data_js" {= version}
+  "promise_jsoo" {>= "0.3.1"}
+  "js_of_ocaml" {>= "4.0"}
+  "js_of_ocaml-compiler" {>= "4.0"}
+  "js_of_ocaml-ppx" {>= "4.0"}
+  "odoc" {with-doc}
 ]
 build: [
   ["dune" "subst"] {dev}

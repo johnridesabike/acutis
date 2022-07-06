@@ -1,5 +1,5 @@
 (executable
  (name cli)
  (public_name acutis)
- (package acutis)
+ (package acutis_cli)
  (libraries unix acutis acutis_data_json yojson dune-build-info))

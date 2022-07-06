@@ -11,7 +11,9 @@ bug-reports: "https://github.com/johnridesabike/acutis/issues"
 depends: [
   "dune" {>= "3.3"}
   "ocaml" {>= "4.14"}
+  "acutis" {= version}
   "js_of_ocaml" {>= "4.0"}
+  "js_of_ocaml-ppx" {>= "4.0"}
   "odoc" {with-doc}
 ]
 build: [

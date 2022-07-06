@@ -11,6 +11,7 @@ bug-reports: "https://github.com/johnridesabike/acutis/issues"
 depends: [
   "dune" {>= "3.3"}
   "ocaml" {>= "4.14"}
+  "acutis" {= version}
   "yojson" {>= "2.0"}
   "odoc" {with-doc}
 ]
