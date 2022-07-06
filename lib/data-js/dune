@@ -1,5 +1,5 @@
 (library
- (public_name acutis_data_js)
+ (public_name acutis_js)
  (libraries acutis js_of_ocaml)
  (preprocess
   (pps js_of_ocaml-ppx)))

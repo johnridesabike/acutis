@@ -4,7 +4,7 @@ open Lwt.Syntax
 
 let check = Alcotest.(check string)
 
-module RenderLwt = Render.Make (Lwt) (Acutis_data_json.Data)
+module RenderLwt = Render.Make (Lwt) (Acutis_json.Data)
 
 let render ?(components = []) src json =
   let json = Yojson.Basic.from_string json in

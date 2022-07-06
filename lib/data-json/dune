@@ -1,3 +1,3 @@
 (library
- (public_name acutis_data_json)
+ (public_name acutis_json)
  (libraries acutis yojson))

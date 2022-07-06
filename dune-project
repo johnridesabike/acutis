@@ -24,7 +24,6 @@
  (synopsis "A declarative, type-safe template language")
  (depends
    (ocaml (>= 4.14))
-   dune
    (ocamlformat (= 0.22.4))
    (odoc (>= 2.1))
    (ppx_deriving (>= 5.2.1))
@@ -37,7 +36,7 @@
   (template language parser interpreter)))
 
 (package
- (name acutis_data_json)
+ (name acutis_json)
  (synopsis "Encode and decode JSON data for Acutis")
  (depends
    (ocaml (>= 4.14))
@@ -45,33 +44,12 @@
    (yojson (>= 2.0))))
 
 (package
- (name acutis_data_js)
+ (name acutis_js)
  (synopsis "Encode and decode JavaScript data for Acutis")
  (depends
    (ocaml (>= 4.14))
    (acutis (= :version))
-   (js_of_ocaml (>= 4.0))
-   (js_of_ocaml-ppx (>= 4.0))))
-
-(package
- (name acutis_js)
- (synopsis "A declarative, type-safe template language")
- (allow_empty)
- (depends
-   (ocaml (>= 4.14))
-   dune
-   (acutis (= :version))
-   (acutis_data_js (= :version))
    (promise_jsoo (>= 0.3.1))
    (js_of_ocaml (>= 4.0))
    (js_of_ocaml-compiler (>= 4.0))
    (js_of_ocaml-ppx (>= 4.0))))
-
-(package
- (name acutis_cli)
- (synopsis "A declarative, type-safe template language")
- (depends
-   (ocaml (>= 4.14))
-   dune
-   (acutis (= :version))
-   (acutis_data_json (= :version))))

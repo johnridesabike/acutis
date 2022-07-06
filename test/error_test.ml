@@ -1,5 +1,5 @@
 open Acutis
-module RenderSync = Render.Make (Sync) (Acutis_data_json.Data)
+module RenderSync = Render.Make (Sync) (Acutis_json.Data)
 
 let render ?(json = "{}") src () =
   let temp = Compile.(from_string ~name:"<test>" Components.empty src) in
