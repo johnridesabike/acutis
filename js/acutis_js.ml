@@ -160,6 +160,10 @@ let () =
 let () =
   Js.export "Utils"
     (object%js
+       method filenameToComponent fname =
+         Js.to_string fname |> Filename.basename |> Filename.remove_extension
+         |> String.capitalize_ascii |> Js.string
+
        method isError e =
          match e with Error.Acutis_error _ -> true | _ -> false
 

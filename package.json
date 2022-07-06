@@ -22,9 +22,6 @@
     "name": "John Jackson",
     "url": "https://johnridesa.bike/"
   },
-  "main": "./_build/default/js/acutis_js.bc.js",
-  "files": [
-    "./_build/default/js/acutis_js.bc.js",
-    "node-utils.js"
-  ]
+  "main": "_build/default/js/acutis_js.bc.js",
+  "files": []
 }

@@ -11,7 +11,6 @@ const fs = require("fs");
 const util = require("util");
 const fastGlob = require("fast-glob");
 const { Compile, Render, Utils } = require("../../");
-const { filenameToComponent } = require("../../node-utils");
 
 const readFile = util.promisify(fs.readFile);
 
@@ -32,7 +31,7 @@ module.exports = function (eleventyConfig, config) {
         const queue = await Promise.all(
           files.map(async (fileName) => {
             const str = await readFile(fileName, "utf-8");
-            const name = filenameToComponent(fileName);
+            const name = Utils.filenameToComponent(fileName);
             return Compile.fromString(name, str);
           })
         );
