@@ -1,8 +1,6 @@
 (executable
  (name acutis_js)
  (modes js)
- (js_of_ocaml
-  (flags (--opt=3) (--pretty)))
  (libraries acutis acutis_data_js promise_jsoo)
  (preprocess
   (pps js_of_ocaml-ppx)))
