@@ -14,11 +14,13 @@ Node.js projects.
 
 [ocaml]: https://ocaml.org/
 
-Beware: both the OCaml and JavaScript API are unstable and experimental!
+Beware: both the OCaml and JavaScript API are unstable and experimental.
 
 [The OCaml API is documented here](../api/).
 
-You can also use the [CLI](<#acutis-command-line-interface-(cli)>).
+You can also use the [CLI].
+
+[cli]: #acutis-command-line-interface-(cli)
 
 ## Why Acutis?
 
@@ -44,6 +46,25 @@ repository.
 opam pin https://github.com/johnridesabike/acutis.git
 ```
 
+This command will install three packages:
+
+<dl>
+<dt class="font-monospace">
+  acutis
+<dd>
+  The core Acutis library.
+
+<dt class="font-monospace">
+  acutis_json
+<dd>
+  A JSON-compatible implementation. This also includes the CLI.
+
+<dt class="font-monospace">
+  acutis_js
+<dd>
+  A JavaScript-compatible implementation for compiling with js_of_ocaml.
+</dl>
+
 ## Installation: JavaScript
 
 The JavaScript API is available through npm.
@@ -63,16 +84,18 @@ You can enable syntax highlighting with
 
 - This documentation uses Acutis with [Eleventy]. [Browse the source here][1].
 - [The Acutis CLI][2].
+- [The JavaScript interface][3].
 
 [1]: https://github.com/johnridesabike/acutis/tree/master/docs
 [2]: https://github.com/johnridesabike/acutis/blob/master/bin/cli.ml
+[3]: https://github.com/johnridesabike/acutis/blob/master/js/acutis_js.ml
 [eleventy]: https://www.11ty.dev/
 
 ## Acutis command line interface (CLI)
 
-If you install Acutis through OPAM, then it comes with a command line tool
-called `acutis`. This accepts JSON data and a list of template filenames, and it
-prints the rendered output.
+If you install Acutis through OPAM, then the `acutis_json` package comes with a
+command-line tool called `acutis`. This accepts JSON data and a list of template
+filenames, and it prints the rendered output.
 
 ```shell
 acutis index.acutis src/**/*.acutis < data.json > dist/index.html

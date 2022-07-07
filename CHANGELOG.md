@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.15.0
+
+- Acutis is rewritten in OCaml.
+- The JavaScript output is now compiled with js_of_ocaml.
+- The JavaScript API has completely changed.
+- There is a new OCaml API.
+- The language itself is the same, except for a few edge cases where the new
+  parser behaves slightly differently.
+
 ## 0.14.0
 
 - Acutis is now statically typed. This breaks all older templates.

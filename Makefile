@@ -8,8 +8,8 @@ build-release:
 build:
 	opam exec -- dune build
 
-.PHONY: build-watch
-build-watch:
+.PHONY: watch
+watch:
 	opam exec -- dune build --watch
 
 .PHONY: test
@@ -23,6 +23,14 @@ test-watch:
 .PHONY: clean
 clean:
 	opam exec -- dune clean
+
+.PHONY: dev
+dev:
+	opam switch create . --deps-only --with-test --with-doc
+
+.PHONY: dev-install
+dev-install:
+	opam install . --deps-only --with-test --with-doc
 
 .PHONY: format
 format:
@@ -41,11 +49,3 @@ docs-site:
 	opam exec -- dune build @doc
 	opam exec -- dune build --profile=release
 	cd docs && npm run build
-
-.PHONY: dev-switch
-dev-switch:
-	opam switch create . --deps-only --with-test --with-doc
-
-.PHONY: dev-install
-dev-install:
-	opam install . --deps-only --with-test --with-doc
