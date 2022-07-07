@@ -1,0 +1,5 @@
+# Node.JS modules
+node_modules
+
+# Eleventy output
+_site
