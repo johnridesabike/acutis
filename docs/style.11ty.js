@@ -16,13 +16,14 @@ const readFile = util.promisify(fs.readFile);
 const cssPath = "style.css";
 
 module.exports = class {
-  async data() {
-    const css = await readFile(path.join(__dirname, cssPath));
-    return {
-      permalink: cssPath,
-      cssPath,
-      css: css,
-    };
+  data() {
+    return readFile(path.join(__dirname, cssPath)).then((css) => {
+      return {
+        permalink: cssPath,
+        cssPath,
+        css: css,
+      };
+    });
   }
 
   render({ css, cssPath }) {

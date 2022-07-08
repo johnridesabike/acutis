@@ -484,12 +484,12 @@ Each of the dictionary's values will be matched with the pattern after the
 `with` clause. The index will be the string key associated with the value.
 
 ```acutis
-{% map <
-    author: {name: "John"},
-    editor: {name: "Carlo"}
-  > with {name}, role ~%}
+{% map_dict
+    < author: {name: "John"},
+      editor: {name: "Carlo"} >
+    with {name}, role ~%}
   {{ name }} is the {{ role }}.
-{% /map %}
+{% /map_dict %}
 ```
 
 ## More about pattern matching

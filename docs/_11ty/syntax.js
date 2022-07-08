@@ -9,6 +9,7 @@
 module.exports = function (Prism) {
   // Make sure markup-templating is loaded.
   require("prismjs/components/prism-markup-templating");
+
   Prism.languages.acutis = {
     comment: /^{\*[\s\S]*?\*}$/,
     tag: {
@@ -28,17 +29,16 @@ module.exports = function (Prism) {
       pattern: /\b([A-Z])([a-zA-Z0-9_]+)?/,
       alias: "function",
     },
-    keyword: /\b(?:match|map|with)\b/,
-    operator: /&|\?|#|~/,
+    keyword: /\b(?:match|map|map_dict|with)\b/,
+    operator: /&|\?|#|~|!|@/,
     number: /(-|\+)?\s*[0-9]+(\.[0-9]+)?(e|E)?/,
     boolean: /\b(false|true|null)\b/,
     variable: /([a-z_])([a-zA-Z0-9_]+)?/,
-    punctuation: /[{}[\],.:/=]/,
+    punctuation: /[{}[\],.:/=(\)<>]/,
   };
 
   var pattern = /{{[\s\S]*?}}|{%[\s\S]*?%}|{\*[\s\S]*?\*}/g;
   var markupTemplating = Prism.languages["markup-templating"];
-  //console.dir(Prism.languages);
 
   Prism.hooks.add("before-tokenize", (env) =>
     markupTemplating.buildPlaceholders(env, "acutis", pattern)
