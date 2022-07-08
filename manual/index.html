@@ -26,23 +26,21 @@
                 />
                 Acutis
               </a>
-            </p><p class="site-header__subtitle">A declarative template language for web documents &amp; beyond.</p>
+            </p><p class="site-header__subtitle">A declarative, type-safe template language</p>
         </header>
         <nav class="site-header__nav">
           <ol class="site-header__nav-list"><li>
-                <a href="https:&#x2F;&#x2F;johnridesa.bike&#x2F;acutis&#x2F;" aria-current="false">Home</a>
+                <a href="https://johnridesa.bike/acutis/" aria-current="false">Home</a>
               </li><li>
-                <a href="https:&#x2F;&#x2F;johnridesa.bike&#x2F;acutis&#x2F;introduction&#x2F;" aria-current="false">Getting started</a>
+                <a href="https://johnridesa.bike/acutis/introduction/" aria-current="false">Getting started</a>
               </li><li>
-                <a href="https:&#x2F;&#x2F;johnridesa.bike&#x2F;acutis&#x2F;manual&#x2F;" aria-current="true">Language manual</a>
+                <a href="https://johnridesa.bike/acutis/manual/" aria-current="true">Language manual</a>
               </li><li>
-                <a href="https:&#x2F;&#x2F;johnridesa.bike&#x2F;acutis&#x2F;api&#x2F;" aria-current="false">API</a>
+                <a href="https://johnridesa.bike/acutis/api/" aria-current="false">OCaml API</a>
               </li><li>
-                <a href="https:&#x2F;&#x2F;johnridesa.bike&#x2F;acutis&#x2F;playground&#x2F;" aria-current="false">Playground</a>
+                <a href="https://johnridesa.bike/acutis/playground/" aria-current="false">Playground</a>
               </li><li>
-                <a href="https:&#x2F;&#x2F;johnridesa.bike&#x2F;acutis&#x2F;development&#x2F;" aria-current="false">Development</a>
-              </li><li>
-                <a href="https:&#x2F;&#x2F;johnridesa.bike&#x2F;acutis&#x2F;credits&#x2F;" aria-current="false">Credits</a>
+                <a href="https://johnridesa.bike/acutis/credits/" aria-current="false">Credits</a>
               </li></ol>
         </nav>
       </div><main class="main" id="content">
@@ -51,119 +49,285 @@
             <h1>Acutis language manual</h1>
           </header><p>An Acutis template is parsed as three basic building blocks:</p>
 <ul>
-<li>Text, which is rendered as-is.</li>
-<li>Echoes, which are values wrapped in <code>{{</code> “mustaches” <code>}}</code>.</li>
-<li>Expressions, which are wrapped in <code>{%</code> and <code>%}</code>.</li>
+<li><strong>Text</strong>, which is rendered as-is.</li>
+<li><strong>Echoes</strong>, which are values wrapped in <code>{{</code> “mustaches” <code>}}</code>.</li>
+<li><strong>Expressions</strong>, which are wrapped in <code>{%</code> and <code>%}</code>.</li>
 </ul>
 <p>Most of the language features occur within <code>{%</code> expressions <code>%}</code>.</p>
-<p><div class="table-of-contents"><details open><summary class="toc-container-header">Contents</summary><ol><li><a href="#bindings">Bindings</a></li><li><a href="#echoing-values">Echoing values</a><ol><li><a href="#nullish-coalescing">Nullish coalescing</a></li><li><a href="#escaping">Escaping</a></li></ol></li><li><a href="#comments">Comments</a></li><li><a href="#whitespace-control">Whitespace control</a></li><li><a href="#pattern-matching">Pattern matching</a><ol><li><a href="#example">Example</a></li></ol></li><li><a href="#multiple-patterns-for-a-block">Multiple patterns for a block</a></li><li><a href="#shadowing-bindings">Shadowing bindings</a></li><li><a href="#mapping">Mapping</a><ol><li><a href="#example">Example</a></li><li><a href="#mapping-static-patterns">Mapping static patterns</a></li><li><a href="#matching-the-item-index">Matching the item index</a></li><li><a href="#mapping-objects">Mapping objects</a></li></ol></li><li><a href="#pattern-matching-in-depth">Pattern matching in-depth</a><ol><li><a href="#reference-table">Reference table</a></li><li><a href="#ignoring-values-with-_-(underscore)">Ignoring values with _ (underscore)</a></li><li><a href="#matching-multiple-values-at-once">Matching multiple values at once</a></li><li><a href="#the-rules-of-pattern-matching">The rules of pattern matching</a></li></ol></li><li><a href="#type">Type</a></li><li><a href="#template-components">Template components</a><ol><li><a href="#patterns-in-props">Patterns in props</a></li><li><a href="#prop-punning">Prop punning</a></li><li><a href="#template-children-props">Template children props</a></li><li><a href="#default-children-prop">Default children prop</a></li></ol></li></ol></details></div></p>
-<h2 id="bindings">Bindings</h2>
-<p>Every template accepts a properties object (props) that binds values to
-names. The object <code>{&quot;color&quot;: &quot;blue&quot;}</code> binds <code>&quot;blue&quot;</code> to the name <code>color</code>.</p>
-<p>If a template tries to access a binding that doesn’t exist, then the value
-defaults to <code>null</code>. (See <a href="#patterns%2C-matching%2C-and-mapping">Pattern matching</a> and <a href="#type">Type</a> for more
-information about this.)</p>
-<h2 id="echoing-values">Echoing values</h2>
+<p><div class="table-of-contents"><details open><summary class="toc-container-header">Contents</summary><ol><li><a href="#props-and-bindings">Props and bindings</a></li><li><a href="#echoing-values">Echoing values</a><ol><li><a href="#nullish-coalescing">Nullish coalescing</a></li><li><a href="#escaping">Escaping</a></li></ol></li><li><a href="#comments">Comments</a></li><li><a href="#whitespace-control">Whitespace control</a></li><li><a href="#introduction-to-types">Introduction to types</a><ol><li><a href="#constants%3A-int%2C-float%2C-and-string">Constants: int, float, and string</a></li><li><a href="#nullable">Nullable</a></li><li><a href="#list">List</a></li><li><a href="#tuple">Tuple</a></li><li><a href="#record">Record</a></li><li><a href="#dictionary">Dictionary</a></li><li><a href="#enumeration">Enumeration</a></li><li><a href="#boolean">Boolean</a></li><li><a href="#tagged-union">Tagged union</a></li><li><a href="#echoable">Echoable</a></li><li><a href="#unknown">Unknown</a></li></ol></li><li><a href="#typing-philosophy">Typing philosophy</a></li><li><a href="#types-and-json">Types and JSON</a></li><li><a href="#introduction-to-pattern-matching">Introduction to pattern matching</a></li><li><a href="#multiple-patterns-for-a-block">Multiple patterns for a block</a></li><li><a href="#shadowing-bindings">Shadowing bindings</a></li><li><a href="#mapping">Mapping</a><ol><li><a href="#mapping-static-patterns">Mapping static patterns</a></li><li><a href="#matching-the-item-index">Matching the item index</a></li><li><a href="#mapping-dictionaries">Mapping dictionaries</a></li></ol></li><li><a href="#more-about-pattern-matching">More about pattern matching</a><ol><li><a href="#reference-table">Reference table</a></li><li><a href="#ignoring-values-with-_-(underscore)">Ignoring values with _ (underscore)</a></li><li><a href="#matching-multiple-values-at-once">Matching multiple values at once</a></li></ol></li><li><a href="#template-components">Template components</a><ol><li><a href="#patterns-in-props">Patterns in props</a></li><li><a href="#prop-punning">Prop punning</a></li><li><a href="#template-children-props">Template children props</a></li><li><a href="#default-children-prop">Default children prop</a></li></ol></li></ol></details></div></p>
+<h2 id="props-and-bindings" tabindex="-1">Props and bindings</h2>
+<p>Every template accepts a map of properties (props) that binds names to values.
+In this document, we will use JSON data to represent our input type, but the
+Acutis rendering engine is flexible enough to allow other types of input.</p>
+<p>The JSON object <code>{&quot;color&quot;: &quot;blue&quot;}</code> binds <code>&quot;blue&quot;</code> to the name <code>color</code>.</p>
+<h2 id="echoing-values" tabindex="-1">Echoing values</h2>
 <p>If you apply the props from the last section to this template:</p>
 <pre class="language-acutis"><code class="language-acutis">My favorite color is <span class="token acutis language-acutis"><span class="token delimiter punctuation">{{</span> <span class="token variable">color</span> <span class="token delimiter punctuation">}}</span></span>.</code></pre>
 <p>It renders:</p>
 <pre class="language-acutis"><code class="language-acutis">My favorite color is blue.</code></pre>
-<h3 id="nullish-coalescing">Nullish coalescing</h3>
-<p>The <code>?</code> (question mark) echoes the value on its right-hand side if the value
-on its left-hand side is <code>null</code>.</p>
+<h3 id="nullish-coalescing" tabindex="-1">Nullish coalescing</h3>
+<p>The <code>?</code> (question mark) echoes the value on its right-hand side if the value on
+its left-hand side is <code>null</code>.</p>
 <pre class="language-acutis"><code class="language-acutis">My favorite color is <span class="token acutis language-acutis"><span class="token delimiter punctuation">{{</span> <span class="token variable">color</span> <span class="token operator">?</span> <span class="token variable">fallbackColor</span> <span class="token delimiter punctuation">}}</span></span>.<br><br>You can chain ?s: <span class="token acutis language-acutis"><span class="token delimiter punctuation">{{</span> <span class="token variable">a</span> <span class="token operator">?</span> <span class="token variable">b</span> <span class="token operator">?</span> <span class="token string">"If this prints, a and b are both null."</span> <span class="token delimiter punctuation">}}</span></span></code></pre>
-<h3 id="escaping">Escaping</h3>
+<h3 id="escaping" tabindex="-1">Escaping</h3>
 <p>Acutis escapes echoes by default. It transforms the following characters into
 HTML entities:</p>
 <pre class="language-acutis"><code class="language-acutis">&amp; " ' > &lt; / ` =</code></pre>
-<p>If the <code>&amp;</code> (ampersand) character appears before a value, then the value will
-not be escaped.</p>
+<p>If the <code>&amp;</code> (ampersand) character appears before a value, then it will not escape
+the value.</p>
 <pre class="language-acutis"><code class="language-acutis">My favorite color is <span class="token acutis language-acutis"><span class="token delimiter punctuation">{{</span> <span class="token operator">&amp;</span><span class="token variable">color</span> <span class="token delimiter punctuation">}}</span></span>.</code></pre>
-<h2 id="comments">Comments</h2>
+<h2 id="comments" tabindex="-1">Comments</h2>
 <pre class="language-acutis"><code class="language-acutis"><span class="token acutis language-acutis"><span class="token comment">{* TODO: add more colors. *}</span></span></code></pre>
-<p>Anything wrapped <code>{*</code> and <code>*}</code> is always ignored in the output. It is
-possible to nest comments, similar to ML-style languages.</p>
-<!-- Prism can't render nested comments. -->
-<pre class="language-acutis"><code class="language-acutis"><span class="token acutis language-acutis"><span class="token comment">{* None of {* this is *} rendered. *}</span></span></code></pre>
-<h2 id="whitespace-control">Whitespace control</h2>
-<p>The <code>~</code> (tilde) symbol trims whitespace before or after an expression or an
-echo statement.</p>
+<p>Anything wrapped <code>{*</code> and <code>*}</code> is always ignored in the output. It is possible
+to nest comments, similar to ML-style languages.</p>
+<h2 id="whitespace-control" tabindex="-1">Whitespace control</h2>
+<p>The <code>~</code> (tilde) symbol trims whitespace before or after an expression or an echo
+statement.</p>
 <pre class="language-acutis"><code class="language-acutis"><span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>p</span><span class="token punctuation">></span></span><br>  <span class="token acutis language-acutis"><span class="token delimiter punctuation">{{</span><span class="token operator">~</span> <span class="token variable">color</span> <span class="token operator">~</span><span class="token delimiter punctuation">}}</span></span><br><span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>p</span><span class="token punctuation">></span></span></code></pre>
 <p>Renders:</p>
 <pre class="language-acutis"><code class="language-acutis"><span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>p</span><span class="token punctuation">></span></span>Blue<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>p</span><span class="token punctuation">></span></span></code></pre>
-<h2 id="pattern-matching">Pattern matching</h2>
-<p>The <code>match</code> and <code>map</code> statements are the core of Acutis’ superpowers. They
-use pattern matching to conditionally output sections of a template.</p>
-<p>Pattern matching in Acutis combines object destructuring with equality
-checking. If you’re used to destructuring objects and using the <code>switch</code>
-statement in JavaScript, then this may seem like a natural progression from
-that.</p>
-<h3 id="example">Example</h3>
+<h2 id="introduction-to-types" tabindex="-1">Introduction to types</h2>
+<p>Acutis is statically typed, where types are checked at compile time. The type
+scheme is mostly based on JSON with some additional features.</p>
+<p>Acutis does not use type annotations. The compiler can infer the types 100%
+correctly based on how you use the values in your templates. This is a
+double-edged sword, though. It means that code is more concise and easier to
+write, but, if you write a template incorrectly, the compiler will infer the
+types in ways you may not expect.</p>
+<h3 id="constants%3A-int%2C-float%2C-and-string" tabindex="-1">Constants: int, float, and string</h3>
+<p>Examples:</p>
+<pre class="language-txt"><code class="language-txt">1<br>1.5<br>"abc"</code></pre>
+<p>The three “constant” types are <code>int</code>, <code>float</code>, and <code>string</code>, which work as you’d
+expect from other languages.</p>
+<h3 id="nullable" tabindex="-1">Nullable</h3>
+<p>Examples:</p>
+<pre class="language-txt"><code class="language-txt">null<br>!"abc"</code></pre>
+<p>Any type may be “wrapped” in a nullable. Nullable types are indicated by a <code>?</code>
+preceding the wrapped type, e.g. <code>?int</code>. They can either be <code>null</code> or not-null,
+which is written in patterns with a <code>!</code>.</p>
+<p>Because of the way Acutis “wraps” nullable values, they’re closer to what other
+languages call “option” types.</p>
+<h3 id="list" tabindex="-1">List</h3>
+<p>Examples:</p>
+<pre class="language-txt"><code class="language-txt">[]<br>["a", "b"]<br>[1, 2, 3, ...rest]</code></pre>
+<p>A list is an ordered sequence of values. Lists are homogeneous; each item must
+be of the same type. They are indicated with brackets, e.g. <code>[int]</code>.</p>
+<p>You can append or destructure items from the “head,” or the front, of a list
+with the <code>...</code> syntax.</p>
+<h3 id="tuple" tabindex="-1">Tuple</h3>
+<p>Example:</p>
+<pre class="language-txt"><code class="language-txt">(12, "abc", null)</code></pre>
+<p>A tuple is an ordered sequence of items. They’re heterogeneous, so each item may
+be a different type than its neighbor. They are indicated with parentheses, e.g.
+<code>(int, string, ?float)</code>.</p>
+<p>Unlike lists, which are dynamically sized, tuple sizes are always fixed.</p>
+<h3 id="record" tabindex="-1">Record</h3>
+<p>Example:</p>
+<pre class="language-txt"><code class="language-txt">{a: 12, b: "xyz"}</code></pre>
+<p>A record is a series of key-value pairs. Records are indicated by braces, e.g.
+<code>{a: int, b: string}</code>.</p>
+<p>Acutis records are extensible. The compiler always assumes that every record may
+contain additional fields have not been specified yet.</p>
+<h3 id="dictionary" tabindex="-1">Dictionary</h3>
+<p>Example:</p>
+<pre class="language-txt"><code class="language-txt">&lt;a: 12, b: 101></code></pre>
+<p>Dictionaries, or “dicts,” are to records what lists are to tuples. They
+represent key-value pairs like records, but they are dynamically sized and
+homogeneously typed. They are specified with angled brackets, e.g. <code>&lt;int&gt;</code>.</p>
+<p>The order of keys in a dict is <em>not</em> preserved. The compiler currently sorts
+them alphabetically, but that specific behavior is not defined.</p>
+<h3 id="enumeration" tabindex="-1">Enumeration</h3>
+<p>Examples:</p>
+<pre class="language-txt"><code class="language-txt">@"abc"<br>@12</code></pre>
+<p>An enumeration, or an “enum,” is a set of integers or strings. Each enum value
+is indicated with an at-symbol, e.g. <code>@&quot;a&quot; | @&quot;b&quot; | @&quot;c&quot;</code>.</p>
+<p>Enums can be “open” or “closed.” A closed enum only allows its specified values.
+An open enum allows the possibility of adding new values. “Openness” is
+indicated with ellipses, e.g. <code>@&quot;a&quot; | @&quot;b&quot; | ...</code>.</p>
+<h3 id="boolean" tabindex="-1">Boolean</h3>
+<p>Examples:</p>
+<pre class="language-txt"><code class="language-txt">false<br>true</code></pre>
+<p>Boolean values are really just a special kind of enum. The <code>false | true</code> type
+works exactly any closed binary enum would, such as <code>@0 | @1</code>.</p>
+<p>It is possible to have a type which is <em>only</em> <code>false</code> or <em>only</em> <code>true</code>, but this
+usually indicates a programmer error.</p>
+<h3 id="tagged-union" tabindex="-1">Tagged union</h3>
+<p>Examples:</p>
+<pre class="language-txt"><code class="language-txt">{@shape: "circle": radius: 12}<br>{@shape: "rectangle", height: 11, width: 7}</code></pre>
+<p>A record may have a “tag” field, indicated by an at-symbol, which allows it to
+combine with other records. This is like a combination of a record and enum
+type, since the tag field works like an enum.</p>
+<pre class="language-txt"><code class="language-txt">{@shape: "circle", r: int} | {@shape: "rectangle", h: int, w: int}</code></pre>
+<p>Unions may also be “open” or “closed,” similar to enums.</p>
+<p>Tag fields may only contain literal integer, string, or boolean values.</p>
+<h3 id="echoable" tabindex="-1">Echoable</h3>
+<p>Acutis can echo any int, string, float, or enum value. If it can’t determine
+which of these types a particular echoed value is, then it uses a catch-all
+<code>echoable</code> type.</p>
+<h3 id="unknown" tabindex="-1">Unknown</h3>
+<p>Finally, if Acutis can’t determine anything at all about a value’s type, then it
+uses “unknown,” which is indicated by an underscore: <code>_</code>.</p>
+<h2 id="typing-philosophy" tabindex="-1">Typing philosophy</h2>
+<p>Acutis is <em>strongly</em> and <em>statically</em> typed. The compiler guarantees that values
+are coherent, for example, a <code>string</code> will never appear where an <code>int</code> is
+expected.</p>
+<p>Acutis is also <em>structurally</em> typed. This allows the compiler to do more than
+just check type equality. It can check for subtypes, which sees if a particular
+structure is compatible as a subset of another structure.</p>
+<p>The goal is to enable real-world data to easily fit into a system that’s 100%
+type-safe. This means you must sometimes make decisions about which types best
+fit your data. For example, records and tuples are heterogeneous and
+fixed-sized, while dicts and lists are homogeneous and dynamically-sized. This
+trade-off is necessary because a structure that is heterogeneous and dynamic
+would be unsafe.</p>
+<h2 id="types-and-json" tabindex="-1">Types and JSON</h2>
+<p>The Acutis rendering engine is generic enough to allow different input types.
+However, it currently only includes decoders for JSON and JavaScript. Both are
+very similar, so we’ll use JSON as our primary example.</p>
+<p>Acutis accepts incoming data and decodes it according to the template’s type
+scheme. Any data sent to an external function is encoded back into its original
+type.</p>
+<p>Here’s how example Acutis types correspond to JSON types and values:</p>
+<!-- Adding bars inside inside tables messes with markdown tooling. -->
+<table>
+<thead>
+<tr>
+<th>Acutis type</th>
+<th>JSON type or value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>int</code></td>
+<td><code>number</code></td>
+</tr>
+<tr>
+<td><code>float</code></td>
+<td><code>number</code></td>
+</tr>
+<tr>
+<td><code>string</code></td>
+<td><code>string</code></td>
+</tr>
+<tr>
+<td><code>false | true</code></td>
+<td><code>boolean</code></td>
+</tr>
+<tr>
+<td><code>?string</code></td>
+<td><code>null</code> or <code>string</code></td>
+</tr>
+<tr>
+<td><code>[string]</code></td>
+<td><code>array</code> with <code>string</code> values</td>
+</tr>
+<tr>
+<td><code>(int, string, float)</code></td>
+<td><code>array</code> with shape <code>[number, string, number]</code></td>
+</tr>
+<tr>
+<td><code>{a: int, b: string}</code></td>
+<td><code>object</code> with shape <code>{&quot;a&quot;: number, &quot;b&quot;: string}</code></td>
+</tr>
+<tr>
+<td><code>&lt;string&gt;</code></td>
+<td><code>object</code> with <code>string</code> values</td>
+</tr>
+<tr>
+<td><code>@&quot;a&quot; | @&quot;b&quot;</code></td>
+<td>Values <code>&quot;a&quot;</code> or <code>&quot;b&quot;</code></td>
+</tr>
+<tr>
+<td><code>@1 | @2</code></td>
+<td>Values <code>1</code> or <code>2</code></td>
+</tr>
+<tr>
+<td><code>{@tag: &quot;a&quot;, b: int}</code></td>
+<td><code>object</code> with shape <code>{&quot;tag&quot;: &quot;a&quot;, &quot;b&quot;: number}</code></td>
+</tr>
+<tr>
+<td><code>echoable</code></td>
+<td><code>number</code> or <code>string</code> or <code>boolean</code></td>
+</tr>
+<tr>
+<td><code>_</code> (unknown)</td>
+<td>Any</td>
+</tr>
+</tbody>
+</table>
+<p>You may need to preprocess your input data to fit Acutis’ type constraints. For
+example, if you have a value can be one of several incompatible types, then you
+will have to transform it into a legal type such as a tagged union.</p>
+<h2 id="introduction-to-pattern-matching" tabindex="-1">Introduction to pattern matching</h2>
+<p>The <code>match</code> and <code>map</code> statements are the core of Acutis’ powers. They use
+pattern matching to conditionally output sections of a template.</p>
+<p>Pattern matching in Acutis combines object destructuring with equality checking.
+If you’re used to destructuring objects and using the <code>switch</code> statement in
+JavaScript, then this may seem like a natural progression from that.</p>
 <p>Consider this pattern:</p>
-<pre class="language-js"><code class="language-js"><span class="token punctuation">{</span>published<span class="token operator">:</span> <span class="token boolean">true</span><span class="token punctuation">,</span> title<span class="token punctuation">,</span> dates<span class="token operator">:</span> <span class="token punctuation">{</span>posted<span class="token punctuation">,</span> updated<span class="token punctuation">}</span><span class="token punctuation">}</span></code></pre>
+<pre class="language-js"><code class="language-js"><span class="token punctuation">{</span><span class="token literal-property property">published</span><span class="token operator">:</span> <span class="token boolean">true</span><span class="token punctuation">,</span> title<span class="token punctuation">,</span> <span class="token literal-property property">dates</span><span class="token operator">:</span> <span class="token punctuation">{</span>posted<span class="token punctuation">,</span> updated<span class="token punctuation">}</span><span class="token punctuation">}</span></code></pre>
 <p>This matches any object where <code>published</code> equals <code>true</code>, which contains a
-<code>title</code> field, and which contains a <code>dates</code> object with <code>posted</code> and
-<code>updated</code> fields. Additionally, it <em>binds</em> the values of <code>title</code>, <code>posted</code>,
-and <code>updated</code> to those names.</p>
+<code>title</code> field, and which contains a <code>dates</code> object with <code>posted</code> and <code>updated</code>
+fields. Additionally, it <em>binds</em> the values of <code>title</code>, <code>posted</code>, and <code>updated</code>
+to those names.</p>
 <p>Therefore, we can use these with the <code>match</code> statement and the <code>with</code> clause:</p>
 <pre class="language-acutis"><code class="language-acutis"><span class="token acutis language-acutis"><span class="token delimiter punctuation">{%</span> <span class="token tag keyword">match</span> <span class="token variable">article</span><br>   <span class="token keyword">with</span> <span class="token punctuation">{</span><span class="token variable">published</span><span class="token punctuation">:</span> <span class="token boolean">true</span><span class="token punctuation">,</span> <span class="token variable">title</span><span class="token punctuation">,</span> <span class="token variable">dates</span><span class="token punctuation">:</span> <span class="token punctuation">{</span><span class="token variable">posted</span><span class="token punctuation">,</span> <span class="token variable">updated</span><span class="token punctuation">}</span><span class="token punctuation">}</span> <span class="token delimiter punctuation">%}</span></span><br>  <span class="token acutis language-acutis"><span class="token delimiter punctuation">{{</span> <span class="token variable">title</span> <span class="token delimiter punctuation">}}</span></span> was posted on <span class="token acutis language-acutis"><span class="token delimiter punctuation">{{</span> <span class="token variable">posted</span> <span class="token delimiter punctuation">}}</span></span> and updated on <span class="token acutis language-acutis"><span class="token delimiter punctuation">{{</span> <span class="token variable">updated</span> <span class="token delimiter punctuation">}}</span></span>.<br><span class="token acutis language-acutis"><span class="token delimiter punctuation">{%</span> <span class="token tag keyword">with</span> <span class="token punctuation">{</span><span class="token variable">published</span><span class="token punctuation">:</span> <span class="token boolean">false</span><span class="token punctuation">}</span> <span class="token delimiter punctuation">%}</span></span><br>  <span class="token acutis language-acutis"><span class="token comment">{* Don't render unpublished articles. *}</span></span><br><span class="token acutis language-acutis"><span class="token delimiter punctuation">{%</span> <span class="token punctuation">/</span><span class="token keyword">match</span> <span class="token delimiter punctuation">%}</span></span></code></pre>
 <p>The <code>match</code>…<code>with</code> block is analogous to a <code>switch</code>…<code>case</code> block in some
 languages. Here, the structure and values of the <code>article</code> binding is checked
-against the patterns after each <code>with</code> clause. If one of the patterns
-<em>matches</em> the contents of <code>article</code>, then the following template section is
-rendered.</p>
-<h2 id="multiple-patterns-for-a-block">Multiple patterns for a block</h2>
+against the patterns after each <code>with</code> clause. If one of the patterns <em>matches</em>
+the contents of <code>article</code>, then the following template section is rendered.</p>
+<h2 id="multiple-patterns-for-a-block" tabindex="-1">Multiple patterns for a block</h2>
 <p>Acutis allows multiple <code>with</code> patterns to render single block expression.</p>
 <pre class="language-acutis"><code class="language-acutis"><span class="token acutis language-acutis"><span class="token delimiter punctuation">{%</span> <span class="token tag keyword">match</span> <span class="token variable">greeting</span><br>   <span class="token keyword">with</span> <span class="token string">"Hello"</span><br>   <span class="token keyword">with</span> <span class="token string">"Hola"</span><br>   <span class="token keyword">with</span> <span class="token string">"Konnichiwa"</span> <span class="token delimiter punctuation">%}</span></span><br>  I can speak this language.<br><span class="token acutis language-acutis"><span class="token delimiter punctuation">{%</span> <span class="token tag keyword">with</span> <span class="token variable">unknown</span> <span class="token delimiter punctuation">%}</span></span><br>  I don't know what "<span class="token acutis language-acutis"><span class="token delimiter punctuation">{{</span> <span class="token variable">unknown</span> <span class="token delimiter punctuation">}}</span></span>" means.<br><span class="token acutis language-acutis"><span class="token delimiter punctuation">{%</span> <span class="token punctuation">/</span><span class="token keyword">match</span> <span class="token delimiter punctuation">%}</span></span></code></pre>
-<h2 id="shadowing-bindings">Shadowing bindings</h2>
+<h2 id="shadowing-bindings" tabindex="-1">Shadowing bindings</h2>
 <p>Bindings are immutable. Binding a value to an existing name does not override
 the original, but <em>shadows</em> it. Bindings are also scoped to their blocks.</p>
-<p>Consider this object about my favorite colors:</p>
-<pre class="language-json"><code class="language-json"><span class="token punctuation">{</span><span class="token property">"color"</span><span class="token operator">:</span> <span class="token string">"blue"</span><span class="token punctuation">,</span> <span class="token property">"other"</span><span class="token operator">:</span> <span class="token punctuation">{</span><span class="token property">"color"</span><span class="token operator">:</span> <span class="token string">"green"</span><span class="token punctuation">}</span><span class="token punctuation">}</span></code></pre>
+<p>Consider this JSON object:</p>
+<pre class="language-json"><code class="language-json"><span class="token punctuation">{</span> <span class="token property">"color"</span><span class="token operator">:</span> <span class="token string">"blue"</span><span class="token punctuation">,</span> <span class="token property">"other"</span><span class="token operator">:</span> <span class="token punctuation">{</span> <span class="token property">"color"</span><span class="token operator">:</span> <span class="token string">"green"</span> <span class="token punctuation">}</span> <span class="token punctuation">}</span></code></pre>
 <p>And this template:</p>
 <pre class="language-acutis"><code class="language-acutis">My favorite is <span class="token acutis language-acutis"><span class="token delimiter punctuation">{{</span> <span class="token variable">color</span> <span class="token delimiter punctuation">}}</span></span>.<br><br><span class="token acutis language-acutis"><span class="token delimiter punctuation">{%</span> <span class="token tag keyword">match</span> <span class="token variable">other</span> <span class="token keyword">with</span> <span class="token punctuation">{</span><span class="token variable">color</span><span class="token punctuation">}</span> <span class="token operator">~</span><span class="token delimiter punctuation">%}</span></span><br>  Another is <span class="token acutis language-acutis"><span class="token delimiter punctuation">{{</span> <span class="token variable">color</span> <span class="token delimiter punctuation">}}</span></span>.<br><span class="token acutis language-acutis"><span class="token delimiter punctuation">{%</span><span class="token operator">~</span> <span class="token punctuation">/</span><span class="token keyword">match</span> <span class="token delimiter punctuation">%}</span></span><br><br>But my favorite is still <span class="token acutis language-acutis"><span class="token delimiter punctuation">{{</span> <span class="token variable">color</span> <span class="token delimiter punctuation">}}</span></span>.</code></pre>
 <p>Which renders:</p>
 <pre class="language-acutis"><code class="language-acutis">My favorite is blue.<br><br>Another is green.<br><br>But my favorite is still blue.</code></pre>
 <p>The top-level <code>color</code> is not affected by the nested <code>color</code> binding.</p>
-<h2 id="mapping">Mapping</h2>
-<p>The <code>map</code> statement is similar to <code>match</code> except that it is used on arrays
-and objects to render each value of the array or object.</p>
-<p>The value types must be homogenous (all the same type), or else a type error
-is likely.</p>
-<h3 id="example-1">Example</h3>
+<h2 id="mapping" tabindex="-1">Mapping</h2>
+<p>The <code>map</code> statement is similar to <code>match</code> except that it is used on lists to
+render each value of the list.</p>
 <p>These props:</p>
-<pre class="language-json"><code class="language-json"><span class="token punctuation">{</span><br>  <span class="token property">"articles"</span><span class="token operator">:</span> <span class="token punctuation">[</span><br>    <span class="token punctuation">{</span><span class="token property">"title"</span><span class="token operator">:</span> <span class="token string">"Acutis templates for beginners"</span><span class="token punctuation">,</span> <span class="token property">"author"</span><span class="token operator">:</span> <span class="token string">"John"</span><span class="token punctuation">}</span><span class="token punctuation">,</span> <br>    <span class="token punctuation">{</span><span class="token property">"title"</span><span class="token operator">:</span> <span class="token string">"Level up your Acutis skills"</span><span class="token punctuation">,</span> <span class="token property">"author"</span><span class="token operator">:</span> <span class="token string">"Carlo"</span><span class="token punctuation">}</span><br>  <span class="token punctuation">]</span><br><span class="token punctuation">}</span></code></pre>
+<pre class="language-json"><code class="language-json"><span class="token punctuation">{</span><br>  <span class="token property">"articles"</span><span class="token operator">:</span> <span class="token punctuation">[</span><br>    <span class="token punctuation">{</span> <span class="token property">"title"</span><span class="token operator">:</span> <span class="token string">"Acutis templates for beginners"</span><span class="token punctuation">,</span> <span class="token property">"author"</span><span class="token operator">:</span> <span class="token string">"John"</span> <span class="token punctuation">}</span><span class="token punctuation">,</span><br>    <span class="token punctuation">{</span> <span class="token property">"title"</span><span class="token operator">:</span> <span class="token string">"Level up your Acutis skills"</span><span class="token punctuation">,</span> <span class="token property">"author"</span><span class="token operator">:</span> <span class="token string">"Carlo"</span> <span class="token punctuation">}</span><br>  <span class="token punctuation">]</span><br><span class="token punctuation">}</span></code></pre>
 <p>And this template:</p>
 <pre class="language-acutis"><code class="language-acutis"><span class="token acutis language-acutis"><span class="token delimiter punctuation">{%</span> <span class="token tag keyword">map</span> <span class="token variable">articles</span> <span class="token keyword">with</span> <span class="token punctuation">{</span><span class="token variable">title</span><span class="token punctuation">,</span> <span class="token variable">author</span><span class="token punctuation">}</span> <span class="token operator">~</span><span class="token delimiter punctuation">%}</span></span><br>  The article "<span class="token acutis language-acutis"><span class="token delimiter punctuation">{{</span> <span class="token variable">title</span> <span class="token delimiter punctuation">}}</span></span>" was written by <span class="token acutis language-acutis"><span class="token delimiter punctuation">{{</span> <span class="token variable">author</span> <span class="token delimiter punctuation">}}</span></span>.<br><span class="token acutis language-acutis"><span class="token delimiter punctuation">{%</span> <span class="token punctuation">/</span><span class="token keyword">map</span> <span class="token delimiter punctuation">%}</span></span></code></pre>
-<p>Renders:</p>
-<pre class="language-html"><code class="language-html">The article "Acutis templates for beginners" was written by John.<br>The article "Level up your Acutis skills" was written by Carlo.</code></pre>
+<p>Will render:</p>
+<pre class="language-txt"><code class="language-txt">The article "Acutis templates for beginners" was written by John.<br>The article "Level up your Acutis skills" was written by Carlo.</code></pre>
 <p>Just like <code>match</code>, <code>map</code> can take multiple patterns to conditionally render
 different template sections based on an value’s content.</p>
 <pre class="language-acutis"><code class="language-acutis"><span class="token acutis language-acutis"><span class="token delimiter punctuation">{%</span> <span class="token tag keyword">map</span> <span class="token variable">articles</span><br>   <span class="token keyword">with</span> <span class="token punctuation">{</span><span class="token variable">title</span><span class="token punctuation">,</span> <span class="token variable">author</span><span class="token punctuation">:</span> <span class="token boolean">null</span><span class="token punctuation">}</span> <span class="token delimiter punctuation">%}</span></span><br>  The article "<span class="token acutis language-acutis"><span class="token delimiter punctuation">{{</span> <span class="token variable">title</span> <span class="token delimiter punctuation">}}</span></span>" was written anonymously.<br><span class="token acutis language-acutis"><span class="token delimiter punctuation">{%</span> <span class="token tag keyword">with</span> <span class="token punctuation">{</span><span class="token variable">title</span><span class="token punctuation">,</span> <span class="token variable">author</span><span class="token punctuation">}</span> <span class="token delimiter punctuation">%}</span></span><br>  The article "<span class="token acutis language-acutis"><span class="token delimiter punctuation">{{</span> <span class="token variable">title</span> <span class="token delimiter punctuation">}}</span></span>" was written by <span class="token acutis language-acutis"><span class="token delimiter punctuation">{{</span> <span class="token variable">author</span> <span class="token delimiter punctuation">}}</span></span>.<br><span class="token acutis language-acutis"><span class="token delimiter punctuation">{%</span> <span class="token punctuation">/</span><span class="token keyword">map</span> <span class="token delimiter punctuation">%}</span></span></code></pre>
-<h3 id="mapping-static-patterns">Mapping static patterns</h3>
-<p>You can map static array patterns.</p>
+<h3 id="mapping-static-patterns" tabindex="-1">Mapping static patterns</h3>
+<p>You can map static list patterns.</p>
 <pre class="language-acutis"><code class="language-acutis"><span class="token acutis language-acutis"><span class="token delimiter punctuation">{%</span> <span class="token tag keyword">map</span> <span class="token punctuation">[</span><span class="token string">"Carlo"</span><span class="token punctuation">,</span> <span class="token string">"John"</span><span class="token punctuation">]</span> <span class="token keyword">with</span> <span class="token variable">name</span> <span class="token operator">~</span><span class="token delimiter punctuation">%}</span></span><br>  Hello, <span class="token acutis language-acutis"><span class="token delimiter punctuation">{{</span> <span class="token variable">name</span> <span class="token delimiter punctuation">}}</span></span>.<br><span class="token acutis language-acutis"><span class="token delimiter punctuation">{%</span> <span class="token punctuation">/</span><span class="token keyword">map</span> <span class="token delimiter punctuation">%}</span></span></code></pre>
-<p>You can also concatenate a static array pattern with an array binding by
-using the <code>...</code> (spread) syntax.</p>
+<p>You can also concatenate a static list pattern with an list binding by using the
+<code>...</code> (spread) syntax.</p>
 <pre class="language-acutis"><code class="language-acutis"><span class="token acutis language-acutis"><span class="token delimiter punctuation">{%</span> <span class="token tag keyword">map</span> <span class="token punctuation">[</span><span class="token string">"Carlo"</span><span class="token punctuation">,</span> <span class="token string">"John"</span><span class="token punctuation">,</span> <span class="token punctuation">.</span><span class="token punctuation">.</span><span class="token punctuation">.</span><span class="token variable">others</span><span class="token punctuation">]</span> <span class="token keyword">with</span> <span class="token variable">name</span> <span class="token operator">~</span><span class="token delimiter punctuation">%}</span></span><br>  Hello, <span class="token acutis language-acutis"><span class="token delimiter punctuation">{{</span> <span class="token variable">name</span> <span class="token delimiter punctuation">}}</span></span>.<br><span class="token acutis language-acutis"><span class="token delimiter punctuation">{%</span> <span class="token punctuation">/</span><span class="token keyword">map</span> <span class="token delimiter punctuation">%}</span></span></code></pre>
-<h3 id="matching-the-item-index">Matching the item index</h3>
-<p>You can optionally include an item’s index in the pattern.
-<em>For arrays, indices always begin at zero.</em></p>
+<h3 id="matching-the-item-index" tabindex="-1">Matching the item index</h3>
+<p>You can optionally include an item’s index in the pattern. <em>For lists, indices
+always begin at zero.</em></p>
 <pre class="language-acutis"><code class="language-acutis"><span class="token acutis language-acutis"><span class="token delimiter punctuation">{%</span> <span class="token tag keyword">map</span> <span class="token variable">articles</span> <span class="token keyword">with</span> <span class="token punctuation">{</span><span class="token variable">title</span><span class="token punctuation">,</span> <span class="token variable">author</span><span class="token punctuation">}</span><span class="token punctuation">,</span> <span class="token variable">index</span> <span class="token delimiter punctuation">%}</span></span><br>  <span class="token acutis language-acutis"><span class="token delimiter punctuation">{{</span> <span class="token variable">index</span> <span class="token delimiter punctuation">}}</span></span>. <span class="token acutis language-acutis"><span class="token delimiter punctuation">{{</span> <span class="token variable">title</span> <span class="token delimiter punctuation">}}</span></span> was written by <span class="token acutis language-acutis"><span class="token delimiter punctuation">{{</span> <span class="token variable">author</span> <span class="token delimiter punctuation">}}</span></span>.<br><span class="token acutis language-acutis"><span class="token delimiter punctuation">{%</span> <span class="token punctuation">/</span><span class="token keyword">map</span> <span class="token delimiter punctuation">%}</span></span></code></pre>
 <p>Because the <code>index</code> binding is just another pattern, you can also use it to
 conditionally render sections by matching the index with specific numbers.</p>
 <pre class="language-acutis"><code class="language-acutis"><span class="token acutis language-acutis"><span class="token delimiter punctuation">{%</span> <span class="token tag keyword">map</span> <span class="token variable">articles</span><br>   <span class="token keyword">with</span> <span class="token punctuation">{</span><span class="token variable">title</span><span class="token punctuation">}</span><span class="token punctuation">,</span><span class="token number"> 0</span> <span class="token delimiter punctuation">%}</span></span><br>  Our first article is <span class="token acutis language-acutis"><span class="token delimiter punctuation">{{</span> <span class="token variable">title</span> <span class="token delimiter punctuation">}}</span></span>.<br><span class="token acutis language-acutis"><span class="token delimiter punctuation">{%</span> <span class="token tag keyword">with</span> <span class="token punctuation">{</span><span class="token variable">title</span><span class="token punctuation">}</span> <span class="token delimiter punctuation">%}</span></span><br>  <span class="token acutis language-acutis"><span class="token delimiter punctuation">{{</span> <span class="token variable">title</span> <span class="token delimiter punctuation">}}</span></span><br><span class="token acutis language-acutis"><span class="token delimiter punctuation">{%</span> <span class="token punctuation">/</span><span class="token keyword">map</span> <span class="token delimiter punctuation">%}</span></span></code></pre>
-<h3 id="mapping-objects">Mapping objects</h3>
-<p>You can <code>map</code> an object binding or pattern. Each of the object’s values will
-be matched with the pattern after the <code>with</code> clause. The index will be the
-key associated with the value.</p>
-<pre class="language-acutis"><code class="language-acutis"><span class="token acutis language-acutis"><span class="token delimiter punctuation">{%</span> <span class="token tag keyword">map</span> <span class="token punctuation">{</span><br>    <span class="token variable">author</span><span class="token punctuation">:</span> <span class="token punctuation">{</span><span class="token variable">name</span><span class="token punctuation">:</span> <span class="token string">"John"</span><span class="token punctuation">}</span><span class="token punctuation">,</span><br>    <span class="token variable">editor</span><span class="token punctuation">:</span> <span class="token punctuation">{</span><span class="token variable">name</span><span class="token punctuation">:</span> <span class="token string">"Carlo"</span><span class="token punctuation">}</span><br>  <span class="token punctuation">}</span> <span class="token keyword">with</span> <span class="token punctuation">{</span><span class="token variable">name</span><span class="token punctuation">}</span><span class="token punctuation">,</span> <span class="token variable">role</span> <span class="token operator">~</span><span class="token delimiter punctuation">%}</span></span><br>  <span class="token acutis language-acutis"><span class="token delimiter punctuation">{{</span> <span class="token variable">name</span> <span class="token delimiter punctuation">}}</span></span> is the <span class="token acutis language-acutis"><span class="token delimiter punctuation">{{</span> <span class="token variable">role</span> <span class="token delimiter punctuation">}}</span></span>.<br><span class="token acutis language-acutis"><span class="token delimiter punctuation">{%</span> <span class="token punctuation">/</span><span class="token keyword">map</span> <span class="token delimiter punctuation">%}</span></span></code></pre>
-<h2 id="pattern-matching-in-depth">Pattern matching in-depth</h2>
+<h3 id="mapping-dictionaries" tabindex="-1">Mapping dictionaries</h3>
+<p>You can map dictionaries by using <code>map_dict</code>.</p>
+<p>Each of the dictionary’s values will be matched with the pattern after the
+<code>with</code> clause. The index will be the string key associated with the value.</p>
+<pre class="language-acutis"><code class="language-acutis"><span class="token acutis language-acutis"><span class="token delimiter punctuation">{%</span> <span class="token tag keyword">map_dict</span><br>    <span class="token punctuation">&lt;</span> <span class="token variable">author</span><span class="token punctuation">:</span> <span class="token punctuation">{</span><span class="token variable">name</span><span class="token punctuation">:</span> <span class="token string">"John"</span><span class="token punctuation">}</span><span class="token punctuation">,</span><br>      <span class="token variable">editor</span><span class="token punctuation">:</span> <span class="token punctuation">{</span><span class="token variable">name</span><span class="token punctuation">:</span> <span class="token string">"Carlo"</span><span class="token punctuation">}</span> <span class="token punctuation">></span><br>    <span class="token keyword">with</span> <span class="token punctuation">{</span><span class="token variable">name</span><span class="token punctuation">}</span><span class="token punctuation">,</span> <span class="token variable">role</span> <span class="token operator">~</span><span class="token delimiter punctuation">%}</span></span><br>  <span class="token acutis language-acutis"><span class="token delimiter punctuation">{{</span> <span class="token variable">name</span> <span class="token delimiter punctuation">}}</span></span> is the <span class="token acutis language-acutis"><span class="token delimiter punctuation">{{</span> <span class="token variable">role</span> <span class="token delimiter punctuation">}}</span></span>.<br><span class="token acutis language-acutis"><span class="token delimiter punctuation">{%</span> <span class="token punctuation">/</span><span class="token keyword">map_dict</span> <span class="token delimiter punctuation">%}</span></span></code></pre>
+<h2 id="more-about-pattern-matching" tabindex="-1">More about pattern matching</h2>
 <p>Pattern matching combines many concepts into one terse syntax. In other
 languages, you may use variable assignment, <code>if</code>…<code>else</code> statements, and
-imperative loops to control how your content is rendered. To help you
-maximize your use of patterns, this section explains the system’s nuances.</p>
-<h3 id="reference-table">Reference table</h3>
+imperative loops to control how your content is rendered. To help you maximize
+your use of patterns, this section explains the system’s nuances.</p>
+<p>Patterns work by comparing literal values. The following code may not work as
+you might expect: <code>{% match a with b %}</code>. It does not compare the value of <code>a</code>
+with value of <code>b</code>, but rather binds the value of <code>a</code> to a new <code>b</code> binding.</p>
+<h3 id="reference-table" tabindex="-1">Reference table</h3>
 <table>
 <thead>
 <tr>
@@ -173,8 +337,12 @@ maximize your use of patterns, this section explains the system’s nuances.</p>
 </thead>
 <tbody>
 <tr>
+<td><code>_</code></td>
+<td>Any value.</td>
+</tr>
+<tr>
 <td><code>x</code></td>
-<td>A binding. It matches any value, and the value is bound to <code>x</code>.</td>
+<td>Any value, and the value is bound to <code>x</code>.</td>
 </tr>
 <tr>
 <td><code>true</code></td>
@@ -185,172 +353,137 @@ maximize your use of patterns, this section explains the system’s nuances.</p>
 <td>Exactly <code>false</code>.</td>
 </tr>
 <tr>
-<td><code>null</code></td>
-<td>Exactly <code>null</code>.</td>
-</tr>
-<tr>
 <td><code>&quot;abc&quot;</code></td>
 <td>The exact string <code>&quot;abc&quot;</code>.</td>
 </tr>
 <tr>
 <td><code>1.5</code></td>
-<td>The exact number <code>1.5</code>.</td>
+<td>The exact float <code>1.5</code>.</td>
 </tr>
 <tr>
-<td><code>1.5e1</code></td>
-<td>The exact number <code>15</code>.</td>
+<td><code>7</code></td>
+<td>The exact integer <code>7</code>.</td>
+</tr>
+<tr>
+<td><code>null</code></td>
+<td>A nullable value which is <code>null</code>.</td>
+</tr>
+<tr>
+<td><code>!x</code>, <code>!1.5</code>, <code>!&quot;abc&quot;</code>, etc.</td>
+<td>A nullable value which is not <code>null</code>.</td>
+</tr>
+<tr>
+<td><code>@7</code></td>
+<td>The exact integer <code>7</code>, when <code>7</code> is part of an enum.</td>
+</tr>
+<tr>
+<td><code>@&quot;a&quot;</code></td>
+<td>The exact string <code>&quot;a&quot;</code>, when <code>&quot;a&quot;</code> is part of an enum.</td>
 </tr>
 <tr>
 <td><code>[]</code></td>
-<td>An array with <em>exactly zero</em> items.</td>
+<td>A list with <em>exactly zero</em> items.</td>
 </tr>
 <tr>
 <td><code>[&quot;a&quot;, &quot;b&quot;]</code></td>
-<td>An array that contains strings <code>&quot;a&quot;</code> and <code>&quot;b&quot;</code> as its first two items, receptively. <em>There may be more items.</em></td>
+<td>A list with <em>exactly two</em> items, <code>&quot;a&quot;</code> and <code>&quot;b&quot;</code> receptively.</td>
 </tr>
 <tr>
 <td><code>[&quot;a&quot;, &quot;b&quot;, ...rest]</code></td>
-<td>An array that contains strings <code>&quot;a&quot;</code> and <code>&quot;b&quot;</code> as its first two items, receptively. The remainder of the array is bound to <code>rest</code>.</td>
+<td>A list with <em>at least two</em> items, <code>&quot;a&quot;</code> and <code>&quot;b&quot;</code>. The remainder of the list is bound to <code>rest</code>.</td>
 </tr>
 <tr>
-<td><code>{}</code></td>
-<td>An object with <em>exactly zero</em> fields.</td>
-</tr>
-<tr>
-<td><code>{a: 1.5}</code></td>
-<td>An object with a field <code>&quot;a&quot;</code> containing number <code>1.5</code>. <em>There may be more fields.</em></td>
+<td><code>{a: 1}</code></td>
+<td>A record with field <code>&quot;a&quot;</code> containing integer <code>1</code>.</td>
 </tr>
 <tr>
 <td><code>{a}</code></td>
-<td>An object with a field <code>&quot;a&quot;</code> whose value is then bound to name <code>a</code>. <em>There may be more fields.</em></td>
+<td>A record with field <code>&quot;a&quot;</code> whose value is then bound to name <code>a</code>.</td>
 </tr>
 <tr>
 <td><code>{a: x}</code></td>
-<td>An object with a field <code>&quot;a&quot;</code> whose value is then bound to name <code>x</code>. <em>There may be more fields.</em></td>
+<td>A record with field <code>&quot;a&quot;</code> whose value is then bound to name <code>x</code>.</td>
 </tr>
 <tr>
 <td><code>{&quot;null&quot;: a}</code></td>
-<td>An object with a field <code>&quot;null&quot;</code> whose value is then bound to name <code>a</code>. (<code>null</code> itself is a reserved keyword). <em>There may be more fields.</em></td>
+<td>A record with field <code>&quot;null&quot;</code> whose value is then bound to name <code>a</code>. (<code>null</code> without quotes is a reserved keyword.)</td>
+</tr>
+<tr>
+<td><code>(7, &quot;a&quot;)</code></td>
+<td>A 2-tuple whose first value is <code>7</code> and whose second value is <code>&quot;a&quot;</code></td>
+</tr>
+<tr>
+<td><code>{@tag: &quot;a&quot;, b: 7}</code></td>
+<td>A tagged record with a tag field <code>&quot;tag&quot;</code> whose value is <code>&quot;a&quot;</code> and with field <code>&quot;b&quot;</code> whose value is 7.</td>
+</tr>
+<tr>
+<td><code>&lt;a: 2&gt;</code></td>
+<td>A dictionary with key <code>&quot;a&quot;</code> containing integer <code>2</code>.</td>
 </tr>
 </tbody>
 </table>
-<p>Notably, Acutis does not check the size of objects and arrays except for
-empty objects (<code>{}</code>) and empty arrays (<code>[]</code>).</p>
-<h3 id="ignoring-values-with-_-(underscore)">Ignoring values with <code>_</code> (underscore)</h3>
-<p>Bindings will match any value, so they can be used as “catch-all” patterns.
-However, Acutis will not let you reuse a binding in a pattern, so a pattern
-like <code>{a: x, b: x}</code> is illegal.</p>
-<p>Acutis treats the <code>_</code> (underscore) name as a special case. Values bound to it
-are immediately discarded. Therefore <code>{a: _, b: _}</code> will always match any
-object with fields <code>a</code> and <code>b</code>, but it will ignore their contents.</p>
+<h3 id="ignoring-values-with-_-(underscore)" tabindex="-1">Ignoring values with <code>_</code> (underscore)</h3>
+<p>Bindings will match any value, so you can use them as “catch-all” patterns.
+However, Acutis will not let you reuse a binding in a pattern, so a pattern like
+<code>{a: x, b: x}</code> is illegal.</p>
+<p>Acutis treats the <code>_</code> (underscore) name as a special. Values bound to it are
+immediately discarded. Therefore <code>{a: _, b: _}</code> will always match any object
+with fields <code>a</code> and <code>b</code>, but it will ignore their contents.</p>
 <p>Because bindings match <em>anything</em>, you can use <code>_</code> as a “default” case:</p>
 <pre class="language-acutis"><code class="language-acutis"><span class="token acutis language-acutis"><span class="token delimiter punctuation">{%</span> <span class="token tag keyword">match</span> <span class="token variable">greeting</span><br>   <span class="token keyword">with</span> <span class="token string">"Hello"</span> <span class="token delimiter punctuation">%}</span></span><br>  This is an English greeting.<br><span class="token acutis language-acutis"><span class="token delimiter punctuation">{%</span> <span class="token tag keyword">with</span> <span class="token string">"Hola"</span> <span class="token delimiter punctuation">%}</span></span><br>  This is a Spanish greeting.<br><span class="token acutis language-acutis"><span class="token delimiter punctuation">{%</span> <span class="token tag keyword">with</span> <span class="token variable">_</span> <span class="token delimiter punctuation">%}</span></span><br>  This is some other kind of greeting.<br><span class="token acutis language-acutis"><span class="token delimiter punctuation">{%</span> <span class="token punctuation">/</span><span class="token keyword">match</span> <span class="token delimiter punctuation">%}</span></span></code></pre>
-<h3 id="matching-multiple-values-at-once">Matching multiple values at once</h3>
+<h3 id="matching-multiple-values-at-once" tabindex="-1">Matching multiple values at once</h3>
 <p>You can match many values at once by separating them with a comma (<code>,</code>). This
 can be useful for reasoning about two-dimensional matrices of data.</p>
 <pre class="language-acutis"><code class="language-acutis"><span class="token acutis language-acutis"><span class="token delimiter punctuation">{%</span> <span class="token tag keyword">match</span> <span class="token variable">object</span><span class="token punctuation">,</span> <span class="token variable">color</span><br>   <span class="token keyword">with</span> <span class="token string">"sky"</span><span class="token punctuation">,</span> <span class="token string">"blue"</span><br>   <span class="token keyword">with</span> <span class="token string">"grass"</span><span class="token punctuation">,</span> <span class="token string">"green"</span> <span class="token delimiter punctuation">%}</span></span><br>  That's a common color.<br><span class="token acutis language-acutis"><span class="token delimiter punctuation">{%</span> <span class="token tag keyword">with</span> <span class="token variable">_</span><span class="token punctuation">,</span> <span class="token variable">_</span> <span class="token delimiter punctuation">%}</span></span><br>  That's an unusual color.<br><span class="token acutis language-acutis"><span class="token delimiter punctuation">{%</span> <span class="token punctuation">/</span><span class="token keyword">match</span> <span class="token delimiter punctuation">%}</span></span></code></pre>
-<p>The number of patterns must match the number of values. This is illegal:</p>
-<pre class="language-acutis"><code class="language-acutis"><span class="token acutis language-acutis"><span class="token delimiter punctuation">{%</span> <span class="token tag keyword">match</span> <span class="token variable">object</span><span class="token punctuation">,</span> <span class="token variable">color</span> <span class="token keyword">with</span> <span class="token string">"sky"</span> <span class="token delimiter punctuation">%}</span></span><br>  I forgot to match the color!<br><span class="token acutis language-acutis"><span class="token delimiter punctuation">{%</span> <span class="token punctuation">/</span><span class="token keyword">match</span> <span class="token delimiter punctuation">%}</span></span></code></pre>
-<h3 id="the-rules-of-pattern-matching">The rules of pattern matching</h3>
-<ul>
-<li>When matching a value, at least one of the patterns <em>must</em> match. If no match
-is found, then Acutis raises an error. (You can avoid this with a catch-all
-pattern.)</li>
-<li>Patterns are checked in the order they’re written. It’s usually best to put
-more specific patterns before less specific patterns, with catch-all
-patterns at the end.</li>
-<li>When binding values, a binding name cannot be used more than once per
-pattern. The only exception is <code>_</code>.</li>
-<li>Each <code>with</code> clause must have the same number of patterns as the number of
-values being matched.</li>
-<li>Patterns can only contain concrete values. The following code doesn’t work
-as you may expect: <code>{% match a with b %}...</code>. It doesn’t compare the value
-of <code>a</code> with value of <code>b</code>, but rather binds the value of <code>a</code> to a new <code>b</code>
-binding.</li>
-</ul>
-<h2 id="type">Type</h2>
-<p>Acutis uses strong typing, where every value can only be of one type. Acutis
-also uses dynamic typing, where types are checked at runtime, not compile
-time.</p>
-<p>Type definitions types are borrowed from <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/JSON">JSON</a>:</p>
-<ul>
-<li>Object</li>
-<li>Array</li>
-<li>String</li>
-<li>Number</li>
-<li>Boolean</li>
-<li>Null</li>
-</ul>
-<p>When a value is in a pattern, the matched value must be the same type. The
-only exception to this rule that Acutis assumes all values are <em>nullable</em>, so
-<code>null</code> can be compared with any value without a type error.</p>
-<p>Only <code>string</code> and <code>number</code> values can be echoed. <code>null</code> cannot be echoed.</p>
-<p>Acutis is suited for environments where data comes from a statically typed
-source. Union types, such as <code>boolean | number</code>, are not supported. If you
-must use data like that, we recommend you normalize the data before passing
-it to templates. However, because type checking happens at runtime, it is
-sometimes possible write patterns that cleverly guard against potential
-errors. This usually isn’t best practice, though.</p>
-<h2 id="template-components">Template components</h2>
-<p>Template components in Acutis are analogous to “partials” or “includes” in
-other template languages. They are how we reuse common pieces of templates.
-We can also write them in JavaScript to add custom runtime logic, which makes
-them also comparable to “filters” or “shortcodes” in other languages.</p>
-<p>Components always begin with a capital letter. They accept XML-style props
-which are turned into bindings within the component. They also end with
-XML-style <code>/</code> (backslash). If you’ve used React JSX before, these concepts
-will look similar.</p>
-<p>Components are global. Once they are loaded into the render context, any
-template in the render tree can access them. (See <a href="../api/#rendercontext"><code>renderContext</code></a> in the API
-manual for more information.)</p>
+<h2 id="template-components" tabindex="-1">Template components</h2>
+<p>Template components in Acutis are analogous to “partials” or “includes” in other
+template languages. They are how we reuse common pieces of templates.</p>
+<p>We can also use functions as templates to add custom runtime logic, which makes
+them comparable to “filters” or “shortcodes” in other languages.</p>
+<p>Components always begin with a capital letter. They accept XML-style props which
+are turned into bindings within the component. They also end with an XML-style
+<code>/</code> (backslash).</p>
 <p>A couple of basic components:</p>
 <p>File: <code>Byline.acutis</code></p>
 <pre class="language-acutis"><code class="language-acutis">Written by <span class="token acutis language-acutis"><span class="token delimiter punctuation">{{</span> <span class="token variable">name</span> <span class="token delimiter punctuation">}}</span></span>.</code></pre>
 <p>File: <code>Articles.acutis</code></p>
 <pre class="language-acutis"><code class="language-acutis"><span class="token acutis language-acutis"><span class="token delimiter punctuation">{%</span> <span class="token tag keyword">map</span> <span class="token variable">articles</span> <span class="token keyword">with</span> <span class="token punctuation">{</span><span class="token variable">title</span><span class="token punctuation">,</span> <span class="token variable">author</span><span class="token punctuation">}</span> <span class="token delimiter punctuation">%}</span></span><br>  <span class="token acutis language-acutis"><span class="token delimiter punctuation">{{</span> <span class="token variable">title</span> <span class="token delimiter punctuation">}}</span></span> <span class="token acutis language-acutis"><span class="token delimiter punctuation">{%</span> <span class="token component function">Byline</span> <span class="token variable">name</span><span class="token punctuation">=</span><span class="token variable">author</span> <span class="token punctuation">/</span> <span class="token delimiter punctuation">%}</span></span><br><span class="token acutis language-acutis"><span class="token delimiter punctuation">{%</span> <span class="token punctuation">/</span><span class="token keyword">map</span> <span class="token delimiter punctuation">%}</span></span></code></pre>
-<h3 id="patterns-in-props">Patterns in props</h3>
-<p>Patterns can be used in props. They compile into the values they would match
-in pattern matching.</p>
+<h3 id="patterns-in-props" tabindex="-1">Patterns in props</h3>
+<p>Patterns can be used in props. They compile into the values they would match in
+pattern matching.</p>
 <pre class="language-acutis"><code class="language-acutis"><span class="token acutis language-acutis"><span class="token delimiter punctuation">{%</span> <span class="token component function">Article</span><br>   <span class="token variable">published</span><span class="token punctuation">=</span><span class="token boolean">true</span><br>   <span class="token variable">class</span><span class="token punctuation">=</span><span class="token string">"news"</span><br>   <span class="token variable">authors</span><span class="token punctuation">=</span><span class="token punctuation">[</span><span class="token variable">author</span><span class="token punctuation">,</span> <span class="token variable">editor</span><span class="token punctuation">]</span><br>   <span class="token punctuation">/</span> <span class="token delimiter punctuation">%}</span></span></code></pre>
-<p>⚠️ Unbound names in these patterns will not default to <code>null</code>. They will raise
-an error.</p>
-<h3 id="prop-punning">Prop punning</h3>
+<h3 id="prop-punning" tabindex="-1">Prop punning</h3>
 <p>Props can be “punned.” You can take code such as <code>{% DateTime date=date / %}</code>
 and abbreviate it to <code>{% DateTime date / %}</code>.</p>
-<h3 id="template-children-props">Template children props</h3>
-<p>Props can be template sections, which are considered the template’s
-“children.” These are denoted with octothorpes, beginning with <code>#</code> and ending
-with <code>/#</code>. Children’s names must begin with a capital letter, just like
-components.</p>
-<pre class="language-acutis"><code class="language-acutis"><span class="token acutis language-acutis"><span class="token delimiter punctuation">{%</span> <span class="token component function">Layout</span><br>   <span class="token component function">Header</span><span class="token punctuation">=</span><span class="token operator">#</span><span class="token delimiter punctuation">%}</span></span><br>    <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>h1</span><span class="token punctuation">></span></span> <span class="token acutis language-acutis"><span class="token delimiter punctuation">{{</span> <span class="token variable">title</span> <span class="token delimiter punctuation">}}</span></span> <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>h1</span><span class="token punctuation">></span></span><br>   <span class="token acutis language-acutis"><span class="token delimiter punctuation">{%</span><span class="token punctuation">/</span><span class="token operator">#</span><br>   <span class="token component function">Sidebar</span><span class="token punctuation">=</span><span class="token operator">#</span><span class="token delimiter punctuation">%}</span></span><br>    <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>h2</span><span class="token punctuation">></span></span> Menu <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>h2</span><span class="token punctuation">></span></span><br>    <span class="token acutis language-acutis"><span class="token delimiter punctuation">{%</span> <span class="token tag keyword">map</span> <span class="token variable">menu</span> <span class="token keyword">with</span> <span class="token punctuation">{</span><span class="token variable">title</span><span class="token punctuation">,</span> <span class="token variable">slug</span><span class="token punctuation">}</span> <span class="token delimiter punctuation">%}</span></span><br>      <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>a</span> <span class="token attr-name">href</span><span class="token attr-value"><span class="token punctuation attr-equals">=</span><span class="token punctuation">"</span><span class="token acutis language-acutis"><span class="token delimiter punctuation">{{</span> <span class="token variable">slug</span> <span class="token delimiter punctuation">}}</span></span><span class="token punctuation">"</span></span><span class="token punctuation">></span></span><span class="token acutis language-acutis"><span class="token delimiter punctuation">{{</span> <span class="token variable">title</span> <span class="token delimiter punctuation">}}</span></span><span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>a</span><span class="token punctuation">></span></span><br>    <span class="token acutis language-acutis"><span class="token delimiter punctuation">{%</span> <span class="token punctuation">/</span><span class="token keyword">map</span> <span class="token delimiter punctuation">%}</span></span><br>   <span class="token acutis language-acutis"><span class="token delimiter punctuation">{%</span><span class="token punctuation">/</span><span class="token operator">#</span><br>   <span class="token punctuation">/</span> <span class="token delimiter punctuation">%}</span></span></code></pre>
+<h3 id="template-children-props" tabindex="-1">Template children props</h3>
+<p>Props can be template sections, which are considered the template’s “children.”
+These are denoted with hashes, beginning with <code>#%}</code> and ending with <code>{%/#</code>.
+Children names must begin with a capital letter, just like components.</p>
+<pre class="language-acutis"><code class="language-acutis"><span class="token acutis language-acutis"><span class="token delimiter punctuation">{%</span> <span class="token component function">Layout</span><br>   <span class="token component function">Header</span><span class="token punctuation">=</span><span class="token operator">#</span><span class="token delimiter punctuation">%}</span></span> <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>h1</span><span class="token punctuation">></span></span> <span class="token acutis language-acutis"><span class="token delimiter punctuation">{{</span> <span class="token variable">title</span> <span class="token delimiter punctuation">}}</span></span> <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>h1</span><span class="token punctuation">></span></span> <span class="token acutis language-acutis"><span class="token delimiter punctuation">{%</span><span class="token punctuation">/</span><span class="token operator">#</span><br>   <span class="token component function">Sidebar</span><span class="token punctuation">=</span><span class="token operator">#</span><span class="token delimiter punctuation">%}</span></span><br>    <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>h2</span><span class="token punctuation">></span></span> Menu <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>h2</span><span class="token punctuation">></span></span><br>    <span class="token acutis language-acutis"><span class="token delimiter punctuation">{%</span> <span class="token tag keyword">map</span> <span class="token variable">menu</span> <span class="token keyword">with</span> <span class="token punctuation">{</span><span class="token variable">title</span><span class="token punctuation">,</span> <span class="token variable">slug</span><span class="token punctuation">}</span> <span class="token delimiter punctuation">%}</span></span><br>      <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>a</span> <span class="token attr-name">href</span><span class="token attr-value"><span class="token punctuation attr-equals">=</span><span class="token punctuation">"</span><span class="token acutis language-acutis"><span class="token delimiter punctuation">{{</span> <span class="token variable">slug</span> <span class="token delimiter punctuation">}}</span></span><span class="token punctuation">"</span></span><span class="token punctuation">></span></span><span class="token acutis language-acutis"><span class="token delimiter punctuation">{{</span> <span class="token variable">title</span> <span class="token delimiter punctuation">}}</span></span><span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>a</span><span class="token punctuation">></span></span><br>    <span class="token acutis language-acutis"><span class="token delimiter punctuation">{%</span> <span class="token punctuation">/</span><span class="token keyword">map</span> <span class="token delimiter punctuation">%}</span></span><br>   <span class="token acutis language-acutis"><span class="token delimiter punctuation">{%</span><span class="token punctuation">/</span><span class="token operator">#</span><br>   <span class="token punctuation">/</span> <span class="token delimiter punctuation">%}</span></span></code></pre>
 <p>Inside the template, you can echo these children the same way you echo other
-bindings, such as <code>{{ Header }}</code> or <code>{{ Sidebar }}</code>. Their contents are
-rendered just like any template content, so they will not be escaped.</p>
+bindings, such as <code>{{ Header }}</code> or <code>{{ Sidebar }}</code>. Their contents are rendered
+just like any template content, so they will not be escaped.</p>
 <p>Template children may look like regular bindings, but they live on a separate
-layer of the language. We can’t use them with <code>map</code> or <code>match</code>, and we can’t
-put them inside patterns. We can pass them to other components’ children
-props.</p>
-<h3 id="default-children-prop">Default children prop</h3>
-<p>A template section inside a component is automatically bound to a children
-prop named <code>Children</code>.</p>
+layer of the language. We can’t use them with <code>map</code> or <code>match</code>, and we can’t put
+them inside patterns. We can pass them to other components’ children props.</p>
+<h3 id="default-children-prop" tabindex="-1">Default children prop</h3>
+<p>A template section inside a component is automatically bound to a children prop
+named <code>Children</code>.</p>
 <p>An implicit children prop:</p>
 <pre class="language-acutis"><code class="language-acutis"><span class="token acutis language-acutis"><span class="token delimiter punctuation">{%</span> <span class="token component function">Layout</span> <span class="token delimiter punctuation">%}</span></span><br>  content<br><span class="token acutis language-acutis"><span class="token delimiter punctuation">{%</span> <span class="token punctuation">/</span><span class="token component function">Layout</span> <span class="token delimiter punctuation">%}</span></span></code></pre>
 <p>An explicit children prop:</p>
-<pre class="language-acutis"><code class="language-acutis"><span class="token acutis language-acutis"><span class="token delimiter punctuation">{%</span> <span class="token component function">Layout</span> <br>   <span class="token component function">Children</span><span class="token punctuation">=</span><span class="token operator">#</span><span class="token delimiter punctuation">%}</span></span><br>    content<br>   <span class="token acutis language-acutis"><span class="token delimiter punctuation">{%</span><span class="token punctuation">/</span><span class="token operator">#</span><br>   <span class="token punctuation">/</span> <span class="token delimiter punctuation">%}</span></span></code></pre>
-<p>Both of those examples are rendered identically. If you’ve used React, this
-should look familiar.</p>
-<nav class="next">
-            <h2 class="next__header">Next:</h2>
-            <a href="https:&#x2F;&#x2F;johnridesa.bike&#x2F;acutis&#x2F;api&#x2F;" class="next__url">Read the API 👉</a>
-          </nav>
+<pre class="language-acutis"><code class="language-acutis"><span class="token acutis language-acutis"><span class="token delimiter punctuation">{%</span> <span class="token component function">Layout</span><br>   <span class="token component function">Children</span><span class="token punctuation">=</span><span class="token operator">#</span><span class="token delimiter punctuation">%}</span></span><br>    content<br>   <span class="token acutis language-acutis"><span class="token delimiter punctuation">{%</span><span class="token punctuation">/</span><span class="token operator">#</span><br>   <span class="token punctuation">/</span> <span class="token delimiter punctuation">%}</span></span></code></pre>
+<p>Both of those examples are rendered identically.</p>
+
       </article>
-    </main><footer class="footer">
-  <p>
-    Published in 2021 by <a href="https:&#x2F;&#x2F;johnridesa.bike">John Jackson</a>.
-  </p>
-  <p class="footer__license">
-    <a href="https:&#x2F;&#x2F;johnridesa.bike&#x2F;acutis/license/">View the license</a>.
-  </p>
-</footer>
-</body>
+    </main>
+        <footer class="footer">
+          <p>
+            Published in 2022 by <a href="https://johnridesa.bike">John Jackson</a>.
+          </p>
+          <p class="footer__license">
+            <a href="https://johnridesa.bike/acutis/license/">View the license</a>.
+          </p>
+        </footer></body>
 </html>
+
