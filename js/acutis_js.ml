@@ -22,13 +22,13 @@ module RenderSync = Render.Make (Sync) (Acutis_js.Data)
 module RenderAsync = Render.Make (Promise_with_fixed_bind) (Acutis_js.Data)
 
 let child_async (k, p) =
-  let p = p |> Promise.map Js.string |> Js.Unsafe.inject in
+  let p = Promise.map Js.string p |> Js.Unsafe.inject in
   (k, p)
 
 let child_sync (k, v) = (k, Js.Unsafe.coerce (Js.string v))
 
 let map_to_js f m =
-  m |> Map.String.to_seq |> Seq.map f |> Array.of_seq |> Js.Unsafe.obj
+  Map.String.to_seq m |> Seq.map f |> Array.of_seq |> Js.Unsafe.obj
 
 let () =
   Js.export "Compile"
@@ -54,7 +54,7 @@ let () =
          Compile.Components.from_fun ~name:(Js.to_string name) ty children fn
 
        method components a =
-         a |> Js.to_array |> Array.to_list |> Compile.Components.make
+         Js.to_array a |> Array.to_list |> Compile.Components.make
 
        method make fname components src =
          Compile.from_string ~name:(Js.to_string fname) components
@@ -77,20 +77,20 @@ let () =
     (a.(0), Obj.magic a.(1))
   in
   let key_values v =
-    v |> Js.to_array
+    Js.to_array v
     |> Array.map (fun a ->
            let k, v = array_to_2tuple a in
            let k = Js.to_string k in
            (k, v))
     |> Array.to_list
   in
-  let int_of_number x = x |> Js.float_of_number |> int_of_float in
+  let int_of_number x = Js.float_of_number x |> int_of_float in
   Js.export "Typescheme"
     (object%js
        val variantOpen = `Open
        val variantClosed = `Closed
        val empty = empty
-       method make a = a |> key_values |> make
+       method make a = key_values a |> make
        method unknown = unknown ()
        method int = int ()
        method float = float ()
@@ -98,10 +98,10 @@ let () =
        method echo = echo ()
        method nullable t = nullable t
        method list t = list t
-       method tuple a = a |> Js.to_array |> Array.to_list |> tuple
+       method tuple a = Js.to_array a |> Array.to_list |> tuple
 
        method record a =
-         a |> Js.to_array
+         Js.to_array a
          |> Array.map (fun a ->
                 let k, v = array_to_2tuple a in
                 (Js.to_string k, v))
@@ -110,11 +110,10 @@ let () =
        method dict t = dict t
 
        method enumInt r a =
-         a |> Js.to_array |> Array.map int_of_number |> Array.to_list
-         |> enum_int r
+         Js.to_array a |> Array.map int_of_number |> Array.to_list |> enum_int r
 
        method enumString r a =
-         a |> Js.to_array |> Array.map Js.to_string |> Array.to_list
+         Js.to_array a |> Array.map Js.to_string |> Array.to_list
          |> enum_string r
 
        method boolean = boolean ()
@@ -122,7 +121,7 @@ let () =
        method trueOnly = true_only ()
 
        method unionInt r k a =
-         a |> Js.to_array
+         Js.to_array a
          |> Array.map (fun a ->
                 let i, v = array_to_2tuple a in
                 (int_of_number i, key_values v))
@@ -130,7 +129,7 @@ let () =
          |> union_int r (Js.to_string k)
 
        method unionString r k a =
-         a |> Js.to_array
+         Js.to_array a
          |> Array.map (fun a ->
                 let s, v = array_to_2tuple a in
                 (Js.to_string s, key_values v))
@@ -152,7 +151,7 @@ let () =
   Js.export "TypeschemeChildren"
     (object%js
        val empty = empty
-       method make a = a |> key_values |> make
+       method make a = key_values a |> make
        method child s = child (Js.to_string s)
        method nullable s = nullable (Js.to_string s)
     end)

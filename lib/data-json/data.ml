@@ -90,8 +90,7 @@ and dict stack ty = function
 and tuple ty stack tys = function
   | `List l as j -> (
       try
-        l
-        |> List.map2 (fun ty x -> (ty, x)) tys
+        List.map2 (fun ty x -> (ty, x)) tys l
         |> List.mapi (fun i (ty, x) -> make (Index i :: stack) ty x)
         |> Array.of_list |> Data.tuple
       with Invalid_argument _ -> decode_error ty stack j)
@@ -183,10 +182,10 @@ and to_json ty t =
       in
       aux [] t
   | Tuple tys, Array a ->
-      let l = a |> Array.to_list |> List.map2 to_json tys in
+      let l = Array.to_list a |> List.map2 to_json tys in
       `List l
   | Dict (ty, _), Dict m ->
-      let l = m |> Map.String.map (to_json ty) |> Map.String.bindings in
+      let l = Map.String.map (to_json ty) m |> Map.String.bindings in
       `Assoc l
   | Record tys, Dict m -> `Assoc (record_to_json !tys m)
   | Union (k, { cases; _ }), Dict m ->

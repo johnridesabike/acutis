@@ -20,7 +20,7 @@ let get_tree src =
   |> Option.get
 
 let e = Matching.Exit.unsafe_key
-let map l = l |> List.to_seq |> MS.of_seq
+let map l = List.to_seq l |> MS.of_seq
 let set = SI.of_list
 
 let basic_tree () =

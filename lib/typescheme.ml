@@ -208,13 +208,13 @@ let rec pp ppf t =
       let cases =
         match cases with
         | String m ->
-            m |> Map.String.to_seq |> Seq.map (fun (tag, m) -> (`String tag, m))
+            Map.String.to_seq m |> Seq.map (fun (tag, m) -> (`String tag, m))
         | Int m -> (
             match extra with
             | `Extra_none ->
-                m |> Map.Int.to_seq |> Seq.map (fun (tag, m) -> (`Int tag, m))
+                Map.Int.to_seq m |> Seq.map (fun (tag, m) -> (`Int tag, m))
             | `Extra_bool ->
-                m |> Map.Int.to_seq |> Seq.map (fun (tag, m) -> (`Bool tag, m)))
+                Map.Int.to_seq m |> Seq.map (fun (tag, m) -> (`Bool tag, m)))
       in
       F.fprintf ppf "@[| %a@]@[%a@]"
         (F.pp_print_seq ~pp_sep:pp_sep_pipe (pp_union_cases key))

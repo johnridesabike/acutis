@@ -110,11 +110,10 @@ let rec pattern_to_data ~vars = function
   | TConstruct (_, Some x) -> pattern_to_data ~vars x
   | TConstruct (_, None) -> Data.null
   | TTuple l ->
-      let a = l |> Array.of_list |> Array.map (pattern_to_data ~vars) in
+      let a = Array.of_list l |> Array.map (pattern_to_data ~vars) in
       Data.tuple a
   | TRecord (Some (k, v, { extra; _ }), x, _) ->
-      x
-      |> Map.String.map (pattern_to_data ~vars)
+      Map.String.map (pattern_to_data ~vars) x
       |> Map.String.add k (Data.const v extra)
       |> Data.dict
   | TRecord (None, x, _) | TDict (x, _) ->
@@ -229,7 +228,7 @@ module Make (M : MONAD) (D : DATA) = struct
       | Component (data, comp_vars, comp_children) -> (
           let f = function
             | Compile.Child_block nodes ->
-                let b = M.return (Buffer.create 1024) in
+                let b = Buffer.create 1024 |> M.return in
                 let* result = make b nodes vars children in
                 M.return (Buffer.contents result)
             | Child_name child -> Map.String.find child children

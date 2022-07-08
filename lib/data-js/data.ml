@@ -239,25 +239,24 @@ and to_js ty t =
   | _, Const (`Float f, _) -> Js.number_of_float f |> coerce
   | _, Const (`String s, _) -> Js.string s |> coerce
   | (Ty.Enum { extra = `Extra_bool; _ } | Echo), Const (`Int 0, `Extra_bool) ->
-      Js._false |> coerce
+      coerce Js._false
   | (Ty.Enum { extra = `Extra_bool; _ } | Echo), Const (`Int _, `Extra_bool) ->
-      Js._true |> coerce
+      coerce Js._true
   | (Enum _ | Int | Echo), Const (`Int i, _) ->
-      i |> float_of_int |> Js.number_of_float |> coerce
-  | Nullable _, Nil -> Js.null |> Js.Unsafe.inject
+      float_of_int i |> Js.number_of_float |> coerce
+  | Nullable _, Nil -> Js.Unsafe.inject Js.null
   | Nullable ty, Array [| t |] -> to_js ty t
   | List ty, t ->
       let rec aux acc = function
-        | Data.Nil -> acc |> List.rev |> Array.of_list |> Js.array |> coerce
+        | Data.Nil -> List.rev acc |> Array.of_list |> Js.array |> coerce
         | Array [| hd; tl |] -> aux (to_js ty hd :: acc) tl
         | _ -> assert false
       in
       aux [] t
   | Tuple tys, Array a ->
-      a |> Array.map2 to_js (Array.of_list tys) |> Js.array |> coerce
+      Array.map2 to_js (Array.of_list tys) a |> Js.array |> coerce
   | Dict (ty, _), Dict m ->
-      m
-      |> Map.String.map (to_js ty)
+      Map.String.map (to_js ty) m
       |> Map.String.to_seq |> Array.of_seq |> Js.Unsafe.obj
   | Record tys, Dict m -> record_to_js !tys m |> Array.of_list |> Js.Unsafe.obj
   | Union (k, { cases; _ }), Dict m ->
@@ -271,10 +270,10 @@ and to_js ty t =
       let tag =
         match tag with
         | Const (`String s, _) -> Js.string s |> coerce
-        | Const (`Int 0, `Extra_bool) -> Js._false |> coerce
-        | Const (`Int _, `Extra_bool) -> Js._true |> coerce
+        | Const (`Int 0, `Extra_bool) -> coerce Js._false
+        | Const (`Int _, `Extra_bool) -> coerce Js._true
         | Const (`Int i, `Extra_none) ->
-            i |> float_of_int |> Js.number_of_float |> coerce
+            float_of_int i |> Js.number_of_float |> coerce
         | _ -> assert false
       in
       let l = record_to_js !record_tys m in

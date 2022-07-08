@@ -45,7 +45,7 @@ let args =
     ]
 
 let fname_to_component s =
-  s |> Filename.basename |> Filename.remove_extension |> String.capitalize_ascii
+  Filename.basename s |> Filename.remove_extension |> String.capitalize_ascii
 
 let () =
   try
@@ -63,13 +63,12 @@ let () =
     in
 
     let components =
-      templates
-      |> Queue.fold
-           (fun acc name ->
-             In_channel.with_open_text name
-               (Compile.Components.parse_channel ~name:(fname_to_component name))
-             :: acc)
-           []
+      Queue.fold
+        (fun acc name ->
+          In_channel.with_open_text name
+            (Compile.Components.parse_channel ~name:(fname_to_component name))
+          :: acc)
+        [] templates
       |> Compile.Components.make
     in
 

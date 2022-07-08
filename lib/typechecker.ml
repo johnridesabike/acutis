@@ -42,7 +42,7 @@ and open_rows ty =
       match (ty.extra, ty.cases) with
       | `Extra_bool, Int cases ->
           let f = open_rows_bool_union_aux in
-          ty.cases <- Int (cases |> Map.Int.update 0 f |> Map.Int.update 1 f)
+          ty.cases <- Int (Map.Int.update 0 f cases |> Map.Int.update 1 f)
       | _, Int cases ->
           Map.Int.iter
             (fun _ v -> Map.String.iter (fun _ v -> open_rows v) !v)
@@ -278,14 +278,14 @@ module Pattern = struct
         TTuple (List.map2 (make ~f mode) tyvars l)
     | Record (loc, Untagged m) ->
         let m = Ast.Dict.to_map m in
-        let new_tyvars = m |> Map.String.map unknown |> ref in
+        let new_tyvars = Map.String.map unknown m |> ref in
         let tyvars = match !ty with Record tys -> tys | _ -> new_tyvars in
         unify loc mode ty (Ty.internal_record new_tyvars);
         let r = make_record ~f loc mode !tyvars m in
         TRecord (None, r, tyvars)
     | Record (loc, Tagged (k, v, m)) ->
         let m = Ast.Dict.to_map m in
-        let new_tyvars = m |> Map.String.map unknown |> ref in
+        let new_tyvars = Map.String.map unknown m |> ref in
         let new_tag_ty = Ty.unknown () in
         let row =
           match mode with
@@ -328,7 +328,7 @@ module Pattern = struct
           | _ -> (Ty.unknown (), new_kys)
         in
         unify loc mode ty (Ty.internal_dict_keys tyvar new_kys);
-        let d = m |> Ast.Dict.to_map |> Map.String.map (make ~f mode tyvar) in
+        let d = Ast.Dict.to_map m |> Map.String.map (make ~f mode tyvar) in
         TDict (d, kys)
     | Var (loc, "_") -> (
         match mode with
@@ -597,28 +597,27 @@ let unify_map ~ty ~key loc (tys, cases) pat ctx =
 let rec make_cases ctx g cases =
   let tys =
     let _, pats = (Nonempty.hd cases).Ast.pats |> Nonempty.hd in
-    pats |> Nonempty.map Pattern.unknown
+    Nonempty.map Pattern.unknown pats
   in
   (* Type-check all of the cases BEFORE running [make_nodes]. *)
   let cases =
-    cases
-    |> Nonempty.map (fun Ast.{ pats; nodes } ->
-           let bindings_all = Queue.create () in
-           let pats =
-             Nonempty.map
-               (fun (loc, pat) ->
-                 let bindings = Queue.create () in
-                 Queue.add bindings bindings_all;
-                 let f l k v = Queue.add (l, k, v) bindings in
-                 try
-                   ( loc,
-                     Nonempty.map2 (Pattern.make ~f Destructure_expand) tys pat
-                   )
-                 with Invalid_argument _ -> Error.pat_num_mismatch loc)
-               pats
-           in
-           let ctx = Context.add_scope bindings_all ctx in
-           (pats, nodes, ctx))
+    Nonempty.map
+      (fun Ast.{ pats; nodes } ->
+        let bindings_all = Queue.create () in
+        let pats =
+          Nonempty.map
+            (fun (loc, pat) ->
+              let bindings = Queue.create () in
+              Queue.add bindings bindings_all;
+              let f l k v = Queue.add (l, k, v) bindings in
+              try
+                (loc, Nonempty.map2 (Pattern.make ~f Destructure_expand) tys pat)
+              with Invalid_argument _ -> Error.pat_num_mismatch loc)
+            pats
+        in
+        let ctx = Context.add_scope bindings_all ctx in
+        (pats, nodes, ctx))
+      cases
     |> Nonempty.map (fun (pats, nodes, ctx) ->
            { pats; nodes = make_nodes ctx g nodes })
   in
@@ -641,7 +640,7 @@ and make_nodes ctx g nodes =
           | prop, _ -> prop
         in
         let props =
-          props |> Ast.Dict.to_map
+          Ast.Dict.to_map props
           |> Map.String.merge missing_to_nullable prop_types
           |> Pattern.make_record ~f:(Context.update ctx) loc Construct_literal
                prop_types
@@ -694,7 +693,7 @@ let make_src g = function
   | Src (name, ast) -> Src (name, make `Component g ast)
   | Fun (name, p, c, f) -> Fun (name, p, c, f)
 
-let make_components m = m |> Dagmap.make ~f:make_src |> Dagmap.link_all
+let make_components m = Dagmap.make ~f:make_src m |> Dagmap.link_all
 
 let make ~root components ast =
   make `Root (Dagmap.prelinked root components) ast
