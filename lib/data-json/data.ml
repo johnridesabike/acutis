@@ -81,9 +81,10 @@ and list stack ty = function
 
 and dict stack ty = function
   | `Assoc l ->
-      l |> List.to_seq
-      |> Seq.map (fun (k, v) -> (k, make (Key k :: stack) ty v))
-      |> Map.String.of_seq |> Data.dict
+      List.fold_left
+        (fun map (k, v) -> Map.String.add k (make (Key k :: stack) ty v) map)
+        Map.String.empty l
+      |> Data.dict
   | j -> decode_error (Ty.dict ty) stack j
 
 and tuple ty stack tys = function
@@ -98,7 +99,7 @@ and tuple ty stack tys = function
 
 and record_aux stack tys j =
   let f k ty =
-    match (ty, Map.String.find_opt k j) with
+    match (ty, List.assoc_opt k j) with
     | { contents = Ty.Nullable _ | Unknown _ }, None -> Data.null
     | ty, Some j -> make (Key k :: stack) ty j
     | _ -> Error.missing_key stack (Ty.internal_record (ref tys)) k
@@ -106,17 +107,14 @@ and record_aux stack tys j =
   Map.String.mapi f tys
 
 and record stack tys = function
-  | `Assoc l ->
-      let map = l |> List.to_seq |> Map.String.of_seq in
-      Data.dict (record_aux stack !tys map)
+  | `Assoc l -> Data.dict (record_aux stack !tys l)
   | j -> decode_error (Ty.internal_record tys) stack j
 
 and union stack ty key cases extra = function
   | `Assoc l as j ->
-      let map = l |> List.to_seq |> Map.String.of_seq in
       let tag, tys =
         try
-          let tag = Map.String.find key map in
+          let tag = List.assoc key l in
           match (tag, cases, extra) with
           | `Bool false, Ty.Variant.Int map, `Extra_bool ->
               let tag = 0 in
@@ -131,7 +129,7 @@ and union stack ty key cases extra = function
           | _ -> raise Not_found
         with Not_found -> decode_error ty stack j
       in
-      let r = record_aux stack !tys map in
+      let r = record_aux stack !tys l in
       Data.dict (Map.String.add key tag r)
   | j -> decode_error ty stack j
 
@@ -155,9 +153,7 @@ and make stack ty j =
   | Union (key, { cases; extra; _ }) -> union stack ty key cases extra j
 
 let decode tys = function
-  | `Assoc l ->
-      let map = l |> List.to_seq |> Map.String.of_seq in
-      record_aux [] tys map
+  | `Assoc l -> record_aux [] tys l
   | j -> decode_error (Ty.internal_record (ref tys)) [] j
 
 let rec record_to_json ty t =

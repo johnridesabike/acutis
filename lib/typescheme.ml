@@ -10,6 +10,12 @@
 
 module F = Format
 
+let map_of_list l =
+  List.fold_left (fun map (k, v) -> Map.String.add k v map) Map.String.empty l
+
+let int_map_of_list l =
+  List.fold_left (fun map (k, v) -> Map.Int.add k v map) Map.Int.empty l
+
 module Variant = struct
   type row = [ `Closed | `Open ] [@@deriving eq]
   type extra = [ `Extra_none | `Extra_bool ] [@@deriving eq, show]
@@ -77,14 +83,9 @@ module Union = struct
     { cases = String (Map.String.singleton s x); row; extra = `Extra_none }
 
   let string l row =
-    {
-      cases = String (Map.String.of_seq (List.to_seq l));
-      row;
-      extra = `Extra_none;
-    }
+    { cases = String (map_of_list l); row; extra = `Extra_none }
 
-  let int l row =
-    { cases = Int (Map.Int.of_seq (List.to_seq l)); row; extra = `Extra_none }
+  let int l row = { cases = Int (int_map_of_list l); row; extra = `Extra_none }
 
   let boolean ~f ~t =
     {
@@ -127,17 +128,14 @@ let echo () = ref Echo
 let nullable t = ref (Nullable t)
 let list t = ref (List t)
 let tuple l = ref (Tuple l)
-let record l = internal_record (ref (Map.String.of_seq (List.to_seq l)))
+let record l = internal_record (ref (map_of_list l))
 let dict t = ref (Dict (t, ref Set.String.empty))
 let enum_int row l = ref (Enum (Enum.int l row))
 let enum_string row l = ref (Enum (Enum.string l row))
 let boolean () = ref (Enum (Enum.false_and_true ()))
 let false_only () = ref (Enum (Enum.false_only ()))
 let true_only () = ref (Enum (Enum.true_only ()))
-
-let nested_lists_to_map l =
-  List.map (fun (k, v) -> (k, ref (Map.String.of_seq (List.to_seq v)))) l
-
+let nested_lists_to_map l = List.map (fun (k, v) -> (k, ref (map_of_list v))) l
 let union_int row k l = ref (Union (k, Union.int (nested_lists_to_map l) row))
 
 let union_string row k l =
@@ -145,19 +143,13 @@ let union_string row k l =
 
 let union_boolean k ~f ~t =
   ref
-    (Union
-       ( k,
-         Union.boolean
-           ~f:(ref (Map.String.of_seq (List.to_seq f)))
-           ~t:(ref (Map.String.of_seq (List.to_seq t))) ))
+    (Union (k, Union.boolean ~f:(ref (map_of_list f)) ~t:(ref (map_of_list t))))
 
 let union_false_only k l =
-  ref (Union (k, Union.false_only (ref (Map.String.of_seq (List.to_seq l)))))
+  ref (Union (k, Union.false_only (ref (map_of_list l))))
 
-let union_true_only k l =
-  ref (Union (k, Union.true_only (ref (Map.String.of_seq (List.to_seq l)))))
-
-let make l = l |> List.to_seq |> Map.String.of_seq
+let union_true_only k l = ref (Union (k, Union.true_only (ref (map_of_list l))))
+let make = map_of_list
 let empty = Map.String.empty
 
 let rec copy = function
@@ -247,7 +239,7 @@ module Child = struct
   type t = ty ref
 
   let equal a b = !a = !b
-  let make l = l |> List.to_seq |> Map.String.of_seq
+  let make = map_of_list
   let child x = (x, ref Child)
   let nullable x = (x, ref Nullable_child)
   let is_nullable t = match !t with Nullable_child -> true | Child -> false

@@ -526,14 +526,14 @@ let rec of_tpat :
         { key; ids = Set.Int.empty; child; wildcard = None; debug = Not_dict }
   | TRecord (tag, m, tys) ->
       (* We need to expand the map to include all of its type's keys. *)
-      let l =
+      let child =
         Map.String.merge
           (fun _k _ty p ->
-            match p with None -> Some TPat.TAny | Some p -> Some p)
+            match p with None -> Some TPat.TAny | Some _ as p -> p)
           !tys m
-        |> Map.String.to_seq
+        |> Map.String.bindings
+        |> of_keyvalues b (fun b -> End (k b))
       in
-      let child = of_keyvalues b (fun b -> End (k b)) l in
       let child, debug =
         match tag with
         | Some (key, data, union) ->
@@ -550,14 +550,16 @@ let rec of_tpat :
         }
   | TDict (m, kys) ->
       (* We need to expand the map to include all of its type's keys. *)
-      let l =
-        !kys |> Set.String.to_seq
-        |> Seq.map (fun key -> (key, TPat.TAny))
-        |> Map.String.of_seq
-        |> Map.String.union (fun _ p _ -> Some p) m
-        |> Map.String.to_seq
+      let child =
+        Set.String.fold
+          (fun key map ->
+            Map.String.update key
+              (function None -> Some TPat.TAny | Some _ as p -> p)
+              map)
+          !kys m
+        |> Map.String.bindings
+        |> of_keyvalues b (fun b -> End (k b))
       in
-      let child = of_keyvalues b (fun b -> End (k b)) l in
       Nest
         {
           key;
@@ -575,14 +577,11 @@ and of_list :
   | p :: l -> of_tpat ~key b (fun b -> of_list ~key:(succ key) b k l) p
 
 and of_keyvalues :
-    bindings ->
-    ('a, string) cont ->
-    (string * TPat.t) Seq.t ->
-    ('a, string) tree =
- fun b k s ->
-  match s () with
-  | Nil -> k b
-  | Cons ((key, v), s) -> of_tpat ~key b (fun b -> of_keyvalues b k s) v
+    bindings -> ('a, string) cont -> (string * TPat.t) list -> ('a, string) tree
+    =
+ fun b k -> function
+  | [] -> k b
+  | (key, v) :: l -> of_tpat ~key b (fun b -> of_keyvalues b k l) v
 
 let of_nonempty ~exit next_id Nonempty.(hd :: tl) =
   let k { names; _ } = End { names; exit } in
@@ -597,7 +596,7 @@ let rec make_case ~exit next_id tree = function
       make_case ~exit next_id tree l
 
 let make Nonempty.(Typechecker.{ pats; nodes } :: tl_cases) =
-  let exitq = Queue.create () in
+  let exits = Array.make (1 + List.length tl_cases) [] in
   (* IDs must be unique across all branches of the tree. *)
   let next_id = ref 0 in
   let next_id () =
@@ -607,24 +606,22 @@ let make Nonempty.(Typechecker.{ pats; nodes } :: tl_cases) =
   in
   let hd_tree =
     let ((_, hd_pats) :: tl_pats) = pats in
-    Queue.add nodes exitq;
-    let exit = Queue.length exitq - 1 in
-    let hd_tree = of_nonempty ~exit next_id hd_pats in
-    make_case ~exit next_id hd_tree tl_pats
+    exits.(0) <- nodes;
+    let hd_tree = of_nonempty ~exit:0 next_id hd_pats in
+    make_case ~exit:0 next_id hd_tree tl_pats
   in
-  let rec aux tree = function
-    | [] -> { tree; exits = exitq |> Queue.to_seq |> Array.of_seq }
+  let rec aux tree exit = function
+    | [] -> { tree; exits }
     | Typechecker.{ pats = (loc, hd_pats) :: tl_pats; nodes } :: l ->
-        Queue.add nodes exitq;
-        let exit = Queue.length exitq - 1 in
+        exits.(exit) <- nodes;
         let hd_tree = of_nonempty ~exit next_id hd_pats in
         let tree =
           try merge tree hd_tree with Merge_fail -> Error.unused_case loc
         in
         let tree = make_case ~exit next_id tree tl_pats in
-        aux tree l
+        aux tree (exit + 1) l
   in
-  aux hd_tree tl_cases
+  aux hd_tree 1 tl_cases
 
 module ParMatch = struct
   (** Searches a given tree to find an example of a missing branch. If found,
@@ -645,19 +642,19 @@ module ParMatch = struct
     | Nullable _, Cons Any -> TConstruct (TNullable, Some TAny)
     | Nullable _, Nil -> TConstruct (TNullable, None)
     | Record tys, Nest path ->
-        let s = Map.String.to_seq !tys in
-        TRecord (None, to_map Map.String.empty s path, tys)
+        let l = Map.String.bindings !tys in
+        TRecord (None, to_map Map.String.empty l path, tys)
     | Union (key, ({ cases; _ } as ty)), Nest (Const c :: path) -> (
         let key = Some (key, c, ty) in
         match (cases, c) with
         | Int m, `Int i ->
             let tys = Map.Int.find i m in
-            let s = Map.String.to_seq !tys in
-            TRecord (key, to_map Map.String.empty s path, tys)
+            let l = Map.String.bindings !tys in
+            TRecord (key, to_map Map.String.empty l path, tys)
         | String m, `String s ->
             let tys = Map.String.find s m in
-            let s = Map.String.to_seq !tys in
-            TRecord (key, to_map Map.String.empty s path, tys)
+            let l = Map.String.bindings !tys in
+            TRecord (key, to_map Map.String.empty l path, tys)
         | _ -> assert false)
     | _ -> TAny
 
@@ -671,8 +668,8 @@ module ParMatch = struct
   and to_list tys path = List.map2 to_pat tys path
 
   and to_map acc tys path =
-    match (tys (), path) with
-    | Cons ((key, ty), tys), hd :: path ->
+    match (tys, path) with
+    | (key, ty) :: tys, hd :: path ->
         let pat = to_pat ty hd in
         let acc = Map.String.add key pat acc in
         to_map acc tys path

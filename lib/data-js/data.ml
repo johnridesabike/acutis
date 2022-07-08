@@ -38,7 +38,7 @@ module Table : sig
   val unsafe_of_js : Js.Unsafe.any -> t
   val find_exn : string -> t -> Js.Unsafe.any
   val find_opt : string -> t -> Js.Unsafe.any option
-  val to_seq : t -> (string * Js.Unsafe.any) Seq.t
+  val fold : (string -> Js.Unsafe.any -> 'a -> 'a) -> t -> 'a -> 'a
 end = struct
   type t = Js.Unsafe.any
 
@@ -52,9 +52,11 @@ end = struct
 
   let find_opt k m = get m (Js.string k) |> Js.Optdef.to_option
 
-  let to_seq m =
-    let f s = (Js.to_string s, unsafe_get m s) in
-    Js.object_keys m |> Js.to_array |> Array.to_seq |> Seq.map f
+  let fold f m init =
+    Js.object_keys m |> Js.to_array
+    |> Array.fold_left
+         (fun init k -> f (Js.to_string k) (unsafe_get m k) init)
+         init
 end
 
 type tagged =
@@ -142,9 +144,10 @@ and list stack ty j =
 and dict stack ty j =
   match classify j with
   | Js_object o ->
-      o |> Table.to_seq
-      |> Seq.map (fun (k, v) -> (k, make (Key k :: stack) ty v))
-      |> Map.String.of_seq |> Data.dict
+      Table.fold
+        (fun k v map -> Map.String.add k (make (Key k :: stack) ty v) map)
+        o Map.String.empty
+      |> Data.dict
   | _ -> decode_error (Ty.dict ty) stack j
 
 and tuple ty stack tys j =
