@@ -3,9 +3,7 @@ title: Acutis language manual
 description: The manual for how to use the Acutis template language.
 showTitle: true
 layout: main.acutis
-next:
-  text: Read the API 👉
-  url: /api/
+next: null
 ---
 
 An Acutis template is parsed as three basic building blocks:
@@ -20,8 +18,11 @@ Most of the language features occur within `{%` expressions `%}`.
 
 ## Props and bindings
 
-Every template accepts a JSON map of properties (props) that binds values to
-names. The JSON object `{"color": "blue"}` binds `"blue"` to the name `color`.
+Every template accepts a map of properties (props) that binds names to values.
+In this document, we will use JSON data to represent our input type, but the
+Acutis rendering engine is flexible enough to allow other types of input.
+
+The JSON object `{"color": "blue"}` binds `"blue"` to the name `color`.
 
 ## Echoing values
 
@@ -112,7 +113,7 @@ Examples:
 ```
 
 The three "constant" types are `int`, `float`, and `string`, which work as you'd
-probably expect from other languages.
+expect from other languages.
 
 ### Nullable
 
@@ -144,9 +145,7 @@ A list is an ordered sequence of values. Lists are homogeneous; each item must
 be of the same type. They are indicated with brackets, e.g. `[int]`.
 
 You can append or destructure items from the "head," or the front, of a list
-while ignoring the rest with the `...` syntax.
-
-An empty list is structured as `[]`.
+with the `...` syntax.
 
 ### Tuple
 
@@ -189,7 +188,7 @@ represent key-value pairs like records, but they are dynamically sized and
 homogeneously typed. They are specified with angled brackets, e.g. `<int>`.
 
 The order of keys in a dict is _not_ preserved. The compiler currently sorts
-them alphabetically, but that behavior could change.
+them alphabetically, but that specific behavior is not defined.
 
 ### Enumeration
 
@@ -220,7 +219,7 @@ Boolean values are really just a special kind of enum. The `false | true` type
 works exactly any closed binary enum would, such as `@0 | @1`.
 
 It is possible to have a type which is _only_ `false` or _only_ `true`, but this
-is not useful and usually indicates a programmer error.
+usually indicates a programmer error.
 
 ### Tagged union
 
@@ -268,14 +267,20 @@ The goal is to enable real-world data to easily fit into a system that's 100%
 type-safe. This means you must sometimes make decisions about which types best
 fit your data. For example, records and tuples are heterogeneous and
 fixed-sized, while dicts and lists are homogeneous and dynamically-sized. This
-trade-off is necessary because if a structure was heterogeneous and dynamic then
-it would be unsafe.
+trade-off is necessary because a structure that is heterogeneous and dynamic
+would be unsafe.
 
 ## Types and JSON
 
-Acutis accepts incoming JSON data and decodes it according to the template's
-type scheme. Any data sent to an external function is encoded back into JSON.
-Here is how JSON values and the Acutis types work together.
+The Acutis rendering engine is generic enough to allow different input types.
+However, it currently only includes decoders for JSON and JavaScript. Both are
+very similar, so we'll use JSON as our primary example.
+
+Acutis accepts incoming data and decodes it according to the template's type
+scheme. Any data sent to an external function is encoded back into its original
+type.
+
+Here's how example Acutis types correspond to JSON types and values:
 
 <!-- Adding bars inside inside tables messes with markdown tooling. -->
 
@@ -297,12 +302,12 @@ Here is how JSON values and the Acutis types work together.
 | `_` (unknown)                                       | Any                                              |
 
 You may need to preprocess your input data to fit Acutis' type constraints. For
-example, if your JSON value can be one of multiple incompatible types, then you
+example, if you have a value can be one of several incompatible types, then you
 will have to transform it into a legal type such as a tagged union.
 
 ## Introduction to pattern matching
 
-The `match` and `map` statements are the core of Acutis' superpowers. They use
+The `match` and `map` statements are the core of Acutis' powers. They use
 pattern matching to conditionally output sections of a template.
 
 Pattern matching in Acutis combines object destructuring with equality checking.
@@ -479,12 +484,12 @@ Each of the dictionary's values will be matched with the pattern after the
 `with` clause. The index will be the string key associated with the value.
 
 ```acutis
-{% map <
-    author: {name: "John"},
-    editor: {name: "Carlo"}
-  > with {name}, role ~%}
+{% map_dict
+    < author: {name: "John"},
+      editor: {name: "Carlo"} >
+    with {name}, role ~%}
   {{ name }} is the {{ role }}.
-{% /map %}
+{% /map_dict %}
 ```
 
 ## More about pattern matching
@@ -565,13 +570,14 @@ can be useful for reasoning about two-dimensional matrices of data.
 ## Template components
 
 Template components in Acutis are analogous to "partials" or "includes" in other
-template languages. They are how we reuse common pieces of templates. We can
-also write them in JavaScript to add custom runtime logic, which makes them
-comparable to "filters" or "shortcodes" in other languages.
+template languages. They are how we reuse common pieces of templates.
+
+We can also use functions as templates to add custom runtime logic, which makes
+them comparable to "filters" or "shortcodes" in other languages.
 
 Components always begin with a capital letter. They accept XML-style props which
-are turned into bindings within the component. They also end with XML-style `/`
-(backslash). If you've used React JSX before, these concepts will look similar.
+are turned into bindings within the component. They also end with an XML-style
+`/` (backslash).
 
 A couple of basic components:
 
@@ -610,14 +616,12 @@ and abbreviate it to `{% DateTime date / %}`.
 ### Template children props
 
 Props can be template sections, which are considered the template's "children."
-These are denoted with octothorps, beginning with `#` and ending with `/#`.
-Children's names must begin with a capital letter, just like components.
+These are denoted with hashes, beginning with `#%}` and ending with `{%/#`.
+Children names must begin with a capital letter, just like components.
 
 ```acutis
 {% Layout
-   Header=#%}
-    <h1> {{ title }} </h1>
-   {%/#
+   Header=#%} <h1> {{ title }} </h1> {%/#
    Sidebar=#%}
     <h2> Menu </h2>
     {% map menu with {title, slug} %}
@@ -658,5 +662,4 @@ An explicit children prop:
    / %}
 ```
 
-Both of those examples are rendered identically. If you've used React, this
-should look familiar.
+Both of those examples are rendered identically.

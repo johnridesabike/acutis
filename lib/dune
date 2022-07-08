@@ -1,0 +1,36 @@
+(library
+ (public_name acutis)
+ (preprocess
+  (pps ppx_deriving.show ppx_deriving.eq ppx_deriving.ord)))
+
+(ocamllex lexer)
+
+(menhir
+ (modules parser)
+ (flags --strict --explain --dump --exn-carries-state)
+ (infer true))
+
+;; These rules generate the Menhir error messages:
+
+(rule ; Generate parserMessages.ml
+ (deps messages.check)
+ (action
+  (with-stdout-to
+   parserMessages.ml
+   (run menhir %{dep:parser.mly} --compile-errors %{dep:parser.messages}))))
+
+(rule ; Generate a list of all error states for the completeness check.
+ (with-stdout-to
+  parser.auto.messages
+  (run menhir %{dep:parser.mly} --list-errors)))
+
+(rule ; Perform the completeness check.
+ (with-stdout-to
+  messages.check
+  (run
+   menhir
+   %{dep:parser.mly}
+   --compare-errors
+   %{dep:parser.auto.messages}
+   --compare-errors
+   %{dep:parser.messages})))

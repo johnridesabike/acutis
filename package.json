@@ -2,12 +2,12 @@
   "name": "acutis-lang",
   "version": "0.14.0",
   "private": false,
-  "description": "A declarative template language for web documents & beyond.",
+  "description": "A declarative, type-safe template language",
   "keywords": [
-    "rescript",
     "template",
-    "templating",
-    "template engine"
+    "language",
+    "parser",
+    "interpreter"
   ],
   "homepage": "https://johnridesa.bike/acutis/",
   "bugs": {
@@ -22,53 +22,6 @@
     "name": "John Jackson",
     "url": "https://johnridesa.bike/"
   },
-  "exports": {
-    ".": {
-      "import": "./lib/es6/src/AcutisJs.mjs",
-      "require": "./lib/js/src/AcutisJs.js"
-    },
-    "./lib/*": "./lib/*",
-    "./node-utils": "./node-utils.js",
-    "./package.json": "./package.json",
-    "./src/*": "./src/*"
-  },
-  "main": "lib/js/src/AcutisJs.js",
-  "module": "lib/es6/src/AcutisJs.mjs",
-  "bin": {
-    "acutis": "cli",
-    "acutis-lang": "cli"
-  },
-  "files": [
-    "bsconfig.json",
-    "cli",
-    "lib/es6/src/",
-    "lib/js/src/",
-    "node-utils.js",
-    "src/"
-  ],
-  "scripts": {
-    "analyze:dead-code": "reanalyze -dce",
-    "analyze:exception": "reanalyze -exception",
-    "build": "rescript",
-    "clean": "rescript clean",
-    "prepublishOnly": "rescript",
-    "preversion": "yarn build && yarn test",
-    "start": "rescript build -w",
-    "test": "jest",
-    "test:watch": "jest --watchAll",
-    "test:watch:coverage": "jest --watchAll --coverage"
-  },
-  "dependencies": {
-    "@rescript/std": "^9.1.3",
-    "minimist": "^1.2.5"
-  },
-  "devDependencies": {
-    "jest": "^26.6.3",
-    "reanalyze": "^2.15.0",
-    "reason-test-framework": "^0.3.2",
-    "rescript": "^9.1.4"
-  },
-  "engines": {
-    "node": ">= 12"
-  }
+  "main": "_build/default/js/acutis_js.bc.js",
+  "files": []
 }

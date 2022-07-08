@@ -2,12 +2,11 @@
 
 ## Acutis language
 
-Acutis is a template language for building documents. It features static typing,
-pattern matching, template components, and asynchronous templates. It can run in
-a browser or in Node.
+Acutis is a template language that features static typing, pattern matching, and
+asynchronous template components. It's a simple, yet powerful alternative to
+engines like Mustache, Handlebars, Liquid, and Nunjucks.
 
-Acutis is a small, personal project and is not stable. Use Acutis if you want to
-experiment with a different kind of template language.
+Acutis is an experimental, personal project and is not stable.
 
 ```acutis
 <h1> Blog posts for {{ siteTitle }} </h1>
@@ -31,30 +30,33 @@ experiment with a different kind of template language.
 
 ## Getting started
 
-```sh
-npm install acutis-lang
+Acutis is written in OCaml. You will need to use the OCaml package manager,
+OPAM.
+
+```shell
+opam pin https://github.com/johnridesabike/acutis.git
 ```
 
-You can use the Acutis API to add it to your build system.
-
-[Read the docs](https://johnridesa.bike/acutis/).
-
-[Changelog](https://github.com/johnridesabike/acutis/blob/master/CHANGELOG.md).
+[Read the documentation here](https://johnridesa.bike/acutis/).
 
 ## Development
 
-[Read the development docs](https://johnridesa.bike/acutis/development/).
-
-Compile the source in watch mode:
+Once you clone this repository, create a development OPAM switch:
 
 ```shell
-yarn start
+make dev
 ```
 
-Run the tests:
+Run the compiler in watch mode:
 
 ```shell
-yarn test
+make watch
+```
+
+Run tests:
+
+```shell
+make test
 ```
 
 ## License

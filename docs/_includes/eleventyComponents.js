@@ -6,29 +6,29 @@
   file, You can obtain one at http://mozilla.org/MPL/2.0/.
 */
 
-const { Source, Typescheme } = require("../../");
+const { Compile, Typescheme, TypeschemeChildren } = require("../../");
 const site = require("../_data/site");
 
 module.exports = [
-  Source.fn(
+  Compile.fromFunAsync(
     "Log",
     Typescheme.make([["val", Typescheme.unknown()]]),
-    Typescheme.Child.make([]),
-    (Env, props, _children) => {
+    TypeschemeChildren.make([]),
+    (props, _children) => {
       console.log(props);
-      return Env.return_("");
+      return Promise.resolve("");
     }
   ),
-  Source.fn(
+  Compile.fromFunAsync(
     "Debugger",
     Typescheme.make([["val", Typescheme.unknown()]]),
-    Typescheme.Child.make([]),
-    (Env, _props, _children) => {
+    TypeschemeChildren.make([]),
+    (_props, _children) => {
       debugger;
-      return Env.return_("");
+      return Promise.resolve("");
     }
   ),
-  Source.fn(
+  Compile.fromFunAsync(
     "Footer",
     Typescheme.make([
       ["year", Typescheme.nullable(Typescheme.string())],
@@ -36,8 +36,8 @@ module.exports = [
       ["name", Typescheme.string()],
       ["siteUrl", Typescheme.string()],
     ]),
-    Typescheme.Child.make([]),
-    (Env, props, _children) => {
+    TypeschemeChildren.make([]),
+    (props, _children) => {
       if (!props.year) {
         props.year = new Date().getFullYear();
       }
@@ -47,7 +47,7 @@ module.exports = [
       } else {
         link = `<a href="${props.link}">${props.name}</a>`;
       }
-      return Env.return_(`
+      return Promise.resolve(`
         <footer class="footer">
           <p>
             Published in ${props.year} by ${link}.
@@ -58,18 +58,17 @@ module.exports = [
         </footer>`);
     }
   ),
-  Source.fn(
+  Compile.fromFunAsync(
     "Link",
     Typescheme.make([
       ["path", Typescheme.string()],
       ["page", Typescheme.record([["url", Typescheme.string()]])],
     ]),
-    Typescheme.Child.make([Typescheme.Child.child("Children")]),
-    (Env, { path, page }, { Children }) => {
+    TypeschemeChildren.make([TypeschemeChildren.child("Children")]),
+    ({ path, page }, { Children }) => {
       const current = path === page.url ? "true" : "false";
       const href = site.url + path;
-      return Env.map(
-        Children,
+      return Children.then(
         (Children) =>
           `<a href="${href}" aria-current="${current}">${Children}</a>`
       );

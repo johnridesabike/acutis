@@ -9,11 +9,10 @@ next:
 ---
 
 Acutis is a template language that features static typing, pattern matching, and
-asynchronous template components. It's built in [ReScript] and designed for
-JavaScript. It's comparable to engines like Mustache, Handlebars, Liquid, and
-Nunjucks.
+asynchronous template components. It's a simple, yet powerful alternative to
+engines like Mustache, Handlebars, Liquid, and Nunjucks.
 
-[Source code][1] | [Changelog][2]
+[Source code] | [Changelog]
 
 ```acutis
 <h1> Blog posts for {{ siteTitle }} </h1>
@@ -35,6 +34,5 @@ Nunjucks.
 {% /map %}
 ```
 
-[rescript]: https://rescript-lang.org/
-[1]: https://github.com/johnridesabike/acutis
-[2]: https://github.com/johnridesabike/acutis/blob/master/CHANGELOG.md
+[source code]: https://github.com/johnridesabike/acutis
+[changelog]: https://github.com/johnridesabike/acutis/blob/master/CHANGELOG.md

@@ -10,59 +10,75 @@ const path = require("path");
 const fs = require("fs");
 const util = require("util");
 const fastGlob = require("fast-glob");
-const { Compile, Render, Result, Source } = require("../../");
-const { filenameToComponent } = require("../../node-utils");
+const { Compile, Render, Utils } = require("../../");
 
 const readFile = util.promisify(fs.readFile);
 
-function onComponentsError(e) {
-  console.error(e);
-  throw new Error(
-    "I couldn't compile Acutis components due to the previous errors."
-  );
-}
+/*
+ Due to the way JSOO modifies Node.JS's default error handling, in addition to
+ the incompatibilities between OCaml/JSOO exceptions and JS exceptions, we
+ avoid throwing errors that come from the OCaml side.
+
+ We continue to raise any exceptions that come from Eleventy, since Eleventy
+ will handle those itself.
+*/
 
 module.exports = function (eleventyConfig, config) {
-  let components = Compile.Components.empty();
+  let components = Compile.components([]);
   eleventyConfig.addTemplateFormats("acutis");
   eleventyConfig.addExtension("acutis", {
     read: true,
     data: true,
-    init: async function () {
+    init: function () {
       const glob = path.join(
         this.config.inputDir,
         this.config.dir.includes,
         "**/*.acutis"
       );
-      const files = await fastGlob(glob);
-      const queue = await Promise.all(
-        files.map(async (fileName) => {
-          const str = await readFile(fileName, "utf-8");
-          const name = filenameToComponent(fileName);
-          return Source.src(name, str);
+      return fastGlob(glob)
+        .then((files) => {
+          const filesp = files.map((fileName) =>
+            readFile(fileName, "utf-8").then((src) => {
+              const name = Utils.filenameToComponent(fileName);
+              return Compile.fromString(name, src);
+            })
+          );
+          return Promise.all(filesp);
         })
-      );
-      const componentsResult = Compile.Components.make([
-        ...queue,
-        ...config.components,
-      ]);
-      components = Result.getOrElse(componentsResult, onComponentsError);
+        .then((arr) => {
+          components = Compile.components([...arr, ...config.components]);
+        })
+        .catch((e) => {
+          if (Utils.isError(e)) {
+            console.error(Utils.getError(e));
+          } else {
+            throw e;
+          }
+        });
     },
     compile: function (str, inputPath) {
-      function onError(e) {
-        console.error(e);
-        throw new Error(
-          `I couldn't render ${inputPath} due to the previous errors.`
-        );
+      try {
+        const template = Compile.make(inputPath, components, str);
+        return function (data) {
+          return Render.async(template, data).catch((e) => {
+            if (Utils.isError(e)) {
+              console.error(Utils.getError(e));
+              return "error";
+            } else {
+              throw e;
+            }
+          });
+        };
+      } catch (e) {
+        if (Utils.isError(e)) {
+          console.error(Utils.getError(e));
+          return function (_data) {
+            return "error";
+          };
+        } else {
+          throw e;
+        }
       }
-      const template = Result.getOrElse(
-        Compile.make(inputPath, str, components),
-        onError
-      );
-      return async function (data) {
-        const result = await Render.async(template, data);
-        return Result.getOrElse(result, onError);
-      };
     },
   });
 };

@@ -1,7 +1,0 @@
-{% A content=name / %}
-
-{% Bb name / %}
-
-{% D name / %}
-
-<p>{% C name /%}</p>
