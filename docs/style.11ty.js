@@ -13,6 +13,12 @@ const postcss = require("postcss");
 
 const readFile = util.promisify(fs.readFile);
 
+const postcssWithOptions = postcss([
+  require("postcss-import"),
+  require("postcss-custom-properties")(),
+  require("cssnano"),
+]);
+
 const cssPath = "style.css";
 
 module.exports = class {
@@ -27,11 +33,7 @@ module.exports = class {
   }
 
   render({ css, cssPath }) {
-    return postcss([
-      require("postcss-import"),
-      require("postcss-custom-properties")(),
-      require("cssnano"),
-    ])
+    return postcssWithOptions
       .process(css, { from: cssPath })
       .then((result) => result.css);
   }
