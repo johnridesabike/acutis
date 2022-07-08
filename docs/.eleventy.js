@@ -28,6 +28,7 @@ module.exports = (eleventyConfig) => {
   });
   eleventyConfig.addPassthroughCopy("icon.svg");
   eleventyConfig.addPassthroughCopy("favicon.ico");
+  eleventyConfig.addPassthroughCopy(".nojekyll");
   eleventyConfig.setLibrary(
     "md",
     MarkdownIt({
