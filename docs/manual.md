@@ -18,15 +18,17 @@ Most of the language features occur within `{%` expressions `%}`.
 
 ## Props and bindings
 
-Every template accepts a map of properties (props) that binds names to values.
+Every template accepts a map of properties (props) that binds values to names.
+
 In this document, we will use JSON data to represent our input type, but the
 Acutis rendering engine is flexible enough to allow other types of input.
 
-The JSON object `{"color": "blue"}` binds `"blue"` to the name `color`.
+As an example, the JSON object `{"color": "blue"}` binds the string `"blue"` to
+the name `color`.
 
 ## Echoing values
 
-If you apply the props from the last section to this template:
+If you apply the data from the last section to this template:
 
 ```acutis
 My favorite color is {{ color }}.
@@ -390,6 +392,37 @@ But my favorite is still blue.
 ```
 
 The top-level `color` is not affected by the nested `color` binding.
+
+## Exhaustive and partial patterns
+
+The Acutis compiler analyzes patterns to determine whether they are exhaustive
+or partial. An exhaustive set of patterns covers every possible shape of input
+data.
+
+It's easy for a programmer to accidentally write a partial set of patterns,
+especially when matching a complex data structure. Fortunately, the compiler can
+handle nested patterns easily. Here's an example:
+
+```acutis
+{% match author with {name, books: [{title}]} %}
+  {{ name }}'s latest books is {{ title }}.
+{% with {name, books: []} %}
+  {{ name }} hasn't published any books yet.
+{% /match %}
+```
+
+This fails with the error message:
+
+```txt
+Matching error.
+This pattern-matching is not exhaustive. Here's an example of a pattern which
+is not matched:
+{books: [{title: _}, ..._], name: _}
+```
+
+The example pattern it generated should tell you what you missed. In this case,
+the original set of patterns only matched a `books` list with one or zero
+items, but not more than one (thus the `..._]` in the error's example).
 
 ## Mapping
 
