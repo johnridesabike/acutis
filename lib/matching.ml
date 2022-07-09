@@ -661,7 +661,7 @@ module ParMatch = struct
   and to_list_pat ty = function
     | Cons (Nest [ hd; tl ]) ->
         TConstruct (TList, Some (TTuple [ to_pat ty hd; to_list_pat ty tl ]))
-    | Cons Any -> TConstruct (TList, Some TAny)
+    | Cons Any -> TAny
     | Nil -> TConstruct (TList, None)
     | _ -> TAny
 

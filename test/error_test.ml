@@ -793,6 +793,20 @@ let parmatch () =
     (render
        "{% match a with {firstName: name, favoriteColor: \"green\"} %}\n\
         {{ name }}'s favorite color is green.\n\
+        {% /match %}");
+  check_raises "Partial lists print correctly."
+    (E
+       "File <test>, 1:5-5:10\n\
+        Matching error.\n\
+        This pattern-matching is not exhaustive. Here's an example of a \
+        pattern which\n\
+        is not matched:\n\
+        {@kind: \"anonymous\", books: _}")
+    (render
+       "{%~ match author\n\
+       \    with {@kind: \"person\", name, books: [newest, ...older]} %}\n\
+        {%~  with {@kind: \"anonymous\", books: []} %}\n\
+       \  This author hasn't published any books.\n\
         {% /match %}")
 
 let component_graph () =
