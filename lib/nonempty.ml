@@ -29,8 +29,9 @@ let map2 f (hd1 :: tl1) (hd2 :: tl2) =
   hd :: List.map2 f tl1 tl2
 
 let equal f (h1 :: t1) (h2 :: t2) = f h1 h2 && List.equal f t1 t2
-let pp_sep ppf () = Format.fprintf ppf ";@ "
 
 let pp pp_a ppf l =
   let open Format in
-  fprintf ppf "@[<2>Nonempty.[%a@,]@]" (pp_print_list ~pp_sep pp_a) (to_list l)
+  fprintf ppf "@[<2>[%a@,]@]"
+    (pp_print_list ~pp_sep:Pp.sep_semicolon pp_a)
+    (to_list l)

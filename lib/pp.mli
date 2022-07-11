@@ -15,6 +15,9 @@ open Format
 val sep_comma : formatter -> unit -> unit
 (** Outputs [,@ ]. *)
 
+val sep_semicolon : formatter -> unit -> unit
+(** Outputs [;@ ]. *)
+
 val map_string :
   (Format.formatter -> 'a -> unit) ->
   Format.formatter ->

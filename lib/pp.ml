@@ -11,20 +11,21 @@
 open Format
 
 let sep_comma ppf () = fprintf ppf ",@ "
+let sep_semicolon ppf () = Format.fprintf ppf ";@ "
 
 let bindings pp_k pp_v ppf (k, v) =
-  fprintf ppf "@[%a@ -> @[%a@]@]" pp_k k pp_v v
+  fprintf ppf "@[<hov 2>%a ->@ %a@]" pp_k k pp_v v
 
-let string_key ppf (k : string) = fprintf ppf "%S" k
+let string_key ppf k = fprintf ppf "%S" k
 
 let map_string pp_a ppf m =
-  fprintf ppf "MapString.[@[@,%a@,@]]"
-    (pp_print_seq ~pp_sep:sep_comma (bindings string_key pp_a))
+  fprintf ppf "@[<hov 2>Map.(@,@[%a@]@,)@]"
+    (pp_print_seq ~pp_sep:sep_semicolon (bindings string_key pp_a))
     (Map.String.to_seq m)
 
 let set_int ppf s =
-  fprintf ppf "SetString.[@[@,%a@,@]]"
-    (pp_print_seq ~pp_sep:sep_comma pp_print_int)
+  fprintf ppf "@[<hov 2>Set.(@,@[%a@]@,)@]"
+    (pp_print_seq ~pp_sep:sep_semicolon pp_print_int)
     (Set.Int.to_seq s)
 
 (* Sync with lexer*)
