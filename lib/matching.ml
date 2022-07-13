@@ -81,52 +81,36 @@ type (_, _) nat =
   | Z : ('z, 'z) nat
   | S : ('a, 'z) nat -> (('a, 'key) tree, 'z) nat
 
-(** Whenever we iterate through cases, we do it tail-recursively which creates
-    a reversed accumulator. We need to reverse it again back to normal. *)
-let rec rev_cases ?tail t =
-  let tail = { t with next_case = tail } in
-  match t.next_case with None -> tail | Some t -> rev_cases ~tail t
-
 exception Merge_fail
 (** If a branch of tree cannot merge with another branch, then we throw that
     branch away. If an entire tree failed to merge, then we know its pattern was
-    redundant.
-    *)
+    redundant. *)
 
 (** Sort the data for easier analysis. If the new value is lower than the
     original, then append it to the beginning. If the new value equals the
     original, then merge them. If the new value is greater than the original,
     then check if we're at the end of the list. If we are, then add this new
     case. If not, then keep searching. *)
-let rec merge_testcases_aux :
+let[@tail_mod_cons] rec merge_testcases_aux :
     type a k.
-    ?init:(a, k) switchcase ->
     (a, leaf) nat ->
     (a, k) switchcase ->
     Const.t ->
     (a, k) tree ->
-    (a, k) switchcase option =
- fun ?init n original data if_match ->
+    (a, k) switchcase =
+ fun n original data if_match ->
   let cmp = Const.compare data original.data in
-  if cmp < 0 then
-    let tail = { data; if_match; next_case = Some original } in
-    match init with
-    | None -> Some tail
-    | Some init -> Some (rev_cases ~tail init)
+  if cmp < 0 then { data; if_match; next_case = Some original }
   else if cmp = 0 then
-    try
-      let tail =
-        { original with if_match = merge n original.if_match if_match }
-      in
-      match init with
-      | None -> Some tail
-      | Some init -> Some (rev_cases ~tail init)
-    with Merge_fail -> None
+    { original with if_match = merge n original.if_match if_match }
   else
-    let init = { original with next_case = init } in
-    match original.next_case with
-    | None -> Some (rev_cases ~tail:{ data; if_match; next_case = None } init)
-    | Some original -> merge_testcases_aux ~init n original data if_match
+    {
+      original with
+      next_case =
+        (match original.next_case with
+        | None -> Some { data; if_match; next_case = None }
+        | Some next_case -> Some (merge_testcases_aux n next_case data if_match));
+    }
 
 (** When merging a and b, we take each value from b and try to merge it with the
     items in a. At least one value must merge in order to be considered a
@@ -140,11 +124,11 @@ and merge_testcases :
     (a, k) switchcase option =
  fun n original { data; if_match; next_case } success ->
   match merge_testcases_aux n original data if_match with
-  | Some result -> (
+  | result -> (
       match next_case with
       | None -> Some result
       | Some b -> merge_testcases n result b true)
-  | None -> (
+  | exception Merge_fail -> (
       match (next_case, success) with
       | None, false -> None
       | None, true -> Some original
@@ -154,41 +138,43 @@ and merge_testcases :
     successfully. As long as at least one merges, then this function succeeds.
     We filter out any unsuccessful mergers, since their paths are covered by the
     wildcard case. *)
-and merge_testcases_into_wildcard :
+and[@tail_mod_cons] merge_testcases_into_wildcard :
     type a k.
-    ?init:(a, k) switchcase ->
     (a, leaf) nat ->
     (a, k) tree ->
     (a, k) switchcase ->
     (a, k) switchcase option =
- fun ?init n wildcard t ->
-  let init =
-    try Some { t with if_match = merge n wildcard t.if_match; next_case = init }
-    with Merge_fail -> init
+ fun n wildcard t ->
+  let if_match =
+    try Some (merge n wildcard t.if_match) with Merge_fail -> None
   in
-  match (t.next_case, init) with
+  match (if_match, t.next_case) with
   | None, None -> None
-  | None, Some init -> Some (rev_cases init)
-  | Some t, init -> merge_testcases_into_wildcard ?init n wildcard t
+  | Some if_match, None -> Some { t with if_match }
+  | None, Some next_case -> merge_testcases_into_wildcard n wildcard next_case
+  | Some if_match, Some next_case ->
+      Some
+        {
+          t with
+          if_match;
+          next_case = merge_testcases_into_wildcard n wildcard next_case;
+        }
 
 (** When we expand a wildcard into a list of test values, we merge it with each
-    child and ignore any errors. Merge failures are replaced by their unmerged
-    originals. *)
-and expand_wildcard_into_testcases :
+    child and ignore any errors. *)
+and[@tail_mod_cons] expand_wildcard_into_testcases :
     type a k.
-    ?init:(a, k) switchcase ->
-    (a, leaf) nat ->
-    (a, k) switchcase ->
-    (a, k) tree ->
-    (a, k) switchcase =
- fun ?init n { data; if_match; next_case } wildcard ->
-  let init =
-    try { data; if_match = merge n if_match wildcard; next_case = init }
-    with Merge_fail -> { data; if_match; next_case = init }
-  in
+    (a, leaf) nat -> (a, k) switchcase -> (a, k) tree -> (a, k) switchcase =
+ fun n { data; if_match; next_case } wildcard ->
+  let if_match = try merge n if_match wildcard with Merge_fail -> if_match in
   match next_case with
-  | None -> rev_cases init
-  | Some a -> expand_wildcard_into_testcases ~init n a wildcard
+  | None -> { data; if_match; next_case }
+  | Some next_case ->
+      {
+        data;
+        if_match;
+        next_case = Some (expand_wildcard_into_testcases n next_case wildcard);
+      }
 
 (** When we expand a wildcard into a nest, we need to expand all of the
     wildcard's child nodes after the nest's child nodes.  We need a second [nat]
@@ -236,16 +222,16 @@ and expand_wildcard_after_nest :
         | None -> None
         | Some a -> Some (expand_wildcard_after_nest na nb a ~wildcard)
       in
-      let rec aux init case =
+      let[@tail_mod_cons] rec aux case =
         let if_match =
           expand_wildcard_after_nest na nb case.if_match ~wildcard
         in
-        let init = { case with if_match; next_case = init } in
         match case.next_case with
-        | None -> Switch { a with cases = rev_cases init; wildcard = wildcard' }
-        | Some a -> aux (Some init) a
+        | None -> { case with if_match }
+        | Some next_case ->
+            { case with if_match; next_case = Some (aux next_case) }
       in
-      aux None a.cases
+      Switch { a with cases = aux a.cases; wildcard = wildcard' }
   | _ -> .
 
 (** When we merge a wildcard after a nest, we can only keep successful mergers.
@@ -272,8 +258,8 @@ and merge_wildcard_after_nest :
       in
       Nest { b with child }
   | Construct b, na, nb -> (
-      (* At least one branch must successfully merge. Unsuccessful
-          mergers are discarded either way. *)
+      (* At least one branch must successfully merge. Unsuccessful mergers are
+         discarded either way. *)
       let nil =
         match b.nil with
         | None -> Ok None
@@ -296,9 +282,9 @@ and merge_wildcard_after_nest :
   | Wildcard b, na, nb ->
       Wildcard
         { b with child = merge_wildcard_after_nest na nb ~wildcard b.child }
-  | Switch b, na, nb ->
-      (* At least one branch must successfully merge. Unsuccessful
-          mergers are discarded either way. *)
+  | Switch b, na, nb -> (
+      (* At least one branch must successfully merge. Unsuccessful mergers are
+         discarded either way. *)
       let wildcard' =
         match b.wildcard with
         | None -> None
@@ -306,22 +292,21 @@ and merge_wildcard_after_nest :
             try Some (merge_wildcard_after_nest na nb ~wildcard b)
             with Merge_fail -> None)
       in
-      let rec aux init case =
-        let init =
-          try
-            let if_match =
-              merge_wildcard_after_nest na nb ~wildcard case.if_match
-            in
-            Some { case with if_match; next_case = init }
-          with Merge_fail -> init
+      let[@tail_mod_cons] rec aux case =
+        let if_match =
+          try Some (merge_wildcard_after_nest na nb ~wildcard case.if_match)
+          with Merge_fail -> None
         in
-        match (case.next_case, init) with
-        | None, None -> raise_notrace Merge_fail
-        | None, Some init ->
-            Switch { b with cases = rev_cases init; wildcard = wildcard' }
-        | Some a, init -> aux init a
+        match (if_match, case.next_case) with
+        | None, None -> None
+        | Some if_match, None -> Some { case with if_match }
+        | None, Some next_case -> aux next_case
+        | Some if_match, Some next_case ->
+            Some { case with if_match; next_case = aux next_case }
       in
-      aux None b.cases
+      match aux b.cases with
+      | None -> raise_notrace Merge_fail
+      | Some cases -> Switch { b with cases; wildcard = wildcard' })
 
 and merge : type a k. (a, leaf) nat -> (a, k) tree -> (a, k) tree -> (a, k) tree
     =
@@ -658,7 +643,7 @@ module ParMatch = struct
         | _ -> assert false)
     | _ -> TAny
 
-  and to_list_pat ty = function
+  and[@tail_mod_cons] to_list_pat ty = function
     | Cons (Nest [ hd; tl ]) ->
         TConstruct (TList, Some (TTuple [ to_pat ty hd; to_list_pat ty tl ]))
     | Cons Any -> TAny
