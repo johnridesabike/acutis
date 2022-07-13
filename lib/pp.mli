@@ -26,7 +26,7 @@ val map_string :
 (** The function that [Stdlib.Map.S] is missing. *)
 
 val set_int : Format.formatter -> Set.Int.t -> unit
-(** The function that [Stdlib.Int.S] is missing. *)
+(** The function that [Stdlib.Set.S] is missing. *)
 
 val field : formatter -> string -> unit
 (** Outputs either [field] or ["string field"] depending on whether the input is
