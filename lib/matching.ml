@@ -262,23 +262,21 @@ and merge_wildcard_after_nest :
          discarded either way. *)
       let nil =
         match b.nil with
-        | None -> Ok None
+        | None -> None
         | Some c -> (
-            try Ok (Some (merge_wildcard_after_nest na nb ~wildcard c))
-            with Merge_fail -> Error None)
+            try Some (merge_wildcard_after_nest na nb ~wildcard c)
+            with Merge_fail -> None)
       in
       let cons =
         match b.cons with
-        | None -> Ok None
+        | None -> None
         | Some c -> (
-            try Ok (Some (merge_wildcard_after_nest na nb ~wildcard c))
-            with Merge_fail -> Error None)
+            try Some (merge_wildcard_after_nest na nb ~wildcard c)
+            with Merge_fail -> None)
       in
       match (nil, cons) with
-      | Error _, Error _ | Ok None, Error None | Error None, Ok None ->
-          raise_notrace Merge_fail
-      | Ok nil, Ok cons | Ok nil, Error cons | Error nil, Ok cons ->
-          Construct { b with nil; cons })
+      | None, None -> raise_notrace Merge_fail
+      | nil, cons -> Construct { b with nil; cons })
   | Wildcard b, na, nb ->
       Wildcard
         { b with child = merge_wildcard_after_nest na nb ~wildcard b.child }
@@ -336,22 +334,18 @@ and merge : type a k. (a, leaf) nat -> (a, k) tree -> (a, k) tree -> (a, k) tree
          must succeed. *)
       let nil =
         match b.nil with
-        | None -> Ok (Some a.child)
-        | Some b -> (
-            try Ok (Some (merge n a.child b)) with Merge_fail -> Error None)
+        | None -> Some a.child
+        | Some b -> ( try Some (merge n a.child b) with Merge_fail -> None)
       in
       let cons =
         match b.cons with
-        | None -> Ok (Some a')
-        | Some b -> (
-            try Ok (Some (merge n a' b)) with Merge_fail -> Error None)
+        | None -> Some a'
+        | Some b -> ( try Some (merge n a' b) with Merge_fail -> None)
       in
       let ids = Set.Int.union a.ids b.ids in
       match (nil, cons) with
-      | Error _, Error _ | Ok None, Error None | Error None, Ok None ->
-          raise_notrace Merge_fail
-      | Ok nil, Ok cons | Error nil, Ok cons | Ok nil, Error cons ->
-          Construct { b with ids; nil; cons })
+      | None, None -> raise_notrace Merge_fail
+      | nil, cons -> Construct { b with ids; nil; cons })
   | Wildcard a, Switch b -> (
       match merge_testcases_into_wildcard n a.child b.cases with
       | None -> raise_notrace Merge_fail
