@@ -1,12 +1,12 @@
-default: build-release
-
-.PHONY: build-release
-build-release:
-	opam exec -- dune build --profile=release
+default: build
 
 .PHONY: build
 build:
 	opam exec -- dune build
+
+.PHONY: release
+release:
+	opam exec -- dune build --profile=release
 
 .PHONY: watch
 watch:
