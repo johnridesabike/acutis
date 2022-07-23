@@ -72,7 +72,7 @@ v}
    with {a: 10, b: 11}, 12 %} a
 {% with {b: 21, a: 20}, 22 %} b
 {% with _, _ %} c
-{% /match %}|}
+{% /match %}
 v}
 
 {v
@@ -108,7 +108,7 @@ v}
    with [] %} a
 {% with [x] %} b
 {% with [x, ...y] %} c
-{% /match %}|}
+{% /match %}
 v}
 
 {v
@@ -137,7 +137,7 @@ v}
    with               x, 41 %} a
 {% with  ((10, 20), 30), 40 %} b
 {% with               y,  z %} c
-{% /match %}|}
+{% /match %}
 v}
 
 {v
