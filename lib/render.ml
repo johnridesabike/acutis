@@ -8,18 +8,22 @@
 (*                                                                        *)
 (**************************************************************************)
 
-let rec test_case ~wildcard data case =
-  if Data.Const.equal data case.Matching.data then Some case.if_match
+let rec test_case ~wildcard arg Matching.{ data; if_match; next } =
+  if Data.Const.equal arg data then Some if_match
   else
-    match case.next_case with
-    | Some case -> test_case ~wildcard data case
+    match next with
+    | Some case -> test_case ~wildcard arg case
     | None -> wildcard
 
 let bind_names data ids map =
   Set.Int.fold (fun id map -> Map.Int.add id data map) ids map
 
-let array_get i a =
-  if i >= 0 && i < Array.length a then Some (Array.unsafe_get a i) else None
+(** Only dicts can return [None] during pattern matching. To simplify the
+    code, we also make tuples and records return [option] values. This could
+    probably be optimized to avoid unnecessary [option] allocations for those
+    types. *)
+
+let tuple_get i a = Some a.(i)
 
 let rec make_match :
           'a 'args 'key.
@@ -62,7 +66,7 @@ let rec make_match :
             match child with
             | Int_keys child ->
                 let tuple = Data.get_tuple data in
-                make_match tuple array_get vars child
+                make_match tuple tuple_get vars child
             | String_keys child ->
                 let dict = Data.get_dict data in
                 make_match dict Map.String.find_opt vars child
@@ -76,7 +80,7 @@ let rec make_match :
       | None -> None)
 
 let make_match args Matching.{ tree; exits } =
-  match make_match args array_get Map.Int.empty tree with
+  match make_match args tuple_get Map.Int.empty tree with
   | Some (vars, { names; exit }) ->
       let bindings = Map.String.map (fun id -> Map.Int.find id vars) names in
       Some (bindings, Matching.Exit.get exits exit)

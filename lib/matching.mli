@@ -21,11 +21,11 @@
     up" with the others in 2D space. We also sort the tested values (the
     integers, strings, etc.).
 
-    Every node has a set of integer "IDs." These keep track of which values
-    could potentially be bound to an identifier. Due to the merging and
-    expanding of trees, nodes can have multiple IDs. Each leaf contains a map of
-    binding names to their IDs. This is necessary because multiple patterns may
-    merge that use different or overlapping binding names.
+    Every node has a set of integer IDs. These keep track of which values could
+    potentially be bound to an identifier. Due to the merging and expanding of
+    trees, nodes may have multiple IDs. Each leaf at the end of the branches
+    contains a map of names to their IDs. This is necessary because multiple
+    patterns may merge that use different or overlapping names for bindings.
 
     The most complicated part is how we handle wildcards. When we merge trees,
     each wildcard "expands" into its joining node. All of the nodes that come
@@ -34,8 +34,8 @@
     node is only visited once at runtime. One disadvantage is that some patterns
     may produce extremely large trees.
 
-    Detecting redundant patterns is "free" with this strategy because merging a
-    redundant tree always fails.
+    Detecting redundant patterns is almost "free" with this strategy because
+    merging a redundant tree fails to produce a new, different tree.
 *)
 
 (** {1 Example patterns and their resulting trees.}
@@ -65,7 +65,7 @@ v}
     {2 A record nested in a tuple. }
 
     (Note: internally, all arguments passed to a [match] statement are
-    implicitly wrapped in a tuple-like construct.)
+    implicitly wrapped in a tuple-like structure.)
 
 {v
 {% match a, b
@@ -165,7 +165,7 @@ key 0
 v}
     *)
 
-(** {1 Type definitions.}*)
+(** {1 Type definitions.} *)
 
 type debug_nest_info = Not_dict | Dict
 
@@ -174,6 +174,11 @@ type debug_nest_info = Not_dict | Dict
     [End] nodes to be fully polymorphic. They can either lead to a {!leaf} or
     back to their containing tree. This type nesting corresponds to the nesting
     of physical patterns.
+
+    One way to think about this is that our input patterns are non-nested types,
+    but their physical structure can be nested in many dimensions. Our trees are
+    the inverse. We need a tree that is always structurally two-dimensional, but
+    its type can be nested on multiple dimensions.
 
     Nested types are simple to create, but complicated to manipulate. Functions
     cannot consume these types under normal polymorphism rules. We need to use
@@ -184,7 +189,7 @@ type ('leaf, 'key) tree =
       ids : Set.Int.t;
       cases : ('leaf, 'key) switchcase;
       wildcard : ('leaf, 'key) tree option;
-      row : [ `Open | `Closed ];
+      debug_row : Typescheme.Variant.row;
     }
       (** A Switch represents a list of discreet values to test (i.e., [1],
           ["a"], etc.). If none of the values match the input, then the wildcard
@@ -204,8 +209,8 @@ type ('leaf, 'key) tree =
     }
       (** A Construct represents one of the built-in variant types: lists and 
           nullables. [nil] represents an empty list or a null value. It is like
-          a wildcard in that it always points to the {b next} node, whatever
-          that may be. [cons] always points to a {!Wildcard} or {!Nest} node.*)
+          a wildcard in that it always points to the {b next} node. [cons]
+          always points to a {!Wildcard} or {!Nest} node.*)
   | Wildcard of { key : 'key; ids : Set.Int.t; child : ('leaf, 'key) tree }
       (** Wildcards simply point to the next node in the tree.*)
   | End of 'leaf
@@ -217,16 +222,16 @@ and ('leaf, 'key) nest =
 and ('leaf, 'key) switchcase = {
   data : Data.Const.t;
   if_match : ('leaf, 'key) tree;
-  next_case : ('leaf, 'key) switchcase option;
+  next : ('leaf, 'key) switchcase option;
 }
-(** The switch cases work like linked lists of values. If an input matches a
-  value, then we follow its associated tree. If not, we try the next case. *)
+(** The switch cases work like linked lists of values to test. If an input
+    matches a value, then we follow its associated tree. If not, we try the next
+    case. *)
 
 module Exit : sig
   (** Each "exit" is given an integer key which we can use to look up the AST
-      nodes to follow after the tree. We use integers as a level of indirection
-      because exits can be copied when trees merge, and we don't want to
-      duplicate entire ASTs. *)
+      nodes to follow after the tree. We use integers because exits can be
+      copied when trees merge, and we don't want to duplicate entire ASTs. *)
 
   type key
   (** Internally: [int] *)
@@ -246,7 +251,7 @@ type 'a t = { tree : (leaf, int) tree; exits : 'a Exit.t }
 val make : Typechecker.case Nonempty.t -> Typechecker.nodes t
 
 val partial_match_check : Loc.t -> Typescheme.t list -> (leaf, int) tree -> unit
-(** Searches the tree for a counter-example to prove it does not cover
+(** Searches the tree for a counterexample to prove it does not cover
     a case. Raises {!Error.Acutis_error} if it finds one. *)
 
 (** {1 Functions for tests.} *)

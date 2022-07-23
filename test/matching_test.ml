@@ -62,33 +62,33 @@ let basic_tree () =
        {
          key = 0;
          ids = SI.empty;
-         row = `Open;
+         debug_row = `Open;
          cases =
            {
              data = `Int 0;
              if_match = End { names = MS.empty; exit = e 0 };
-             next_case =
+             next =
                Some
                  {
                    data = `Int 10;
                    if_match = End { names = MS.empty; exit = e 0 };
-                   next_case =
+                   next =
                      Some
                        {
                          data = `Int 15;
                          if_match = End { names = MS.empty; exit = e 1 };
-                         next_case =
+                         next =
                            Some
                              {
                                data = `Int 20;
                                if_match = End { names = MS.empty; exit = e 0 };
-                               next_case =
+                               next =
                                  Some
                                    {
                                      data = `Int 30;
                                      if_match =
                                        End { names = MS.empty; exit = e 0 };
-                                     next_case = None;
+                                     next = None;
                                    };
                              };
                        };
@@ -119,11 +119,11 @@ let basic_tree () =
           {
             key = 2;
             ids = set [ 4 ];
-            row = `Open;
-            cases = { data = `Int 22; if_match = End exit_1; next_case = None };
+            debug_row = `Open;
+            cases = { data = `Int 22; if_match = End exit_1; next = None };
             wildcard = Some (End exit_4);
           };
-      next_case = None;
+      next = None;
     }
   in
   let int_11 =
@@ -134,14 +134,14 @@ let basic_tree () =
           {
             key = 2;
             ids = set [ 4 ];
-            row = `Open;
-            cases = { data = `Int 12; if_match = End exit_0; next_case = None };
+            debug_row = `Open;
+            cases = { data = `Int 12; if_match = End exit_0; next = None };
             wildcard = Some (End exit_4);
           };
-      next_case = Some int_21;
+      next = Some int_21;
     }
   in
-  let int_42 = { data = `Int 42; if_match = End exit_3; next_case = None } in
+  let int_42 = { data = `Int 42; if_match = End exit_3; next = None } in
   let int_31 =
     {
       data = `Int 31;
@@ -150,12 +150,12 @@ let basic_tree () =
           {
             key = 2;
             ids = set [ 4 ];
-            row = `Open;
+            debug_row = `Open;
             cases =
-              { data = `Int 32; if_match = End exit_2; next_case = Some int_42 };
+              { data = `Int 32; if_match = End exit_2; next = Some int_42 };
             wildcard = Some (End exit_4);
           };
-      next_case = None;
+      next = None;
     }
   in
   let wildcard_2 = Wildcard { key = 2; ids = set [ 4 ]; child = End exit_4 } in
@@ -167,7 +167,7 @@ let basic_tree () =
           {
             key = 1;
             ids = set [ 1; 3 ];
-            row = `Open;
+            debug_row = `Open;
             cases =
               {
                 data = `Int 21;
@@ -176,16 +176,16 @@ let basic_tree () =
                     {
                       key = 2;
                       ids = set [ 4 ];
-                      row = `Open;
+                      debug_row = `Open;
                       cases =
                         {
                           data = `Int 22;
                           if_match = End exit_1;
-                          next_case = Some int_42;
+                          next = Some int_42;
                         };
                       wildcard = Some (End exit_4);
                     };
-                next_case = Some int_31;
+                next = Some int_31;
               };
             wildcard =
               Some
@@ -193,12 +193,12 @@ let basic_tree () =
                    {
                      key = 2;
                      ids = set [ 4 ];
-                     row = `Open;
+                     debug_row = `Open;
                      cases = int_42;
                      wildcard = Some (End exit_4);
                    });
           };
-      next_case = None;
+      next = None;
     }
   in
   check "A basic decision tree works"
@@ -206,7 +206,7 @@ let basic_tree () =
        {
          key = 0;
          ids = set [ 0; 2 ];
-         row = `Open;
+         debug_row = `Open;
          cases =
            {
              data = `Int 10;
@@ -215,11 +215,11 @@ let basic_tree () =
                  {
                    key = 1;
                    ids = set [ 3 ];
-                   row = `Open;
+                   debug_row = `Open;
                    cases = int_11;
                    wildcard = Some wildcard_2;
                  };
-             next_case = Some int_30;
+             next = Some int_30;
            };
          wildcard =
            Some
@@ -227,7 +227,7 @@ let basic_tree () =
                 {
                   key = 1;
                   ids = set [ 3 ];
-                  row = `Open;
+                  debug_row = `Open;
                   cases = int_21;
                   wildcard = Some wildcard_2;
                 });
@@ -253,30 +253,25 @@ let nests_merge () =
       {
         key = 2;
         ids = SI.empty;
-        row = `Open;
+        debug_row = `Open;
         cases =
           {
             data = `Int 12;
             if_match = End exit_0;
-            next_case =
+            next =
               Some
                 {
                   data = `Int 22;
                   if_match = End exit_1;
-                  next_case =
-                    Some
-                      {
-                        data = `Int 32;
-                        if_match = End exit_2;
-                        next_case = None;
-                      };
+                  next =
+                    Some { data = `Int 32; if_match = End exit_2; next = None };
                 };
           };
         wildcard = Some (End exit_3);
       }
   in
   let int_12_exit_0 =
-    Matching.{ data = `Int 12; if_match = End exit_0; next_case = None }
+    Matching.{ data = `Int 12; if_match = End exit_0; next = None }
   in
   let int_12_exit_3 =
     Matching.(
@@ -284,7 +279,7 @@ let nests_merge () =
         {
           key = 2;
           ids = SI.empty;
-          row = `Open;
+          debug_row = `Open;
           cases = int_12_exit_0;
           wildcard = Some (End exit_3);
         })
@@ -306,7 +301,7 @@ let nests_merge () =
                       {
                         key = 0;
                         ids = SI.empty;
-                        row = `Open;
+                        debug_row = `Open;
                         cases =
                           {
                             data = `Int 20;
@@ -315,16 +310,16 @@ let nests_merge () =
                                 {
                                   key = 1;
                                   ids = SI.empty;
-                                  row = `Open;
+                                  debug_row = `Open;
                                   cases =
                                     {
                                       data = `Int 21;
                                       if_match = End if_int_21;
-                                      next_case = None;
+                                      next = None;
                                     };
                                   wildcard = Some (End int_12_exit_3);
                                 };
-                            next_case = None;
+                            next = None;
                           };
                         wildcard =
                           Some
@@ -341,7 +336,7 @@ let nests_merge () =
                       {
                         key = 2;
                         ids = SI.empty;
-                        row = `Open;
+                        debug_row = `Open;
                         cases = int_12_exit_0;
                         wildcard = None;
                       });
@@ -366,13 +361,12 @@ let nests_merge_wildcards () =
       {
         key = 1;
         ids = set [ 2 ];
-        row = `Open;
+        debug_row = `Open;
         cases =
           {
             data = `Int 40;
             if_match = End exit_1;
-            next_case =
-              Some { data = `Int 41; if_match = End exit_0; next_case = None };
+            next = Some { data = `Int 41; if_match = End exit_0; next = None };
           };
         wildcard = Some (End exit_2);
       }
@@ -382,8 +376,8 @@ let nests_merge_wildcards () =
       {
         key = 1;
         ids = SI.empty;
-        row = `Open;
-        cases = { data = `Int 30; if_match = End int_40; next_case = None };
+        debug_row = `Open;
+        cases = { data = `Int 30; if_match = End int_40; next = None };
         wildcard = None;
       }
   in
@@ -406,7 +400,7 @@ let nests_merge_wildcards () =
                          {
                            key = 0;
                            ids = SI.empty;
-                           row = `Open;
+                           debug_row = `Open;
                            cases =
                              {
                                data = `Int 10;
@@ -415,16 +409,16 @@ let nests_merge_wildcards () =
                                    {
                                      key = 1;
                                      ids = SI.empty;
-                                     row = `Open;
+                                     debug_row = `Open;
                                      cases =
                                        {
                                          data = `Int 20;
                                          if_match = End int_30;
-                                         next_case = None;
+                                         next = None;
                                        };
                                      wildcard = None;
                                    };
-                               next_case = None;
+                               next = None;
                              };
                            wildcard = None;
                          });
@@ -436,9 +430,8 @@ let nests_merge_wildcards () =
                 {
                   key = 1;
                   ids = set [ 2 ];
-                  row = `Open;
-                  cases =
-                    { data = `Int 41; if_match = End exit_0; next_case = None };
+                  debug_row = `Open;
+                  cases = { data = `Int 41; if_match = End exit_0; next = None };
                   wildcard = Some (End exit_2);
                 });
        })
@@ -509,10 +502,8 @@ let lists () =
   let exit_2 = { names = MS.empty; exit = e 2 } in
   let exit_3 = { names = map [ ("y", 1) ]; exit = e 3 } in
   let exit_4 = { names = MS.empty; exit = e 4 } in
-  let int_42 = { data = `Int 42; if_match = End exit_3; next_case = None } in
-  let int_22 =
-    { data = `Int 22; if_match = End exit_1; next_case = Some int_42 }
-  in
+  let int_42 = { data = `Int 42; if_match = End exit_3; next = None } in
+  let int_22 = { data = `Int 22; if_match = End exit_1; next = Some int_42 } in
   let int_11 =
     {
       data = `Int 11;
@@ -529,12 +520,12 @@ let lists () =
                          {
                            key = 1;
                            ids = SI.empty;
-                           row = `Open;
+                           debug_row = `Open;
                            cases =
                              {
                                data = `Int 12;
                                if_match = End exit_0;
-                               next_case = Some int_22;
+                               next = Some int_22;
                              };
                            wildcard = Some (End exit_4);
                          })));
@@ -551,13 +542,13 @@ let lists () =
                                {
                                  key = 1;
                                  ids = SI.empty;
-                                 row = `Open;
+                                 debug_row = `Open;
                                  cases = int_22;
                                  wildcard = Some (End exit_4);
                                }));
                    });
           };
-      next_case = None;
+      next = None;
     }
   in
   let int_10 =
@@ -581,7 +572,7 @@ let lists () =
                             {
                               key = 0;
                               ids = SI.empty;
-                              row = `Open;
+                              debug_row = `Open;
                               cases = int_11;
                               wildcard = None;
                             });
@@ -589,7 +580,7 @@ let lists () =
                    });
             nil = None;
           };
-      next_case =
+      next =
         Some
           {
             data = `Int 30;
@@ -605,18 +596,18 @@ let lists () =
                             {
                               key = 1;
                               ids = SI.empty;
-                              row = `Open;
+                              debug_row = `Open;
                               cases =
                                 {
                                   data = `Int 32;
                                   if_match = End exit_2;
-                                  next_case = Some int_42;
+                                  next = Some int_42;
                                 };
                               wildcard = Some (End exit_4);
                             }));
                   cons = None;
                 };
-            next_case = None;
+            next = None;
           };
     }
   in
@@ -638,7 +629,7 @@ let lists () =
                          {
                            key = 0;
                            ids = SI.empty;
-                           row = `Open;
+                           debug_row = `Open;
                            cases = int_10;
                            wildcard = None;
                          });
@@ -648,7 +639,7 @@ let lists () =
                          {
                            key = 1;
                            ids = SI.empty;
-                           row = `Open;
+                           debug_row = `Open;
                            cases = int_42;
                            wildcard = Some (End exit_4);
                          });
@@ -659,10 +650,421 @@ let lists () =
                 {
                   key = 1;
                   ids = SI.empty;
-                  row = `Open;
+                  debug_row = `Open;
                   cases = int_42;
                   wildcard = Some (End exit_4);
                 });
+       })
+    (get_tree src)
+
+let wildcards_constructs () =
+  let open Matching in
+  let src =
+    {|
+    {% match a,  b,   c
+        with 1,  _,   0 %} 0
+    {%  with _, !1,   0 %} 1
+    {%  with _, null, 0 %} 2
+    {%  with 1, !1,   1 %} 3
+    {%  with _, _,    _ %} 4
+    {% /match %}|}
+  in
+  let exit_0 = { names = MS.empty; exit = e 0 } in
+  let exit_1 = { names = MS.empty; exit = e 1 } in
+  let exit_2 = { names = MS.empty; exit = e 2 } in
+  let exit_3 = { names = MS.empty; exit = e 3 } in
+  let exit_4 = { names = MS.empty; exit = e 4 } in
+  check
+    "Constructs can merge into wildcards correctly (nil path fails to merge)."
+    (Switch
+       {
+         key = 0;
+         ids = SI.empty;
+         cases =
+           {
+             data = `Int 1;
+             if_match =
+               Construct
+                 {
+                   key = 1;
+                   ids = SI.empty;
+                   nil =
+                     Some
+                       (Switch
+                          {
+                            key = 2;
+                            ids = SI.empty;
+                            cases =
+                              {
+                                data = `Int 0;
+                                if_match = End exit_0;
+                                next = None;
+                              };
+                            wildcard = Some (End exit_4);
+                            debug_row = `Open;
+                          });
+                   cons =
+                     Some
+                       (Nest
+                          {
+                            key = 1;
+                            ids = SI.empty;
+                            child =
+                              Int_keys
+                                (Switch
+                                   {
+                                     key = 0;
+                                     ids = SI.empty;
+                                     cases =
+                                       {
+                                         data = `Int 1;
+                                         if_match =
+                                           End
+                                             (Switch
+                                                {
+                                                  key = 2;
+                                                  ids = SI.empty;
+                                                  cases =
+                                                    {
+                                                      data = `Int 0;
+                                                      if_match = End exit_0;
+                                                      next =
+                                                        Some
+                                                          {
+                                                            data = `Int 1;
+                                                            if_match =
+                                                              End exit_3;
+                                                            next = None;
+                                                          };
+                                                    };
+                                                  wildcard = Some (End exit_4);
+                                                  debug_row = `Open;
+                                                });
+                                         next = None;
+                                       };
+                                     wildcard = None;
+                                     debug_row = `Open;
+                                   });
+                            wildcard =
+                              Some
+                                (Switch
+                                   {
+                                     key = 2;
+                                     ids = SI.empty;
+                                     cases =
+                                       {
+                                         data = `Int 0;
+                                         if_match = End exit_0;
+                                         next = None;
+                                       };
+                                     wildcard = Some (End exit_4);
+                                     debug_row = `Open;
+                                   });
+                            debug = Not_dict;
+                          });
+                 };
+             next = None;
+           };
+         wildcard =
+           Some
+             (Construct
+                {
+                  key = 1;
+                  ids = SI.empty;
+                  nil =
+                    Some
+                      (Switch
+                         {
+                           key = 2;
+                           ids = SI.empty;
+                           cases =
+                             {
+                               data = `Int 0;
+                               if_match = End exit_2;
+                               next = None;
+                             };
+                           wildcard = Some (End exit_4);
+                           debug_row = `Open;
+                         });
+                  cons =
+                    Some
+                      (Nest
+                         {
+                           key = 1;
+                           ids = SI.empty;
+                           child =
+                             Int_keys
+                               (Switch
+                                  {
+                                    key = 0;
+                                    ids = SI.empty;
+                                    cases =
+                                      {
+                                        data = `Int 1;
+                                        if_match =
+                                          End
+                                            (Switch
+                                               {
+                                                 key = 2;
+                                                 ids = SI.empty;
+                                                 cases =
+                                                   {
+                                                     data = `Int 0;
+                                                     if_match = End exit_1;
+                                                     next = None;
+                                                   };
+                                                 wildcard = Some (End exit_4);
+                                                 debug_row = `Open;
+                                               });
+                                        next = None;
+                                      };
+                                    wildcard = None;
+                                    debug_row = `Open;
+                                  });
+                           wildcard =
+                             Some
+                               (Wildcard
+                                  {
+                                    key = 2;
+                                    ids = SI.empty;
+                                    child = End exit_4;
+                                  });
+                           debug = Not_dict;
+                         });
+                });
+         debug_row = `Open;
+       })
+    (get_tree src);
+  let src =
+    {|
+    {% match a,  b,   c
+        with 1,  _,   0 %} 0
+    {%  with _, !1,   0 %} 1
+    {%  with _, null, 0 %} 2
+    {%  with 1, null, 1 %} 3
+    {%  with _, _,    _ %} 4
+    {% /match %}|}
+  in
+  let exit_0 = { names = MS.empty; exit = e 0 } in
+  let exit_2 = { names = MS.empty; exit = e 2 } in
+  let exit_3 = { names = MS.empty; exit = e 3 } in
+  let exit_4 = { names = MS.empty; exit = e 4 } in
+  let exit_1 =
+    Switch
+      {
+        key = 2;
+        ids = SI.empty;
+        cases =
+          {
+            data = `Int 0;
+            if_match = End { names = MS.empty; exit = e 1 };
+            next = None;
+          };
+        wildcard = Some (End exit_4);
+        debug_row = `Open;
+      }
+  in
+  check
+    "Constructs can merge into wildcards correctly (cons path fails to merge)."
+    (Switch
+       {
+         key = 0;
+         ids = SI.empty;
+         cases =
+           {
+             data = `Int 1;
+             if_match =
+               Construct
+                 {
+                   key = 1;
+                   ids = SI.empty;
+                   nil =
+                     Some
+                       (Switch
+                          {
+                            key = 2;
+                            ids = SI.empty;
+                            cases =
+                              {
+                                data = `Int 0;
+                                if_match = End exit_0;
+                                next =
+                                  Some
+                                    {
+                                      data = `Int 1;
+                                      if_match = End exit_3;
+                                      next = None;
+                                    };
+                              };
+                            wildcard = Some (End exit_4);
+                            debug_row = `Open;
+                          });
+                   cons =
+                     Some
+                       (Wildcard
+                          {
+                            key = 1;
+                            ids = SI.empty;
+                            child =
+                              Switch
+                                {
+                                  key = 2;
+                                  ids = SI.empty;
+                                  cases =
+                                    {
+                                      data = `Int 0;
+                                      if_match = End exit_0;
+                                      next = None;
+                                    };
+                                  wildcard = Some (End exit_4);
+                                  debug_row = `Open;
+                                };
+                          });
+                 };
+             next = None;
+           };
+         wildcard =
+           Some
+             (Construct
+                {
+                  key = 1;
+                  ids = SI.empty;
+                  nil =
+                    Some
+                      (Switch
+                         {
+                           key = 2;
+                           ids = SI.empty;
+                           cases =
+                             {
+                               data = `Int 0;
+                               if_match = End exit_2;
+                               next = None;
+                             };
+                           wildcard = Some (End exit_4);
+                           debug_row = `Open;
+                         });
+                  cons =
+                    Some
+                      (Nest
+                         {
+                           key = 1;
+                           ids = SI.empty;
+                           child =
+                             Int_keys
+                               (Switch
+                                  {
+                                    key = 0;
+                                    ids = SI.empty;
+                                    cases =
+                                      {
+                                        data = `Int 1;
+                                        if_match = End exit_1;
+                                        next = None;
+                                      };
+                                    wildcard = None;
+                                    debug_row = `Open;
+                                  });
+                           wildcard =
+                             Some
+                               (Wildcard
+                                  {
+                                    key = 2;
+                                    ids = SI.empty;
+                                    child = End exit_4;
+                                  });
+                           debug = Not_dict;
+                         });
+                });
+         debug_row = `Open;
+       })
+    (get_tree src);
+  let src =
+    {|
+   {% match a, b
+       with 1, null %} 0
+   {%  with _, !"a" %} 1
+   {%  with _, null %} 2
+   {%  with 1, _ %}    3
+   {%  with _, _ %}    4
+   {% /match %}|}
+  in
+  let exit_0 = { names = MS.empty; exit = e 0 } in
+  let exit_1 =
+    {
+      data = `String "a";
+      if_match = End (End { names = MS.empty; exit = e 1 });
+      next = None;
+    }
+  in
+  let exit_2 = { names = MS.empty; exit = e 2 } in
+  let exit_3 = { names = MS.empty; exit = e 3 } in
+  let exit_4 = { names = MS.empty; exit = e 4 } in
+  check
+    "Constructs can merge into wildcards correctly (both paths fail to merge)."
+    (Switch
+       {
+         key = 0;
+         ids = SI.empty;
+         cases =
+           {
+             data = `Int 1;
+             if_match =
+               Construct
+                 {
+                   key = 1;
+                   ids = SI.empty;
+                   nil = Some (End exit_0);
+                   cons =
+                     Some
+                       (Nest
+                          {
+                            key = 1;
+                            ids = SI.empty;
+                            child =
+                              Int_keys
+                                (Switch
+                                   {
+                                     key = 0;
+                                     ids = SI.empty;
+                                     cases = exit_1;
+                                     wildcard = None;
+                                     debug_row = `Open;
+                                   });
+                            wildcard = Some (End exit_3);
+                            debug = Not_dict;
+                          });
+                 };
+             next = None;
+           };
+         wildcard =
+           Some
+             (Construct
+                {
+                  key = 1;
+                  ids = SI.empty;
+                  nil = Some (End exit_2);
+                  cons =
+                    Some
+                      (Nest
+                         {
+                           key = 1;
+                           ids = SI.empty;
+                           child =
+                             Int_keys
+                               (Switch
+                                  {
+                                    key = 0;
+                                    ids = SI.empty;
+                                    cases = exit_1;
+                                    wildcard = None;
+                                    debug_row = `Open;
+                                  });
+                           wildcard = Some (End exit_4);
+                           debug = Not_dict;
+                         });
+                });
+         debug_row = `Open;
        })
     (get_tree src)
 
@@ -691,7 +1093,7 @@ let records_sort () =
                 {
                   key = "a";
                   ids = SI.empty;
-                  row = `Open;
+                  debug_row = `Open;
                   cases =
                     {
                       data = `Int 10;
@@ -700,7 +1102,7 @@ let records_sort () =
                           {
                             key = "b";
                             ids = SI.empty;
-                            row = `Open;
+                            debug_row = `Open;
                             cases =
                               {
                                 data = `Int 11;
@@ -710,20 +1112,20 @@ let records_sort () =
                                        {
                                          key = 1;
                                          ids = SI.empty;
-                                         row = `Open;
+                                         debug_row = `Open;
                                          cases =
                                            {
                                              data = `Int 12;
                                              if_match = End exit_0;
-                                             next_case = None;
+                                             next = None;
                                            };
                                          wildcard = Some (End exit_2);
                                        });
-                                next_case = None;
+                                next = None;
                               };
                             wildcard = None;
                           };
-                      next_case =
+                      next =
                         Some
                           {
                             data = `Int 20;
@@ -732,7 +1134,7 @@ let records_sort () =
                                 {
                                   key = "b";
                                   ids = SI.empty;
-                                  row = `Open;
+                                  debug_row = `Open;
                                   cases =
                                     {
                                       data = `Int 21;
@@ -742,20 +1144,20 @@ let records_sort () =
                                              {
                                                key = 1;
                                                ids = SI.empty;
-                                               row = `Open;
+                                               debug_row = `Open;
                                                cases =
                                                  {
                                                    data = `Int 22;
                                                    if_match = End exit_1;
-                                                   next_case = None;
+                                                   next = None;
                                                  };
                                                wildcard = Some (End exit_2);
                                              });
-                                      next_case = None;
+                                      next = None;
                                     };
                                   wildcard = None;
                                 };
-                            next_case = None;
+                            next = None;
                           };
                     };
                   wildcard = None;
@@ -792,7 +1194,7 @@ let records_expand () =
                 {
                   key = "a";
                   ids = SI.empty;
-                  row = `Open;
+                  debug_row = `Open;
                   cases =
                     {
                       data = `Int 20;
@@ -801,7 +1203,7 @@ let records_expand () =
                           {
                             key = "b";
                             ids = SI.empty;
-                            row = `Open;
+                            debug_row = `Open;
                             cases =
                               {
                                 data = `Int 10;
@@ -812,7 +1214,7 @@ let records_expand () =
                                       ids = SI.empty;
                                       child = End (End exit_0);
                                     };
-                                next_case = None;
+                                next = None;
                               };
                             wildcard =
                               Some
@@ -823,7 +1225,7 @@ let records_expand () =
                                      child = End (End exit_1);
                                    });
                           };
-                      next_case = None;
+                      next = None;
                     };
                   wildcard =
                     Some
@@ -831,7 +1233,7 @@ let records_expand () =
                          {
                            key = "b";
                            ids = SI.empty;
-                           row = `Open;
+                           debug_row = `Open;
                            cases =
                              {
                                data = `Int 10;
@@ -842,7 +1244,7 @@ let records_expand () =
                                      ids = SI.empty;
                                      child = End (End exit_0);
                                    };
-                               next_case = None;
+                               next = None;
                              };
                            wildcard =
                              Some
@@ -850,12 +1252,12 @@ let records_expand () =
                                   {
                                     key = "c";
                                     ids = SI.empty;
-                                    row = `Open;
+                                    debug_row = `Open;
                                     cases =
                                       {
                                         data = `Int 30;
                                         if_match = End (End exit_2);
-                                        next_case = None;
+                                        next = None;
                                       };
                                     wildcard = None;
                                   });
@@ -876,6 +1278,8 @@ let () =
           test_case "Wildcards merge with nests" `Quick nests_merge_wildcards;
           test_case "Lists" `Quick lists;
         ] );
+      ( "Merging expanded trees",
+        [ test_case "Wildcards and constructs" `Quick wildcards_constructs ] );
       ( "Records",
         [
           test_case "Fields sort" `Quick records_sort;

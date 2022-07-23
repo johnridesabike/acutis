@@ -809,6 +809,20 @@ let parmatch () =
        \  This author hasn't published any books.\n\
         {% /match %}")
 
+let merge_expanded_trees () =
+  let open Alcotest in
+  check_raises "Both nil and cons paths fail to merge into a wildcard."
+    (E "File <test>, 6:9-6:19\nMatching error.\nThis match case is unused.")
+    (render
+       {|
+    {% match a, b
+        with 1, _ %}
+    {%  with _, !1 %}
+    {%  with _, null %}
+    {%  with 1, !2 %}
+    {%  with _, _ %}
+    {% /match %}|})
+
 let component_graph () =
   let open Alcotest in
   let a = Compile.Components.parse_string ~name:"A" "{% B /%}" in
@@ -826,6 +840,15 @@ let component_graph () =
   check_raises "Duplicate names are reported."
     (E "Compile error.\nThere are multiple components with name `A`.")
     (fun () -> ignore @@ Compile.Components.make [ a; b; a ])
+
+let known_broken () =
+  let open Alcotest in
+  check_raises
+    "This error is incorrect. The compiler fails to detect the first unused \
+     wildcard case. I'm not fixing this error yet, but I'm keeping this test \
+     to track when it changes."
+    (E "File <test>, 1:43-1:49\nMatching error.\nThis match case is unused.")
+    (render "{% match a with (_, _) %} {% with _ %} {% with _ %} {% /match %}")
 
 let decode_mismatch () =
   let open Alcotest in
@@ -957,8 +980,13 @@ let () =
         [
           test_case "Unused patterns" `Quick matching_unused;
           test_case "Partial patterns" `Quick parmatch;
+          test_case "Partial patterns with complex trees" `Quick
+            merge_expanded_trees;
         ] );
       ( "Other compile errors",
-        [ test_case "Dependency graphs" `Quick component_graph ] );
+        [
+          test_case "Dependency graphs" `Quick component_graph;
+          test_case "Known broken cases" `Quick known_broken;
+        ] );
       ("Render errors", [ test_case "Decode errors" `Quick decode_mismatch ]);
     ]
