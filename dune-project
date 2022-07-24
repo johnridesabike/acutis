@@ -26,8 +26,6 @@
    (ocaml (>= 4.14))
    (menhir (= 20220210))
    (ppx_deriving (>= 5.2.1))
-   (ocamlformat (and :dev (= 0.22.4)))
-   (ocaml-lsp-server :dev)
    (alcotest (and :with-test (>= 1.5)))
    (alcotest-lwt (and :with-test (>= 1.5)))
    (lwt (and :with-test (>= 5.5))))

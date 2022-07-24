@@ -14,8 +14,6 @@ depends: [
   "ocaml" {>= "4.14"}
   "menhir" {= "20220210"}
   "ppx_deriving" {>= "5.2.1"}
-  "ocamlformat" {dev & = "0.22.4"}
-  "ocaml-lsp-server" {dev}
   "alcotest" {with-test & >= "1.5"}
   "alcotest-lwt" {with-test & >= "1.5"}
   "lwt" {with-test & >= "5.5"}
