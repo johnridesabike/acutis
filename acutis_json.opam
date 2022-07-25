@@ -13,6 +13,7 @@ depends: [
   "ocaml" {>= "4.14"}
   "acutis" {= version}
   "yojson" {>= "2.0"}
+  "dune-build-info"
   "odoc" {with-doc}
 ]
 build: [

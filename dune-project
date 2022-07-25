@@ -38,7 +38,8 @@
  (depends
    (ocaml (>= 4.14))
    (acutis (= :version))
-   (yojson (>= 2.0))))
+   (yojson (>= 2.0))
+   dune-build-info))
 
 (package
  (name acutis_js)
