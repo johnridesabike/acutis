@@ -13,10 +13,10 @@ depends: [
   "dune" {>= "3.3"}
   "ocaml" {>= "4.14"}
   "menhir" {= "20220210"}
-  "ppx_deriving" {>= "5.2.1"}
-  "alcotest" {with-test & >= "1.5"}
-  "alcotest-lwt" {with-test & >= "1.5"}
-  "lwt" {with-test & >= "5.5"}
+  "ppx_deriving"
+  "alcotest" {with-test}
+  "alcotest-lwt" {with-test}
+  "lwt" {with-test}
   "odoc" {with-doc}
 ]
 build: [

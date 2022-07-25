@@ -25,10 +25,10 @@
  (depends
    (ocaml (>= 4.14))
    (menhir (= 20220210))
-   (ppx_deriving (>= 5.2.1))
-   (alcotest (and :with-test (>= 1.5)))
-   (alcotest-lwt (and :with-test (>= 1.5)))
-   (lwt (and :with-test (>= 5.5))))
+   ppx_deriving
+   (alcotest :with-test)
+   (alcotest-lwt :with-test)
+   (lwt :with-test))
  (tags
   (template language parser interpreter)))
 
@@ -38,7 +38,7 @@
  (depends
    (ocaml (>= 4.14))
    (acutis (= :version))
-   (yojson (>= 2.0))
+   yojson
    dune-build-info))
 
 (package
@@ -47,7 +47,7 @@
  (depends
    (ocaml (>= 4.14))
    (acutis (= :version))
-   (promise_jsoo (>= 0.3.1))
-   (js_of_ocaml (>= 4.0))
-   (js_of_ocaml-compiler (>= 4.0))
-   (js_of_ocaml-ppx (>= 4.0))))
+   promise_jsoo
+   js_of_ocaml
+   js_of_ocaml-compiler
+   js_of_ocaml-ppx))
