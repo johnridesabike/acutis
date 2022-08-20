@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.16.0
+
+- Added interfaces. These allow you to optionally declare each template's types.
+- Improved pattern-matching compilation. This fixed bugs and made the algorithm
+  more robust.
+
 ## 0.15.0
 
 - Acutis is rewritten in OCaml.

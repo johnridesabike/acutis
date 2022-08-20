@@ -14,17 +14,15 @@ module V = Ty.Variant
 
 exception Clash
 
-(**
-  When we unify a type during destructuring, we expand any structural types
-  (records, enums).
+(** When we unify a type during destructuring, we expand any structural types
+    (records, enums).
 
-  When we unify a type during constructing literal values, record types are
-  narrowed (we use a subset of both) and enum behavior depends on its row
-  property.
+    When we unify a type during constructing literal values, record types are
+    narrowed (we use a subset of both) and enum behavior depends on its row
+    property.
 
-  When we unify a type during constructing with a variable, then we expand
-  records and open enums in the variable's type.
-*)
+    When we unify a type during constructing with a variable, then we expand
+    records and open enums in the variable's type. *)
 
 let rec open_rows_bool_union_aux = function
   | None -> Some (ref Map.String.empty)
@@ -39,16 +37,16 @@ and open_rows ty =
       | `Extra_none -> ty.row <- `Open
       | `Extra_bool -> ty.cases <- Ty.Enum.false_and_true_cases)
   | Union (_, ty) -> (
-      match (ty.extra, ty.cases) with
-      | `Extra_bool, Int cases ->
+      match ty with
+      | { cases = Int cases; extra = `Extra_bool; _ } ->
           let f = open_rows_bool_union_aux in
           ty.cases <- Int (Map.Int.update 0 f cases |> Map.Int.update 1 f)
-      | _, Int cases ->
+      | { cases = Int cases; _ } ->
           Map.Int.iter
             (fun _ v -> Map.String.iter (fun _ v -> open_rows v) !v)
             cases;
           ty.row <- `Open
-      | _, String cases ->
+      | { cases = String cases; _ } ->
           Map.String.iter
             (fun _ v -> Map.String.iter (fun _ v -> open_rows v) !v)
             cases;
@@ -188,6 +186,97 @@ and subset_union_cases mode a b =
 let unify loc mode a b =
   try unify mode a b with Clash -> Error.type_mismatch loc a b
 
+let map_string_subset f ~interface ~impl =
+  Map.String.for_all
+    (fun k impl ->
+      match Map.String.find_opt k interface with
+      | Some interface -> f ~interface ~impl
+      | None -> false)
+    impl
+
+let map_int_subset f ~interface ~impl =
+  Map.Int.for_all
+    (fun k impl ->
+      match Map.Int.find_opt k interface with
+      | Some interface -> f ~interface ~impl
+      | None -> false)
+    impl
+
+let rec check_interface ~interface ~impl =
+  match (!interface, !impl) with
+  | Ty.Int, Ty.Int
+  | Float, Float
+  | String, String
+  | _, Unknown _
+  | (Echo | Int | Float | String | Enum _), Echo ->
+      true
+  | Nullable a, Nullable b | List a, List b | Dict (a, _), Dict (b, _) ->
+      check_interface ~interface:a ~impl:b
+  | Tuple a, Tuple b ->
+      List.equal (fun a b -> check_interface ~interface:a ~impl:b) a b
+  | Record a, Record b -> check_interface_record ~interface:a ~impl:b
+  | Enum a, Enum b when Ty.Variant.equal_extra a.extra b.extra -> (
+      match (a.row, b.row) with
+      | `Closed, `Closed -> (
+          match (a.cases, b.cases) with
+          | Int a, Int b -> Set.Int.equal a b
+          | String a, String b -> Set.String.equal a b
+          | _ -> false)
+      | `Open, `Open -> (
+          match (a.cases, b.cases) with
+          | Int interface, Int impl -> Set.Int.subset impl interface
+          | String interface, String impl -> Set.String.subset impl interface
+          | _ -> false)
+      | _ -> false)
+  | Union (ka, a), Union (kb, b)
+    when String.equal ka kb && Ty.Variant.equal_extra a.extra b.extra -> (
+      match (a.row, b.row) with
+      | `Closed, `Closed -> (
+          match (a.cases, b.cases) with
+          | Int a, Int b ->
+              Map.Int.equal
+                (fun a b -> check_interface_record ~interface:a ~impl:b)
+                a b
+          | String a, String b ->
+              Map.String.equal
+                (fun a b -> check_interface_record ~interface:a ~impl:b)
+                a b
+          | _ -> false)
+      | `Open, `Open -> (
+          match (a.cases, b.cases) with
+          | Int interface, Int impl ->
+              map_int_subset check_interface_record ~interface ~impl
+          | String interface, String impl ->
+              map_string_subset check_interface_record ~interface ~impl
+          | _ -> false)
+      | _ -> false)
+  | _ -> false
+
+and check_interface_record ~interface ~impl =
+  map_string_subset check_interface ~interface:!interface ~impl:!impl
+
+(** Check for equality, but allow the interface to add additional
+    fields to records and additional entries to open enums and unions. *)
+let check_interface loc ~interface ~impl =
+  Map.String.iter
+    (fun k impl ->
+      match Map.String.find_opt k interface with
+      | Some (loc, interface) ->
+          if not (check_interface ~interface ~impl) then
+            Error.interface_type_mismatch loc k interface impl
+      | None -> Error.interface_missing_prop loc k impl)
+    impl
+
+let check_interface_child loc ~interface ~impl =
+  Map.String.iter
+    (fun k impl ->
+      match Map.String.find_opt k interface with
+      | Some (loc, interface) ->
+          if not (Ty.Child.equal interface impl) then
+            Error.interface_child_mismatch loc k interface impl
+      | None -> Error.interface_missing_child loc k)
+    impl
+
 module Pattern = struct
   type constant = [ `Int of int | `String of string | `Float of float ]
   [@@deriving eq]
@@ -286,18 +375,16 @@ module Pattern = struct
     | Record (loc, Tagged (k, v, m)) ->
         let m = Ast.Dict.to_map m in
         let new_tyvars = Map.String.map unknown m |> ref in
-        let new_tag_ty = Ty.unknown () in
         let row =
           match mode with
           | Destructure_expand -> `Closed
           | Construct_literal | Construct_var -> `Open
         in
         let tag, tag_extra =
-          match make ~f mode new_tag_ty v with
-          | TConst (((`Int _ | `String _) as tag), None) -> (tag, `Extra_none)
-          | TConst (((`Int _ | `String _) as tag), Some { extra; _ }) ->
-              (tag, extra) (* booleans *)
-          | _ -> Error.bad_union_tag loc new_tag_ty
+          match v with
+          | Tag_int (_, i) -> (`Int i, `Extra_none)
+          | Tag_bool (_, i) -> (`Int i, `Extra_bool)
+          | Tag_string (_, s) -> (`String s, `Extra_none)
         in
         let tyvars =
           match !ty with
@@ -462,19 +549,32 @@ let unify_child loc a b =
 module Context = struct
   type root = [ `Root | `Component ]
 
+  type interface =
+    | No_interface
+    | Interface of {
+        mutable types : (Loc.t * Ty.t) Map.String.t;
+        mutable children : (Loc.t * Ty.Child.t) Map.String.t;
+      }
+
   type t = {
+    root : root;
     global : Ty.t Map.String.t ref;
     scope : Ty.t Map.String.t;
     children : Ty.Child.t Map.String.t ref;
-    root : root;
+    interface : interface ref;
+    interface_loc : Loc.t ref;
   }
+  (** We have to wrap each mutable value in a [ref] instead of using mutable
+      fields because a new context record is created for each scope. *)
 
   let make root =
     {
+      root;
       global = ref Map.String.empty;
       scope = Map.String.empty;
       children = ref Map.String.empty;
-      root;
+      interface = ref No_interface;
+      interface_loc = ref Loc.dummy;
     }
 
   let get k scope global =
@@ -487,7 +587,7 @@ module Context = struct
     | None -> global := Map.String.add k v !global
     | Some v' -> unify loc Construct_var v v'
 
-  let update_child loc { root; children; _ } (k, v) =
+  let update_child loc { root; children; _ } k v =
     match root with
     | `Root -> Error.child_in_root loc
     | `Component ->
@@ -540,6 +640,129 @@ module Context = struct
         { ctx with scope }
 end
 
+module Interface = struct
+  let there_can_be_only_one loc k v = function
+    | None -> Some v
+    | Some _ -> Error.interface_duplicate loc k
+
+  let update loc k v { Context.interface; _ } =
+    match !interface with
+    | No_interface ->
+        interface :=
+          Interface
+            {
+              types = Map.String.singleton k (loc, v);
+              children = Map.String.empty;
+            }
+    | Interface interface ->
+        interface.types <-
+          Map.String.update k
+            (there_can_be_only_one loc k (loc, v))
+            interface.types
+
+  let update_child loc k v { Context.interface; _ } =
+    match !interface with
+    | No_interface ->
+        interface :=
+          Interface
+            {
+              types = Map.String.empty;
+              children = Map.String.singleton k (loc, v);
+            }
+    | Interface interface ->
+        interface.children <-
+          Map.String.update k
+            (there_can_be_only_one loc k (loc, v))
+            interface.children
+
+  let named loc = function
+    | "int" -> Ty.int ()
+    | "string" -> Ty.string ()
+    | "float" -> Ty.float ()
+    | "echoable" -> Ty.echo ()
+    | "_" -> Ty.unknown ()
+    | s -> Error.interface_bad_name loc s
+
+  let error_tag expected = function
+    | Ast.Record.Tag_int (loc, _) ->
+        Error.type_mismatch loc expected (Typescheme.int ())
+    | Tag_bool (loc, 0) ->
+        Error.type_mismatch loc expected (Typescheme.false_only ())
+    | Tag_bool (loc, _) ->
+        Error.type_mismatch loc expected (Typescheme.true_only ())
+    | Tag_string (loc, _) ->
+        Error.type_mismatch loc expected (Typescheme.string ())
+
+  let tag_int = function
+    | Ast.Record.Tag_int (_, i) -> i
+    | t -> error_tag (Ty.int ()) t
+
+  let tag_string = function
+    | Ast.Record.Tag_string (_, s) -> s
+    | t -> error_tag (Ty.string ()) t
+
+  let tag_bool = function
+    | Ast.Record.Tag_bool (_, i) -> i
+    | t -> error_tag (Ty.boolean ()) t
+
+  let rec make_ty = function
+    | Ast.Interface.Named (loc, s) -> named loc s
+    | Nullable t -> Ty.nullable (make_ty t)
+    | List t -> Ty.list (make_ty t)
+    | Dict t -> Ty.dict (make_ty t)
+    | Tuple l -> Ty.tuple (List.map make_ty l)
+    | Enum_int (l, r) -> Ty.enum_int r (Nonempty.to_list l)
+    | Enum_bool l -> Ty.internal_bool (Nonempty.to_list l)
+    | Enum_string (l, r) -> Ty.enum_string r (Nonempty.to_list l)
+    | Record ([ (_, Untagged r) ], `Closed) ->
+        Ast.Dict.to_map r |> Map.String.map make_ty |> ref |> Ty.internal_record
+    | Record ((loc, Untagged _) :: _ :: _, _)
+    | Record ((loc, Untagged _) :: _, `Open) ->
+        Error.interface_untagged_union loc
+    | Record ((_, Tagged (tagk, tagv, m)) :: tl, row) -> (
+        let aux update parse_tag m =
+          List.fold_left
+            (fun acc -> function
+              | loc, Ast.Record.Tagged (tagk', tagv, m) ->
+                  if tagk <> tagk' then
+                    Error.interface_unmatched_tags loc tagk tagk';
+                  let k = parse_tag tagv in
+                  update k
+                    (function
+                      | None ->
+                          Some
+                            (Ast.Dict.to_map m |> Map.String.map make_ty |> ref)
+                      | Some _ ->
+                          Error.interface_duplicate_tag loc Ast.Record.pp_tag
+                            tagv)
+                    acc
+              | loc, Untagged _ -> Error.interface_untagged_union loc)
+            m tl
+        in
+        let m = Ast.Dict.to_map m |> Map.String.map make_ty in
+        match tagv with
+        | Tag_int (_, i) ->
+            let m = Map.Int.(singleton i (ref m) |> aux update tag_int) in
+            ref (Ty.Union (tagk, { cases = Int m; row; extra = `Extra_none }))
+        | Tag_bool (_, i) ->
+            let m = Map.Int.(singleton i (ref m) |> aux update tag_bool) in
+            ref (Ty.Union (tagk, { cases = Int m; row; extra = `Extra_bool }))
+        | Tag_string (_, s) ->
+            let m = Map.String.(singleton s (ref m) |> aux update tag_string) in
+            ref
+              (Ty.Union (tagk, { cases = String m; row; extra = `Extra_none })))
+
+  let make loc ctx l =
+    ctx.Context.interface_loc := loc;
+    List.iter
+      (function
+        | Ast.Interface.Type (loc, k, v) -> update loc k (make_ty v) ctx
+        | Child (loc, k) -> update_child loc k (Ty.Child.child ()) ctx
+        | Child_nullable (loc, k) ->
+            update_child loc k (Ty.Child.nullable ()) ctx)
+      l
+end
+
 (** @raises [Invalid_argument] if the list sizes are mismatched. *)
 let unify_match_cases pats tys ctx =
   Nonempty.map2
@@ -552,7 +775,7 @@ let rec make_echoes ctx = function
       Context.update ctx loc b (Ty.nullable (Ty.echo ()));
       Ech_var (b, esc) :: make_echoes ctx tl
   | Ech_component (loc, c) :: tl ->
-      Context.update_child loc ctx (Ty.Child.nullable c);
+      Context.update_child loc ctx c (Ty.Child.nullable ());
       Ech_component c :: make_echoes ctx tl
   | Ech_string (loc, _) :: _ -> Error.echo_nullable_literal loc
 
@@ -561,7 +784,7 @@ let make_default_echo ctx = function
       Context.update ctx loc b (Ty.echo ());
       Ech_var (b, esc)
   | Ech_component (loc, c) ->
-      Context.update_child loc ctx (Ty.Child.child c);
+      Context.update_child loc ctx c (Ty.Child.child ());
       Ech_component c
   | Ech_string (_, s) -> Ech_string s
 
@@ -625,9 +848,9 @@ let rec make_cases ctx g cases =
 
 and make_nodes ctx g nodes =
   let f = function
-    | Ast.Text (s, l, r) -> TText (s, l, r)
+    | Ast.Text (s, l, r) -> Some (TText (s, l, r))
     | Echo (nullables, default) ->
-        TEcho (make_echoes ctx nullables, make_default_echo ctx default)
+        Some (TEcho (make_echoes ctx nullables, make_default_echo ctx default))
     | Component (loc, comp, comp', props, children) ->
         if comp <> comp' then Error.component_name_mismatch loc comp comp';
         let prop_types, prop_types_child = get_types (Dagmap.get comp g) in
@@ -651,7 +874,7 @@ and make_nodes ctx g nodes =
               if Ty.Child.is_nullable ty then None
               else Error.missing_child loc k
           | Some (Ast.Child_name (loc, c)), Some ty ->
-              Context.update_child loc ctx (c, ty);
+              Context.update_child loc ctx c ty;
               Some (TChild_name c)
           | Some (Child_block nodes), Some _ ->
               Some (TChild_block (make_nodes ctx g nodes))
@@ -661,33 +884,49 @@ and make_nodes ctx g nodes =
         let children =
           Map.String.merge f (Ast.Dict.to_map children) prop_types_child
         in
-        TComponent (comp, props, children)
+        Some (TComponent (comp, props, children))
     | Match (loc, pats, cases) ->
         let tys, cases = make_cases ctx g cases in
         let patterns =
           try unify_match_cases pats tys ctx
           with Invalid_argument _ -> Error.pat_num_mismatch loc
         in
-        TMatch (loc, patterns, tys, cases)
+        Some (TMatch (loc, patterns, tys, cases))
     | Map_list (loc, pattern, cases) ->
         let cases = add_default_wildcard cases |> make_cases ctx g in
         let pattern, ty, cases =
           unify_map ~ty:Ty.list ~key:Ty.int loc cases pattern ctx
         in
-        TMap_list (loc, pattern, ty, cases)
+        Some (TMap_list (loc, pattern, ty, cases))
     | Map_dict (loc, pattern, cases) ->
         let cases = add_default_wildcard cases |> make_cases ctx g in
         let pattern, ty, cases =
           unify_map ~ty:Ty.dict ~key:Ty.string loc cases pattern ctx
         in
-        TMap_dict (loc, pattern, ty, cases)
+        Some (TMap_dict (loc, pattern, ty, cases))
+    | Interface (loc, i) ->
+        Interface.make loc ctx i;
+        None
   in
-  List.map f nodes
+  List.filter_map f nodes
+
+let pair_snd (_, v) = v
 
 let make root g ast =
   let ctx = Context.make root in
   let nodes = make_nodes ctx g ast in
-  { nodes; prop_types = !(ctx.global); child_types = !(ctx.children) }
+  match !(ctx.interface) with
+  | No_interface ->
+      { nodes; prop_types = !(ctx.global); child_types = !(ctx.children) }
+  | Interface { types; children } ->
+      check_interface !(ctx.interface_loc) ~interface:types ~impl:!(ctx.global);
+      check_interface_child !(ctx.interface_loc) ~interface:children
+        ~impl:!(ctx.children);
+      {
+        nodes;
+        prop_types = Map.String.map pair_snd types;
+        child_types = Map.String.map pair_snd children;
+      }
 
 let make_src g = function
   | Src (name, ast) -> Src (name, make `Component g ast)

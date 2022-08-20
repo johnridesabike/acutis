@@ -127,12 +127,9 @@ let parser_errors () =
   check_raises "Unclosed < (4)"
     (E "File <test>, 1:14-1:18\nParse error.\nThis is not a valid pattern.\n")
     (render "{% match <a: with %} {% /match %}");
-  check_raises "Illegal pattern after with (1)"
+  check_raises "Illegal pattern after with"
     (E "File <test>, 1:17-1:20\nParse error.\nThis is not a valid pattern.\n")
     (render "{% match a with Abc %} {% /match %}");
-  check_raises "Illegal pattern after with (2)"
-    (E "File <test>, 1:24-1:27\nParse error.\nThis is not a valid pattern.\n")
-    (render "{% match a with x with Abc %} {% /match %}");
   check_raises "Bad pattern (14)"
     (E "File <test>, 1:4-1:5\nParse error.\nThis is not a valid pattern.\n")
     (render "{{ ? }}");
@@ -233,17 +230,11 @@ let parser_errors () =
     (render "{% match a with a b %} {% /match %}");
   check_raises "Missing commas in match/map patterns (3)"
     (E
-       "File <test>, 1:26-1:27\n\
-        Parse error.\n\
-        Sequential patterns must be separated by a `,`.\n")
-    (render "{% match a with a with a b %} {% /match %}");
-  check_raises "Missing commas in match/map patterns (4)"
-    (E
        "File <test>, 1:15-1:16\n\
         Parse error.\n\
         Sequential patterns must be separated by a `,`.\n")
     (render "{% map_dict a b with a %} {% /map_dict %}");
-  check_raises "Missing commas in match/map patterns (5)"
+  check_raises "Missing commas in match/map patterns (4)"
     (E
        "File <test>, 1:10-1:11\n\
         Parse error.\n\
@@ -413,7 +404,7 @@ let type_error_nest () =
         Type error.\n\
         Type mismatch.\n\
         Expected: {a: int}\n\
-        Received: | {@a: 1} | ...")
+        Received: {@a: 1} | ...")
     (render
        "{% match a with {@a: 1} %} {% with _ %} {% /match %}\n\
         {% match a with {a: 1} %} {% with _ %} {% /match %}");
@@ -483,8 +474,8 @@ let type_error_enum () =
        "File <test>, 2:10-2:11\n\
         Type error.\n\
         Type mismatch.\n\
-        Expected: | @1\n\
-        Received: | @1 | @2 | ...")
+        Expected: @1\n\
+        Received: @1 | @2 | ...")
     (render
        "{% match a with @1 %} {% with @2 %} {% with _ %} {% /match %}\n\
         {% match a with @1 %} {% /match %}");
@@ -493,8 +484,8 @@ let type_error_enum () =
        "File <test>, 3:12-3:13\n\
         Type error.\n\
         Type mismatch.\n\
-        Expected: | @1 | @2\n\
-        Received: | @3 | @4")
+        Expected: @1 | @2\n\
+        Received: @3 | @4")
     (render
        "{% match a with @1 %} {% with @2 %} {% /match %}\n\
         {% match b with @3 %} {% with @4 %} {% /match %}\n\
@@ -504,8 +495,8 @@ let type_error_enum () =
        "File <test>, 2:12-2:14\n\
         Type error.\n\
         Type mismatch.\n\
-        Expected: | @1 | @2\n\
-        Received: | @3 | ...")
+        Expected: @1 | @2\n\
+        Received: @3 | ...")
     (render
        "{% match a with @1 %} {% with @2 %} {% /match %}\n\
         {% map [a, @3] with _ %} {% /map %}");
@@ -514,24 +505,24 @@ let type_error_enum () =
        "File <test>, 1:10-1:12\n\
         Type error.\n\
         Type mismatch.\n\
-        Expected: | @1\n\
-        Received: | @0 | ...")
+        Expected: @1\n\
+        Received: @0 | ...")
     (render "{% match @0 with @1 %} {% /match %}");
   check_raises "Enum literals with no subset are reported (2)."
     (E
        "File <test>, 1:10-1:12\n\
         Type error.\n\
         Type mismatch.\n\
-        Expected: | @\"a\"\n\
-        Received: | @0 | ...")
+        Expected: @\"a\"\n\
+        Received: @0 | ...")
     (render "{% match @0 with @\"a\" %} {% /match %}");
   check_raises "| false | true <> only false"
     (E
        "File <test>, 1:10-1:14\n\
         Type error.\n\
         Type mismatch.\n\
-        Expected: | false\n\
-        Received: | false | true")
+        Expected: false\n\
+        Received: false | true")
     (render "{% match true with false %} {% /match %}")
 
 let type_error_union () =
@@ -541,32 +532,24 @@ let type_error_union () =
        "File <test>, 1:38-1:52\n\
         Type error.\n\
         Type mismatch.\n\
-        Expected: | {@tag: 0}\n\
-        Received: | {@tag: \"a\", b: _}")
+        Expected: {@tag: 0}\n\
+        Received: {@tag: \"a\", b: _}")
     (render
        "{% match a with {@tag: 0} %} {% with {@tag: \"a\", b} %} {{ b }}\n\
         {% /match %}");
-  check_raises "Float tags don't compile."
+  check_raises "Random other tags don't compile."
     (E
-       "File <test>, 1:17-1:28\n\
-        Type error.\n\
-        Only `int`, `string`, and `boolean` types may be union tags.\n\
-        Received: float")
-    (render "{% match a with {@tag: 1.5} %} {% /match %}");
-  check_raises "Other random tags don't compile."
-    (E
-       "File <test>, 1:17-1:27\n\
-        Type error.\n\
-        Only `int`, `string`, and `boolean` types may be union tags.\n\
-        Received: [_]")
+       "File <test>, 1:24-1:25\n\
+        Parse error.\n\
+        Only literal `int`, `string`, and `boolean` values may be union tags.\n")
     (render "{% match a with {@tag: []} %} {% /match %}");
   check_raises "Tag names must be coherent."
     (E
        "File <test>, 1:36-1:46\n\
         Type error.\n\
         Type mismatch.\n\
-        Expected: | {@a: 0}\n\
-        Received: | {@b: 1, c: _}")
+        Expected: {@a: 0}\n\
+        Received: {@b: 1, c: _}")
     (render
        "{% match a with {@a: 0} %} {% with {@b: 1, c} %} {{ c }} {% /match %}")
 
@@ -886,14 +869,14 @@ let decode_mismatch () =
     (E
        "Decode error.\n\
         Path: input -> \"b\"\n\
-        Expected type: | false\n\
+        Expected type: false\n\
         This type does not allow the given value: true")
     (render "{% match b with false %} {% /match %}" ~json);
   check_raises "Bad enums are reported: int."
     (E
        "Decode error.\n\
         Path: input -> \"a\"\n\
-        Expected type: | @1 | @2\n\
+        Expected type: @1 | @2\n\
         This type does not allow the given value: 3")
     (render "{% match a with @1 %} {% with @2 %} {% /match %}"
        ~json:{|{"a": 3}|});
@@ -901,7 +884,7 @@ let decode_mismatch () =
     (E
        "Decode error.\n\
         Path: input -> \"a\"\n\
-        Expected type: | @\"a\" | @\"b\"\n\
+        Expected type: @\"a\" | @\"b\"\n\
         This type does not allow the given value: \"c\"")
     (render "{% match a with @\"a\" %} {% with @\"b\" %} {% /match %}"
        ~json:{|{"a": "c"}|});
@@ -917,7 +900,7 @@ let decode_mismatch () =
     (E
        "Decode error.\n\
         Path: input -> \"a\"\n\
-        Expected type: | {@tag: 1, a: echoable}\n\
+        Expected type: {@tag: 1, a: echoable}\n\
         Received value: { \"tag\": \"a\", \"a\": \"a\" }")
     (render "{% match a with {@tag: 1, a} %} {{ a }} {% /match %}"
        ~json:{|{"a": {"tag": "a", "a": "a"}}|});
@@ -925,7 +908,7 @@ let decode_mismatch () =
     (E
        "Decode error.\n\
         Path: input -> \"a\"\n\
-        Expected type: | {@tag: 1, a: echoable}\n\
+        Expected type: {@tag: 1, a: echoable}\n\
         Received value: { \"tag\": 2, \"a\": \"a\" }")
     (render "{% match a with {@tag: 1, a} %} {{ a }} {% /match %}"
        ~json:{|{"a": {"tag": 2, "a": "a"}}|});
@@ -947,6 +930,323 @@ let decode_mismatch () =
                 {"yz": "a"}}}}}}}}
             }|})
 
+let interface_parse () =
+  let open Alcotest in
+  check_raises "Invalid field names."
+    (E "File <test>, 1:27-1:31\nParse error.\nThis is not a valid field name.\n")
+    (render "{% interface a = {a: int, with: string } /interface %}");
+  check_raises "Missing , or }."
+    (E "File <test>, 1:26-1:27\nParse error.\nExpected `,` or `}`.\n")
+    (render "{% interface a = {a: int b: string } /interface %}");
+
+  check_raises "Bad prop / component name (1)."
+    (E
+       "File <test>, 1:14-1:18\n\
+        Parse error.\n\
+        This is not a valid prop or component name.\n")
+    (render "{% interface with = int /interface %}");
+  check_raises "Bad prop / component name (2)."
+    (E
+       "File <test>, 1:22-1:26\n\
+        Parse error.\n\
+        This is not a valid prop or component name.\n")
+    (render "{% interface x = int with = int /interface %}");
+  check_raises "Bad prop / component name (3)."
+    (E
+       "File <test>, 1:16-1:20\n\
+        Parse error.\n\
+        This is not a valid prop or component name.\n")
+    (render "{% interface X with = int /interface %}");
+
+  check_raises "Bad child type."
+    (E
+       "File <test>, 1:18-1:21\n\
+        Parse error.\n\
+        This is not a valid child type. The only valid types are not nullable \
+        (blank)\n\
+        and nullable (`?`).\n")
+    (render "{% interface X = int /interface %}");
+
+  check_raises "Bad token after a variant (1)."
+    (E
+       "File <test>, 1:24-1:28\n\
+        Parse error.\n\
+        This is not a valid prop or component name. You possibly forgot a `|`.\n")
+    (render "{% interface x={@a: 1} with /interface %}");
+  check_raises "Bad token after a variant (2)."
+    (E
+       "File <test>, 1:21-1:25\n\
+        Parse error.\n\
+        This is not a valid prop or component name. You possibly forgot a `|`.\n")
+    (render "{% interface x=@\"a\" with /interface %}");
+  check_raises "Bad token after a variant (3)."
+    (E
+       "File <test>, 1:19-1:23\n\
+        Parse error.\n\
+        This is not a valid prop or component name. You possibly forgot a `|`.\n")
+    (render "{% interface x=@0 with /interface %}");
+  check_raises "Bad token after a variant (4)."
+    (E
+       "File <test>, 1:22-1:26\n\
+        Parse error.\n\
+        This is not a valid prop or component name. You possibly forgot a `|`.\n")
+    (render "{% interface x=false with /interface %}");
+
+  check_raises "Missing equals."
+    (E "File <test>, 1:16-1:19\nParse error.\nExpected an `=`.\n")
+    (render "{% interface x int /interface %}");
+
+  check_raises "Invalid type (1)."
+    (E "File <test>, 1:16-1:20\nParse error.\nThis is not a valid type.\n")
+    (render "{% interface x=with /interface %}");
+  check_raises "Invalid type (2)."
+    (E "File <test>, 1:17-1:21\nParse error.\nThis is not a valid type.\n")
+    (render "{% interface x=?with /interface %}");
+  check_raises "Invalid type (3)."
+    (E "File <test>, 1:17-1:21\nParse error.\nThis is not a valid type.\n")
+    (render "{% interface x=[with] /interface %}");
+  check_raises "Invalid type (4)."
+    (E "File <test>, 1:17-1:21\nParse error.\nThis is not a valid type.\n")
+    (render "{% interface x={with: int} /interface %}");
+  check_raises "Invalid type (5)."
+    (E "File <test>, 1:18-1:22\nParse error.\nThis is not a valid type.\n")
+    (render "{% interface x={@with: 1} /interface %}");
+  check_raises "Invalid type (6)."
+    (E "File <test>, 1:20-1:24\nParse error.\nThis is not a valid type.\n")
+    (render "{% interface x={a: with} /interface %}");
+  check_raises "Invalid type (7)."
+    (E "File <test>, 1:17-1:21\nParse error.\nThis is not a valid type.\n")
+    (render "{% interface x=<with> /interface %}");
+  check_raises "Invalid type (8)."
+    (E "File <test>, 1:17-1:21\nParse error.\nThis is not a valid type.\n")
+    (render "{% interface x=(with) /interface %}");
+  check_raises "Invalid type (9)."
+    (E "File <test>, 1:22-1:26\nParse error.\nThis is not a valid type.\n")
+    (render "{% interface x=(int, with) /interface %}");
+
+  check_raises "Missing colon (1)."
+    (E "File <test>, 1:19-1:20\nParse error.\nExpected a `:`.\n")
+    (render "{% interface x={a b} /interface %}");
+  check_raises "Missing colon (2)."
+    (E "File <test>, 1:20-1:21\nParse error.\nExpected a `:`.\n")
+    (render "{% interface x={@a b} /interface %}");
+
+  check_raises "Bad enum"
+    (E
+       "File <test>, 1:17-1:18\n\
+        Parse error.\n\
+        Expected either a string or an integer.\n")
+    (render "{% interface x=@a /interface %}");
+
+  check_raises "Bad token after record pipe."
+    (E
+       "File <test>, 1:26-1:27\n\
+        Parse error.\n\
+        Expected a record type or an `...`.\n")
+    (render "{% interface x={@a: 1} | y /interface %}");
+  check_raises "Bad token after string enum pipe."
+    (E
+       "File <test>, 1:23-1:24\n\
+        Parse error.\n\
+        Expected an enum value or an `...`.\n")
+    (render "{% interface x=@\"a\" | y /interface %}");
+  check_raises "Bad token after int enum pipe."
+    (E
+       "File <test>, 1:21-1:22\n\
+        Parse error.\n\
+        Expected an enum value or an `...`.\n")
+    (render "{% interface x=@0 | y /interface %}");
+
+  check_raises "Missing >"
+    (E "File <test>, 1:20-1:21\nParse error.\nExpected a `>`.\n")
+    (render "{% interface x=<int} /interface %}");
+  check_raises "Missing ]"
+    (E "File <test>, 1:20-1:21\nParse error.\nExpected a `]`.\n")
+    (render "{% interface x=[int} /interface %}");
+  check_raises "Missing )"
+    (E "File <test>, 1:20-1:21\nParse error.\nExpected a `)`.\n")
+    (render "{% interface x=(int} /interface %}");
+
+  check_raises "Bad string enum"
+    (E "File <test>, 1:24-1:25\nParse error.\nExpected a string.\n")
+    (render "{% interface x=@\"a\" | @0 /interface %}");
+  check_raises "Bad int enum"
+    (E "File <test>, 1:22-1:25\nParse error.\nExpected an integer.\n")
+    (render "{% interface x=@0 | @\"a\" /interface %}");
+  check_raises "Bad boolean"
+    (E "File <test>, 1:24-1:25\nParse error.\nExpected a boolean.\n")
+    (render "{% interface x=false | @0 /interface %}");
+
+  check_raises "Bad /interface"
+    (E "File <test>, 1:21-1:26\nParse error.\nExpected `interface`.\n")
+    (render "{% interface x=int /match %}")
+
+let interface_type_parse () =
+  let open Alcotest in
+  check_raises "Duplicate declarations"
+    (E
+       "File <test>, 1:20-1:28\n\
+        Type error.\n\
+        Prop `x` is already defined in the interface.")
+    (render "{% interface x=int x=string /interface %}");
+  check_raises "Non-existent type names."
+    (E "File <test>, 1:16-1:20\nType error.\nThere is no type named \"lmao.\"")
+    (render "{% interface x=lmao /interface %}");
+  check_raises "Untagged unions (1)"
+    (E
+       "File <test>, 1:18-1:26\n\
+        Type error.\n\
+        Records cannot be unioned without a `@` tag field.")
+    (render "{% interface x = {a: int} | {b: string} /interface %}");
+  check_raises "Untagged unions (2)"
+    (E
+       "File <test>, 1:38-1:49\n\
+        Type error.\n\
+        Records cannot be unioned without a `@` tag field.")
+    (render "{% interface x = {@tag: 1, a: int} | {b: string} /interface %}");
+  check_raises "Tagged unions with mismatched tag names"
+    (E
+       "File <test>, 1:30-1:42\n\
+        Type error.\n\
+        This record has tag field `@badtag` instead of `@tag`.")
+    (render "{% interface x = {@tag: 1} | {@badtag: 2} /interface %}");
+  check_raises "Duplicate tags."
+    (E
+       "File <test>, 1:30-1:39\n\
+        Type error.\n\
+        Tag value `1` is already used in this union.")
+    (render "{% interface x = {@tag: 1} | {@tag: 1} /interface %}");
+  check_raises "Tag type error: int <> string."
+    (E
+       "File <test>, 1:37-1:40\n\
+        Type error.\n\
+        Type mismatch.\n\
+        Expected: int\n\
+        Received: string")
+    (render "{% interface x = {@tag: 1} | {@tag: \"a\"} /interface %}");
+  check_raises "Tag type error: string <> bool."
+    (E
+       "File <test>, 1:39-1:43\n\
+        Type error.\n\
+        Type mismatch.\n\
+        Expected: string\n\
+        Received: true")
+    (render "{% interface x = {@tag: \"a\"} | {@tag: true} /interface %}");
+  check_raises "Tag type error: bool <> int."
+    (E
+       "File <test>, 1:41-1:44\n\
+        Type error.\n\
+        Type mismatch.\n\
+        Expected: false | true\n\
+        Received: int")
+    (render "{% interface x = {@tag: false} | {@tag: 100} /interface %}")
+
+let interface_typecheck () =
+  let open Alcotest in
+  check_raises "Interface type error: bool <> int."
+    (E
+       "File <test>, 1:14-1:21\n\
+        Type error.\n\
+        This interface does not match the implementation.\n\
+        Prop name: `x`\n\
+        Interface: int\n\
+        Implementation: true")
+    (render
+       "{% interface x = int /interface %}{% match x with true %}{% /match %}");
+  check_raises "Interface is missing props."
+    (E
+       "File <test>, 1:4-1:32\n\
+        Type error.\n\
+        This interface does not match the implementation.\n\
+        Missing prop name: `y`\n\
+        Of type: echoable")
+    (render "{% interface x = int /interface %} {{ y }}");
+  check_raises "Interface is missing record fields."
+    (E
+       "File <test>, 1:14-1:26\n\
+        Type error.\n\
+        This interface does not match the implementation.\n\
+        Prop name: `x`\n\
+        Interface: {a: int}\n\
+        Implementation: {a: echoable, b: echoable}")
+    (render
+       "{% interface x = {a: int} /interface %} \n\
+        {% match x with {a, b} %} {{ a }} {{ b }} {% /match %}");
+  check_raises "Interface is missing enum cases."
+    (E
+       "File <test>, 1:14-1:31\n\
+        Type error.\n\
+        This interface does not match the implementation.\n\
+        Prop name: `x`\n\
+        Interface: @0 | @1 | ...\n\
+        Implementation: @0 | @1 | @2 | ...")
+    (render
+       "{% interface x = @0 | @1 | ... /interface %} \n\
+        {% match x with @0 %} {% with @1 %} {% with @2 %} {% with _ %}\n\
+        {% /match %}");
+  check_raises "Interface is missing union cases."
+    (E
+       "File <test>, 1:14-1:53\n\
+        Type error.\n\
+        This interface does not match the implementation.\n\
+        Prop name: `x`\n\
+        Interface: {@tag: 0} | {@tag: 1, a: int} | ...\n\
+        Implementation:\n\
+       \    {@tag: 0} | {@tag: 1, a: echoable} | {@tag: 2, b: echoable} | ...")
+    (render
+       "{% interface x = {@tag: 0} | {@tag: 1, a: int} | ... /interface %} \n\
+        {% match x\n\
+       \  with {@tag: 0} %}\n\
+        {% with {@tag: 1, a} %} {{ a }}\n\
+        {% with {@tag: 2, b} %} {{ b }}\n\
+        {% with _ %}\n\
+        {% /match %}");
+  check_raises "Echoable is not equal to a concrete type."
+    (E
+       "File <test>, 1:14-1:26\n\
+        Type error.\n\
+        This interface does not match the implementation.\n\
+        Prop name: `x`\n\
+        Interface: echoable\n\
+        Implementation: int")
+    (render
+       "{% interface x = echoable /interface %} \n\
+        {% match x with 0 %} {% with _ %} {% /match %}");
+  check_raises "Unknown is not equal to any other type."
+    (E
+       "File <test>, 1:14-1:19\n\
+        Type error.\n\
+        This interface does not match the implementation.\n\
+        Prop name: `x`\n\
+        Interface: _\n\
+        Implementation: echoable")
+    (render "{% interface x = _ /interface %} {{ x }}");
+  check_raises "Child <> nullable child"
+    (E
+       "File A, 1:14-1:17\n\
+        Type error.\n\
+        This interface does not match the implementation.\n\
+        Child name: `X`\n\
+        Interface: nullable child\n\
+        Implementation: child") (fun () ->
+      ignore
+      @@ Compile.Components.(
+           make
+             [ parse_string ~name:"A" "{% interface X=? /interface %} {{ X }}" ]));
+  check_raises "Missing child"
+    (E
+       "File A, 1:4-1:28\n\
+        Type error.\n\
+        This interface does not match the implementation.\n\
+        Missing child name: `Y`") (fun () ->
+      ignore
+      @@ Compile.Components.(
+           make
+             [
+               parse_string ~name:"A"
+                 "{% interface X=? /interface %} {{ X ? Y }}";
+             ]))
+
 let () =
   let open Alcotest in
   run "Errors"
@@ -959,6 +1259,8 @@ let () =
           test_case "Illegal escape sequences" `Quick illegal_escape;
           test_case "Duplicate fields" `Quick dup_record_field;
           test_case "Parser errors" `Quick parser_errors;
+          test_case "Interface parser errors" `Quick interface_parse;
+          test_case "Interface type parser errors" `Quick interface_type_parse;
         ] );
       ( "Type clash",
         [
@@ -968,6 +1270,7 @@ let () =
           test_case "Records" `Quick type_error_record;
           test_case "Enums" `Quick type_error_enum;
           test_case "Tagged unions" `Quick type_error_union;
+          test_case "Interface type errors" `Quick interface_typecheck;
         ] );
       ( "Typechecker errors",
         [

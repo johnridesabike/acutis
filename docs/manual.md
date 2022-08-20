@@ -93,20 +93,56 @@ Renders:
 <p>Blue</p>
 ```
 
-## Introduction to types
+## Types and interfaces
 
-Acutis is statically typed, where types are checked at compile time. The type
-scheme is mostly based on JSON with some additional features.
+Acutis is statically typed, so types are checked at compile time and erased at
+runtime. The type scheme is mostly based on JSON with some additional features.
 
-Acutis does not use type annotations. The compiler can infer the types 100%
-correctly based on how you use the values in your templates. This is a
-double-edged sword, though. It means that code is more concise and easier to
-write, but, if you write a template incorrectly, the compiler will infer the
-types in ways you may not expect.
+Acutis does not need annotations. The compiler can infer the types 100%
+correctly based on how you use the data in your templates. This is a
+double-edged sword, though. It means your code is more concise, but, if you
+write a template incorrectly, the compiler will infer the types in ways you may
+not expect. You may optionally add an interface to each template which
+explicitly declares its types.
+
+### Interfaces
+
+An interface contains a sequence of prop names and their respective types,
+following the format `prop = type`. Each interface begins with `{% interface`
+and ends with `/interface %}`.
+
+Examples:
+
+```acutis
+{% interface
+  page = {title: string, url: string}
+  visible = false | true
+/interface %}
+```
+
+Interfaces are optional, and they exist mainly for the benefit of us humans who
+may have difficulty inferring types as well as our computers do. They can make
+large templates easier to read and understand.
+
+Once you add an interface to a template, then that interface must include _all_
+of the template's props and their types. If the compiler finds a prop in your
+template that is not listed in the interface, then it will raise an error.
+
+Interfaces may exist anywhere inside a template. Their location does not affect
+how the compiler parses them. You may even divide an interface across multiple
+`{% interface /interface %}` blocks.
 
 ### Constants: int, float, and string
 
 Examples:
+
+```acutis
+{% interface
+  a = int
+  b = float
+  c = string
+/interface %}
+```
 
 ```txt
 1
@@ -121,9 +157,15 @@ expect from other languages.
 
 Examples:
 
+```acutis
+{% interface
+  a = ?string
+/interface %}
+```
+
 ```txt
 null
-!"abc"
+!"This isn't null."
 ```
 
 Any type may be "wrapped" in a nullable. Nullable types are indicated by a `?`
@@ -137,21 +179,33 @@ languages call "option" types.
 
 Examples:
 
+```acutis
+{% interface
+  a = [string]
+/interface %}
+```
+
 ```txt
 []
 ["a", "b"]
 [1, 2, 3, ...rest]
 ```
 
-A list is an ordered sequence of values. Lists are homogeneous; each item must
-be of the same type. They are indicated with brackets, e.g. `[int]`.
+A list is an ordered sequence of values. Lists are homogeneous, so each item
+must be of the same type. They are indicated with brackets, e.g. `[int]`.
 
 You can append or destructure items from the "head," or the front, of a list
-with the `...` syntax.
+with the `...` syntax: `[head, ...tail]`.
 
 ### Tuple
 
-Example:
+Examples:
+
+```acutis
+{% interface
+  a = (int, string, ?float)
+/interface %}
+```
 
 ```txt
 (12, "abc", null)
@@ -161,11 +215,18 @@ A tuple is an ordered sequence of items. They're heterogeneous, so each item may
 be a different type than its neighbor. They are indicated with parentheses, e.g.
 `(int, string, ?float)`.
 
-Unlike lists, which are dynamically sized, tuple sizes are always fixed.
+Unlike lists, which are dynamically sized, each tuple has a fixed size defined
+by its type.
 
 ### Record
 
-Example:
+Examples:
+
+```acutis
+{% interface
+  a = {a: int, b: string}
+/interface %}
+```
 
 ```txt
 {a: 12, b: "xyz"}
@@ -174,12 +235,18 @@ Example:
 A record is a series of key-value pairs. Records are indicated by braces, e.g.
 `{a: int, b: string}`.
 
-Acutis records are extensible. The compiler always assumes that every record may
-contain additional fields have not been specified yet.
+Records are extensible. The compiler assumes that every record may contain
+additional fields which have not been specified yet.
 
 ### Dictionary
 
-Example:
+Examples:
+
+```acutis
+{% interface
+  a = <int>
+/interface %}
+```
 
 ```txt
 <a: 12, b: 101>
@@ -189,12 +256,19 @@ Dictionaries, or "dicts," are to records what lists are to tuples. They
 represent key-value pairs like records, but they are dynamically sized and
 homogeneously typed. They are specified with angled brackets, e.g. `<int>`.
 
-The order of keys in a dict is _not_ preserved. The compiler currently sorts
-them alphabetically, but that specific behavior is not defined.
+The order of keys in a dict is not defined. The compiler currently sorts them
+alphabetically.
 
 ### Enumeration
 
 Examples:
+
+```acutis
+{% interface
+  a = @"abc" | @"def"
+  b = @12 | @34 | ...
+/interface %}
+```
 
 ```txt
 @"abc"
@@ -202,7 +276,7 @@ Examples:
 ```
 
 An enumeration, or an "enum," is a set of integers or strings. Each enum value
-is indicated with an at-symbol, e.g. `@"a" | @"b" | @"c"`.
+is prefixed with an `@`, e.g. `@"a" | @"b" | @"c"`.
 
 Enums can be "open" or "closed." A closed enum only allows its specified values.
 An open enum allows the possibility of adding new values. "Openness" is
@@ -212,39 +286,55 @@ indicated with ellipses, e.g. `@"a" | @"b" | ...`.
 
 Examples:
 
+```acutis
+{% interface
+  a = false | true
+/interface %}
+```
+
 ```txt
 false
 true
 ```
 
 Boolean values are really just a special kind of enum. The `false | true` type
-works exactly any closed binary enum would, such as `@0 | @1`.
+works exactly like any closed binary enum would, such as `@0 | @1`.
 
-It is possible to have a type which is _only_ `false` or _only_ `true`, but this
-usually indicates a programmer error.
+It is possible to declare a type which is _only_ `false` or _only_ `true`, but
+this is not usually useful.
 
 ### Tagged union
 
 Examples:
 
+```acutis
+{% interface
+  a =
+      {@shape: "circle", radius: int}
+    | {@shape: "rectagle", height: int, width: int}
+/interface %}
+```
+
 ```txt
-{@shape: "circle": radius: 12}
+{@shape: "circle", radius: 12}
 {@shape: "rectangle", height: 11, width: 7}
 ```
 
-A record may have a "tag" field, indicated by an at-symbol, which allows it to
-combine with other records. This is like a combination of a record and enum
-type, since the tag field works like an enum.
+A record may have a "tag" field, indicated by an `@`, which allows it to unify
+with other records. This is like a combination of a record and enum type, since
+the tag field works like an enum.
 
-```txt
-{@shape: "circle", r: int} | {@shape: "rectangle", h: int, w: int}
-```
-
-Unions may also be "open" or "closed," similar to enums.
+Unions may be "open" or "closed," similar to enums.
 
 Tag fields may only contain literal integer, string, or boolean values.
 
 ### Echoable
+
+```acutis
+{% interface
+  a = echoable
+/interface %}
+```
 
 Acutis can echo any int, string, float, or enum value. If it can't determine
 which of these types a particular echoed value is, then it uses a catch-all
@@ -252,13 +342,19 @@ which of these types a particular echoed value is, then it uses a catch-all
 
 ### Unknown
 
+```acutis
+{% interface
+  a = _
+/interface %}
+```
+
 Finally, if Acutis can't determine anything at all about a value's type, then it
 uses "unknown," which is indicated by an underscore: `_`.
 
 ## Typing philosophy
 
 Acutis is _strongly_ and _statically_ typed. The compiler guarantees that values
-are coherent, for example, a `string` will never appear where an `int` is
+are coherent. For example, a `string` will never appear where an `int` is
 expected.
 
 Acutis is also _structurally_ typed. This allows the compiler to do more than
@@ -279,10 +375,8 @@ However, it currently only includes decoders for JSON and JavaScript. Both are
 very similar, so we'll use JSON as our primary example.
 
 Acutis accepts incoming data and decodes it according to the template's type
-scheme. Any data sent to an external function is encoded back into its original
-type.
-
-Here's how example Acutis types correspond to JSON types and values:
+scheme. Here are examples of how Acutis types correspond to JSON types and
+values:
 
 <!-- Adding bars inside inside tables messes with markdown tooling. -->
 
@@ -421,8 +515,8 @@ is not matched:
 ```
 
 The example pattern it generated should tell you what you missed. In this case,
-the original set of patterns only matched a `books` list with one or zero
-items, but not more than one (thus the `..._]` in the error's example).
+the original set of patterns only matched a `books` list with one or zero items,
+but not more than one (thus the `..._]` in the error's example).
 
 ## Mapping
 
@@ -680,19 +774,29 @@ named `Children`.
 An implicit children prop:
 
 ```acutis
-{% Layout %}
-  content
-{% /Layout %}
+{% Layout %} content {% /Layout %}
 ```
 
 An explicit children prop:
 
 ```acutis
-{% Layout
-   Children=#%}
-    content
-   {%/#
-   / %}
+{% Layout Children=#%} content {%/# / %}
 ```
 
 Both of those examples are rendered identically.
+
+### Children in interfaces
+
+If a template has an interface, then its children must be declared in it. Unlike
+regular props, children have only two types: nullable and not nullable.
+Non-nullable children only need their names listed. Nullable children are
+labeled as such with `= ?`.
+
+Examples:
+
+```acutis
+{% interface
+  Child
+  NullableChild = ?
+/interface %}
+```

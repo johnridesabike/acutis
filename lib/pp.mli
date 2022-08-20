@@ -18,6 +18,9 @@ val sep_comma : formatter -> unit -> unit
 val sep_semicolon : formatter -> unit -> unit
 (** Outputs [;@ ]. *)
 
+val syntax_string : formatter -> string -> unit
+(** Equivalent to the format string ["%S"]. *)
+
 val map_string :
   (Format.formatter -> 'a -> unit) ->
   Format.formatter ->

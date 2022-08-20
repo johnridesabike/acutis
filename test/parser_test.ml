@@ -385,7 +385,7 @@ let patterns () =
                         ( loc,
                           Tagged
                             ( "tag",
-                              Bool (loc, 1),
+                              Tag_bool (loc, 1),
                               Ast.Dict.singleton "a"
                                 (Ast.Pattern.Var (loc, "a")) ) );
                     ] );
@@ -397,7 +397,8 @@ let patterns () =
                 [
                   ( loc,
                     [
-                      Record (loc, Tagged ("tag", Bool (loc, 0), Ast.Dict.empty));
+                      Record
+                        (loc, Tagged ("tag", Tag_bool (loc, 0), Ast.Dict.empty));
                     ] );
                 ];
               nodes = [ Text (" ", No_trim, No_trim) ];
@@ -433,6 +434,116 @@ let patterns () =
               pats = [ (loc, [ Var (loc, "_") ]) ];
               nodes = [ Text (" ", No_trim, No_trim) ];
             };
+          ] );
+      Text ("", No_trim, No_trim);
+    ]
+    (parse src)
+
+let interface () =
+  let src =
+    {|{% interface
+    a = {a: @0 | @1, b: @"a" | @"b"}
+    b = {@tag: true, a: [int]} | {@tag: false, a: <?string>}
+    c = {@tag: 0} | {@tag: 1, a: (float, true | false)}
+    d = {@tag: "a", a: float} | {@tag: "b", a: @0 | @1 | ...}
+    e = {@tag: 0, a: _} | {@tag: 1, b: @"a" | @"b" | ...} | ...
+    Children
+    OptionalChildren = ?
+  /interface %}|}
+  in
+  let open Ast.Interface in
+  check "Interfaces parse correctly."
+    [
+      Text ("", No_trim, No_trim);
+      Interface
+        ( loc,
+          [
+            Type
+              ( loc,
+                "a",
+                Record
+                  ( [
+                      ( loc,
+                        Untagged
+                          Ast.Dict.(
+                            singleton "a" (Enum_int ([ 0; 1 ], `Closed))
+                            |> add loc "b" (Enum_string ([ "a"; "b" ], `Closed)))
+                      );
+                    ],
+                    `Closed ) );
+            Type
+              ( loc,
+                "b",
+                Record
+                  ( [
+                      ( loc,
+                        Tagged
+                          ( "tag",
+                            Tag_bool (loc, 1),
+                            Ast.Dict.singleton "a" (List (Named (loc, "int")))
+                          ) );
+                      ( loc,
+                        Tagged
+                          ( "tag",
+                            Tag_bool (loc, 0),
+                            Ast.Dict.singleton "a"
+                              (Dict (Nullable (Named (loc, "string")))) ) );
+                    ],
+                    `Closed ) );
+            Type
+              ( loc,
+                "c",
+                Record
+                  ( [
+                      (loc, Tagged ("tag", Tag_int (loc, 0), Ast.Dict.empty));
+                      ( loc,
+                        Tagged
+                          ( "tag",
+                            Tag_int (loc, 1),
+                            Ast.Dict.singleton "a"
+                              (Tuple
+                                 [ Named (loc, "float"); Enum_bool [ 1; 0 ] ])
+                          ) );
+                    ],
+                    `Closed ) );
+            Type
+              ( loc,
+                "d",
+                Record
+                  ( [
+                      ( loc,
+                        Tagged
+                          ( "tag",
+                            Tag_string (loc, "a"),
+                            Ast.Dict.singleton "a" (Named (loc, "float")) ) );
+                      ( loc,
+                        Tagged
+                          ( "tag",
+                            Tag_string (loc, "b"),
+                            Ast.Dict.singleton "a" (Enum_int ([ 0; 1 ], `Open))
+                          ) );
+                    ],
+                    `Closed ) );
+            Type
+              ( loc,
+                "e",
+                Record
+                  ( [
+                      ( loc,
+                        Tagged
+                          ( "tag",
+                            Tag_int (loc, 0),
+                            Ast.Dict.singleton "a" (Named (loc, "_")) ) );
+                      ( loc,
+                        Tagged
+                          ( "tag",
+                            Tag_int (loc, 1),
+                            Ast.Dict.singleton "b"
+                              (Enum_string ([ "a"; "b" ], `Open)) ) );
+                    ],
+                    `Open ) );
+            Child (loc, "Children");
+            Child_nullable (loc, "OptionalChildren");
           ] );
       Text ("", No_trim, No_trim);
     ]
@@ -488,6 +599,7 @@ let () =
           test_case "Maps" `Quick maps;
           test_case "Components" `Quick components;
           test_case "Patterns" `Quick patterns;
-          test_case "Edge cases" `Quick edge_cases;
+          test_case "Interface" `Quick edge_cases;
+          test_case "Edge cases" `Quick interface;
         ] );
     ]

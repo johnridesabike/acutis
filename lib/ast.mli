@@ -24,10 +24,39 @@ module Dict : sig
 end
 
 module Record : sig
-  type 'a t = Untagged of 'a Dict.t | Tagged of string * 'a * 'a Dict.t
+  type tag =
+    | Tag_int of Loc.t * int
+    | Tag_bool of Loc.t * int
+    | Tag_string of Loc.t * string
 
-  val add : Loc.t -> [ `Tag | `Notag ] -> string -> 'a -> 'a t -> 'a t
-  val singleton : [ `Tag | `Notag ] -> string -> 'a -> 'a t
+  val pp_tag : Format.formatter -> tag -> unit
+
+  type 'a t = Untagged of 'a Dict.t | Tagged of string * tag * 'a Dict.t
+
+  val add :
+    Loc.t -> [ `Tag of string * tag | `Notag of string * 'a ] -> 'a t -> 'a t
+
+  val singleton : [ `Tag of string * tag | `Notag of string * 'a ] -> 'a t
+end
+
+module Interface : sig
+  type row = [ `Closed | `Open ]
+
+  type ty =
+    | Named of Loc.t * string
+    | Nullable of ty
+    | List of ty
+    | Dict of ty
+    | Enum_int of int Nonempty.t * row
+    | Enum_bool of int Nonempty.t
+    | Enum_string of string Nonempty.t * row
+    | Record of (Loc.t * ty Record.t) Nonempty.t * row
+    | Tuple of ty list
+
+  type t =
+    | Type of Loc.t * string * ty
+    | Child of Loc.t * string
+    | Child_nullable of Loc.t * string
 end
 
 module Pattern : sig
@@ -61,6 +90,7 @@ type node =
   | Map_list of Loc.t * Pattern.t * case Nonempty.t
   | Map_dict of Loc.t * Pattern.t * case Nonempty.t
   | Component of Loc.t * string * string * Pattern.t Dict.t * child Dict.t
+  | Interface of Loc.t * Interface.t list
 
 and case = { pats : (Loc.t * Pattern.t Nonempty.t) Nonempty.t; nodes : t }
 and child = Child_name of Loc.t * string | Child_block of t

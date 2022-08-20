@@ -73,6 +73,7 @@ and expr state = parse
   | "null"        { NULL }
   | "true"        { TRUE }
   | "false"       { FALSE }
+  | "interface"   { INTERFACE }
   | int           { INT (int_of_string (L.lexeme lexbuf)) }
   | float         { FLOAT (float_of_string (L.lexeme lexbuf)) }
   | id            { ID (L.lexeme lexbuf) }
@@ -95,6 +96,8 @@ and expr state = parse
   | '='           { EQUALS }
   | '#'           { HASH }
   | '!'           { EXCLAMATION }
+  | '|'           { PIPE }
+  | '?'           { QUESTION }
   | "..."         { ELLIPSIS }
   | eof           { raise Error }
   | _             { raise Error }
@@ -109,7 +112,8 @@ and echo state = parse
   | "map_dict"
   | "null"
   | "true"
-  | "false"       { raise Error }
+  | "false"
+  | "interface"   { raise Error }
   | id            { ID (L.lexeme lexbuf) }
   | component     { COMPONENT (L.lexeme lexbuf) }
   | white         { echo state lexbuf }

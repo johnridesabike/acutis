@@ -24,6 +24,7 @@ open Ast
 %token MAP                    (* map *)
 %token MAP_DICT               (* map_dict *)
 %token WITH                   (* with *)
+%token INTERFACE              (* interface *)
 %token BACKSLASH              (* / *)
 %token EQUALS                 (* = *)
 %token HASH                   (* # *)
@@ -48,6 +49,7 @@ open Ast
 %token AT                     (* @ *)
 %token COMMA                  (* , *)
 %token ELLIPSIS               (* ... *)
+%token PIPE                   (* | *)
 
 %start <Ast.t> acutis
 
@@ -72,23 +74,25 @@ pattern:
   | LEFT_ANGLE; d = dict; RIGHT_ANGLE;          { Dict ($loc, d) }
 
 record_tag:
-  | (* empty *) { `Notag }
-  | AT;         { `Tag }
+  | i = INT;    { Tag_int ($loc, i) }
+  | FALSE;      { Tag_bool ($loc, 0) }
+  | TRUE;       { Tag_bool ($loc, 1) }
+  | s = STRING; { Record.Tag_string ($loc, s) }
 
 record_key:
   | k = ID; | k = STRING; { k }
 
 record_field:
-  | t = record_tag; k = record_key; COLON; v = pattern;
-    { (t, k, v) }
-  | t = record_tag; k = ID;
-    { (t, k, Pattern.Var ($loc, k) ) }
+  | AT; k = record_key; COLON; v = record_tag;
+    { `Tag (k, v) }
+  | k = record_key; COLON; v = pattern;
+    { `Notag (k, v) }
+  | k = ID;
+    { `Notag (k, Pattern.Var ($loc, k) ) }
 
 record:
-  | x = record_field;
-    { let (t, k, v) = x in Record.singleton t k v }
-  | m = record; COMMA; x = record_field;
-    { let (t, k, v) = x in Record.add $loc t k v m }
+  | x = record_field;                     { Record.singleton x }
+  | m = record; COMMA; x = record_field;  { Record.add $loc x m }
 
 dict_field:
   | k = record_key; COLON; v = pattern; { (k, v) }
@@ -117,18 +121,16 @@ pattern_list_nonempty_rev:
   | p = pattern;                                       { [ p ] }
   | l = pattern_list_nonempty_rev; COMMA; p = pattern; { Nonempty.cons p l }
 
-with_pats: l = with_pats_rev; { Nonempty.rev l }
-with_pats_rev:
+with_pats:
   | WITH; ps = pattern_list_nonempty;
     { [ ($loc, ps) ] }
-  | l = with_pats_rev; WITH; ps = pattern_list_nonempty;
+  | WITH; ps = pattern_list_nonempty; l = with_pats;
     { Nonempty.cons ($loc, ps) l }
 
-cases: l = cases_rev; { Nonempty.rev l }
-cases_rev:
+cases:
   | pats = with_pats; child = nodes;
     { [ {pats; nodes = child} ] }
-  | l = cases_rev; pats = with_pats; child = nodes;
+  | pats = with_pats; child = nodes; l = cases;
     { Nonempty.cons {pats; nodes = child} l }
 
 (** Component rules *)
@@ -204,10 +206,74 @@ node:
       let children = Child_block n in
       Component ($loc, x1, x2, p, Dict.add $loc "Children" children c)
     }
+  | INTERFACE; i = interface; BACKSLASH; INTERFACE;
+    { Interface ($loc, i) }
+
+(** Interface rules *)
+
+ty:
+  | l = variant(enum_int); r = row;;
+    { Enum_int (l, r) }
+  | l = variant(bool);
+    { Enum_bool l }
+  | l = variant(enum_string); r = row;
+    { Enum_string (l, r) }
+  | l = variant(ty_record); r = row;
+    { Record (l, r) }
+  | x = ID;
+    { Named ($loc, x) }
+  | QUESTION; t = ty;
+    { Nullable t }
+  | LEFT_BRACK; t = ty; RIGHT_BRACK;
+    { List t }
+  | LEFT_ANGLE; t = ty; RIGHT_ANGLE;
+    { Dict t }
+  | LEFT_PAREN; l = separated_list(COMMA, ty); RIGHT_PAREN;
+    { Interface.Tuple l }
+
+ty_record_field:
+  | AT; k = record_key; COLON; v = record_tag;  { `Tag (k, v) }
+  | k = record_key; COLON; v = ty;              { `Notag (k, v) }
+
+ty_record_fields:
+  | x = ty_record_field;                              { Record.singleton x }
+  | m = ty_record_fields; COMMA; x = ty_record_field; { Record.add $loc x m }
+
+ty_record: LEFT_BRACE; x = ty_record_fields; RIGHT_BRACE; { ($loc, x) }
+
+enum_int: AT; i = INT; { i }
+
+enum_string: AT; s = STRING; { s }
+
+bool:
+  | FALSE; { 0 }
+  | TRUE;  { 1 }
+
+row:
+  | (* empty *)     { `Closed }
+  | PIPE; ELLIPSIS; { `Open }
+
+%inline variant(X):
+  | l = variant_rev(X); { Nonempty.rev l }
+variant_rev(X):
+  | x = X;                            { [ x ] }
+  | l = variant_rev(X); PIPE; x = X;  { Nonempty.cons x l }
+
+interface:
+  | (* empty *)
+    { [] }
+  | k = ID; EQUALS; v = ty; l = interface;
+    { Type ($loc, k, v) :: l }
+  | k = COMPONENT; l = interface;
+    { Child ($loc, k) :: l }
+  | k = COMPONENT; EQUALS; QUESTION; l = interface;
+    { Child_nullable ($loc, k) :: l }
+
+(** Putting it all together *)
 
 nodes: l = nodes_rev; { List.rev l }
 nodes_rev:
-  | n = text;                 { [n] }
+  | n = text;                 { [ n ] }
   | l = nodes_rev; n = node;  { n :: l }
 
 acutis: n = nodes; EOF; { n }

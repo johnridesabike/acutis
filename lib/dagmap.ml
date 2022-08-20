@@ -43,7 +43,7 @@ let get k g =
   | None -> (
       match Map.String.find_opt k g.notlinked with
       | Some x ->
-          (* Remove it form the unlinked map so a cycle isn't possible. *)
+          (* Remove it from the unlinked map so a cycle isn't possible. *)
           g.notlinked <- Map.String.remove k g.notlinked;
           let x = g.f { g with stack = k :: g.stack } x in
           g.linked <- Map.String.add k x g.linked;

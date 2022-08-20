@@ -15,6 +15,9 @@ module Variant : sig
       *)
 
   type row = [ `Closed | `Open ]
+
+  val equal_row : row -> row -> bool
+
   type extra = [ `Extra_none | `Extra_bool ]
 
   val equal_extra : extra -> extra -> bool
@@ -110,8 +113,8 @@ module Child : sig
   type t
 
   val make : (string * t) list -> t Map.String.t
-  val child : string -> string * t
-  val nullable : string -> string * t
+  val child : unit -> t
+  val nullable : unit -> t
   val is_nullable : t -> bool
   val equal : t -> t -> bool
   val pp : Format.formatter -> t -> unit
@@ -123,5 +126,7 @@ end
 val internal_record : t Map.String.t ref -> t
 val internal_dict_keys : t -> Set.String.t ref -> t
 val internal_copy_record : t Map.String.t -> t Map.String.t
+val internal_bool : int list -> t
 val pp : Format.formatter -> t -> unit
+val pp_interface : Format.formatter -> t Map.String.t -> unit
 val equal : t -> t -> bool

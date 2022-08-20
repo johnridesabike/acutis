@@ -60,14 +60,6 @@ let mismatch a b t =
 let type_mismatch loc a b =
   raise @@ Acutis_error (pp_ty loc (mismatch a b (F.dprintf "")))
 
-let bad_union_tag loc ty =
-  let f =
-    F.dprintf "@[<v>@[%a@]@ @[Received:@ @[<hov 2>%a@]@]@]" text
-      "Only `int`, `string`, and `boolean` types may be union tags."
-      Typescheme.pp ty
-  in
-  raise @@ Acutis_error (pp_ty loc f)
-
 let missing_field loc key ty =
   let f =
     F.dprintf "This is missing key@ `%a`@ of type@ @[%a@]" Pp.field key
@@ -139,6 +131,65 @@ let component_name_mismatch loc a b =
   in
   raise @@ Acutis_error (pp_ty loc f)
 
+let interface_duplicate loc id =
+  let f = F.dprintf "Prop `%s` is already defined in the interface." id in
+  raise @@ Acutis_error (pp_ty loc f)
+
+let interface_bad_name loc id =
+  let f = F.dprintf "There is no type named \"%s.\"" id in
+  raise @@ Acutis_error (pp_ty loc f)
+
+let interface_untagged_union loc =
+  let f ppf = text ppf "Records cannot be unioned without a `@` tag field." in
+  raise @@ Acutis_error (pp_ty loc f)
+
+let interface_unmatched_tags loc s1 s2 =
+  let f =
+    F.dprintf "This record has tag field `@%a` instead of `@%a`." Pp.field s2
+      Pp.field s1
+  in
+  raise @@ Acutis_error (pp_ty loc f)
+
+let interface_duplicate_tag loc pp tag =
+  let f = F.dprintf "Tag value `%a` is already used in this union." pp tag in
+  raise @@ Acutis_error (pp_ty loc f)
+
+let interface_type_mismatch loc k a b =
+  let f =
+    F.dprintf
+      "@[<v>@[This interface does not match the implementation.@]@ @[Prop \
+       name: `%s`@]@ @[<hv 2>Interface:@ %a@]@ @[<hv 2>Implementation:@ %a@]@]"
+      k Typescheme.pp a Typescheme.pp b
+  in
+  raise @@ Acutis_error (pp_ty loc f)
+
+let interface_child_mismatch loc k a b =
+  let f =
+    F.dprintf
+      "@[<v>@[This interface does not match the implementation.@]@ @[Child \
+       name: `%s`@]@ @[<hv 2>Interface:@ %a@]@ @[<hv 2>Implementation:@ %a@]@]"
+      k Typescheme.Child.pp a Typescheme.Child.pp b
+  in
+  raise @@ Acutis_error (pp_ty loc f)
+
+let interface_missing_prop loc k ty =
+  let f =
+    F.dprintf
+      "@[<v>@[This interface does not match the implementation.@]@ @[Missing \
+       prop name: `%s`@]@ @[<hv 2>Of type:@ %a@]@]"
+      k Typescheme.pp ty
+  in
+  raise @@ Acutis_error (pp_ty loc f)
+
+let interface_missing_child loc k =
+  let f =
+    F.dprintf
+      "@[<v>@[This interface does not match the implementation.@]@ @[Missing \
+       child name: `%s`@]@]"
+      k
+  in
+  raise @@ Acutis_error (pp_ty loc f)
+
 let pp_match = pp ~kind:"Matching error"
 
 let unused_case loc =
@@ -164,7 +215,7 @@ let pp_sep ppf () = F.fprintf ppf " ->@ "
 
 let cycle stack =
   let s =
-    F.asprintf "@[<v>@[Dependency cycle detected.@]@,@[%a@]"
+    F.asprintf "@[<v>@[Dependency cycle detected.@]@,@[%a@]@]"
       (F.pp_print_list ~pp_sep F.pp_print_string)
       (List.rev stack)
   in
@@ -172,7 +223,7 @@ let cycle stack =
 
 let missing_component stack name =
   let s =
-    F.asprintf "@[<v>@[Missing template:@ %s.@]@,@[Required by:@ %s.@]" name
+    F.asprintf "@[<v>@[Missing template:@ %s.@]@,@[Required by:@ %s.@]@]" name
       (List.hd stack)
   in
   raise @@ Acutis_error s
@@ -199,7 +250,7 @@ let pp stack ty mess =
     "@[<v>@[Decode error.@]@,\
      @[Path: @[%a@]@]@,\
      @[Expected type: @[%a@]@]@,\
-     @[%t@]"
+     @[%t@]@]"
     DecodePath.pp stack Typescheme.pp ty mess
 
 let decode pp_data ty stack data =

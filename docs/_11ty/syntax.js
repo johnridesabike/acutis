@@ -29,12 +29,16 @@ module.exports = function (Prism) {
       pattern: /\b([A-Z])([a-zA-Z0-9_]+)?/,
       alias: "function",
     },
-    keyword: /\b(?:match|map|map_dict|with)\b/,
+    tag: {
+      pattern: /(@)([a-z_])([a-zA-Z0-9_]+)?/,
+      alias: "operator",
+    },
+    keyword: /(\/{0,1})\b(?:match|map|map_dict|with|interface)\b/,
     operator: /&|\?|#|~|!|@/,
     number: /(-|\+)?\s*[0-9]+(\.[0-9]+)?(e|E)?/,
     boolean: /\b(false|true|null)\b/,
     variable: /([a-z_])([a-zA-Z0-9_]+)?/,
-    punctuation: /[{}[\],.:/=(\)<>]/,
+    punctuation: /[{}[\],.:/=(\)<>\|]/,
   };
 
   var pattern = /{{[\s\S]*?}}|{%[\s\S]*?%}|{\*[\s\S]*?\*}/g;

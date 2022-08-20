@@ -152,8 +152,8 @@ let () =
     (object%js
        val empty = empty
        method make a = key_values a |> make
-       method child s = child (Js.to_string s)
-       method nullable s = nullable (Js.to_string s)
+       method child s = (Js.to_string s, child ())
+       method nullable s = (Js.to_string s, nullable ())
     end)
 
 let () =

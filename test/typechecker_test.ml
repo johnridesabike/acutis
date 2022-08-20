@@ -255,7 +255,7 @@ let open_unions () =
     {|
     {% match a
        with <k: {@tag: "a"}> %}
-    {% with <k: {@tag: @"b"}> %}
+    {% with <k: {@tag: "b"}> %}
     {% with _ %} {% /match %}
     {% map [<k: {@tag: "c"}>, a] with _ %} {% /map %}|}
   in
@@ -445,6 +445,103 @@ let components () =
     Ty.(make [ ("a", int ()); ("b", string ()) ])
     r.prop_types
 
+let interface_basic () =
+  let src =
+    {|
+  {% interface
+    a = ?int
+    b = @"a" | @"b"
+  /interface %}
+  {% match a with !1 %} {% with _ %} {% /match %}
+  {% match b with @"a" %} {% with @"b" %} {% /match %}
+  |}
+  in
+  check "Basic interface"
+    Ty.(
+      make [ ("a", nullable (int ())); ("b", enum_string `Closed [ "a"; "b" ]) ])
+    (get_types src)
+
+let interface_special () =
+  let src =
+    {|{% interface a = int /interface %}
+      {% match a with _ %} {% /match %}|}
+  in
+  check "Any type can interface with unknown."
+    Ty.(make [ ("a", int ()) ])
+    (get_types src);
+  let src =
+    {|{% interface a = int b = string c = false | true d = float/interface %}
+      {{ a }} {{ b }} {{ c }} {{ d }}|}
+  in
+  check "Any constant can interface with echoable."
+    Ty.(
+      make
+        [ ("a", int ()); ("b", string ()); ("c", boolean ()); ("d", float ()) ])
+    (get_types src);
+  let src =
+    {|{% interface a = {a: int, b: string} /interface %}
+      {% match a with {a} %} {{ a }} {% /match %}|}
+  in
+  check "Interfaces may add record fields."
+    Ty.(make [ ("a", record [ ("a", int ()); ("b", string ()) ]) ])
+    (get_types src);
+  let src =
+    {|{% interface a = @0 | @1 | @2 | ... /interface %}
+      {% match a with @0 with @1 %} {% with _ %} {% /match %}|}
+  in
+  check "Interfaces may add cases to open enums."
+    Ty.(make [ ("a", enum_int `Open [ 0; 1; 2 ]) ])
+    (get_types src);
+  let src =
+    {|{% interface
+        a = {@tag: 0} | {@tag: 1, a: int} | {@tag: 2} | ...
+      /interface %}
+      {% match a with {@tag: 0} with {@tag: 1} %} {% with _ %} {% /match %}|}
+  in
+  check "Interfaces may add cases to open unions."
+    Ty.(
+      make
+        [
+          ( "a",
+            union_int `Open "tag" [ (0, []); (1, [ ("a", int ()) ]); (2, []) ]
+          );
+        ])
+    (get_types src)
+
+let interface_print () =
+  let interface =
+    "a = {a: @0 | @1, b: @\"a\" | @\"b\"}\n\
+     b = {@tag: false, a: <?string>} | {@tag: true, a: [int]}\n\
+     c = {@tag: 0} | {@tag: 1, a: (float, false | true)}\n\
+     d =\n\
+    \    {@tag: \"a\", a: float}\n\
+    \  | {@tag: \"b\", a: @0 | @1 | ...}\n\
+     e =\n\
+    \    {@tag: 0, a: _}\n\
+    \  | {@tag: 1, b: @\"a\" | @\"b\" | ...}\n\
+    \  | {@tag: 2, b: int, c: false | true}\n\
+    \  | ...\n\
+     f =\n\
+    \    @\"a very looooong string enum type\"\n\
+    \  | @\"it is so very loooooong! It just keeps going!\"\n\
+    \  | ...\n\
+     g =\n\
+    \  {\n\
+    \     a:\n\
+    \       [\n\
+    \            @\"another loooong enum type!\"\n\
+    \          | @\"it is so very loooooong! It just keeps going!\"\n\
+    \          | @\"this time it is inside a record!\"\n\
+    \          | ...\n\
+    \       ]\n\
+    \  }"
+  in
+  let src = "{% interface " ^ interface ^ " /interface %}" in
+  Alcotest.(
+    check string
+      "The typescheme pretty-printer prints valid (and pretty) syntax" interface
+      (get_types src |> Format.asprintf "%a" Ty.pp_interface))
+
 let () =
   let open Alcotest in
   run "Typechecker"
@@ -469,6 +566,12 @@ let () =
           test_case "Boolean unions" `Quick boolean_unions;
         ] );
       ("Components", [ test_case "Components" `Quick components ]);
+      ( "Interfaces",
+        [
+          test_case "Basic types" `Quick interface_basic;
+          test_case "Special cases" `Quick interface_special;
+          test_case "Type scheme prints valid interfaces" `Quick interface_print;
+        ] );
       ( "Other cases",
         [
           test_case "Other cases" `Quick other_cases;

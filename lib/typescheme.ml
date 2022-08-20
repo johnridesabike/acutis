@@ -28,18 +28,23 @@ module Variant = struct
   }
   [@@deriving eq]
 
+  let pp_sep ppf () = F.fprintf ppf "@ | "
+
   let pp_row ppf = function
-    | `Closed -> F.fprintf ppf ""
+    | `Closed -> ()
     | `Open -> F.fprintf ppf "@ @[| ...@]"
 
   let pp_bool ppf = function
-    | 0 -> F.fprintf ppf "false"
-    | _ -> F.fprintf ppf "true"
+    | 0 -> F.pp_print_string ppf "false"
+    | _ -> F.pp_print_string ppf "true"
 
-  let pp_types ppf = function
-    | `String s -> F.fprintf ppf "%S" s
-    | `Int i -> F.fprintf ppf "%i" i
-    | `Bool b -> pp_bool ppf b
+  let pp ppf pp_case cases row =
+    F.fprintf ppf "@[<hv>";
+    F.pp_print_if_newline ppf ();
+    F.pp_print_string ppf "  ";
+    F.pp_print_seq ~pp_sep pp_case ppf cases;
+    pp_row ppf row;
+    F.fprintf ppf "@]"
 end
 
 module Enum = struct
@@ -67,6 +72,12 @@ module Enum = struct
 
   let true_only () = { cases = true_only; row = `Closed; extra = `Extra_bool }
   let false_only () = { cases = false_only; row = `Closed; extra = `Extra_bool }
+
+  let bool_of_list l =
+    { cases = Int (Set.Int.of_list l); row = `Closed; extra = `Extra_bool }
+
+  let pp_string ppf s = F.fprintf ppf "%@%S" s
+  let pp_int ppf i = F.fprintf ppf "%@%i" i
 end
 
 module Union = struct
@@ -99,6 +110,8 @@ module Union = struct
 
   let true_only l =
     { cases = Int (Map.Int.singleton 1 l); row = `Closed; extra = `Extra_bool }
+
+  let pp_tag_field ppf s = F.fprintf ppf "%@%a" Pp.field s
 end
 
 type ty =
@@ -120,6 +133,7 @@ and t = ty ref [@@deriving eq]
 
 let internal_record m = ref (Record m)
 let internal_dict_keys t kys = ref (Dict (t, kys))
+let internal_bool l = ref (Enum (Enum.bool_of_list l))
 let unknown () = ref (Unknown (ref `Closed))
 let int () = ref Int
 let float () = ref Float
@@ -174,7 +188,23 @@ let rec copy = function
 and copy_ref r = ref (copy !r)
 and internal_copy_record m = Map.String.map copy_ref m
 
-let pp_sep_pipe ppf () = F.fprintf ppf "@ | "
+let surround ~left ~right ppf f x =
+  F.fprintf ppf "@[%c@[<hv 2>@,%a@]@,%c@]" left f x right
+
+let pp_record =
+  let field pp_k pp_v ppf (k, v) =
+    F.fprintf ppf "@[<hv 2>%a:@ %a@]" pp_k k pp_v v
+  in
+  let record ?tag pp ppf m =
+    (match tag with
+    | None -> ()
+    | Some (pp_tag, tag) ->
+        field Union.pp_tag_field pp_tag ppf tag;
+        if not (Map.String.is_empty !m) then Pp.sep_comma ppf ());
+    F.pp_print_seq ~pp_sep:Pp.sep_comma (field Pp.field pp) ppf
+      (Map.String.to_seq !m)
+  in
+  fun ?tag pp ppf m -> surround ~left:'{' ~right:'}' ppf (record ?tag pp) m
 
 let rec pp ppf t =
   match !t with
@@ -183,56 +213,38 @@ let rec pp ppf t =
   | Float -> F.pp_print_string ppf "float"
   | String -> F.pp_print_string ppf "string"
   | Echo -> F.pp_print_string ppf "echoable"
-  | Enum { cases = String cases; row; _ } ->
-      F.fprintf ppf "@[| %a@]@[%a@]"
-        (F.pp_print_list ~pp_sep:pp_sep_pipe (fun ppf s ->
-             F.fprintf ppf "%@%S" s))
-        (Set.String.elements cases)
-        Variant.pp_row row
-  | Enum { cases = Int cases; row; extra = `Extra_none } ->
-      (F.fprintf ppf "@[| %a@]@[%a@]"
-         (F.pp_print_list ~pp_sep:pp_sep_pipe (fun ppf i ->
-              F.fprintf ppf "%@%i" i)))
-        (Set.Int.elements cases) Variant.pp_row row
-  | Enum { cases = Int cases; row; extra = `Extra_bool } ->
-      F.fprintf ppf "@[| %a@]@[%a@]"
-        (F.pp_print_list ~pp_sep:pp_sep_pipe Variant.pp_bool)
-        (Set.Int.elements cases) Variant.pp_row row
-  | Nullable x -> F.fprintf ppf "?%a" pp x
-  | List l -> F.fprintf ppf "[@[@,@[%a@]@,]@]" pp l
-  | Dict (t, _) -> F.fprintf ppf "<@[%a@]>" pp t
+  | Nullable x -> F.fprintf ppf "?@[<hov 1>@,%a@]" pp x
+  | List t -> surround ~left:'[' ~right:']' ppf pp t
+  | Dict (t, _) -> surround ~left:'<' ~right:'>' ppf pp t
+  | Record r -> pp_record pp ppf r
   | Tuple l ->
-      F.fprintf ppf "(@[%a@])" (F.pp_print_list ~pp_sep:Pp.sep_comma pp) l
-  | Record r -> pp_record ppf !r
-  | Union (key, { cases; extra; row }) ->
-      let cases =
-        match cases with
-        | String m ->
-            Map.String.to_seq m |> Seq.map (fun (tag, m) -> (`String tag, m))
-        | Int m -> (
-            match extra with
-            | `Extra_none ->
-                Map.Int.to_seq m |> Seq.map (fun (tag, m) -> (`Int tag, m))
-            | `Extra_bool ->
-                Map.Int.to_seq m |> Seq.map (fun (tag, m) -> (`Bool tag, m)))
+      surround ~left:'(' ~right:')' ppf
+        (F.pp_print_list ~pp_sep:Pp.sep_comma pp)
+        l
+  | Enum { cases = String cases; row; _ } ->
+      Variant.pp ppf Enum.pp_string (Set.String.to_seq cases) row
+  | Enum { cases = Int cases; extra = `Extra_none; row } ->
+      Variant.pp ppf Enum.pp_int (Set.Int.to_seq cases) row
+  | Enum { cases = Int cases; extra = `Extra_bool; row } ->
+      Variant.pp ppf Variant.pp_bool (Set.Int.to_seq cases) row
+  | Union (key, union) -> (
+      let aux pp_tag ppf (tag, fields) =
+        pp_record ~tag:(pp_tag, (key, tag)) pp ppf fields
       in
-      F.fprintf ppf "@[| %a@]@[%a@]"
-        (F.pp_print_seq ~pp_sep:pp_sep_pipe (pp_union_cases key))
-        cases Variant.pp_row row
+      match union with
+      | { cases = String cases; row; _ } ->
+          Variant.pp ppf (aux Pp.syntax_string) (Map.String.to_seq cases) row
+      | { cases = Int cases; extra = `Extra_none; row } ->
+          Variant.pp ppf (aux F.pp_print_int) (Map.Int.to_seq cases) row
+      | { cases = Int cases; extra = `Extra_bool; row } ->
+          Variant.pp ppf (aux Variant.pp_bool) (Map.Int.to_seq cases) row)
 
-and pp_union_cases key ppf (tag, m) =
-  F.fprintf ppf "@[{@,@[@@%a:@ %a" Pp.field key Variant.pp_types tag;
-  if not (Map.String.is_empty !m) then
-    F.fprintf ppf ",@ %a" pp_record_rows (Map.String.to_seq !m);
-  F.fprintf ppf "@]@,}@]"
-
-and pp_record_rows ppf l =
-  F.pp_print_seq ~pp_sep:Pp.sep_comma
-    (fun ppf (k, v) -> F.fprintf ppf "%a:@ @[%a@]" Pp.field k pp v)
-    ppf l
-
-and pp_record ppf r =
-  F.fprintf ppf "{@[%a@]}" pp_record_rows (Map.String.to_seq r)
+let pp_interface =
+  let equals ppf (k, v) = F.fprintf ppf "@[<hv 2>%a =@ %a@]" Pp.field k pp v in
+  fun ppf m ->
+    F.fprintf ppf "@[<hv>%a@]"
+      (F.pp_print_seq ~pp_sep:F.pp_print_space equals)
+      (Map.String.to_seq m)
 
 module Child = struct
   type ty = Child | Nullable_child
@@ -240,8 +252,8 @@ module Child = struct
 
   let equal a b = !a = !b
   let make = map_of_list
-  let child x = (x, ref Child)
-  let nullable x = (x, ref Nullable_child)
+  let child () = ref Child
+  let nullable () = ref Nullable_child
   let is_nullable t = match !t with Nullable_child -> true | Child -> false
 
   let pp ppf = function

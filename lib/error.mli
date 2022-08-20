@@ -19,11 +19,10 @@ val lex_error : Lexing.lexbuf -> _
 val parse_error : int -> Lexing.lexbuf -> _
 val dup_record_key : Loc.t -> string -> _
 val extra_record_tag : Loc.t -> _
-val type_mismatch : Loc.t -> Typescheme.t -> Typescheme.t -> _
 
 (** {1 Type errors.} *)
 
-val bad_union_tag : Loc.t -> Typescheme.t -> _
+val type_mismatch : Loc.t -> Typescheme.t -> Typescheme.t -> _
 val missing_field : Loc.t -> string -> Typescheme.t -> _
 val underscore_in_construct : Loc.t -> _
 val child_type_mismatch : Loc.t -> Typescheme.Child.t -> Typescheme.Child.t -> _
@@ -36,10 +35,29 @@ val extra_child : Loc.t -> comp:string -> child:string -> _
 val missing_child : Loc.t -> string -> _
 val child_in_root : Loc.t -> _
 val component_name_mismatch : Loc.t -> string -> string -> _
-val unused_case : Loc.t -> _
+
+(** {2 Interface errors.} *)
+
+val interface_duplicate : Loc.t -> string -> _
+val interface_bad_name : Loc.t -> string -> _
+val interface_untagged_union : Loc.t -> _
+val interface_unmatched_tags : Loc.t -> string -> string -> _
+
+val interface_duplicate_tag :
+  Loc.t -> (Format.formatter -> 'a -> unit) -> 'a -> _
+
+val interface_type_mismatch :
+  Loc.t -> string -> Typescheme.t -> Typescheme.t -> _
+
+val interface_child_mismatch :
+  Loc.t -> string -> Typescheme.Child.t -> Typescheme.Child.t -> _
+
+val interface_missing_prop : Loc.t -> string -> Typescheme.t -> _
+val interface_missing_child : Loc.t -> string -> _
 
 (** {1 Matching errors.} *)
 
+val unused_case : Loc.t -> _
 val parmatch : Loc.t -> (Format.formatter -> 'a -> unit) -> 'a -> _
 val duplicate_name : string -> _
 
