@@ -6,7 +6,7 @@ let check = Alcotest.(check (module Ast))
 let loc = Loc.dummy
 
 let echoes () =
-  let src = {|{{ a }} {{ "b" }} {{ C }} {{ &d ? E ? "f" }}|} in
+  let src = {|{{ a }} {{ "b" }} {{ C }} {{ &d ? E ? "f\"g" }}|} in
   check "Echoes parse correctly"
     [
       Text ("", No_trim, No_trim);
@@ -18,7 +18,7 @@ let echoes () =
       Text (" ", No_trim, No_trim);
       Echo
         ( [ Ech_var (loc, "d", No_escape); Ech_component (loc, "E") ],
-          Ech_string (loc, "f") );
+          Ech_string (loc, "f\"g") );
       Text ("", No_trim, No_trim);
     ]
     (parse src)

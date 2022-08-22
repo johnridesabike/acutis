@@ -127,6 +127,7 @@ and echo state = parse
 and string pos buf =
   parse
   | '"'           { lexbuf.lex_start_p <- pos; STRING (B.contents buf) }
+  | '\\' '"'      { B.add_char buf '"'; string pos buf lexbuf }
   | '\\' '/'      { B.add_char buf '/'; string pos buf lexbuf }
   | '\\' '\\'     { B.add_char buf '\\'; string pos buf lexbuf }
   | '\\' 'b'      { B.add_char buf '\b'; string pos buf lexbuf }
