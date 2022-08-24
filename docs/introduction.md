@@ -26,15 +26,15 @@ You can also use the [CLI].
 
 Acutis is an experiment with a new kind of template language.
 
-I created Acutis because there were specific language and toolchain features I
-wanted in my templates that I couldn't find in existing projects. I was inspired
-by the declarative, component-based design in React as well as the
-pattern-matching abilities in OCaml.
+I created Acutis because there were specific language features I wanted in my
+templates that I couldn't find in existing projects. I was inspired by the
+declarative, component-based design in React as well as the pattern-matching
+abilities in OCaml.
 
 ## What state is it in?
 
 Acutis is young software. I'm currently the only person who uses it. Also, I
-haven't developed any editor tooling for it yet. Use it if you don't mind
+haven't developed much editor tooling for it yet. Use it if you don't mind
 getting your getting your hands dirty.
 
 ## Installation: OPAM
@@ -73,12 +73,12 @@ The JavaScript API is available through npm.
 npm install acutis-lang
 ```
 
-## Editor plugin
+## Editor plugins
 
-### VS Code
+These offer basic syntax highlighting and indentation features.
 
-You can enable syntax highlighting with
-[the VS Code extension](https://marketplace.visualstudio.com/items?itemName=jbpjackson.acutis-vscode).
+- [Vim plugin](https://github.com/johnridesabike/vim-acutis)
+- [VS Code plugin](https://marketplace.visualstudio.com/items?itemName=jbpjackson.acutis-vscode)
 
 ## Examples
 
