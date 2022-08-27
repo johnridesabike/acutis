@@ -1,20 +1,21 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <svg
-   xmlns:dc="http://purl.org/dc/elements/1.1/"
-   xmlns:cc="http://creativecommons.org/ns#"
-   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
-   xmlns:svg="http://www.w3.org/2000/svg"
-   xmlns="http://www.w3.org/2000/svg"
-   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
-   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
    version="1.1"
    height="256"
    width="256"
    id="svg66"
    sodipodi:docname="icon.svg"
-   inkscape:version="1.0.2 (e86c8708, 2021-01-15)"
+   inkscape:version="1.2.1 (9c6d41e4, 2022-07-14)"
    inkscape:export-xdpi="96"
-   inkscape:export-ydpi="96">
+   inkscape:export-ydpi="96"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns:xlink="http://www.w3.org/1999/xlink"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg"
+   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+   xmlns:cc="http://creativecommons.org/ns#"
+   xmlns:dc="http://purl.org/dc/elements/1.1/">
   <metadata
      id="metadata72">
     <rdf:RDF>
@@ -23,12 +24,59 @@
         <dc:format>image/svg+xml</dc:format>
         <dc:type
            rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
-        <dc:title />
       </cc:Work>
     </rdf:RDF>
   </metadata>
   <defs
-     id="defs70" />
+     id="defs70">
+    <linearGradient
+       inkscape:collect="always"
+       id="linearGradient30674">
+      <stop
+         style="stop-color:#1098f7;stop-opacity:1;"
+         offset="0"
+         id="stop30672" />
+      <stop
+         style="stop-color:#a1e8cc;stop-opacity:1;"
+         offset="0.75"
+         id="stop30670" />
+    </linearGradient>
+    <linearGradient
+       inkscape:collect="always"
+       id="linearGradient24064">
+      <stop
+         style="stop-color:#fddc48;stop-opacity:1;"
+         offset="0"
+         id="stop24060" />
+      <stop
+         style="stop-color:#f8cb43;stop-opacity:1;"
+         offset="0.75"
+         id="stop24081" />
+      <stop
+         style="stop-color:#eb9935;stop-opacity:1;"
+         offset="1"
+         id="stop24062" />
+    </linearGradient>
+    <radialGradient
+       inkscape:collect="always"
+       id="radialGradient24068"
+       cx="128"
+       cy="128"
+       fx="128"
+       fy="128"
+       r="128"
+       gradientUnits="userSpaceOnUse"
+       xlink:href="#linearGradient24064" />
+    <linearGradient
+       inkscape:collect="always"
+       xlink:href="#linearGradient30674"
+       id="linearGradient30686"
+       x1="128"
+       y1="256"
+       x2="128"
+       y2="0"
+       gradientUnits="userSpaceOnUse" />
+  </defs>
   <sodipodi:namedview
      pagecolor="#ffffff"
      bordercolor="#666666"
@@ -38,41 +86,49 @@
      guidetolerance="10"
      inkscape:pageopacity="0"
      inkscape:pageshadow="2"
-     inkscape:window-width="1409"
+     inkscape:window-width="1524"
      inkscape:window-height="840"
      id="namedview68"
      showgrid="false"
      inkscape:zoom="1"
-     inkscape:cx="116.92217"
-     inkscape:cy="94.940512"
-     inkscape:window-x="71"
+     inkscape:cx="121"
+     inkscape:cy="121"
+     inkscape:window-x="182"
      inkscape:window-y="25"
      inkscape:window-maximized="0"
      inkscape:current-layer="svg66"
-     inkscape:document-rotation="0" />
+     inkscape:document-rotation="0"
+     inkscape:showpageshadow="2"
+     inkscape:pagecheckerboard="false"
+     inkscape:deskcolor="#d1d1d1"
+     showguides="false" />
+  <circle
+     style="display:inline;fill:url(#radialGradient24068);fill-opacity:1;stroke:#022b3a;stroke-width:4;stroke-opacity:1"
+     id="background_circle"
+     cy="128"
+     cx="128"
+     r="126"
+     inkscape:label="Circle" />
   <path
-     style="fill:#e1712b;stroke-width:2.84267;fill-opacity:1"
-     d="M 83.460938,248 A 128,128 0 0 0 128,256 a 128,128 0 0 0 44.53906,-8 z"
-     id="path61" />
-  <path
-     style="fill:#eb9935;stroke-width:2.84267;fill-opacity:1"
-     d="m 48.099609,228 a 128,128 0 0 0 11.199219,8 H 196.69922 a 128,128 0 0 0 11.19922,-8 z"
-     id="path59" />
-  <path
-     style="fill:#f8cb43;stroke-width:2.84267;fill-opacity:1"
-     d="m 25.005859,204 a 128,128 0 0 0 10.044922,12 H 220.94922 a 128,128 0 0 0 10.04492,-12 z"
-     id="path57" />
-  <path
-     style="fill:#fddc48;stroke-width:2.84267;fill-opacity:1"
-     d="M 127.67578,0 A 128,128 0 0 0 0,128 128,128 0 0 0 17.148438,192 H 238.84961 A 128,128 0 0 0 256,128 128,128 0 0 0 128,0 128,128 0 0 0 127.67578,0 Z"
-     id="path43" />
+     id="hex_lines"
+     style="mix-blend-mode:normal;fill:none;stroke:#022b3a;stroke-width:4;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:none;stroke-opacity:1"
+     inkscape:label="Hex lines"
+     d="M 95.898926,207.4395 170.66083,245.7 m 4.2672,-141.47336 76.76406,40.08905 m -65.87671,-106.48055 1e-5,71.818 m 18.98516,-80.464729 -18.98517,8.646729 m 0,0 L 118.43445,2.5795751 M 44.497478,109.65315 79.826951,127.60764 M 3.0160384,133.86427 44.497478,109.65315 m 0,-1e-5 L 44.2788,34.96043 m 88.75949,172.47907 -17.88187,9.94063 -43.653253,22.31932 M 115.06483,18.116555 115.31471,3.179652"
+     sodipodi:nodetypes="ccccccccccccccccccccc" />
   <g
-     aria-label="A"
-     id="text22"
-     style="font-size:243.323px;line-height:1.25;font-family:'Cooper Hewitt';-inkscape-font-specification:'Cooper Hewitt';word-spacing:0px;fill:#e1712b;fill-opacity:1;stroke-width:6.08309">
+     inkscape:groupmode="layer"
+     id="letter_a"
+     inkscape:label="Letter A">
     <path
-       d="M 123.13354,51.25217 98.557919,123.76242 H 147.46584 Z M 49.16335,187.99969 v -9.97624 l 20.439132,-3.1632 51.827798,-150.860256 h 15.32935 l 51.8278,151.833546 18.24922,2.18991 v 9.97624 H 140.6528 v -9.97624 l 23.84565,-2.91987 -13.38276,-39.90498 H 94.664751 l -13.626088,39.66165 23.845657,3.1632 v 9.97624 z"
-       style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-family:'Source Serif Pro';-inkscape-font-specification:'Source Serif Pro';fill:#e1712b;fill-opacity:1;stroke-width:6.08309"
-       id="path25" />
+       d="M 114.90046,62.336904 91.004592,135.7519 H 138.22052 Z M 222,207.4395 h -88.96171 l 22.16845,-17.84992 -11.80398,-37.13936 H 85.534455 l -11.516079,35.98775 21.88055,19.00153 H 34 L 57.320061,188.43797 115.76417,17.999999 h 29.6539 l 59.01991,172.453281 z"
+       id="letter_a_fill"
+       sodipodi:nodetypes="ccccccccccccccccc"
+       style="fill:url(#linearGradient30686);fill-opacity:1;"
+       inkscape:label="Letter A" />
+    <path
+       id="letter_a_outline"
+       style="fill:none;stroke:#022b3a;stroke-width:6;stroke-linecap:round;stroke-linejoin:round;stroke-opacity:1"
+       inkscape:label="Letter A outline"
+       d="m 91.004592,135.7519 h 47.215928 l 5.18224,16.69832 H 85.534455 Z m 4.894334,71.6876 H 34 L 57.320061,188.43797 108.45866,39.304746 114.90046,62.336904 91.004592,135.7519 h 47.215928 l 5.18224,16.69832 H 85.534455 l -11.516079,35.98775 z m 126.101074,0 h -88.96171 l 22.16845,-17.84992 -11.80398,-37.13936 -5.18224,-16.69832 -23.32006,-73.414996 -6.4418,-23.032159 7.30551,-21.304746 h 29.6539 l 59.01991,172.453281 z" />
   </g>
 </svg>
