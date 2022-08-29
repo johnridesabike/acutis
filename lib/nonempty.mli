@@ -10,7 +10,7 @@
 
 (** Lists with at least one item. *)
 
-(** We can use the standard list syntax: [[1, 2, 3]] and [1 :: 2 :: 3 :: []]. *)
+(** We can use the standard list syntax: [[1; 2; 3]] and [1 :: 2 :: 3 :: []]. *)
 type 'a t = ( :: ) of 'a * 'a list
 
 val to_list : 'a t -> 'a list
