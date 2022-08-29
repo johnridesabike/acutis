@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.17.0
+- Change interface syntax for consistency with other blocks.
+- Fix bug with escaped quote characters in strings.
+
 ## 0.16.0
 
 - Added interfaces. These allow you to optionally declare each template's types.

@@ -206,7 +206,7 @@ node:
       let children = Child_block n in
       Component ($loc, x1, x2, p, Dict.add $loc "Children" children c)
     }
-  | INTERFACE; i = interface; BACKSLASH; INTERFACE;
+  | INTERFACE; i = interface; BACKSLASH;
     { Interface ($loc, i) }
 
 (** Interface rules *)

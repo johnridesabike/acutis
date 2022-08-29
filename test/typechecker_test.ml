@@ -451,7 +451,7 @@ let interface_basic () =
   {% interface
     a = ?int
     b = @"a" | @"b"
-  /interface %}
+  / %}
   {% match a with !1 %} {% with _ %} {% /match %}
   {% match b with @"a" %} {% with @"b" %} {% /match %}
   |}
@@ -463,14 +463,14 @@ let interface_basic () =
 
 let interface_special () =
   let src =
-    {|{% interface a = int /interface %}
+    {|{% interface a = int / %}
       {% match a with _ %} {% /match %}|}
   in
   check "Any type can interface with unknown."
     Ty.(make [ ("a", int ()) ])
     (get_types src);
   let src =
-    {|{% interface a = int b = string c = false | true d = float/interface %}
+    {|{% interface a = int b = string c = false | true d = float / %}
       {{ a }} {{ b }} {{ c }} {{ d }}|}
   in
   check "Any constant can interface with echoable."
@@ -479,14 +479,14 @@ let interface_special () =
         [ ("a", int ()); ("b", string ()); ("c", boolean ()); ("d", float ()) ])
     (get_types src);
   let src =
-    {|{% interface a = {a: int, b: string} /interface %}
+    {|{% interface a = {a: int, b: string} / %}
       {% match a with {a} %} {{ a }} {% /match %}|}
   in
   check "Interfaces may add record fields."
     Ty.(make [ ("a", record [ ("a", int ()); ("b", string ()) ]) ])
     (get_types src);
   let src =
-    {|{% interface a = @0 | @1 | @2 | ... /interface %}
+    {|{% interface a = @0 | @1 | @2 | ... / %}
       {% match a with @0 with @1 %} {% with _ %} {% /match %}|}
   in
   check "Interfaces may add cases to open enums."
@@ -495,7 +495,7 @@ let interface_special () =
   let src =
     {|{% interface
         a = {@tag: 0} | {@tag: 1, a: int} | {@tag: 2} | ...
-      /interface %}
+      / %}
       {% match a with {@tag: 0} with {@tag: 1} %} {% with _ %} {% /match %}|}
   in
   check "Interfaces may add cases to open unions."
@@ -536,7 +536,7 @@ let interface_print () =
     \       ]\n\
     \  }"
   in
-  let src = "{% interface " ^ interface ^ " /interface %}" in
+  let src = "{% interface " ^ interface ^ " / %}" in
   Alcotest.(
     check string
       "The typescheme pretty-printer prints valid (and pretty) syntax" interface

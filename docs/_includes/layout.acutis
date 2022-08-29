@@ -20,7 +20,7 @@
   title = string
 
   Children
-/interface %}
+/ %}
 {%~ match site with {url: siteUrl} ~%}
 <!DOCTYPE html>
 <html lang="en-US">

@@ -449,7 +449,7 @@ let interface () =
     e = {@tag: 0, a: _} | {@tag: 1, b: @"a" | @"b" | ...} | ...
     Children
     OptionalChildren = ?
-  /interface %}|}
+  / %}|}
   in
   let open Ast.Interface in
   check "Interfaces parse correctly."

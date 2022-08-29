@@ -232,7 +232,3 @@ Expected an integer.
 acutis: TEXT INTERFACE ID EQUALS FALSE PIPE WITH
 
 Expected a boolean.
-
-acutis: TEXT INTERFACE BACKSLASH WITH
-
-Expected `interface`.

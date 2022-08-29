@@ -109,7 +109,7 @@ explicitly declares its types.
 
 An interface contains a sequence of prop names and their respective types,
 following the format `prop = type`. Each interface begins with `{% interface`
-and ends with `/interface %}`.
+and ends with `/ %}`.
 
 Examples:
 
@@ -117,7 +117,7 @@ Examples:
 {% interface
   page = {title: string, url: string}
   visible = false | true
-/interface %}
+/ %}
 ```
 
 Interfaces are optional, and they exist mainly for the benefit of us humans who
@@ -130,7 +130,7 @@ template that is not listed in the interface, then it will raise an error.
 
 Interfaces may exist anywhere inside a template. Their location does not affect
 how the compiler parses them. You may even divide an interface across multiple
-`{% interface /interface %}` blocks.
+`{% interface / %}` blocks.
 
 ### Constants: int, float, and string
 
@@ -141,7 +141,7 @@ Examples:
   a = int
   b = float
   c = string
-/interface %}
+/ %}
 ```
 
 ```txt
@@ -160,7 +160,7 @@ Examples:
 ```acutis
 {% interface
   a = ?string
-/interface %}
+/ %}
 ```
 
 ```txt
@@ -182,7 +182,7 @@ Examples:
 ```acutis
 {% interface
   a = [string]
-/interface %}
+/ %}
 ```
 
 ```txt
@@ -204,7 +204,7 @@ Examples:
 ```acutis
 {% interface
   a = (int, string, ?float)
-/interface %}
+/ %}
 ```
 
 ```txt
@@ -225,7 +225,7 @@ Examples:
 ```acutis
 {% interface
   a = {a: int, b: string}
-/interface %}
+/ %}
 ```
 
 ```txt
@@ -245,7 +245,7 @@ Examples:
 ```acutis
 {% interface
   a = <int>
-/interface %}
+/ %}
 ```
 
 ```txt
@@ -267,7 +267,7 @@ Examples:
 {% interface
   a = @"abc" | @"def"
   b = @12 | @34 | ...
-/interface %}
+/ %}
 ```
 
 ```txt
@@ -289,7 +289,7 @@ Examples:
 ```acutis
 {% interface
   a = false | true
-/interface %}
+/ %}
 ```
 
 ```txt
@@ -312,7 +312,7 @@ Examples:
   a =
       {@shape: "circle", radius: int}
     | {@shape: "rectagle", height: int, width: int}
-/interface %}
+/ %}
 ```
 
 ```txt
@@ -333,7 +333,7 @@ Tag fields may only contain literal integer, string, or boolean values.
 ```acutis
 {% interface
   a = echoable
-/interface %}
+/ %}
 ```
 
 Acutis can echo any int, string, float, or enum value. If it can't determine
@@ -345,7 +345,7 @@ which of these types a particular echoed value is, then it uses a catch-all
 ```acutis
 {% interface
   a = _
-/interface %}
+/ %}
 ```
 
 Finally, if Acutis can't determine anything at all about a value's type, then it
@@ -798,5 +798,5 @@ Examples:
 {% interface
   Child
   NullableChild = ?
-/interface %}
+/ %}
 ```

@@ -934,29 +934,29 @@ let interface_parse () =
   let open Alcotest in
   check_raises "Invalid field names."
     (E "File <test>, 1:27-1:31\nParse error.\nThis is not a valid field name.\n")
-    (render "{% interface a = {a: int, with: string } /interface %}");
+    (render "{% interface a = {a: int, with: string } / %}");
   check_raises "Missing , or }."
     (E "File <test>, 1:26-1:27\nParse error.\nExpected `,` or `}`.\n")
-    (render "{% interface a = {a: int b: string } /interface %}");
+    (render "{% interface a = {a: int b: string } / %}");
 
   check_raises "Bad prop / component name (1)."
     (E
        "File <test>, 1:14-1:18\n\
         Parse error.\n\
         This is not a valid prop or component name.\n")
-    (render "{% interface with = int /interface %}");
+    (render "{% interface with = int / %}");
   check_raises "Bad prop / component name (2)."
     (E
        "File <test>, 1:22-1:26\n\
         Parse error.\n\
         This is not a valid prop or component name.\n")
-    (render "{% interface x = int with = int /interface %}");
+    (render "{% interface x = int with = int / %}");
   check_raises "Bad prop / component name (3)."
     (E
        "File <test>, 1:16-1:20\n\
         Parse error.\n\
         This is not a valid prop or component name.\n")
-    (render "{% interface X with = int /interface %}");
+    (render "{% interface X with = int / %}");
 
   check_raises "Bad child type."
     (E
@@ -965,121 +965,117 @@ let interface_parse () =
         This is not a valid child type. The only valid types are not nullable \
         (blank)\n\
         and nullable (`?`).\n")
-    (render "{% interface X = int /interface %}");
+    (render "{% interface X = int / %}");
 
   check_raises "Bad token after a variant (1)."
     (E
        "File <test>, 1:24-1:28\n\
         Parse error.\n\
         This is not a valid prop or component name. You possibly forgot a `|`.\n")
-    (render "{% interface x={@a: 1} with /interface %}");
+    (render "{% interface x={@a: 1} with / %}");
   check_raises "Bad token after a variant (2)."
     (E
        "File <test>, 1:21-1:25\n\
         Parse error.\n\
         This is not a valid prop or component name. You possibly forgot a `|`.\n")
-    (render "{% interface x=@\"a\" with /interface %}");
+    (render "{% interface x=@\"a\" with / %}");
   check_raises "Bad token after a variant (3)."
     (E
        "File <test>, 1:19-1:23\n\
         Parse error.\n\
         This is not a valid prop or component name. You possibly forgot a `|`.\n")
-    (render "{% interface x=@0 with /interface %}");
+    (render "{% interface x=@0 with / %}");
   check_raises "Bad token after a variant (4)."
     (E
        "File <test>, 1:22-1:26\n\
         Parse error.\n\
         This is not a valid prop or component name. You possibly forgot a `|`.\n")
-    (render "{% interface x=false with /interface %}");
+    (render "{% interface x=false with / %}");
 
   check_raises "Missing equals."
     (E "File <test>, 1:16-1:19\nParse error.\nExpected an `=`.\n")
-    (render "{% interface x int /interface %}");
+    (render "{% interface x int / %}");
 
   check_raises "Invalid type (1)."
     (E "File <test>, 1:16-1:20\nParse error.\nThis is not a valid type.\n")
-    (render "{% interface x=with /interface %}");
+    (render "{% interface x=with / %}");
   check_raises "Invalid type (2)."
     (E "File <test>, 1:17-1:21\nParse error.\nThis is not a valid type.\n")
-    (render "{% interface x=?with /interface %}");
+    (render "{% interface x=?with / %}");
   check_raises "Invalid type (3)."
     (E "File <test>, 1:17-1:21\nParse error.\nThis is not a valid type.\n")
-    (render "{% interface x=[with] /interface %}");
+    (render "{% interface x=[with] / %}");
   check_raises "Invalid type (4)."
     (E "File <test>, 1:17-1:21\nParse error.\nThis is not a valid type.\n")
-    (render "{% interface x={with: int} /interface %}");
+    (render "{% interface x={with: int} / %}");
   check_raises "Invalid type (5)."
     (E "File <test>, 1:18-1:22\nParse error.\nThis is not a valid type.\n")
-    (render "{% interface x={@with: 1} /interface %}");
+    (render "{% interface x={@with: 1} / %}");
   check_raises "Invalid type (6)."
     (E "File <test>, 1:20-1:24\nParse error.\nThis is not a valid type.\n")
-    (render "{% interface x={a: with} /interface %}");
+    (render "{% interface x={a: with} / %}");
   check_raises "Invalid type (7)."
     (E "File <test>, 1:17-1:21\nParse error.\nThis is not a valid type.\n")
-    (render "{% interface x=<with> /interface %}");
+    (render "{% interface x=<with> / %}");
   check_raises "Invalid type (8)."
     (E "File <test>, 1:17-1:21\nParse error.\nThis is not a valid type.\n")
-    (render "{% interface x=(with) /interface %}");
+    (render "{% interface x=(with) / %}");
   check_raises "Invalid type (9)."
     (E "File <test>, 1:22-1:26\nParse error.\nThis is not a valid type.\n")
-    (render "{% interface x=(int, with) /interface %}");
+    (render "{% interface x=(int, with) / %}");
 
   check_raises "Missing colon (1)."
     (E "File <test>, 1:19-1:20\nParse error.\nExpected a `:`.\n")
-    (render "{% interface x={a b} /interface %}");
+    (render "{% interface x={a b} / %}");
   check_raises "Missing colon (2)."
     (E "File <test>, 1:20-1:21\nParse error.\nExpected a `:`.\n")
-    (render "{% interface x={@a b} /interface %}");
+    (render "{% interface x={@a b} / %}");
 
   check_raises "Bad enum"
     (E
        "File <test>, 1:17-1:18\n\
         Parse error.\n\
         Expected either a string or an integer.\n")
-    (render "{% interface x=@a /interface %}");
+    (render "{% interface x=@a / %}");
 
   check_raises "Bad token after record pipe."
     (E
        "File <test>, 1:26-1:27\n\
         Parse error.\n\
         Expected a record type or an `...`.\n")
-    (render "{% interface x={@a: 1} | y /interface %}");
+    (render "{% interface x={@a: 1} | y / %}");
   check_raises "Bad token after string enum pipe."
     (E
        "File <test>, 1:23-1:24\n\
         Parse error.\n\
         Expected an enum value or an `...`.\n")
-    (render "{% interface x=@\"a\" | y /interface %}");
+    (render "{% interface x=@\"a\" | y / %}");
   check_raises "Bad token after int enum pipe."
     (E
        "File <test>, 1:21-1:22\n\
         Parse error.\n\
         Expected an enum value or an `...`.\n")
-    (render "{% interface x=@0 | y /interface %}");
+    (render "{% interface x=@0 | y / %}");
 
   check_raises "Missing >"
     (E "File <test>, 1:20-1:21\nParse error.\nExpected a `>`.\n")
-    (render "{% interface x=<int} /interface %}");
+    (render "{% interface x=<int} / %}");
   check_raises "Missing ]"
     (E "File <test>, 1:20-1:21\nParse error.\nExpected a `]`.\n")
-    (render "{% interface x=[int} /interface %}");
+    (render "{% interface x=[int} / %}");
   check_raises "Missing )"
     (E "File <test>, 1:20-1:21\nParse error.\nExpected a `)`.\n")
-    (render "{% interface x=(int} /interface %}");
+    (render "{% interface x=(int} / %}");
 
   check_raises "Bad string enum"
     (E "File <test>, 1:24-1:25\nParse error.\nExpected a string.\n")
-    (render "{% interface x=@\"a\" | @0 /interface %}");
+    (render "{% interface x=@\"a\" | @0 / %}");
   check_raises "Bad int enum"
     (E "File <test>, 1:22-1:25\nParse error.\nExpected an integer.\n")
-    (render "{% interface x=@0 | @\"a\" /interface %}");
+    (render "{% interface x=@0 | @\"a\" / %}");
   check_raises "Bad boolean"
     (E "File <test>, 1:24-1:25\nParse error.\nExpected a boolean.\n")
-    (render "{% interface x=false | @0 /interface %}");
-
-  check_raises "Bad /interface"
-    (E "File <test>, 1:21-1:26\nParse error.\nExpected `interface`.\n")
-    (render "{% interface x=int /match %}")
+    (render "{% interface x=false | @0 / %}")
 
 let interface_type_parse () =
   let open Alcotest in
@@ -1088,34 +1084,34 @@ let interface_type_parse () =
        "File <test>, 1:20-1:28\n\
         Type error.\n\
         Prop `x` is already defined in the interface.")
-    (render "{% interface x=int x=string /interface %}");
+    (render "{% interface x=int x=string / %}");
   check_raises "Non-existent type names."
     (E "File <test>, 1:16-1:20\nType error.\nThere is no type named \"lmao.\"")
-    (render "{% interface x=lmao /interface %}");
+    (render "{% interface x=lmao / %}");
   check_raises "Untagged unions (1)"
     (E
        "File <test>, 1:18-1:26\n\
         Type error.\n\
         Records cannot be unioned without a `@` tag field.")
-    (render "{% interface x = {a: int} | {b: string} /interface %}");
+    (render "{% interface x = {a: int} | {b: string} / %}");
   check_raises "Untagged unions (2)"
     (E
        "File <test>, 1:38-1:49\n\
         Type error.\n\
         Records cannot be unioned without a `@` tag field.")
-    (render "{% interface x = {@tag: 1, a: int} | {b: string} /interface %}");
+    (render "{% interface x = {@tag: 1, a: int} | {b: string} / %}");
   check_raises "Tagged unions with mismatched tag names"
     (E
        "File <test>, 1:30-1:42\n\
         Type error.\n\
         This record has tag field `@badtag` instead of `@tag`.")
-    (render "{% interface x = {@tag: 1} | {@badtag: 2} /interface %}");
+    (render "{% interface x = {@tag: 1} | {@badtag: 2} / %}");
   check_raises "Duplicate tags."
     (E
        "File <test>, 1:30-1:39\n\
         Type error.\n\
         Tag value `1` is already used in this union.")
-    (render "{% interface x = {@tag: 1} | {@tag: 1} /interface %}");
+    (render "{% interface x = {@tag: 1} | {@tag: 1} / %}");
   check_raises "Tag type error: int <> string."
     (E
        "File <test>, 1:37-1:40\n\
@@ -1123,7 +1119,7 @@ let interface_type_parse () =
         Type mismatch.\n\
         Expected: int\n\
         Received: string")
-    (render "{% interface x = {@tag: 1} | {@tag: \"a\"} /interface %}");
+    (render "{% interface x = {@tag: 1} | {@tag: \"a\"} / %}");
   check_raises "Tag type error: string <> bool."
     (E
        "File <test>, 1:39-1:43\n\
@@ -1131,7 +1127,7 @@ let interface_type_parse () =
         Type mismatch.\n\
         Expected: string\n\
         Received: true")
-    (render "{% interface x = {@tag: \"a\"} | {@tag: true} /interface %}");
+    (render "{% interface x = {@tag: \"a\"} | {@tag: true} / %}");
   check_raises "Tag type error: bool <> int."
     (E
        "File <test>, 1:41-1:44\n\
@@ -1139,7 +1135,7 @@ let interface_type_parse () =
         Type mismatch.\n\
         Expected: false | true\n\
         Received: int")
-    (render "{% interface x = {@tag: false} | {@tag: 100} /interface %}")
+    (render "{% interface x = {@tag: false} | {@tag: 100} / %}")
 
 let interface_typecheck () =
   let open Alcotest in
@@ -1151,16 +1147,15 @@ let interface_typecheck () =
         Prop name: `x`\n\
         Interface: int\n\
         Implementation: true")
-    (render
-       "{% interface x = int /interface %}{% match x with true %}{% /match %}");
+    (render "{% interface x = int / %}{% match x with true %}{% /match %}");
   check_raises "Interface is missing props."
     (E
-       "File <test>, 1:4-1:32\n\
+       "File <test>, 1:4-1:23\n\
         Type error.\n\
         This interface does not match the implementation.\n\
         Missing prop name: `y`\n\
         Of type: echoable")
-    (render "{% interface x = int /interface %} {{ y }}");
+    (render "{% interface x = int / %} {{ y }}");
   check_raises "Interface is missing record fields."
     (E
        "File <test>, 1:14-1:26\n\
@@ -1170,7 +1165,7 @@ let interface_typecheck () =
         Interface: {a: int}\n\
         Implementation: {a: echoable, b: echoable}")
     (render
-       "{% interface x = {a: int} /interface %} \n\
+       "{% interface x = {a: int} / %} \n\
         {% match x with {a, b} %} {{ a }} {{ b }} {% /match %}");
   check_raises "Interface is missing enum cases."
     (E
@@ -1181,7 +1176,7 @@ let interface_typecheck () =
         Interface: @0 | @1 | ...\n\
         Implementation: @0 | @1 | @2 | ...")
     (render
-       "{% interface x = @0 | @1 | ... /interface %} \n\
+       "{% interface x = @0 | @1 | ... / %} \n\
         {% match x with @0 %} {% with @1 %} {% with @2 %} {% with _ %}\n\
         {% /match %}");
   check_raises "Interface is missing union cases."
@@ -1194,7 +1189,7 @@ let interface_typecheck () =
         Implementation:\n\
        \    {@tag: 0} | {@tag: 1, a: echoable} | {@tag: 2, b: echoable} | ...")
     (render
-       "{% interface x = {@tag: 0} | {@tag: 1, a: int} | ... /interface %} \n\
+       "{% interface x = {@tag: 0} | {@tag: 1, a: int} | ... / %} \n\
         {% match x\n\
        \  with {@tag: 0} %}\n\
         {% with {@tag: 1, a} %} {{ a }}\n\
@@ -1210,7 +1205,7 @@ let interface_typecheck () =
         Interface: echoable\n\
         Implementation: int")
     (render
-       "{% interface x = echoable /interface %} \n\
+       "{% interface x = echoable / %} \n\
         {% match x with 0 %} {% with _ %} {% /match %}");
   check_raises "Unknown is not equal to any other type."
     (E
@@ -1220,7 +1215,7 @@ let interface_typecheck () =
         Prop name: `x`\n\
         Interface: _\n\
         Implementation: echoable")
-    (render "{% interface x = _ /interface %} {{ x }}");
+    (render "{% interface x = _ / %} {{ x }}");
   check_raises "Child <> nullable child"
     (E
        "File A, 1:14-1:17\n\
@@ -1231,21 +1226,16 @@ let interface_typecheck () =
         Implementation: child") (fun () ->
       ignore
       @@ Compile.Components.(
-           make
-             [ parse_string ~name:"A" "{% interface X=? /interface %} {{ X }}" ]));
+           make [ parse_string ~name:"A" "{% interface X=? / %} {{ X }}" ]));
   check_raises "Missing child"
     (E
-       "File A, 1:4-1:28\n\
+       "File A, 1:4-1:19\n\
         Type error.\n\
         This interface does not match the implementation.\n\
         Missing child name: `Y`") (fun () ->
       ignore
       @@ Compile.Components.(
-           make
-             [
-               parse_string ~name:"A"
-                 "{% interface X=? /interface %} {{ X ? Y }}";
-             ]))
+           make [ parse_string ~name:"A" "{% interface X=? / %} {{ X ? Y }}" ]))
 
 let () =
   let open Alcotest in

@@ -21,7 +21,7 @@
       url: string
     }
   title = string
-/interface %}
+/ %}
 {%~ match published
    with {@tag: false} %} {%
    with {@tag: true, page}
