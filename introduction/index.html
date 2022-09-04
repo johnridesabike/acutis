@@ -64,10 +64,9 @@ abilities in OCaml.</p>
 <h2 id="what-state-is-it-in%3F" tabindex="-1">What state is it in?</h2>
 <p>Acutis is young software. I’m currently the only person who uses it. Also, I
 haven’t developed much editor tooling for it yet. Use it if you don’t mind
-getting your getting your hands dirty.</p>
-<h2 id="installation%3A-opam" tabindex="-1">Installation: OPAM</h2>
-<p>The OCaml package manager, OPAM, can install Acutis by using the URL to its git
-repository.</p>
+getting your hands dirty.</p>
+<h2 id="installation%3A-ocaml" tabindex="-1">Installation: OCaml</h2>
+<p>The OCaml package manager, OPAM, can install Acutis through the git repository.</p>
 <pre class="language-shell"><code class="language-shell">opam pin https://github.com/johnridesabike/acutis.git</code></pre>
 <p>This command will install three packages:</p>
 <dl>
@@ -85,8 +84,21 @@ repository.</p>
   A JavaScript-compatible implementation for compiling with js_of_ocaml.
 </dl>
 <h2 id="installation%3A-javascript" tabindex="-1">Installation: JavaScript</h2>
-<p>The JavaScript API is available through npm.</p>
+<p>The Acutis JavaScript package is available through npm.</p>
 <pre class="language-shell"><code class="language-shell"><span class="token function">npm</span> <span class="token function">install</span> acutis-lang</code></pre>
+<p><a href="https://github.com/johnridesabike/acutis/blob/master/js/acutis_js.ml">You can view the JavaScript API here</a>. (It’s in OCaml syntax. I’m sorry.)</p>
+<h3 id="using-with-eleventy" tabindex="-1">Using with Eleventy</h3>
+<p><a href="https://www.11ty.dev/">Eleventy</a> is a static site generator in JavaScript. Acutis includes an Eleventy
+template language plugin.</p>
+<p>After installing the npm package, you can import the compiler and the plugin
+into your JavaScript project.</p>
+<pre class="language-javascript"><code class="language-javascript"><span class="token keyword">const</span> acutis <span class="token operator">=</span> <span class="token function">require</span><span class="token punctuation">(</span><span class="token string">"acutis-lang"</span><span class="token punctuation">)</span><span class="token punctuation">;</span> <span class="token comment">// The compiler and runtime.</span><br><span class="token keyword">const</span> acutisEleventy <span class="token operator">=</span> <span class="token function">require</span><span class="token punctuation">(</span><span class="token string">"acutis-lang/eleventy"</span><span class="token punctuation">)</span><span class="token punctuation">;</span> <span class="token comment">// The plugin.</span></code></pre>
+<p>Inside your Eleventy configuration, you can enable the plugin with Eleventy’s
+<code>addPlugin</code> function.</p>
+<pre class="language-javascript"><code class="language-javascript">eleventyConfig<span class="token punctuation">.</span><span class="token function">addPlugin</span><span class="token punctuation">(</span>acutisEleventy<span class="token punctuation">)</span><span class="token punctuation">;</span></code></pre>
+<p>Beware: loading Acutis in Node.js has the side-effect of modifying how all
+uncaught exceptions are handled. This should not affect well-behaved code, but
+may make debugging errors more complicated.</p>
 <h2 id="editor-plugins" tabindex="-1">Editor plugins</h2>
 <p>These offer basic syntax highlighting and indentation features.</p>
 <ul>
@@ -98,6 +110,7 @@ repository.</p>
 <li>This documentation uses Acutis with <a href="https://www.11ty.dev/">Eleventy</a>. <a href="https://github.com/johnridesabike/acutis/tree/master/docs">Browse the source here</a>.</li>
 <li><a href="https://github.com/johnridesabike/acutis/blob/master/bin/cli.ml">The Acutis CLI</a>.</li>
 <li><a href="https://github.com/johnridesabike/acutis/blob/master/js/acutis_js.ml">The JavaScript interface</a>.</li>
+<li><a href="https://github.com/johnridesabike/acutis/blob/master/eleventy.js">The Eleventy plugin source</a>.</li>
 </ul>
 <h2 id="acutis-command-line-interface-(cli)" tabindex="-1">Acutis command line interface (CLI)</h2>
 <p>If you install Acutis through OPAM, then the <code>acutis_json</code> package comes with a
