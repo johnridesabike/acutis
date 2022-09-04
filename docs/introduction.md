@@ -35,11 +35,11 @@ abilities in OCaml.
 
 Acutis is young software. I'm currently the only person who uses it. Also, I
 haven't developed much editor tooling for it yet. Use it if you don't mind
-getting your getting your hands dirty.
+getting your hands dirty.
 
 ## Installation: OCaml
 
-The OCaml package manager, OPAM, can install Acutis through its git repository.
+The OCaml package manager, OPAM, can install Acutis through the git repository.
 
 ```shell
 opam pin https://github.com/johnridesabike/acutis.git
