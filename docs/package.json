@@ -13,10 +13,9 @@
     "deploy": "gh-pages -d _site"
   },
   "devDependencies": {
-    "@11ty/eleventy": "^1.0.1",
+    "@11ty/eleventy": "^1.0.2",
     "@11ty/eleventy-plugin-syntaxhighlight": "^4.1.0",
     "cssnano": "^5.1.12",
-    "fast-glob": "^3.2.11",
     "gh-pages": "^4.0.0",
     "markdown-it": "^13.0.1",
     "markdown-it-anchor": "^8.6.4",

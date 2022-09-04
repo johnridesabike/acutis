@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.18.0
+
+- Add Eleventy plugin.
+
 ## 0.17.0
 - Change interface syntax for consistency with other blocks.
 - Fix bug with escaped quote characters in strings.

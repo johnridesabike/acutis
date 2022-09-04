@@ -6,11 +6,11 @@
   file, You can obtain one at http://mozilla.org/MPL/2.0/.
 */
 
-const { Compile, Typescheme, TypeschemeChildren } = require("../../");
+const { Component, Typescheme, TypeschemeChildren } = require("../..");
 const site = require("../_data/site");
 
 module.exports = [
-  Compile.fromFunAsync(
+  Component.funAsync(
     "Log",
     Typescheme.make([["val", Typescheme.unknown()]]),
     TypeschemeChildren.make([]),
@@ -19,7 +19,7 @@ module.exports = [
       return Promise.resolve("");
     }
   ),
-  Compile.fromFunAsync(
+  Component.funAsync(
     "Debugger",
     Typescheme.make([["val", Typescheme.unknown()]]),
     TypeschemeChildren.make([]),
@@ -28,7 +28,7 @@ module.exports = [
       return Promise.resolve("");
     }
   ),
-  Compile.fromFunAsync(
+  Component.funAsync(
     "Footer",
     Typescheme.make([
       ["year", Typescheme.nullable(Typescheme.string())],
@@ -58,7 +58,7 @@ module.exports = [
         </footer>`);
     }
   ),
-  Compile.fromFunAsync(
+  Component.funAsync(
     "Link",
     Typescheme.make([
       ["path", Typescheme.string()],

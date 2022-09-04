@@ -37,10 +37,9 @@ Acutis is young software. I'm currently the only person who uses it. Also, I
 haven't developed much editor tooling for it yet. Use it if you don't mind
 getting your getting your hands dirty.
 
-## Installation: OPAM
+## Installation: OCaml
 
-The OCaml package manager, OPAM, can install Acutis by using the URL to its git
-repository.
+The OCaml package manager, OPAM, can install Acutis through its git repository.
 
 ```shell
 opam pin https://github.com/johnridesabike/acutis.git
@@ -67,11 +66,37 @@ This command will install three packages:
 
 ## Installation: JavaScript
 
-The JavaScript API is available through npm.
+The Acutis JavaScript package is available through npm.
 
 ```shell
 npm install acutis-lang
 ```
+
+[You can view the JavaScript API here][3]. (It's in OCaml syntax. I'm sorry.)
+
+### Using with Eleventy
+
+[Eleventy] is a static site generator in JavaScript. Acutis includes an Eleventy
+template language plugin.
+
+After installing the npm package, you can import the compiler and the plugin
+into your JavaScript project.
+
+```javascript
+const acutis = require("acutis-lang"); // The compiler and runtime.
+const acutisEleventy = require("acutis-lang/eleventy"); // The plugin.
+```
+
+Inside your Eleventy configuration, you can enable the plugin with Eleventy's
+`addPlugin` function.
+
+```javascript
+eleventyConfig.addPlugin(acutisEleventy);
+```
+
+Beware: loading Acutis in Node.js has the side-effect of modifying how all
+uncaught exceptions are handled. This should not affect well-behaved code, but
+may make debugging errors more complicated.
 
 ## Editor plugins
 
@@ -85,10 +110,12 @@ These offer basic syntax highlighting and indentation features.
 - This documentation uses Acutis with [Eleventy]. [Browse the source here][1].
 - [The Acutis CLI][2].
 - [The JavaScript interface][3].
+- [The Eleventy plugin source][4].
 
 [1]: https://github.com/johnridesabike/acutis/tree/master/docs
 [2]: https://github.com/johnridesabike/acutis/blob/master/bin/cli.ml
 [3]: https://github.com/johnridesabike/acutis/blob/master/js/acutis_js.ml
+[4]: https://github.com/johnridesabike/acutis/blob/master/eleventy.js
 [eleventy]: https://www.11ty.dev/
 
 ## Acutis command line interface (CLI)

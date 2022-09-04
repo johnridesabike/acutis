@@ -7,7 +7,9 @@
     "template",
     "language",
     "parser",
-    "interpreter"
+    "interpreter",
+    "eleventy-plugin",
+    "eleventy"
   ],
   "homepage": "https://johnridesa.bike/acutis/",
   "bugs": {
@@ -23,5 +25,7 @@
     "url": "https://johnridesa.bike/"
   },
   "main": "_build/default/js/acutis_js.bc.js",
-  "files": []
+  "files": [
+    "eleventy.js"
+  ]
 }

@@ -57,14 +57,15 @@ window.onload = function playground(_event) {
 `;
 
   var resultText = document.getElementById("result");
+  var components = globalThis.Compile.components([]);
 
   function render(_event) {
     let result;
     try {
       var props = JSON.parse(propsText.value);
-      var template = globalThis.Compile.make(
+      var template = globalThis.Compile.string(
         "<playground>",
-        globalThis.Compile.components([]),
+        components,
         sourceText.value
       );
       result = globalThis.Render.sync(template, props);

@@ -10,17 +10,61 @@ const syntaxHighlight = require("@11ty/eleventy-plugin-syntaxhighlight");
 const MarkdownIt = require("markdown-it");
 const markdownItAnchor = require("markdown-it-anchor");
 const markdownItToc = require("markdown-it-table-of-contents");
-
-const acutis = require("./_11ty/eleventyAcutis");
-const acutisSyntax = require("./_11ty/syntax");
+const acutisEleventy = require("../eleventy");
 const acutisComponents = require("./_includes/eleventyComponents");
 const { pathPrefix } = require("./_data/site");
+
+function acutisSyntax(Prism) {
+  // Make sure markup-templating is loaded.
+  require("prismjs/components/prism-markup-templating");
+
+  Prism.languages.acutis = {
+    comment: /^{\*[\s\S]*?\*}$/,
+    tag: {
+      pattern: /(^{%\s*)([a-z_])([a-zA-Z0-9_]+)/,
+      lookbehind: true,
+      alias: "keyword",
+    },
+    delimiter: {
+      pattern: /^{[{%]|[}%]}$/,
+      alias: "punctuation",
+    },
+    string: {
+      pattern: /(")(?:\\.|(?!\1)[^\\\r\n])*\1/,
+      greedy: true,
+    },
+    component: {
+      pattern: /\b([A-Z])([a-zA-Z0-9_]+)?/,
+      alias: "function",
+    },
+    tag: {
+      pattern: /(@)([a-z_])([a-zA-Z0-9_]+)?/,
+      alias: "operator",
+    },
+    keyword: /(\/{0,1})\b(?:match|map|map_dict|with|interface)\b/,
+    operator: /&|\?|#|~|!|@/,
+    number: /(-|\+)?\s*[0-9]+(\.[0-9]+)?(e|E)?/,
+    boolean: /\b(false|true|null)\b/,
+    variable: /([a-z_])([a-zA-Z0-9_]+)?/,
+    punctuation: /[{}[\],.:/=(\)<>\|]/,
+  };
+
+  var pattern = /{{[\s\S]*?}}|{%[\s\S]*?%}|{\*[\s\S]*?\*}/g;
+  var markupTemplating = Prism.languages["markup-templating"];
+
+  Prism.hooks.add("before-tokenize", (env) =>
+    markupTemplating.buildPlaceholders(env, "acutis", pattern)
+  );
+  Prism.hooks.add("after-tokenize", (env) =>
+    markupTemplating.tokenizePlaceholders(env, "acutis")
+  );
+}
 
 module.exports = (eleventyConfig) => {
   eleventyConfig.addPlugin(syntaxHighlight, {
     init: ({ Prism }) => acutisSyntax(Prism),
   });
-  eleventyConfig.addPlugin(acutis, { components: acutisComponents });
+  eleventyConfig.addPlugin(acutisEleventy, { components: acutisComponents });
   eleventyConfig.addPassthroughCopy("playground.js");
   eleventyConfig.addPassthroughCopy({ "../_build/default/_doc/_html": "api" });
   eleventyConfig.addPassthroughCopy({

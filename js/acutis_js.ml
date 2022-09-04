@@ -31,13 +31,17 @@ let map_to_js f m =
   Map.String.to_seq m |> Seq.map f |> Array.of_seq |> Js.Unsafe.obj
 
 let () =
-  Js.export "Compile"
+  Js.export "Component"
     (object%js
-       method fromString name src =
+       method string name src =
          Compile.Components.parse_string ~name:(Js.to_string name)
            (Js.to_string src)
 
-       method fromFunAsync name ty children fn =
+       method uint8Array name src =
+         Compile.Components.parse_string ~name:(Js.to_string name)
+           (Typed_array.String.of_uint8Array src)
+
+       method funAsync name ty children fn =
          let fn : RenderAsync.component =
           fun data children ->
            Js.Unsafe.fun_call fn [| data; map_to_js child_async children |]
@@ -45,20 +49,28 @@ let () =
          in
          Compile.Components.from_fun ~name:(Js.to_string name) ty children fn
 
-       method fromFun name ty children fn =
+       method funSync name ty children fn =
          let fn : RenderSync.component =
           fun data children ->
            Js.Unsafe.fun_call fn [| data; map_to_js child_sync children |]
            |> Js.to_string
          in
          Compile.Components.from_fun ~name:(Js.to_string name) ty children fn
+    end)
 
+let () =
+  Js.export "Compile"
+    (object%js
        method components a =
          Js.to_array a |> Array.to_list |> Compile.Components.make
 
-       method make fname components src =
+       method string fname components src =
          Compile.from_string ~name:(Js.to_string fname) components
            (Js.to_string src)
+
+       method uint8Array fname components src =
+         Compile.from_string ~name:(Js.to_string fname) components
+           (Typed_array.String.of_uint8Array src)
     end)
 
 let () =

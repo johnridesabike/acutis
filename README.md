@@ -28,29 +28,49 @@ Acutis is an experimental, personal project and is not stable.
 {% /map %}
 ```
 
-## Getting started
+[Read the documentation here](https://johnridesa.bike/acutis/).
 
-Acutis is written in OCaml. You will need to use the OCaml package manager,
-OPAM.
+## Usage in OCaml
+
+The Acutis source is written in OCaml. You can install it with the OCaml package
+manager, OPAM.
 
 ```shell
 opam pin https://github.com/johnridesabike/acutis.git
 ```
 
-[Read the documentation here](https://johnridesa.bike/acutis/).
+## JavaScript & Eleventy plugin
+
+You can use npm to install a JavaScript build of Acutis. This includes an
+[Eleventy] plugin.
+
+[eleventy]: https://www.11ty.dev/
+
+Install the JavaScript package in your project:
+
+```shell
+npm install acutis-lang
+```
+
+Import the package in your Eleventy-powered site:
+
+```javascript
+const acutis = require("acutis-lang");
+const acutisEleventy = require("acutis-lang/eleventy");
+```
 
 ## Development
 
-Once you clone this repository, create a development OPAM switch:
+Clone this repository with git. Then create a development OPAM switch:
 
 ```shell
 make dev
 ```
 
-Run the compiler in watch mode:
+Compile the code:
 
 ```shell
-make watch
+make
 ```
 
 Run tests:
