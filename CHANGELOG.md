@@ -3,8 +3,10 @@
 ## 0.18.0
 
 - Add Eleventy plugin.
+- Distinguish filenames from component names when compiling components.
 
 ## 0.17.0
+
 - Change interface syntax for consistency with other blocks.
 - Fix bug with escaped quote characters in strings.
 

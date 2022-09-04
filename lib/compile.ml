@@ -8,9 +8,10 @@
 (*                                                                        *)
 (**************************************************************************)
 
-let parse ~name lexbuf =
+let parse ~fname lexbuf =
   let state = Lexer.make_state () in
-  lexbuf.Lexing.lex_curr_p <- { lexbuf.Lexing.lex_curr_p with pos_fname = name };
+  lexbuf.Lexing.lex_curr_p <-
+    { lexbuf.Lexing.lex_curr_p with pos_fname = fname };
   try Parser.acutis (Lexer.acutis state) lexbuf with
   | Lexer.Error -> Error.lex_error lexbuf
   | Parser.Error i -> Error.parse_error i lexbuf
@@ -100,10 +101,11 @@ module Components = struct
 
   type 'a source = (Ast.t, 'a) T.source
 
-  let parse_string ~name src = T.Src (name, parse ~name (Lexing.from_string src))
+  let parse_string ~fname ~name src =
+    T.Src (name, parse ~fname (Lexing.from_string src))
 
-  let parse_channel ~name src =
-    T.Src (name, parse ~name (Lexing.from_channel src))
+  let parse_channel ~fname ~name src =
+    T.Src (name, parse ~fname (Lexing.from_channel src))
 
   let from_fun ~name props children f = T.Fun (name, props, children, f)
 
@@ -165,15 +167,15 @@ let link_src graph = function
   | Typechecker.Src (_, nodes) -> Src (link_nodes graph nodes)
   | Fun (_, props, _, f) -> Fun (props, f)
 
-let make ~name components src =
-  let nodes = parse ~name src in
-  let ast = Typechecker.make ~root:name components.Components.typed nodes in
-  let g = Dagmap.make ~f:link_src ~root:name components.optimized in
+let make ~fname components src =
+  let nodes = parse ~fname src in
+  let ast = Typechecker.make ~root:fname components.Components.typed nodes in
+  let g = Dagmap.make ~f:link_src ~root:fname components.optimized in
   let nodes = make_nodes ast |> link_nodes g in
   { prop_types = ast.prop_types; nodes }
 
-let from_string ~name components src =
-  make ~name components (Lexing.from_string src)
+let from_string ~fname components src =
+  make ~fname components (Lexing.from_string src)
 
-let from_channel ~name components src =
-  make ~name components (Lexing.from_channel src)
+let from_channel ~fname components src =
+  make ~fname components (Lexing.from_channel src)

@@ -14,7 +14,7 @@ let get_tree_aux acc = function
 let nodes x = x.Compile.nodes
 
 let get_tree src =
-  Compile.(from_string ~name:"" Components.empty src)
+  Compile.(from_string ~fname:"<test>" Components.empty src)
   |> nodes
   |> List.fold_left get_tree_aux None
   |> Option.get

@@ -8,7 +8,9 @@ module RenderLwt = Render.Make (Lwt) (Acutis_json.Data)
 
 let render ?(components = []) src json =
   let json = Yojson.Basic.from_string json in
-  let temp = Compile.(from_string ~name:"" (Components.make components) src) in
+  let temp =
+    Compile.(from_string ~fname:"<test>" (Components.make components) src)
+  in
   RenderLwt.make temp json
 
 let basic _ () =

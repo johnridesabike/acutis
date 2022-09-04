@@ -20,8 +20,8 @@ let print_pos ppf pos =
   Format.fprintf ppf "%d:%d" pos.Lexing.pos_lnum (column pos)
 
 let pp ~kind (start, pos) mess =
-  F.asprintf "@[<v>@[File@ %s,@ %a-%a@]@,@[%s.@]@,@[%t@]@]" pos.Lexing.pos_fname
-    print_pos start print_pos pos kind mess
+  F.asprintf "@[<v>@[File \"%s\", %a-%a@]@,@[%s.@]@,@[%t@]@]"
+    pos.Lexing.pos_fname print_pos start print_pos pos kind mess
 
 let pp_lexbuf ~kind mess lexbuf =
   let start = lexbuf.Lexing.lex_start_p in

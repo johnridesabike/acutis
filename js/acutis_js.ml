@@ -30,15 +30,20 @@ let child_sync (k, v) = (k, Js.Unsafe.coerce (Js.string v))
 let map_to_js f m =
   Map.String.to_seq m |> Seq.map f |> Array.of_seq |> Js.Unsafe.obj
 
+let fname_to_compname s =
+  Filename.basename s |> Filename.remove_extension |> String.capitalize_ascii
+
 let () =
   Js.export "Component"
     (object%js
-       method string name src =
-         Compile.Components.parse_string ~name:(Js.to_string name)
+       method string fname src =
+         let fname = Js.to_string fname in
+         Compile.Components.parse_string ~fname ~name:(fname_to_compname fname)
            (Js.to_string src)
 
-       method uint8Array name src =
-         Compile.Components.parse_string ~name:(Js.to_string name)
+       method uint8Array fname src =
+         let fname = Js.to_string fname in
+         Compile.Components.parse_string ~fname ~name:(fname_to_compname fname)
            (Typed_array.String.of_uint8Array src)
 
        method funAsync name ty children fn =
@@ -65,11 +70,11 @@ let () =
          Js.to_array a |> Array.to_list |> Compile.Components.make
 
        method string fname components src =
-         Compile.from_string ~name:(Js.to_string fname) components
+         Compile.from_string ~fname:(Js.to_string fname) components
            (Js.to_string src)
 
        method uint8Array fname components src =
-         Compile.from_string ~name:(Js.to_string fname) components
+         Compile.from_string ~fname:(Js.to_string fname) components
            (Typed_array.String.of_uint8Array src)
     end)
 
@@ -171,10 +176,6 @@ let () =
 let () =
   Js.export "Utils"
     (object%js
-       method filenameToComponent fname =
-         Js.to_string fname |> Filename.basename |> Filename.remove_extension
-         |> String.capitalize_ascii |> Js.string
-
        method isError e =
          match e with Error.Acutis_error _ -> true | _ -> false
 

@@ -11,7 +11,7 @@
 (** Orchestrate the {!Lexer}, {!Parser}, {!Typechecker}, and {!Matching}
     to produce the final template. *)
 
-val parse : name:string -> Lexing.lexbuf -> Ast.t
+val parse : fname:string -> Lexing.lexbuf -> Ast.t
 (** @raise Error.Acutis_error *)
 
 type 'a node =
@@ -37,12 +37,16 @@ type 'a t = {
 module Components : sig
   type 'a source
 
-  val parse_string : name:string -> string -> _ source
+  val parse_string : fname:string -> name:string -> string -> _ source
   (** Parses the input but doesn't type-check yet.
+      @param fname The filename (for error messages).
+      @param name The component name when called inside a template.
       @raise Error.Acutis_error *)
 
-  val parse_channel : name:string -> in_channel -> _ source
+  val parse_channel : fname:string -> name:string -> in_channel -> _ source
   (** Parses the input but doesn't type-check yet.
+      @param fname The filename (for error messages).
+      @param name The component name when called inside a template.
       @raise Error.Acutis_error *)
 
   val from_fun :
@@ -61,6 +65,6 @@ module Components : sig
       @raise Error.Acutis_error *)
 end
 
-val make : name:string -> 'a Components.t -> Lexing.lexbuf -> 'a t
-val from_string : name:string -> 'a Components.t -> string -> 'a t
-val from_channel : name:string -> 'a Components.t -> in_channel -> 'a t
+val make : fname:string -> 'a Components.t -> Lexing.lexbuf -> 'a t
+val from_string : fname:string -> 'a Components.t -> string -> 'a t
+val from_channel : fname:string -> 'a Components.t -> in_channel -> 'a t

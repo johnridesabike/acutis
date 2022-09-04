@@ -23,10 +23,9 @@ function getComponents(result, filePath) {
           )
         );
     } else if (filePath.toLowerCase().endsWith(".acutis")) {
-      return fs.readFile(filePath).then((src) => {
-        const name = Utils.filenameToComponent(filePath);
-        result.push(Component.uint8Array(name, src));
-      });
+      return fs
+        .readFile(filePath)
+        .then((src) => result.push(Component.uint8Array(filePath, src)));
     } else {
       return;
     }

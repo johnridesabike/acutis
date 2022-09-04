@@ -12,7 +12,7 @@ let check =
          (Map.String.equal Typescheme.equal)))
 
 let get_types src =
-  (parse ~name:"<test>" src |> Typechecker.make ~root:"<test>" Map.String.empty)
+  (parse ~fname:"<test>" src |> Typechecker.make ~root:"<test>" Map.String.empty)
     .prop_types
 
 let echoes () =
@@ -433,13 +433,13 @@ let pathologic () =
 
 let components () =
   let a =
-    Compile.Components.parse_string ~name:"A"
+    Compile.Components.parse_string ~fname:"a.acutis" ~name:"A"
       {|{% map a with x %} {{ x }} {% /map %}
        {% map b with x %} {{ x }} {% /map %}|}
   in
   let src = {|{% A a=[1, a] b=["b", b] /%}|} in
   let r =
-    Compile.from_string ~name:"<test>" (Compile.Components.make [ a ]) src
+    Compile.from_string ~fname:"<test>" (Compile.Components.make [ a ]) src
   in
   check "Components infer correctly."
     Ty.(make [ ("a", int ()); ("b", string ()) ])

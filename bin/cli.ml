@@ -44,14 +44,14 @@ let args =
       ("--version", Unit version, doc_version);
     ]
 
-let fname_to_component s =
+let fname_to_compname s =
   Filename.basename s |> Filename.remove_extension |> String.capitalize_ascii
 
 let () =
   try
     Arg.parse args set_templates usage_msg;
 
-    let name = Queue.take templates in
+    let fname = Queue.take templates in
 
     let data =
       match !arg_data with
@@ -64,16 +64,17 @@ let () =
 
     let components =
       Queue.fold
-        (fun acc name ->
-          In_channel.with_open_text name
-            (Compile.Components.parse_channel ~name:(fname_to_component name))
+        (fun acc fname ->
+          In_channel.with_open_text fname
+            (Compile.Components.parse_channel ~fname
+               ~name:(fname_to_compname fname))
           :: acc)
         [] templates
       |> Compile.Components.make
     in
 
     let template =
-      In_channel.with_open_text name (Compile.from_channel ~name components)
+      In_channel.with_open_text fname (Compile.from_channel ~fname components)
     in
 
     let result = Render.make template data in
