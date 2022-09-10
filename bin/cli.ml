@@ -86,14 +86,14 @@ let () =
           with_open_text fname (fun chan -> output_string chan result))
   with
   | Error.Acutis_error e ->
-      Format.eprintf "@[<v>@[Compiler error:@]@,%s@,@]" e;
+      Out_channel.output_string stderr e;
       exit 1
   | Yojson.Json_error s ->
-      Format.eprintf "@[<v>@[Error decoding JSON input:@]@,%s@,@]" s;
+      Format.eprintf "@[<v>Error decoding JSON input:@;%s@;@]" s;
       exit 1
   | Queue.Empty ->
-      Format.eprintf "Error: You need to provide a template.@,";
+      Format.eprintf "@[<v>Compile error.@;You need to provide a template.@;@]";
       exit 1
   | Sys_error s ->
-      Format.eprintf "@[<v>@[System error:@]@,%s@,@]" s;
+      Format.eprintf "@[<v>System error:@;%s@;@]" s;
       exit 1

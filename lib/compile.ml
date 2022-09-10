@@ -94,6 +94,7 @@ type 'a template =
 type 'a t = {
   prop_types : Typescheme.t Map.String.t;
   nodes : 'a template nodes;
+  name : string;
 }
 
 module Components = struct
@@ -172,7 +173,7 @@ let make ~fname components src =
   let ast = Typechecker.make ~root:fname components.Components.typed nodes in
   let g = Dagmap.make ~f:link_src ~root:fname components.optimized in
   let nodes = make_nodes ast |> link_nodes g in
-  { prop_types = ast.prop_types; nodes }
+  { prop_types = ast.prop_types; nodes; name = fname }
 
 let from_string ~fname components src =
   make ~fname components (Lexing.from_string src)

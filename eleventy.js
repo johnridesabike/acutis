@@ -34,7 +34,10 @@ function getComponents(result, filePath) {
 
 function acutisErrorToJsError(e) {
   if (Utils.isError(e)) {
-    throw Error(Utils.getError(e));
+    console.error(Utils.getError(e) + "\n");
+    throw Error(
+      "Error compiling an Acutis file. See the full error message above."
+    );
   } else {
     throw e;
   }

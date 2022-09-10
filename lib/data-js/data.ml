@@ -11,6 +11,7 @@
 open Acutis
 open Js_of_ocaml
 module Ty = Typescheme
+module EPath = Error.DecodePath
 
 type 'a map = 'a Stdlib.Map.Make(String).t
 type t = Js.Unsafe.any
@@ -81,25 +82,25 @@ let classify j =
             Js_array (Js.Unsafe.coerce j |> Js.to_array)
           else Js_object (Table.unsafe_of_js j))
 
-let boolean ty stack cases j =
+let boolean ty path cases j =
   match classify j with
   | Js_bool b ->
       let i = match b with false -> 0 | true -> 1 in
       if Set.Int.mem i cases then Data.const (`Int i) `Extra_bool
-      else Error.bad_enum pp ty stack j
-  | _ -> decode_error ty stack j
+      else Error.bad_enum pp ty path j
+  | _ -> decode_error ty path j
 
-let string ty stack cases j =
+let string ty path cases j =
   match classify j with
   | Js_string s -> (
       match cases with
       | None -> Data.const (`String s) `Extra_none
       | Some cases ->
           if Set.String.mem s cases then Data.const (`String s) `Extra_none
-          else Error.bad_enum pp ty stack j)
-  | _ -> decode_error ty stack j
+          else Error.bad_enum pp ty path j)
+  | _ -> decode_error ty path j
 
-let int ty stack cases j =
+let int ty path cases j =
   match classify j with
   | Js_float f -> (
       let i = int_of_float f in
@@ -107,75 +108,75 @@ let int ty stack cases j =
       | None -> Data.const (`Int i) `Extra_none
       | Some cases ->
           if Set.Int.mem i cases then Data.const (`Int i) `Extra_none
-          else Error.bad_enum pp ty stack j)
-  | _ -> decode_error ty stack j
+          else Error.bad_enum pp ty path j)
+  | _ -> decode_error ty path j
 
-let float stack j =
+let float path j =
   match classify j with
   | Js_float f -> Data.const (`Float f) `Extra_none
-  | _ -> decode_error (Ty.float ()) stack j
+  | _ -> decode_error (Ty.float ()) path j
 
-let echo stack j =
+let echo path j =
   match classify j with
   | Js_float f -> Data.const (`Float f) `Extra_none
   | Js_string s -> Data.const (`String s) `Extra_none
   | Js_bool b ->
       let i = match b with false -> 0 | true -> 1 in
       Data.const (`Int i) `Extra_bool
-  | _ -> decode_error (Ty.echo ()) stack j
+  | _ -> decode_error (Ty.echo ()) path j
 
-let rec nullable stack ty j =
+let rec nullable path ty j =
   match classify j with
   | Js_null -> Data.null
-  | _ -> Data.some (make (Error.DecodePath.Nullable :: stack) ty j)
+  | _ -> Data.some (make (EPath.nullable path) ty j)
 
-and list stack ty j =
+and list path ty j =
   match classify j with
   | Js_array a ->
       let len = Array.length a in
       let l = ref Data.list_empty in
       for i = 0 to len - 1 do
         let x = Array.unsafe_get a i in
-        l := Data.list_cons (make (Index i :: stack) ty x) !l
+        l := Data.list_cons (make (EPath.index i path) ty x) !l
       done;
       Data.list_rev !l
-  | _ -> decode_error (Ty.list ty) stack j
+  | _ -> decode_error (Ty.list ty) path j
 
-and dict stack ty j =
+and dict path ty j =
   match classify j with
   | Js_object o ->
       Table.fold
-        (fun k v map -> Map.String.add k (make (Key k :: stack) ty v) map)
+        (fun k v map -> Map.String.add k (make (EPath.key k path) ty v) map)
         o Map.String.empty
       |> Data.dict
-  | _ -> decode_error (Ty.dict ty) stack j
+  | _ -> decode_error (Ty.dict ty) path j
 
-and tuple ty stack tys j =
+and tuple ty path tys j =
   match classify j with
   | Js_array a ->
       let tys = Array.of_list tys in
       if Array.length a = Array.length tys then
         Array.map2 (fun ty x -> (ty, x)) tys a
-        |> Array.mapi (fun i (ty, x) -> make (Index i :: stack) ty x)
+        |> Array.mapi (fun i (ty, x) -> make (EPath.index i path) ty x)
         |> Data.tuple
-      else decode_error ty stack j
-  | _ -> decode_error ty stack j
+      else decode_error ty path j
+  | _ -> decode_error ty path j
 
-and record_aux stack tys j =
+and record_aux path tys j =
   let f k ty =
     match (ty, Table.find_opt k j) with
     | { contents = Ty.Nullable _ | Unknown _ }, None -> Data.null
-    | ty, Some j -> make (Key k :: stack) ty j
-    | _ -> Error.missing_key stack (Ty.internal_record (ref tys)) k
+    | ty, Some j -> make (EPath.key k path) ty j
+    | _ -> Error.missing_key path (Ty.internal_record (ref tys)) k
   in
   Map.String.mapi f tys
 
-and record stack tys j =
+and record path tys j =
   match classify j with
-  | Js_object o -> record_aux stack !tys o |> Data.dict
-  | _ -> decode_error (Ty.internal_record tys) stack j
+  | Js_object o -> record_aux path !tys o |> Data.dict
+  | _ -> decode_error (Ty.internal_record tys) path j
 
-and union stack ty key cases extra j =
+and union path ty key cases extra j =
   match classify j with
   | Js_object o ->
       let tag, tys =
@@ -194,35 +195,36 @@ and union stack ty key cases extra j =
           | Js_string tag, String map, `Extra_none ->
               (Data.const (`String tag) extra, Map.String.find tag map)
           | _ -> raise Not_found
-        with Not_found -> decode_error ty stack j
+        with Not_found -> decode_error ty path j
       in
-      let r = record_aux stack !tys o in
+      let r = record_aux path !tys o in
       Data.dict (Map.String.add key tag r)
-  | _ -> decode_error ty stack j
+  | _ -> decode_error ty path j
 
-and make stack ty j =
+and make path ty j =
   match !ty with
   | Ty.Unknown _ -> Data.unknown j
-  | Nullable ty -> nullable stack ty j
+  | Nullable ty -> nullable path ty j
   | Enum { extra = `Extra_bool; cases = Int cases; _ } ->
-      boolean ty stack cases j
-  | String | Enum { row = `Open; cases = String _; _ } -> string ty stack None j
+      boolean ty path cases j
+  | String | Enum { row = `Open; cases = String _; _ } -> string ty path None j
   | Enum { row = `Closed; cases = String cases; _ } ->
-      string ty stack (Some cases) j
-  | Int | Enum { row = `Open; cases = Int _; _ } -> int ty stack None j
-  | Enum { row = `Closed; cases = Int cases; _ } -> int ty stack (Some cases) j
-  | Float -> float stack j
-  | Echo -> echo stack j
-  | List ty -> list stack ty j
-  | Dict (ty, _) -> dict stack ty j
-  | Tuple tys -> tuple ty stack tys j
-  | Record tys -> record stack tys j
-  | Union (key, { cases; extra; _ }) -> union stack ty key cases extra j
+      string ty path (Some cases) j
+  | Int | Enum { row = `Open; cases = Int _; _ } -> int ty path None j
+  | Enum { row = `Closed; cases = Int cases; _ } -> int ty path (Some cases) j
+  | Float -> float path j
+  | Echo -> echo path j
+  | List ty -> list path ty j
+  | Dict (ty, _) -> dict path ty j
+  | Tuple tys -> tuple ty path tys j
+  | Record tys -> record path tys j
+  | Union (key, { cases; extra; _ }) -> union path ty key cases extra j
 
-let decode tys j =
+let decode ~name tys j =
+  let path = EPath.make name in
   match classify j with
-  | Js_object o -> record_aux [] tys o
-  | _ -> decode_error (Ty.internal_record (ref tys)) [] j
+  | Js_object o -> record_aux path tys o
+  | _ -> decode_error (Ty.internal_record (ref tys)) path j
 
 let coerce = Js.Unsafe.coerce
 

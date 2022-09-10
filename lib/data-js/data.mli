@@ -15,5 +15,5 @@ open Acutis
 type 'a map = 'a Stdlib.Map.Make(String).t
 type t = Js_of_ocaml.Js.Unsafe.any
 
-val decode : Typescheme.t map -> t -> t Data.t map
+val decode : name:string -> Typescheme.t map -> t -> t Data.t map
 val encode : Typescheme.t map -> t Data.t map -> t

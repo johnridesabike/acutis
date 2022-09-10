@@ -32,6 +32,7 @@ type 'a template =
 type 'a t = {
   prop_types : Typescheme.t Map.String.t;
   nodes : 'a template nodes;
+  name : string;
 }
 
 module Components : sig

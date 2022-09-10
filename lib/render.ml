@@ -134,7 +134,9 @@ end
 module type DATA = sig
   type t
 
-  val decode : Typescheme.t Map.String.t -> t -> t Data.t Map.String.t
+  val decode :
+    name:string -> Typescheme.t Map.String.t -> t -> t Data.t Map.String.t
+
   val encode : Typescheme.t Map.String.t -> t Data.t Map.String.t -> t
 end
 
@@ -249,9 +251,11 @@ module Make (M : MONAD) (D : DATA) = struct
     in
     List.fold_left f b nodes
 
-  let make Compile.{ nodes; prop_types } props =
+  let make { Compile.nodes; prop_types; name } props =
+    (* Wrap the props in a monad so it can catch decode exceptions. *)
+    let* props = M.return props in
+    let vars = D.decode ~name prop_types props in
     let b = M.return (Buffer.create 1024) in
-    let vars = D.decode prop_types props in
     let* result = make b nodes vars Map.String.empty in
     Buffer.contents result |> M.return
 end

@@ -33,11 +33,11 @@ acutis: TEXT WITH
 acutis: TEXT NULL
 acutis: TEXT TILDE_RIGHT NULL
 
-Expected `match`, `map`, `map_dict`, or a component name.
+Expected 'match', 'map', 'map_dict', or a component name.
 
 acutis: TEXT COMPONENT COMPONENT EQUALS HASH TEXT WITH
 
-Expected `/#`, `match`, `map`, `map_dict`, or a component name.
+Expected '/#', 'match', 'map', 'map_dict', or a component name.
 
 acutis: TEXT MATCH WITH
 acutis: TEXT MATCH EXCLAMATION WITH
@@ -83,79 +83,79 @@ acutis: TEXT MATCH LEFT_BRACE AT ID WITH
 acutis: TEXT MATCH LEFT_BRACE AT ID COLON WITH
 acutis: TEXT INTERFACE ID EQUALS LEFT_BRACE AT ID COLON WITH
 
-Only literal `int`, `string`, and `boolean` values may be union tags.
+Only literal 'int', 'string', and 'boolean' values may be union tags.
 
 acutis: TEXT MATCH LEFT_BRACE ID WITH
 
-Expected `,`, `:`, or `}`.
+Expected ',', ':', or '}'.
 
 acutis: TEXT MATCH LEFT_BRACE STRING WITH
 
-Expected `:`.
+Expected ':'.
 
 acutis: TEXT MATCH LEFT_BRACE ID COLON NULL WITH
 acutis: TEXT INTERFACE ID EQUALS LEFT_BRACE ID COLON ID WITH
 
-Expected `,` or `}`.
+Expected ',' or '}'.
 
 acutis: TEXT MATCH LEFT_PAREN NULL WITH
 
-Expected `,` or `)`.
+Expected ',' or ')'.
 
 acutis: TEXT MATCH LEFT_BRACK NULL WITH
 
-Expected `,`, `...`, or `]`.
+Expected ',', '...', or ']'.
 
 acutis: TEXT MATCH LEFT_BRACK ELLIPSIS NULL WITH
 
-Expected `]`.
+Expected ']'.
 
 acutis: TEXT MATCH LEFT_ANGLE ID WITH
 
-Expected `,`, `:`, or `>`.
+Expected ',', ':', or '>'.
 
 acutis: TEXT MATCH LEFT_ANGLE STRING WITH
 
-Expected `:`.
+Expected ':'.
 
 acutis: TEXT MATCH LEFT_ANGLE ID COLON NULL WITH
 
-Expected `,` or `>`.
+Expected ',' or '>'.
 
 acutis: TEXT MATCH NULL NULL
 acutis: TEXT MATCH NULL WITH NULL NULL
 acutis: TEXT MAP_DICT NULL NULL
 acutis: TEXT MAP NULL NULL
 
-Sequential patterns must be separated by a `,`.
+Sequential patterns must be separated by a ','.
 
 acutis: TEXT MATCH NULL WITH NULL TEXT EOF
 
-Unclosed block. Expected a `{% /` somewhere.
+Unclosed block. Expected a '{% /' somewhere.
 
 acutis: TEXT MATCH NULL WITH NULL TEXT BACKSLASH WITH
 
-Expected `/match`.
+Expected '/match'.
 
 acutis: TEXT MAP NULL WITH NULL TEXT BACKSLASH WITH
 
-Expected `/map`.
+Expected '/map'.
 
 acutis: TEXT MAP_DICT NULL WITH NULL TEXT BACKSLASH WITH
 
-Expected `/map_dict`.
+Expected '/map_dict'.
 
 acutis: TEXT ECHO_BEGIN ID WITH
 
-Expected either a `?` or `}}`.
+Expected either a '?' or '}}'.
 
 acutis: TEXT COMPONENT COMPONENT EQUALS HASH WITH
 
-Expected `%}`.
+Expected '%}'.
 
 acutis: TEXT COMPONENT COMPONENT EQUALS HASH TEXT BACKSLASH WITH
 
-Expected `/#`.
+Expected '/#'.
 
 acutis: TEXT INTERFACE WITH
 acutis: TEXT INTERFACE ID EQUALS ID WITH
@@ -166,18 +166,18 @@ This is not a valid prop or component name.
 
 acutis: TEXT INTERFACE COMPONENT EQUALS WITH
 
-This is not a valid child type. The only valid types are not nullable (blank) and nullable (`?`).
+This is not a valid child type. The only valid types are not nullable (blank) and nullable ('?').
 
 acutis: TEXT INTERFACE ID EQUALS LEFT_BRACE ID COLON ID RIGHT_BRACE WITH
 acutis: TEXT INTERFACE ID EQUALS AT STRING WITH
 acutis: TEXT INTERFACE ID EQUALS AT INT WITH
 acutis: TEXT INTERFACE ID EQUALS FALSE WITH
 
-This is not a valid prop or component name. You possibly forgot a `|`.
+This is not a valid prop or component name. You possibly forgot a '|'.
 
 acutis: TEXT INTERFACE ID WITH
 
-Expected an `=`.
+Expected an '='.
 
 acutis: TEXT INTERFACE ID EQUALS WITH
 acutis: TEXT INTERFACE ID EQUALS QUESTION WITH
@@ -194,7 +194,7 @@ This is not a valid type.
 acutis: TEXT INTERFACE ID EQUALS LEFT_BRACE AT ID WITH
 acutis: TEXT INTERFACE ID EQUALS LEFT_BRACE ID WITH
 
-Expected a `:`.
+Expected a ':'.
 
 acutis: TEXT INTERFACE ID EQUALS AT WITH
 
@@ -202,24 +202,24 @@ Expected either a string or an integer.
 
 acutis: TEXT INTERFACE ID EQUALS LEFT_BRACE ID COLON ID RIGHT_BRACE PIPE WITH
 
-Expected a record type or an `...`.
+Expected a record type or an '...'.
 
 acutis: TEXT INTERFACE ID EQUALS AT STRING PIPE WITH
 acutis: TEXT INTERFACE ID EQUALS AT INT PIPE WITH
 
-Expected an enum value or an `...`.
+Expected an enum value or an '...'.
 
 acutis: TEXT INTERFACE ID EQUALS LEFT_ANGLE ID WITH
 
-Expected a `>`.
+Expected a '>'.
 
 acutis: TEXT INTERFACE ID EQUALS LEFT_BRACK ID WITH
 
-Expected a `]`.
+Expected a ']'.
 
 acutis: TEXT INTERFACE ID EQUALS LEFT_PAREN ID WITH
 
-Expected a `)`.
+Expected a ')'.
 
 acutis: TEXT INTERFACE ID EQUALS AT STRING PIPE AT WITH
 

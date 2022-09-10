@@ -684,7 +684,9 @@ module ParMatch = struct
     | _ -> acc
 
   let pp tys ppf l =
-    Format.pp_print_list ~pp_sep:Pp.sep_comma TPat.pp ppf (to_list tys l)
+    Format.fprintf ppf "@[%a@]"
+      (Format.pp_print_list ~pp_sep:Pp.sep_comma TPat.pp)
+      (to_list tys l)
 
   module List = struct
     (** A list indexed by its length. We describe length in terms of

@@ -23,5 +23,5 @@ type t =
   | `Assoc of (string * t) list
   | `List of t list ]
 
-val decode : Typescheme.t map -> t -> t Data.t map
+val decode : name:string -> Typescheme.t map -> t -> t Data.t map
 val encode : Typescheme.t map -> t Data.t map -> t

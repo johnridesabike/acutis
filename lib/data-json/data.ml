@@ -10,6 +10,7 @@
 
 open Acutis
 module Ty = Typescheme
+module EPath = Error.DecodePath
 
 type 'a map = 'a Stdlib.Map.Make(String).t
 
@@ -25,91 +26,91 @@ type t =
 let pp = Yojson.Basic.pretty_print ~std:false
 let decode_error = Error.decode pp
 
-let boolean ty stack cases j =
+let boolean ty path cases j =
   let i =
     match j with
     | `Bool false -> 0
     | `Bool true -> 1
-    | j -> decode_error ty stack j
+    | j -> decode_error ty path j
   in
   if Set.Int.mem i cases then Data.const (`Int i) `Extra_bool
-  else Error.bad_enum pp ty stack j
+  else Error.bad_enum pp ty path j
 
-let string ty stack cases = function
+let string ty path cases = function
   | `String s as j -> (
       match cases with
       | None -> Data.const j `Extra_none
       | Some cases ->
           if Set.String.mem s cases then Data.const j `Extra_none
-          else Error.bad_enum pp ty stack j)
-  | j -> decode_error ty stack j
+          else Error.bad_enum pp ty path j)
+  | j -> decode_error ty path j
 
-let int ty stack cases = function
+let int ty path cases = function
   | `Int i as j -> (
       match cases with
       | None -> Data.const j `Extra_none
       | Some cases ->
           if Set.Int.mem i cases then Data.const j `Extra_none
-          else Error.bad_enum pp ty stack j)
-  | j -> decode_error ty stack j
+          else Error.bad_enum pp ty path j)
+  | j -> decode_error ty path j
 
-let float stack = function
+let float path = function
   | `Float _ as x -> Data.const x `Extra_none
   | `Int i -> Data.const (`Float (float_of_int i)) `Extra_none
-  | j -> decode_error (Ty.float ()) stack j
+  | j -> decode_error (Ty.float ()) path j
 
-let echo stack = function
+let echo path = function
   | (`String _ | `Int _ | `Float _) as x -> Data.const x `Extra_none
   | `Bool false -> Data.const (`Int 0) `Extra_bool
   | `Bool true -> Data.const (`Int 1) `Extra_bool
-  | j -> decode_error (Ty.echo ()) stack j
+  | j -> decode_error (Ty.echo ()) path j
 
-let rec nullable stack ty = function
+let rec nullable path ty = function
   | `Null -> Data.null
-  | j -> Data.some (make (Error.DecodePath.Nullable :: stack) ty j)
+  | j -> Data.some (make (EPath.nullable path) ty j)
 
-and list stack ty = function
+and list path ty = function
   | `List l ->
       let rec aux i acc = function
         | [] -> Data.list_rev acc
         | hd :: tl ->
-            let acc = Data.list_cons (make (Index i :: stack) ty hd) acc in
+            let acc = Data.list_cons (make (EPath.index i path) ty hd) acc in
             aux (succ i) acc tl
       in
       aux 0 Data.list_empty l
-  | j -> decode_error (Ty.list ty) stack j
+  | j -> decode_error (Ty.list ty) path j
 
-and dict stack ty = function
+and dict path ty = function
   | `Assoc l ->
       List.fold_left
-        (fun map (k, v) -> Map.String.add k (make (Key k :: stack) ty v) map)
+        (fun map (k, v) -> Map.String.add k (make (EPath.key k path) ty v) map)
         Map.String.empty l
       |> Data.dict
-  | j -> decode_error (Ty.dict ty) stack j
+  | j -> decode_error (Ty.dict ty) path j
 
-and tuple ty stack tys = function
+and tuple ty path tys = function
   | `List l as j -> (
       try
         List.map2 (fun ty x -> (ty, x)) tys l
-        |> List.mapi (fun i (ty, x) -> make (Index i :: stack) ty x)
+        |> List.mapi (fun i (ty, x) -> make (EPath.index i path) ty x)
         |> Array.of_list |> Data.tuple
-      with Invalid_argument _ -> decode_error ty stack j)
-  | j -> decode_error ty stack j
+      with Invalid_argument _ -> decode_error ty path j)
+  | j -> decode_error ty path j
 
-and record_aux stack tys j =
+and record_aux path tys j =
   let f k ty =
     match (ty, List.assoc_opt k j) with
     | { contents = Ty.Nullable _ | Unknown _ }, None -> Data.null
-    | ty, Some j -> make (Key k :: stack) ty j
-    | _ -> Error.missing_key stack (Ty.internal_record (ref tys)) k
+    | ty, Some j -> make (EPath.key k path) ty j
+    | _ -> Error.missing_key path (Ty.internal_record (ref tys)) k
   in
   Map.String.mapi f tys
 
-and record stack tys = function
-  | `Assoc l -> Data.dict (record_aux stack !tys l)
-  | j -> decode_error (Ty.internal_record tys) stack j
+and record path tys = function
+  | `Assoc l -> Data.dict (record_aux path !tys l)
+  | j -> decode_error (Ty.internal_record tys) path j
 
-and union stack ty key cases extra = function
+and union path ty key cases extra = function
   | `Assoc l as j ->
       let tag, tys =
         try
@@ -126,34 +127,34 @@ and union stack ty key cases extra = function
           | (`String tag as x), String map, `Extra_none ->
               (Data.const x extra, Map.String.find tag map)
           | _ -> raise Not_found
-        with Not_found -> decode_error ty stack j
+        with Not_found -> decode_error ty path j
       in
-      let r = record_aux stack !tys l in
+      let r = record_aux path !tys l in
       Data.dict (Map.String.add key tag r)
-  | j -> decode_error ty stack j
+  | j -> decode_error ty path j
 
-and make stack ty j =
+and make path ty j =
   match !ty with
   | Ty.Unknown _ -> Data.unknown j
-  | Nullable ty -> nullable stack ty j
+  | Nullable ty -> nullable path ty j
   | Enum { extra = `Extra_bool; cases = Int cases; _ } ->
-      boolean ty stack cases j
-  | String | Enum { row = `Open; cases = String _; _ } -> string ty stack None j
+      boolean ty path cases j
+  | String | Enum { row = `Open; cases = String _; _ } -> string ty path None j
   | Enum { row = `Closed; cases = String cases; _ } ->
-      string ty stack (Some cases) j
-  | Int | Enum { row = `Open; cases = Int _; _ } -> int ty stack None j
-  | Enum { row = `Closed; cases = Int cases; _ } -> int ty stack (Some cases) j
-  | Float -> float stack j
-  | Echo -> echo stack j
-  | List ty -> list stack ty j
-  | Dict (ty, _) -> dict stack ty j
-  | Tuple tys -> tuple ty stack tys j
-  | Record tys -> record stack tys j
-  | Union (key, { cases; extra; _ }) -> union stack ty key cases extra j
+      string ty path (Some cases) j
+  | Int | Enum { row = `Open; cases = Int _; _ } -> int ty path None j
+  | Enum { row = `Closed; cases = Int cases; _ } -> int ty path (Some cases) j
+  | Float -> float path j
+  | Echo -> echo path j
+  | List ty -> list path ty j
+  | Dict (ty, _) -> dict path ty j
+  | Tuple tys -> tuple ty path tys j
+  | Record tys -> record path tys j
+  | Union (key, { cases; extra; _ }) -> union path ty key cases extra j
 
-let decode tys = function
-  | `Assoc l -> record_aux [] tys l
-  | j -> decode_error (Ty.internal_record (ref tys)) [] j
+let decode ~name tys = function
+  | `Assoc l -> record_aux (EPath.make name) tys l
+  | j -> decode_error (Ty.internal_record (ref tys)) (EPath.make name) j
 
 let rec record_to_json ty t =
   let f _ ty t =

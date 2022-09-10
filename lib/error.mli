@@ -69,21 +69,26 @@ val missing_component : string list -> string -> _
 (** {1 Decode errors.} *)
 
 module DecodePath : sig
-  type t = Nullable | Index of int | Key of string
+  type t
+
+  val make : string -> t
+  val nullable : t -> t
+  val index : int -> t -> t
+  val key : string -> t -> t
 end
 
 val decode :
   (Format.formatter -> 'data -> unit) ->
   Typescheme.t ->
-  DecodePath.t list ->
+  DecodePath.t ->
   'data ->
   _
 
-val missing_key : DecodePath.t list -> Typescheme.t -> string -> _
+val missing_key : DecodePath.t -> Typescheme.t -> string -> _
 
 val bad_enum :
   (Format.formatter -> 'data -> unit) ->
   Typescheme.t ->
-  DecodePath.t list ->
+  DecodePath.t ->
   'data ->
   _

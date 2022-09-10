@@ -1,6 +1,6 @@
 {
   "name": "acutis-lang",
-  "version": "0.18.0",
+  "version": "0.18.1",
   "private": false,
   "description": "A declarative, type-safe template language",
   "keywords": [
@@ -9,7 +9,8 @@
     "parser",
     "interpreter",
     "eleventy-plugin",
-    "eleventy"
+    "eleventy",
+    "ocaml"
   ],
   "homepage": "https://johnridesa.bike/acutis/",
   "bugs": {

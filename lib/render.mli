@@ -24,7 +24,9 @@ module type DATA = sig
 
   type t
 
-  val decode : Typescheme.t Map.String.t -> t -> t Data.t Map.String.t
+  val decode :
+    name:string -> Typescheme.t Map.String.t -> t -> t Data.t Map.String.t
+
   val encode : Typescheme.t Map.String.t -> t Data.t Map.String.t -> t
 end
 
