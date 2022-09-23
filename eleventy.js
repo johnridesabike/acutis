@@ -51,6 +51,8 @@ module.exports = function (eleventyConfig, config) {
   let cache = new Map();
   eleventyConfig.addTemplateFormats("acutis");
   eleventyConfig.addExtension("acutis", {
+    // Because we pre-compile our components, 11ty's built-in file reading won't
+    // reload all changes in watch mode.
     read: false,
     init: function () {
       cache.clear();
@@ -64,13 +66,22 @@ module.exports = function (eleventyConfig, config) {
         .catch(acutisErrorToJsError);
     },
     compile: function (str, inputPath) {
-      // since `read: false` is set, 11ty doesn't read file contents
-      // so if str has a value, it's a permalink
-      // (which can be a string or a function)
+      // since `read: false` is set, 11ty doesn't read Acutis template files.
+      // If str has a value, it's either a permalink or markdown content.
+      // Permalinks can either be a string or a function.
       if (str) {
-        return function (data) {
-          return typeof str === "function" ? str(data) : str;
-        };
+        if (typeof str === "function") {
+          return Promise.resolve(str);
+        } else {
+          return Promise.resolve(str)
+            .then((src) => {
+              const template = Compile.string(inputPath, components, src);
+              return function (data) {
+                return Render.async(template, data).catch(acutisErrorToJsError);
+              };
+            })
+            .catch(acutisErrorToJsError);
+        }
       } else {
         let template = cache.get(inputPath);
         if (!template) {
