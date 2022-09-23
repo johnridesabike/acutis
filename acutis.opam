@@ -2,8 +2,8 @@
 opam-version: "2.0"
 version: "0.18.1"
 synopsis: "A declarative, type-safe template language"
-maintainer: ["John Jackson"]
-authors: ["John Jackson"]
+maintainer: ["John Jackson <jbpjackson+acutis@icloud.com>"]
+authors: ["John Jackson <jbpjackson+acutis@icloud.com>"]
 license: "MPL-2.0"
 tags: ["template" "language" "parser" "interpreter"]
 homepage: "https://github.com/johnridesabike/acutis"

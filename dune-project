@@ -11,9 +11,9 @@
 (source
  (github johnridesabike/acutis))
 
-(authors "John Jackson")
+(authors "John Jackson <jbpjackson+acutis@icloud.com>")
 
-(maintainers "John Jackson")
+(maintainers "John Jackson <jbpjackson+acutis@icloud.com>")
 
 (license MPL-2.0)
 
