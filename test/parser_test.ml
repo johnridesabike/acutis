@@ -40,11 +40,9 @@ let trim () =
     (parse src)
 
 let comments () =
-  let src = {|
-  a {* {* *} *}b{*
-  *} c|} in
+  let src = "a {* {* *} *}b{* *} c" in
   check "Comments parse correctly"
-    [ Text ("\n  a b c", No_trim, No_trim) ]
+    [ Text ("a b c", No_trim, No_trim) ]
     (parse src)
 
 let matches () =
@@ -251,13 +249,12 @@ let patterns () =
     ]
     (parse src);
   let src =
-    {|
-  {% match list
-      with [] %} {% with [!a, null] %} {% with [z, ...tl] %} {% /match %}|}
+    "{% match list with [] %} {% with [!a, null] %} {% with [z, ...tl] %}\n\
+     {% /match %}"
   in
   check "List patterns parse correctly"
     [
-      Text ("\n  ", No_trim, No_trim);
+      Text ("", No_trim, No_trim);
       Match
         ( loc,
           [ Var (loc, "list") ],
@@ -289,7 +286,7 @@ let patterns () =
                     [ List (loc, [ Var (loc, "z") ], Some (Var (loc, "tl"))) ]
                   );
                 ];
-              nodes = [ Text (" ", No_trim, No_trim) ];
+              nodes = [ Text ("\n", No_trim, No_trim) ];
             };
           ] );
       Text ("", No_trim, No_trim);
@@ -365,13 +362,12 @@ let patterns () =
     ]
     (parse src);
   let src =
-    {|
-  {% match tagged with {@tag: true, a} %} {% with {@tag: false} %} {% /match %}
-  |}
+    "{% match tagged with {@tag: true, a} %} {% with {@tag: false} %}\n\
+     {% /match %}"
   in
   check "Tagged union patterns parse correctly"
     [
-      Text ("\n  ", No_trim, No_trim);
+      Text ("", No_trim, No_trim);
       Match
         ( loc,
           [ Var (loc, "tagged") ],
@@ -401,10 +397,10 @@ let patterns () =
                         (loc, Tagged ("tag", Tag_bool (loc, 0), Ast.Dict.empty));
                     ] );
                 ];
-              nodes = [ Text (" ", No_trim, No_trim) ];
+              nodes = [ Text ("\n", No_trim, No_trim) ];
             };
           ] );
-      Text ("\n  ", No_trim, No_trim);
+      Text ("", No_trim, No_trim);
     ]
     (parse src);
   let src = {|{% match dict with <a: 1, b: 2> %} {% with _ %} {% /match %}|} in
