@@ -40,7 +40,7 @@ let trim () =
     (parse src)
 
 let comments () =
-  let src = "a {* {* *} *}b{* *} c" in
+  let src = "a {* {* *} *}b{* \n *} c" in
   check "Comments parse correctly"
     [ Text ("a b c", No_trim, No_trim) ]
     (parse src)
