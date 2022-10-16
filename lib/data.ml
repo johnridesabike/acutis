@@ -12,7 +12,15 @@ module Ty = Typescheme
 
 module Const = struct
   type t = [ `Int of int | `String of string | `Float of float ]
-  [@@deriving eq, ord, show]
+  [@@deriving eq, show]
+
+  let compare (a : t) (b : t) =
+    match (a, b) with
+    | `Int a, `Int b -> compare a b
+    | `String a, `String b -> compare a b
+    | `Float a, `Float b -> compare a b
+    | `Int _, (`String _ | `Float _) | `String _, `Float _ -> -1
+    | `String _, `Int _ | `Float _, (`Int _ | `String _) -> 1
 
   let to_string (t : t) (extra : Ty.Variant.extra) =
     match (t, extra) with

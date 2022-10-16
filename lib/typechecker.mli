@@ -11,20 +11,14 @@
 (** Type-checks the untyped {!Ast.t} and constructs a typed tree. *)
 
 module Pattern : sig
-  type constant = [ `Int of int | `String of string | `Float of float ]
-
-  val equal_constant : constant -> constant -> bool
-
   type construct = TList | TNullable
 
-  val equal_construct : construct -> construct -> bool
-
   type t =
-    | TConst of constant * Typescheme.Enum.t option
+    | TConst of Data.Const.t * Typescheme.Enum.t option
     | TConstruct of construct * t option
     | TTuple of t list
     | TRecord of
-        (string * constant * Typescheme.t Typescheme.Union.t) option
+        (string * Data.Const.t * Typescheme.t Typescheme.Union.t) option
         * t Map.String.t
         * Typescheme.t Map.String.t ref
     | TDict of t Map.String.t * Set.String.t ref

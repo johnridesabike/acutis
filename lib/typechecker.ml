@@ -278,17 +278,14 @@ let check_interface_child loc ~interface ~impl =
     impl
 
 module Pattern = struct
-  type constant = [ `Int of int | `String of string | `Float of float ]
-  [@@deriving eq]
-
   type construct = TList | TNullable [@@deriving eq]
 
   type t =
-    | TConst of constant * Ty.Enum.t option
+    | TConst of Data.Const.t * Ty.Enum.t option
     | TConstruct of construct * t option
     | TTuple of t list
     | TRecord of
-        (string * constant * Ty.t Ty.Union.t) option
+        (string * Data.Const.t * Ty.t Ty.Union.t) option
         * t Map.String.t
         * Ty.t Map.String.t ref
     | TDict of t Map.String.t * Set.String.t ref
