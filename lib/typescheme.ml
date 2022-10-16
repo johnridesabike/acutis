@@ -18,7 +18,7 @@ let int_map_of_list l =
 
 module Variant = struct
   type row = [ `Closed | `Open ] [@@deriving eq]
-  type extra = [ `Extra_none | `Extra_bool ] [@@deriving eq, show]
+  type extra = [ `Extra_none | `Extra_bool ] [@@deriving eq]
   type ('a, 'b) ty = Int of 'a | String of 'b [@@deriving eq]
 
   type ('a, 'b) t = {

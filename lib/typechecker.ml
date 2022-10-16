@@ -281,7 +281,7 @@ module Pattern = struct
   type constant = [ `Int of int | `String of string | `Float of float ]
   [@@deriving eq]
 
-  type construct = TList | TNullable [@@deriving eq, show]
+  type construct = TList | TNullable [@@deriving eq]
 
   type t =
     | TConst of constant * Ty.Enum.t option

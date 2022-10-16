@@ -17,7 +17,6 @@ module Pattern : sig
 
   type construct = TList | TNullable
 
-  val pp_construct : Format.formatter -> construct -> unit
   val equal_construct : construct -> construct -> bool
 
   type t =

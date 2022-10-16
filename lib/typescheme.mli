@@ -21,7 +21,6 @@ module Variant : sig
   type extra = [ `Extra_none | `Extra_bool ]
 
   val equal_extra : extra -> extra -> bool
-  val pp_extra : Format.formatter -> extra -> unit
 
   type ('a, 'b) ty = Int of 'a | String of 'b
 
