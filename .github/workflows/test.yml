@@ -33,5 +33,6 @@ jobs:
         with:
           ocaml-compiler: ${{ matrix.ocaml-compiler }}
       - run: make dev-install
+      - run: make format
       - run: make build
       - run: make test

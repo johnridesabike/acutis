@@ -34,7 +34,7 @@ dev-install:
 
 .PHONY: format
 format:
-	opam exec -- dune build --auto-promote @fmt
+	opam exec -- dune fmt
 
 .PHONY: docs
 docs:
