@@ -107,9 +107,9 @@ let map_merge =
   fun a b -> Map.String.union f a b
 
 let rec pattern_to_data ~vars = function
-  | Typechecker.Pattern.TConst (x, Some { extra = `Extra_bool; _ }) ->
-      Data.const x `Extra_bool
-  | TConst (x, _) -> Data.const x `Extra_none
+  | Typechecker.Pattern.TConst (x, Some { extra = Bool; _ }) ->
+      Data.const x Bool
+  | TConst (x, _) -> Data.const x Not_bool
   | TVar x -> Map.String.find x vars
   | TConstruct (_, Some x) -> pattern_to_data ~vars x
   | TConstruct (_, None) -> Data.null

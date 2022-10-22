@@ -33,36 +33,37 @@ let boolean ty path cases j =
     | `Bool true -> 1
     | j -> decode_error ty path j
   in
-  if Set.Int.mem i cases then Data.const (`Int i) `Extra_bool
-  else Error.bad_enum pp ty path j
+  if Set.Int.mem i cases then Data.bool i else Error.bad_enum pp ty path j
 
 let string ty path cases = function
   | `String s as j -> (
       match cases with
-      | None -> Data.const j `Extra_none
+      | None -> Data.string s
       | Some cases ->
-          if Set.String.mem s cases then Data.const j `Extra_none
+          if Set.String.mem s cases then Data.string s
           else Error.bad_enum pp ty path j)
   | j -> decode_error ty path j
 
 let int ty path cases = function
   | `Int i as j -> (
       match cases with
-      | None -> Data.const j `Extra_none
+      | None -> Data.int i
       | Some cases ->
-          if Set.Int.mem i cases then Data.const j `Extra_none
+          if Set.Int.mem i cases then Data.int i
           else Error.bad_enum pp ty path j)
   | j -> decode_error ty path j
 
 let float path = function
-  | `Float _ as x -> Data.const x `Extra_none
-  | `Int i -> Data.const (`Float (float_of_int i)) `Extra_none
+  | `Float f -> Data.float f
+  | `Int i -> Data.float (float_of_int i)
   | j -> decode_error (Ty.float ()) path j
 
 let echo path = function
-  | (`String _ | `Int _ | `Float _) as x -> Data.const x `Extra_none
-  | `Bool false -> Data.const (`Int 0) `Extra_bool
-  | `Bool true -> Data.const (`Int 1) `Extra_bool
+  | `String s -> Data.string s
+  | `Int i -> Data.int i
+  | `Float f -> Data.float f
+  | `Bool false -> Data.bool 0
+  | `Bool true -> Data.bool 1
   | j -> decode_error (Ty.echo ()) path j
 
 let rec nullable path ty = function
@@ -110,22 +111,21 @@ and record path tys = function
   | `Assoc l -> Data.dict (record_aux path !tys l)
   | j -> decode_error (Ty.internal_record tys) path j
 
-and union path ty key cases extra = function
+and union path ty key Ty.Variant.{ cases; extra; _ } = function
   | `Assoc l as j ->
       let tag, tys =
         try
           let tag = List.assoc key l in
           match (tag, cases, extra) with
-          | `Bool false, Ty.Variant.Int map, `Extra_bool ->
+          | `Bool false, VInt map, Bool ->
               let tag = 0 in
-              (Data.const (`Int tag) extra, Map.Int.find tag map)
-          | `Bool true, Int map, `Extra_bool ->
+              (Data.bool tag, Map.Int.find tag map)
+          | `Bool true, VInt map, Bool ->
               let tag = 1 in
-              (Data.const (`Int tag) extra, Map.Int.find tag map)
-          | (`Int tag as x), Int map, `Extra_none ->
-              (Data.const x extra, Map.Int.find tag map)
-          | (`String tag as x), String map, `Extra_none ->
-              (Data.const x extra, Map.String.find tag map)
+              (Data.bool tag, Map.Int.find tag map)
+          | `Int tag, VInt map, Not_bool -> (Data.int tag, Map.Int.find tag map)
+          | `String tag, VString map, Not_bool ->
+              (Data.string tag, Map.String.find tag map)
           | _ -> raise Not_found
         with Not_found -> decode_error ty path j
       in
@@ -137,20 +137,19 @@ and make path ty j =
   match !ty with
   | Ty.Unknown _ -> Data.unknown j
   | Nullable ty -> nullable path ty j
-  | Enum { extra = `Extra_bool; cases = Int cases; _ } ->
-      boolean ty path cases j
-  | String | Enum { row = `Open; cases = String _; _ } -> string ty path None j
-  | Enum { row = `Closed; cases = String cases; _ } ->
+  | Enum { extra = Bool; cases = VInt cases; _ } -> boolean ty path cases j
+  | String | Enum { row = `Open; cases = VString _; _ } -> string ty path None j
+  | Enum { row = `Closed; cases = VString cases; _ } ->
       string ty path (Some cases) j
-  | Int | Enum { row = `Open; cases = Int _; _ } -> int ty path None j
-  | Enum { row = `Closed; cases = Int cases; _ } -> int ty path (Some cases) j
+  | Int | Enum { row = `Open; cases = VInt _; _ } -> int ty path None j
+  | Enum { row = `Closed; cases = VInt cases; _ } -> int ty path (Some cases) j
   | Float -> float path j
   | Echo -> echo path j
   | List ty -> list path ty j
   | Dict (ty, _) -> dict path ty j
   | Tuple tys -> tuple ty path tys j
   | Record tys -> record path tys j
-  | Union (key, { cases; extra; _ }) -> union path ty key cases extra j
+  | Union (key, variant) -> union path ty key variant j
 
 let decode ~name tys = function
   | `Assoc l -> record_aux (EPath.make name) tys l
@@ -166,13 +165,11 @@ let rec record_to_json ty t =
 and to_json ty t =
   match (!ty, t) with
   | _, Data.Unknown j -> j
-  | _, Const (`Float f, _) -> `Float f
-  | _, Const (`String s, _) -> `String s
-  | (Ty.Enum { extra = `Extra_bool; _ } | Echo), Const (`Int 0, `Extra_bool) ->
-      `Bool false
-  | (Ty.Enum { extra = `Extra_bool; _ } | Echo), Const (`Int _, `Extra_bool) ->
-      `Bool true
-  | (Enum _ | Int | Echo), Const (`Int i, _) -> `Int i
+  | _, Const (Float f, _) -> `Float f
+  | _, Const (String s, _) -> `String s
+  | (Ty.Enum { extra = Bool; _ } | Echo), Const (Int 0, Bool) -> `Bool false
+  | (Ty.Enum { extra = Bool; _ } | Echo), Const (Int _, Bool) -> `Bool true
+  | (Enum _ | Int | Echo), Const (Int i, _) -> `Int i
   | Nullable _, Nil -> `Null
   | Nullable ty, Array [| t |] -> to_json ty t
   | List ty, t ->
@@ -193,16 +190,16 @@ and to_json ty t =
       let tag = Map.String.find k m in
       let record_tys =
         match (cases, tag) with
-        | Int m, Const (`Int i, _) -> Map.Int.find i m
-        | String m, Const (`String s, _) -> Map.String.find s m
+        | VInt m, Const (Int i, _) -> Map.Int.find i m
+        | VString m, Const (String s, _) -> Map.String.find s m
         | _ -> assert false
       in
       let tag =
         match tag with
-        | Const (`String s, _) -> `String s
-        | Const (`Int 0, `Extra_bool) -> `Bool false
-        | Const (`Int _, `Extra_bool) -> `Bool true
-        | Const (`Int i, `Extra_none) -> `Int i
+        | Const (String s, _) -> `String s
+        | Const (Int 0, Bool) -> `Bool false
+        | Const (Int _, Bool) -> `Bool true
+        | Const (Int i, Not_bool) -> `Int i
         | _ -> assert false
       in
       let l = record_to_json !record_tys m in

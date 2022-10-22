@@ -65,27 +65,27 @@ let basic_tree () =
          debug_row = `Open;
          cases =
            {
-             data = `Int 0;
+             data = Int 0;
              if_match = End { names = MS.empty; exit = e 0 };
              next =
                Some
                  {
-                   data = `Int 10;
+                   data = Int 10;
                    if_match = End { names = MS.empty; exit = e 0 };
                    next =
                      Some
                        {
-                         data = `Int 15;
+                         data = Int 15;
                          if_match = End { names = MS.empty; exit = e 1 };
                          next =
                            Some
                              {
-                               data = `Int 20;
+                               data = Int 20;
                                if_match = End { names = MS.empty; exit = e 0 };
                                next =
                                  Some
                                    {
-                                     data = `Int 30;
+                                     data = Int 30;
                                      if_match =
                                        End { names = MS.empty; exit = e 0 };
                                      next = None;
@@ -113,14 +113,14 @@ let basic_tree () =
   let exit_4 = { exit = e 4; names = map [ ("a", 2); ("b", 3); ("c", 4) ] } in
   let int_21 =
     {
-      data = `Int 21;
+      data = Int 21;
       if_match =
         Switch
           {
             key = 2;
             ids = set [ 4 ];
             debug_row = `Open;
-            cases = { data = `Int 22; if_match = End exit_1; next = None };
+            cases = { data = Int 22; if_match = End exit_1; next = None };
             wildcard = Some (End exit_4);
           };
       next = None;
@@ -128,31 +128,30 @@ let basic_tree () =
   in
   let int_11 =
     {
-      data = `Int 11;
+      data = Int 11;
       if_match =
         Switch
           {
             key = 2;
             ids = set [ 4 ];
             debug_row = `Open;
-            cases = { data = `Int 12; if_match = End exit_0; next = None };
+            cases = { data = Int 12; if_match = End exit_0; next = None };
             wildcard = Some (End exit_4);
           };
       next = Some int_21;
     }
   in
-  let int_42 = { data = `Int 42; if_match = End exit_3; next = None } in
+  let int_42 = { data = Int 42; if_match = End exit_3; next = None } in
   let int_31 =
     {
-      data = `Int 31;
+      data = Int 31;
       if_match =
         Switch
           {
             key = 2;
             ids = set [ 4 ];
             debug_row = `Open;
-            cases =
-              { data = `Int 32; if_match = End exit_2; next = Some int_42 };
+            cases = { data = Int 32; if_match = End exit_2; next = Some int_42 };
             wildcard = Some (End exit_4);
           };
       next = None;
@@ -161,7 +160,7 @@ let basic_tree () =
   let wildcard_2 = Wildcard { key = 2; ids = set [ 4 ]; child = End exit_4 } in
   let int_30 =
     {
-      data = `Int 30;
+      data = Int 30;
       if_match =
         Switch
           {
@@ -170,7 +169,7 @@ let basic_tree () =
             debug_row = `Open;
             cases =
               {
-                data = `Int 21;
+                data = Int 21;
                 if_match =
                   Switch
                     {
@@ -179,7 +178,7 @@ let basic_tree () =
                       debug_row = `Open;
                       cases =
                         {
-                          data = `Int 22;
+                          data = Int 22;
                           if_match = End exit_1;
                           next = Some int_42;
                         };
@@ -209,7 +208,7 @@ let basic_tree () =
          debug_row = `Open;
          cases =
            {
-             data = `Int 10;
+             data = Int 10;
              if_match =
                Switch
                  {
@@ -256,22 +255,22 @@ let nests_merge () =
         debug_row = `Open;
         cases =
           {
-            data = `Int 12;
+            data = Int 12;
             if_match = End exit_0;
             next =
               Some
                 {
-                  data = `Int 22;
+                  data = Int 22;
                   if_match = End exit_1;
                   next =
-                    Some { data = `Int 32; if_match = End exit_2; next = None };
+                    Some { data = Int 32; if_match = End exit_2; next = None };
                 };
           };
         wildcard = Some (End exit_3);
       }
   in
   let int_12_exit_0 =
-    Matching.{ data = `Int 12; if_match = End exit_0; next = None }
+    Matching.{ data = Int 12; if_match = End exit_0; next = None }
   in
   let int_12_exit_3 =
     Matching.(
@@ -304,7 +303,7 @@ let nests_merge () =
                         debug_row = `Open;
                         cases =
                           {
-                            data = `Int 20;
+                            data = Int 20;
                             if_match =
                               Switch
                                 {
@@ -313,7 +312,7 @@ let nests_merge () =
                                   debug_row = `Open;
                                   cases =
                                     {
-                                      data = `Int 21;
+                                      data = Int 21;
                                       if_match = End if_int_21;
                                       next = None;
                                     };
@@ -364,9 +363,9 @@ let nests_merge_wildcards () =
         debug_row = `Open;
         cases =
           {
-            data = `Int 40;
+            data = Int 40;
             if_match = End exit_1;
-            next = Some { data = `Int 41; if_match = End exit_0; next = None };
+            next = Some { data = Int 41; if_match = End exit_0; next = None };
           };
         wildcard = Some (End exit_2);
       }
@@ -377,7 +376,7 @@ let nests_merge_wildcards () =
         key = 1;
         ids = SI.empty;
         debug_row = `Open;
-        cases = { data = `Int 30; if_match = End int_40; next = None };
+        cases = { data = Int 30; if_match = End int_40; next = None };
         wildcard = None;
       }
   in
@@ -403,7 +402,7 @@ let nests_merge_wildcards () =
                            debug_row = `Open;
                            cases =
                              {
-                               data = `Int 10;
+                               data = Int 10;
                                if_match =
                                  Switch
                                    {
@@ -412,7 +411,7 @@ let nests_merge_wildcards () =
                                      debug_row = `Open;
                                      cases =
                                        {
-                                         data = `Int 20;
+                                         data = Int 20;
                                          if_match = End int_30;
                                          next = None;
                                        };
@@ -431,7 +430,7 @@ let nests_merge_wildcards () =
                   key = 1;
                   ids = set [ 2 ];
                   debug_row = `Open;
-                  cases = { data = `Int 41; if_match = End exit_0; next = None };
+                  cases = { data = Int 41; if_match = End exit_0; next = None };
                   wildcard = Some (End exit_2);
                 });
        })
@@ -502,11 +501,11 @@ let lists () =
   let exit_2 = { names = MS.empty; exit = e 2 } in
   let exit_3 = { names = map [ ("y", 1) ]; exit = e 3 } in
   let exit_4 = { names = MS.empty; exit = e 4 } in
-  let int_42 = { data = `Int 42; if_match = End exit_3; next = None } in
-  let int_22 = { data = `Int 22; if_match = End exit_1; next = Some int_42 } in
+  let int_42 = { data = Int 42; if_match = End exit_3; next = None } in
+  let int_22 = { data = Int 22; if_match = End exit_1; next = Some int_42 } in
   let int_11 =
     {
-      data = `Int 11;
+      data = Int 11;
       if_match =
         Construct
           {
@@ -523,7 +522,7 @@ let lists () =
                            debug_row = `Open;
                            cases =
                              {
-                               data = `Int 12;
+                               data = Int 12;
                                if_match = End exit_0;
                                next = Some int_22;
                              };
@@ -553,7 +552,7 @@ let lists () =
   in
   let int_10 =
     {
-      data = `Int 10;
+      data = Int 10;
       if_match =
         Construct
           {
@@ -583,7 +582,7 @@ let lists () =
       next =
         Some
           {
-            data = `Int 30;
+            data = Int 30;
             if_match =
               Construct
                 {
@@ -599,7 +598,7 @@ let lists () =
                               debug_row = `Open;
                               cases =
                                 {
-                                  data = `Int 32;
+                                  data = Int 32;
                                   if_match = End exit_2;
                                   next = Some int_42;
                                 };
@@ -682,7 +681,7 @@ let wildcards_constructs () =
          ids = SI.empty;
          cases =
            {
-             data = `Int 1;
+             data = Int 1;
              if_match =
                Construct
                  {
@@ -696,7 +695,7 @@ let wildcards_constructs () =
                             ids = SI.empty;
                             cases =
                               {
-                                data = `Int 0;
+                                data = Int 0;
                                 if_match = End exit_0;
                                 next = None;
                               };
@@ -717,7 +716,7 @@ let wildcards_constructs () =
                                      ids = SI.empty;
                                      cases =
                                        {
-                                         data = `Int 1;
+                                         data = Int 1;
                                          if_match =
                                            End
                                              (Switch
@@ -726,12 +725,12 @@ let wildcards_constructs () =
                                                   ids = SI.empty;
                                                   cases =
                                                     {
-                                                      data = `Int 0;
+                                                      data = Int 0;
                                                       if_match = End exit_0;
                                                       next =
                                                         Some
                                                           {
-                                                            data = `Int 1;
+                                                            data = Int 1;
                                                             if_match =
                                                               End exit_3;
                                                             next = None;
@@ -753,7 +752,7 @@ let wildcards_constructs () =
                                      ids = SI.empty;
                                      cases =
                                        {
-                                         data = `Int 0;
+                                         data = Int 0;
                                          if_match = End exit_0;
                                          next = None;
                                        };
@@ -779,7 +778,7 @@ let wildcards_constructs () =
                            ids = SI.empty;
                            cases =
                              {
-                               data = `Int 0;
+                               data = Int 0;
                                if_match = End exit_2;
                                next = None;
                              };
@@ -800,7 +799,7 @@ let wildcards_constructs () =
                                     ids = SI.empty;
                                     cases =
                                       {
-                                        data = `Int 1;
+                                        data = Int 1;
                                         if_match =
                                           End
                                             (Switch
@@ -809,7 +808,7 @@ let wildcards_constructs () =
                                                  ids = SI.empty;
                                                  cases =
                                                    {
-                                                     data = `Int 0;
+                                                     data = Int 0;
                                                      if_match = End exit_1;
                                                      next = None;
                                                    };
@@ -856,7 +855,7 @@ let wildcards_constructs () =
         ids = SI.empty;
         cases =
           {
-            data = `Int 0;
+            data = Int 0;
             if_match = End { names = MS.empty; exit = e 1 };
             next = None;
           };
@@ -872,7 +871,7 @@ let wildcards_constructs () =
          ids = SI.empty;
          cases =
            {
-             data = `Int 1;
+             data = Int 1;
              if_match =
                Construct
                  {
@@ -886,12 +885,12 @@ let wildcards_constructs () =
                             ids = SI.empty;
                             cases =
                               {
-                                data = `Int 0;
+                                data = Int 0;
                                 if_match = End exit_0;
                                 next =
                                   Some
                                     {
-                                      data = `Int 1;
+                                      data = Int 1;
                                       if_match = End exit_3;
                                       next = None;
                                     };
@@ -912,7 +911,7 @@ let wildcards_constructs () =
                                   ids = SI.empty;
                                   cases =
                                     {
-                                      data = `Int 0;
+                                      data = Int 0;
                                       if_match = End exit_0;
                                       next = None;
                                     };
@@ -937,7 +936,7 @@ let wildcards_constructs () =
                            ids = SI.empty;
                            cases =
                              {
-                               data = `Int 0;
+                               data = Int 0;
                                if_match = End exit_2;
                                next = None;
                              };
@@ -958,7 +957,7 @@ let wildcards_constructs () =
                                     ids = SI.empty;
                                     cases =
                                       {
-                                        data = `Int 1;
+                                        data = Int 1;
                                         if_match = End exit_1;
                                         next = None;
                                       };
@@ -992,7 +991,7 @@ let wildcards_constructs () =
   let exit_0 = { names = MS.empty; exit = e 0 } in
   let exit_1 =
     {
-      data = `String "a";
+      data = String "a";
       if_match = End (End { names = MS.empty; exit = e 1 });
       next = None;
     }
@@ -1008,7 +1007,7 @@ let wildcards_constructs () =
          ids = SI.empty;
          cases =
            {
-             data = `Int 1;
+             data = Int 1;
              if_match =
                Construct
                  {
@@ -1096,7 +1095,7 @@ let records_sort () =
                   debug_row = `Open;
                   cases =
                     {
-                      data = `Int 10;
+                      data = Int 10;
                       if_match =
                         Switch
                           {
@@ -1105,7 +1104,7 @@ let records_sort () =
                             debug_row = `Open;
                             cases =
                               {
-                                data = `Int 11;
+                                data = Int 11;
                                 if_match =
                                   End
                                     (Switch
@@ -1115,7 +1114,7 @@ let records_sort () =
                                          debug_row = `Open;
                                          cases =
                                            {
-                                             data = `Int 12;
+                                             data = Int 12;
                                              if_match = End exit_0;
                                              next = None;
                                            };
@@ -1128,7 +1127,7 @@ let records_sort () =
                       next =
                         Some
                           {
-                            data = `Int 20;
+                            data = Int 20;
                             if_match =
                               Switch
                                 {
@@ -1137,7 +1136,7 @@ let records_sort () =
                                   debug_row = `Open;
                                   cases =
                                     {
-                                      data = `Int 21;
+                                      data = Int 21;
                                       if_match =
                                         End
                                           (Switch
@@ -1147,7 +1146,7 @@ let records_sort () =
                                                debug_row = `Open;
                                                cases =
                                                  {
-                                                   data = `Int 22;
+                                                   data = Int 22;
                                                    if_match = End exit_1;
                                                    next = None;
                                                  };
@@ -1197,7 +1196,7 @@ let records_expand () =
                   debug_row = `Open;
                   cases =
                     {
-                      data = `Int 20;
+                      data = Int 20;
                       if_match =
                         Switch
                           {
@@ -1206,7 +1205,7 @@ let records_expand () =
                             debug_row = `Open;
                             cases =
                               {
-                                data = `Int 10;
+                                data = Int 10;
                                 if_match =
                                   Wildcard
                                     {
@@ -1236,7 +1235,7 @@ let records_expand () =
                            debug_row = `Open;
                            cases =
                              {
-                               data = `Int 10;
+                               data = Int 10;
                                if_match =
                                  Wildcard
                                    {
@@ -1255,7 +1254,7 @@ let records_expand () =
                                     debug_row = `Open;
                                     cases =
                                       {
-                                        data = `Int 30;
+                                        data = Int 30;
                                         if_match = End (End exit_2);
                                         next = None;
                                       };

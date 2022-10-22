@@ -62,17 +62,15 @@ module Record = struct
 end
 
 module Interface = struct
-  type row = [ `Closed | `Open ] [@@deriving show, eq]
-
   type ty =
     | Named of Loc.t * string
     | Nullable of ty
     | List of ty
     | Dict of ty
-    | Enum_int of int Nonempty.t * row
+    | Enum_int of int Nonempty.t * Typescheme.Variant.row
     | Enum_bool of int Nonempty.t
-    | Enum_string of string Nonempty.t * row
-    | Record of (Loc.t * ty Record.t) Nonempty.t * row
+    | Enum_string of string Nonempty.t * Typescheme.Variant.row
+    | Record of (Loc.t * ty Record.t) Nonempty.t * Typescheme.Variant.row
     | Tuple of ty list
   [@@deriving show, eq]
 

@@ -86,17 +86,16 @@ let boolean ty path cases j =
   match classify j with
   | Js_bool b ->
       let i = match b with false -> 0 | true -> 1 in
-      if Set.Int.mem i cases then Data.const (`Int i) `Extra_bool
-      else Error.bad_enum pp ty path j
+      if Set.Int.mem i cases then Data.bool i else Error.bad_enum pp ty path j
   | _ -> decode_error ty path j
 
 let string ty path cases j =
   match classify j with
   | Js_string s -> (
       match cases with
-      | None -> Data.const (`String s) `Extra_none
+      | None -> Data.string s
       | Some cases ->
-          if Set.String.mem s cases then Data.const (`String s) `Extra_none
+          if Set.String.mem s cases then Data.string s
           else Error.bad_enum pp ty path j)
   | _ -> decode_error ty path j
 
@@ -105,24 +104,23 @@ let int ty path cases j =
   | Js_float f -> (
       let i = int_of_float f in
       match cases with
-      | None -> Data.const (`Int i) `Extra_none
+      | None -> Data.int i
       | Some cases ->
-          if Set.Int.mem i cases then Data.const (`Int i) `Extra_none
+          if Set.Int.mem i cases then Data.int i
           else Error.bad_enum pp ty path j)
   | _ -> decode_error ty path j
 
 let float path j =
   match classify j with
-  | Js_float f -> Data.const (`Float f) `Extra_none
+  | Js_float f -> Data.float f
   | _ -> decode_error (Ty.float ()) path j
 
 let echo path j =
   match classify j with
-  | Js_float f -> Data.const (`Float f) `Extra_none
-  | Js_string s -> Data.const (`String s) `Extra_none
-  | Js_bool b ->
-      let i = match b with false -> 0 | true -> 1 in
-      Data.const (`Int i) `Extra_bool
+  | Js_float f -> Data.float f
+  | Js_string s -> Data.string s
+  | Js_bool false -> Data.bool 0
+  | Js_bool true -> Data.bool 1
   | _ -> decode_error (Ty.echo ()) path j
 
 let rec nullable path ty j =
@@ -176,24 +174,24 @@ and record path tys j =
   | Js_object o -> record_aux path !tys o |> Data.dict
   | _ -> decode_error (Ty.internal_record tys) path j
 
-and union path ty key cases extra j =
+and union path ty key Ty.Variant.{ cases; extra; _ } j =
   match classify j with
   | Js_object o ->
       let tag, tys =
         try
           let tag = Table.find_exn key o in
           match (classify tag, cases, extra) with
-          | Js_bool false, Ty.Variant.Int map, `Extra_bool ->
+          | Js_bool false, VInt map, Bool ->
               let tag = 0 in
-              (Data.const (`Int tag) extra, Map.Int.find tag map)
-          | Js_bool true, Int map, `Extra_bool ->
+              (Data.bool tag, Map.Int.find tag map)
+          | Js_bool true, VInt map, Bool ->
               let tag = 1 in
-              (Data.const (`Int tag) extra, Map.Int.find tag map)
-          | Js_float tag, Int map, `Extra_none ->
+              (Data.bool tag, Map.Int.find tag map)
+          | Js_float tag, VInt map, Not_bool ->
               let tag = int_of_float tag in
-              (Data.const (`Int tag) extra, Map.Int.find tag map)
-          | Js_string tag, String map, `Extra_none ->
-              (Data.const (`String tag) extra, Map.String.find tag map)
+              (Data.int tag, Map.Int.find tag map)
+          | Js_string tag, VString map, Not_bool ->
+              (Data.string tag, Map.String.find tag map)
           | _ -> raise Not_found
         with Not_found -> decode_error ty path j
       in
@@ -205,20 +203,19 @@ and make path ty j =
   match !ty with
   | Ty.Unknown _ -> Data.unknown j
   | Nullable ty -> nullable path ty j
-  | Enum { extra = `Extra_bool; cases = Int cases; _ } ->
-      boolean ty path cases j
-  | String | Enum { row = `Open; cases = String _; _ } -> string ty path None j
-  | Enum { row = `Closed; cases = String cases; _ } ->
+  | Enum { extra = Bool; cases = VInt cases; _ } -> boolean ty path cases j
+  | String | Enum { row = `Open; cases = VString _; _ } -> string ty path None j
+  | Enum { row = `Closed; cases = VString cases; _ } ->
       string ty path (Some cases) j
-  | Int | Enum { row = `Open; cases = Int _; _ } -> int ty path None j
-  | Enum { row = `Closed; cases = Int cases; _ } -> int ty path (Some cases) j
+  | Int | Enum { row = `Open; cases = VInt _; _ } -> int ty path None j
+  | Enum { row = `Closed; cases = VInt cases; _ } -> int ty path (Some cases) j
   | Float -> float path j
   | Echo -> echo path j
   | List ty -> list path ty j
   | Dict (ty, _) -> dict path ty j
   | Tuple tys -> tuple ty path tys j
   | Record tys -> record path tys j
-  | Union (key, { cases; extra; _ }) -> union path ty key cases extra j
+  | Union (key, variant) -> union path ty key variant j
 
 let decode ~name tys j =
   let path = EPath.make name in
@@ -238,13 +235,12 @@ let rec record_to_js ty t =
 and to_js ty t =
   match (!ty, t) with
   | _, Data.Unknown j -> j
-  | _, Const (`Float f, _) -> Js.number_of_float f |> coerce
-  | _, Const (`String s, _) -> Js.string s |> coerce
-  | (Ty.Enum { extra = `Extra_bool; _ } | Echo), Const (`Int 0, `Extra_bool) ->
+  | _, Const (Float f, _) -> Js.number_of_float f |> coerce
+  | _, Const (String s, _) -> Js.string s |> coerce
+  | (Ty.Enum { extra = Bool; _ } | Echo), Const (Int 0, Bool) ->
       coerce Js._false
-  | (Ty.Enum { extra = `Extra_bool; _ } | Echo), Const (`Int _, `Extra_bool) ->
-      coerce Js._true
-  | (Enum _ | Int | Echo), Const (`Int i, _) ->
+  | (Ty.Enum { extra = Bool; _ } | Echo), Const (Int _, Bool) -> coerce Js._true
+  | (Enum _ | Int | Echo), Const (Int i, _) ->
       float_of_int i |> Js.number_of_float |> coerce
   | Nullable _, Nil -> Js.Unsafe.inject Js.null
   | Nullable ty, Array [| t |] -> to_js ty t
@@ -265,16 +261,16 @@ and to_js ty t =
       let tag = Map.String.find k m in
       let record_tys =
         match (cases, tag) with
-        | Int m, Const (`Int i, _) -> Map.Int.find i m
-        | String m, Const (`String s, _) -> Map.String.find s m
+        | VInt m, Const (Int i, _) -> Map.Int.find i m
+        | VString m, Const (String s, _) -> Map.String.find s m
         | _ -> assert false
       in
       let tag =
         match tag with
-        | Const (`String s, _) -> Js.string s |> coerce
-        | Const (`Int 0, `Extra_bool) -> coerce Js._false
-        | Const (`Int _, `Extra_bool) -> coerce Js._true
-        | Const (`Int i, `Extra_none) ->
+        | Const (String s, _) -> coerce @@ Js.string s
+        | Const (Int 0, Bool) -> coerce Js._false
+        | Const (Int _, Bool) -> coerce Js._true
+        | Const (Int i, Not_bool) ->
             float_of_int i |> Js.number_of_float |> coerce
         | _ -> assert false
       in

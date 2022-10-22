@@ -18,11 +18,11 @@ module Variant : sig
 
   val equal_row : row -> row -> bool
 
-  type extra = [ `Extra_none | `Extra_bool ]
+  type extra = Not_bool | Bool
 
   val equal_extra : extra -> extra -> bool
 
-  type ('a, 'b) ty = Int of 'a | String of 'b
+  type ('a, 'b) ty = VInt of 'a | VString of 'b
 
   type ('a, 'b) t = {
     mutable cases : ('a, 'b) ty;

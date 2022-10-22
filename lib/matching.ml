@@ -21,7 +21,7 @@ type ('leaf, 'key) tree =
       ids : Set.Int.t; [@printer Pp.set_int]
       cases : ('leaf, 'key) switchcase;
       wildcard : ('leaf, 'key) tree option;
-      debug_row : [ `Open | `Closed ];
+      debug_row : Ty.Variant.row;
     }
   | Nest of {
       key : 'key;
@@ -655,11 +655,11 @@ module ParMatch = struct
     | Union (key, ({ cases; _ } as ty)), Nest (Const c :: path) -> (
         let key = Some (key, c, ty) in
         match (cases, c) with
-        | Int m, `Int i ->
+        | VInt m, Int i ->
             let tys = Map.Int.find i m in
             let l = Map.String.bindings !tys in
             TRecord (key, to_map Map.String.empty l path, tys)
-        | String m, `String s ->
+        | VString m, String s ->
             let tys = Map.String.find s m in
             let l = Map.String.bindings !tys in
             TRecord (key, to_map Map.String.empty l path, tys)

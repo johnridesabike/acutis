@@ -11,24 +11,18 @@
 module Ty = Typescheme
 
 module Const = struct
-  type t = [ `Int of int | `String of string | `Float of float ]
-  [@@deriving eq, show]
+  type t = Int of int | String of string | Float of float
+  [@@deriving show { with_path = false }]
 
-  let compare (a : t) (b : t) =
+  let compare a b =
     match (a, b) with
-    | `Int a, `Int b -> compare a b
-    | `String a, `String b -> compare a b
-    | `Float a, `Float b -> compare a b
-    | `Int _, (`String _ | `Float _) | `String _, `Float _ -> -1
-    | `String _, `Int _ | `Float _, (`Int _ | `String _) -> 1
+    | Int a, Int b -> compare a b
+    | String a, String b -> compare a b
+    | Float a, Float b -> compare a b
+    | Int _, (String _ | Float _) | String _, Float _ -> -1
+    | String _, Int _ | Float _, (Int _ | String _) -> 1
 
-  let to_string (t : t) (extra : Ty.Variant.extra) =
-    match (t, extra) with
-    | `Int 0, `Extra_bool -> "false"
-    | _, `Extra_bool -> "true"
-    | `String s, _ -> s
-    | `Float n, _ -> Printf.sprintf "%g" n
-    | `Int i, _ -> string_of_int i
+  let equal a b = compare a b = 0
 end
 
 type 'a t =
@@ -41,6 +35,10 @@ type 'a t =
 let unknown x = Unknown x
 let null = Nil
 let const x e = Const (x, e)
+let int i = Const (Int i, Not_bool)
+let bool i = Const (Int i, Bool)
+let string s = Const (String s, Not_bool)
+let float f = Const (Float f, Not_bool)
 let some x = Array [| x |]
 let dict m = Dict m
 let tuple a = Array a
@@ -68,19 +66,20 @@ let fold_list f acc l =
   let rec aux i acc = function
     | Nil -> acc
     | Array [| hd; tl |] ->
-        let acc = f ~index:(Const (`Int i, `Extra_none)) acc hd in
+        let acc = f ~index:(int i) acc hd in
         aux (succ i) acc tl
     | _ -> assert false
   in
   aux 0 acc l
 
 let fold_dict f acc = function
-  | Dict m ->
-      Map.String.fold
-        (fun k v acc -> f ~index:(Const (`String k, `Extra_none)) acc v)
-        m acc
+  | Dict m -> Map.String.fold (fun k v acc -> f ~index:(string k) acc v) m acc
   | _ -> assert false
 
 let to_string = function
-  | Const (x, e) -> Const.to_string x e
+  | Const (Int 0, Bool) -> "false"
+  | Const (_, Bool) -> "true"
+  | Const (Int i, _) -> string_of_int i
+  | Const (String s, _) -> s
+  | Const (Float n, _) -> Printf.sprintf "%g" n
   | _ -> assert false

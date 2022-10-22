@@ -26,7 +26,6 @@ module Pattern : sig
     | TAny
 
   val pp : Format.formatter -> t -> unit
-  val equal : t -> t -> bool
 end
 
 type echo =

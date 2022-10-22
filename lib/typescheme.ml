@@ -18,8 +18,8 @@ let int_map_of_list l =
 
 module Variant = struct
   type row = [ `Closed | `Open ] [@@deriving eq]
-  type extra = [ `Extra_none | `Extra_bool ] [@@deriving eq]
-  type ('a, 'b) ty = Int of 'a | String of 'b [@@deriving eq]
+  type extra = Not_bool | Bool [@@deriving eq]
+  type ('a, 'b) ty = VInt of 'a | VString of 'b [@@deriving eq]
 
   type ('a, 'b) t = {
     mutable cases : ('a, 'b) ty;
@@ -53,28 +53,28 @@ module Enum = struct
   type t = (Set.Int.t, Set.String.t) Variant.t [@@deriving eq]
 
   let string l row =
-    { cases = String (Set.String.of_list l); row; extra = `Extra_none }
+    { cases = VString (Set.String.of_list l); row; extra = Not_bool }
 
   let string_singleton s row =
-    { cases = String (Set.String.singleton s); row; extra = `Extra_none }
+    { cases = VString (Set.String.singleton s); row; extra = Not_bool }
 
-  let int l row = { cases = Int (Set.Int.of_list l); row; extra = `Extra_none }
+  let int l row = { cases = VInt (Set.Int.of_list l); row; extra = Not_bool }
 
   let int_singleton i row =
-    { cases = Int (Set.Int.singleton i); row; extra = `Extra_none }
+    { cases = VInt (Set.Int.singleton i); row; extra = Not_bool }
 
-  let false_and_true_cases = Int (Set.Int.of_list [ 0; 1 ])
-  let false_only = Int (Set.Int.singleton 0)
-  let true_only = Int (Set.Int.singleton 1)
+  let false_and_true_cases = VInt (Set.Int.of_list [ 0; 1 ])
+  let false_only = VInt (Set.Int.singleton 0)
+  let true_only = VInt (Set.Int.singleton 1)
 
   let false_and_true () =
-    { cases = false_and_true_cases; row = `Closed; extra = `Extra_bool }
+    { cases = false_and_true_cases; row = `Closed; extra = Bool }
 
-  let true_only () = { cases = true_only; row = `Closed; extra = `Extra_bool }
-  let false_only () = { cases = false_only; row = `Closed; extra = `Extra_bool }
+  let true_only () = { cases = true_only; row = `Closed; extra = Bool }
+  let false_only () = { cases = false_only; row = `Closed; extra = Bool }
 
   let bool_of_list l =
-    { cases = Int (Set.Int.of_list l); row = `Closed; extra = `Extra_bool }
+    { cases = VInt (Set.Int.of_list l); row = `Closed; extra = Bool }
 
   let pp_string ppf s = F.fprintf ppf "%@%S" s
   let pp_int ppf i = F.fprintf ppf "%@%i" i
@@ -88,28 +88,26 @@ module Union = struct
   [@@deriving eq]
 
   let int_singleton i x row extra =
-    { cases = Int (Map.Int.singleton i x); row; extra }
+    { cases = VInt (Map.Int.singleton i x); row; extra }
 
   let string_singleton s x row =
-    { cases = String (Map.String.singleton s x); row; extra = `Extra_none }
+    { cases = VString (Map.String.singleton s x); row; extra = Not_bool }
 
-  let string l row =
-    { cases = String (map_of_list l); row; extra = `Extra_none }
-
-  let int l row = { cases = Int (int_map_of_list l); row; extra = `Extra_none }
+  let string l row = { cases = VString (map_of_list l); row; extra = Not_bool }
+  let int l row = { cases = VInt (int_map_of_list l); row; extra = Not_bool }
 
   let boolean ~f ~t =
     {
-      cases = Int (Map.Int.singleton 0 f |> Map.Int.add 1 t);
+      cases = VInt (Map.Int.singleton 0 f |> Map.Int.add 1 t);
       row = `Closed;
-      extra = `Extra_bool;
+      extra = Bool;
     }
 
   let false_only l =
-    { cases = Int (Map.Int.singleton 0 l); row = `Closed; extra = `Extra_bool }
+    { cases = VInt (Map.Int.singleton 0 l); row = `Closed; extra = Bool }
 
   let true_only l =
-    { cases = Int (Map.Int.singleton 1 l); row = `Closed; extra = `Extra_bool }
+    { cases = VInt (Map.Int.singleton 1 l); row = `Closed; extra = Bool }
 
   let pp_tag_field ppf s = F.fprintf ppf "%@%a" Pp.field s
 end
@@ -178,10 +176,11 @@ let rec copy = function
   | Union (tag, { cases; row; extra }) ->
       let cases =
         match cases with
-        | String m ->
-            Variant.String
+        | VString m ->
+            Variant.VString
               (Map.String.map (fun r -> ref (internal_copy_record !r)) m)
-        | Int m -> Int (Map.Int.map (fun r -> ref (internal_copy_record !r)) m)
+        | VInt m ->
+            VInt (Map.Int.map (fun r -> ref (internal_copy_record !r)) m)
       in
       Union (tag, { cases; row; extra })
 
@@ -221,22 +220,22 @@ let rec pp ppf t =
       surround ~left:'(' ~right:')' ppf
         (F.pp_print_list ~pp_sep:Pp.sep_comma pp)
         l
-  | Enum { cases = String cases; row; _ } ->
+  | Enum { cases = VString cases; row; _ } ->
       Variant.pp ppf Enum.pp_string (Set.String.to_seq cases) row
-  | Enum { cases = Int cases; extra = `Extra_none; row } ->
+  | Enum { cases = VInt cases; extra = Not_bool; row } ->
       Variant.pp ppf Enum.pp_int (Set.Int.to_seq cases) row
-  | Enum { cases = Int cases; extra = `Extra_bool; row } ->
+  | Enum { cases = VInt cases; extra = Bool; row } ->
       Variant.pp ppf Variant.pp_bool (Set.Int.to_seq cases) row
   | Union (key, union) -> (
       let aux pp_tag ppf (tag, fields) =
         pp_record ~tag:(pp_tag, (key, tag)) pp ppf fields
       in
       match union with
-      | { cases = String cases; row; _ } ->
+      | { cases = VString cases; row; _ } ->
           Variant.pp ppf (aux Pp.syntax_string) (Map.String.to_seq cases) row
-      | { cases = Int cases; extra = `Extra_none; row } ->
+      | { cases = VInt cases; extra = Not_bool; row } ->
           Variant.pp ppf (aux F.pp_print_int) (Map.Int.to_seq cases) row
-      | { cases = Int cases; extra = `Extra_bool; row } ->
+      | { cases = VInt cases; extra = Bool; row } ->
           Variant.pp ppf (aux Variant.pp_bool) (Map.Int.to_seq cases) row)
 
 let pp_interface =

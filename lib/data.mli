@@ -11,7 +11,7 @@
 (** The internal representation of runtime data. *)
 
 module Const : sig
-  type t = [ `Int of int | `String of string | `Float of float ]
+  type t = Int of int | String of string | Float of float
 
   val equal : t -> t -> bool
   val compare : t -> t -> int
@@ -35,6 +35,10 @@ type 'a t = private
 val unknown : 'a -> 'a t
 val null : _ t
 val const : Const.t -> Typescheme.Variant.extra -> _ t
+val int : int -> _ t
+val bool : int -> _ t
+val string : string -> _ t
+val float : float -> _ t
 val some : 'a t -> 'a t
 val dict : 'a t Map.String.t -> 'a t
 val tuple : 'a t array -> 'a t
