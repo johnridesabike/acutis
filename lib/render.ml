@@ -106,23 +106,7 @@ let map_merge =
   let f _ _ b = Some b in
   fun a b -> Map.String.union f a b
 
-let rec pattern_to_data ~vars = function
-  | Typechecker.Pattern.TConst (x, Some { extra = Bool; _ }) ->
-      Data.const x Bool
-  | TConst (x, _) -> Data.const x Not_bool
-  | TVar x -> Map.String.find x vars
-  | TConstruct (_, Some x) -> pattern_to_data ~vars x
-  | TConstruct (_, None) -> Data.null
-  | TTuple l ->
-      let a = Array.of_list l |> Array.map (pattern_to_data ~vars) in
-      Data.tuple a
-  | TRecord (Some (k, v, { extra; _ }), x, _) ->
-      Map.String.map (pattern_to_data ~vars) x
-      |> Map.String.add k (Data.const v extra)
-      |> Data.dict
-  | TRecord (None, x, _) | TDict (x, _) ->
-      Data.dict (Map.String.map (pattern_to_data ~vars) x)
-  | TAny -> assert false
+let eval_data vars = Data.flat_map (fun x -> Map.String.find x vars)
 
 module type MONAD = sig
   type 'a t
@@ -205,14 +189,14 @@ module Make (M : MONAD) (D : DATA) = struct
           Buffer.add_string b s;
           M.return b
       | Match (args, tree) -> (
-          let args = Array.map (pattern_to_data ~vars) args in
+          let args = Array.map (eval_data vars) args in
           match make_match args tree with
           | None -> assert false
           | Some (vars', nodes) ->
               let vars = map_merge vars vars' in
               make b nodes vars children)
       | Map_list (arg, tree) ->
-          let l = pattern_to_data ~vars arg in
+          let l = eval_data vars arg in
           let f ~index b arg =
             match make_match [| arg; index |] tree with
             | None -> assert false
@@ -222,7 +206,7 @@ module Make (M : MONAD) (D : DATA) = struct
           in
           Data.fold_list f b l
       | Map_dict (arg, tree) ->
-          let l = pattern_to_data ~vars arg in
+          let d = eval_data vars arg in
           let f ~index b arg =
             match make_match [| arg; index |] tree with
             | None -> assert false
@@ -230,8 +214,8 @@ module Make (M : MONAD) (D : DATA) = struct
                 let vars = map_merge vars vars' in
                 make b nodes vars children
           in
-          Data.fold_dict f b l
-      | Component (data, comp_vars, comp_children) -> (
+          Data.fold_dict f b d
+      | Component (comp, args, children_args) -> (
           let f = function
             | Compile.Child_block nodes ->
                 let b = Buffer.create 1024 |> M.return in
@@ -239,9 +223,9 @@ module Make (M : MONAD) (D : DATA) = struct
                 M.return (Buffer.contents result)
             | Child_name child -> Map.String.find child children
           in
-          let children = Map.String.map f comp_children in
-          let vars = Map.String.map (pattern_to_data ~vars) comp_vars in
-          match data with
+          let children = Map.String.map f children_args in
+          let vars = Map.String.map (eval_data vars) args in
+          match comp with
           | Compile.Src nodes -> make b nodes vars children
           | Fun (prop_types, f) ->
               let* result = f (D.encode prop_types vars) children in

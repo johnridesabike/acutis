@@ -52,6 +52,14 @@ let list_rev =
   fun l -> aux Nil l
 
 let list_empty = Nil
+
+let rec flat_map f = function
+  | Unknown x -> f x
+  | Nil -> Nil
+  | Array a -> Array (Array.map (flat_map f) a)
+  | Dict d -> Dict (Map.String.map (flat_map f) d)
+  | Const (a, b) -> Const (a, b)
+
 let get_const = function Const (x, _) -> x | _ -> assert false
 let get_tuple = function Array t -> t | _ -> assert false
 let get_dict = function Dict t -> t | _ -> assert false

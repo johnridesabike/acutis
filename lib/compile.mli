@@ -14,13 +14,14 @@
 val parse : fname:string -> Lexing.lexbuf -> Ast.t
 (** @raise Error.Acutis_error *)
 
+(** The names of variables are preserved as strings in the [Data.t] values. *)
 type 'a node =
   | Text of string
   | Echo of Typechecker.echo list * Typechecker.echo
-  | Match of Typechecker.Pattern.t array * 'a nodes Matching.t
-  | Map_list of Typechecker.Pattern.t * 'a nodes Matching.t
-  | Map_dict of Typechecker.Pattern.t * 'a nodes Matching.t
-  | Component of 'a * Typechecker.Pattern.t Map.String.t * 'a child Map.String.t
+  | Match of string Data.t array * 'a nodes Matching.t
+  | Map_list of string Data.t * 'a nodes Matching.t
+  | Map_dict of string Data.t * 'a nodes Matching.t
+  | Component of 'a * string Data.t Map.String.t * 'a child Map.String.t
 
 and 'a child = Child_name of string | Child_block of 'a nodes
 and 'a nodes = 'a node list

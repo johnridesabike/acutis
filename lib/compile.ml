@@ -48,13 +48,30 @@ end
 type 'a node =
   | Text of string
   | Echo of Typechecker.echo list * Typechecker.echo
-  | Match of Typechecker.Pattern.t array * 'a nodes Matching.t
-  | Map_list of Typechecker.Pattern.t * 'a nodes Matching.t
-  | Map_dict of Typechecker.Pattern.t * 'a nodes Matching.t
-  | Component of 'a * Typechecker.Pattern.t Map.String.t * 'a child Map.String.t
+  | Match of string Data.t array * 'a nodes Matching.t
+  | Map_list of string Data.t * 'a nodes Matching.t
+  | Map_dict of string Data.t * 'a nodes Matching.t
+  | Component of 'a * string Data.t Map.String.t * 'a child Map.String.t
 
 and 'a child = Child_name of string | Child_block of 'a nodes
 and 'a nodes = 'a node list
+
+let rec make_data = function
+  | Typechecker.Pattern.TConst (x, Some { extra; _ }) -> Data.const x extra
+  | TConst (x, _) -> Data.const x Not_bool
+  | TVar x -> Data.unknown x
+  | TConstruct (_, Some x) -> make_data x
+  | TConstruct (_, None) -> Data.null
+  | TTuple l ->
+      let a = Array.of_list l |> Array.map make_data in
+      Data.tuple a
+  | TRecord (Some (k, v, { extra; _ }), x, _) ->
+      Map.String.map make_data x
+      |> Map.String.add k (Data.const v extra)
+      |> Data.dict
+  | TRecord (None, x, _) | TDict (x, _) ->
+      Data.dict (Map.String.map make_data x)
+  | TAny -> assert false
 
 let rec make_nodes =
   let f = function
@@ -64,14 +81,15 @@ let rec make_nodes =
     | TText (s, Trim, Trim) -> Text (String.trim s)
     | TEcho (nullables, default) -> Echo (nullables, default)
     | TMatch (loc, hd :: tl, tys, cases) ->
-        Match (Array.of_list (hd :: tl), make_match loc tys cases)
+        let pats = Array.of_list (hd :: tl) |> Array.map make_data in
+        Match (pats, make_match loc tys cases)
     | TMap_list (loc, pat, tys, cases) ->
-        Map_list (pat, make_match loc tys cases)
+        Map_list (make_data pat, make_match loc tys cases)
     | TMap_dict (loc, pat, tys, cases) ->
-        Map_dict (pat, make_match loc tys cases)
+        Map_dict (make_data pat, make_match loc tys cases)
     | TComponent (name, props, children) ->
         let children = Map.String.map make_children children in
-        Component (name, props, children)
+        Component (name, Map.String.map make_data props, children)
   in
   fun l -> List.map f l
 

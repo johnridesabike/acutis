@@ -21,7 +21,8 @@ end
 (** The boxed representation of runtime data. *)
 type 'a t = private
   | Unknown of 'a
-      (** Any values without a concrete type are preserved as-is. *)
+      (** At runtime, this stores any raw input with an unknown type.
+          In a compiled template, this stores the names of variables. *)
   | Nil  (** Represents both [null] and [[]]. *)
   | Array of 'a t array  (** Tuples are compiled to arrays. *)
   | Dict of 'a t Map.String.t
@@ -45,6 +46,9 @@ val tuple : 'a t array -> 'a t
 val list_cons : 'a t -> 'a t -> 'a t
 val list_rev : 'a t -> 'a t
 val list_empty : _ t
+
+val flat_map : ('a -> 'b t) -> 'a t -> 'b t
+(** Transform the contents of [Unknown] values to a different type of data. *)
 
 (** {1 Deconstructing data} *)
 
