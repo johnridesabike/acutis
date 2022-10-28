@@ -25,7 +25,7 @@ let set = SI.of_list
 
 let basic_tree () =
   let open Matching in
-  let src = {|{% match a with !a %} {% with null %} {% /match %}|} in
+  let src = {|{% match a with !_a %} {% with null %} {% /match %}|} in
   check "Basic tree"
     (Construct
        {
@@ -46,7 +46,7 @@ let basic_tree () =
                            key = 0;
                            ids = SI.of_list [ 0 ];
                            child =
-                             End (End { names = map [ ("a", 0) ]; exit = e 0 });
+                             End (End { names = map [ ("_a", 0) ]; exit = e 0 });
                          });
                   wildcard = None;
                 });
@@ -100,17 +100,19 @@ let basic_tree () =
   let src =
     {|{% match a, b, c
        with 10, 11, 12 %}
-    {% with  x, 21, 22 %}
+    {% with  _x, 21, 22 %}
     {% with 30, 31, 32 %}
-    {% with 30,  y, 42 %}
-    {% with  a,  b,  c %}
+    {% with 30,  _y, 42 %}
+    {% with  _a,  _b,  _c %}
     {% /match %}|}
   in
   let exit_0 = { names = MS.empty; exit = e 0 } in
-  let exit_1 = { names = map [ ("x", 0) ]; exit = e 1 } in
+  let exit_1 = { names = map [ ("_x", 0) ]; exit = e 1 } in
   let exit_2 = { names = MS.empty; exit = e 2 } in
-  let exit_3 = { names = map [ ("y", 1) ]; exit = e 3 } in
-  let exit_4 = { exit = e 4; names = map [ ("a", 2); ("b", 3); ("c", 4) ] } in
+  let exit_3 = { names = map [ ("_y", 1) ]; exit = e 3 } in
+  let exit_4 =
+    { exit = e 4; names = map [ ("_a", 2); ("_b", 3); ("_c", 4) ] }
+  in
   let int_21 =
     {
       data = Int 21;
@@ -347,14 +349,14 @@ let nests_merge_wildcards () =
   let open Matching in
   let src =
     {|{% match              a,  b
-       with               x, 41 %}
+       with               _x, 41 %}
     {% with  ((10, 20), 30), 40 %}
-    {% with               y,  z %}
+    {% with               _y,  _z %}
     {% /match %}|}
   in
-  let exit_0 = { names = map [ ("x", 0) ]; exit = e 0 } in
+  let exit_0 = { names = map [ ("_x", 0) ]; exit = e 0 } in
   let exit_1 = { names = MS.empty; exit = e 1 } in
-  let exit_2 = { names = map [ ("y", 1); ("z", 2) ]; exit = e 2 } in
+  let exit_2 = { names = map [ ("_y", 1); ("_z", 2) ]; exit = e 2 } in
   let int_40 =
     Switch
       {
@@ -441,13 +443,13 @@ let lists () =
   let src =
     {|{% match a
        with [] %}
-    {% with [x] %}
-    {% with [x, ...y] %}
+    {% with [_x] %}
+    {% with [_x, ..._y] %}
     {% /match %}|}
   in
   let exit_0 = { names = MS.empty; exit = e 0 } in
-  let exit_1 = { names = map [ ("x", 0) ]; exit = e 1 } in
-  let exit_2 = { names = map [ ("x", 1); ("y", 2) ]; exit = e 2 } in
+  let exit_1 = { names = map [ ("_x", 0) ]; exit = e 1 } in
+  let exit_2 = { names = map [ ("_x", 1); ("_y", 2) ]; exit = e 2 } in
   check "Different-sized lists merge correctly"
     (Construct
        {
@@ -490,16 +492,16 @@ let lists () =
   let src =
     {|{% match a, b
        with  [10, 11], 12 %}
-    {% with  [10, 11, ...x], 22 %}
+    {% with  [10, 11, ..._x], 22 %}
     {% with  [30], 32 %}
-    {% with  y, 42 %}
+    {% with  _y, 42 %}
     {% with  _, _ %}
     {% /match %}|}
   in
   let exit_0 = { names = MS.empty; exit = e 0 } in
-  let exit_1 = { names = map [ ("x", 0) ]; exit = e 1 } in
+  let exit_1 = { names = map [ ("_x", 0) ]; exit = e 1 } in
   let exit_2 = { names = MS.empty; exit = e 2 } in
-  let exit_3 = { names = map [ ("y", 1) ]; exit = e 3 } in
+  let exit_3 = { names = map [ ("_y", 1) ]; exit = e 3 } in
   let exit_4 = { names = MS.empty; exit = e 4 } in
   let int_42 = { data = Int 42; if_match = End exit_3; next = None } in
   let int_22 = { data = Int 22; if_match = End exit_1; next = Some int_42 } in
@@ -1174,13 +1176,13 @@ let records_expand () =
        with {b: 10} %}
     {% with {a: 20} %}
     {% with {c: 30} %}
-    {% with x %}
+    {% with _x %}
     {% /match %}|}
   in
   let exit_0 = { names = MS.empty; exit = e 0 } in
   let exit_1 = { names = MS.empty; exit = e 1 } in
   let exit_2 = { names = MS.empty; exit = e 2 } in
-  let exit_3 = { names = map [ ("x", 0) ]; exit = e 3 } in
+  let exit_3 = { names = map [ ("_x", 0) ]; exit = e 3 } in
   check "New fields expand existing rows"
     (Nest
        {

@@ -26,6 +26,11 @@ Acutis rendering engine is flexible enough to allow other types of input.
 As an example, the JSON object `{"color": "blue"}` binds the string `"blue"` to
 the name `color`.
 
+Bindings in Acutis are what some languages call "variables." The term _variable_
+is not completely accurate in Acutis because bindings are immutable and
+therefore cannot _vary_. Nonetheless, you may still see the two terms used
+interchangeably.
+
 ## Echoing values
 
 If you apply the data from the last section to this template:
@@ -486,6 +491,28 @@ But my favorite is still blue.
 ```
 
 The top-level `color` is not affected by the nested `color` binding.
+
+## Ignoring bindings
+
+The compiler will raise an error if you declare a binding but never use it. You
+can suppress this warning either by prefixing the name with an `_` (underscore)
+or by replacing the entire name with `_`.
+
+```acutis
+{% match list with [head, ...tail] %}
+  The list's head is {{ head }}.
+  This will fail to compile. We forgot to use 'tail'.
+{% with [] %} The list is empty.
+{% /match %}
+```
+
+```acutis
+{% match list with [head, ..._tail] %}
+  The list's head is {{ head }}.
+  This will compile without an error.
+{% with [] %} The list is empty.
+{% /match %}
+```
 
 ## Exhaustive and partial patterns
 

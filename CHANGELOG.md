@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.19.0
+
+- Add detection for unused bound variables.
+
 ## 0.18.0
 
 - Add Eleventy plugin.

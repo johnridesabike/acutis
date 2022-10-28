@@ -28,6 +28,7 @@ val underscore_in_construct : Loc.t -> _
 val child_type_mismatch : Loc.t -> Typescheme.Child.t -> Typescheme.Child.t -> _
 val name_bound_too_many : Loc.t -> string -> _
 val var_missing : Loc.t -> string -> _
+val var_unused : Loc.t -> string -> _
 val pat_num_mismatch : Loc.t -> _
 val map_pat_num_mismatch : Loc.t -> _
 val echo_nullable_literal : Loc.t -> _

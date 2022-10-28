@@ -548,7 +548,7 @@ let type_error_record () =
        \  {a: _, b: _}\n\
         Received:\n\
        \  {a: _}")
-    (render "{% match {a: 1} with {a, b} %} {% /match %}");
+    (render "{% match {a: 1} with {a: _, b: _} %} {% /match %}");
   let comps =
     Compile.Components.(
       make [ parse_string ~fname:"a.acutis" ~name:"A" "{{ a }}" ])
@@ -738,6 +738,36 @@ let component_typechecker () =
               parse_string ~fname:"y.acutis" ~name:"Y" "{{ A ? z }} {% Z A / %}";
             ]))
 
+let unused_bindings () =
+  let open Alcotest in
+  check_raises "Basic unused bindings are reported."
+    (E
+       "File \"<test>\", 1:18-1:19\n\
+        Type error.\n\
+        This variable is bound but never used:\n\
+       \  x")
+    (render "{% match a with {x} %} {% /match %}");
+  check_raises "Unused bindings are reported in the order they appear."
+    (E
+       "File \"<test>\", 1:21-1:22\n\
+        Type error.\n\
+        This variable is bound but never used:\n\
+       \  y")
+    (render
+       "{% match a with {x, y} %}\n\
+       \  {% match x with {z} %} {% /match %}\n\
+        {% /match %}");
+  check_raises "Shadowing bindings can report them as unused."
+    (E
+       "File \"<test>\", 1:26-1:27\n\
+        Type error.\n\
+        This variable is bound but never used:\n\
+       \  y")
+    (render
+       "{% match a, b with {x}, {y} %}\n\
+       \  {% match x with {y} %} {{ y }} {%/ match %}\n\
+        {% /match %}")
+
 let matching_unused () =
   let open Alcotest in
   check_raises "Basic pattern (1)."
@@ -745,7 +775,7 @@ let matching_unused () =
     (render
        "{% match a, b, c\n\
        \   with 10, 11, 12 %}\n\
-        {% with x, 21, 22 %}\n\
+        {% with _x, 21, 22 %}\n\
         {% with 10, 11, 12 %}\n\
         {% /match %}");
   check_raises "Basic pattern (2)."
@@ -753,19 +783,19 @@ let matching_unused () =
     (render
        "{% match a, b, c\n\
        \   with 10, 11, 12 %}\n\
-        {% with x, 21, 22 %}\n\
+        {% with _x, 21, 22 %}\n\
         {% with 30, 31, 32 %}\n\
-        {% with 30, y, 42 %}\n\
+        {% with 30, _y, 42 %}\n\
         {% with 30, 31, 42 %}\n\
         {% /match %}");
   check_raises "Nest patterns merge into wildcard patterns correctly (1)."
-    (E "File \"<test>\", 1:31-1:46\nMatching error.\nThis match case is unused.")
-    (render "{% match a, b with x, y %} {% with (_, _), 40 %} {% /match %}");
-  check_raises "Nest patterns merge into wildcard patterns correctly (1)."
+    (E "File \"<test>\", 1:33-1:48\nMatching error.\nThis match case is unused.")
+    (render "{% match a, b with _x, _y %} {% with (_, _), 40 %} {% /match %}");
+  check_raises "Nest patterns merge into wildcard patterns correctly (2)."
     (E "File \"<test>\", 4:4-4:22\nMatching error.\nThis match case is unused.")
     (render
        "{% match a, b\n\
-       \   with x, 1 %}\n\
+       \   with _x, 1 %}\n\
         {% with (\"a\", \"b\"), 10 %}\n\
         {% with (\"a\", \"b\"), 1 %}\n\
         {% /match %}")
@@ -872,7 +902,7 @@ let parmatch () =
         Here's an example of a pattern which is not matched:\n\
        \  {@tag: true, a: _}")
     (render
-       "{% match a with {@tag: true, a: 10} %} {% with {@tag: false, b} %}\n\
+       "{% match a with {@tag: true, a: 10} %} {% with {@tag: false, b: _} %}\n\
         {% /match %}");
   check_raises "Partial matching with records."
     (E
@@ -894,7 +924,7 @@ let parmatch () =
        \  {@kind: \"anonymous\", books: _}")
     (render
        "{%~ match author\n\
-       \    with {@kind: \"person\", name, books: [newest, ...older]} %}\n\
+       \    with {@kind: \"person\", name: _, books: [_newest, ..._older]} %}\n\
         {%~  with {@kind: \"anonymous\", books: []} %}\n\
        \  This author hasn't published any books.\n\
         {% /match %}")
@@ -1479,6 +1509,7 @@ let () =
           test_case "Multiple names bound" `Quick dup_name_destructure;
           test_case "Variables in with clauses" `Quick vars_with_clauses;
           test_case "Component errors" `Quick component_typechecker;
+          test_case "Unused bindings" `Quick unused_bindings;
         ] );
       ( "Matching errors",
         [

@@ -33,6 +33,13 @@ let unbound_vars () =
   check "Unbound variables default to null." "a doesn't exist."
     (render src "{}")
 
+let ignore_bindings () =
+  let src = "{% match a with {x: _x} ~%} x is ignored. {%~ /match %}" in
+  check
+    "Prefixing a name with an underscore suppresses unused-variable warnings."
+    "x is ignored."
+    (render src "{\"a\": {\"x\": null}}")
+
 let whitespace () =
   let props = {|{"a": {"b": {"c": "hi"}}}|} in
   let src =
@@ -210,6 +217,7 @@ let () =
         [
           test_case "Basic" `Quick basic;
           test_case "Unbound variables" `Quick unbound_vars;
+          test_case "Ignoring bindings" `Quick ignore_bindings;
           test_case "Whitespace control" `Quick whitespace;
           test_case "Nullish coalescing" `Quick nullish_coalescing;
           test_case "Append list literal" `Quick list_literal_append;

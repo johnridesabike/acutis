@@ -79,6 +79,10 @@ let var_missing loc v =
   let f = F.dprintf "Variable '%s' must occur in each 'with' pattern." v in
   raise @@ Acutis_error (pp_ty loc f)
 
+let var_unused loc s =
+  let f = F.dprintf "This variable is bound but never used:@;<1 2>%s" s in
+  raise @@ Acutis_error (pp_ty loc f)
+
 let pat_num_mismatch =
   let f = F.dprintf "Pattern count mismatch." in
   fun loc -> raise @@ Acutis_error (pp_ty loc f)

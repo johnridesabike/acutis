@@ -83,13 +83,13 @@ let constructing () =
         ])
     (get_types src);
   let src =
-    {|{% match a with [{a: 1}, c, {b: "b"}] %} {% with _ %} {% /match %}|}
+    {|{% match a with [{a: 1}, _c, {b: "b"}] %} {% with _ %} {% /match %}|}
   in
   check "Inferrence works for nested types (1)"
     Ty.(make [ ("a", list (record [ ("a", int ()); ("b", string ()) ])) ])
     (get_types src);
   let src =
-    {|{% match a with [{@tag: 0, a: 1}, c, {@tag: 1, b: "b"}] %}
+    {|{% match a with [{@tag: 0, a: 1}, _c, {@tag: 1, b: "b"}] %}
       {% with _ %} {% /match %}|}
   in
   check "Inferrence works for nested types (2)"

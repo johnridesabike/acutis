@@ -556,13 +556,20 @@ module Context = struct
         mutable children : (Loc.t * Ty.Child.t) Map.String.t;
       }
 
+  type used = Unused | Used
+  type binding = { loc : Loc.t; name : string; mutable used : used; ty : Ty.t }
+
   type t = {
     root : root;
     global : Ty.t Map.String.t ref;
-    scope : Ty.t Map.String.t;
+    scope : binding Map.String.t;
+    all_bindings : binding Queue.t;
+        (** This is for checking for unused variables. A queue preserves the
+            order for friendlier debugging. *)
     children : Ty.Child.t Map.String.t ref;
     interface : interface ref;
     interface_loc : Loc.t ref;
+        (** When there's more than one interface, this is for the last one. *)
   }
   (** We have to wrap each mutable value in a [ref] instead of using mutable
       fields because a new context record is created for each scope. *)
@@ -572,6 +579,7 @@ module Context = struct
       root;
       global = ref Map.String.empty;
       scope = Map.String.empty;
+      all_bindings = Queue.create ();
       children = ref Map.String.empty;
       interface = ref No_interface;
       interface_loc = ref Loc.dummy;
@@ -580,7 +588,9 @@ module Context = struct
   let get k scope global =
     match Map.String.find_opt k scope with
     | None -> Map.String.find_opt k !global
-    | Some _ as x -> x
+    | Some x ->
+        x.used <- Used;
+        Some x.ty
 
   let update { scope; global; _ } loc k v =
     match get k scope global with
@@ -599,43 +609,40 @@ module Context = struct
         in
         children := Map.String.update k f !children
 
-  let add_scope bindings ctx =
-    let bindings' = Queue.create () in
-    Queue.iter
-      (fun q ->
-        Queue.add
-          (Queue.fold
-             (fun newscope (loc, k, v) ->
-               if Map.String.mem k newscope then Error.name_bound_too_many loc k
-               else Map.String.add k (loc, v) newscope)
-             Map.String.empty q)
-          bindings')
-      bindings;
-    match Queue.take_opt bindings' with
-    | None -> ctx
-    | Some hd ->
-        let newscope =
+  let add_scope var_matrix ctx =
+    let var_map_rows =
+      Queue.fold
+        (fun var_map_rows var_row ->
           Queue.fold
+            (fun var_map (loc, k, v) ->
+              if Map.String.mem k var_map then Error.name_bound_too_many loc k
+              else
+                let binding = { loc; used = Unused; name = k; ty = v } in
+                Queue.add binding ctx.all_bindings;
+                Map.String.add k binding var_map)
+            Map.String.empty var_row
+          :: var_map_rows)
+        [] var_matrix
+      |> List.rev
+    in
+    match var_map_rows with
+    | [] -> ctx
+    | hd :: vars ->
+        let scope =
+          List.fold_left
             (fun acc m ->
               Map.String.merge
                 (fun k a b ->
                   match (a, b) with
-                  | (Some (loc, a) as a'), Some (_, b) ->
+                  | (Some { loc; ty = a; _ } as a'), Some { ty = b; _ } ->
                       unify loc Construct_literal a b;
                       a'
-                  | Some (loc, _), None | None, Some (loc, _) ->
+                  | Some { loc; _ }, None | None, Some { loc; _ } ->
                       Error.var_missing loc k
                   | None, None -> None)
                 acc m)
-            hd bindings'
-        in
-        let scope =
-          Map.String.merge
-            (fun _ a b ->
-              match (a, b) with
-              | None, None -> None
-              | Some x, None | _, Some (_, x) -> Some x)
-            ctx.scope newscope
+            hd vars
+          |> Map.String.union (fun _k _oldvar newvar -> Some newvar) ctx.scope
         in
         { ctx with scope }
 end
@@ -909,11 +916,15 @@ and make_nodes ctx g nodes =
   in
   List.filter_map f nodes
 
-let pair_snd (_, v) = v
-
 let make root g ast =
   let ctx = Context.make root in
   let nodes = make_nodes ctx g ast in
+  Queue.iter
+    (function
+      | Context.{ used = Used; _ } -> ()
+      | { used = Unused; loc; name; _ } -> (
+          match name.[0] with '_' -> () | _ -> Error.var_unused loc name))
+    ctx.all_bindings;
   match !(ctx.interface) with
   | No_interface ->
       { nodes; prop_types = !(ctx.global); child_types = !(ctx.children) }
@@ -923,8 +934,8 @@ let make root g ast =
         ~impl:!(ctx.children);
       {
         nodes;
-        prop_types = Map.String.map pair_snd types;
-        child_types = Map.String.map pair_snd children;
+        prop_types = Map.String.map snd types;
+        child_types = Map.String.map snd children;
       }
 
 let make_src g = function
