@@ -33,7 +33,6 @@ module Record = struct
     | Tag_int of Loc.t * int
     | Tag_bool of Loc.t * int
     | Tag_string of Loc.t * string
-  [@@deriving eq]
 
   let pp_tag ppf = function
     | Tag_int (_, i) -> Format.pp_print_int ppf i
@@ -42,7 +41,6 @@ module Record = struct
     | Tag_string (_, s) -> Format.fprintf ppf "%S" s
 
   type 'a t = Untagged of 'a Dict.t | Tagged of string * tag * 'a Dict.t
-  [@@deriving show, eq]
 
   let add loc tag m =
     match (tag, m) with
@@ -72,13 +70,11 @@ module Interface = struct
     | Enum_string of string Nonempty.t * Typescheme.Variant.row
     | Record of (Loc.t * ty Record.t) Nonempty.t * Typescheme.Variant.row
     | Tuple of ty list
-  [@@deriving show, eq]
 
   type t =
     | Type of Loc.t * string * ty
     | Child of Loc.t * string
     | Child_nullable of Loc.t * string
-  [@@deriving show, eq]
 end
 
 module Pattern = struct
@@ -95,17 +91,15 @@ module Pattern = struct
     | Tuple of Loc.t * t list
     | Record of Loc.t * t Record.t
     | Dict of Loc.t * t Dict.t
-  [@@deriving show, eq]
 end
 
-type trim = No_trim | Trim [@@deriving show, eq]
-type escape = No_escape | Escape [@@deriving show, eq]
+type trim = No_trim | Trim
+type escape = No_escape | Escape
 
 type echo =
   | Ech_var of Loc.t * string * escape
   | Ech_component of Loc.t * string
   | Ech_string of Loc.t * string
-[@@deriving show, eq]
 
 type node =
   | Text of string * trim * trim
@@ -118,4 +112,4 @@ type node =
 
 and case = { pats : (Loc.t * Pattern.t Nonempty.t) Nonempty.t; nodes : t }
 and child = Child_name of Loc.t * string | Child_block of t
-and t = node list [@@deriving show, eq]
+and t = node list

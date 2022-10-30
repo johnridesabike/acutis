@@ -14,6 +14,17 @@ let sep_comma ppf () = fprintf ppf ",@ "
 let sep_semicolon ppf () = Format.fprintf ppf ";@ "
 let syntax_string ppf k = fprintf ppf "%S" k
 
+let option pp ppf o =
+  pp_print_option
+    ~none:(fun ppf () -> pp_print_string ppf "None")
+    (fun ppf x -> fprintf ppf "(Some %a)" pp x)
+    ppf o
+
+let list pp ppf l =
+  fprintf ppf "@[<2>[%a@,]@]" (pp_print_list ~pp_sep:sep_semicolon pp) l
+
+let pair pp_a pp_b ppf (a, b) = fprintf ppf "(@[%a,@ %a@])" pp_a a pp_b b
+
 let bindings pp_k pp_v ppf (k, v) =
   fprintf ppf "@[<hov 2>%a ->@ %a@]" pp_k k pp_v v
 

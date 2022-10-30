@@ -2,7 +2,7 @@ open Acutis
 module F = Format
 
 let parse src = Compile.parse ~fname:"<test>" (Lexing.from_string src)
-let check = Alcotest.(check (module Ast))
+let check = Alcotest.(check (module DebugAst))
 let loc = Loc.dummy
 
 let echoes () =

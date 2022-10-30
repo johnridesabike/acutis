@@ -16,17 +16,34 @@ let map_of_list l =
 let int_map_of_list l =
   List.fold_left (fun map (k, v) -> Map.Int.add k v map) Map.Int.empty l
 
+let equal_ref equal a b = equal !a !b
+
 module Variant = struct
-  type row = [ `Closed | `Open ] [@@deriving eq]
-  type extra = Not_bool | Bool [@@deriving eq]
-  type ('a, 'b) ty = VInt of 'a | VString of 'b [@@deriving eq]
+  type row = [ `Closed | `Open ]
+  type extra = Not_bool | Bool
+  type ('a, 'b) ty = VInt of 'a | VString of 'b
 
   type ('a, 'b) t = {
     mutable cases : ('a, 'b) ty;
     mutable row : row;
     extra : extra;
   }
-  [@@deriving eq]
+
+  let equal_row (a : row) (b : row) =
+    match (a, b) with `Closed, `Closed | `Open, `Open -> true | _ -> false
+
+  let equal_extra a b =
+    match (a, b) with Not_bool, Not_bool | Bool, Bool -> true | _ -> false
+
+  let equal_ty equal_int equal_string a b =
+    match (a, b) with
+    | VInt a, VInt b -> equal_int a b
+    | VString a, VString b -> equal_string a b
+    | _ -> false
+
+  let equal equal_int equal_string a { cases; row; extra } =
+    equal_ty equal_int equal_string a.cases cases
+    && equal_row a.row row && equal_extra a.extra extra
 
   let pp_sep ppf () = F.fprintf ppf "@ | "
 
@@ -50,7 +67,9 @@ end
 module Enum = struct
   open Variant
 
-  type t = (Set.Int.t, Set.String.t) Variant.t [@@deriving eq]
+  type t = (Set.Int.t, Set.String.t) Variant.t
+
+  let equal a b = Variant.equal Set.Int.equal Set.String.equal a b
 
   let string l row =
     { cases = VString (Set.String.of_list l); row; extra = Not_bool }
@@ -85,7 +104,12 @@ module Union = struct
 
   type 'a t =
     ('a Map.String.t ref Map.Int.t, 'a Map.String.t ref Map.String.t) Variant.t
-  [@@deriving eq]
+
+  let equal equal a b =
+    Variant.equal
+      (Map.Int.equal (equal_ref (Map.String.equal equal)))
+      (Map.String.equal (equal_ref (Map.String.equal equal)))
+      a b
 
   let int_singleton i x row extra =
     { cases = VInt (Map.Int.singleton i x); row; extra }
@@ -125,9 +149,24 @@ type ty =
   | Dict of t * Set.String.t ref
   | Enum of Enum.t
   | Union of string * t Union.t
-[@@deriving eq]
 
-and t = ty ref [@@deriving eq]
+and t = ty ref
+
+let rec equal_ty a b =
+  match (a, b) with
+  | Unknown a, Unknown b -> Variant.equal_row !a !b
+  | Int, Int | Float, Float | String, String | Echo, Echo -> true
+  | Nullable a, Nullable b | List a, List b -> equal a b
+  | Tuple a, Tuple b -> List.equal equal a b
+  | Record a, Record b -> Map.String.equal equal !a !b
+  | Dict (a, a_set), Dict (b, b_set) ->
+      equal a b && Set.String.equal !a_set !b_set
+  | Enum a, Enum b -> Enum.equal a b
+  | Union (a, a_union), Union (b, b_union) ->
+      a = b && Union.equal equal a_union b_union
+  | _ -> false
+
+and equal a b = equal_ref equal_ty a b
 
 let internal_record m = ref (Record m)
 let internal_dict_keys t kys = ref (Dict (t, kys))

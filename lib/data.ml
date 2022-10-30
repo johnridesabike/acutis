@@ -12,7 +12,6 @@ module Ty = Typescheme
 
 module Const = struct
   type t = Int of int | String of string | Float of float
-  [@@deriving show { with_path = false }]
 
   let compare a b =
     match (a, b) with

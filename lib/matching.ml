@@ -13,34 +13,29 @@ module Ty = Typescheme
 module Const = Data.Const
 
 type debug_nest_info = Not_dict | Dict
-[@@deriving eq, show { with_path = false }]
 
 type ('leaf, 'key) tree =
   | Switch of {
       key : 'key;
-      ids : Set.Int.t; [@printer Pp.set_int]
+      ids : Set.Int.t;
       cases : ('leaf, 'key) switchcase;
       wildcard : ('leaf, 'key) tree option;
       debug_row : Ty.Variant.row;
     }
   | Nest of {
       key : 'key;
-      ids : Set.Int.t; [@printer Pp.set_int]
+      ids : Set.Int.t;
       child : ('leaf, 'key) nest;
       wildcard : ('leaf, 'key) tree option;
       debug : debug_nest_info;
     }
   | Construct of {
       key : 'key;
-      ids : Set.Int.t; [@printer Pp.set_int]
+      ids : Set.Int.t;
       nil : ('leaf, 'key) tree option;
       cons : ('leaf, 'key) tree option;
     }
-  | Wildcard of {
-      key : 'key;
-      ids : Set.Int.t; [@printer Pp.set_int]
-      child : ('leaf, 'key) tree;
-    }
+  | Wildcard of { key : 'key; ids : Set.Int.t; child : ('leaf, 'key) tree }
   | End of 'leaf
 
 and ('leaf, 'key) nest =
@@ -52,7 +47,6 @@ and ('leaf, 'key) switchcase = {
   if_match : ('leaf, 'key) tree;
   next : ('leaf, 'key) switchcase option;
 }
-[@@deriving eq, show { with_path = false }]
 
 module Exit = struct
   type key = int
@@ -67,13 +61,70 @@ module Exit = struct
   let unsafe_key i = i
 end
 
-type leaf = {
-  names : int Map.String.t; [@printer Pp.map_string Format.pp_print_int]
-  exit : Exit.key;
-}
-[@@deriving eq, show { with_path = false }]
-
+type leaf = { names : int Map.String.t; exit : Exit.key }
 type 'a t = { tree : (leaf, int) tree; exits : 'a Exit.t }
+
+let equal_debug_nest_info a b =
+  match (a, b) with Not_dict, Not_dict | Dict, Dict -> true | _ -> false
+
+let rec equal_tree :
+          'leaf 'key.
+          ('leaf -> 'leaf -> bool) ->
+          ('key -> 'key -> bool) ->
+          ('leaf, 'key) tree ->
+          ('leaf, 'key) tree ->
+          bool =
+ fun equal_leaf equal_key a b ->
+  match (a, b) with
+  | Switch a, Switch { key; ids; cases; wildcard; debug_row } ->
+      equal_key a.key key && Set.Int.equal a.ids ids
+      && equal_switchcase equal_leaf equal_key a.cases cases
+      && Option.equal (equal_tree equal_leaf equal_key) a.wildcard wildcard
+      && Ty.Variant.equal_row a.debug_row debug_row
+  | Nest a, Nest { key; ids; child; wildcard; debug } ->
+      equal_key a.key key && Set.Int.equal a.ids ids
+      && equal_nest equal_leaf equal_key a.child child
+      && Option.equal (equal_tree equal_leaf equal_key) a.wildcard wildcard
+      && equal_debug_nest_info a.debug debug
+  | Construct a, Construct { key; ids; nil; cons } ->
+      equal_key a.key key && Set.Int.equal a.ids ids
+      && Option.equal (equal_tree equal_leaf equal_key) a.nil nil
+      && Option.equal (equal_tree equal_leaf equal_key) a.cons cons
+  | Wildcard a, Wildcard { key; ids; child } ->
+      equal_key a.key key && Set.Int.equal a.ids ids
+      && equal_tree equal_leaf equal_key a.child child
+  | End a, End b -> equal_leaf a b
+  | _ -> false
+
+and equal_nest :
+      'leaf 'key.
+      ('leaf -> 'leaf -> bool) ->
+      ('key -> 'key -> bool) ->
+      ('leaf, 'key) nest ->
+      ('leaf, 'key) nest ->
+      bool =
+ fun equal_leaf equal_key a b ->
+  match (a, b) with
+  | Int_keys a, Int_keys b ->
+      equal_tree (equal_tree equal_leaf equal_key) Int.equal a b
+  | String_keys a, String_keys b ->
+      equal_tree (equal_tree equal_leaf equal_key) String.equal a b
+  | _ -> false
+
+and equal_switchcase :
+      'leaf 'key.
+      ('leaf -> 'leaf -> bool) ->
+      ('key -> 'key -> bool) ->
+      ('leaf, 'key) switchcase ->
+      ('leaf, 'key) switchcase ->
+      bool =
+ fun equal_leaf equal_key a { data; if_match; next } ->
+  Const.equal a.data data
+  && equal_tree equal_leaf equal_key a.if_match if_match
+  && Option.equal (equal_switchcase equal_leaf equal_key) a.next next
+
+let equal_leaf a { names; exit } =
+  Map.String.equal Int.equal a.names names && Exit.equal_key a.exit exit
 
 (** One challenge when merging the trees is that we need to keep track of where
     we are in the tree. This natural-number GADT tracks that for us on the type
@@ -627,7 +678,7 @@ let make Nonempty.(Typechecker.{ pats; nodes } :: tl_cases) =
         if equal_tree equal_leaf Int.equal tree tree' then Error.unused_case loc
         else
           let tree = make_case ~exit next_id tree' tl_pats in
-          aux tree (exit + 1) l
+          aux tree (succ exit) l
   in
   aux hd_tree 1 tl_cases
 

@@ -1,7 +1,5 @@
 (library
- (public_name acutis)
- (preprocess
-  (pps ppx_deriving.show ppx_deriving.eq)))
+ (public_name acutis))
 
 (ocamllex lexer)
 

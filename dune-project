@@ -25,7 +25,6 @@
  (depends
    (ocaml (>= 4.14))
    (menhir (= 20220210))
-   ppx_deriving
    (alcotest :with-test)
    (alcotest-lwt :with-test)
    (lwt :with-test)

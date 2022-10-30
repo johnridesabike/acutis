@@ -20,6 +20,8 @@ module Dict : sig
   val empty : _ t
   val add : Loc.t -> string -> 'a -> 'a t -> 'a t
   val singleton : string -> 'a -> 'a t
+  val pp : (Format.formatter -> 'a -> unit) -> Format.formatter -> 'a t -> unit
+  val equal : ('a -> 'a -> bool) -> 'a t -> 'a t -> bool
   val to_map : 'a t -> 'a Map.String.t
 end
 
@@ -93,6 +95,3 @@ type node =
 and case = { pats : (Loc.t * Pattern.t Nonempty.t) Nonempty.t; nodes : t }
 and child = Child_name of Loc.t * string | Child_block of t
 and t = node list
-
-val equal : t -> t -> bool
-val pp : Format.formatter -> t -> unit
