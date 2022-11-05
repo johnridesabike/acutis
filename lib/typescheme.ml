@@ -283,20 +283,3 @@ let pp_interface =
     F.fprintf ppf "@[<hv>%a@]"
       (F.pp_print_seq ~pp_sep:F.pp_print_space equals)
       (Map.String.to_seq m)
-
-module Child = struct
-  type ty = Child | Nullable_child
-  type t = ty ref
-
-  let equal a b = !a = !b
-  let make = map_of_list
-  let child () = ref Child
-  let nullable () = ref Nullable_child
-  let is_nullable t = match !t with Nullable_child -> true | Child -> false
-
-  let pp ppf = function
-    | { contents = Child } -> F.pp_print_string ppf "child"
-    | { contents = Nullable_child } -> F.pp_print_string ppf "nullable child"
-
-  let empty = Map.String.empty
-end

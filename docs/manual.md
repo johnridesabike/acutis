@@ -98,6 +98,10 @@ Renders:
 <p>Blue</p>
 ```
 
+Trimming whitespace only applies to the template text, not echoed values. If
+`color` in the previous example contained whitespace, e.g. `" blue "`, then
+those spaces would still render.
+
 ## Types and interfaces
 
 Acutis is statically typed, so types are checked at compile time and erased at
@@ -261,7 +265,7 @@ Dictionaries, or "dicts," are to records what lists are to tuples. They
 represent key-value pairs like records, but they are dynamically sized and
 homogeneously typed. They are specified with angled brackets, e.g. `<int>`.
 
-The order of keys in a dict is not defined. The compiler currently sorts them
+The order of keys in a dict is not specified. The compiler currently sorts them
 alphabetically.
 
 ### Enumeration
@@ -492,28 +496,6 @@ But my favorite is still blue.
 
 The top-level `color` is not affected by the nested `color` binding.
 
-## Ignoring bindings
-
-The compiler will raise an error if you declare a binding but never use it. You
-can suppress this warning either by prefixing the name with an `_` (underscore)
-or by replacing the entire name with `_`.
-
-```acutis
-{% match list with [head, ...tail] %}
-  The list's head is {{ head }}.
-  This will fail to compile. We forgot to use 'tail'.
-{% with [] %} The list is empty.
-{% /match %}
-```
-
-```acutis
-{% match list with [head, ..._tail] %}
-  The list's head is {{ head }}.
-  This will compile without an error.
-{% with [] %} The list is empty.
-{% /match %}
-```
-
 ## Exhaustive and partial patterns
 
 The Acutis compiler analyzes patterns to determine whether they are exhaustive
@@ -646,6 +628,10 @@ Each of the dictionary's values will be matched with the pattern after the
 {% /map_dict %}
 ```
 
+Keep in mind that the order of keys in a dictionary is not specified, and may
+not render in the same order that you write it. If you need a specific order,
+then use a list.
+
 ## More about pattern matching
 
 Pattern matching combines many concepts into one terse syntax. In other
@@ -655,7 +641,7 @@ your use of patterns, this section explains the system's nuances.
 
 Patterns work by comparing literal values. The following code may not work as
 you might expect: `{% match a with b %}`. It does not compare the value of `a`
-with value of `b`, but rather binds the value of `a` to a new `b` binding.
+with value of `b`, but rather binds the value of `a` to a new name `b`.
 
 ### Reference table
 
@@ -675,13 +661,13 @@ with value of `b`, but rather binds the value of `a` to a new `b` binding.
 | `[]`                         | A list with _exactly zero_ items.                                                                                  |
 | `["a", "b"]`                 | A list with _exactly two_ items, `"a"` and `"b"` receptively.                                                      |
 | `["a", "b", ...rest]`        | A list with _at least two_ items, `"a"` and `"b"`. The remainder of the list is bound to `rest`.                   |
-| `{a: 1}`                     | A record with field `"a"` containing integer `1`.                                                                  |
-| `{a}`                        | A record with field `"a"` whose value is then bound to name `a`.                                                   |
-| `{a: x}`                     | A record with field `"a"` whose value is then bound to name `x`.                                                   |
+| `{a: 1}`                     | A record with field `a` containing integer `1`.                                                                    |
+| `{a}`                        | A record with field `a` whose value is then bound to name `a`.                                                     |
+| `{a: x}`                     | A record with field `a` whose value is then bound to name `x`.                                                     |
 | `{"null": a}`                | A record with field `"null"` whose value is then bound to name `a`. (`null` without quotes is a reserved keyword.) |
 | `(7, "a")`                   | A 2-tuple whose first value is `7` and whose second value is `"a"`                                                 |
-| `{@tag: "a", b: 7}`          | A tagged record with a tag field `"tag"` whose value is `"a"` and with field `"b"` whose value is 7.               |
-| `<a: 2>`                     | A dictionary with key `"a"` containing integer `2`.                                                                |
+| `{@tag: "a", b: 7}`          | A tagged record with a tag field `tag` whose value is `"a"` and with field `"b"` whose value is 7.                 |
+| `<a: 2>`                     | A dictionary with key `a` containing integer `2`.                                                                  |
 
 ### Ignoring values with `_` (underscore)
 
@@ -689,7 +675,7 @@ Bindings will match any value, so you can use them as "catch-all" patterns.
 However, Acutis will not let you reuse a binding in a pattern, so a pattern like
 `{a: x, b: x}` is illegal.
 
-Acutis treats the `_` (underscore) name as a special. Values bound to it are
+Acutis treats the `_` (underscore) name specially. Values bound to it are
 immediately discarded. Therefore `{a: _, b: _}` will always match any object
 with fields `a` and `b`, but it will ignore their contents.
 
@@ -703,6 +689,27 @@ Because bindings match _anything_, you can use `_` as a "default" case:
   This is a Spanish greeting.
 {% with _ %}
   This is some other kind of greeting.
+{% /match %}
+```
+
+### Ignoring named bindings
+
+The compiler will raise an error if you declare a binding but never use it. You
+can suppress this warning by prefixing the name with an `_` (underscore).
+
+```acutis
+{% match list with [head, ...tail] %}
+  The list's head is {{ head }}.
+  This will fail to compile. We forgot to use 'tail'.
+{% with [] %} The list is empty.
+{% /match %}
+```
+
+```acutis
+{% match list with [head, ..._tail] %}
+  The list's head is {{ head }}.
+  This will compile without an error.
+{% with [] %} The list is empty.
 {% /match %}
 ```
 
@@ -726,8 +733,10 @@ can be useful for reasoning about two-dimensional matrices of data.
 Template components in Acutis are analogous to "partials" or "includes" in other
 template languages. They are how we reuse common pieces of templates.
 
-We can also use functions as templates to add custom runtime logic, which makes
-them comparable to "filters" or "shortcodes" in other languages.
+We can also use external functions as templates to add custom runtime logic,
+which makes them analogous to "filters" or "shortcodes" in other languages.
+Functional template components can be written the language you use to run Acutis
+(i.e. OCaml or JavaScript) using the Acutis API.
 
 Components always begin with a capital letter. They accept XML-style props which
 are turned into bindings within the component. They also end with an XML-style
@@ -767,36 +776,59 @@ pattern matching.
 Props can be "punned." You can take code such as `{% DateTime date=date / %}`
 and abbreviate it to `{% DateTime date / %}`.
 
-### Template children props
+### Optional props
 
-Props can be template sections, which are considered the template's "children."
-These are denoted with hashes, beginning with `#%}` and ending with `{%/#`.
-Children names must begin with a capital letter, just like components.
+If a prop is nullable, then you may exclude it when you call its component. The
+examples below are all valid.
+
+An implicit null prop:
+
+```acutis
+{% Layout %} content {% /Layout %}
+```
+
+An explicit null prop:
+
+```acutis
+{% Layout optional=null %} content {% /Layout %}
+```
+
+An explicit not-null prop:
+
+```acutis
+{% Layout optional=!"this isn't null" %} content {% /Layout %}
+```
+
+Notice how an explicitly not-null prop still requires the `!` before its value.
+
+### Template block props
+
+Props can be template "block" sections. These are denoted with hashes, beginning
+with `#%}` and ending with `{%#`.
 
 ```acutis
 {% Layout
-   Header=#%} <h1> {{ title }} </h1> {%/#
-   Sidebar=#%}
+   header=#%} <h1> {{ title }} </h1> {%#
+   sidebar=#%}
     <h2> Menu </h2>
     {% map menu with {title, slug} %}
       <a href="{{ slug }}">{{ title }}</a>
     {% /map %}
-   {%/#
+   {%#
    / %}
 ```
 
-Inside the template, you can echo these children the same way you echo other
-bindings, such as `{{ Header }}` or `{{ Sidebar }}`. Their contents are rendered
-just like any template content, so they will not be escaped.
+Inside the template, these blocks are just strings. In fact, you can combine
+them with other patterns too. For example, prefixing a block with a `!` will
+wrap it as a nullable, `optional=!#%}...{%#`.
 
-Template children may look like regular bindings, but they live on a separate
-layer of the language. We can't use them with `map` or `match`, and we can't put
-them inside patterns. We can pass them to other components' children props.
+Since blocks are rendered as regular strings, echoing will still escape them
+unless you prefix them with a `&`, e.g. `{{ &header }}`.
 
 ### Default children prop
 
-A template section inside a component is automatically bound to a children prop
-named `Children`.
+A template section inside a component is automatically bound to a prop named
+`children`.
 
 An implicit children prop:
 
@@ -807,23 +839,7 @@ An implicit children prop:
 An explicit children prop:
 
 ```acutis
-{% Layout Children=#%} content {%/# / %}
+{% Layout children=#%} content {%# / %}
 ```
 
-Both of those examples are rendered identically.
-
-### Children in interfaces
-
-If a template has an interface, then its children must be declared in it. Unlike
-regular props, children have only two types: nullable and not nullable.
-Non-nullable children only need their names listed. Nullable children are
-labeled as such with `= ?`.
-
-Examples:
-
-```acutis
-{% interface
-  Child
-  NullableChild = ?
-/ %}
-```
+Both of those examples will render identically.

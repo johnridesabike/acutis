@@ -10,54 +10,41 @@
 
 (** Type-checks the untyped {!Ast.t} and constructs a typed tree. *)
 
-module Pattern : sig
-  type construct = TList | TNullable
+type echo = Ech_var of string * Ast.escape | Ech_string of string
+type construct = TList | TNullable
 
-  type t =
-    | TConst of Data.Const.t * Typescheme.Enum.t option
-    | TConstruct of construct * t option
-    | TTuple of t list
-    | TRecord of
-        (string * Data.Const.t * Typescheme.t Typescheme.Union.t) option
-        * t Map.String.t
-        * Typescheme.t Map.String.t ref
-    | TDict of t Map.String.t * Set.String.t ref
-    | TVar of string
-    | TAny
+type pat =
+  | TConst of Data.Const.t * Typescheme.Enum.t option
+  | TConstruct of construct * pat option
+  | TTuple of pat list
+  | TRecord of
+      (string * Data.Const.t * Typescheme.t Typescheme.Union.t) option
+      * pat Map.String.t
+      * Typescheme.t Map.String.t ref
+  | TDict of pat Map.String.t * Set.String.t ref
+  | TVar of string
+  | TBlock of Loc.t * nodes
+  | TAny
 
-  val pp : Format.formatter -> t -> unit
-end
-
-type echo =
-  | Ech_var of string * Ast.escape
-  | Ech_component of string
-  | Ech_string of string
-
-type node =
+and node =
   | TText of string * Ast.trim * Ast.trim
-  | TEcho of echo list * echo
-  | TMatch of
-      Loc.t * Pattern.t Nonempty.t * Typescheme.t Nonempty.t * case Nonempty.t
-  | TMap_list of Loc.t * Pattern.t * Typescheme.t Nonempty.t * case Nonempty.t
-  | TMap_dict of Loc.t * Pattern.t * Typescheme.t Nonempty.t * case Nonempty.t
-  | TComponent of string * Pattern.t Map.String.t * child Map.String.t
+  | TEcho of (string * Ast.escape) list * echo
+  | TMatch of Loc.t * pat Nonempty.t * Typescheme.t Nonempty.t * case Nonempty.t
+  | TMap_list of Loc.t * pat * Typescheme.t Nonempty.t * case Nonempty.t
+  | TMap_dict of Loc.t * pat * Typescheme.t Nonempty.t * case Nonempty.t
+  | TComponent of string * pat Map.String.t
 
-and case = { pats : (Loc.t * Pattern.t Nonempty.t) Nonempty.t; nodes : nodes }
-and child = TChild_name of string | TChild_block of nodes
+and case = { pats : (Loc.t * pat Nonempty.t) Nonempty.t; nodes : nodes }
 and nodes = node list
 
-type t = {
-  nodes : nodes;
-  prop_types : Typescheme.t Map.String.t;
-  child_types : Typescheme.Child.t Map.String.t;
-}
+type t = { nodes : nodes; types : Typescheme.t Map.String.t }
 
 type ('a, 'b) source =
   | Src of string * 'a
-  | Fun of
-      string * Typescheme.t Map.String.t * Typescheme.Child.t Map.String.t * 'b
+  | Fun of string * Typescheme.t Map.String.t * 'b
 
 val make_components :
   (Ast.t, 'a) source Map.String.t -> (t, 'a) source Map.String.t
 
 val make : root:string -> (t, 'a) source Map.String.t -> Ast.t -> t
+val pp_pat : Format.formatter -> pat -> unit

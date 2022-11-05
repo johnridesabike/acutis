@@ -83,8 +83,8 @@ let make_match args Matching.{ tree; exits } =
   match make_match args tuple_get Map.Int.empty tree with
   | Some (vars, { names; exit }) ->
       let bindings = Map.String.map (fun id -> Map.Int.find id vars) names in
-      Some (bindings, Matching.Exit.get exits exit)
-  | None -> None
+      (bindings, Matching.Exit.get exits exit)
+  | None -> assert false
 
 let escape b = function
   | '&' -> Buffer.add_string b "&amp;"
@@ -99,14 +99,21 @@ let escape b = function
 
 let echo_var b esc str =
   match esc with
-  | Ast.Escape -> String.iter (escape b) str
+  | Compile.Escape -> String.iter (escape b) str
   | No_escape -> Buffer.add_string b str
 
-let map_merge =
-  let f _ _ b = Some b in
-  fun a b -> Map.String.union f a b
+let rec echo b props default = function
+  | [] -> (
+      match default with
+      | Compile.Ech_var (var, esc) ->
+          Map.String.find var props |> Data.echo |> echo_var b esc
+      | Ech_string s -> Buffer.add_string b s)
+  | (var, esc) :: tl -> (
+      match Data.get_nullable (Map.String.find var props) with
+      | Some s -> Data.echo s |> echo_var b esc
+      | None -> echo b props default tl)
 
-let eval_data vars = Data.flat_map (fun x -> Map.String.find x vars)
+let map_merge a b = Map.String.union (fun _ _ b -> Some b) a b
 
 module type MONAD = sig
   type 'a t
@@ -127,119 +134,101 @@ end
 module type S = sig
   type t
   type data
-  type component = data -> t Map.String.t -> t
 
-  val make : component Compile.t -> data -> t
+  val make : (data -> t) Compile.t -> data -> t
 end
 
 module Make (M : MONAD) (D : DATA) = struct
   type t = string M.t
   type data = D.t
-  type component = data -> t Map.String.t -> t
 
   let ( let* ) = M.bind
 
-  let echo_not_null b props children = function
-    | Typechecker.Ech_var (var, esc) ->
-        Map.String.find var props |> Data.to_string |> echo_var b esc;
-        M.return b
-    | Ech_component child ->
-        let* child = Map.String.find child children in
-        Buffer.add_string b child;
-        M.return b
-    | Ech_string s ->
-        Buffer.add_string b s;
-        M.return b
+  let all_array a =
+    let result = Array.make (Array.length a) Data.Nil in
+    let* _idx =
+      Array.fold_left
+        (fun idx data ->
+          let* idx = idx in
+          let* data = data in
+          result.(idx) <- data;
+          M.return @@ succ idx)
+        (M.return 0) a
+    in
+    M.return result
 
-  let echo_nullable b props children = function
-    | Typechecker.Ech_var (var, esc) -> (
-        match Data.get_nullable (Map.String.find var props) with
-        | None -> None
-        | Some x ->
-            echo_var b esc (Data.to_string x);
-            Some (M.return b))
-    | Ech_component child -> (
-        match Map.String.find_opt child children with
-        | None -> None
-        | Some child ->
-            let b =
-              let* child = child in
-              Buffer.add_string b child;
-              M.return b
-            in
-            Some b)
-    | Ech_string s ->
-        Buffer.add_string b s;
-        Some (M.return b)
+  let all_map m =
+    Map.String.fold
+      (fun key data result ->
+        let* result = result in
+        let* data = data in
+        M.return @@ Map.String.add key data result)
+      m
+      (M.return Map.String.empty)
 
-  let rec echo b props children default = function
-    | [] -> echo_not_null b props children default
-    | hd :: tl -> (
-        match echo_nullable b props children hd with
-        | Some x -> x
-        | None -> echo b props children default tl)
+  let rec eval_data vars = function
+    | Data.Other (Compile.Var x) -> M.return @@ Map.String.find x vars
+    | Other (Block nodes) ->
+        let b = M.return @@ Buffer.create 1024 in
+        let* result = make b nodes vars in
+        M.return @@ Data.string (Buffer.contents result)
+    | Nil -> M.return Data.Nil
+    | Array a ->
+        let* result = all_array (Array.map (eval_data vars) a) in
+        M.return @@ Data.Array result
+    | Dict d ->
+        let* result = all_map (Map.String.map (eval_data vars) d) in
+        M.return @@ Data.Dict result
+    | Const (a, b) -> M.return @@ Data.Const (a, b)
 
-  let rec make b nodes vars children =
+  and make b nodes vars =
     let f b = function
       | Compile.Echo (nullables, default) ->
           let* b = b in
-          echo b vars children default nullables
+          echo b vars default nullables;
+          M.return b
       | Text s ->
           let* b = b in
           Buffer.add_string b s;
           M.return b
-      | Match (args, tree) -> (
-          let args = Array.map (eval_data vars) args in
-          match make_match args tree with
-          | None -> assert false
-          | Some (vars', nodes) ->
-              let vars = map_merge vars vars' in
-              make b nodes vars children)
+      | Match (args, tree) ->
+          let* args = all_array (Array.map (eval_data vars) args) in
+          let vars', nodes = make_match args tree in
+          let vars = map_merge vars vars' in
+          make b nodes vars
       | Map_list (arg, tree) ->
-          let l = eval_data vars arg in
+          let* l = eval_data vars arg in
           let f ~index b arg =
-            match make_match [| arg; index |] tree with
-            | None -> assert false
-            | Some (vars', nodes) ->
-                let vars = map_merge vars vars' in
-                make b nodes vars children
+            let vars', nodes = make_match [| arg; index |] tree in
+            let vars = map_merge vars vars' in
+            make b nodes vars
           in
           Data.fold_list f b l
       | Map_dict (arg, tree) ->
-          let d = eval_data vars arg in
+          let* d = eval_data vars arg in
           let f ~index b arg =
-            match make_match [| arg; index |] tree with
-            | None -> assert false
-            | Some (vars', nodes) ->
-                let vars = map_merge vars vars' in
-                make b nodes vars children
+            let vars', nodes = make_match [| arg; index |] tree in
+            let vars = map_merge vars vars' in
+            make b nodes vars
           in
           Data.fold_dict f b d
-      | Component (comp, args, children_args) -> (
-          let f = function
-            | Compile.Child_block nodes ->
-                let b = Buffer.create 1024 |> M.return in
-                let* result = make b nodes vars children in
-                M.return (Buffer.contents result)
-            | Child_name child -> Map.String.find child children
-          in
-          let children = Map.String.map f children_args in
-          let vars = Map.String.map (eval_data vars) args in
+      | Component (comp, args) -> (
+          let* vars = all_map (Map.String.map (eval_data vars) args) in
           match comp with
-          | Compile.Src nodes -> make b nodes vars children
-          | Fun (prop_types, f) ->
-              let* result = f (D.encode prop_types vars) children in
+          | Compile.Src nodes -> make b nodes vars
+          | Fun (types, f) ->
+              let* result = f (D.encode types vars) in
               let* b = b in
               Buffer.add_string b result;
               M.return b)
     in
     List.fold_left f b nodes
 
-  let make { Compile.nodes; prop_types; name } props =
+  let make { Compile.nodes; types; name } props =
     (* Wrap the props in a monad so it can catch decode exceptions. *)
     let* props = M.return props in
-    let vars = D.decode ~name prop_types props in
-    let b = M.return (Buffer.create 1024) in
-    let* result = make b nodes vars Map.String.empty in
-    Buffer.contents result |> M.return
+    let vars = D.decode ~name types props in
+    let b = M.return @@ Buffer.create 1024 in
+    let* result = make b nodes vars in
+    M.return @@ Buffer.contents result
 end

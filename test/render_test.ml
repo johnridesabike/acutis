@@ -48,11 +48,11 @@ let whitespace () =
   check "Whitespace control works (1)" "_hi_" (render src props);
   let oh_hai =
     Compile.Components.parse_string ~fname:"ohHai.acutis" ~name:"OhHai"
-      "{{ Children }} Oh hai {{ name }}."
+      "{{ children }} Oh hai {{ name }}."
   in
   let src =
     {|{% OhHai name="Mark" ~%} I did not. {%~ /OhHai %}
-      {%~ OhHai name="Lisa" Children=#%} Cheep cheep cheep. {%~/# / %}|}
+      {%~ OhHai name="Lisa" children=#%} Cheep cheep cheep. {%~# / %}|}
   in
   check "Whitespace control works (2)"
     "I did not. Oh hai Mark. Cheep cheep cheep. Oh hai Lisa."
@@ -62,10 +62,10 @@ let nullish_coalescing () =
   let props = {|{"b": "b", "c": "c"}|} in
   let comp =
     Compile.Components.parse_string ~fname:"comp.acutis" ~name:"Comp"
-      "{{ a ? b ? C ? Z }}"
+      "{{ a ? b ? c ? z }}"
   in
   let src =
-    {|{{ a ? b ? c }} {% Comp b Z=#%}z{%/# / %} {% Comp Z=#%}z{%/# / %}|}
+    {|{{ a ? b ? c }} {% Comp b z=#%}z{%# / %} {% Comp z=#%}z{%# / %}|}
   in
   check "Nullish coalescing works" "b b z"
     (render ~components:[ comp ] src props)
@@ -130,29 +130,29 @@ let nullable_props () =
 
 let default_children () =
   let a =
-    Compile.Components.parse_string ~fname:"a.acutis" ~name:"A" "{{ Children }}"
+    Compile.Components.parse_string ~fname:"a.acutis" ~name:"A" "{{ children }}"
   in
-  let src = "{% A ~%} a {%~ /A %} {% A Children=#~%} b {%~/# / %}" in
-  check "The default [Children] child works" "a b"
+  let src = "{% A ~%} a {%~ /A %} {% A children=#~%} b {%~# / %}" in
+  check "The default [children] child works" "a b"
     (render ~components:[ a ] src "{}")
 
 let template_sections () =
   let x =
     Compile.Components.parse_string ~fname:"x.acutis" ~name:"X"
-      "{{ PassthroughChild }}"
+      "{{ passthroughChild }}"
   in
   let y =
     Compile.Components.parse_string ~fname:"y.acutis" ~name:"Y"
-      "{% X PassthroughChild=A / %}"
+      "{% X passthroughChild=a / %}"
   in
-  let src = "{% Y A=#~%} a {%~/# / %}" in
+  let src = "{% Y a=#~%} a {%~# / %}" in
   check "Children are passed correctly" "a"
     (render ~components:[ x; y ] src "{}");
   let y =
     Compile.Components.parse_string ~fname:"y.acutis" ~name:"Y"
-      "{% X PassthroughChild / %}"
+      "{% X passthroughChild / %}"
   in
-  let src = "{% Y PassthroughChild=#~%} a {%~/# / %}" in
+  let src = "{% Y passthroughChild=#~%} a {%~# / %}" in
   check "Children are passed correctly (with punning)" "a"
     (render ~components:[ x; y ] src "{}")
 
@@ -209,6 +209,24 @@ let constructing_values () =
   in
   check "Constructing values works" "success" (render src "{}")
 
+let nested_blocks_data () =
+  let src =
+    {|{%~
+        match
+          {
+            a:
+              !#~%}
+                {% match b with true ~%} yes {%~ with false %} {% /match %}
+              {%~#
+          }
+        with {a: !"yes"} ~%} success
+      {%~ with _ %} fail
+      {% /match %}|}
+  in
+  check "Constructing nested template blocks inside data patterns works"
+    "success"
+    (render src {|{"b": true}|})
+
 let () =
   let open Alcotest in
   run "Rendering"
@@ -237,5 +255,6 @@ let () =
         [
           test_case "Tagged unions" `Quick tagged_unions;
           test_case "Constructing values" `Quick constructing_values;
+          test_case "Nested blocks in data" `Quick nested_blocks_data;
         ] );
     ]

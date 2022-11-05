@@ -45,21 +45,28 @@ module StringExtra = struct
   let rtrim s = rdrop_while is_space s
 end
 
+type escape = Ast.escape = No_escape | Escape
+
+type echo = Typechecker.echo =
+  | Ech_var of string * Ast.escape
+  | Ech_string of string
+
 type 'a node =
   | Text of string
-  | Echo of Typechecker.echo list * Typechecker.echo
-  | Match of string Data.t array * 'a nodes Matching.t
-  | Map_list of string Data.t * 'a nodes Matching.t
-  | Map_dict of string Data.t * 'a nodes Matching.t
-  | Component of 'a * string Data.t Map.String.t * 'a child Map.String.t
+  | Echo of (string * escape) list * echo
+  | Match of 'a data Data.t array * 'a nodes Matching.t
+  | Map_list of 'a data Data.t * 'a nodes Matching.t
+  | Map_dict of 'a data Data.t * 'a nodes Matching.t
+  | Component of 'a * 'a data Data.t Map.String.t
 
-and 'a child = Child_name of string | Child_block of 'a nodes
+and 'a data = Var of string | Block of 'a nodes
 and 'a nodes = 'a node list
 
 let rec make_data = function
-  | Typechecker.Pattern.TConst (x, Some { extra; _ }) -> Data.const x extra
+  | Typechecker.TConst (x, Some { extra; _ }) -> Data.const x extra
   | TConst (x, _) -> Data.const x Not_bool
-  | TVar x -> Data.unknown x
+  | TVar x -> Data.other (Var x)
+  | TBlock (_, x) -> Data.other (Block (make_nodes x))
   | TConstruct (_, Some x) -> make_data x
   | TConstruct (_, None) -> Data.null
   | TTuple l ->
@@ -73,7 +80,7 @@ let rec make_data = function
       Data.dict (Map.String.map make_data x)
   | TAny -> assert false
 
-let rec make_nodes =
+and make_nodes =
   let f = function
     | Typechecker.TText (s, No_trim, No_trim) -> Text s
     | TText (s, Trim, No_trim) -> Text (StringExtra.ltrim s)
@@ -87,9 +94,8 @@ let rec make_nodes =
         Map_list (make_data pat, make_match loc tys cases)
     | TMap_dict (loc, pat, tys, cases) ->
         Map_dict (make_data pat, make_match loc tys cases)
-    | TComponent (name, props, children) ->
-        let children = Map.String.map make_children children in
-        Component (name, Map.String.map make_data props, children)
+    | TComponent (name, props) ->
+        Component (name, Map.String.map make_data props)
   in
   fun l -> List.map f l
 
@@ -99,10 +105,6 @@ and make_match loc tys cases =
   let exits = Matching.Exit.map make_nodes exits in
   { tree; exits }
 
-and make_children = function
-  | Typechecker.TChild_name s -> Child_name s
-  | TChild_block n -> Child_block (make_nodes n)
-
 let make_nodes Typechecker.{ nodes; _ } = make_nodes nodes
 
 type 'a template =
@@ -110,7 +112,7 @@ type 'a template =
   | Fun of Typescheme.t Map.String.t * 'a
 
 type 'a t = {
-  prop_types : Typescheme.t Map.String.t;
+  types : Typescheme.t Map.String.t;
   nodes : 'a template nodes;
   name : string;
 }
@@ -126,7 +128,7 @@ module Components = struct
   let parse_channel ~fname ~name src =
     T.Src (name, parse ~fname (Lexing.from_channel src))
 
-  let from_fun ~name props children f = T.Fun (name, props, children, f)
+  let from_fun ~name props f = T.Fun (name, props, f)
 
   type 'a t = {
     typed : (T.t, 'a) T.source Map.String.t;
@@ -135,63 +137,65 @@ module Components = struct
 
   let empty = { typed = Map.String.empty; optimized = Map.String.empty }
 
-  let rec make_aux_parse m = function
-    | [] -> m
-    | T.Src (name, src) :: l ->
-        if Map.String.mem name m then Error.duplicate_name name;
-        let c = T.Src (name, src) in
-        make_aux_parse (Map.String.add name c m) l
-    | Fun (name, p, c, f) :: l ->
-        if Map.String.mem name m then Error.duplicate_name name;
-        make_aux_parse (Map.String.add name (T.Fun (name, p, c, f)) m) l
-
-  let make_aux_optimize _ v optimized =
-    match v with
-    | T.Src (name, src) ->
-        Map.String.add name (T.Src (name, make_nodes src)) optimized
-    | Fun (name, p, c, f) ->
-        Map.String.add name (T.Fun (name, p, c, f)) optimized
-
   let make l =
-    let untyped = make_aux_parse Map.String.empty l in
+    let untyped =
+      List.fold_left
+        (fun acc -> function
+          | T.Src (name, src) ->
+              if Map.String.mem name acc then Error.duplicate_name name;
+              Map.String.add name (T.Src (name, src)) acc
+          | Fun (name, p, f) ->
+              if Map.String.mem name acc then Error.duplicate_name name;
+              Map.String.add name (T.Fun (name, p, f)) acc)
+        Map.String.empty l
+    in
     let typed = T.make_components untyped in
-    let optimized = Map.String.fold make_aux_optimize typed Map.String.empty in
+    let optimized =
+      Map.String.map
+        (function
+          | T.Src (name, src) -> T.Src (name, make_nodes src)
+          | Fun (name, p, f) -> Fun (name, p, f))
+        typed
+    in
     { typed; optimized }
 end
 
 let rec link_nodes graph nodes =
   let f = function
     | (Text _ | Echo _) as x -> x
-    | Match (p, t) ->
+    | Match (pats, t) ->
+        let pats = Array.map (Data.flat_map (link_data graph)) pats in
         let exits = Matching.Exit.map (link_nodes graph) t.exits in
-        Match (p, { t with exits })
-    | Map_list (p, t) ->
+        Match (pats, { t with exits })
+    | Map_list (pats, t) ->
+        let pats = Data.flat_map (link_data graph) pats in
         let exits = Matching.Exit.map (link_nodes graph) t.exits in
-        Map_list (p, { t with exits })
-    | Map_dict (p, t) ->
+        Map_list (pats, { t with exits })
+    | Map_dict (pats, t) ->
+        let pats = Data.flat_map (link_data graph) pats in
         let exits = Matching.Exit.map (link_nodes graph) t.exits in
-        Map_dict (p, { t with exits })
-    | Component (name, props, children) ->
-        let f = function
-          | Child_name _ as child -> child
-          | Child_block nodes -> Child_block (link_nodes graph nodes)
-        in
-        let children = Map.String.map f children in
+        Map_dict (pats, { t with exits })
+    | Component (name, pats) ->
+        let pats = Map.String.map (Data.flat_map (link_data graph)) pats in
         let data = Dagmap.get name graph in
-        Component (data, props, children)
+        Component (data, pats)
   in
   List.map f nodes
 
+and link_data graph = function
+  | Var x -> Data.other (Var x)
+  | Block nodes -> Data.other (Block (link_nodes graph nodes))
+
 let link_src graph = function
   | Typechecker.Src (_, nodes) -> Src (link_nodes graph nodes)
-  | Fun (_, props, _, f) -> Fun (props, f)
+  | Fun (_, props, f) -> Fun (props, f)
 
 let make ~fname components src =
   let nodes = parse ~fname src in
   let ast = Typechecker.make ~root:fname components.Components.typed nodes in
   let g = Dagmap.make ~f:link_src ~root:fname components.optimized in
   let nodes = make_nodes ast |> link_nodes g in
-  { prop_types = ast.prop_types; nodes; name = fname }
+  { types = ast.types; nodes; name = fname }
 
 let from_string ~fname components src =
   make ~fname components (Lexing.from_string src)

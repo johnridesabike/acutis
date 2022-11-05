@@ -106,20 +106,6 @@ val union_true_only : string -> (string * t) list -> t
 val make : (string * t) list -> t Map.String.t
 val empty : t Map.String.t
 
-module Child : sig
-  (** This defines the types of children. (They're either null or not null.) *)
-
-  type t
-
-  val make : (string * t) list -> t Map.String.t
-  val child : unit -> t
-  val nullable : unit -> t
-  val is_nullable : t -> bool
-  val equal : t -> t -> bool
-  val pp : Format.formatter -> t -> unit
-  val empty : t Map.String.t
-end
-
 (** {1 Internal utilities.} *)
 
 val internal_record : t Map.String.t ref -> t

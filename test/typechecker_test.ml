@@ -13,7 +13,7 @@ let check =
 
 let get_types src =
   (parse ~fname:"<test>" src |> Typechecker.make ~root:"<test>" Map.String.empty)
-    .prop_types
+    .types
 
 let echoes () =
   let src = {|{{ a }} {{ "b" }} {{ c ? "d" }}|} in
@@ -443,7 +443,7 @@ let components () =
   in
   check "Components infer correctly."
     Ty.(make [ ("a", int ()); ("b", string ()) ])
-    r.prop_types
+    r.types
 
 let interface_basic () =
   let src =

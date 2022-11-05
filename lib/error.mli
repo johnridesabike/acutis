@@ -25,16 +25,12 @@ val extra_record_tag : Loc.t -> _
 val type_mismatch : Loc.t -> Typescheme.t -> Typescheme.t -> _
 val missing_field : Loc.t -> string -> Typescheme.t -> _
 val underscore_in_construct : Loc.t -> _
-val child_type_mismatch : Loc.t -> Typescheme.Child.t -> Typescheme.Child.t -> _
 val name_bound_too_many : Loc.t -> string -> _
 val var_missing : Loc.t -> string -> _
 val var_unused : Loc.t -> string -> _
 val pat_num_mismatch : Loc.t -> _
 val map_pat_num_mismatch : Loc.t -> _
 val echo_nullable_literal : Loc.t -> _
-val extra_child : Loc.t -> comp:string -> child:string -> _
-val missing_child : Loc.t -> string -> _
-val child_in_root : Loc.t -> _
 val component_name_mismatch : Loc.t -> string -> string -> _
 
 (** {2 Interface errors.} *)
@@ -50,20 +46,17 @@ val interface_duplicate_tag :
 val interface_type_mismatch :
   Loc.t -> string -> Typescheme.t -> Typescheme.t -> _
 
-val interface_child_mismatch :
-  Loc.t -> string -> Typescheme.Child.t -> Typescheme.Child.t -> _
-
 val interface_missing_prop : Loc.t -> string -> Typescheme.t -> _
-val interface_missing_child : Loc.t -> string -> _
 
 (** {1 Matching errors.} *)
 
 val unused_case : Loc.t -> _
 val parmatch : Loc.t -> (Format.formatter -> 'a -> unit) -> 'a -> _
+val bad_block : Loc.t -> _
+
+(** {1 Other compile errors.} *)
+
 val duplicate_name : string -> _
-
-(** {1 DAG errors.} *)
-
 val cycle : string list -> _
 val missing_component : string list -> string -> _
 

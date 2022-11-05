@@ -25,13 +25,13 @@ module Const = struct
 end
 
 type 'a t =
-  | Unknown of 'a
+  | Other of 'a
   | Nil
   | Array of 'a t array
   | Dict of 'a t Map.String.t
   | Const of Const.t * Ty.Variant.extra
 
-let unknown x = Unknown x
+let other x = Other x
 let null = Nil
 let const x e = Const (x, e)
 let int i = Const (Int i, Not_bool)
@@ -53,7 +53,7 @@ let list_rev =
 let list_empty = Nil
 
 let rec flat_map f = function
-  | Unknown x -> f x
+  | Other x -> f x
   | Nil -> Nil
   | Array a -> Array (Array.map (flat_map f) a)
   | Dict d -> Dict (Map.String.map (flat_map f) d)
@@ -83,7 +83,7 @@ let fold_dict f acc = function
   | Dict m -> Map.String.fold (fun k v acc -> f ~index:(string k) acc v) m acc
   | _ -> assert false
 
-let to_string = function
+let echo = function
   | Const (Int 0, Bool) -> "false"
   | Const (_, Bool) -> "true"
   | Const (Int i, _) -> string_of_int i

@@ -6,15 +6,14 @@
   file, You can obtain one at http://mozilla.org/MPL/2.0/.
 */
 
-const { Component, Typescheme, TypeschemeChildren } = require("../..");
+const { Component, Typescheme } = require("../..");
 const site = require("../_data/site");
 
 module.exports = [
   Component.funAsync(
     "Log",
     Typescheme.make([["val", Typescheme.unknown()]]),
-    TypeschemeChildren.make([]),
-    (props, _children) => {
+    (props) => {
       console.log(props);
       return Promise.resolve("");
     }
@@ -22,8 +21,7 @@ module.exports = [
   Component.funAsync(
     "Debugger",
     Typescheme.make([["val", Typescheme.unknown()]]),
-    TypeschemeChildren.make([]),
-    (_props, _children) => {
+    (_props) => {
       debugger;
       return Promise.resolve("");
     }
@@ -36,8 +34,7 @@ module.exports = [
       ["name", Typescheme.string()],
       ["siteUrl", Typescheme.string()],
     ]),
-    TypeschemeChildren.make([]),
-    (props, _children) => {
+    (props) => {
       if (!props.year) {
         props.year = new Date().getFullYear();
       }
@@ -63,14 +60,13 @@ module.exports = [
     Typescheme.make([
       ["path", Typescheme.string()],
       ["page", Typescheme.record([["url", Typescheme.string()]])],
+      ["children", Typescheme.string()],
     ]),
-    TypeschemeChildren.make([TypeschemeChildren.child("Children")]),
-    ({ path, page }, { Children }) => {
+    ({ path, page, children }) => {
       const current = path === page.url ? "true" : "false";
       const href = site.url + path;
-      return Children.then(
-        (Children) =>
-          `<a href="${href}" aria-current="${current}">${Children}</a>`
+      return Promise.resolve(
+        `<a href="${href}" aria-current="${current}">${children}</a>`
       );
     }
   ),

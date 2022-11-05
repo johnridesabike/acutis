@@ -64,26 +64,35 @@ let parser_errors () =
     (E
        "File \"<test>\", 1:4-1:5\n\
         Parse error.\n\
-        Expected 'match', 'map', 'map_dict', or a component name.\n")
+        Expected '%}', 'match', 'map', 'map_dict', or a component name.\n")
     (render "{% a %}");
   check_raises "Unexpected tokens (2)"
     (E
        "File \"<test>\", 1:5-1:6\n\
         Parse error.\n\
-        Expected 'match', 'map', 'map_dict', or a component name.\n")
+        Expected '%}', 'match', 'map', 'map_dict', or a component name.\n")
     (render "{%~ a %}");
   check_raises "Unexpected tokens (3)"
     (E
        "File \"<test>\", 1:5-1:9\n\
         Parse error.\n\
-        Expected 'match', 'map', 'map_dict', or a component name.\n")
+        Expected '%}', 'match', 'map', 'map_dict', or a component name.\n")
     (render "{%~ with %}");
+  check_raises "Unexpected tokens (4)"
+    (E
+       "File \"<test>\", 1:10-1:11\n\
+        Parse error.\n\
+        Expected '%}', 'match', 'map', 'map_dict', or a component name.\n")
+    (render "{% %}{%~ a %}");
+  check_raises "Unexpected tokens (5)"
+    (E "File \"<test>\", 1:40-1:41\nParse error.\nExpected '%}'.\n")
+    (render "{% A %} {% match a with _ %} {% /match /A %}");
   check_raises "Unexpected tokens (inside # blocks)"
     (E
        "File \"<test>\", 1:20-1:24\n\
         Parse error.\n\
-        Expected '/#', 'match', 'map', 'map_dict', or a component name.\n")
-    (render "{% A A=#%} abcd {% with /A %}");
+        Expected '%}', '#', 'match', 'map', 'map_dict', or a component name.\n")
+    (render "{% A a=#%} abcd {% with /A %}");
 
   check_raises "Bad pattern (1)"
     (E
@@ -202,14 +211,7 @@ let parser_errors () =
        "File \"<test>\", 1:8-1:9\n\
         Parse error.\n\
         This is not a valid component prop.\n")
-    (render "{% A B # %}");
-
-  check_raises "Invalid component name"
-    (E
-       "File \"<test>\", 1:8-1:9\n\
-        Parse error.\n\
-        Expected a component name or a text block.\n")
-    (render "{% Z A=1 / %}");
+    (render "{% A b # %}");
 
   check_raises "Illegal field name (1)"
     (E
@@ -325,10 +327,7 @@ let parser_errors () =
 
   check_raises "# Blocks must contain text"
     (E "File \"<test>\", 1:10-1:13\nParse error.\nExpected '%}'.\n")
-    (render "{% A A=# abc /# / %}");
-  check_raises "Unterminated # blocks"
-    (E "File \"<test>\", 1:24-1:24\nParse error.\nExpected '/#'.\n")
-    (render "{% A A=#%} abcd {% / %}")
+    (render "{% A a=# abc # / %}")
 
 let dup_record_field () =
   let open Alcotest in
@@ -699,44 +698,7 @@ let component_typechecker () =
        \  A.\n\
         Received:\n\
        \  B.")
-    (render "{% A %} {% /B %}");
-  check_raises "Child components aren't allowed in the root."
-    (E
-       "File \"<test>\", 1:4-1:5\n\
-        Type error.\n\
-        Children are not allowed in the root template.")
-    (render "{{ A }}");
-  let a =
-    Compile.Components.parse_string ~fname:"a.acutis" ~name:"A" "{{ B }}"
-  in
-  let components = Compile.Components.make [ a ] in
-  let src = "{% A /%}" in
-  check_raises "Missing children are reported."
-    (E "File \"<test>\", 1:4-1:7\nType error.\nMissing child:\n  B") (fun () ->
-      ignore @@ Compile.from_string ~fname:"<test>" components src);
-  let src = "{% A B=#%}{%/# C=#%}{%/# /%}" in
-  check_raises "Extra children are reported."
-    (E
-       "File \"<test>\", 1:4-1:27\n\
-        Type error.\n\
-        Component 'A' does not allow child 'C'.") (fun () ->
-      ignore @@ Compile.from_string ~fname:"<test>" components src);
-  check_raises "Child type mismatch."
-    (E
-       "File \"y.acutis\", 1:17-1:19\n\
-        Type error.\n\
-        Child type mismatch.\n\
-        Expected:\n\
-       \  child\n\
-        Received:\n\
-       \  nullable child") (fun () ->
-      ignore
-        Compile.Components.(
-          make
-            [
-              parse_string ~fname:"z.acutis" ~name:"Z" "{{ A }}";
-              parse_string ~fname:"y.acutis" ~name:"Y" "{{ A ? z }} {% Z A / %}";
-            ]))
+    (render "{% A %} {% /B %}")
 
 let unused_bindings () =
   let open Alcotest in
@@ -943,6 +905,15 @@ let merge_expanded_trees () =
     {%  with _, _ %}
     {% /match %}|})
 
+let bad_block () =
+  let open Alcotest in
+  check_raises "Template blocks are not allowed in destructure patterns."
+    (E
+       "File \"<test>\", 1:21-1:28\n\
+        Matching error.\n\
+        Template blocks are not allowed in a destructure pattern.")
+    (render "{% match a with {b: #%} {%#} %} {% /match %}")
+
 let component_graph () =
   let open Alcotest in
   let a =
@@ -1143,57 +1114,42 @@ let interface_parse () =
     (E "File \"<test>\", 1:26-1:27\nParse error.\nExpected ',' or '}'.\n")
     (render "{% interface a = {a: int b: string } / %}");
 
-  check_raises "Bad prop / component name (1)."
+  check_raises "Bad prop name (1)."
     (E
        "File \"<test>\", 1:14-1:18\n\
         Parse error.\n\
-        This is not a valid prop or component name.\n")
+        This is not a valid prop name.\n")
     (render "{% interface with = int / %}");
-  check_raises "Bad prop / component name (2)."
+  check_raises "Bad prop name (2)."
     (E
        "File \"<test>\", 1:22-1:26\n\
         Parse error.\n\
-        This is not a valid prop or component name.\n")
+        This is not a valid prop name.\n")
     (render "{% interface x = int with = int / %}");
-  check_raises "Bad prop / component name (3)."
-    (E
-       "File \"<test>\", 1:16-1:20\n\
-        Parse error.\n\
-        This is not a valid prop or component name.\n")
-    (render "{% interface X with = int / %}");
-
-  check_raises "Bad child type."
-    (E
-       "File \"<test>\", 1:18-1:21\n\
-        Parse error.\n\
-        This is not a valid child type. The only valid types are not nullable \
-        (blank)\n\
-        and nullable ('?').\n")
-    (render "{% interface X = int / %}");
 
   check_raises "Bad token after a variant (1)."
     (E
        "File \"<test>\", 1:24-1:28\n\
         Parse error.\n\
-        This is not a valid prop or component name. You possibly forgot a '|'.\n")
+        This is not a valid prop name. You possibly forgot a '|'.\n")
     (render "{% interface x={@a: 1} with / %}");
   check_raises "Bad token after a variant (2)."
     (E
        "File \"<test>\", 1:21-1:25\n\
         Parse error.\n\
-        This is not a valid prop or component name. You possibly forgot a '|'.\n")
+        This is not a valid prop name. You possibly forgot a '|'.\n")
     (render "{% interface x=@\"a\" with / %}");
   check_raises "Bad token after a variant (3)."
     (E
        "File \"<test>\", 1:19-1:23\n\
         Parse error.\n\
-        This is not a valid prop or component name. You possibly forgot a '|'.\n")
+        This is not a valid prop name. You possibly forgot a '|'.\n")
     (render "{% interface x=@0 with / %}");
   check_raises "Bad token after a variant (4)."
     (E
        "File \"<test>\", 1:22-1:26\n\
         Parse error.\n\
-        This is not a valid prop or component name. You possibly forgot a '|'.\n")
+        This is not a valid prop name. You possibly forgot a '|'.\n")
     (render "{% interface x=false with / %}");
 
   check_raises "Missing equals."
@@ -1444,39 +1400,7 @@ let interface_typecheck () =
        \  _\n\
         Implementation:\n\
        \  echoable")
-    (render "{% interface x = _ / %} {{ x }}");
-  check_raises "Child <> nullable child"
-    (E
-       "File \"a.acutis\", 1:14-1:17\n\
-        Type error.\n\
-        This interface does not match the implementation.\n\
-        Child name:\n\
-       \  X\n\
-        Interface:\n\
-       \  nullable child\n\
-        Implementation:\n\
-       \  child") (fun () ->
-      ignore
-      @@ Compile.Components.(
-           make
-             [
-               parse_string ~fname:"a.acutis" ~name:"A"
-                 "{% interface X=? / %} {{ X }}";
-             ]));
-  check_raises "Missing child"
-    (E
-       "File \"a.acutis\", 1:4-1:19\n\
-        Type error.\n\
-        This interface does not match the implementation.\n\
-        Missing child name:\n\
-       \  Y") (fun () ->
-      ignore
-      @@ Compile.Components.(
-           make
-             [
-               parse_string ~fname:"a.acutis" ~name:"A"
-                 "{% interface X=? / %} {{ X ? Y }}";
-             ]))
+    (render "{% interface x = _ / %} {{ x }}")
 
 let () =
   let open Alcotest in
@@ -1517,6 +1441,7 @@ let () =
           test_case "Partial patterns" `Quick parmatch;
           test_case "Partial patterns with complex trees" `Quick
             merge_expanded_trees;
+          test_case "Other errors" `Quick bad_block;
         ] );
       ( "Other compile errors",
         [

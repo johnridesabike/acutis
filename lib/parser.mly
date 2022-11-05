@@ -72,6 +72,8 @@ pattern:
   | LEFT_PAREN; l = tuple; RIGHT_PAREN;         { Tuple ($loc, l) }
   | LEFT_BRACE; r = record; RIGHT_BRACE;        { Record ($loc, r) }
   | LEFT_ANGLE; d = dict; RIGHT_ANGLE;          { Dict ($loc, d) }
+  | HASH; x = nodes; HASH;                      { Block ($loc, x) }
+  | HASH; HASH;                                 { Block ($loc, []) }
 
 record_tag:
   | i = INT;    { Tag_int ($loc, i) }
@@ -79,16 +81,12 @@ record_tag:
   | TRUE;       { Tag_bool ($loc, 1) }
   | s = STRING; { Record.Tag_string ($loc, s) }
 
-record_key:
-  | k = ID; | k = STRING; { k }
+record_key: k = ID; | k = STRING; { k }
 
 record_field:
-  | AT; k = record_key; COLON; v = record_tag;
-    { `Tag (k, v) }
-  | k = record_key; COLON; v = pattern;
-    { `Notag (k, v) }
-  | k = ID;
-    { `Notag (k, Pattern.Var ($loc, k) ) }
+  | AT; k = record_key; COLON; v = record_tag;  { `Tag (k, v) }
+  | k = record_key; COLON; v = pattern;         { `Notag (k, v) }
+  | k = ID;                                     { `Notag (k, Var ($loc, k) ) }
 
 record:
   | x = record_field;                     { Record.singleton x }
@@ -96,7 +94,7 @@ record:
 
 dict_field:
   | k = record_key; COLON; v = pattern; { (k, v) }
-  | k = ID;                             { (k, Pattern.Var ($loc, k) ) }
+  | k = ID;                             { (k, Var ($loc, k) ) }
 
 dict:
   | x = dict_field;
@@ -108,7 +106,7 @@ pattern_list:
   | tl = option(ELLIPSIS; p = pattern { p });
     { List ($loc, [], tl) }
   | l = pattern_list_nonempty; tl = option(COMMA; ELLIPSIS; p = pattern; { p });
-    { Pattern.List ($loc, Nonempty.to_list l, tl) }
+    { List ($loc, Nonempty.to_list l, tl) }
 
 tuple:
   | (* empty *)                { [] }
@@ -136,26 +134,12 @@ cases:
 (** Component rules *)
 
 props:
-  | (* empty *) { (Dict.empty, Dict.empty) }
+  | (* empty *)
+    { Dict.empty }
   | p = props; k = ID; EQUALS; v = pattern;
-    { let (pats, childs) = p in (Dict.add $loc k v pats, childs) }
+    { Dict.add $loc k v p }
   | p = props; k = ID;
-    {
-      let (pats, childs) = p in
-      (Dict.add $loc k (Pattern.Var ($loc, k)) pats, childs)
-    }
-  | p = props; k = COMPONENT; EQUALS; HASH; v = nodes; BACKSLASH; HASH;
-    { let (pats, childs) = p in (pats, Dict.add $loc k (Child_block v) childs) }
-  | p = props; k = COMPONENT; EQUALS; v = COMPONENT;
-    {
-      let (pats, childs) = p in
-      (pats, Dict.add $loc k (Child_name ($loc, v)) childs)
-    }
-  | p = props; k = COMPONENT;
-    {
-      let (pats, childs) = p in
-      (pats, Dict.add $loc k (Child_name ($loc, k)) childs)
-    }
+    { Dict.add $loc k (Var ($loc, k)) p }
 
 (** Echo rules *)
 
@@ -165,7 +149,6 @@ escape:
 
 echo:
   | e = escape; x = ID; { Ech_var ($loc, x, e) }
-  | x = COMPONENT;      { Ech_component ($loc, x) }
   | s = STRING;         { Ech_string ($loc, s) }
 
 echoes:
@@ -182,8 +165,7 @@ trim_right:
   | (* empty *)  { No_trim }
   | TILDE_RIGHT  { Trim }
 
-text:
-  | l = trim_left; txt = TEXT; r = trim_right; { Text (txt, l, r) }
+text: l = trim_left; txt = TEXT; r = trim_right; { Text (txt, l, r) }
 
 (** Putting it all together *)
 
@@ -199,13 +181,9 @@ node:
   | MAP_DICT; pat = pattern; child = cases; BACKSLASH; MAP_DICT;
     { Map_dict ($loc, pat, child) }
   | x = COMPONENT; p = props; BACKSLASH;
-    { let (p, c) = p in Component ($loc, x, x, p, c) }
+    { Component ($loc, x, x, p) }
   | x1 = COMPONENT; p = props; n = nodes; BACKSLASH; x2 = COMPONENT;
-    {
-      let (p, c) = p in
-      let children = Child_block n in
-      Component ($loc, x1, x2, p, Dict.add $loc "Children" children c)
-    }
+    { Component ($loc, x1, x2, Dict.add $loc "children" (Block ($loc, n)) p) }
   | INTERFACE; i = interface; BACKSLASH;
     { Interface ($loc, i) }
 
@@ -253,8 +231,7 @@ row:
   | (* empty *)     { `Closed }
   | PIPE; ELLIPSIS; { `Open }
 
-%inline variant(X):
-  | l = variant_rev(X); { Nonempty.rev l }
+%inline variant(X): l = variant_rev(X); { Nonempty.rev l }
 variant_rev(X):
   | x = X;                            { [ x ] }
   | l = variant_rev(X); PIPE; x = X;  { Nonempty.cons x l }
@@ -263,17 +240,15 @@ interface:
   | (* empty *)
     { [] }
   | k = ID; EQUALS; v = ty; l = interface;
-    { Type ($loc, k, v) :: l }
-  | k = COMPONENT; l = interface;
-    { Child ($loc, k) :: l }
-  | k = COMPONENT; EQUALS; QUESTION; l = interface;
-    { Child_nullable ($loc, k) :: l }
+    { { loc = $loc; name = k; ty = v} :: l }
 
 (** Putting it all together *)
 
-nodes: l = nodes_rev; { List.rev l }
+nodes:
+  | t = text;                             { [ t ] }
+  | t1 = text; l = nodes_rev; t2 = text;  { t1 :: List.rev (t2 :: l) }
 nodes_rev:
-  | n = text;                 { [ n ] }
+  | (* empty *)               { [] }
   | l = nodes_rev; n = node;  { n :: l }
 
 acutis: n = nodes; EOF; { n }

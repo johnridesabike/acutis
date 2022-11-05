@@ -64,13 +64,6 @@ let underscore_in_construct =
   let f = F.dprintf "Underscore ('_') is not a valid name." in
   fun loc -> raise @@ Acutis_error (pp_ty loc f)
 
-let child_type_mismatch loc a b =
-  let f =
-    F.dprintf "Child type mismatch.@;Expected:@;<1 2>%a@;Received:@;<1 2>%a"
-      Typescheme.Child.pp a Typescheme.Child.pp b
-  in
-  raise @@ Acutis_error (pp_ty loc f)
-
 let name_bound_too_many loc s =
   let f = F.dprintf "The name '%s' is already bound in this pattern." s in
   raise @@ Acutis_error (pp_ty loc f)
@@ -98,18 +91,6 @@ let map_pat_num_mismatch =
 let echo_nullable_literal =
   let f = F.dprintf "Echoed string literals cannot appear before a ?." in
   fun loc -> raise @@ Acutis_error (pp_ty loc f)
-
-let extra_child loc ~comp ~child =
-  let f = F.dprintf "Component '%s' does not allow child '%s'." comp child in
-  raise @@ Acutis_error (pp_ty loc f)
-
-let missing_child loc s =
-  let f = F.dprintf "Missing child:@;<1 2>%s" s in
-  raise @@ Acutis_error (pp_ty loc f)
-
-let child_in_root loc =
-  let f = F.dprintf "Children are not allowed in the root template." in
-  raise @@ Acutis_error (pp_ty loc f)
 
 let component_name_mismatch loc a b =
   let f =
@@ -154,19 +135,6 @@ let interface_type_mismatch loc k a b =
   in
   raise @@ Acutis_error (pp_ty loc f)
 
-let interface_child_mismatch loc k a b =
-  let f =
-    F.dprintf
-      "This interface does not match the implementation.@;\
-       Child name:@;\
-       <1 2>%s@;\
-       Interface:@;\
-       <1 2>%a@;\
-       Implementation:@;\
-       <1 2>%a" k Typescheme.Child.pp a Typescheme.Child.pp b
-  in
-  raise @@ Acutis_error (pp_ty loc f)
-
 let interface_missing_prop loc k ty =
   let f =
     F.dprintf
@@ -175,15 +143,6 @@ let interface_missing_prop loc k ty =
        <1 2>%s@;\
        Of type:@;\
        <1 2>%a" k Typescheme.pp ty
-  in
-  raise @@ Acutis_error (pp_ty loc f)
-
-let interface_missing_child loc k =
-  let f =
-    F.dprintf
-      "This interface does not match the implementation.@;\
-       Missing child name:@;\
-       <1 2>%s" k
   in
   raise @@ Acutis_error (pp_ty loc f)
 
@@ -199,6 +158,12 @@ let parmatch loc pp_pat pat =
       "This pattern-matching is not exhaustive.@;\
        Here's an example of a pattern which is not matched:@;\
        <1 2>%a" pp_pat pat
+  in
+  raise @@ Acutis_error (pp_match loc f)
+
+let bad_block loc =
+  let f =
+    F.dprintf "Template blocks are not allowed in a destructure pattern."
   in
   raise @@ Acutis_error (pp_match loc f)
 

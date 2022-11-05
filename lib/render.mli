@@ -35,9 +35,8 @@ module type S = sig
 
   type t
   type data
-  type component = data -> t Map.String.t -> t
 
-  val make : component Compile.t -> data -> t
+  val make : (data -> t) Compile.t -> data -> t
   (** Apply data to a template and return the rendered output. *)
 end
 

@@ -8,7 +8,7 @@
 (*                                                                        *)
 (**************************************************************************)
 
-module TPat = Typechecker.Pattern
+module T = Typechecker
 module Ty = Typescheme
 module Const = Data.Const
 
@@ -564,14 +564,14 @@ let of_const key data if_match enum =
     }
 
 let rec of_tpat :
-          'a 'k. key:'k -> bindings -> ('a, 'k) cont -> TPat.t -> ('a, 'k) tree
-    =
+          'a 'k. key:'k -> bindings -> ('a, 'k) cont -> T.pat -> ('a, 'k) tree =
  fun ~key b k -> function
   | TAny -> Wildcard { ids = Set.Int.empty; key; child = k b }
   | TVar x ->
       let id = b.next_id () in
       let b = { b with names = Map.String.add x id b.names } in
       Wildcard { ids = Set.Int.singleton id; key; child = k b }
+  | TBlock (loc, _) -> Error.bad_block loc
   | TConstruct (_, Some cons) ->
       let child = of_tpat ~key b k cons in
       Construct { key; ids = Set.Int.empty; nil = None; cons = Some child }
@@ -587,7 +587,7 @@ let rec of_tpat :
       let child =
         Map.String.merge
           (fun _k _ty p ->
-            match p with None -> Some TPat.TAny | Some _ as p -> p)
+            match p with None -> Some T.TAny | Some _ as p -> p)
           !tys m
         |> Map.String.bindings
         |> of_keyvalues b (fun b -> End (k b))
@@ -612,7 +612,7 @@ let rec of_tpat :
         Set.String.fold
           (fun key map ->
             Map.String.update key
-              (function None -> Some TPat.TAny | Some _ as p -> p)
+              (function None -> Some T.TAny | Some _ as p -> p)
               map)
           !kys m
         |> Map.String.bindings
@@ -628,14 +628,14 @@ let rec of_tpat :
         }
 
 and of_list :
-      'a. key:int -> bindings -> ('a, int) cont -> TPat.t list -> ('a, int) tree
+      'a. key:int -> bindings -> ('a, int) cont -> T.pat list -> ('a, int) tree
     =
  fun ~key b k -> function
   | [] -> k b
   | p :: l -> of_tpat ~key b (fun b -> of_list ~key:(succ key) b k l) p
 
 and of_keyvalues :
-    bindings -> ('a, string) cont -> (string * TPat.t) list -> ('a, string) tree
+    bindings -> ('a, string) cont -> (string * T.pat) list -> ('a, string) tree
     =
  fun b k -> function
   | [] -> k b
@@ -692,7 +692,7 @@ module ParMatch = struct
 
   let rec to_pat ty path =
     match (!ty, path) with
-    | Ty.Enum ty, Const c -> TPat.TConst (c, Some ty)
+    | Ty.Enum ty, Const c -> T.TConst (c, Some ty)
     | _, Const c -> TConst (c, None)
     | Tuple tys, Nest path -> TTuple (to_list tys path)
     | List ty, path -> to_list_pat ty path
@@ -736,7 +736,7 @@ module ParMatch = struct
 
   let pp tys ppf l =
     Format.fprintf ppf "@[%a@]"
-      (Format.pp_print_list ~pp_sep:Pp.sep_comma TPat.pp)
+      (Format.pp_print_list ~pp_sep:Pp.sep_comma T.pp_pat)
       (to_list tys l)
 
   module List = struct

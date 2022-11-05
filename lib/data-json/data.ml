@@ -135,7 +135,7 @@ and union path ty key Ty.Variant.{ cases; extra; _ } = function
 
 and make path ty j =
   match !ty with
-  | Ty.Unknown _ -> Data.unknown j
+  | Ty.Unknown _ -> Data.other j
   | Nullable ty -> nullable path ty j
   | Enum { extra = Bool; cases = VInt cases; _ } -> boolean ty path cases j
   | String | Enum { row = `Open; cases = VString _; _ } -> string ty path None j
@@ -164,7 +164,7 @@ let rec record_to_json ty t =
 
 and to_json ty t =
   match (!ty, t) with
-  | _, Data.Unknown j -> j
+  | _, Data.Other j -> j
   | _, Const (Float f, _) -> `Float f
   | _, Const (String s, _) -> `String s
   | (Ty.Enum { extra = Bool; _ } | Echo), Const (Int 0, Bool) -> `Bool false

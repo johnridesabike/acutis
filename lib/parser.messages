@@ -32,12 +32,9 @@ Unclosed component.
 acutis: TEXT WITH
 acutis: TEXT NULL
 acutis: TEXT TILDE_RIGHT NULL
+acutis: TEXT TEXT TILDE_RIGHT NULL
 
-Expected 'match', 'map', 'map_dict', or a component name.
-
-acutis: TEXT COMPONENT COMPONENT EQUALS HASH TEXT WITH
-
-Expected '/#', 'match', 'map', 'map_dict', or a component name.
+Expected '%}', 'match', 'map', 'map_dict', or a component name.
 
 acutis: TEXT MATCH WITH
 acutis: TEXT MATCH EXCLAMATION WITH
@@ -62,13 +59,8 @@ This is not a valid pattern.
 
 acutis: TEXT COMPONENT WITH
 acutis: TEXT COMPONENT ID WITH
-acutis: TEXT COMPONENT COMPONENT WITH
 
 This is not a valid component prop.
-
-acutis: TEXT COMPONENT COMPONENT EQUALS WITH
-
-Expected a component name or a text block.
 
 acutis: TEXT MATCH LEFT_BRACE WITH
 acutis: TEXT MATCH LEFT_BRACE AT WITH
@@ -133,6 +125,15 @@ acutis: TEXT MATCH NULL WITH NULL TEXT EOF
 
 Unclosed block. Expected a '{% /' somewhere.
 
+acutis: TEXT MATCH HASH WITH
+acutis: TEXT COMPONENT BACKSLASH WITH
+
+Expected '%}'.
+
+acutis: TEXT MATCH HASH TEXT WITH
+
+Expected '%}', '#', 'match', 'map', 'map_dict', or a component name.
+
 acutis: TEXT MATCH NULL WITH NULL TEXT BACKSLASH WITH
 
 Expected '/match'.
@@ -149,31 +150,17 @@ acutis: TEXT ECHO_BEGIN ID WITH
 
 Expected either a '?' or '}}'.
 
-acutis: TEXT COMPONENT COMPONENT EQUALS HASH WITH
-
-Expected '%}'.
-
-acutis: TEXT COMPONENT COMPONENT EQUALS HASH TEXT BACKSLASH WITH
-
-Expected '/#'.
-
 acutis: TEXT INTERFACE WITH
 acutis: TEXT INTERFACE ID EQUALS ID WITH
-acutis: TEXT INTERFACE COMPONENT WITH
-acutis: TEXT INTERFACE COMPONENT EQUALS QUESTION WITH
 
-This is not a valid prop or component name.
-
-acutis: TEXT INTERFACE COMPONENT EQUALS WITH
-
-This is not a valid child type. The only valid types are not nullable (blank) and nullable ('?').
+This is not a valid prop name.
 
 acutis: TEXT INTERFACE ID EQUALS LEFT_BRACE ID COLON ID RIGHT_BRACE WITH
 acutis: TEXT INTERFACE ID EQUALS AT STRING WITH
 acutis: TEXT INTERFACE ID EQUALS AT INT WITH
 acutis: TEXT INTERFACE ID EQUALS FALSE WITH
 
-This is not a valid prop or component name. You possibly forgot a '|'.
+This is not a valid prop name. You possibly forgot a '|'.
 
 acutis: TEXT INTERFACE ID WITH
 

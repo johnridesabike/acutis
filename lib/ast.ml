@@ -71,45 +71,36 @@ module Interface = struct
     | Record of (Loc.t * ty Record.t) Nonempty.t * Typescheme.Variant.row
     | Tuple of ty list
 
-  type t =
-    | Type of Loc.t * string * ty
-    | Child of Loc.t * string
-    | Child_nullable of Loc.t * string
-end
-
-module Pattern = struct
-  type t =
-    | Var of Loc.t * string
-    | Bool of Loc.t * int
-    | Int of Loc.t * int
-    | Float of Loc.t * float
-    | String of Loc.t * string
-    | Nullable of Loc.t * t option
-    | Enum_string of Loc.t * string
-    | Enum_int of Loc.t * int
-    | List of Loc.t * t list * t option
-    | Tuple of Loc.t * t list
-    | Record of Loc.t * t Record.t
-    | Dict of Loc.t * t Dict.t
+  type t = { loc : Loc.t; name : string; ty : ty }
 end
 
 type trim = No_trim | Trim
 type escape = No_escape | Escape
+type echo = Ech_var of Loc.t * string * escape | Ech_string of Loc.t * string
 
-type echo =
-  | Ech_var of Loc.t * string * escape
-  | Ech_component of Loc.t * string
-  | Ech_string of Loc.t * string
+type pat =
+  | Var of Loc.t * string
+  | Bool of Loc.t * int
+  | Int of Loc.t * int
+  | Float of Loc.t * float
+  | String of Loc.t * string
+  | Nullable of Loc.t * pat option
+  | Enum_string of Loc.t * string
+  | Enum_int of Loc.t * int
+  | List of Loc.t * pat list * pat option
+  | Tuple of Loc.t * pat list
+  | Record of Loc.t * pat Record.t
+  | Dict of Loc.t * pat Dict.t
+  | Block of Loc.t * t
 
-type node =
+and node =
   | Text of string * trim * trim
   | Echo of echo list * echo
-  | Match of Loc.t * Pattern.t Nonempty.t * case Nonempty.t
-  | Map_list of Loc.t * Pattern.t * case Nonempty.t
-  | Map_dict of Loc.t * Pattern.t * case Nonempty.t
-  | Component of Loc.t * string * string * Pattern.t Dict.t * child Dict.t
+  | Match of Loc.t * pat Nonempty.t * case Nonempty.t
+  | Map_list of Loc.t * pat * case Nonempty.t
+  | Map_dict of Loc.t * pat * case Nonempty.t
+  | Component of Loc.t * string * string * pat Dict.t
   | Interface of Loc.t * Interface.t list
 
-and case = { pats : (Loc.t * Pattern.t Nonempty.t) Nonempty.t; nodes : t }
-and child = Child_name of Loc.t * string | Child_block of t
+and case = { pats : (Loc.t * pat Nonempty.t) Nonempty.t; nodes : t }
 and t = node list

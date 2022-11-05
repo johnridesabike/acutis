@@ -28,5 +28,5 @@ val get : string -> ('a, 'b) t -> 'b
     @raise Error.Acutis_error When a key does not exist or if the graph forms
     a cycle.*)
 
-val prelinked : string -> 'a Map.String.t -> ('a, 'a) t
+val prelinked : string -> 'a Map.String.t -> ('b, 'a) t
 val link_all : ('a, 'b) t -> 'b Map.String.t

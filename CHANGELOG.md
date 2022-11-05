@@ -2,7 +2,11 @@
 
 ## 0.19.0
 
+- Make template blocks a first-class data type. Remove the child prop type that
+  was previously used for them.
+- Change template block syntax to begin and end with `#` (`#%} block {%#`).
 - Add detection for unused bound variables.
+- Make parser require a text node (`%}...{%`) separates each expression.
 
 ## 0.18.0
 

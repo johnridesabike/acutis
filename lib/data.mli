@@ -18,8 +18,8 @@ module Const : sig
 end
 
 (** The boxed representation of runtime data. *)
-type 'a t = private
-  | Unknown of 'a
+type 'a t =
+  | Other of 'a
       (** At runtime, this stores any raw input with an unknown type.
           In a compiled template, this stores the names of variables. *)
   | Nil  (** Represents both [null] and [[]]. *)
@@ -32,7 +32,7 @@ type 'a t = private
 
 (** {1 Constructing data} *)
 
-val unknown : 'a -> 'a t
+val other : 'a -> 'a t
 val null : _ t
 val const : Const.t -> Typescheme.Variant.extra -> _ t
 val int : int -> _ t
@@ -61,5 +61,5 @@ val fold_dict : (index:'a t -> 'b -> 'a t -> 'b) -> 'b -> 'a t -> 'b
 
 (** {1 Echoing data} *)
 
-val to_string : _ t -> string
+val echo : _ t -> string
 (** This only works on constants. *)

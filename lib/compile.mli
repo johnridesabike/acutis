@@ -14,16 +14,22 @@
 val parse : fname:string -> Lexing.lexbuf -> Ast.t
 (** @raise Error.Acutis_error *)
 
+type escape = Ast.escape = No_escape | Escape
+
+type echo = Typechecker.echo =
+  | Ech_var of string * escape
+  | Ech_string of string
+
 (** The names of variables are preserved as strings in the [Data.t] values. *)
 type 'a node =
   | Text of string
-  | Echo of Typechecker.echo list * Typechecker.echo
-  | Match of string Data.t array * 'a nodes Matching.t
-  | Map_list of string Data.t * 'a nodes Matching.t
-  | Map_dict of string Data.t * 'a nodes Matching.t
-  | Component of 'a * string Data.t Map.String.t * 'a child Map.String.t
+  | Echo of (string * escape) list * echo
+  | Match of 'a data Data.t array * 'a nodes Matching.t
+  | Map_list of 'a data Data.t * 'a nodes Matching.t
+  | Map_dict of 'a data Data.t * 'a nodes Matching.t
+  | Component of 'a * 'a data Data.t Map.String.t
 
-and 'a child = Child_name of string | Child_block of 'a nodes
+and 'a data = Var of string | Block of 'a nodes
 and 'a nodes = 'a node list
 
 type 'a template =
@@ -31,7 +37,7 @@ type 'a template =
   | Fun of Typescheme.t Map.String.t * 'a
 
 type 'a t = {
-  prop_types : Typescheme.t Map.String.t;
+  types : Typescheme.t Map.String.t;
   nodes : 'a template nodes;
   name : string;
 }
@@ -51,12 +57,7 @@ module Components : sig
       @param name The component name when called inside a template.
       @raise Error.Acutis_error *)
 
-  val from_fun :
-    name:string ->
-    Typescheme.t Map.String.t ->
-    Typescheme.Child.t Map.String.t ->
-    'a ->
-    'a source
+  val from_fun : name:string -> Typescheme.t Map.String.t -> 'a -> 'a source
 
   type 'a t
 

@@ -21,15 +21,6 @@ end
 module RenderSync = Render.Make (Sync) (Acutis_js.Data)
 module RenderAsync = Render.Make (Promise_with_fixed_bind) (Acutis_js.Data)
 
-let child_async (k, p) =
-  let p = Promise.map Js.string p |> Js.Unsafe.inject in
-  (k, p)
-
-let child_sync (k, v) = (k, Js.Unsafe.coerce (Js.string v))
-
-let map_to_js f m =
-  Map.String.to_seq m |> Seq.map f |> Array.of_seq |> Js.Unsafe.obj
-
 let fname_to_compname s =
   Filename.basename s |> Filename.remove_extension |> String.capitalize_ascii
 
@@ -46,21 +37,18 @@ let () =
          Compile.Components.parse_string ~fname ~name:(fname_to_compname fname)
            (Typed_array.String.of_uint8Array src)
 
-       method funAsync name ty children fn =
-         let fn : RenderAsync.component =
-          fun data children ->
-           Js.Unsafe.fun_call fn [| data; map_to_js child_async children |]
-           |> Promise.map Js.to_string
+       method funAsync name ty fn =
+         let fn : RenderAsync.data -> RenderAsync.t =
+          fun data ->
+           Js.Unsafe.fun_call fn [| data |] |> Promise.map Js.to_string
          in
-         Compile.Components.from_fun ~name:(Js.to_string name) ty children fn
+         Compile.Components.from_fun ~name:(Js.to_string name) ty fn
 
-       method funSync name ty children fn =
-         let fn : RenderSync.component =
-          fun data children ->
-           Js.Unsafe.fun_call fn [| data; map_to_js child_sync children |]
-           |> Js.to_string
+       method funSync name ty fn =
+         let fn : RenderSync.data -> RenderSync.t =
+          fun data -> Js.Unsafe.fun_call fn [| data |] |> Js.to_string
          in
-         Compile.Components.from_fun ~name:(Js.to_string name) ty children fn
+         Compile.Components.from_fun ~name:(Js.to_string name) ty fn
     end)
 
 let () =
@@ -163,14 +151,6 @@ let () =
 
        method unionFalseOnly k f =
          union_false_only (Js.to_string k) (key_values f)
-    end);
-  let open Child in
-  Js.export "TypeschemeChildren"
-    (object%js
-       val empty = empty
-       method make a = key_values a |> make
-       method child s = (Js.to_string s, child ())
-       method nullable s = (Js.to_string s, nullable ())
     end)
 
 let () =

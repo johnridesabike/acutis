@@ -267,322 +267,70 @@ let check_interface loc ~interface ~impl =
       | None -> Error.interface_missing_prop loc k impl)
     impl
 
-let check_interface_child loc ~interface ~impl =
-  Map.String.iter
-    (fun k impl ->
-      match Map.String.find_opt k interface with
-      | Some (loc, interface) ->
-          if not (Ty.Child.equal interface impl) then
-            Error.interface_child_mismatch loc k interface impl
-      | None -> Error.interface_missing_child loc k)
-    impl
+type echo = Ech_var of string * Ast.escape | Ech_string of string
+type construct = TList | TNullable
 
-module Pattern = struct
-  type construct = TList | TNullable
+type pat =
+  | TConst of Data.Const.t * Ty.Enum.t option
+  | TConstruct of construct * pat option
+  | TTuple of pat list
+  | TRecord of
+      (string * Data.Const.t * Ty.t Ty.Union.t) option
+      * pat Map.String.t
+      * Ty.t Map.String.t ref
+  | TDict of pat Map.String.t * Set.String.t ref
+  | TVar of string
+  | TBlock of Loc.t * nodes
+  | TAny
 
-  type t =
-    | TConst of Data.Const.t * Ty.Enum.t option
-    | TConstruct of construct * t option
-    | TTuple of t list
-    | TRecord of
-        (string * Data.Const.t * Ty.t Ty.Union.t) option
-        * t Map.String.t
-        * Ty.t Map.String.t ref
-    | TDict of t Map.String.t * Set.String.t ref
-    | TVar of string
-    | TAny
-
-  let unknown _ = Ty.unknown ()
-
-  let rec make ~f mode ty = function
-    | Ast.Pattern.Int (loc, i) ->
-        unify loc mode ty (Ty.int ());
-        TConst (Int i, None)
-    | String (loc, s) ->
-        unify loc mode ty (Ty.string ());
-        TConst (String s, None)
-    | Float (loc, f) ->
-        unify loc mode ty (Ty.float ());
-        TConst (Float f, None)
-    | Bool (loc, b) ->
-        let new_enum =
-          match mode with
-          | Destructure_expand -> (
-              match b with
-              | 0 -> Ty.Enum.false_only ()
-              | _ -> Ty.Enum.true_only ())
-          | Construct_var | Construct_literal -> Ty.Enum.false_and_true ()
-        in
-        let new_ty = ref (Ty.Enum new_enum) in
-        let enum = match !ty with Enum e -> e | _ -> new_enum in
-        unify loc mode ty new_ty;
-        TConst (Int b, Some enum)
-    | Enum_string (loc, s) ->
-        let new_enum =
-          match mode with
-          | Destructure_expand -> Ty.Enum.string_singleton s `Closed
-          | Construct_var | Construct_literal ->
-              Ty.Enum.string_singleton s `Open
-        in
-        let new_ty = ref (Ty.Enum new_enum) in
-        let enum = match !ty with Enum e -> e | _ -> new_enum in
-        unify loc mode ty new_ty;
-        TConst (String s, Some enum)
-    | Enum_int (loc, i) ->
-        let new_enum =
-          match mode with
-          | Destructure_expand -> Ty.Enum.int_singleton i `Closed
-          | Construct_var | Construct_literal -> Ty.Enum.int_singleton i `Open
-        in
-        let new_ty = ref (Ty.Enum new_enum) in
-        let enum = match !ty with Enum e -> e | _ -> new_enum in
-        unify loc mode ty new_ty;
-        TConst (Int i, Some enum)
-    | Nullable (loc, pat) ->
-        let tyvar = match !ty with Nullable ty -> ty | _ -> Ty.unknown () in
-        let pat =
-          match pat with
-          | None -> None
-          | Some pat -> Some (TTuple [ make ~f mode tyvar pat ])
-        in
-        unify loc mode ty (Ty.nullable tyvar);
-        TConstruct (TNullable, pat)
-    | List (loc, l, tl) ->
-        let tyvar = match !ty with List ty -> ty | _ -> Ty.unknown () in
-        unify loc mode ty (Ty.list tyvar);
-        let tl =
-          match tl with
-          | None -> TConstruct (TList, None)
-          | Some tl -> make ~f mode ty tl
-        in
-        make_list ~tl ~f mode tyvar l
-    | Tuple (loc, l) ->
-        let new_tyvars = List.map unknown l in
-        let tyvars = match !ty with Tuple tys -> tys | _ -> new_tyvars in
-        unify loc mode ty (Ty.tuple tyvars);
-        TTuple (List.map2 (make ~f mode) tyvars l)
-    | Record (loc, Untagged m) ->
-        let m = Ast.Dict.to_map m in
-        let new_tyvars = Map.String.map unknown m |> ref in
-        let tyvars = match !ty with Record tys -> tys | _ -> new_tyvars in
-        unify loc mode ty (Ty.internal_record new_tyvars);
-        let r = make_record ~f loc mode !tyvars m in
-        TRecord (None, r, tyvars)
-    | Record (loc, Tagged (k, v, m)) ->
-        let m = Ast.Dict.to_map m in
-        let new_tyvars = Map.String.map unknown m |> ref in
-        let row =
-          match mode with
-          | Destructure_expand -> `Closed
-          | Construct_literal | Construct_var -> `Open
-        in
-        (* Use a polyvar instead of Data.Const.t to disallow Float values. *)
-        let tag, tag_extra =
-          match v with
-          | Tag_int (_, i) -> (`Int i, Ty.Variant.Not_bool)
-          | Tag_bool (_, i) -> (`Int i, Bool)
-          | Tag_string (_, s) -> (`String s, Not_bool)
-        in
-        let tyvars =
-          match !ty with
-          | Union (_, enum) -> (
-              let tyvars =
-                match (tag, enum) with
-                | `Int i, { cases = VInt cases; _ } -> Map.Int.find_opt i cases
-                | `String s, { cases = VString cases; _ } ->
-                    Map.String.find_opt s cases
-                | _ -> None
-              in
-              match tyvars with Some tv -> tv | None -> new_tyvars)
-          | _ -> new_tyvars
-        in
-        let new_enum =
-          match tag with
-          | `Int i -> Ty.Union.int_singleton i tyvars row tag_extra
-          | `String s -> Ty.Union.string_singleton s tyvars row
-        in
-        unify loc mode ty (ref (Ty.Union (k, new_enum)));
-        let r = make_record ~f loc mode !tyvars m in
-        let tag =
-          match tag with `Int i -> Data.Const.Int i | `String s -> String s
-        in
-        TRecord (Some (k, tag, new_enum), r, tyvars)
-    | Dict (loc, m) ->
-        let new_kys = ref Set.String.empty in
-        let tyvar, kys =
-          match !ty with
-          | Dict (ty, ks) -> (ty, ks)
-          | _ -> (Ty.unknown (), new_kys)
-        in
-        unify loc mode ty (Ty.internal_dict_keys tyvar new_kys);
-        let d = Ast.Dict.to_map m |> Map.String.map (make ~f mode tyvar) in
-        TDict (d, kys)
-    | Var (loc, "_") -> (
-        match mode with
-        | Destructure_expand ->
-            open_rows ty;
-            TAny
-        | Construct_literal | Construct_var -> Error.underscore_in_construct loc
-        )
-    | Var (loc, b) ->
-        (match mode with
-        | Destructure_expand -> open_rows ty
-        | Construct_literal | Construct_var -> ());
-        f loc b ty;
-        TVar b
-
-  and make_list ~f ~tl mode ty = function
-    | [] -> tl
-    | p :: l ->
-        let hd = make ~f mode ty p in
-        let tl = make_list ~f ~tl mode ty l in
-        TConstruct (TList, Some (TTuple [ hd; tl ]))
-
-  and make_record ~f loc mode tyvars m =
-    match mode with
-    | Destructure_expand ->
-        let f _ pat ty =
-          match (pat, ty) with
-          | Some pat, None -> Some (make ~f mode (Ty.unknown ()) pat)
-          | Some pat, Some ty -> Some (make ~f mode ty pat)
-          | None, Some _ -> Some TAny
-          | None, None -> None
-        in
-        Map.String.merge f m tyvars
-    | Construct_var | Construct_literal ->
-        let f k pat ty =
-          match (pat, ty) with
-          | Some pat, Some ty -> Some (make ~f mode ty pat)
-          | None, Some ty -> Error.missing_field loc k ty (* for components *)
-          | _ -> None
-        in
-        Map.String.merge f m tyvars
-
-  let to_list l =
-    let rec aux acc = function
-      | TTuple [ hd; TConstruct (_, Some tl) ] -> aux (hd :: acc) tl
-      | TTuple [ hd; TConstruct (_, None) ] -> (List.rev (hd :: acc), None)
-      | TTuple [ hd; tl ] -> (List.rev (hd :: acc), Some tl)
-      | l -> (List.rev acc, Some l)
-    in
-    aux [] l
-
-  let pp_constant ppf c =
-    match c with
-    | Data.Const.Int i -> F.pp_print_int ppf i
-    | String s -> F.fprintf ppf "%S" s
-    | Float f -> F.pp_print_float ppf f
-
-  let pp_constant_enum ppf x c =
-    match (x, c) with
-    | { V.extra = Bool; _ }, Data.Const.Int 0 -> F.pp_print_string ppf "false"
-    | { V.extra = Bool; _ }, Int _ -> F.pp_print_string ppf "true"
-    | _, c -> F.fprintf ppf "%@%a" pp_constant c
-
-  let pp_constant_union ppf x c =
-    match (x, c) with
-    | { V.extra = Bool; _ }, Data.Const.Int 0 -> F.pp_print_string ppf "false"
-    | { V.extra = Bool; _ }, Int _ -> F.pp_print_string ppf "true"
-    | _, c -> pp_constant ppf c
-
-  let rec pp ppf = function
-    | TConst (c, None) -> pp_constant ppf c
-    | TConst (c, Some x) -> pp_constant_enum ppf x c
-    | TTuple t ->
-        F.fprintf ppf "(@[%a@])" (F.pp_print_list ~pp_sep:Pp.sep_comma pp) t
-    | TRecord (Some (k, tag, var), r, _) ->
-        F.fprintf ppf "{@[%@%a: %t, %a@]}" Pp.field k
-          (fun ppf -> pp_constant_union ppf var tag)
-          pp_bindings r
-    | TRecord (None, r, _) -> F.fprintf ppf "{@[%a@]}" pp_bindings r
-    | TDict (m, _) -> F.fprintf ppf "<%a>" pp_bindings m
-    | TVar v -> F.pp_print_string ppf v
-    | TConstruct (TNullable, None) -> F.pp_print_string ppf "null"
-    | TConstruct (TNullable, Some x) -> F.fprintf ppf "!%a" pp x
-    | TConstruct (TList, None) -> F.pp_print_string ppf "[]"
-    | TConstruct (TList, Some l) ->
-        let l, rest = to_list l in
-        F.fprintf ppf "[@[%a%a@]]"
-          (F.pp_print_list ~pp_sep:Pp.sep_comma pp)
-          l
-          (F.pp_print_option pp_rest)
-          rest
-    | TAny -> F.pp_print_string ppf "_"
-
-  and pp_key_values ppf (k, v) =
-    match v with
-    | TVar v when v = k -> Pp.field ppf k
-    | v -> F.fprintf ppf "%a: %a" Pp.field k pp v
-
-  and pp_bindings ppf m =
-    F.pp_print_seq ~pp_sep:Pp.sep_comma pp_key_values ppf (Map.String.to_seq m)
-
-  and pp_rest ppf t = F.fprintf ppf ",@ ...%a" pp t
-end
-
-type echo =
-  | Ech_var of string * Ast.escape
-  | Ech_component of string
-  | Ech_string of string
-
-type node =
+and node =
   | TText of string * Ast.trim * Ast.trim
-  | TEcho of echo list * echo
-  | TMatch of Loc.t * Pattern.t Nonempty.t * Ty.t Nonempty.t * case Nonempty.t
-  | TMap_list of Loc.t * Pattern.t * Ty.t Nonempty.t * case Nonempty.t
-  | TMap_dict of Loc.t * Pattern.t * Ty.t Nonempty.t * case Nonempty.t
-  | TComponent of string * Pattern.t Map.String.t * child Map.String.t
+  | TEcho of (string * Ast.escape) list * echo
+  | TMatch of Loc.t * pat Nonempty.t * Ty.t Nonempty.t * case Nonempty.t
+  | TMap_list of Loc.t * pat * Ty.t Nonempty.t * case Nonempty.t
+  | TMap_dict of Loc.t * pat * Ty.t Nonempty.t * case Nonempty.t
+  | TComponent of string * pat Map.String.t
 
-and case = { pats : (Loc.t * Pattern.t Nonempty.t) Nonempty.t; nodes : nodes }
-and child = TChild_name of string | TChild_block of nodes
+and case = { pats : (Loc.t * pat Nonempty.t) Nonempty.t; nodes : nodes }
 and nodes = node list
 
-type t = {
-  nodes : nodes;
-  prop_types : Ty.t Map.String.t;
-  child_types : Ty.Child.t Map.String.t;
-}
+type t = { nodes : nodes; types : Ty.t Map.String.t }
 
-let unify_child loc a b =
-  if Ty.Child.equal a b then () else Error.child_type_mismatch loc a b
+type ('a, 'b) source =
+  | Src of string * 'a
+  | Fun of string * Ty.t Map.String.t * 'b
+
+let get_types = function
+  | Src (_, { types; _ }) -> types
+  | Fun (_, props, _) -> props
 
 module Context = struct
-  type root = [ `Root | `Component ]
-
-  type interface =
-    | No_interface
-    | Interface of {
-        mutable types : (Loc.t * Ty.t) Map.String.t;
-        mutable children : (Loc.t * Ty.Child.t) Map.String.t;
-      }
-
+  type typed_tree = t
   type used = Unused | Used
   type binding = { loc : Loc.t; name : string; mutable used : used; ty : Ty.t }
 
-  type t = {
-    root : root;
+  type 'a t = {
     global : Ty.t Map.String.t ref;
     scope : binding Map.String.t;
     all_bindings : binding Queue.t;
         (** This is for checking for unused variables. A queue preserves the
             order for friendlier debugging. *)
-    children : Ty.Child.t Map.String.t ref;
-    interface : interface ref;
+    interface : (Loc.t * Ty.t) Map.String.t ref option ref;
     interface_loc : Loc.t ref;
         (** When there's more than one interface, this is for the last one. *)
+    graph : ((Ast.t, 'a) source, (typed_tree, 'a) source) Dagmap.t;
   }
   (** We have to wrap each mutable value in a [ref] instead of using mutable
       fields because a new context record is created for each scope. *)
 
-  let make root =
+  let make graph =
     {
-      root;
       global = ref Map.String.empty;
       scope = Map.String.empty;
       all_bindings = Queue.create ();
-      children = ref Map.String.empty;
-      interface = ref No_interface;
+      interface = ref None;
       interface_loc = ref Loc.dummy;
+      graph;
     }
 
   let get k scope global =
@@ -596,18 +344,6 @@ module Context = struct
     match get k scope global with
     | None -> global := Map.String.add k v !global
     | Some v' -> unify loc Construct_var v v'
-
-  let update_child loc { root; children; _ } k v =
-    match root with
-    | `Root -> Error.child_in_root loc
-    | `Component ->
-        let f = function
-          | None -> Some v
-          | Some v' as r ->
-              unify_child loc v v';
-              r
-        in
-        children := Map.String.update k f !children
 
   let add_scope var_matrix ctx =
     let var_map_rows =
@@ -654,33 +390,10 @@ module Interface = struct
 
   let update loc k v { Context.interface; _ } =
     match !interface with
-    | No_interface ->
+    | None -> interface := Some (ref (Map.String.singleton k (loc, v)))
+    | Some interface ->
         interface :=
-          Interface
-            {
-              types = Map.String.singleton k (loc, v);
-              children = Map.String.empty;
-            }
-    | Interface interface ->
-        interface.types <-
-          Map.String.update k
-            (there_can_be_only_one loc k (loc, v))
-            interface.types
-
-  let update_child loc k v { Context.interface; _ } =
-    match !interface with
-    | No_interface ->
-        interface :=
-          Interface
-            {
-              types = Map.String.empty;
-              children = Map.String.singleton k (loc, v);
-            }
-    | Interface interface ->
-        interface.children <-
-          Map.String.update k
-            (there_can_be_only_one loc k (loc, v))
-            interface.children
+          Map.String.update k (there_can_be_only_one loc k (loc, v)) !interface
 
   let named loc = function
     | "int" -> Ty.int ()
@@ -761,58 +474,207 @@ module Interface = struct
   let make loc ctx l =
     ctx.Context.interface_loc := loc;
     List.iter
-      (function
-        | Ast.Interface.Type (loc, k, v) -> update loc k (make_ty v) ctx
-        | Child (loc, k) -> update_child loc k (Ty.Child.child ()) ctx
-        | Child_nullable (loc, k) ->
-            update_child loc k (Ty.Child.nullable ()) ctx)
+      (fun { Ast.Interface.loc; name; ty } -> update loc name (make_ty ty) ctx)
       l
 end
 
-(** @raises [Invalid_argument] if the list sizes are mismatched. *)
-let unify_match_cases pats tys ctx =
-  Nonempty.map2
-    (Pattern.make ~f:(Context.update ctx) Construct_literal)
-    tys pats
-
-let rec make_echoes ctx = function
+let[@tail_mod_cons] rec make_echoes ctx = function
   | [] -> []
   | Ast.Ech_var (loc, b, esc) :: tl ->
       Context.update ctx loc b (Ty.nullable (Ty.echo ()));
-      Ech_var (b, esc) :: make_echoes ctx tl
-  | Ech_component (loc, c) :: tl ->
-      Context.update_child loc ctx c (Ty.Child.nullable ());
-      Ech_component c :: make_echoes ctx tl
+      (b, esc) :: make_echoes ctx tl
   | Ech_string (loc, _) :: _ -> Error.echo_nullable_literal loc
 
 let make_default_echo ctx = function
   | Ast.Ech_var (loc, b, esc) ->
       Context.update ctx loc b (Ty.echo ());
       Ech_var (b, esc)
-  | Ech_component (loc, c) ->
-      Context.update_child loc ctx c (Ty.Child.child ());
-      Ech_component c
   | Ech_string (_, s) -> Ech_string s
-
-type ('a, 'b) source =
-  | Src of string * 'a
-  | Fun of string * Ty.t Map.String.t * Ty.Child.t Map.String.t * 'b
-
-let get_types = function
-  | Src (_, { prop_types; child_types; _ }) -> (prop_types, child_types)
-  | Fun (_, props, children, _) -> (props, children)
 
 let add_default_wildcard cases =
   let f = function
-    | loc, Nonempty.[ h ] ->
-        (loc, Nonempty.[ h; Ast.Pattern.Var (Loc.dummy, "_") ])
+    | loc, Nonempty.[ h ] -> (loc, Nonempty.[ h; Ast.Var (Loc.dummy, "_") ])
     | pat -> pat
   in
   Nonempty.map
     (fun case -> { case with Ast.pats = Nonempty.map f case.Ast.pats })
     cases
 
-let unify_map ~ty ~key loc (tys, cases) pat ctx =
+let unknown _ = Ty.unknown ()
+
+let rec make_pat ~f ctx mode ty = function
+  | Ast.Int (loc, i) ->
+      unify loc mode ty (Ty.int ());
+      TConst (Int i, None)
+  | String (loc, s) ->
+      unify loc mode ty (Ty.string ());
+      TConst (String s, None)
+  | Block (loc, nodes) ->
+      unify loc mode ty (Ty.string ());
+      TBlock (loc, make_nodes ctx nodes)
+  | Float (loc, f) ->
+      unify loc mode ty (Ty.float ());
+      TConst (Float f, None)
+  | Bool (loc, b) ->
+      let new_enum =
+        match mode with
+        | Destructure_expand -> (
+            match b with
+            | 0 -> Ty.Enum.false_only ()
+            | _ -> Ty.Enum.true_only ())
+        | Construct_var | Construct_literal -> Ty.Enum.false_and_true ()
+      in
+      let new_ty = ref (Ty.Enum new_enum) in
+      let enum = match !ty with Enum e -> e | _ -> new_enum in
+      unify loc mode ty new_ty;
+      TConst (Int b, Some enum)
+  | Enum_string (loc, s) ->
+      let new_enum =
+        match mode with
+        | Destructure_expand -> Ty.Enum.string_singleton s `Closed
+        | Construct_var | Construct_literal -> Ty.Enum.string_singleton s `Open
+      in
+      let new_ty = ref (Ty.Enum new_enum) in
+      let enum = match !ty with Enum e -> e | _ -> new_enum in
+      unify loc mode ty new_ty;
+      TConst (String s, Some enum)
+  | Enum_int (loc, i) ->
+      let new_enum =
+        match mode with
+        | Destructure_expand -> Ty.Enum.int_singleton i `Closed
+        | Construct_var | Construct_literal -> Ty.Enum.int_singleton i `Open
+      in
+      let new_ty = ref (Ty.Enum new_enum) in
+      let enum = match !ty with Enum e -> e | _ -> new_enum in
+      unify loc mode ty new_ty;
+      TConst (Int i, Some enum)
+  | Nullable (loc, pat) ->
+      let tyvar = match !ty with Nullable ty -> ty | _ -> Ty.unknown () in
+      let pat =
+        match pat with
+        | None -> None
+        | Some pat -> Some (TTuple [ make_pat ~f ctx mode tyvar pat ])
+      in
+      unify loc mode ty (Ty.nullable tyvar);
+      TConstruct (TNullable, pat)
+  | List (loc, l, tl) ->
+      let tyvar = match !ty with List ty -> ty | _ -> Ty.unknown () in
+      unify loc mode ty (Ty.list tyvar);
+      let tl =
+        match tl with
+        | None -> TConstruct (TList, None)
+        | Some tl -> make_pat ~f ctx mode ty tl
+      in
+      make_list ~tl ~f ctx mode tyvar l
+  | Tuple (loc, l) ->
+      let new_tyvars = List.map unknown l in
+      let tyvars = match !ty with Tuple tys -> tys | _ -> new_tyvars in
+      unify loc mode ty (Ty.tuple tyvars);
+      TTuple (List.map2 (make_pat ~f ctx mode) tyvars l)
+  | Record (loc, Untagged m) ->
+      let m = Ast.Dict.to_map m in
+      let new_tyvars = Map.String.map unknown m |> ref in
+      let tyvars = match !ty with Record tys -> tys | _ -> new_tyvars in
+      unify loc mode ty (Ty.internal_record new_tyvars);
+      let r = make_record ~f loc ctx mode !tyvars m in
+      TRecord (None, r, tyvars)
+  | Record (loc, Tagged (k, v, m)) ->
+      let m = Ast.Dict.to_map m in
+      let new_tyvars = Map.String.map unknown m |> ref in
+      let row =
+        match mode with
+        | Destructure_expand -> `Closed
+        | Construct_literal | Construct_var -> `Open
+      in
+      (* Use a polyvar instead of Data.Const.t to disallow Float values. *)
+      let tag, tag_extra =
+        match v with
+        | Tag_int (_, i) -> (`Int i, Ty.Variant.Not_bool)
+        | Tag_bool (_, i) -> (`Int i, Bool)
+        | Tag_string (_, s) -> (`String s, Not_bool)
+      in
+      let tyvars =
+        match !ty with
+        | Union (_, enum) -> (
+            let tyvars =
+              match (tag, enum) with
+              | `Int i, { cases = VInt cases; _ } -> Map.Int.find_opt i cases
+              | `String s, { cases = VString cases; _ } ->
+                  Map.String.find_opt s cases
+              | _ -> None
+            in
+            match tyvars with Some tv -> tv | None -> new_tyvars)
+        | _ -> new_tyvars
+      in
+      let new_enum =
+        match tag with
+        | `Int i -> Ty.Union.int_singleton i tyvars row tag_extra
+        | `String s -> Ty.Union.string_singleton s tyvars row
+      in
+      unify loc mode ty (ref (Ty.Union (k, new_enum)));
+      let r = make_record ~f loc ctx mode !tyvars m in
+      let tag =
+        match tag with `Int i -> Data.Const.Int i | `String s -> String s
+      in
+      TRecord (Some (k, tag, new_enum), r, tyvars)
+  | Dict (loc, m) ->
+      let new_kys = ref Set.String.empty in
+      let tyvar, kys =
+        match !ty with
+        | Dict (ty, ks) -> (ty, ks)
+        | _ -> (Ty.unknown (), new_kys)
+      in
+      unify loc mode ty (Ty.internal_dict_keys tyvar new_kys);
+      let d =
+        Ast.Dict.to_map m |> Map.String.map (make_pat ~f ctx mode tyvar)
+      in
+      TDict (d, kys)
+  | Var (loc, "_") -> (
+      match mode with
+      | Destructure_expand ->
+          open_rows ty;
+          TAny
+      | Construct_literal | Construct_var -> Error.underscore_in_construct loc)
+  | Var (loc, b) ->
+      (match mode with
+      | Destructure_expand -> open_rows ty
+      | Construct_literal | Construct_var -> ());
+      f loc b ty;
+      TVar b
+
+and[@tail_mod_cons] make_list ~f ~tl ctx mode ty = function
+  | [] -> tl
+  | p :: l ->
+      let hd = make_pat ~f ctx mode ty p in
+      TConstruct (TList, Some (TTuple [ hd; make_list ~f ~tl ctx mode ty l ]))
+
+and make_record ~f loc ctx mode tyvars m =
+  match mode with
+  | Destructure_expand ->
+      let f _ pat ty =
+        match (pat, ty) with
+        | Some pat, None -> Some (make_pat ~f ctx mode (Ty.unknown ()) pat)
+        | Some pat, Some ty -> Some (make_pat ~f ctx mode ty pat)
+        | None, Some _ -> Some TAny
+        | None, None -> None
+      in
+      Map.String.merge f m tyvars
+  | Construct_var | Construct_literal ->
+      let f k pat ty =
+        match (pat, ty) with
+        | Some pat, Some ty -> Some (make_pat ~f ctx mode ty pat)
+        | None, Some ty -> Error.missing_field loc k ty (* for components *)
+        | _ -> None
+      in
+      Map.String.merge f m tyvars
+
+(** @raises [Invalid_argument] if the list sizes are mismatched. *)
+and unify_match_cases pats tys ctx =
+  Nonempty.map2
+    (make_pat ~f:(Context.update ctx) ctx Construct_literal)
+    tys pats
+
+and unify_map ~ty ~key loc (tys, cases) pat ctx =
   let hd_ty =
     match tys with
     | Nonempty.[ hd; tl ] ->
@@ -820,13 +682,13 @@ let unify_map ~ty ~key loc (tys, cases) pat ctx =
         ty hd
     | _ -> Error.map_pat_num_mismatch loc
   in
-  let p = Pattern.make ~f:(Context.update ctx) Construct_literal hd_ty pat in
+  let p = make_pat ~f:(Context.update ctx) ctx Construct_literal hd_ty pat in
   (p, tys, cases)
 
-let rec make_cases ctx g cases =
+and make_cases ctx cases =
   let tys =
     let _, pats = (Nonempty.hd cases).Ast.pats |> Nonempty.hd in
-    Nonempty.map Pattern.unknown pats
+    Nonempty.map unknown pats
   in
   (* Type-check all of the cases BEFORE running [make_nodes]. *)
   let cases =
@@ -840,7 +702,7 @@ let rec make_cases ctx g cases =
               Queue.add bindings bindings_all;
               let f l k v = Queue.add (l, k, v) bindings in
               try
-                (loc, Nonempty.map2 (Pattern.make ~f Destructure_expand) tys pat)
+                (loc, Nonempty.map2 (make_pat ~f ctx Destructure_expand) tys pat)
               with Invalid_argument _ -> Error.pat_num_mismatch loc)
             pats
         in
@@ -848,64 +710,47 @@ let rec make_cases ctx g cases =
         (pats, nodes, ctx))
       cases
     |> Nonempty.map (fun (pats, nodes, ctx) ->
-           { pats; nodes = make_nodes ctx g nodes })
+           { pats; nodes = make_nodes ctx nodes })
   in
   (tys, cases)
 
-and make_nodes ctx g nodes =
+and make_nodes ctx nodes =
   let f = function
     | Ast.Text (s, l, r) -> Some (TText (s, l, r))
     | Echo (nullables, default) ->
         Some (TEcho (make_echoes ctx nullables, make_default_echo ctx default))
-    | Component (loc, comp, comp', props, children) ->
+    | Component (loc, comp, comp', props) ->
         if comp <> comp' then Error.component_name_mismatch loc comp comp';
-        let prop_types, prop_types_child = get_types (Dagmap.get comp g) in
+        let types = get_types (Dagmap.get comp ctx.graph) in
         (* The original should not mutate*)
-        let prop_types = Ty.internal_copy_record prop_types in
+        let types = Ty.internal_copy_record types in
         let missing_to_nullable _ ty prop =
           match (prop, ty) with
           | None, Some { contents = Ty.Nullable _ } ->
-              Some (Ast.Pattern.Nullable (Loc.dummy, None))
+              Some (Ast.Nullable (Loc.dummy, None))
           | prop, _ -> prop
         in
         let props =
           Ast.Dict.to_map props
-          |> Map.String.merge missing_to_nullable prop_types
-          |> Pattern.make_record ~f:(Context.update ctx) loc Construct_literal
-               prop_types
+          |> Map.String.merge missing_to_nullable types
+          |> make_record ~f:(Context.update ctx) loc ctx Construct_literal types
         in
-        let f k c ty =
-          match (c, ty) with
-          | None, Some ty ->
-              if Ty.Child.is_nullable ty then None
-              else Error.missing_child loc k
-          | Some (Ast.Child_name (loc, c)), Some ty ->
-              Context.update_child loc ctx c ty;
-              Some (TChild_name c)
-          | Some (Child_block nodes), Some _ ->
-              Some (TChild_block (make_nodes ctx g nodes))
-          | Some _, None -> Error.extra_child loc ~comp ~child:k
-          | None, None -> None
-        in
-        let children =
-          Map.String.merge f (Ast.Dict.to_map children) prop_types_child
-        in
-        Some (TComponent (comp, props, children))
+        Some (TComponent (comp, props))
     | Match (loc, pats, cases) ->
-        let tys, cases = make_cases ctx g cases in
+        let tys, cases = make_cases ctx cases in
         let patterns =
           try unify_match_cases pats tys ctx
           with Invalid_argument _ -> Error.pat_num_mismatch loc
         in
         Some (TMatch (loc, patterns, tys, cases))
     | Map_list (loc, pattern, cases) ->
-        let cases = add_default_wildcard cases |> make_cases ctx g in
+        let cases = add_default_wildcard cases |> make_cases ctx in
         let pattern, ty, cases =
           unify_map ~ty:Ty.list ~key:Ty.int loc cases pattern ctx
         in
         Some (TMap_list (loc, pattern, ty, cases))
     | Map_dict (loc, pattern, cases) ->
-        let cases = add_default_wildcard cases |> make_cases ctx g in
+        let cases = add_default_wildcard cases |> make_cases ctx in
         let pattern, ty, cases =
           unify_map ~ty:Ty.dict ~key:Ty.string loc cases pattern ctx
         in
@@ -916,9 +761,9 @@ and make_nodes ctx g nodes =
   in
   List.filter_map f nodes
 
-let make root g ast =
-  let ctx = Context.make root in
-  let nodes = make_nodes ctx g ast in
+let make g ast =
+  let ctx = Context.make g in
+  let nodes = make_nodes ctx ast in
   Queue.iter
     (function
       | Context.{ used = Used; _ } -> ()
@@ -926,23 +771,80 @@ let make root g ast =
           match name.[0] with '_' -> () | _ -> Error.var_unused loc name))
     ctx.all_bindings;
   match !(ctx.interface) with
-  | No_interface ->
-      { nodes; prop_types = !(ctx.global); child_types = !(ctx.children) }
-  | Interface { types; children } ->
-      check_interface !(ctx.interface_loc) ~interface:types ~impl:!(ctx.global);
-      check_interface_child !(ctx.interface_loc) ~interface:children
-        ~impl:!(ctx.children);
-      {
-        nodes;
-        prop_types = Map.String.map snd types;
-        child_types = Map.String.map snd children;
-      }
+  | None -> { nodes; types = !(ctx.global) }
+  | Some interface ->
+      check_interface !(ctx.interface_loc) ~interface:!interface
+        ~impl:!(ctx.global);
+      { nodes; types = Map.String.map snd !interface }
 
 let make_src g = function
-  | Src (name, ast) -> Src (name, make `Component g ast)
-  | Fun (name, p, c, f) -> Fun (name, p, c, f)
+  | Src (name, ast) -> Src (name, make g ast)
+  | Fun (name, p, f) -> Fun (name, p, f)
 
 let make_components m = Dagmap.make ~f:make_src m |> Dagmap.link_all
+let make ~root components ast = make (Dagmap.prelinked root components) ast
 
-let make ~root components ast =
-  make `Root (Dagmap.prelinked root components) ast
+let pp_pat =
+  let to_list l =
+    let rec aux acc = function
+      | TTuple [ hd; TConstruct (_, Some tl) ] -> aux (hd :: acc) tl
+      | TTuple [ hd; TConstruct (_, None) ] -> (List.rev (hd :: acc), None)
+      | TTuple [ hd; tl ] -> (List.rev (hd :: acc), Some tl)
+      | l -> (List.rev acc, Some l)
+    in
+    aux [] l
+  in
+
+  let pp_constant ppf c =
+    match c with
+    | Data.Const.Int i -> F.pp_print_int ppf i
+    | String s -> F.fprintf ppf "%S" s
+    | Float f -> F.pp_print_float ppf f
+  in
+
+  let pp_constant_enum ppf x c =
+    match (x, c) with
+    | { V.extra = Bool; _ }, Data.Const.Int 0 -> F.pp_print_string ppf "false"
+    | { V.extra = Bool; _ }, Int _ -> F.pp_print_string ppf "true"
+    | _, c -> F.fprintf ppf "%@%a" pp_constant c
+  in
+
+  let pp_constant_union ppf x c =
+    match (x, c) with
+    | { V.extra = Bool; _ }, Data.Const.Int 0 -> F.pp_print_string ppf "false"
+    | { V.extra = Bool; _ }, Int _ -> F.pp_print_string ppf "true"
+    | _, c -> pp_constant ppf c
+  in
+
+  let rec pp_pat ppf = function
+    | TConst (c, None) -> pp_constant ppf c
+    | TConst (c, Some x) -> pp_constant_enum ppf x c
+    | TTuple t ->
+        F.fprintf ppf "(@[%a@])" (F.pp_print_list ~pp_sep:Pp.sep_comma pp_pat) t
+    | TRecord (Some (k, tag, var), r, _) ->
+        F.fprintf ppf "{@[%@%a: %t, %a@]}" Pp.field k
+          (fun ppf -> pp_constant_union ppf var tag)
+          pp_bindings r
+    | TRecord (None, r, _) -> F.fprintf ppf "{@[%a@]}" pp_bindings r
+    | TDict (m, _) -> F.fprintf ppf "<%a>" pp_bindings m
+    | TVar v -> F.pp_print_string ppf v
+    | TConstruct (TNullable, None) -> F.pp_print_string ppf "null"
+    | TConstruct (TNullable, Some x) -> F.fprintf ppf "!%a" pp_pat x
+    | TConstruct (TList, None) -> F.pp_print_string ppf "[]"
+    | TConstruct (TList, Some l) ->
+        let l, rest = to_list l in
+        F.fprintf ppf "[@[%a%a@]]"
+          (F.pp_print_list ~pp_sep:Pp.sep_comma pp_pat)
+          l
+          (F.pp_print_option pp_rest)
+          rest
+    | TBlock _ -> F.pp_print_string ppf "#%}...{%/#"
+    | TAny -> F.pp_print_string ppf "_"
+  and pp_key_values ppf (k, v) =
+    match v with
+    | TVar v when v = k -> Pp.field ppf k
+    | v -> F.fprintf ppf "%a: %a" Pp.field k pp_pat v
+  and pp_bindings ppf m =
+    F.pp_print_seq ~pp_sep:Pp.sep_comma pp_key_values ppf (Map.String.to_seq m)
+  and pp_rest ppf t = F.fprintf ppf ",@ ...%a" pp_pat t in
+  pp_pat

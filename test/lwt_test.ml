@@ -15,14 +15,12 @@ let render ?(components = []) src json =
 
 let basic _ () =
   let a =
-    Compile.Components.from_fun ~name:"Slow" Typescheme.empty
-      Typescheme.Child.empty (fun _ _ ->
+    Compile.Components.from_fun ~name:"Slow" Typescheme.empty (fun _ ->
         let+ () = Lwt_unix.sleep 0.05 in
         "Short sleep.")
   in
   let b =
-    Compile.Components.from_fun ~name:"Slower" Typescheme.empty
-      Typescheme.Child.empty (fun _ _ ->
+    Compile.Components.from_fun ~name:"Slower" Typescheme.empty (fun _ ->
         let+ () = Lwt_unix.sleep 0.1 in
         "Long sleep.")
   in

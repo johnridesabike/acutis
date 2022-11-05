@@ -6,7 +6,7 @@ let check = Alcotest.(check (module DebugAst))
 let loc = Loc.dummy
 
 let echoes () =
-  let src = {|{{ a }} {{ "b" }} {{ C }} {{ &d ? E ? "f\"g" }}|} in
+  let src = {|{{ a }} {{ "b" }} {{ &d ? e ? "f\"g" }}|} in
   check "Echoes parse correctly"
     [
       Text ("", No_trim, No_trim);
@@ -14,10 +14,8 @@ let echoes () =
       Text (" ", No_trim, No_trim);
       Echo ([], Ech_string (loc, "b"));
       Text (" ", No_trim, No_trim);
-      Echo ([], Ech_component (loc, "C"));
-      Text (" ", No_trim, No_trim);
       Echo
-        ( [ Ech_var (loc, "d", No_escape); Ech_component (loc, "E") ],
+        ( [ Ech_var (loc, "d", No_escape); Ech_var (loc, "e", Escape) ],
           Ech_string (loc, "f\"g") );
       Text ("", No_trim, No_trim);
     ]
@@ -73,7 +71,7 @@ let matches () =
     ]
     (parse src);
   let src =
-    {|{% match b with c %}{% match d, e with f, g %} {% /match /match %}|}
+    {|{% match b with c %}{% match d, e with f, g %} {% /match %}{% /match %}|}
   in
   check "Nested matches parse correctly"
     [
@@ -96,6 +94,7 @@ let matches () =
                           nodes = [ Text (" ", No_trim, No_trim) ];
                         };
                       ] );
+                  Text ("", No_trim, No_trim);
                 ];
             };
           ] );
@@ -162,10 +161,11 @@ let components () =
     {|{% Template
     a=b
     c
-    D=E
-    F
-    G=#%} {%/#
-    H=#%}{% match a with b %} {% /match /#
+    d=e
+    f
+    g=#%} {%#
+    h=#%}{% match a with b %} {% /match %}{%#
+    i=##
   /%}|}
   in
   check "Component with props parses correctly"
@@ -177,27 +177,29 @@ let components () =
           "Template",
           Ast.Dict.(
             empty
-            |> add loc "a" (Ast.Pattern.Var (loc, "b"))
-            |> add loc "c" (Ast.Pattern.Var (loc, "c"))),
-          Ast.Dict.(
-            empty
-            |> add loc "D" (Ast.Child_name (loc, "E"))
-            |> add loc "F" (Ast.Child_name (loc, "F"))
-            |> add loc "G" (Ast.Child_block [ Text (" ", No_trim, No_trim) ])
-            |> add loc "H"
-                 (Ast.Child_block
-                    [
-                      Text ("", No_trim, No_trim);
-                      Match
-                        ( loc,
-                          [ Var (loc, "a") ],
-                          [
-                            {
-                              pats = [ (loc, [ Var (loc, "b") ]) ];
-                              nodes = [ Text (" ", No_trim, No_trim) ];
-                            };
-                          ] );
-                    ])) );
+            |> add loc "a" (Ast.Var (loc, "b"))
+            |> add loc "c" (Ast.Var (loc, "c"))
+            |> add loc "d" (Ast.Var (loc, "e"))
+            |> add loc "f" (Ast.Var (loc, "f"))
+            |> add loc "g"
+                 (Ast.Block (loc, [ Ast.Text (" ", No_trim, No_trim) ]))
+            |> add loc "h"
+                 (Ast.Block
+                    ( loc,
+                      [
+                        Ast.Text ("", No_trim, No_trim);
+                        Match
+                          ( loc,
+                            [ Var (loc, "a") ],
+                            [
+                              {
+                                pats = [ (loc, [ Var (loc, "b") ]) ];
+                                nodes = [ Text (" ", No_trim, No_trim) ];
+                              };
+                            ] );
+                        Ast.Text ("", No_trim, No_trim);
+                      ] ))
+            |> add loc "i" (Ast.Block (loc, []))) );
       Text ("", No_trim, No_trim);
     ]
     (parse src);
@@ -209,9 +211,8 @@ let components () =
         ( loc,
           "Template",
           "Template",
-          Ast.Dict.empty,
-          Ast.Dict.singleton "Children"
-            (Ast.Child_block [ Text (" ", No_trim, No_trim) ]) );
+          Ast.Dict.singleton "children"
+            (Ast.Block (loc, [ Ast.Text (" ", No_trim, No_trim) ])) );
       Text ("", No_trim, No_trim);
     ]
     (parse src)
@@ -312,8 +313,8 @@ let patterns () =
                           Untagged
                             Ast.Dict.(
                               empty
-                              |> add loc "a" (Ast.Pattern.Var (loc, "a"))
-                              |> add loc "!#%@" (Ast.Pattern.Var (loc, "b"))) );
+                              |> add loc "a" (Ast.Var (loc, "a"))
+                              |> add loc "!#%@" (Ast.Var (loc, "b"))) );
                     ] );
                 ];
               nodes = [ Text (" ", No_trim, No_trim) ];
@@ -382,8 +383,7 @@ let patterns () =
                           Tagged
                             ( "tag",
                               Tag_bool (loc, 1),
-                              Ast.Dict.singleton "a"
-                                (Ast.Pattern.Var (loc, "a")) ) );
+                              Ast.Dict.singleton "a" (Ast.Var (loc, "a")) ) );
                     ] );
                 ];
               nodes = [ Text (" ", No_trim, No_trim) ];
@@ -420,8 +420,8 @@ let patterns () =
                         ( loc,
                           Ast.Dict.(
                             empty
-                            |> add loc "a" (Ast.Pattern.Int (loc, 1))
-                            |> add loc "b" (Ast.Pattern.Int (loc, 2))) );
+                            |> add loc "a" (Ast.Int (loc, 1))
+                            |> add loc "b" (Ast.Int (loc, 2))) );
                     ] );
                 ];
               nodes = [ Text (" ", No_trim, No_trim) ];
@@ -443,8 +443,8 @@ let interface () =
     c = {@tag: 0} | {@tag: 1, a: (float, true | false)}
     d = {@tag: "a", a: float} | {@tag: "b", a: @0 | @1 | ...}
     e = {@tag: 0, a: _} | {@tag: 1, b: @"a" | @"b" | ...} | ...
-    Children
-    OptionalChildren = ?
+    children = string
+    optionalChildren = ?string
   / %}|}
   in
   let open Ast.Interface in
@@ -454,9 +454,10 @@ let interface () =
       Interface
         ( loc,
           [
-            Type
-              ( loc,
-                "a",
+            {
+              loc;
+              name = "a";
+              ty =
                 Record
                   ( [
                       ( loc,
@@ -466,10 +467,12 @@ let interface () =
                             |> add loc "b" (Enum_string ([ "a"; "b" ], `Closed)))
                       );
                     ],
-                    `Closed ) );
-            Type
-              ( loc,
-                "b",
+                    `Closed );
+            };
+            {
+              loc;
+              name = "b";
+              ty =
                 Record
                   ( [
                       ( loc,
@@ -485,10 +488,12 @@ let interface () =
                             Ast.Dict.singleton "a"
                               (Dict (Nullable (Named (loc, "string")))) ) );
                     ],
-                    `Closed ) );
-            Type
-              ( loc,
-                "c",
+                    `Closed );
+            };
+            {
+              loc;
+              name = "c";
+              ty =
                 Record
                   ( [
                       (loc, Tagged ("tag", Tag_int (loc, 0), Ast.Dict.empty));
@@ -501,10 +506,12 @@ let interface () =
                                  [ Named (loc, "float"); Enum_bool [ 1; 0 ] ])
                           ) );
                     ],
-                    `Closed ) );
-            Type
-              ( loc,
-                "d",
+                    `Closed );
+            };
+            {
+              loc;
+              name = "d";
+              ty =
                 Record
                   ( [
                       ( loc,
@@ -519,10 +526,12 @@ let interface () =
                             Ast.Dict.singleton "a" (Enum_int ([ 0; 1 ], `Open))
                           ) );
                     ],
-                    `Closed ) );
-            Type
-              ( loc,
-                "e",
+                    `Closed );
+            };
+            {
+              loc;
+              name = "e";
+              ty =
                 Record
                   ( [
                       ( loc,
@@ -537,9 +546,14 @@ let interface () =
                             Ast.Dict.singleton "b"
                               (Enum_string ([ "a"; "b" ], `Open)) ) );
                     ],
-                    `Open ) );
-            Child (loc, "Children");
-            Child_nullable (loc, "OptionalChildren");
+                    `Open );
+            };
+            { loc; name = "children"; ty = Named (loc, "string") };
+            {
+              loc;
+              name = "optionalChildren";
+              ty = Nullable (Named (loc, "string"));
+            };
           ] );
       Text ("", No_trim, No_trim);
     ]
@@ -563,11 +577,11 @@ let edge_cases () =
                         ( loc,
                           Untagged
                             (Ast.Dict.singleton "a"
-                               (Ast.Pattern.Record
+                               (Ast.Record
                                   ( loc,
                                     Untagged
                                       (Ast.Dict.singleton "b"
-                                         (Ast.Pattern.Var (loc, "b"))) ))) );
+                                         (Ast.Var (loc, "b"))) ))) );
                     ] );
                 ];
               nodes =
