@@ -30,7 +30,7 @@ let digit = ['0'-'9']
 let int = '-'? digit digit*
 let frac = '.' digit*
 let exp = ['e' 'E'] ['-' '+']? digit+
-let float = digit+ frac? exp?
+let float = '-'? digit+ frac? exp?
 
 rule text state buf = parse
   | "{{"

@@ -21,6 +21,58 @@ let echoes () =
     ]
     (parse src)
 
+let numbers () =
+  let src =
+    {|{% match a
+        with
+          {
+            int: 01000,
+            frac: 010.55,
+            negint: -0999,
+            negfrac: -012.34,
+            exp1: 1.5e2,
+            exp2: -10e+2,
+            exp3: 20e-2
+          }
+      %}{% with _ %}{% /match %}|}
+  in
+  check "Numbers parse correctly"
+    [
+      Text ("", No_trim, No_trim);
+      Match
+        ( loc,
+          [ Var (loc, "a") ],
+          [
+            {
+              pats =
+                [
+                  ( loc,
+                    [
+                      Record
+                        ( loc,
+                          Untagged
+                            Ast.Dict.(
+                              empty
+                              |> add loc "int" (Ast.Int (loc, 1000))
+                              |> add loc "frac" (Ast.Float (loc, 10.55))
+                              |> add loc "negint" (Ast.Int (loc, -999))
+                              |> add loc "negfrac" (Ast.Float (loc, -12.34))
+                              |> add loc "exp1" (Ast.Float (loc, 150.0))
+                              |> add loc "exp2" (Ast.Float (loc, -1000.0))
+                              |> add loc "exp3" (Ast.Float (loc, 0.2))) );
+                    ] );
+                ];
+              nodes = [ Text ("", No_trim, No_trim) ];
+            };
+            {
+              pats = [ (loc, [ Var (loc, "_") ]) ];
+              nodes = [ Text ("", No_trim, No_trim) ];
+            };
+          ] );
+      Text ("", No_trim, No_trim);
+    ]
+    (parse src)
+
 let trim () =
   let src = {|{{~ a }} {{~ b }} {{ c ~}} {{~ d ~}}|} in
   check "Trim parses correctly"
@@ -603,6 +655,7 @@ let () =
       ( "Parser tests",
         [
           test_case "Echoes" `Quick echoes;
+          test_case "Numbers" `Quick numbers;
           test_case "Trim" `Quick trim;
           test_case "Comments" `Quick comments;
           test_case "Matches" `Quick matches;
