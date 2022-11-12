@@ -6,17 +6,28 @@ let check = Alcotest.(check (module DebugAst))
 let loc = Loc.dummy
 
 let echoes () =
-  let src = {|{{ a }} {{ "b" }} {{ &d ? e ? "f\"g" }}|} in
+  let src = {|{{ a }} {{ "b" }} {{{ d ? e ? "f\"g" }}}|} in
   check "Echoes parse correctly"
     [
       Text ("", No_trim, No_trim);
-      Echo ([], Ech_var (loc, "a", Escape));
+      Echo ([], Ech_var (loc, Fmt_string, "a"), Escape);
       Text (" ", No_trim, No_trim);
-      Echo ([], Ech_string (loc, "b"));
+      Echo ([], Ech_string (loc, "b"), Escape);
       Text (" ", No_trim, No_trim);
       Echo
-        ( [ Ech_var (loc, "d", No_escape); Ech_var (loc, "e", Escape) ],
-          Ech_string (loc, "f\"g") );
+        ( [ Ech_var (loc, Fmt_string, "d"); Ech_var (loc, Fmt_string, "e") ],
+          Ech_string (loc, "f\"g"),
+          No_escape );
+      Text ("", No_trim, No_trim);
+    ]
+    (parse src);
+  let src = {|{{ %i a }}{{ %,i a }}|} in
+  check "Echoe formats parse correctly"
+    [
+      Text ("", No_trim, No_trim);
+      Echo ([], Ech_var (loc, Fmt_int No_flag, "a"), Escape);
+      Text ("", No_trim, No_trim);
+      Echo ([], Ech_var (loc, Fmt_int Flag_comma, "a"), Escape);
       Text ("", No_trim, No_trim);
     ]
     (parse src)
@@ -74,17 +85,25 @@ let numbers () =
     (parse src)
 
 let trim () =
-  let src = {|{{~ a }} {{~ b }} {{ c ~}} {{~ d ~}}|} in
+  let src =
+    {|{{~ a }} {{~ b }} {{ c ~}} {{~ d ~}} {{{~ e }}} {{{ f ~}}} {{{~ g ~}}}|}
+  in
   check "Trim parses correctly"
     [
       Text ("", No_trim, Trim);
-      Echo ([], Ech_var (loc, "a", Escape));
+      Echo ([], Ech_var (loc, Fmt_string, "a"), Escape);
       Text (" ", No_trim, Trim);
-      Echo ([], Ech_var (loc, "b", Escape));
+      Echo ([], Ech_var (loc, Fmt_string, "b"), Escape);
       Text (" ", No_trim, No_trim);
-      Echo ([], Ech_var (loc, "c", Escape));
+      Echo ([], Ech_var (loc, Fmt_string, "c"), Escape);
       Text (" ", Trim, Trim);
-      Echo ([], Ech_var (loc, "d", Escape));
+      Echo ([], Ech_var (loc, Fmt_string, "d"), Escape);
+      Text (" ", Trim, Trim);
+      Echo ([], Ech_var (loc, Fmt_string, "e"), No_escape);
+      Text (" ", No_trim, No_trim);
+      Echo ([], Ech_var (loc, Fmt_string, "f"), No_escape);
+      Text (" ", Trim, Trim);
+      Echo ([], Ech_var (loc, Fmt_string, "g"), No_escape);
       Text ("", Trim, No_trim);
     ]
     (parse src)
@@ -639,7 +658,7 @@ let edge_cases () =
               nodes =
                 [
                   Text (" ", No_trim, No_trim);
-                  Echo ([], Ech_var (loc, "b", Escape));
+                  Echo ([], Ech_var (loc, Fmt_string, "b"), Escape);
                   Text (" ", No_trim, No_trim);
                 ];
             };

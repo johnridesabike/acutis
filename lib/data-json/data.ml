@@ -58,14 +58,6 @@ let float path = function
   | `Int i -> Data.float (float_of_int i)
   | j -> decode_error (Ty.float ()) path j
 
-let echo path = function
-  | `String s -> Data.string s
-  | `Int i -> Data.int i
-  | `Float f -> Data.float f
-  | `Bool false -> Data.bool 0
-  | `Bool true -> Data.bool 1
-  | j -> decode_error (Ty.echo ()) path j
-
 let rec nullable path ty = function
   | `Null -> Data.null
   | j -> Data.some (make (EPath.nullable path) ty j)
@@ -144,7 +136,6 @@ and make path ty j =
   | Int | Enum { row = `Open; cases = VInt _; _ } -> int ty path None j
   | Enum { row = `Closed; cases = VInt cases; _ } -> int ty path (Some cases) j
   | Float -> float path j
-  | Echo -> echo path j
   | List ty -> list path ty j
   | Dict (ty, _) -> dict path ty j
   | Tuple tys -> tuple ty path tys j
@@ -165,11 +156,11 @@ let rec record_to_json ty t =
 and to_json ty t =
   match (!ty, t) with
   | _, Data.Other j -> j
-  | _, Const (Float f, _) -> `Float f
-  | _, Const (String s, _) -> `String s
-  | (Ty.Enum { extra = Bool; _ } | Echo), Const (Int 0, Bool) -> `Bool false
-  | (Ty.Enum { extra = Bool; _ } | Echo), Const (Int _, Bool) -> `Bool true
-  | (Enum _ | Int | Echo), Const (Int i, _) -> `Int i
+  | _, Const (Float f) -> `Float f
+  | _, Const (String s) -> `String s
+  | Ty.Enum { extra = Bool; _ }, Const (Int 0) -> `Bool false
+  | Ty.Enum { extra = Bool; _ }, Const (Int _) -> `Bool true
+  | (Enum _ | Int), Const (Int i) -> `Int i
   | Nullable _, Nil -> `Null
   | Nullable ty, Array [| t |] -> to_json ty t
   | List ty, t ->
@@ -186,20 +177,22 @@ and to_json ty t =
       let l = Map.String.map (to_json ty) m |> Map.String.bindings in
       `Assoc l
   | Record tys, Dict m -> `Assoc (record_to_json !tys m)
-  | Union (k, { cases; _ }), Dict m ->
+  | Union (k, { cases; extra; _ }), Dict m ->
       let tag = Map.String.find k m in
       let record_tys =
         match (cases, tag) with
-        | VInt m, Const (Int i, _) -> Map.Int.find i m
-        | VString m, Const (String s, _) -> Map.String.find s m
+        | VInt m, Const (Int i) -> Map.Int.find i m
+        | VString m, Const (String s) -> Map.String.find s m
         | _ -> assert false
       in
       let tag =
         match tag with
-        | Const (String s, _) -> `String s
-        | Const (Int 0, Bool) -> `Bool false
-        | Const (Int _, Bool) -> `Bool true
-        | Const (Int i, Not_bool) -> `Int i
+        | Const (String s) -> `String s
+        | Const (Int i) -> (
+            match (extra, i) with
+            | Bool, 0 -> `Bool false
+            | Bool, _ -> `Bool true
+            | Not_bool, i -> `Int i)
         | _ -> assert false
       in
       let l = record_to_json !record_tys m in

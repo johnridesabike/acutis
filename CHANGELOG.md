@@ -1,5 +1,13 @@
 # Changelog
 
+Most changes are breaking changes.
+
+## 0.20.0
+
+- Change escape syntax to `{{{` `}}}`.
+- Add format specifiers for echoing integers, floats, and boolean values.
+- Remove the polymorphic "echoable" type.
+
 ## 0.19.0
 
 - Make template blocks a first-class data type. Remove the child prop type that

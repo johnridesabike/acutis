@@ -18,10 +18,36 @@ let basic () =
   "b": "World",
   "c": "&\"'></`="
   }|} in
-  let src = {|{{ a }} {{ b }}! {{ c }} {{ &c }} {{ "<" }} {{ "d" }}|} in
+  let src =
+    {|{{ a }} {{ b }}! {{ c }} {{{ c }}} {{ "<" }} {{{ "<" }}} {{ "d" }}|}
+  in
   check "Echoes work"
-    "Hello World! &amp;&quot;&apos;&gt;&lt;&#x2F;&#x60;&#x3D; &\"'></`= < d"
+    "Hello World! &amp;&quot;&apos;&gt;&lt;&#x2F;&#x60;&#x3D; &\"'></`= &lt; < \
+     d"
     (render src props)
+
+let echo_format () =
+  let props =
+    {|{
+  "num": 123456,
+  "frac": 1234.56789,
+  "binaryf": false,
+  "binaryt": true
+  }|}
+  in
+  let src =
+    "%i: {{ %i num }} {{ %,i num }}\n\
+     %f: {{ %f frac }} {{ %.2f frac }}\n\
+     %e: {{ %e frac }} {{ %.2e frac }}\n\
+     %g: {{ %g frac }} {{ %.2g frac }}\n\
+     %b: {{ %b binaryf }} {{ %b binaryt }}"
+  in
+  check "Echo formats work"
+    "%i: 123456 123,456\n\
+     %f: 1234.567890 1234.57\n\
+     %e: 1.234568e+03 1.23e+03\n\
+     %g: 1234.57 1.2e+03\n\
+     %b: false true" (render src props)
 
 let unbound_vars () =
   let src =
@@ -234,6 +260,7 @@ let () =
       ( "Basic rendering",
         [
           test_case "Basic" `Quick basic;
+          test_case "Echo formats" `Quick echo_format;
           test_case "Unbound variables" `Quick unbound_vars;
           test_case "Ignoring bindings" `Quick ignore_bindings;
           test_case "Whitespace control" `Quick whitespace;

@@ -16,7 +16,9 @@ open Ast
 
 (* Expression syntax *)
 %token ECHO_BEGIN             (* {{ *)
+%token TRIPLE_ECHO_BEGIN      (* {{{ *)
 %token ECHO_END               (* }} *)
+%token TRIPLE_ECHO_END        (* }}} *)
 %token TILDE_LEFT             (* ~%} or ~}} *)
 %token TILDE_RIGHT            (* {%~ or {{~ *)
 %token QUESTION               (* ? *)
@@ -28,7 +30,6 @@ open Ast
 %token BACKSLASH              (* / *)
 %token EQUALS                 (* = *)
 %token HASH                   (* # *)
-%token AMPERSAND              (* & *)
 %token EOF
 
 (* Pattern syntax *)
@@ -50,6 +51,15 @@ open Ast
 %token COMMA                  (* , *)
 %token ELLIPSIS               (* ... *)
 %token PIPE                   (* | *)
+
+(* Echo format syntax *)
+%token PERCENT                (* % *)
+%token CHAR_I                 (* i *)
+%token CHAR_F                 (* f *)
+%token CHAR_E                 (* e *)
+%token CHAR_G                 (* g *)
+%token CHAR_B                 (* b *)
+%token PERIOD                 (* . *)
 
 %start <Ast.t> acutis
 
@@ -143,16 +153,26 @@ props:
 
 (** Echo rules *)
 
-escape:
-  | (* empty *) { Escape }
-  | AMPERSAND;  { No_escape }
+echo_precision:
+  | (* empty *)       { 6 }
+  | PERIOD; i = INT;  { i }
+
+echo_flag:
+  | (* empty *) { No_flag }
+  | COMMA;      { Flag_comma }
+
+echo_format:
+  | (* empty *)                           { Fmt_string }
+  | PERCENT; f = echo_flag; CHAR_I;       { Fmt_int f }
+  | PERCENT; i = echo_precision; CHAR_F;  { Fmt_float i }
+  | PERCENT; i = echo_precision; CHAR_E;  { Fmt_float_e i }
+  | PERCENT; i = echo_precision; CHAR_G;  { Fmt_float_g i }
+  | PERCENT; CHAR_B;                      { Fmt_bool }
 
 echo:
-  | e = escape; x = ID; { Ech_var ($loc, x, e) }
-  | s = STRING;         { Ech_string ($loc, s) }
+  | fmt = echo_format; x = ID;  { Ech_var ($loc, fmt, x) }
+  | s = STRING;                 { Ech_string ($loc, s) }
 
-echoes:
-  | l = echoes_rev; { let Nonempty.(last :: l) = l in Echo (List.rev l, last) }
 echoes_rev:
   | x = echo;                               { [ x ] }
   | l = echoes_rev; QUESTION; last = echo;  { Nonempty.cons last l }
@@ -172,8 +192,10 @@ text: l = trim_left; txt = TEXT; r = trim_right; { Text (txt, l, r) }
 node:
   | txt = text;
     { txt }
-  | ECHO_BEGIN; e = echoes; ECHO_END;
-    { e }
+  | ECHO_BEGIN; e = echoes_rev; ECHO_END;
+    { let Nonempty.(last :: l) = e in Echo (List.rev l, last, Escape) }
+  | TRIPLE_ECHO_BEGIN; e = echoes_rev; TRIPLE_ECHO_END;
+    { let Nonempty.(last :: l) = e in Echo (List.rev l, last, No_escape) }
   | MATCH; pats = pattern_list_nonempty; child = cases; BACKSLASH; MATCH;
     { Match ($loc, pats, child) }
   | MAP; pat = pattern; child = cases; BACKSLASH; MAP;

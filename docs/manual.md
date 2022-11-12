@@ -65,12 +65,72 @@ HTML entities:
 & " ' > < / ` =
 ```
 
-If the `&` (ampersand) character appears before a value, then it will not escape
-the value.
+If you use triple-mustaches, `{{{` and `}}}`, then Acutis will not escape the
+value.
 
 ```acutis
-My favorite color is {{ &color }}.
+My favorite color is {{{ color }}}.
 ```
+
+### Formatted echoes
+
+Printing the contents of a string is simple, but other data types are less
+straightforward. To echo numbers or boolean values, then you must prefix them
+with a format specification. If you've ever used "printf" style tools, then this
+will look similar.
+
+A format specifier begins with a `%` (percent) followed by optional flags and
+ends with a character code for its type.
+
+`% [option] type`
+
+These are the types and their conversions:
+
+- `i`: integer, converted to decimal notation. By default, this prints a plain
+  sequence of digits. You may add the flag `,` to use a comma as a thousands
+  separator.
+- `f`: floating point number, converted to decimal notation. By default, this
+  prints six digits after the decimal. You may change this with the flag `.`
+  followed by your requested number of digits.
+- `e`: floating point number, converted to exponent notation. This follows the
+  same rules as `f` to determine the number of digits after the decimal.
+- `g`: floating point number, converted to either `f` or `e` format, whichever
+  is shorter. This will also remove trailing zeros. By default, this prints six
+  _total_ digits. You can control that number of digits with the same
+  `.[number]` flag as you can with `f`.
+- `b`: boolean, converted to either `"true"` or `"false"`.
+
+Example data:
+
+```json
+{
+  "num": 123456,
+  "frac": 1234.56789,
+  "binaryf": false,
+  "binaryt": true
+}
+```
+
+Example template usage:
+
+```acutis
+Format specification  Output
+--------------------  ------------
+{{ %i num }}          123456
+{{ %,i num }}         123,456
+{{ %f frac }}         1234.567890
+{{ %.2f frac }}       1234.57
+{{ %e frac }}         1.234568e+03
+{{ %.2e frac }}       1.23e+03
+{{ %g frac }}         1234.57
+{{ %.2g frac }}       1.2e+03
+{{ %b binaryf }}      false
+{{ %b binaryt }}      true
+```
+
+These format specifications are intended to cover the common basic use cases. If
+you require more advanced format rules, then you will need to preprocess your
+data or use component functions.
 
 ## Comments
 
@@ -83,8 +143,7 @@ to nest comments, similar to ML-style languages.
 
 ## Whitespace control
 
-The `~` (tilde) symbol trims whitespace before or after an expression or an echo
-statement.
+The `~` (tilde) symbol trims whitespace before or after an expression.
 
 ```acutis
 <p>
@@ -337,18 +396,6 @@ Unions may be "open" or "closed," similar to enums.
 
 Tag fields may only contain literal integer, string, or boolean values.
 
-### Echoable
-
-```acutis
-{% interface
-  a = echoable
-/ %}
-```
-
-Acutis can echo any int, string, float, or enum value. If it can't determine
-which of these types a particular echoed value is, then it uses a catch-all
-`echoable` type.
-
 ### Unknown
 
 ```acutis
@@ -403,7 +450,6 @@ values:
 | <code>@&quot;a&quot; &verbar; @&quot;b&quot;</code> | Values `"a"` or `"b"`                            |
 | <code>@1 &verbar; @2</code>                         | Values `1` or `2`                                |
 | `{@tag: "a", b: int}`                               | `object` with shape `{"tag": "a", "b": number}`  |
-| `echoable`                                          | `number` or `string` or `boolean`                |
 | `_` (unknown)                                       | Any                                              |
 
 You may need to preprocess your input data to fit Acutis' type constraints. For
@@ -412,11 +458,11 @@ will have to transform it into a legal type such as a tagged union.
 
 ## Introduction to pattern matching
 
-The `match` and `map` statements are the core of Acutis' powers. They use
+The `match` and `map` expressions are the core of Acutis' powers. They use
 pattern matching to conditionally output sections of a template.
 
 Pattern matching in Acutis combines object destructuring with equality checking.
-If you're used to destructuring objects and using the `switch` statement in
+If you're used to destructuring objects and using the `switch` expression in
 JavaScript, then this may seem like a natural progression from that.
 
 Consider this pattern:
@@ -430,7 +476,7 @@ This matches any object where `published` equals `true`, which contains a
 fields. Additionally, it _binds_ the values of `title`, `posted`, and `updated`
 to those names.
 
-Therefore, we can use these with the `match` statement and the `with` clause:
+Therefore, we can use these with the `match` expression and the `with` clause:
 
 ```acutis
 {% match article
@@ -529,7 +575,7 @@ but not more than one (thus the `..._]` in the error's example).
 
 ## Mapping
 
-The `map` statement is similar to `match` except that it is used on lists to
+The `map` expression is similar to `match` except that it is used on lists to
 render each value of the list.
 
 These props:
@@ -596,7 +642,7 @@ always begin at zero._
 
 ```acutis
 {% map articles with {title, author}, index %}
-  {{ index }}. {{ title }} was written by {{ author }}.
+  {{ %i index }}. {{ title }} was written by {{ author }}.
 {% /map %}
 ```
 
@@ -635,7 +681,7 @@ then use a list.
 ## More about pattern matching
 
 Pattern matching combines many concepts into one terse syntax. In other
-languages, you may use variable assignment, `if`...`else` statements, and
+languages, you may use variable assignment, `if`...`else` expressions, and
 imperative loops to control how your content is rendered. To help you maximize
 your use of patterns, this section explains the system's nuances.
 
@@ -823,7 +869,7 @@ them with other patterns too. For example, prefixing a block with a `!` will
 wrap it as a nullable, `optional=!#%}...{%#`.
 
 Since blocks are rendered as regular strings, echoing will still escape them
-unless you prefix them with a `&`, e.g. `{{ &header }}`.
+unless you explicitly don't, e.g. `{{{ header }}}`.
 
 ### Default children prop
 

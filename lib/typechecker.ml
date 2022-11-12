@@ -55,7 +55,7 @@ and open_rows ty =
   | Record ty -> Map.String.iter (fun _ v -> open_rows v) !ty
   | Nullable ty | List ty | Dict (ty, _) -> open_rows ty
   | Unknown row -> row := `Open
-  | Int | Float | String | Echo -> ()
+  | Int | Float | String -> ()
 
 type mode =
   | Destructure_expand (* Record a and b both take on each other's fields. *)
@@ -100,9 +100,7 @@ let unify_variant ~unify_cases ~subset_cases mode a b =
 
 let rec unify mode aty bty =
   match (!aty, !bty) with
-  | Ty.Int, Ty.Int | Float, Float | String, String | Echo, Echo -> ()
-  | Echo, ((Int | Float | String | Enum _) as t) -> aty := t
-  | ((Int | Float | String | Enum _) as t), Echo -> bty := t
+  | Ty.Int, Ty.Int | Float, Float | String, String -> ()
   | Nullable t1, Nullable t2 -> unify mode t1 t2
   | List t1, List t2 -> unify mode t1 t2
   | Dict (t1, ks1), Dict (t2, ks2) ->
@@ -204,12 +202,7 @@ let map_int_subset f ~interface ~impl =
 
 let rec check_interface ~interface ~impl =
   match (!interface, !impl) with
-  | Ty.Int, Ty.Int
-  | Float, Float
-  | String, String
-  | _, Unknown _
-  | (Echo | Int | Float | String | Enum _), Echo ->
-      true
+  | Ty.Int, Ty.Int | Float, Float | String, String | _, Unknown _ -> true
   | Nullable a, Nullable b | List a, List b | Dict (a, _), Dict (b, _) ->
       check_interface ~interface:a ~impl:b
   | Tuple a, Tuple b ->
@@ -267,7 +260,7 @@ let check_interface loc ~interface ~impl =
       | None -> Error.interface_missing_prop loc k impl)
     impl
 
-type echo = Ech_var of string * Ast.escape | Ech_string of string
+type echo = Ech_var of Ast.echo_format * string | Ech_string of string
 type construct = TList | TNullable
 
 type pat =
@@ -285,7 +278,7 @@ type pat =
 
 and node =
   | TText of string * Ast.trim * Ast.trim
-  | TEcho of (string * Ast.escape) list * echo
+  | TEcho of (Ast.echo_format * string) list * echo * Ast.escape
   | TMatch of Loc.t * pat Nonempty.t * Ty.t Nonempty.t * case Nonempty.t
   | TMap_list of Loc.t * pat * Ty.t Nonempty.t * case Nonempty.t
   | TMap_dict of Loc.t * pat * Ty.t Nonempty.t * case Nonempty.t
@@ -399,7 +392,6 @@ module Interface = struct
     | "int" -> Ty.int ()
     | "string" -> Ty.string ()
     | "float" -> Ty.float ()
-    | "echoable" -> Ty.echo ()
     | "_" -> Ty.unknown ()
     | s -> Error.interface_bad_name loc s
 
@@ -478,17 +470,25 @@ module Interface = struct
       l
 end
 
+let make_echo_type = function
+  | Ast.Fmt_string -> Ty.string ()
+  | Fmt_int _ -> Ty.int ()
+  | Fmt_float _ | Fmt_float_g _ | Fmt_float_e _ -> Ty.float ()
+  | Fmt_bool -> Ty.boolean ()
+
 let[@tail_mod_cons] rec make_echoes ctx = function
   | [] -> []
-  | Ast.Ech_var (loc, b, esc) :: tl ->
-      Context.update ctx loc b (Ty.nullable (Ty.echo ()));
-      (b, esc) :: make_echoes ctx tl
+  | Ast.Ech_var (loc, fmt, b) :: tl ->
+      let ty = make_echo_type fmt in
+      Context.update ctx loc b (Ty.nullable ty);
+      (fmt, b) :: make_echoes ctx tl
   | Ech_string (loc, _) :: _ -> Error.echo_nullable_literal loc
 
 let make_default_echo ctx = function
-  | Ast.Ech_var (loc, b, esc) ->
-      Context.update ctx loc b (Ty.echo ());
-      Ech_var (b, esc)
+  | Ast.Ech_var (loc, fmt, b) ->
+      let ty = make_echo_type fmt in
+      Context.update ctx loc b ty;
+      Ech_var (fmt, b)
   | Ech_string (_, s) -> Ech_string s
 
 let add_default_wildcard cases =
@@ -717,8 +717,9 @@ and make_cases ctx cases =
 and make_nodes ctx nodes =
   let f = function
     | Ast.Text (s, l, r) -> Some (TText (s, l, r))
-    | Echo (nullables, default) ->
-        Some (TEcho (make_echoes ctx nullables, make_default_echo ctx default))
+    | Echo (nullables, default, esc) ->
+        Some
+          (TEcho (make_echoes ctx nullables, make_default_echo ctx default, esc))
     | Component (loc, comp, comp', props) ->
         if comp <> comp' then Error.component_name_mismatch loc comp comp';
         let types = get_types (Dagmap.get comp ctx.graph) in

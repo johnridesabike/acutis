@@ -15,15 +15,24 @@ val parse : fname:string -> Lexing.lexbuf -> Ast.t
 (** @raise Error.Acutis_error *)
 
 type escape = Ast.escape = No_escape | Escape
+type echo_flag = Ast.echo_flag = No_flag | Flag_comma
+
+type echo_format = Ast.echo_format =
+  | Fmt_string
+  | Fmt_int of echo_flag
+  | Fmt_float of int
+  | Fmt_float_e of int
+  | Fmt_float_g of int
+  | Fmt_bool
 
 type echo = Typechecker.echo =
-  | Ech_var of string * escape
+  | Ech_var of echo_format * string
   | Ech_string of string
 
 (** The names of variables are preserved as strings in the [Data.t] values. *)
 type 'a node =
   | Text of string
-  | Echo of (string * escape) list * echo
+  | Echo of (echo_format * string) list * echo * escape
   | Match of 'a data Data.t array * 'a nodes Matching.t
   | Map_list of 'a data Data.t * 'a nodes Matching.t
   | Map_dict of 'a data Data.t * 'a nodes Matching.t

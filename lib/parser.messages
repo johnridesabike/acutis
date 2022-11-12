@@ -14,27 +14,56 @@
 # MATCH represents either MATCH, MAP, or MAP_DICT.
 # NULL represents any pattern.
 # WITH represents any unexpected token.
-# ID represents any interface type.
+# In an interface, ID represents any type.
+
+############################################################################
+# Generic error
+############################################################################
 
 acutis: WITH
 acutis: TILDE_LEFT WITH
 
 Unexpected token.
 
-acutis: TEXT COMPONENT TEXT BACKSLASH WITH
-
-Expected a component name.
-
-acutis: TEXT COMPONENT TEXT WITH
-
-Unclosed component.
+############################################################################
+# Expression errors
+############################################################################
 
 acutis: TEXT WITH
 acutis: TEXT NULL
 acutis: TEXT TILDE_RIGHT NULL
 acutis: TEXT TEXT TILDE_RIGHT NULL
 
-Expected '%}', 'match', 'map', 'map_dict', or a component name.
+Expected a '%}', 'match', 'map', 'map_dict', or a component name.
+
+acutis: TEXT MATCH NULL WITH NULL TEXT EOF
+
+Unclosed block. Expected a '{% /' somewhere.
+
+acutis: TEXT MATCH HASH WITH
+acutis: TEXT COMPONENT BACKSLASH WITH
+
+Expected a '%}'.
+
+acutis: TEXT MATCH HASH TEXT WITH
+
+Expected a '%}', '#', 'match', 'map', 'map_dict', or a component name.
+
+acutis: TEXT MATCH NULL WITH NULL TEXT BACKSLASH WITH
+
+Expected a '/match'.
+
+acutis: TEXT MAP NULL WITH NULL TEXT BACKSLASH WITH
+
+Expected a '/map'.
+
+acutis: TEXT MAP_DICT NULL WITH NULL TEXT BACKSLASH WITH
+
+Expected a '/map_dict'.
+
+############################################################################
+# Pattern errors
+############################################################################
 
 acutis: TEXT MATCH WITH
 acutis: TEXT MATCH EXCLAMATION WITH
@@ -50,17 +79,9 @@ acutis: TEXT MATCH LEFT_BRACK NULL COMMA WITH
 acutis: TEXT MATCH LEFT_BRACK NULL COMMA ELLIPSIS WITH
 acutis: TEXT MATCH LEFT_ANGLE ID COLON WITH
 acutis: TEXT MATCH NULL WITH WITH
-acutis: TEXT ECHO_BEGIN WITH
-acutis: TEXT ECHO_BEGIN AMPERSAND WITH
-acutis: TEXT ECHO_BEGIN ID QUESTION WITH
 acutis: TEXT COMPONENT ID EQUALS WITH
 
 This is not a valid pattern.
-
-acutis: TEXT COMPONENT WITH
-acutis: TEXT COMPONENT ID WITH
-
-This is not a valid component prop.
 
 acutis: TEXT MATCH LEFT_BRACE WITH
 acutis: TEXT MATCH LEFT_BRACE AT WITH
@@ -75,44 +96,41 @@ acutis: TEXT MATCH LEFT_BRACE AT ID WITH
 acutis: TEXT MATCH LEFT_BRACE AT ID COLON WITH
 acutis: TEXT INTERFACE ID EQUALS LEFT_BRACE AT ID COLON WITH
 
-Only literal 'int', 'string', and 'boolean' values may be union tags.
+Only literal integer, string, and boolean values may be union tags.
 
 acutis: TEXT MATCH LEFT_BRACE ID WITH
 
-Expected ',', ':', or '}'.
+Expected a ',', ':', or '}'.
 
 acutis: TEXT MATCH LEFT_BRACE STRING WITH
+acutis: TEXT MATCH LEFT_ANGLE STRING WITH
 
-Expected ':'.
+Expected a ':'.
 
 acutis: TEXT MATCH LEFT_BRACE ID COLON NULL WITH
 acutis: TEXT INTERFACE ID EQUALS LEFT_BRACE ID COLON ID WITH
 
-Expected ',' or '}'.
+Expected a ',' or '}'.
 
 acutis: TEXT MATCH LEFT_PAREN NULL WITH
 
-Expected ',' or ')'.
+Expected a ',' or ')'.
 
 acutis: TEXT MATCH LEFT_BRACK NULL WITH
 
-Expected ',', '...', or ']'.
+Expected a ',', '...', or ']'.
 
 acutis: TEXT MATCH LEFT_BRACK ELLIPSIS NULL WITH
 
-Expected ']'.
+Expected a ']'.
 
 acutis: TEXT MATCH LEFT_ANGLE ID WITH
 
-Expected ',', ':', or '>'.
-
-acutis: TEXT MATCH LEFT_ANGLE STRING WITH
-
-Expected ':'.
+Expected a ',', ':', or '>'.
 
 acutis: TEXT MATCH LEFT_ANGLE ID COLON NULL WITH
 
-Expected ',' or '>'.
+Expected a ',' or '>'.
 
 acutis: TEXT MATCH NULL NULL
 acutis: TEXT MATCH NULL WITH NULL NULL
@@ -121,34 +139,61 @@ acutis: TEXT MAP NULL NULL
 
 Sequential patterns must be separated by a ','.
 
-acutis: TEXT MATCH NULL WITH NULL TEXT EOF
+############################################################################
+# Echo errors
+############################################################################
 
-Unclosed block. Expected a '{% /' somewhere.
+acutis: TEXT ECHO_BEGIN WITH
+acutis: TEXT TRIPLE_ECHO_BEGIN WITH
+acutis: TEXT ECHO_BEGIN ID QUESTION WITH
+acutis: TEXT ECHO_BEGIN PERCENT CHAR_I WITH
 
-acutis: TEXT MATCH HASH WITH
-acutis: TEXT COMPONENT BACKSLASH WITH
-
-Expected '%}'.
-
-acutis: TEXT MATCH HASH TEXT WITH
-
-Expected '%}', '#', 'match', 'map', 'map_dict', or a component name.
-
-acutis: TEXT MATCH NULL WITH NULL TEXT BACKSLASH WITH
-
-Expected '/match'.
-
-acutis: TEXT MAP NULL WITH NULL TEXT BACKSLASH WITH
-
-Expected '/map'.
-
-acutis: TEXT MAP_DICT NULL WITH NULL TEXT BACKSLASH WITH
-
-Expected '/map_dict'.
+This is not a valid echo.
 
 acutis: TEXT ECHO_BEGIN ID WITH
 
-Expected either a '?' or '}}'.
+Expected a '?' or '}}'.
+
+acutis: TEXT TRIPLE_ECHO_BEGIN ID WITH
+
+Expected a '?' or '}}}'.
+
+acutis: TEXT ECHO_BEGIN PERCENT WITH
+
+This is missing a format specification.
+
+acutis: TEXT ECHO_BEGIN PERCENT COMMA WITH
+
+Expected an 'i' format type.
+
+acutis: TEXT ECHO_BEGIN PERCENT PERIOD WITH
+
+Expected a number.
+
+acutis: TEXT ECHO_BEGIN PERCENT PERIOD INT WITH
+
+Expected an 'f', 'e', or 'g' format type.
+
+############################################################################
+# Component errors
+############################################################################
+
+acutis: TEXT COMPONENT TEXT BACKSLASH WITH
+
+Expected a component name.
+
+acutis: TEXT COMPONENT TEXT WITH
+
+Unclosed component.
+
+acutis: TEXT COMPONENT WITH
+acutis: TEXT COMPONENT ID WITH
+
+This is not a valid component prop.
+
+############################################################################
+# Interface errors
+############################################################################
 
 acutis: TEXT INTERFACE WITH
 acutis: TEXT INTERFACE ID EQUALS ID WITH
@@ -185,7 +230,7 @@ Expected a ':'.
 
 acutis: TEXT INTERFACE ID EQUALS AT WITH
 
-Expected either a string or an integer.
+Expected a string or an integer.
 
 acutis: TEXT INTERFACE ID EQUALS LEFT_BRACE ID COLON ID RIGHT_BRACE PIPE WITH
 

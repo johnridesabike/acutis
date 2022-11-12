@@ -46,14 +46,23 @@ module StringExtra = struct
 end
 
 type escape = Ast.escape = No_escape | Escape
+type echo_flag = Ast.echo_flag = No_flag | Flag_comma
+
+type echo_format = Ast.echo_format =
+  | Fmt_string
+  | Fmt_int of echo_flag
+  | Fmt_float of int
+  | Fmt_float_e of int
+  | Fmt_float_g of int
+  | Fmt_bool
 
 type echo = Typechecker.echo =
-  | Ech_var of string * Ast.escape
+  | Ech_var of echo_format * string
   | Ech_string of string
 
 type 'a node =
   | Text of string
-  | Echo of (string * escape) list * echo
+  | Echo of (echo_format * string) list * echo * escape
   | Match of 'a data Data.t array * 'a nodes Matching.t
   | Map_list of 'a data Data.t * 'a nodes Matching.t
   | Map_dict of 'a data Data.t * 'a nodes Matching.t
@@ -63,8 +72,7 @@ and 'a data = Var of string | Block of 'a nodes
 and 'a nodes = 'a node list
 
 let rec make_data = function
-  | Typechecker.TConst (x, Some { extra; _ }) -> Data.const x extra
-  | TConst (x, _) -> Data.const x Not_bool
+  | Typechecker.TConst (x, _) -> Data.const x
   | TVar x -> Data.other (Var x)
   | TBlock (_, x) -> Data.other (Block (make_nodes x))
   | TConstruct (_, Some x) -> make_data x
@@ -72,10 +80,8 @@ let rec make_data = function
   | TTuple l ->
       let a = Array.of_list l |> Array.map make_data in
       Data.tuple a
-  | TRecord (Some (k, v, { extra; _ }), x, _) ->
-      Map.String.map make_data x
-      |> Map.String.add k (Data.const v extra)
-      |> Data.dict
+  | TRecord (Some (k, v, _), x, _) ->
+      Map.String.map make_data x |> Map.String.add k (Data.const v) |> Data.dict
   | TRecord (None, x, _) | TDict (x, _) ->
       Data.dict (Map.String.map make_data x)
   | TAny -> assert false
@@ -86,7 +92,7 @@ and make_nodes =
     | TText (s, Trim, No_trim) -> Text (StringExtra.ltrim s)
     | TText (s, No_trim, Trim) -> Text (StringExtra.rtrim s)
     | TText (s, Trim, Trim) -> Text (String.trim s)
-    | TEcho (nullables, default) -> Echo (nullables, default)
+    | TEcho (nullables, default, esc) -> Echo (nullables, default, esc)
     | TMatch (loc, hd :: tl, tys, cases) ->
         let pats = Array.of_list (hd :: tl) |> Array.map make_data in
         Match (pats, make_match loc tys cases)

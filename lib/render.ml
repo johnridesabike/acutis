@@ -86,7 +86,7 @@ let make_match args Matching.{ tree; exits } =
       (bindings, Matching.Exit.get exits exit)
   | None -> assert false
 
-let escape b = function
+let add_escape b = function
   | '&' -> Buffer.add_string b "&amp;"
   | '"' -> Buffer.add_string b "&quot;"
   | '\'' -> Buffer.add_string b "&apos;"
@@ -97,21 +97,29 @@ let escape b = function
   | '=' -> Buffer.add_string b "&#x3D;"
   | c -> Buffer.add_char b c
 
-let echo_var b esc str =
-  match esc with
-  | Compile.Escape -> String.iter (escape b) str
-  | No_escape -> Buffer.add_string b str
+let echo_format fmt data =
+  match (fmt, data) with
+  | Compile.Fmt_int No_flag, Data.Const (Int i) -> Printf.sprintf "%i" i
+  | Fmt_int Flag_comma, Const (Int i) ->
+      Printf.sprintf "%#i" i |> String.map (function '_' -> ',' | c -> c)
+  | Fmt_float pad, Const (Float i) -> Printf.sprintf "%.*f" pad i
+  | Fmt_float_e pad, Const (Float i) -> Printf.sprintf "%.*e" pad i
+  | Fmt_float_g pad, Const (Float i) -> Printf.sprintf "%.*g" pad i
+  | Fmt_bool, Const (Int 0) -> "false"
+  | Fmt_bool, _ -> "true"
+  | Fmt_string, Const (String s) -> s
+  | _ -> assert false
 
-let rec echo b props default = function
+let rec get_echo props default = function
   | [] -> (
       match default with
-      | Compile.Ech_var (var, esc) ->
-          Map.String.find var props |> Data.echo |> echo_var b esc
-      | Ech_string s -> Buffer.add_string b s)
-  | (var, esc) :: tl -> (
+      | Compile.Ech_var (fmt, var) ->
+          Map.String.find var props |> echo_format fmt
+      | Ech_string s -> s)
+  | (fmt, var) :: tl -> (
       match Data.get_nullable (Map.String.find var props) with
-      | Some s -> Data.echo s |> echo_var b esc
-      | None -> echo b props default tl)
+      | Some data -> echo_format fmt data
+      | None -> get_echo props default tl)
 
 let map_merge a b = Map.String.union (fun _ _ b -> Some b) a b
 
@@ -179,13 +187,16 @@ module Make (M : MONAD) (D : DATA) = struct
     | Dict d ->
         let* result = all_map (Map.String.map (eval_data vars) d) in
         M.return @@ Data.Dict result
-    | Const (a, b) -> M.return @@ Data.Const (a, b)
+    | Const a -> M.return @@ Data.Const a
 
   and make b nodes vars =
     let f b = function
-      | Compile.Echo (nullables, default) ->
+      | Compile.Echo (nullables, default, esc) ->
           let* b = b in
-          echo b vars default nullables;
+          let str = get_echo vars default nullables in
+          (match esc with
+          | Escape -> String.iter (add_escape b) str
+          | No_escape -> Buffer.add_string b str);
           M.return b
       | Text s ->
           let* b = b in

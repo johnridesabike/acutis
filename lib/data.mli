@@ -21,20 +21,19 @@ end
 type 'a t =
   | Other of 'a
       (** At runtime, this stores any raw input with an unknown type.
-          In a compiled template, this stores the names of variables. *)
+          In a compiled template, this stores the names of variables and
+          template blocks. *)
   | Nil  (** Represents both [null] and [[]]. *)
   | Array of 'a t array  (** Tuples are compiled to arrays. *)
   | Dict of 'a t Map.String.t
       (** Records and dictionaries are compiled to string maps. *)
-  | Const of Const.t * Typescheme.Variant.extra
-      (** Integers, strings, and floats must be wrapped to accommodate the
-          polymorphic echo. *)
+  | Const of Const.t
 
 (** {1 Constructing data} *)
 
 val other : 'a -> 'a t
 val null : _ t
-val const : Const.t -> Typescheme.Variant.extra -> _ t
+val const : Const.t -> _ t
 val int : int -> _ t
 val bool : int -> _ t
 val string : string -> _ t
@@ -58,8 +57,3 @@ val is_null : _ t -> bool
 val get_nullable : 'a t -> 'a t option
 val fold_list : (index:'a t -> 'b -> 'a t -> 'b) -> 'b -> 'a t -> 'b
 val fold_dict : (index:'a t -> 'b -> 'a t -> 'b) -> 'b -> 'a t -> 'b
-
-(** {1 Echoing data} *)
-
-val echo : _ t -> string
-(** This only works on constants. *)

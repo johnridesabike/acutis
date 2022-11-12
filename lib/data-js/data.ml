@@ -115,14 +115,6 @@ let float path j =
   | Js_float f -> Data.float f
   | _ -> decode_error (Ty.float ()) path j
 
-let echo path j =
-  match classify j with
-  | Js_float f -> Data.float f
-  | Js_string s -> Data.string s
-  | Js_bool false -> Data.bool 0
-  | Js_bool true -> Data.bool 1
-  | _ -> decode_error (Ty.echo ()) path j
-
 let rec nullable path ty j =
   match classify j with
   | Js_null -> Data.null
@@ -210,7 +202,6 @@ and make path ty j =
   | Int | Enum { row = `Open; cases = VInt _; _ } -> int ty path None j
   | Enum { row = `Closed; cases = VInt cases; _ } -> int ty path (Some cases) j
   | Float -> float path j
-  | Echo -> echo path j
   | List ty -> list path ty j
   | Dict (ty, _) -> dict path ty j
   | Tuple tys -> tuple ty path tys j
@@ -235,12 +226,11 @@ let rec record_to_js ty t =
 and to_js ty t =
   match (!ty, t) with
   | _, Data.Other j -> j
-  | _, Const (Float f, _) -> Js.number_of_float f |> coerce
-  | _, Const (String s, _) -> Js.string s |> coerce
-  | (Ty.Enum { extra = Bool; _ } | Echo), Const (Int 0, Bool) ->
-      coerce Js._false
-  | (Ty.Enum { extra = Bool; _ } | Echo), Const (Int _, Bool) -> coerce Js._true
-  | (Enum _ | Int | Echo), Const (Int i, _) ->
+  | _, Const (Float f) -> Js.number_of_float f |> coerce
+  | _, Const (String s) -> Js.string s |> coerce
+  | Ty.Enum { extra = Bool; _ }, Const (Int 0) -> coerce Js._false
+  | Ty.Enum { extra = Bool; _ }, Const (Int _) -> coerce Js._true
+  | (Enum _ | Int), Const (Int i) ->
       float_of_int i |> Js.number_of_float |> coerce
   | Nullable _, Nil -> Js.Unsafe.inject Js.null
   | Nullable ty, Array [| t |] -> to_js ty t
@@ -257,21 +247,22 @@ and to_js ty t =
       Map.String.map (to_js ty) m
       |> Map.String.to_seq |> Array.of_seq |> Js.Unsafe.obj
   | Record tys, Dict m -> record_to_js !tys m |> Array.of_list |> Js.Unsafe.obj
-  | Union (k, { cases; _ }), Dict m ->
+  | Union (k, { cases; extra; _ }), Dict m ->
       let tag = Map.String.find k m in
       let record_tys =
         match (cases, tag) with
-        | VInt m, Const (Int i, _) -> Map.Int.find i m
-        | VString m, Const (String s, _) -> Map.String.find s m
+        | VInt m, Const (Int i) -> Map.Int.find i m
+        | VString m, Const (String s) -> Map.String.find s m
         | _ -> assert false
       in
       let tag =
         match tag with
-        | Const (String s, _) -> coerce @@ Js.string s
-        | Const (Int 0, Bool) -> coerce Js._false
-        | Const (Int _, Bool) -> coerce Js._true
-        | Const (Int i, Not_bool) ->
-            float_of_int i |> Js.number_of_float |> coerce
+        | Const (String s) -> coerce @@ Js.string s
+        | Const (Int i) -> (
+            match (extra, i) with
+            | Bool, 0 -> coerce Js._false
+            | Bool, _ -> coerce Js._true
+            | Not_bool, i -> float_of_int i |> Js.number_of_float |> coerce)
         | _ -> assert false
       in
       let l = record_to_js !record_tys m in

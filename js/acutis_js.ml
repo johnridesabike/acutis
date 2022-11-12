@@ -100,7 +100,6 @@ let () =
        method int = int ()
        method float = float ()
        method string = string ()
-       method echo = echo ()
        method nullable t = nullable t
        method list t = list t
        method tuple a = Js.to_array a |> Array.to_list |> tuple

@@ -10,7 +10,7 @@
 
 (** Type-checks the untyped {!Ast.t} and constructs a typed tree. *)
 
-type echo = Ech_var of string * Ast.escape | Ech_string of string
+type echo = Ech_var of Ast.echo_format * string | Ech_string of string
 type construct = TList | TNullable
 
 type pat =
@@ -28,7 +28,7 @@ type pat =
 
 and node =
   | TText of string * Ast.trim * Ast.trim
-  | TEcho of (string * Ast.escape) list * echo
+  | TEcho of (Ast.echo_format * string) list * echo * Ast.escape
   | TMatch of Loc.t * pat Nonempty.t * Typescheme.t Nonempty.t * case Nonempty.t
   | TMap_list of Loc.t * pat * Typescheme.t Nonempty.t * case Nonempty.t
   | TMap_dict of Loc.t * pat * Typescheme.t Nonempty.t * case Nonempty.t

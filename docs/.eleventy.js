@@ -41,15 +41,19 @@ function acutisSyntax(Prism) {
       pattern: /(@)([a-z_])([a-zA-Z0-9_]+)?/,
       alias: "operator",
     },
+    formatter: {
+      pattern: /%(,)?(\.[0-9]+)?[a-z]/,
+      alias: "function",
+    },
     keyword: /(\/{0,1})\b(?:match|map|map_dict|with|interface)\b/,
-    operator: /&|\?|#|~|!|@/,
+    operator: /\?|#|~|!|@/,
     number: /(-|\+)?\s*[0-9]+(\.[0-9]+)?(e|E)?/,
     boolean: /\b(false|true|null)\b/,
     variable: /([a-z_])([a-zA-Z0-9_]+)?/,
     punctuation: /[{}[\],.:/=(\)<>\|]/,
   };
 
-  var pattern = /{{[\s\S]*?}}|{%[\s\S]*?%}|{\*[\s\S]*?\*}/g;
+  var pattern = /{{({?)[\s\S]*?(}?)}}|{%[\s\S]*?%}|{\*[\s\S]*?\*}/g;
   var markupTemplating = Prism.languages["markup-templating"];
 
   Prism.hooks.add("before-tokenize", (env) =>

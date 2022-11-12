@@ -65,7 +65,6 @@ type ty =
   | Int
   | Float
   | String
-  | Echo
   | Nullable of t
   | List of t
   | Tuple of t list
@@ -84,7 +83,6 @@ val unknown : unit -> t
 val int : unit -> t
 val float : unit -> t
 val string : unit -> t
-val echo : unit -> t
 val nullable : t -> t
 val list : t -> t
 val tuple : t list -> t

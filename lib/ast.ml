@@ -76,7 +76,19 @@ end
 
 type trim = No_trim | Trim
 type escape = No_escape | Escape
-type echo = Ech_var of Loc.t * string * escape | Ech_string of Loc.t * string
+type echo_flag = No_flag | Flag_comma
+
+type echo_format =
+  | Fmt_string
+  | Fmt_int of echo_flag
+  | Fmt_float of int
+  | Fmt_float_e of int
+  | Fmt_float_g of int
+  | Fmt_bool
+
+type echo =
+  | Ech_var of Loc.t * echo_format * string
+  | Ech_string of Loc.t * string
 
 type pat =
   | Var of Loc.t * string
@@ -95,7 +107,7 @@ type pat =
 
 and node =
   | Text of string * trim * trim
-  | Echo of echo list * echo
+  | Echo of echo list * echo * escape
   | Match of Loc.t * pat Nonempty.t * case Nonempty.t
   | Map_list of Loc.t * pat * case Nonempty.t
   | Map_dict of Loc.t * pat * case Nonempty.t

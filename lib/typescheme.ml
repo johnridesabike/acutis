@@ -141,7 +141,6 @@ type ty =
   | Int
   | Float
   | String
-  | Echo
   | Nullable of t
   | List of t
   | Tuple of t list
@@ -155,7 +154,7 @@ and t = ty ref
 let rec equal_ty a b =
   match (a, b) with
   | Unknown a, Unknown b -> Variant.equal_row !a !b
-  | Int, Int | Float, Float | String, String | Echo, Echo -> true
+  | Int, Int | Float, Float | String, String -> true
   | Nullable a, Nullable b | List a, List b -> equal a b
   | Tuple a, Tuple b -> List.equal equal a b
   | Record a, Record b -> Map.String.equal equal !a !b
@@ -175,7 +174,6 @@ let unknown () = ref (Unknown (ref `Closed))
 let int () = ref Int
 let float () = ref Float
 let string () = ref String
-let echo () = ref Echo
 let nullable t = ref (Nullable t)
 let list t = ref (List t)
 let tuple l = ref (Tuple l)
@@ -204,7 +202,7 @@ let make = map_of_list
 let empty = Map.String.empty
 
 let rec copy = function
-  | (Int | Float | String | Echo) as x -> x
+  | (Int | Float | String) as x -> x
   | Unknown r -> Unknown (ref !r)
   | Enum { cases; row; extra } -> Enum { cases; row; extra }
   | Nullable r -> Nullable (copy_ref r)
@@ -250,7 +248,6 @@ let rec pp ppf t =
   | Int -> F.pp_print_string ppf "int"
   | Float -> F.pp_print_string ppf "float"
   | String -> F.pp_print_string ppf "string"
-  | Echo -> F.pp_print_string ppf "echoable"
   | Nullable x -> F.fprintf ppf "?@[<hov 1>@,%a@]" pp x
   | List t -> surround ~left:'[' ~right:']' ppf pp t
   | Dict (t, _) -> surround ~left:'<' ~right:'>' ppf pp t

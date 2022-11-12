@@ -101,17 +101,44 @@ let pp_escape ppf = function
 let equal_escape a b =
   match (a, b) with No_escape, No_escape | Escape, Escape -> true | _ -> false
 
+let pp_echo_flag ppf = function
+  | No_flag -> F.pp_print_string ppf "No_flag"
+  | Flag_comma -> F.pp_print_string ppf "Flag_comma"
+
+let pp_echo_format ppf = function
+  | Fmt_string -> F.pp_print_string ppf "Fmt_string"
+  | Fmt_int flag -> F.fprintf ppf "(Fmt_int %a@,)" pp_echo_flag flag
+  | Fmt_float i -> F.fprintf ppf "(Fmt_float %i)" i
+  | Fmt_float_e i -> F.fprintf ppf "(Fmt_float_e %i)" i
+  | Fmt_float_g i -> F.fprintf ppf "(Fmt_float_g %i)" i
+  | Fmt_bool -> F.pp_print_string ppf "Fmt_bool"
+
 let pp_echo ppf = function
-  | Ech_var (loc, s, esc) ->
-      F.fprintf ppf "(@[<2>Ech_var (@,%a,@ %S,@ %a@,))@]" Loc.pp loc s pp_escape
-        esc
+  | Ech_var (loc, fmt, s) ->
+      F.fprintf ppf "(@[<2>Ech_var (@,%a,@ %a,@  %S@,))@]" Loc.pp loc
+        pp_echo_format fmt s
   | Ech_string (loc, s) ->
       F.fprintf ppf "(@[<2>Ech_string (@,%a,@ %S@,))@]" Loc.pp loc s
 
+let equal_echo_flag a b =
+  match (a, b) with
+  | No_flag, No_flag | Flag_comma, Flag_comma -> true
+  | _ -> false
+
+let equal_echo_format a b =
+  match (a, b) with
+  | Fmt_string, Fmt_string | Fmt_bool, Fmt_bool -> true
+  | Fmt_int a, Fmt_int b -> equal_echo_flag a b
+  | Fmt_float a, Fmt_float b
+  | Fmt_float_e a, Fmt_float_e b
+  | Fmt_float_g a, Fmt_float_g b ->
+      a = b
+  | _ -> false
+
 let equal_echo a b =
   match (a, b) with
-  | Ech_var (_, a, a_esc), Ech_var (_, b, b_esc) ->
-      a = b && equal_escape a_esc b_esc
+  | Ech_var (_, a_fmt, a_id), Ech_var (_, b_fmt, b_id) ->
+      a_id = b_id && equal_echo_format a_fmt b_fmt
   | Ech_string (_, a), Ech_string (_, b) -> a = b
   | _ -> false
 
@@ -147,9 +174,9 @@ and pp_node ppf = function
   | Text (s, triml, trimr) ->
       F.fprintf ppf "(@[<2>Text (@,%S,@ %a,@ %a@,))@]" s pp_trim triml pp_trim
         trimr
-  | Echo (l, ech) ->
-      F.fprintf ppf "(@[<2>Echo (@,%a,@ %a@,))@]" (Pp.list pp_echo) l pp_echo
-        ech
+  | Echo (l, ech, esc) ->
+      F.fprintf ppf "(@[<2>Echo (@,%a,@ %a,@ %a@,))@]" (Pp.list pp_echo) l
+        pp_echo ech pp_escape esc
   | Match (loc, pats, cases) ->
       F.fprintf ppf "(@[<2>Match (@,%a,@ %a,@ %a@,))@]" Loc.pp loc
         (Nonempty.pp pp_pat) pats (Nonempty.pp pp_case) cases
@@ -197,8 +224,9 @@ and equal_node a b =
   match (a, b) with
   | Text (a, a_triml, a_trimr), Text (b, b_triml, b_trimr) ->
       a = b && equal_trim a_triml b_triml && equal_trim a_trimr b_trimr
-  | Echo (a_l, a_ech), Echo (b_l, b_ech) ->
-      List.equal equal_echo a_l b_l && equal_echo a_ech b_ech
+  | Echo (a_l, a_ech, a_esc), Echo (b_l, b_ech, b_esc) ->
+      List.equal equal_echo a_l b_l
+      && equal_echo a_ech b_ech && equal_escape a_esc b_esc
   | Match (_, a_pats, a_cases), Match (_, b_pats, b_cases) ->
       Nonempty.equal equal_pat a_pats b_pats
       && Nonempty.equal equal_case a_cases b_cases

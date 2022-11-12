@@ -18,7 +18,7 @@ let get_types src =
 let echoes () =
   let src = {|{{ a }} {{ "b" }} {{ c ? "d" }}|} in
   check "Echoes typecheck correctly"
-    Ty.(make [ ("a", echo ()); ("c", nullable (echo ())) ])
+    Ty.(make [ ("a", string ()); ("c", nullable (string ())) ])
     (get_types src)
 
 let nullables () =
@@ -45,7 +45,8 @@ let nested () =
         [
           ( "a",
             record
-              [ ("b", record [ ("c", nullable (int ())) ]); ("d", echo ()) ] );
+              [ ("b", record [ ("c", nullable (int ())) ]); ("d", string ()) ]
+          );
         ])
     (get_types src);
   let src =
@@ -77,8 +78,8 @@ let constructing () =
     Ty.(
       make
         [
-          ("x", record [ ("a", string ()); ("b", echo ()) ]);
-          ("y", record [ ("a", string ()); ("c", echo ()) ]);
+          ("x", record [ ("a", string ()); ("b", string ()) ]);
+          ("y", record [ ("a", string ()); ("c", string ()) ]);
           ("z", record [ ("a", string ()) ]);
         ])
     (get_types src);
@@ -238,14 +239,14 @@ let open_unions () =
         [
           ( "a",
             union_string `Open "tag"
-              [ ("a", [ ("b", echo ()) ]); ("b", [ ("b", int ()) ]) ] );
+              [ ("a", [ ("b", string ()) ]); ("b", [ ("b", int ()) ]) ] );
           ( "b",
             union_int `Open "tag"
-              [ (0, [ ("b", echo ()) ]); (1, [ ("b", int ()) ]) ] );
+              [ (0, [ ("b", string ()) ]); (1, [ ("b", int ()) ]) ] );
           ( "c",
             union_string `Open "tag"
               [
-                ("a", [ ("b", echo ()) ]);
+                ("a", [ ("b", string ()) ]);
                 ("b", [ ("b", int ()) ]);
                 ("c", [ ("b", float ()) ]);
               ] );
@@ -356,10 +357,12 @@ let boolean_unions () =
     Ty.(
       make
         [
-          ("a", union_true_only "tag" [ ("b", echo ()) ]);
-          ("b", union_false_only "tag" [ ("b", echo ()) ]);
-          ("c", union_boolean "tag" ~f:[ ("c", echo ()) ] ~t:[ ("b", echo ()) ]);
-          ("d", union_boolean "tag" ~f:[] ~t:[ ("b", echo ()) ]);
+          ("a", union_true_only "tag" [ ("b", string ()) ]);
+          ("b", union_false_only "tag" [ ("b", string ()) ]);
+          ( "c",
+            union_boolean "tag" ~f:[ ("c", string ()) ] ~t:[ ("b", string ()) ]
+          );
+          ("d", union_boolean "tag" ~f:[] ~t:[ ("b", string ()) ]);
         ])
     (get_types src)
 
@@ -401,16 +404,16 @@ let other_cases () =
                   list
                     (record
                        [
-                         ("templateContent", echo ());
+                         ("templateContent", string ());
                          ( "data",
                            record
                              [
-                               ("isoDate", echo ());
-                               ("page", record [ ("excerpt", echo ()) ]);
+                               ("isoDate", string ());
+                               ("page", record [ ("excerpt", string ()) ]);
                                ( "pub",
                                  union_boolean "pub" ~f:[]
-                                   ~t:[ ("absoluteUrl", echo ()) ] );
-                               ("title", echo ());
+                                   ~t:[ ("absoluteUrl", string ()) ] );
+                               ("title", string ());
                              ] );
                        ]) );
               ] );
@@ -434,7 +437,7 @@ let pathologic () =
 let components () =
   let a =
     Compile.Components.parse_string ~fname:"a.acutis" ~name:"A"
-      {|{% map a with x %} {{ x }} {% /map %}
+      {|{% map a with x %} {{ %i x }} {% /map %}
        {% map b with x %} {{ x }} {% /map %}|}
   in
   let src = {|{% A a=[1, a] b=["b", b] /%}|} in
@@ -470,17 +473,8 @@ let interface_special () =
     Ty.(make [ ("a", int ()) ])
     (get_types src);
   let src =
-    {|{% interface a = int b = string c = false | true d = float / %}
-      {{ a }} {{ b }} {{ c }} {{ d }}|}
-  in
-  check "Any constant can interface with echoable."
-    Ty.(
-      make
-        [ ("a", int ()); ("b", string ()); ("c", boolean ()); ("d", float ()) ])
-    (get_types src);
-  let src =
     {|{% interface a = {a: int, b: string} / %}
-      {% match a with {a} %} {{ a }} {% /match %}|}
+      {% match a with {a} %} {{ %i a }} {% /match %}|}
   in
   check "Interfaces may add record fields."
     Ty.(make [ ("a", record [ ("a", int ()); ("b", string ()) ]) ])
