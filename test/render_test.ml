@@ -42,12 +42,24 @@ let echo_format () =
      %g: {{ %g frac }} {{ %.2g frac }}\n\
      %b: {{ %b binaryf }} {{ %b binaryt }}"
   in
-  check "Echo formats work"
+  let result = render src props in
+  let expected =
     "%i: 123456 123,456\n\
      %f: 1234.567890 1234.57\n\
      %e: 1.234568e+03 1.23e+03\n\
      %g: 1234.57 1.2e+03\n\
-     %b: false true" (render src props)
+     %b: false true"
+  in
+  let expected_windows =
+    "%i: 123456 123,456\n\
+     %f: 1234.567890 1234.57\n\
+     %e: 1.234568e+003 1.23e+003\n\
+     %g: 1234.57 1.2e+003\n\
+     %b: false true"
+  in
+  if result = expected || result = expected_windows then
+    Alcotest.(check pass) "Echo formats work" expected result
+  else check "Echo formats work" expected result
 
 let unbound_vars () =
   let src =
