@@ -7,7 +7,7 @@
 */
 
 @import "normalize.css";
-@import "prismjs/themes/prism.css";
+@import "prismjs/themes/prism-tomorrow.css";
 
 :root {
   --font-family-serif: Georgia, "Times New Roman", serif;

@@ -200,7 +200,7 @@ Interfaces may exist anywhere inside a template. Their location does not affect
 how the compiler parses them. You may even divide an interface across multiple
 `{% interface / %}` blocks.
 
-### Constants: int, float, and string
+### Primitives: int, float, and string
 
 Examples:
 
@@ -218,7 +218,7 @@ Examples:
 "abc"
 ```
 
-The three "constant" types are `int`, `float`, and `string`, which work as you'd
+The three "primitive" types are `int`, `float`, and `string`, which work as you'd
 expect from other languages.
 
 ### Nullable
