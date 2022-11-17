@@ -89,24 +89,24 @@ let rec make_data = function
         "TAny should not appear in data constructs. This means the typechecker \
          failed."
 
-and make_nodes =
-  let f = function
-    | Typechecker.TText (s, No_trim, No_trim) -> Text s
-    | TText (s, Trim, No_trim) -> Text (StringExtra.ltrim s)
-    | TText (s, No_trim, Trim) -> Text (StringExtra.rtrim s)
-    | TText (s, Trim, Trim) -> Text (String.trim s)
-    | TEcho (nullables, default, esc) -> Echo (nullables, default, esc)
-    | TMatch (loc, hd :: tl, tys, cases) ->
-        let pats = Array.of_list (hd :: tl) |> Array.map make_data in
-        Match (pats, make_match loc tys cases)
-    | TMap_list (loc, pat, tys, cases) ->
-        Map_list (make_data pat, make_match loc tys cases)
-    | TMap_dict (loc, pat, tys, cases) ->
-        Map_dict (make_data pat, make_match loc tys cases)
-    | TComponent (name, props) ->
-        Component (name, Map.String.map make_data props)
-  in
-  fun l -> List.map f l
+and make_nodes l =
+  List.map
+    (function
+      | Typechecker.TText (s, No_trim, No_trim) -> Text s
+      | TText (s, Trim, No_trim) -> Text (StringExtra.ltrim s)
+      | TText (s, No_trim, Trim) -> Text (StringExtra.rtrim s)
+      | TText (s, Trim, Trim) -> Text (String.trim s)
+      | TEcho (nullables, default, esc) -> Echo (nullables, default, esc)
+      | TMatch (loc, hd :: tl, tys, cases) ->
+          let pats = Array.of_list (hd :: tl) |> Array.map make_data in
+          Match (pats, make_match loc tys cases)
+      | TMap_list (loc, pat, tys, cases) ->
+          Map_list (make_data pat, make_match loc tys cases)
+      | TMap_dict (loc, pat, tys, cases) ->
+          Map_dict (make_data pat, make_match loc tys cases)
+      | TComponent (name, props) ->
+          Component (name, Map.String.map make_data props))
+    l
 
 and make_match loc tys cases =
   let Matching.{ tree; exits } = Matching.make cases in
@@ -170,30 +170,30 @@ module Components = struct
 end
 
 let rec link_nodes graph nodes =
-  let f = function
-    | (Text _ | Echo _) as x -> x
-    | Match (pats, t) ->
-        let pats = Array.map (Data.flat_map (link_data graph)) pats in
-        let exits = Matching.Exit.map (link_nodes graph) t.exits in
-        Match (pats, { t with exits })
-    | Map_list (pats, t) ->
-        let pats = Data.flat_map (link_data graph) pats in
-        let exits = Matching.Exit.map (link_nodes graph) t.exits in
-        Map_list (pats, { t with exits })
-    | Map_dict (pats, t) ->
-        let pats = Data.flat_map (link_data graph) pats in
-        let exits = Matching.Exit.map (link_nodes graph) t.exits in
-        Map_dict (pats, { t with exits })
-    | Component (name, pats) ->
-        let pats = Map.String.map (Data.flat_map (link_data graph)) pats in
-        let data = Dagmap.get name graph in
-        Component (data, pats)
-  in
-  List.map f nodes
+  List.map
+    (function
+      | (Text _ | Echo _) as x -> x
+      | Match (pats, t) ->
+          let pats = Array.map (Data.map (link_data graph)) pats in
+          let exits = Matching.Exit.map (link_nodes graph) t.exits in
+          Match (pats, { t with exits })
+      | Map_list (pats, t) ->
+          let pats = Data.map (link_data graph) pats in
+          let exits = Matching.Exit.map (link_nodes graph) t.exits in
+          Map_list (pats, { t with exits })
+      | Map_dict (pats, t) ->
+          let pats = Data.map (link_data graph) pats in
+          let exits = Matching.Exit.map (link_nodes graph) t.exits in
+          Map_dict (pats, { t with exits })
+      | Component (name, pats) ->
+          let pats = Map.String.map (Data.map (link_data graph)) pats in
+          let data = Dagmap.get name graph in
+          Component (data, pats))
+    nodes
 
 and link_data graph = function
-  | Var x -> Data.other (Var x)
-  | Block nodes -> Data.other (Block (link_nodes graph nodes))
+  | Var _ as x -> x
+  | Block nodes -> Block (link_nodes graph nodes)
 
 let link_src graph = function
   | Typechecker.Src (_, nodes) -> Src (link_nodes graph nodes)

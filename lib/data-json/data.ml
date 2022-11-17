@@ -91,13 +91,13 @@ and tuple ty path tys = function
   | j -> decode_error ty path j
 
 and record_aux path tys j =
-  let f k ty =
-    match (ty, List.assoc_opt k j) with
-    | { contents = Ty.Nullable _ | Unknown _ }, None -> Data.null
-    | ty, Some j -> make (EPath.key k path) ty j
-    | _ -> Error.missing_key path (Ty.internal_record (ref tys)) k
-  in
-  Map.String.mapi f tys
+  Map.String.mapi
+    (fun k ty ->
+      match (ty, List.assoc_opt k j) with
+      | { contents = Ty.Nullable _ | Unknown _ }, None -> Data.null
+      | ty, Some j -> make (EPath.key k path) ty j
+      | _ -> Error.missing_key path (Ty.internal_record (ref tys)) k)
+    tys
 
 and record path tys = function
   | `Assoc l -> Data.dict (record_aux path !tys l)
@@ -147,11 +147,11 @@ let decode ~name tys = function
   | j -> decode_error (Ty.internal_record (ref tys)) (EPath.make name) j
 
 let rec record_to_json ty t =
-  let f _ ty t =
-    match (ty, t) with Some ty, Some t -> Some (to_json ty t) | _ -> None
-  in
-  let l = Map.String.merge f ty t |> Map.String.bindings in
-  l
+  Map.String.merge
+    (fun _ ty t ->
+      match (ty, t) with Some ty, Some t -> Some (to_json ty t) | _ -> None)
+    ty t
+  |> Map.String.bindings
 
 and to_json ty t =
   match (!ty, t) with

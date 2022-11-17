@@ -45,7 +45,7 @@ val list_cons : 'a t -> 'a t -> 'a t
 val list_rev : 'a t -> 'a t
 val list_empty : _ t
 
-val flat_map : ('a -> 'b t) -> 'a t -> 'b t
+val map : ('a -> 'b) -> 'a t -> 'b t
 (** Transform the contents of [Unknown] values to a different type of data. *)
 
 (** {1 Deconstructing data} *)

@@ -191,50 +191,50 @@ module Make (M : MONAD) (D : DATA) = struct
     | Const a -> M.return @@ Data.Const a
 
   and make b nodes vars =
-    let f b = function
-      | Compile.Echo (nullables, default, esc) ->
-          let* b = b in
-          let str = get_echo vars default nullables in
-          (match esc with
-          | Escape -> String.iter (add_escape b) str
-          | No_escape -> Buffer.add_string b str);
-          M.return b
-      | Text s ->
-          let* b = b in
-          Buffer.add_string b s;
-          M.return b
-      | Match (args, tree) ->
-          let* args = all_array (Array.map (eval_data vars) args) in
-          let vars', nodes = make_match args tree in
-          let vars = map_merge vars vars' in
-          make b nodes vars
-      | Map_list (arg, tree) ->
-          let* l = eval_data vars arg in
-          let f ~index b arg =
-            let vars', nodes = make_match [| arg; index |] tree in
+    List.fold_left
+      (fun b -> function
+        | Compile.Echo (nullables, default, esc) ->
+            let* b = b in
+            let str = get_echo vars default nullables in
+            (match esc with
+            | Escape -> String.iter (add_escape b) str
+            | No_escape -> Buffer.add_string b str);
+            M.return b
+        | Text s ->
+            let* b = b in
+            Buffer.add_string b s;
+            M.return b
+        | Match (args, tree) ->
+            let* args = all_array (Array.map (eval_data vars) args) in
+            let vars', nodes = make_match args tree in
             let vars = map_merge vars vars' in
             make b nodes vars
-          in
-          Data.fold_list f b l
-      | Map_dict (arg, tree) ->
-          let* d = eval_data vars arg in
-          let f ~index b arg =
-            let vars', nodes = make_match [| arg; index |] tree in
-            let vars = map_merge vars vars' in
-            make b nodes vars
-          in
-          Data.fold_dict f b d
-      | Component (comp, args) -> (
-          let* vars = all_map (Map.String.map (eval_data vars) args) in
-          match comp with
-          | Compile.Src nodes -> make b nodes vars
-          | Fun (types, f) ->
-              let* result = f (D.encode types vars) in
-              let* b = b in
-              Buffer.add_string b result;
-              M.return b)
-    in
-    List.fold_left f b nodes
+        | Map_list (arg, tree) ->
+            let* l = eval_data vars arg in
+            Data.fold_list
+              (fun ~index b arg ->
+                let vars', nodes = make_match [| arg; index |] tree in
+                let vars = map_merge vars vars' in
+                make b nodes vars)
+              b l
+        | Map_dict (arg, tree) ->
+            let* d = eval_data vars arg in
+            Data.fold_dict
+              (fun ~index b arg ->
+                let vars', nodes = make_match [| arg; index |] tree in
+                let vars = map_merge vars vars' in
+                make b nodes vars)
+              b d
+        | Component (comp, args) -> (
+            let* vars = all_map (Map.String.map (eval_data vars) args) in
+            match comp with
+            | Compile.Src nodes -> make b nodes vars
+            | Fun (types, f) ->
+                let* result = f (D.encode types vars) in
+                let* b = b in
+                Buffer.add_string b result;
+                M.return b))
+      b nodes
 
   let make { Compile.nodes; types; name } props =
     (* Wrap the props in a monad so it can catch decode exceptions. *)

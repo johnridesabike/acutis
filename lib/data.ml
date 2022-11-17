@@ -52,11 +52,11 @@ let list_rev =
 
 let list_empty = Nil
 
-let rec flat_map f = function
-  | Other x -> f x
+let rec map f = function
+  | Other x -> Other (f x)
   | Nil -> Nil
-  | Array a -> Array (Array.map (flat_map f) a)
-  | Dict d -> Dict (Map.String.map (flat_map f) d)
+  | Array a -> Array (Array.map (map f) a)
+  | Dict d -> Dict (Map.String.map (map f) d)
   | Const a -> Const a
 
 let get_const = function

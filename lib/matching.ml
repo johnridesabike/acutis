@@ -444,7 +444,7 @@ and merge :
         | Some x, None | None, Some x -> Some x
         | Some a, Some b -> Some (merge n a b)
       in
-      let f a b =
+      let merge_child a b =
         let child = merge (S n) a b in
         match wildcard with
         | None -> child
@@ -455,8 +455,8 @@ and merge :
       in
       let child =
         match (a.child, b.child) with
-        | Int_keys a, Int_keys b -> Int_keys (f a b)
-        | String_keys a, String_keys b -> String_keys (f a b)
+        | Int_keys a, Int_keys b -> Int_keys (merge_child a b)
+        | String_keys a, String_keys b -> String_keys (merge_child a b)
         | _ ->
             Error.internal __POS__
               "Type error between int and string keys. This means the \

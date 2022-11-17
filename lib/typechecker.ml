@@ -39,8 +39,10 @@ and open_rows ty =
   | Union (_, ty) -> (
       match ty with
       | { cases = VInt cases; extra = Bool; _ } ->
-          let f = open_rows_bool_union_aux in
-          ty.cases <- VInt (Map.Int.update 0 f cases |> Map.Int.update 1 f)
+          ty.cases <-
+            VInt
+              (Map.Int.update 0 open_rows_bool_union_aux cases
+              |> Map.Int.update 1 open_rows_bool_union_aux)
       | { cases = VInt cases; _ } ->
           Map.Int.iter
             (fun _ v -> Map.String.iter (fun _ v -> open_rows v) !v)
@@ -128,33 +130,36 @@ let rec unify mode aty bty =
 and unify_record mode a b =
   match mode with
   | Destructure_expand ->
-      let f _ a b =
-        match (a, b) with
-        | (Some a as a'), Some b ->
-            unify mode a b;
-            a'
-        | None, Some b ->
-            open_rows b;
-            Some b
-        | x, None -> x
-      in
-      a := Map.String.merge f !a !b
+      a :=
+        Map.String.merge
+          (fun _ a b ->
+            match (a, b) with
+            | (Some a as a'), Some b ->
+                unify mode a b;
+                a'
+            | None, Some b ->
+                open_rows b;
+                Some b
+            | x, None -> x)
+          !a !b
   | Construct_var ->
-      let f _ a b =
-        unify mode a b;
-        Some b
-      in
-      b := Map.String.union f !a !b
-  | Construct_literal ->
-      let f _ a b =
-        match (a, b) with
-        | (Some a as x), Some b ->
+      b :=
+        Map.String.union
+          (fun _ a b ->
             unify mode a b;
-            x
-        | Some _, None -> raise_notrace Clash
-        | None, _ -> None
-      in
-      a := Map.String.merge f !a !b
+            Some b)
+          !a !b
+  | Construct_literal ->
+      a :=
+        Map.String.merge
+          (fun _ a b ->
+            match (a, b) with
+            | (Some a as x), Some b ->
+                unify mode a b;
+                x
+            | Some _, None -> raise_notrace Clash
+            | None, _ -> None)
+          !a !b
 
 and unify_union_cases mode a b =
   let f _ a b =
@@ -492,12 +497,18 @@ let make_default_echo ctx = function
   | Ech_string (_, s) -> Ech_string s
 
 let add_default_wildcard cases =
-  let f = function
-    | loc, Nonempty.[ h ] -> (loc, Nonempty.[ h; Ast.Var (Loc.dummy, "_") ])
-    | pat -> pat
-  in
   Nonempty.map
-    (fun case -> { case with Ast.pats = Nonempty.map f case.Ast.pats })
+    (fun case ->
+      {
+        case with
+        Ast.pats =
+          Nonempty.map
+            (function
+              | loc, Nonempty.[ h ] ->
+                  (loc, Nonempty.[ h; Ast.Var (Loc.dummy, "_") ])
+              | pat -> pat)
+            case.Ast.pats;
+      })
     cases
 
 let unknown _ = Ty.unknown ()
@@ -651,22 +662,22 @@ and[@tail_mod_cons] make_list ~f ~tl ctx mode ty = function
 and make_record ~f loc ctx mode tyvars m =
   match mode with
   | Destructure_expand ->
-      let f _ pat ty =
-        match (pat, ty) with
-        | Some pat, None -> Some (make_pat ~f ctx mode (Ty.unknown ()) pat)
-        | Some pat, Some ty -> Some (make_pat ~f ctx mode ty pat)
-        | None, Some _ -> Some TAny
-        | None, None -> None
-      in
-      Map.String.merge f m tyvars
+      Map.String.merge
+        (fun _ pat ty ->
+          match (pat, ty) with
+          | Some pat, None -> Some (make_pat ~f ctx mode (Ty.unknown ()) pat)
+          | Some pat, Some ty -> Some (make_pat ~f ctx mode ty pat)
+          | None, Some _ -> Some TAny
+          | None, None -> None)
+        m tyvars
   | Construct_var | Construct_literal ->
-      let f k pat ty =
-        match (pat, ty) with
-        | Some pat, Some ty -> Some (make_pat ~f ctx mode ty pat)
-        | None, Some ty -> Error.missing_field loc k ty (* for components *)
-        | _ -> None
-      in
-      Map.String.merge f m tyvars
+      Map.String.merge
+        (fun k pat ty ->
+          match (pat, ty) with
+          | Some pat, Some ty -> Some (make_pat ~f ctx mode ty pat)
+          | None, Some ty -> Error.missing_field loc k ty (* for components *)
+          | _ -> None)
+        m tyvars
 
 (** @raises [Invalid_argument] if the list sizes are mismatched. *)
 and unify_match_cases pats tys ctx =
@@ -715,52 +726,54 @@ and make_cases ctx cases =
   (tys, cases)
 
 and make_nodes ctx nodes =
-  let f = function
-    | Ast.Text (s, l, r) -> Some (TText (s, l, r))
-    | Echo (nullables, default, esc) ->
-        Some
-          (TEcho (make_echoes ctx nullables, make_default_echo ctx default, esc))
-    | Component (loc, comp, comp', props) ->
-        if comp <> comp' then Error.component_name_mismatch loc comp comp';
-        let types = get_types (Dagmap.get comp ctx.graph) in
-        (* The original should not mutate*)
-        let types = Ty.internal_copy_record types in
-        let missing_to_nullable _ ty prop =
-          match (prop, ty) with
-          | None, Some { contents = Ty.Nullable _ } ->
-              Some (Ast.Nullable (Loc.dummy, None))
-          | prop, _ -> prop
-        in
-        let props =
-          Ast.Dict.to_map props
-          |> Map.String.merge missing_to_nullable types
-          |> make_record ~f:(Context.update ctx) loc ctx Construct_literal types
-        in
-        Some (TComponent (comp, props))
-    | Match (loc, pats, cases) ->
-        let tys, cases = make_cases ctx cases in
-        let patterns =
-          try unify_match_cases pats tys ctx
-          with Invalid_argument _ -> Error.pat_num_mismatch loc
-        in
-        Some (TMatch (loc, patterns, tys, cases))
-    | Map_list (loc, pattern, cases) ->
-        let cases = add_default_wildcard cases |> make_cases ctx in
-        let pattern, ty, cases =
-          unify_map ~ty:Ty.list ~key:Ty.int loc cases pattern ctx
-        in
-        Some (TMap_list (loc, pattern, ty, cases))
-    | Map_dict (loc, pattern, cases) ->
-        let cases = add_default_wildcard cases |> make_cases ctx in
-        let pattern, ty, cases =
-          unify_map ~ty:Ty.dict ~key:Ty.string loc cases pattern ctx
-        in
-        Some (TMap_dict (loc, pattern, ty, cases))
-    | Interface (loc, i) ->
-        Interface.make loc ctx i;
-        None
-  in
-  List.filter_map f nodes
+  List.filter_map
+    (function
+      | Ast.Text (s, l, r) -> Some (TText (s, l, r))
+      | Echo (nullables, default, esc) ->
+          Some
+            (TEcho
+               (make_echoes ctx nullables, make_default_echo ctx default, esc))
+      | Component (loc, comp, comp', props) ->
+          if comp <> comp' then Error.component_name_mismatch loc comp comp';
+          let types = get_types (Dagmap.get comp ctx.graph) in
+          (* The original should not mutate*)
+          let types = Ty.internal_copy_record types in
+          let missing_to_nullable _ ty prop =
+            match (prop, ty) with
+            | None, Some { contents = Ty.Nullable _ } ->
+                Some (Ast.Nullable (Loc.dummy, None))
+            | prop, _ -> prop
+          in
+          let props =
+            Ast.Dict.to_map props
+            |> Map.String.merge missing_to_nullable types
+            |> make_record ~f:(Context.update ctx) loc ctx Construct_literal
+                 types
+          in
+          Some (TComponent (comp, props))
+      | Match (loc, pats, cases) ->
+          let tys, cases = make_cases ctx cases in
+          let patterns =
+            try unify_match_cases pats tys ctx
+            with Invalid_argument _ -> Error.pat_num_mismatch loc
+          in
+          Some (TMatch (loc, patterns, tys, cases))
+      | Map_list (loc, pattern, cases) ->
+          let cases = add_default_wildcard cases |> make_cases ctx in
+          let pattern, ty, cases =
+            unify_map ~ty:Ty.list ~key:Ty.int loc cases pattern ctx
+          in
+          Some (TMap_list (loc, pattern, ty, cases))
+      | Map_dict (loc, pattern, cases) ->
+          let cases = add_default_wildcard cases |> make_cases ctx in
+          let pattern, ty, cases =
+            unify_map ~ty:Ty.dict ~key:Ty.string loc cases pattern ctx
+          in
+          Some (TMap_dict (loc, pattern, ty, cases))
+      | Interface (loc, i) ->
+          Interface.make loc ctx i;
+          None)
+    nodes
 
 let make g ast =
   let ctx = Context.make g in
