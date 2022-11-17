@@ -238,7 +238,7 @@ and to_js ty t =
       let rec aux acc = function
         | Data.Nil -> List.rev acc |> Array.of_list |> Js.array |> coerce
         | Array [| hd; tl |] -> aux (to_js ty hd :: acc) tl
-        | _ -> assert false
+        | _ -> Error.internal __POS__ "Lists may only contain Array or Nil."
       in
       aux [] t
   | Tuple tys, Array a ->
@@ -253,7 +253,7 @@ and to_js ty t =
         match (cases, tag) with
         | VInt m, Const (Int i) -> Map.Int.find i m
         | VString m, Const (String s) -> Map.String.find s m
-        | _ -> assert false
+        | _ -> Error.internal __POS__ "Type mismatch while encoding a union."
       in
       let tag =
         match tag with
@@ -263,10 +263,10 @@ and to_js ty t =
             | Bool, 0 -> coerce Js._false
             | Bool, _ -> coerce Js._true
             | Not_bool, i -> float_of_int i |> Js.number_of_float |> coerce)
-        | _ -> assert false
+        | _ -> Error.internal __POS__ "Union tags may only be ints or strings."
       in
       let l = record_to_js !record_tys m in
       (k, tag) :: l |> Array.of_list |> Js.Unsafe.obj
-  | _ -> assert false
+  | _ -> Error.internal __POS__ "Type mismatch while encoding data."
 
 let encode tys j = record_to_js tys j |> Array.of_list |> Js.Unsafe.obj

@@ -167,7 +167,7 @@ and to_json ty t =
       let rec aux acc = function
         | Data.Nil -> `List (List.rev acc)
         | Array [| hd; tl |] -> aux (to_json ty hd :: acc) tl
-        | _ -> assert false
+        | _ -> Error.internal __POS__ "Lists may only contain Array or Nil."
       in
       aux [] t
   | Tuple tys, Array a ->
@@ -183,7 +183,7 @@ and to_json ty t =
         match (cases, tag) with
         | VInt m, Const (Int i) -> Map.Int.find i m
         | VString m, Const (String s) -> Map.String.find s m
-        | _ -> assert false
+        | _ -> Error.internal __POS__ "Type mismatch while encoding a union."
       in
       let tag =
         match tag with
@@ -193,10 +193,10 @@ and to_json ty t =
             | Bool, 0 -> `Bool false
             | Bool, _ -> `Bool true
             | Not_bool, i -> `Int i)
-        | _ -> assert false
+        | _ -> Error.internal __POS__ "Union tags may only be ints or strings."
       in
       let l = record_to_json !record_tys m in
       `Assoc ((k, tag) :: l)
-  | _ -> assert false
+  | _ -> Error.internal __POS__ "Type mismatch while encoding data."
 
 let encode tys j = `Assoc (record_to_json tys j)

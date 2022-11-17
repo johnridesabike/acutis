@@ -86,3 +86,10 @@ val bad_enum :
   DecodePath.t ->
   'data ->
   _
+
+(** {1 Internal errors.} *)
+
+val internal : string * int * int * int -> string -> _
+(** Use this instead of [assert false] when an internal invariant breaks. It
+    indicates a bug in the compiler. The first argument is the type for
+    [__POS__]. *)

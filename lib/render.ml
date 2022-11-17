@@ -84,7 +84,7 @@ let make_match args Matching.{ tree; exits } =
   | Some (vars, { names; exit }) ->
       let bindings = Map.String.map (fun id -> Map.Int.find id vars) names in
       (bindings, Matching.Exit.get exits exit)
-  | None -> assert false
+  | None -> Error.internal __POS__ "Matching failed to find a match."
 
 let add_escape b = function
   | '&' -> Buffer.add_string b "&amp;"
@@ -108,7 +108,8 @@ let echo_format fmt data =
   | Fmt_bool, Const (Int 0) -> "false"
   | Fmt_bool, _ -> "true"
   | Fmt_string, Const (String s) -> s
-  | _ -> assert false
+  | _ ->
+      Error.internal __POS__ "Type mismatch while formatting an echo statement."
 
 let rec get_echo props default = function
   | [] -> (

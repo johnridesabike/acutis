@@ -59,11 +59,20 @@ let rec flat_map f = function
   | Dict d -> Dict (Map.String.map (flat_map f) d)
   | Const a -> Const a
 
-let get_const = function Const x -> x | _ -> assert false
-let get_tuple = function Array t -> t | _ -> assert false
-let get_dict = function Dict t -> t | _ -> assert false
+let get_const = function
+  | Const x -> x
+  | _ -> Error.internal __POS__ "Expected Const."
+
+let get_tuple = function
+  | Array t -> t
+  | _ -> Error.internal __POS__ "Expected Array."
+
+let get_dict = function
+  | Dict t -> t
+  | _ -> Error.internal __POS__ "Expected Dict."
+
 let is_null = function Nil -> true | _ -> false
-let get_nullable = function Array [| t |] -> Some t | _ -> None
+let get_nullable = function Array a -> Some a.(0) | _ -> None
 
 let fold_list f acc l =
   let rec aux i acc = function
@@ -71,10 +80,10 @@ let fold_list f acc l =
     | Array [| hd; tl |] ->
         let acc = f ~index:(int i) acc hd in
         aux (succ i) acc tl
-    | _ -> assert false
+    | _ -> Error.internal __POS__ "Lists may only contain Array or Nil."
   in
   aux 0 acc l
 
 let fold_dict f acc = function
   | Dict m -> Map.String.fold (fun k v acc -> f ~index:(string k) acc v) m acc
-  | _ -> assert false
+  | _ -> Error.internal __POS__ "Expected Dict."

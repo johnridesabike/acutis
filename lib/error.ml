@@ -241,3 +241,14 @@ let bad_enum pp_data ty stack data =
     F.dprintf "This type does not allow the given value:@;<1 2>%a" pp_data data
   in
   raise @@ Acutis_error (pp stack ty f)
+
+let internal (file, lnum, cnum, enum) s =
+  let s =
+    F.asprintf
+      "@[<v>Compile error.@;\
+       This is a bug in the compiler. Please contact the Acutis developer.@;\
+       @[OCaml source file %S, line %d, characters %d-%d.@]@;\
+       @[%a@]@]"
+      file lnum cnum enum F.pp_print_text s
+  in
+  raise @@ Acutis_error s

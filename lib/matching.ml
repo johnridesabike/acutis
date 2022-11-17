@@ -457,7 +457,10 @@ and merge :
         match (a.child, b.child) with
         | Int_keys a, Int_keys b -> Int_keys (f a b)
         | String_keys a, String_keys b -> String_keys (f a b)
-        | _ -> assert false
+        | _ ->
+            Error.internal __POS__
+              "Type error between int and string keys. This means the \
+               typechecker failed."
       in
       Nest { a with ids; child; wildcard }
   | Nest a, Wildcard b ->
@@ -542,7 +545,9 @@ and merge :
   | Nest _, (Switch _ | Construct _)
   | (Switch _ | Nest _ | Construct _ | Wildcard _), End _
   | End _, (Switch _ | Nest _ | Construct _ | Wildcard _) ->
-      assert false
+      Error.internal __POS__
+        "Tried to merge incompatible trees. Either the typechecker failed or \
+         the function that constructs trees failed."
 
 let merge = merge Z
 
@@ -714,7 +719,10 @@ module ParMatch = struct
             let tys = Map.String.find s m in
             let l = Map.String.bindings !tys in
             TRecord (key, to_map Map.String.empty l path, tys)
-        | _ -> assert false)
+        | _ ->
+            Error.internal __POS__
+              "Type mismatch while parsing a union. This means the typechecker \
+               failed.")
     | _ -> TAny
 
   and[@tail_mod_cons] to_list_pat ty = function
@@ -814,7 +822,9 @@ module ParMatch = struct
                 { pats; flag = Partial; after_nest })
         | { flag = Partial; pats; after_nest } ->
             { flag = Partial; pats = Nil :: pats; after_nest })
-    | Construct { nil = None; cons = None; _ } -> assert false
+    | Construct { nil = None; cons = None; _ } ->
+        Error.internal __POS__
+          "Tried to analyze a construct with neither nil nor cons."
     | Switch { wildcard = Some wildcard; _ } -> exhaustive (check n wildcard)
     | Switch { cases; wildcard = None; debug_row = `Open; _ } ->
         let r = check n cases.if_match in

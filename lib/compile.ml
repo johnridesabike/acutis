@@ -84,7 +84,10 @@ let rec make_data = function
       Map.String.map make_data x |> Map.String.add k (Data.const v) |> Data.dict
   | TRecord (None, x, _) | TDict (x, _) ->
       Data.dict (Map.String.map make_data x)
-  | TAny -> assert false
+  | TAny ->
+      Error.internal __POS__
+        "TAny should not appear in data constructs. This means the typechecker \
+         failed."
 
 and make_nodes =
   let f = function
