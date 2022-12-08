@@ -594,14 +594,13 @@ let rec of_tpat :
           (fun _k _ty p ->
             match p with None -> Some T.TAny | Some _ as p -> p)
           !tys m
-        |> Map.String.bindings
+        |> Map.String.to_seq
         |> of_keyvalues b (fun b -> End (k b))
       in
-      let child, debug =
+      let child =
         match tag with
-        | Some (key, data, union) ->
-            (of_const key data child (Some union), Not_dict)
-        | None -> (child, Not_dict)
+        | Some (key, data, union) -> of_const key data child (Some union)
+        | None -> child
       in
       Nest
         {
@@ -609,7 +608,7 @@ let rec of_tpat :
           ids = Set.Int.empty;
           child = String_keys child;
           wildcard = None;
-          debug;
+          debug = Not_dict;
         }
   | TDict (m, kys) ->
       (* We need to expand the map to include all of its type's keys. *)
@@ -620,7 +619,7 @@ let rec of_tpat :
               (function None -> Some T.TAny | Some _ as p -> p)
               map)
           !kys m
-        |> Map.String.bindings
+        |> Map.String.to_seq
         |> of_keyvalues b (fun b -> End (k b))
       in
       Nest
@@ -640,11 +639,12 @@ and of_list :
   | p :: l -> of_tpat ~key b (fun b -> of_list ~key:(succ key) b k l) p
 
 and of_keyvalues :
-    bindings -> ('a, string) cont -> (string * T.pat) list -> ('a, string) tree
+    bindings -> ('a, string) cont -> (string * T.pat) Seq.t -> ('a, string) tree
     =
- fun b k -> function
-  | [] -> k b
-  | (key, v) :: l -> of_tpat ~key b (fun b -> of_keyvalues b k l) v
+ fun b k s ->
+  match s () with
+  | Nil -> k b
+  | Cons ((key, v), l) -> of_tpat ~key b (fun b -> of_keyvalues b k l) v
 
 let of_nonempty ~exit next_id Nonempty.(hd :: tl) =
   let k { names; _ } = End { names; exit } in
@@ -706,19 +706,19 @@ module ParMatch = struct
     | Nullable _, Cons Any -> TConstruct (TNullable, Some TAny)
     | Nullable _, Nil -> TConstruct (TNullable, None)
     | Record tys, Nest path ->
-        let l = Map.String.bindings !tys in
-        TRecord (None, to_map Map.String.empty l path, tys)
+        let s = Map.String.to_seq !tys in
+        TRecord (None, to_map Map.String.empty s path, tys)
     | Union (key, ({ cases; _ } as ty)), Nest (Const c :: path) -> (
         let key = Some (key, c, ty) in
         match (cases, c) with
         | VInt m, Int i ->
             let tys = Map.Int.find i m in
-            let l = Map.String.bindings !tys in
-            TRecord (key, to_map Map.String.empty l path, tys)
+            let s = Map.String.to_seq !tys in
+            TRecord (key, to_map Map.String.empty s path, tys)
         | VString m, String s ->
             let tys = Map.String.find s m in
-            let l = Map.String.bindings !tys in
-            TRecord (key, to_map Map.String.empty l path, tys)
+            let s = Map.String.to_seq !tys in
+            TRecord (key, to_map Map.String.empty s path, tys)
         | _ ->
             Error.internal __POS__
               "Type mismatch while parsing a union. This means the typechecker \
@@ -735,8 +735,8 @@ module ParMatch = struct
   and to_list tys path = List.map2 to_pat tys path
 
   and to_map acc tys path =
-    match (tys, path) with
-    | (key, ty) :: tys, hd :: path ->
+    match (tys (), path) with
+    | Seq.Cons ((key, ty), tys), hd :: path ->
         let pat = to_pat ty hd in
         let acc = Map.String.add key pat acc in
         to_map acc tys path
