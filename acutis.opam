@@ -16,7 +16,7 @@ depends: [
   "alcotest" {with-test}
   "alcotest-lwt" {with-test}
   "lwt" {with-test}
-  "ocamlformat" {= "0.23.0" & with-test}
+  "ocamlformat" {= "0.24.1" & with-test}
   "odoc" {with-doc}
 ]
 build: [

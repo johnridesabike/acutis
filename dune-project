@@ -28,7 +28,7 @@
    (alcotest :with-test)
    (alcotest-lwt :with-test)
    (lwt :with-test)
-   (ocamlformat (and (= 0.23.0) :with-test)))
+   (ocamlformat (and (= 0.24.1) :with-test)))
  (tags
   (template language parser interpreter)))
 
