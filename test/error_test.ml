@@ -947,7 +947,7 @@ let bad_block () =
   check_raises "Template blocks are not allowed in destructure patterns."
     (E
        "File \"<test>\", 1:21-1:28\n\
-        Matching error.\n\
+        Type error.\n\
         Template blocks are not allowed in a destructure pattern.")
     (render "{% match a with {b: #%} {%#} %} {% /match %}")
 

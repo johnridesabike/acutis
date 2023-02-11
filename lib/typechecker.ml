@@ -344,38 +344,45 @@ module Context = struct
     | Some v' -> unify loc Construct_var v v'
 
   let add_scope var_matrix ctx =
-    let var_map_rows =
+    (* Turn each row of variables into a map and check for duplicate keys. *)
+    let var_matrix =
       Queue.fold
-        (fun var_map_rows var_row ->
+        (fun var_matrix var_row ->
           Queue.fold
-            (fun var_map (loc, k, v) ->
-              if Map.String.mem k var_map then Error.name_bound_too_many loc k
-              else
-                let binding = { loc; used = Unused; name = k; ty = v } in
-                Queue.add binding ctx.all_bindings;
-                Map.String.add k binding var_map)
+            (fun var_map (loc, name, ty) ->
+              Map.String.update name
+                (function
+                  | Some _ -> Error.name_bound_too_many loc name
+                  | None ->
+                      let binding = { loc; used = Unused; name; ty } in
+                      Queue.add binding ctx.all_bindings;
+                      Some binding)
+                var_map)
             Map.String.empty var_row
-          :: var_map_rows)
+          :: var_matrix)
         [] var_matrix
       |> List.rev
     in
-    match var_map_rows with
+    match var_matrix with
     | [] -> ctx
     | hd :: vars ->
+        (* Merge the maps into one map. Unify the types and check that both maps
+           have identical keys. *)
         let scope =
           List.fold_left
             (fun acc m ->
               Map.String.merge
-                (fun k a b ->
+                (fun name a b ->
                   match (a, b) with
                   | (Some { loc; ty = a; _ } as a'), Some { ty = b; _ } ->
                       unify loc Construct_literal a b;
                       a'
                   | Some { loc; _ }, None | None, Some { loc; _ } ->
-                      Error.var_missing loc k
+                      Error.var_missing loc name
                   | None, None -> None)
                 acc m)
             hd vars
+          (* Add them to the scope, replacing (shadowing) the old variables. *)
           |> Map.String.union (fun _k _oldvar newvar -> Some newvar) ctx.scope
         in
         { ctx with scope }
@@ -513,16 +520,25 @@ let add_default_wildcard cases =
 
 let unknown _ = Ty.unknown ()
 
-let rec make_pat ~f ctx mode ty = function
+type 'a var_action =
+  | Add_vars of (Loc.t * string * Ty.t) Queue.t
+      (** When we destructure a pattern, we add all new variables to a queue. *)
+  | Update_vars of 'a Context.t
+      (** When we construct a pattern, we update the context for each new
+          variable. *)
+
+let rec make_pat var_action mode ty = function
   | Ast.Int (loc, i) ->
       unify loc mode ty (Ty.int ());
       TConst (Int i, None)
   | String (loc, s) ->
       unify loc mode ty (Ty.string ());
       TConst (String s, None)
-  | Block (loc, nodes) ->
+  | Block (loc, nodes) -> (
       unify loc mode ty (Ty.string ());
-      TBlock (loc, make_nodes ctx nodes)
+      match var_action with
+      | Add_vars _ -> Error.bad_block loc
+      | Update_vars ctx -> TBlock (loc, make_nodes ctx nodes))
   | Float (loc, f) ->
       unify loc mode ty (Ty.float ());
       TConst (Float f, None)
@@ -564,7 +580,7 @@ let rec make_pat ~f ctx mode ty = function
       let pat =
         match pat with
         | None -> None
-        | Some pat -> Some (TTuple [ make_pat ~f ctx mode tyvar pat ])
+        | Some pat -> Some (TTuple [ make_pat var_action mode tyvar pat ])
       in
       unify loc mode ty (Ty.nullable tyvar);
       TConstruct (TNullable, pat)
@@ -574,20 +590,20 @@ let rec make_pat ~f ctx mode ty = function
       let tl =
         match tl with
         | None -> TConstruct (TList, None)
-        | Some tl -> make_pat ~f ctx mode ty tl
+        | Some tl -> make_pat var_action mode ty tl
       in
-      make_list ~tl ~f ctx mode tyvar l
+      make_list ~tl var_action mode tyvar l
   | Tuple (loc, l) ->
       let new_tyvars = List.map unknown l in
       let tyvars = match !ty with Tuple tys -> tys | _ -> new_tyvars in
       unify loc mode ty (Ty.tuple tyvars);
-      TTuple (List.map2 (make_pat ~f ctx mode) tyvars l)
+      TTuple (List.map2 (make_pat var_action mode) tyvars l)
   | Record (loc, Untagged m) ->
       let m = Ast.Dict.to_map m in
       let new_tyvars = Map.String.map unknown m |> ref in
       let tyvars = match !ty with Record tys -> tys | _ -> new_tyvars in
       unify loc mode ty (Ty.internal_record new_tyvars);
-      let r = make_record ~f loc ctx mode !tyvars m in
+      let r = make_record var_action loc mode !tyvars m in
       TRecord (None, r, tyvars)
   | Record (loc, Tagged (k, v, m)) ->
       let m = Ast.Dict.to_map m in
@@ -623,7 +639,7 @@ let rec make_pat ~f ctx mode ty = function
         | `String s -> Ty.Union.string_singleton s tyvars row
       in
       unify loc mode ty (ref (Ty.Union (k, new_enum)));
-      let r = make_record ~f loc ctx mode !tyvars m in
+      let r = make_record var_action loc mode !tyvars m in
       let tag =
         match tag with `Int i -> Data.Const.Int i | `String s -> String s
       in
@@ -637,36 +653,39 @@ let rec make_pat ~f ctx mode ty = function
       in
       unify loc mode ty (Ty.internal_dict_keys tyvar new_kys);
       let d =
-        Ast.Dict.to_map m |> Map.String.map (make_pat ~f ctx mode tyvar)
+        Ast.Dict.to_map m |> Map.String.map (make_pat var_action mode tyvar)
       in
       TDict (d, kys)
-  | Var (loc, "_") -> (
-      match mode with
-      | Destructure_expand ->
-          open_rows ty;
-          TAny
-      | Construct_literal | Construct_var -> Error.underscore_in_construct loc)
+  | Var (loc, "_") ->
+      (match mode with
+      | Destructure_expand -> open_rows ty
+      | Construct_literal | Construct_var -> Error.underscore_in_construct loc);
+      TAny
   | Var (loc, b) ->
       (match mode with
       | Destructure_expand -> open_rows ty
       | Construct_literal | Construct_var -> ());
-      f loc b ty;
+      (match var_action with
+      | Add_vars queue -> Queue.add (loc, b, ty) queue
+      | Update_vars ctx -> Context.update ctx loc b ty);
       TVar b
 
-and[@tail_mod_cons] make_list ~f ~tl ctx mode ty = function
+and[@tail_mod_cons] make_list ~tl var_action mode ty = function
   | [] -> tl
   | p :: l ->
-      let hd = make_pat ~f ctx mode ty p in
-      TConstruct (TList, Some (TTuple [ hd; make_list ~f ~tl ctx mode ty l ]))
+      let hd = make_pat var_action mode ty p in
+      TConstruct
+        (TList, Some (TTuple [ hd; make_list ~tl var_action mode ty l ]))
 
-and make_record ~f loc ctx mode tyvars m =
+and make_record var_action loc mode tyvars m =
   match mode with
   | Destructure_expand ->
       Map.String.merge
         (fun _ pat ty ->
           match (pat, ty) with
-          | Some pat, None -> Some (make_pat ~f ctx mode (Ty.unknown ()) pat)
-          | Some pat, Some ty -> Some (make_pat ~f ctx mode ty pat)
+          | Some pat, None ->
+              Some (make_pat var_action mode (Ty.unknown ()) pat)
+          | Some pat, Some ty -> Some (make_pat var_action mode ty pat)
           | None, Some _ -> Some TAny
           | None, None -> None)
         m tyvars
@@ -674,16 +693,14 @@ and make_record ~f loc ctx mode tyvars m =
       Map.String.merge
         (fun k pat ty ->
           match (pat, ty) with
-          | Some pat, Some ty -> Some (make_pat ~f ctx mode ty pat)
+          | Some pat, Some ty -> Some (make_pat var_action mode ty pat)
           | None, Some ty -> Error.missing_field loc k ty (* for components *)
           | _ -> None)
         m tyvars
 
 (** @raises [Invalid_argument] if the list sizes are mismatched. *)
 and unify_match_cases pats tys ctx =
-  Nonempty.map2
-    (make_pat ~f:(Context.update ctx) ctx Construct_literal)
-    tys pats
+  Nonempty.map2 (make_pat (Update_vars ctx) Construct_literal) tys pats
 
 and unify_map ~ty ~key loc (tys, cases) pat ctx =
   let hd_ty =
@@ -693,7 +710,7 @@ and unify_map ~ty ~key loc (tys, cases) pat ctx =
         ty hd
     | _ -> Error.map_pat_num_mismatch loc
   in
-  let p = make_pat ~f:(Context.update ctx) ctx Construct_literal hd_ty pat in
+  let p = make_pat (Update_vars ctx) Construct_literal hd_ty pat in
   (p, tys, cases)
 
 and make_cases ctx cases =
@@ -705,19 +722,21 @@ and make_cases ctx cases =
   let cases =
     Nonempty.map
       (fun Ast.{ pats; nodes } ->
-        let bindings_all = Queue.create () in
+        let var_matrix = Queue.create () in
         let pats =
           Nonempty.map
-            (fun (loc, pat) ->
-              let bindings = Queue.create () in
-              Queue.add bindings bindings_all;
-              let f l k v = Queue.add (l, k, v) bindings in
+            (fun (loc, pats) ->
+              let new_vars = Queue.create () in
+              Queue.add new_vars var_matrix;
               try
-                (loc, Nonempty.map2 (make_pat ~f ctx Destructure_expand) tys pat)
+                ( loc,
+                  Nonempty.map2
+                    (make_pat (Add_vars new_vars) Destructure_expand)
+                    tys pats )
               with Invalid_argument _ -> Error.pat_num_mismatch loc)
             pats
         in
-        let ctx = Context.add_scope bindings_all ctx in
+        let ctx = Context.add_scope var_matrix ctx in
         (pats, nodes, ctx))
       cases
     |> Nonempty.map (fun (pats, nodes, ctx) ->
@@ -747,8 +766,7 @@ and make_nodes ctx nodes =
           let props =
             Ast.Dict.to_map props
             |> Map.String.merge missing_to_nullable types
-            |> make_record ~f:(Context.update ctx) loc ctx Construct_literal
-                 types
+            |> make_record (Update_vars ctx) loc Construct_literal types
           in
           Some (TComponent (comp, props))
       | Match (loc, pats, cases) ->

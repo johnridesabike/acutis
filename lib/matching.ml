@@ -576,7 +576,8 @@ let rec of_tpat :
       let id = b.next_id () in
       let b = { b with names = Map.String.add x id b.names } in
       Wildcard { ids = Set.Int.singleton id; key; child = k b }
-  | TBlock (loc, _) -> Error.bad_block loc
+  | TBlock (loc, _) ->
+      Error.bad_block loc (* The typechecker should have caught this. *)
   | TConstruct (_, Some cons) ->
       let child = of_tpat ~key b k cons in
       Construct { key; ids = Set.Int.empty; nil = None; cons = Some child }

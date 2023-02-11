@@ -53,6 +53,12 @@ let mismatch a b t =
 
 let type_mismatch loc a b = raise @@ Acutis_error (pp_ty loc (mismatch a b))
 
+let bad_block loc =
+  let f =
+    F.dprintf "Template blocks are not allowed in a destructure pattern."
+  in
+  raise @@ Acutis_error (pp_ty loc f)
+
 let missing_field loc key ty =
   let f =
     F.dprintf "This is missing key '%a' of type:@;<1 2>%a" Pp.field key
@@ -158,12 +164,6 @@ let parmatch loc pp_pat pat =
       "This pattern-matching is not exhaustive.@;\
        Here's an example of a pattern which is not matched:@;\
        <1 2>%a" pp_pat pat
-  in
-  raise @@ Acutis_error (pp_match loc f)
-
-let bad_block loc =
-  let f =
-    F.dprintf "Template blocks are not allowed in a destructure pattern."
   in
   raise @@ Acutis_error (pp_match loc f)
 

@@ -22,6 +22,7 @@ val extra_record_tag : Loc.t -> _
 
 (** {1 Type errors.} *)
 
+val bad_block : Loc.t -> _
 val type_mismatch : Loc.t -> Typescheme.t -> Typescheme.t -> _
 val missing_field : Loc.t -> string -> Typescheme.t -> _
 val underscore_in_construct : Loc.t -> _
@@ -52,7 +53,6 @@ val interface_missing_prop : Loc.t -> string -> Typescheme.t -> _
 
 val unused_case : Loc.t -> _
 val parmatch : Loc.t -> (Format.formatter -> 'a -> unit) -> 'a -> _
-val bad_block : Loc.t -> _
 
 (** {1 Other compile errors.} *)
 
