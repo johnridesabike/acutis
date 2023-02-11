@@ -76,19 +76,19 @@ const acutisEleventy = require("acutis-lang/eleventy");
 Clone this repository with git. Then create a development OPAM switch:
 
 ```shell
-make dev
+opam switch create . --deps-only --with-test --with-doc
 ```
 
 Compile the code:
 
 ```shell
-make
+dune build
 ```
 
 Run tests:
 
 ```shell
-make test
+dune runtest
 ```
 
 ## License

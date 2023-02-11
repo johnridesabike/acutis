@@ -32,7 +32,7 @@ jobs:
         uses: ocaml/setup-ocaml@v2
         with:
           ocaml-compiler: ${{ matrix.ocaml-compiler }}
-      - run: make dev-install
-      - run: make format
-      - run: make build
-      - run: make test
+      - run: opam install . --deps-only --with-test --with-doc
+      - run: opam exec -- dune fmt
+      - run: opam exec -- dune build
+      - run: opam exec -- dune runtest
