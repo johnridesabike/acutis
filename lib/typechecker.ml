@@ -265,7 +265,11 @@ let check_interface loc ~interface ~impl =
       | None -> Error.interface_missing_prop loc k impl)
     impl
 
-type echo = Ech_var of Ast.echo_format * string | Ech_string of string
+type echo =
+  | Echo_var of string
+  | Echo_string of string
+  | Echo_field of echo * string
+
 type construct = TList | TNullable
 
 type pat =
@@ -278,12 +282,13 @@ type pat =
       * Ty.t Map.String.t ref
   | TDict of pat Map.String.t * Set.String.t ref
   | TVar of string
-  | TBlock of Loc.t * nodes
+  | TBlock of nodes
+  | TField of pat * string
   | TAny
 
 and node =
   | TText of string * Ast.trim * Ast.trim
-  | TEcho of (Ast.echo_format * string) list * echo * Ast.escape
+  | TEcho of (Ast.echo_format * echo) list * Ast.echo_format * echo * Ast.escape
   | TMatch of Loc.t * pat Nonempty.t * Ty.t Nonempty.t * case Nonempty.t
   | TMap_list of Loc.t * pat * Ty.t Nonempty.t * case Nonempty.t
   | TMap_dict of Loc.t * pat * Ty.t Nonempty.t * case Nonempty.t
@@ -488,20 +493,23 @@ let make_echo_type = function
   | Fmt_float _ | Fmt_float_g _ | Fmt_float_e _ -> Ty.float ()
   | Fmt_bool -> Ty.boolean ()
 
-let[@tail_mod_cons] rec make_echoes ctx = function
-  | [] -> []
-  | Ast.Ech_var (loc, fmt, b) :: tl ->
-      let ty = make_echo_type fmt in
-      Context.update ctx loc b (Ty.nullable ty);
-      (fmt, b) :: make_echoes ctx tl
-  | Ech_string (loc, _) :: _ -> Error.echo_nullable_literal loc
+let[@tail_mod_cons] rec make_echo ctx ty = function
+  | Ast.Echo_var (loc, var) ->
+      Context.update ctx loc var ty;
+      Echo_var var
+  | Echo_field (var, field) ->
+      let ty = Map.String.singleton field ty |> ref |> Ty.internal_record in
+      Echo_field (make_echo ctx ty var, field)
+  | Echo_string (loc, s) ->
+      unify loc Construct_literal ty (Ty.string ());
+      Echo_string s
 
-let make_default_echo ctx = function
-  | Ast.Ech_var (loc, fmt, b) ->
+let[@tail_mod_cons] rec make_nullable_echoes ctx = function
+  | [] -> []
+  | (fmt, echo) :: tl ->
       let ty = make_echo_type fmt in
-      Context.update ctx loc b ty;
-      Ech_var (fmt, b)
-  | Ech_string (_, s) -> Ech_string s
+      let echo = make_echo ctx (Ty.nullable ty) echo in
+      (fmt, echo) :: make_nullable_echoes ctx tl
 
 let add_default_wildcard cases =
   Nonempty.map
@@ -538,7 +546,13 @@ let rec make_pat var_action mode ty = function
       unify loc mode ty (Ty.string ());
       match var_action with
       | Add_vars _ -> Error.bad_block loc
-      | Update_vars ctx -> TBlock (loc, make_nodes ctx nodes))
+      | Update_vars ctx -> TBlock (make_nodes ctx nodes))
+  | Field (loc, rec_pat, field) -> (
+      let rec_ty = Map.String.singleton field ty |> ref |> Ty.internal_record in
+      let rec_pat = make_pat var_action mode rec_ty rec_pat in
+      match var_action with
+      | Add_vars _ -> Error.bad_field loc
+      | Update_vars _ -> TField (rec_pat, field))
   | Float (loc, f) ->
       unify loc mode ty (Ty.float ());
       TConst (Float f, None)
@@ -748,10 +762,11 @@ and make_nodes ctx nodes =
   List.filter_map
     (function
       | Ast.Text (s, l, r) -> Some (TText (s, l, r))
-      | Echo (nullables, default, esc) ->
-          Some
-            (TEcho
-               (make_echoes ctx nullables, make_default_echo ctx default, esc))
+      | Echo (nullables, fmt, default, esc) ->
+          let nullables = make_nullable_echoes ctx nullables in
+          let ty = make_echo_type fmt in
+          let default = make_echo ctx ty default in
+          Some (TEcho (nullables, fmt, default, esc))
       | Component (loc, comp, comp', props) ->
           if comp <> comp' then Error.component_name_mismatch loc comp comp';
           let types = get_types (Dagmap.get comp ctx.graph) in
@@ -871,6 +886,7 @@ let pp_pat =
           (F.pp_print_option pp_rest)
           rest
     | TBlock _ -> F.pp_print_string ppf "#%}...{%/#"
+    | TField (pat, field) -> F.fprintf ppf "@[<2>%a@[.%s@]@]" pp_pat pat field
     | TAny -> F.pp_print_string ppf "_"
   and pp_key_values ppf (k, v) =
     match v with

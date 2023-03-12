@@ -2,6 +2,10 @@
 
 Most changes are breaking changes.
 
+## 0.21.0
+
+- Add `.` record access syntax: `{{ book.title }}`.
+
 ## 0.20.0
 
 - Change escape syntax to `{{{` `}}}`.

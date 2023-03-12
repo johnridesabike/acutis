@@ -25,7 +25,6 @@ let int_of_string s = try int_of_string s with Failure _ -> raise Error
 let float_of_string s = try float_of_string s with Failure _ -> raise Error
 }
 
-let text = [^ '{' '}' '\r' '\n']*
 let white = [' ' '\t']+
 let newline = '\r' | '\n' | "\r\n"
 let id = ['a'-'z' '_'] ['a'-'z' 'A'-'Z' '0'-'9' '_']*
@@ -106,6 +105,7 @@ and expr state = parse
   | '!'             { EXCLAMATION }
   | '|'             { PIPE }
   | '?'             { QUESTION }
+  | '.'             { DOT }
   | "..."           { ELLIPSIS }
   | eof             { raise Error }
   | _               { raise Error }
@@ -130,6 +130,7 @@ and echo state = parse
   | newline         { L.new_line lexbuf; echo state lexbuf }
   | '"'             { string lexbuf.lex_start_p (B.create 16) lexbuf }
   | '?'             { QUESTION }
+  | '.'             { DOT }
   | '%'             { state := Echo_format; PERCENT }
   | eof             { raise Error }
   | _               { raise Error }
@@ -141,7 +142,7 @@ and echo_format state = parse
   | 'g'         { CHAR_G }
   | 'b'         { CHAR_B }
   | ','         { COMMA }
-  | '.'         { PERIOD }
+  | '.'         { DOT }
   | digit+ as i { INT (int_of_string i) }
   | newline     { L.new_line lexbuf; state := Echo; echo state lexbuf }
   | white       { state := Echo; echo state lexbuf }

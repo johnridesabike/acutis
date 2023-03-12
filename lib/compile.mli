@@ -26,19 +26,24 @@ type echo_format = Ast.echo_format =
   | Fmt_bool
 
 type echo = Typechecker.echo =
-  | Ech_var of echo_format * string
-  | Ech_string of string
+  | Echo_var of string
+  | Echo_string of string
+  | Echo_field of echo * string
 
 (** The names of variables are preserved as strings in the [Data.t] values. *)
 type 'a node =
   | Text of string
-  | Echo of (echo_format * string) list * echo * escape
-  | Match of 'a data Data.t array * 'a nodes Matching.t
-  | Map_list of 'a data Data.t * 'a nodes Matching.t
-  | Map_dict of 'a data Data.t * 'a nodes Matching.t
-  | Component of 'a * 'a data Data.t Map.String.t
+  | Echo of (echo_format * echo) list * echo_format * echo * escape
+  | Match of 'a eval Data.t array * 'a nodes Matching.t
+  | Map_list of 'a eval Data.t * 'a nodes Matching.t
+  | Map_dict of 'a eval Data.t * 'a nodes Matching.t
+  | Component of 'a * 'a eval Data.t Map.String.t
 
-and 'a data = Var of string | Block of 'a nodes
+and 'a eval =
+  | Var of string
+  | Block of 'a nodes
+  | Field of 'a eval Data.t * string
+
 and 'a nodes = 'a node list
 
 type 'a template =

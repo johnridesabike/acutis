@@ -104,6 +104,30 @@ let constructing () =
         ])
     (get_types src)
 
+let record_field_access () =
+  let src =
+    {|
+      {% match x with {a} %} {{ a }} {% /match %}
+      {{ %i x.b }}
+      {% match {a: !x.c.d} with {a: !a} %} {{ a }} {% with {a: null} %} {% /match %}
+      {{ %i x.e."f" ? %b x."e".g }}
+    |}
+  in
+  check "Record field access infers correctly"
+    Ty.(
+      make
+        [
+          ( "x",
+            record
+              [
+                ("a", string ());
+                ("b", int ());
+                ("c", record [ ("d", string ()) ]);
+                ("e", record [ ("f", nullable (int ())); ("g", boolean ()) ]);
+              ] );
+        ])
+    (get_types src)
+
 let open_enums () =
   let src =
     {|
@@ -546,6 +570,7 @@ let () =
           test_case "Nullables" `Quick nullables;
           test_case "Nested" `Quick nested;
           test_case "Constructing values" `Quick constructing;
+          test_case "Record field access" `Quick record_field_access;
         ] );
       ( "Enums",
         [

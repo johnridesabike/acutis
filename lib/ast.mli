@@ -68,9 +68,13 @@ type echo_format =
   | Fmt_float_g of int
   | Fmt_bool
 
+(** The echo syntax is essentially a subset of the pattern syntax, one which
+    only allows strings, variables, and record field access. *)
+
 type echo =
-  | Ech_var of Loc.t * echo_format * string
-  | Ech_string of Loc.t * string
+  | Echo_var of Loc.t * string
+  | Echo_string of Loc.t * string
+  | Echo_field of echo * string
 
 type pat =
   | Var of Loc.t * string
@@ -86,10 +90,11 @@ type pat =
   | Record of Loc.t * pat Record.t
   | Dict of Loc.t * pat Dict.t
   | Block of Loc.t * t
+  | Field of Loc.t * pat * string
 
 and node =
   | Text of string * trim * trim
-  | Echo of echo list * echo * escape
+  | Echo of (echo_format * echo) list * echo_format * echo * escape
   | Match of Loc.t * pat Nonempty.t * case Nonempty.t
   | Map_list of Loc.t * pat * case Nonempty.t
   | Map_dict of Loc.t * pat * case Nonempty.t

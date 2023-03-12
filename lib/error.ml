@@ -59,6 +59,12 @@ let bad_block loc =
   in
   raise @@ Acutis_error (pp_ty loc f)
 
+let bad_field loc =
+  let f =
+    F.dprintf "Record '.' access is not allowed in a destructure pattern."
+  in
+  raise @@ Acutis_error (pp_ty loc f)
+
 let missing_field loc key ty =
   let f =
     F.dprintf "This is missing key '%a' of type:@;<1 2>%a" Pp.field key
@@ -92,10 +98,6 @@ let map_pat_num_mismatch =
       "@[Expressions 'map' and 'map_dict' can only have one or two@ patterns@ \
        for@ each@ 'with'@ expression.@]"
   in
-  fun loc -> raise @@ Acutis_error (pp_ty loc f)
-
-let echo_nullable_literal =
-  let f = F.dprintf "Echoed string literals cannot appear before a ?." in
   fun loc -> raise @@ Acutis_error (pp_ty loc f)
 
 let component_name_mismatch loc a b =

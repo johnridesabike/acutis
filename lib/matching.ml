@@ -576,8 +576,6 @@ let rec of_tpat :
       let id = b.next_id () in
       let b = { b with names = Map.String.add x id b.names } in
       Wildcard { ids = Set.Int.singleton id; key; child = k b }
-  | TBlock (loc, _) ->
-      Error.bad_block loc (* The typechecker should have caught this. *)
   | TConstruct (_, Some cons) ->
       let child = of_tpat ~key b k cons in
       Construct { key; ids = Set.Int.empty; nil = None; cons = Some child }
@@ -631,6 +629,10 @@ let rec of_tpat :
           wildcard = None;
           debug = Dict;
         }
+  | TBlock _ | TField _ ->
+      Error.internal __POS__
+        "This is not allowed in a destructure pattern. The type checker failed \
+         to catch this error."
 
 and of_list :
       'a. key:int -> bindings -> ('a, int) cont -> T.pat list -> ('a, int) tree

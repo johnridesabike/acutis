@@ -20,7 +20,6 @@
   title = string
   children = string
 / %}
-{%~ match site with {url: siteUrl} ~%}
 <!DOCTYPE html>
 <html lang="en-US">
   <head>
@@ -33,9 +32,9 @@
       name="viewport"
       content="width=device-width, initial-scale=1, shrink-to-fit=no"
     />
-    <link rel="stylesheet" href="{{ siteUrl }}/style.css" />
-    <link rel="icon" href="{{ siteUrl}}/icon.svg" type="image/svg+xml" />
-    <link rel="icon" href="{{ siteUrl}}/favicon.ico" />
+    <link rel="stylesheet" href="{{ site.url }}/style.css" />
+    <link rel="icon" href="{{ site.url}}/icon.svg" type="image/svg+xml" />
+    <link rel="icon" href="{{ site.url}}/favicon.ico" />
   </head>
   <body>
     <a class="skip-nav" href="#content">Skip to content.</a>
@@ -44,9 +43,9 @@
         <header class="site-header">
           {%~ match showTitle with false ~%}
             <h1 class="site-header__title">
-              <a href="{{ siteUrl }}/">
+              <a href="{{ site.url }}/">
                 <img
-                  src="{{ siteUrl}}/icon.svg"
+                  src="{{ site.url}}/icon.svg"
                   height="48"
                   width="48"
                   alt="Acutis icon."
@@ -57,9 +56,9 @@
             </h1>
           {%~ with true ~%}
             <p class="site-header__title">
-              <a href="{{ siteUrl }}/">
+              <a href="{{ site.url }}/">
                 <img
-                  src="{{ siteUrl}}/icon.svg"
+                  src="{{ site.url}}/icon.svg"
                   height="48"
                   width="48"
                   alt="Acutis icon."
@@ -97,7 +96,7 @@
         {%~ with !{text, url} ~%}
           <nav class="next">
             <h2 class="next__header">Next:</h2>
-            <a href="{{ siteUrl }}{{ url }}" class="next__url">{{ text }}</a>
+            <a href="{{ site.url }}{{ url }}" class="next__url">{{ text }}</a>
           </nav>
         {%~ /match %}
       </article>
@@ -105,9 +104,8 @@
     {%~ Footer
         name="John Jackson"
         link=!"https://johnridesa.bike"
-        siteUrl
+        siteUrl=site.url
         year=null
     /~%}
   </body>
 </html>
-{%~ /match ~%}

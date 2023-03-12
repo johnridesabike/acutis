@@ -57,24 +57,29 @@ type echo_format = Ast.echo_format =
   | Fmt_bool
 
 type echo = Typechecker.echo =
-  | Ech_var of echo_format * string
-  | Ech_string of string
+  | Echo_var of string
+  | Echo_string of string
+  | Echo_field of echo * string
 
 type 'a node =
   | Text of string
-  | Echo of (echo_format * string) list * echo * escape
-  | Match of 'a data Data.t array * 'a nodes Matching.t
-  | Map_list of 'a data Data.t * 'a nodes Matching.t
-  | Map_dict of 'a data Data.t * 'a nodes Matching.t
-  | Component of 'a * 'a data Data.t Map.String.t
+  | Echo of (echo_format * echo) list * echo_format * echo * escape
+  | Match of 'a eval Data.t array * 'a nodes Matching.t
+  | Map_list of 'a eval Data.t * 'a nodes Matching.t
+  | Map_dict of 'a eval Data.t * 'a nodes Matching.t
+  | Component of 'a * 'a eval Data.t Map.String.t
 
-and 'a data = Var of string | Block of 'a nodes
+and 'a eval =
+  | Var of string
+  | Block of 'a nodes
+  | Field of 'a eval Data.t * string
+
 and 'a nodes = 'a node list
 
 let rec make_data = function
   | Typechecker.TConst (x, _) -> Data.const x
   | TVar x -> Data.other (Var x)
-  | TBlock (_, x) -> Data.other (Block (make_nodes x))
+  | TBlock x -> Data.other (Block (make_nodes x))
   | TConstruct (_, Some x) -> make_data x
   | TConstruct (_, None) -> Data.null
   | TTuple l ->
@@ -84,6 +89,7 @@ let rec make_data = function
       Map.String.map make_data x |> Map.String.add k (Data.const v) |> Data.dict
   | TRecord (None, x, _) | TDict (x, _) ->
       Data.dict (Map.String.map make_data x)
+  | TField (node, field) -> Data.other (Field (make_data node, field))
   | TAny ->
       Error.internal __POS__
         "TAny should not appear in data constructs. This means the typechecker \
@@ -96,7 +102,8 @@ and make_nodes l =
       | TText (s, Trim, No_trim) -> Text (StringExtra.ltrim s)
       | TText (s, No_trim, Trim) -> Text (StringExtra.rtrim s)
       | TText (s, Trim, Trim) -> Text (String.trim s)
-      | TEcho (nullables, default, esc) -> Echo (nullables, default, esc)
+      | TEcho (nullables, fmt, default, esc) ->
+          Echo (nullables, fmt, default, esc)
       | TMatch (loc, hd :: tl, tys, cases) ->
           let pats = Array.of_list (hd :: tl) |> Array.map make_data in
           Match (pats, make_match loc tys cases)
@@ -194,6 +201,7 @@ let rec link_nodes graph nodes =
 and link_data graph = function
   | Var _ as x -> x
   | Block nodes -> Block (link_nodes graph nodes)
+  | Field (data, field) -> Field (Data.map (link_data graph) data, field)
 
 let link_src graph = function
   | Typechecker.Src (_, nodes) -> Src (link_nodes graph nodes)

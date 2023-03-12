@@ -23,6 +23,7 @@ val extra_record_tag : Loc.t -> _
 (** {1 Type errors.} *)
 
 val bad_block : Loc.t -> _
+val bad_field : Loc.t -> _
 val type_mismatch : Loc.t -> Typescheme.t -> Typescheme.t -> _
 val missing_field : Loc.t -> string -> Typescheme.t -> _
 val underscore_in_construct : Loc.t -> _
@@ -31,7 +32,6 @@ val var_missing : Loc.t -> string -> _
 val var_unused : Loc.t -> string -> _
 val pat_num_mismatch : Loc.t -> _
 val map_pat_num_mismatch : Loc.t -> _
-val echo_nullable_literal : Loc.t -> _
 val component_name_mismatch : Loc.t -> string -> string -> _
 
 (** {2 Interface errors.} *)

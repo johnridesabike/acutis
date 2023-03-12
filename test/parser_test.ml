@@ -10,13 +10,16 @@ let echoes () =
   check "Echoes parse correctly"
     [
       Text ("", No_trim, No_trim);
-      Echo ([], Ech_var (loc, Fmt_string, "a"), Escape);
+      Echo ([], Fmt_string, Echo_var (loc, "a"), Escape);
       Text (" ", No_trim, No_trim);
-      Echo ([], Ech_string (loc, "b"), Escape);
+      Echo ([], Fmt_string, Echo_string (loc, "b"), Escape);
       Text (" ", No_trim, No_trim);
       Echo
-        ( [ Ech_var (loc, Fmt_string, "d"); Ech_var (loc, Fmt_string, "e") ],
-          Ech_string (loc, "f\"g"),
+        ( [
+            (Fmt_string, Echo_var (loc, "d")); (Fmt_string, Echo_var (loc, "e"));
+          ],
+          Fmt_string,
+          Echo_string (loc, "f\"g"),
           No_escape );
       Text ("", No_trim, No_trim);
     ]
@@ -25,9 +28,9 @@ let echoes () =
   check "Echoe formats parse correctly"
     [
       Text ("", No_trim, No_trim);
-      Echo ([], Ech_var (loc, Fmt_int No_flag, "a"), Escape);
+      Echo ([], Fmt_int No_flag, Echo_var (loc, "a"), Escape);
       Text ("", No_trim, No_trim);
-      Echo ([], Ech_var (loc, Fmt_int Flag_comma, "a"), Escape);
+      Echo ([], Fmt_int Flag_comma, Echo_var (loc, "a"), Escape);
       Text ("", No_trim, No_trim);
     ]
     (parse src)
@@ -91,19 +94,19 @@ let trim () =
   check "Trim parses correctly"
     [
       Text ("", No_trim, Trim);
-      Echo ([], Ech_var (loc, Fmt_string, "a"), Escape);
+      Echo ([], Fmt_string, Echo_var (loc, "a"), Escape);
       Text (" ", No_trim, Trim);
-      Echo ([], Ech_var (loc, Fmt_string, "b"), Escape);
+      Echo ([], Fmt_string, Echo_var (loc, "b"), Escape);
       Text (" ", No_trim, No_trim);
-      Echo ([], Ech_var (loc, Fmt_string, "c"), Escape);
+      Echo ([], Fmt_string, Echo_var (loc, "c"), Escape);
       Text (" ", Trim, Trim);
-      Echo ([], Ech_var (loc, Fmt_string, "d"), Escape);
+      Echo ([], Fmt_string, Echo_var (loc, "d"), Escape);
       Text (" ", Trim, Trim);
-      Echo ([], Ech_var (loc, Fmt_string, "e"), No_escape);
+      Echo ([], Fmt_string, Echo_var (loc, "e"), No_escape);
       Text (" ", No_trim, No_trim);
-      Echo ([], Ech_var (loc, Fmt_string, "f"), No_escape);
+      Echo ([], Fmt_string, Echo_var (loc, "f"), No_escape);
       Text (" ", Trim, Trim);
-      Echo ([], Ech_var (loc, Fmt_string, "g"), No_escape);
+      Echo ([], Fmt_string, Echo_var (loc, "g"), No_escape);
       Text ("", Trim, No_trim);
     ]
     (parse src)
@@ -630,6 +633,42 @@ let interface () =
     ]
     (parse src)
 
+let precedence () =
+  let src = "{% match !!a.b.c with !!false %}{% with _ %}{% /match %}" in
+  check "! and . precedence works correctly"
+    [
+      Text ("", No_trim, No_trim);
+      Match
+        ( loc,
+          [
+            Nullable
+              ( loc,
+                Some
+                  (Nullable
+                     ( loc,
+                       Some (Field (loc, Field (loc, Var (loc, "a"), "b"), "c"))
+                     )) );
+          ],
+          [
+            {
+              pats =
+                [
+                  ( loc,
+                    [
+                      Nullable (loc, Some (Nullable (loc, Some (Bool (loc, 0)))));
+                    ] );
+                ];
+              nodes = [ Text ("", No_trim, No_trim) ];
+            };
+            {
+              pats = [ (loc, [ Var (loc, "_") ]) ];
+              nodes = [ Text ("", No_trim, No_trim) ];
+            };
+          ] );
+      Text ("", No_trim, No_trim);
+    ]
+    (parse src)
+
 let edge_cases () =
   let src = {|{% match a with {a: {b}} %} {{ b }} {% /match %}|} in
   check "Patterns with }} parse correctly"
@@ -658,7 +697,7 @@ let edge_cases () =
               nodes =
                 [
                   Text (" ", No_trim, No_trim);
-                  Echo ([], Ech_var (loc, Fmt_string, "b"), Escape);
+                  Echo ([], Fmt_string, Echo_var (loc, "b"), Escape);
                   Text (" ", No_trim, No_trim);
                 ];
             };
@@ -682,6 +721,7 @@ let () =
           test_case "Components" `Quick components;
           test_case "Patterns" `Quick patterns;
           test_case "Interface" `Quick edge_cases;
+          test_case "Precedence" `Quick precedence;
           test_case "Edge cases" `Quick interface;
         ] );
     ]

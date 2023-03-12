@@ -218,8 +218,8 @@ Examples:
 "abc"
 ```
 
-The three "primitive" types are `int`, `float`, and `string`, which work as you'd
-expect from other languages.
+The three "primitive" types are `int`, `float`, and `string`, which work as
+you'd expect from other languages.
 
 ### Nullable
 
@@ -305,6 +305,13 @@ A record is a series of key-value pairs. Records are indicated by braces, e.g.
 
 Records are extensible. The compiler assumes that every record may contain
 additional fields which have not been specified yet.
+
+When echoing or constructing a value, you may access a record's field with `.`
+(dot) syntax.
+
+```acutis
+{{ book.title }}
+```
 
 ### Dictionary
 

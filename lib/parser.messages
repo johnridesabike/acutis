@@ -69,6 +69,7 @@ acutis: TEXT MATCH WITH
 acutis: TEXT MATCH EXCLAMATION WITH
 acutis: TEXT MATCH AT WITH
 acutis: TEXT MATCH NULL COMMA WITH
+acutis: TEXT MATCH NULL TILDE_LEFT
 acutis: TEXT MAP_DICT WITH
 acutis: TEXT MAP WITH
 acutis: TEXT MATCH LEFT_BRACE ID COLON WITH
@@ -89,16 +90,18 @@ acutis: TEXT MATCH LEFT_BRACE ID COMMA WITH
 acutis: TEXT MATCH LEFT_ANGLE WITH
 acutis: TEXT MATCH LEFT_ANGLE ID COMMA WITH
 acutis: TEXT INTERFACE ID EQUALS LEFT_BRACE ID COLON ID COMMA WITH
+acutis: TEXT MATCH NULL DOT WITH
+acutis: TEXT ECHO_BEGIN ID DOT WITH
 
 This is not a valid field name.
 
-acutis: TEXT MATCH LEFT_BRACE AT ID WITH
 acutis: TEXT MATCH LEFT_BRACE AT ID COLON WITH
 acutis: TEXT INTERFACE ID EQUALS LEFT_BRACE AT ID COLON WITH
 
 Only literal integer, string, and boolean values may be union tags.
 
 acutis: TEXT MATCH LEFT_BRACE ID WITH
+acutis: TEXT MATCH LEFT_BRACE AT ID WITH
 
 Expected a ',', ':', or '}'.
 
@@ -108,6 +111,7 @@ acutis: TEXT MATCH LEFT_ANGLE STRING WITH
 Expected a ':'.
 
 acutis: TEXT MATCH LEFT_BRACE ID COLON NULL WITH
+acutis: TEXT MATCH LEFT_BRACE AT ID COLON FALSE WITH
 acutis: TEXT INTERFACE ID EQUALS LEFT_BRACE ID COLON ID WITH
 
 Expected a ',' or '}'.
@@ -121,6 +125,7 @@ acutis: TEXT MATCH LEFT_BRACK NULL WITH
 Expected a ',', '...', or ']'.
 
 acutis: TEXT MATCH LEFT_BRACK ELLIPSIS NULL WITH
+acutis: TEXT MATCH LEFT_BRACK NULL COMMA ELLIPSIS NULL WITH
 
 Expected a ']'.
 
@@ -133,9 +138,11 @@ acutis: TEXT MATCH LEFT_ANGLE ID COLON NULL WITH
 Expected a ',' or '>'.
 
 acutis: TEXT MATCH NULL NULL
-acutis: TEXT MATCH NULL WITH NULL NULL
 acutis: TEXT MAP_DICT NULL NULL
 acutis: TEXT MAP NULL NULL
+acutis: TEXT MATCH EXCLAMATION NULL NULL
+acutis: TEXT MATCH NULL WITH NULL RIGHT_PAREN
+acutis: TEXT MATCH NULL COMMA NULL RIGHT_BRACE
 
 Sequential patterns must be separated by a ','.
 
@@ -147,16 +154,22 @@ acutis: TEXT ECHO_BEGIN WITH
 acutis: TEXT TRIPLE_ECHO_BEGIN WITH
 acutis: TEXT ECHO_BEGIN ID QUESTION WITH
 acutis: TEXT ECHO_BEGIN PERCENT CHAR_I WITH
+acutis: TEXT ECHO_BEGIN ID QUESTION PERCENT CHAR_I WITH
 
 This is not a valid echo.
 
 acutis: TEXT ECHO_BEGIN ID WITH
+acutis: TEXT ECHO_BEGIN ID QUESTION ID WITH
 
-Expected a '?' or '}}'.
+Sequential echoes must be separated by a '?'.
 
-acutis: TEXT TRIPLE_ECHO_BEGIN ID WITH
+acutis: TEXT TRIPLE_ECHO_BEGIN ID ECHO_END
 
-Expected a '?' or '}}}'.
+Expected a '}}}'.
+
+acutis: TEXT ECHO_BEGIN ID TRIPLE_ECHO_END
+
+Expected a '}}'.
 
 acutis: TEXT ECHO_BEGIN PERCENT WITH
 
@@ -166,11 +179,11 @@ acutis: TEXT ECHO_BEGIN PERCENT COMMA WITH
 
 Expected an 'i' format type.
 
-acutis: TEXT ECHO_BEGIN PERCENT PERIOD WITH
+acutis: TEXT ECHO_BEGIN PERCENT DOT WITH
 
 Expected a number.
 
-acutis: TEXT ECHO_BEGIN PERCENT PERIOD INT WITH
+acutis: TEXT ECHO_BEGIN PERCENT DOT INT WITH
 
 Expected an 'f', 'e', or 'g' format type.
 
@@ -188,6 +201,7 @@ Unclosed component.
 
 acutis: TEXT COMPONENT WITH
 acutis: TEXT COMPONENT ID WITH
+acutis: TEXT COMPONENT ID EQUALS NULL WITH
 
 This is not a valid component prop.
 

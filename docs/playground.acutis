@@ -47,9 +47,7 @@
     class="playground__textarea"
     wrap="off"
   ></textarea>
-  {%~ match site with {url} ~%}
-    <script src="{{ url }}/acutis.js"></script>
-    <script src="{{ url }}/playground.js"></script>
-  {%~ /match ~%}
+  <script src="{{ site.url }}/acutis.js"></script>
+  <script src="{{ site.url }}/playground.js"></script>
 </div>
 {% /Layout %}

@@ -111,16 +111,18 @@ let echo_format fmt data =
   | _ ->
       Error.internal __POS__ "Type mismatch while formatting an echo statement."
 
-let rec get_echo props default = function
-  | [] -> (
-      match default with
-      | Compile.Ech_var (fmt, var) ->
-          Map.String.find var props |> echo_format fmt
-      | Ech_string s -> s)
+let rec get_echo props = function
+  | Compile.Echo_var var -> Map.String.find var props
+  | Echo_field (var, field) ->
+      get_echo props var |> Data.get_dict |> Map.String.find field
+  | Echo_string s -> Data.string s
+
+let rec get_echo_list props fmt default = function
+  | [] -> get_echo props default |> echo_format fmt
   | (fmt, var) :: tl -> (
-      match Data.get_nullable (Map.String.find var props) with
+      match Data.get_nullable (get_echo props var) with
       | Some data -> echo_format fmt data
-      | None -> get_echo props default tl)
+      | None -> get_echo_list props fmt default tl)
 
 let map_merge a b = Map.String.union (fun _ _ b -> Some b) a b
 
@@ -181,6 +183,9 @@ module Make (M : MONAD) (D : DATA) = struct
         let b = M.return @@ Buffer.create 1024 in
         let* result = make b nodes vars in
         M.return @@ Data.string (Buffer.contents result)
+    | Other (Field (data, field)) ->
+        let* data = eval_data vars data in
+        Data.get_dict data |> Map.String.find field |> M.return
     | Nil -> M.return Data.Nil
     | Array a ->
         let* result = all_array (Array.map (eval_data vars) a) in
@@ -193,9 +198,9 @@ module Make (M : MONAD) (D : DATA) = struct
   and make b nodes vars =
     List.fold_left
       (fun b -> function
-        | Compile.Echo (nullables, default, esc) ->
+        | Compile.Echo (nullables, fmt, default, esc) ->
             let* b = b in
-            let str = get_echo vars default nullables in
+            let str = get_echo_list vars fmt default nullables in
             (match esc with
             | Escape -> String.iter (add_escape b) str
             | No_escape -> Buffer.add_string b str);

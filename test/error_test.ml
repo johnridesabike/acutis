@@ -13,7 +13,7 @@ let illegal_chars () =
   check_raises "Illegal character 1"
     (E "File \"<test>\", 1:9-1:10\nSyntax error.\n") (render "{% match*");
   check_raises "Illegal character 2"
-    (E "File \"<test>\", 1:4-1:5\nSyntax error.\n") (render "{% .a %}");
+    (E "File \"<test>\", 1:4-1:5\nSyntax error.\n") (render "{% +a %}");
   check_raises "Illegal character 3"
     (E "File \"<test>\", 1:12-1:13\nSyntax error.\n") (render "{% match a %%}");
   check_raises "Illegal character 4"
@@ -188,6 +188,12 @@ let parser_errors () =
   check_raises "Bad pattern (14)"
     (E "File \"<test>\", 1:8-1:11\nParse error.\nThis is not a valid pattern.\n")
     (render "{% Z a=ABC / %}");
+  check_raises "Bad pattern (15)"
+    (E
+       "File \"<test>\", 1:15-1:18\n\
+        Parse error.\n\
+        This is not a valid pattern.\n")
+    (render "{% match null ~%}");
 
   check_raises "Bad echo (1)"
     (E "File \"<test>\", 1:4-1:5\nParse error.\nThis is not a valid echo.\n")
@@ -202,11 +208,14 @@ let parser_errors () =
     (E "File \"<test>\", 1:7-1:8\nParse error.\nThis is not a valid echo.\n")
     (render "{{ %i ? }}");
   check_raises "Bad echo (5)"
-    (E "File \"<test>\", 1:7-1:9\nParse error.\nExpected a '?' or '}}}'.\n")
+    (E "File \"<test>\", 1:7-1:9\nParse error.\nExpected a '}}}'.\n")
     (render "{{{ a }}");
   check_raises "Bad echo (6)"
-    (E "File \"<test>\", 1:6-1:9\nParse error.\nExpected a '?' or '}}'.\n")
+    (E "File \"<test>\", 1:6-1:9\nParse error.\nExpected a '}}'.\n")
     (render "{{ a }}}");
+  check_raises "Bad echo (7)"
+    (E "File \"<test>\", 1:11-1:12\nParse error.\nThis is not a valid echo.\n")
+    (render "{{ x ? %i ? }}");
 
   check_raises "Bad echo format (1)"
     (E
@@ -245,6 +254,12 @@ let parser_errors () =
         Parse error.\n\
         This is not a valid component prop.\n")
     (render "{% A b # %}");
+  check_raises "Bad prop (4)"
+    (E
+       "File \"<test>\", 1:12-1:16\n\
+        Parse error.\n\
+        This is not a valid component prop.\n")
+    (render "{% A b = 1 with %}");
 
   check_raises "Illegal field name (1)"
     (E
@@ -284,11 +299,20 @@ let parser_errors () =
         Expected a ',', ':', or '}'.\n")
     (render "{% match {a with %} {% /match %}");
   check_raises "Unclosed { (2)"
+    (E
+       "File \"<test>\", 1:23-1:27\n\
+        Parse error.\n\
+        Expected a ',', ':', or '}'.\n")
+    (render "{% match a with {@tag with} %} {% /match %}");
+  check_raises "Unclosed { (3)"
     (E "File \"<test>\", 1:15-1:19\nParse error.\nExpected a ':'.\n")
     (render "{% match {\"a\" with %} {% /match %}");
-  check_raises "Unclosed { (2)"
+  check_raises "Unclosed { (4)"
     (E "File \"<test>\", 1:15-1:19\nParse error.\nExpected a ',' or '}'.\n")
     (render "{% match {a:0 with %} {% /match %}");
+  check_raises "Unclosed { (5)"
+    (E "File \"<test>\", 1:16-1:20\nParse error.\nExpected a ',' or '}'.\n")
+    (render "{% match {@a:0 with %} {% /match %}");
 
   check_raises "Unclosed ("
     (E "File \"<test>\", 1:13-1:17\nParse error.\nExpected a ',' or ')'.\n")
@@ -303,6 +327,9 @@ let parser_errors () =
   check_raises "Unclosed [ (2)"
     (E "File \"<test>\", 1:19-1:23\nParse error.\nExpected a ']'.\n")
     (render "{% match [a, ...b with %} {% /match %}");
+  check_raises "Unclosed [ (3)"
+    (E "File \"<test>\", 1:16-1:20\nParse error.\nExpected a ']'.\n")
+    (render "{% match [...b with %} {% /match %}");
 
   check_raises "Unclosed < (1)"
     (E
@@ -325,22 +352,34 @@ let parser_errors () =
     (render "{% match a b with a b %} {% /match %}");
   check_raises "Missing commas in match/map patterns (2)"
     (E
-       "File \"<test>\", 1:19-1:20\n\
-        Parse error.\n\
-        Sequential patterns must be separated by a ','.\n")
-    (render "{% match a with a b %} {% /match %}");
-  check_raises "Missing commas in match/map patterns (3)"
-    (E
        "File \"<test>\", 1:15-1:16\n\
         Parse error.\n\
         Sequential patterns must be separated by a ','.\n")
     (render "{% map_dict a b with a %} {% /map_dict %}");
-  check_raises "Missing commas in match/map patterns (4)"
+  check_raises "Missing commas in match/map patterns (3)"
     (E
        "File \"<test>\", 1:10-1:11\n\
         Parse error.\n\
         Sequential patterns must be separated by a ','.\n")
     (render "{% map a b with a %} {% /map %}");
+  check_raises "Missing commas in match/map patterns (4)"
+    (E
+       "File \"<test>\", 1:16-1:20\n\
+        Parse error.\n\
+        Sequential patterns must be separated by a ','.\n")
+    (render "{% match !null null with a %} {% /match %}");
+  check_raises "Missing commas in match/map patterns (5)"
+    (E
+       "File \"<test>\", 1:25-1:26\n\
+        Parse error.\n\
+        Sequential patterns must be separated by a ','.\n")
+    (render "{% match null with null ) %}");
+  check_raises "Missing commas in match/map patterns (5)"
+    (E
+       "File \"<test>\", 1:21-1:22\n\
+        Parse error.\n\
+        Sequential patterns must be separated by a ','.\n")
+    (render "{% match null, null } %}");
 
   check_raises "Unmatched match"
     (E
@@ -358,13 +397,36 @@ let parser_errors () =
   check_raises "Missing /map_dict"
     (E "File \"<test>\", 1:29-1:32\nParse error.\nExpected a '/map_dict'.\n")
     (render "{% map_dict x with x %} {% /map %}");
-  check_raises "Unseparated echoes"
-    (E "File \"<test>\", 1:6-1:7\nParse error.\nExpected a '?' or '}}'.\n")
+
+  check_raises "Unseparated echoes (1)"
+    (E
+       "File \"<test>\", 1:6-1:7\n\
+        Parse error.\n\
+        Sequential echoes must be separated by a '?'.\n")
     (render "{{ a b }}");
+  check_raises "Unseparated echoes (2)"
+    (E
+       "File \"<test>\", 1:10-1:11\n\
+        Parse error.\n\
+        Sequential echoes must be separated by a '?'.\n")
+    (render "{{ a ? b c }}");
 
   check_raises "# Blocks must contain text"
     (E "File \"<test>\", 1:10-1:13\nParse error.\nExpected a '%}'.\n")
-    (render "{% A a=# abc # / %}")
+    (render "{% A a=# abc # / %}");
+
+  check_raises "Bad record field access (1)"
+    (E
+       "File \"<test>\", 1:12-1:13\n\
+        Parse error.\n\
+        This is not a valid field name.\n")
+    (render "{% match a.1 with %}");
+  check_raises "Bad record field access (2)"
+    (E
+       "File \"<test>\", 1:6-1:7\n\
+        Parse error.\n\
+        This is not a valid field name.\n")
+    (render "{{ a.% }}")
 
 let dup_record_field () =
   let open Alcotest in
@@ -416,8 +478,22 @@ let type_error_echo () =
     (E
        "File \"<test>\", 1:4-1:8\n\
         Type error.\n\
-        Echoed string literals cannot appear before a ?.")
-    (render {|{{ "ab" ? "cd" }}|})
+        Type mismatch.\n\
+        Expected:\n\
+       \  ?string\n\
+        Received:\n\
+       \  string")
+    (render {|{{ "ab" ? "cd" }}|});
+  check_raises "Record field access type errors fail correctly."
+    (E
+       "File \"<test>\", 1:17-1:18\n\
+        Type error.\n\
+        Type mismatch.\n\
+        Expected:\n\
+       \  {b: int}\n\
+        Received:\n\
+       \  {b: string}")
+    (render {|{{ a.b }} {{ %i a.b }}|})
 
 let type_error_const () =
   let open Alcotest in
@@ -585,6 +661,18 @@ let type_error_record () =
         Received:\n\
        \  {a: _}")
     (render "{% match {a: 1} with {a: _, b: _} %} {% /match %}");
+  check_raises "Record field access type errors fail correctly."
+    (E
+       "File \"<test>\", 2:19-2:20\n\
+        Type error.\n\
+        Type mismatch.\n\
+        Expected:\n\
+       \  {b: {c: int}}\n\
+        Received:\n\
+       \  {b: {c: false | true}}")
+    (render
+       {|{% match a.b.c with true %}{% with false %}{% /match %}
+         {% match a.b.c with 1 %}{% with _ %}{% /match %}|});
   let comps =
     Compile.Components.(
       make [ parse_string ~fname:"a.acutis" ~name:"A" "{{ a }}" ])
@@ -942,14 +1030,20 @@ let merge_expanded_trees () =
     {%  with _, _ %}
     {% /match %}|})
 
-let bad_block () =
+let bad_destructure () =
   let open Alcotest in
   check_raises "Template blocks are not allowed in destructure patterns."
     (E
        "File \"<test>\", 1:21-1:28\n\
         Type error.\n\
         Template blocks are not allowed in a destructure pattern.")
-    (render "{% match a with {b: #%} {%#} %} {% /match %}")
+    (render "{% match a with {b: #%} {%#} %} {% /match %}");
+  check_raises "Record accessors are not allowed in destructure patterns."
+    (E
+       "File \"<test>\", 1:21-1:24\n\
+        Type error.\n\
+        Record '.' access is not allowed in a destructure pattern.")
+    (render "{% match a with {b: x.z} %} {% /match %}")
 
 let component_graph () =
   let open Alcotest in
@@ -1272,7 +1366,14 @@ let interface_parse () =
     (render "{% interface x=@0 | @\"a\" / %}");
   check_raises "Bad boolean"
     (E "File \"<test>\", 1:24-1:25\nParse error.\nExpected a boolean.\n")
-    (render "{% interface x=false | @0 / %}")
+    (render "{% interface x=false | @0 / %}");
+
+  check_raises "Bad union tag type"
+    (E
+       "File \"<test>\", 1:21-1:22\n\
+        Parse error.\n\
+        Only literal integer, string, and boolean values may be union tags.\n")
+    (render "{% interface x={@x: [int]} / %}")
 
 let interface_type_parse () =
   let open Alcotest in
@@ -1465,7 +1566,7 @@ let () =
           test_case "Partial patterns" `Quick parmatch;
           test_case "Partial patterns with complex trees" `Quick
             merge_expanded_trees;
-          test_case "Other errors" `Quick bad_block;
+          test_case "Other errors" `Quick bad_destructure;
         ] );
       ( "Other compile errors",
         [

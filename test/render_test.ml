@@ -114,6 +114,16 @@ let list_literal_append () =
   in
   check "Appending list literals works" "a b c d " (render src "{}")
 
+let record_field_access () =
+  let props = {|{"a": {"b": {"c": {"d": true}}, "e": {"f": {"g": "pass"}}}}|} in
+  let src =
+    {|
+      {%~ match {x: a.b."c".d} with {x: true} ~%} pass {% with _ %}{% /match ~%}
+      {{~ a.e.f.z ? a.e."f".g ~}}
+    |}
+  in
+  check "Record field_access works" "pass pass" (render src props)
+
 let map_list () =
   let props = {|{"a": [{"name": "John"}, {"name": "Carlo"}]}|} in
   let src = {|{% map a with {name} %} {{~ name }} {% /map %}|} in
@@ -278,6 +288,7 @@ let () =
           test_case "Whitespace control" `Quick whitespace;
           test_case "Nullish coalescing" `Quick nullish_coalescing;
           test_case "Append list literal" `Quick list_literal_append;
+          test_case "Record field dot access" `Quick record_field_access;
         ] );
       ( "Mapping",
         [

@@ -51,6 +51,10 @@ open Ast
 %token COMMA                  (* , *)
 %token ELLIPSIS               (* ... *)
 %token PIPE                   (* | *)
+%token DOT                    (* . *)
+
+%nonassoc EXCLAMATION         (* lowest precedence *)
+%nonassoc DOT                 (* highest precedence *)
 
 (* Echo format syntax *)
 %token PERCENT                (* % *)
@@ -59,7 +63,6 @@ open Ast
 %token CHAR_E                 (* e *)
 %token CHAR_G                 (* g *)
 %token CHAR_B                 (* b *)
-%token PERIOD                 (* . *)
 
 %start <Ast.t> acutis
 
@@ -84,6 +87,7 @@ pattern:
   | LEFT_ANGLE; d = dict; RIGHT_ANGLE;          { Dict ($loc, d) }
   | HASH; x = nodes; HASH;                      { Block ($loc, x) }
   | HASH; HASH;                                 { Block ($loc, []) }
+  | p = pattern; DOT; s = record_key;           { Field ($loc, p, s) }
 
 record_tag:
   | i = INT;    { Tag_int ($loc, i) }
@@ -154,8 +158,8 @@ props:
 (** Echo rules *)
 
 echo_precision:
-  | (* empty *)       { 6 }
-  | PERIOD; i = INT;  { i }
+  | (* empty *)   { 6 }
+  | DOT; i = INT; { i }
 
 echo_flag:
   | (* empty *) { No_flag }
@@ -170,12 +174,15 @@ echo_format:
   | PERCENT; CHAR_B;                      { Fmt_bool }
 
 echo:
-  | fmt = echo_format; x = ID;  { Ech_var ($loc, fmt, x) }
-  | s = STRING;                 { Ech_string ($loc, s) }
+  | s = ID;                         { Echo_var ($loc, s) }
+  | s = STRING;                     { Echo_string ($loc, s) }
+  | e = echo; DOT; s = record_key;  { Echo_field (e, s) }
 
 echoes_rev:
-  | x = echo;                               { [ x ] }
-  | l = echoes_rev; QUESTION; last = echo;  { Nonempty.cons last l }
+  | fmt = echo_format; e = echo;
+    { [ (fmt, e) ] }
+  | l = echoes_rev; QUESTION; fmt = echo_format; last = echo;
+    { Nonempty.cons (fmt, last) l }
 
 trim_left:
   | (* empty *)  { No_trim }
@@ -193,9 +200,15 @@ node:
   | txt = text;
     { txt }
   | ECHO_BEGIN; e = echoes_rev; ECHO_END;
-    { let Nonempty.(last :: l) = e in Echo (List.rev l, last, Escape) }
+    {
+      let Nonempty.((fmt, default) :: l) = e in
+      Echo (List.rev l, fmt, default, Escape)
+    }
   | TRIPLE_ECHO_BEGIN; e = echoes_rev; TRIPLE_ECHO_END;
-    { let Nonempty.(last :: l) = e in Echo (List.rev l, last, No_escape) }
+    {
+      let Nonempty.((fmt, default) :: l) = e in
+      Echo (List.rev l, fmt, default, No_escape)
+    }
   | MATCH; pats = pattern_list_nonempty; child = cases; BACKSLASH; MATCH;
     { Match ($loc, pats, child) }
   | MAP; pat = pattern; child = cases; BACKSLASH; MAP;

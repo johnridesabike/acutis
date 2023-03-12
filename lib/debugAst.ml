@@ -113,12 +113,13 @@ let pp_echo_format ppf = function
   | Fmt_float_g i -> F.fprintf ppf "(Fmt_float_g %i)" i
   | Fmt_bool -> F.pp_print_string ppf "Fmt_bool"
 
-let pp_echo ppf = function
-  | Ech_var (loc, fmt, s) ->
-      F.fprintf ppf "(@[<2>Ech_var (@,%a,@ %a,@  %S@,))@]" Loc.pp loc
-        pp_echo_format fmt s
-  | Ech_string (loc, s) ->
-      F.fprintf ppf "(@[<2>Ech_string (@,%a,@ %S@,))@]" Loc.pp loc s
+let rec pp_echo ppf = function
+  | Echo_var (loc, s) ->
+      F.fprintf ppf "(@[<2>Echo_var (@,%a,@ %S@,))@]" Loc.pp loc s
+  | Echo_string (loc, s) ->
+      F.fprintf ppf "(@[<2>Echo_string (@,%a,@ %S@,))@]" Loc.pp loc s
+  | Echo_field (x, field) ->
+      F.fprintf ppf "(@[<2>Echo_field (@,%a,@ %S@,))@]" pp_echo x field
 
 let equal_echo_flag a b =
   match (a, b) with
@@ -135,11 +136,12 @@ let equal_echo_format a b =
       a = b
   | _ -> false
 
-let equal_echo a b =
+let rec equal_echo a b =
   match (a, b) with
-  | Ech_var (_, a_fmt, a_id), Ech_var (_, b_fmt, b_id) ->
-      a_id = b_id && equal_echo_format a_fmt b_fmt
-  | Ech_string (_, a), Ech_string (_, b) -> a = b
+  | Echo_var (_, a), Echo_var (_, b) -> a = b
+  | Echo_string (_, a), Echo_string (_, b) -> a = b
+  | Echo_field (a, a_field), Echo_field (b, b_field) ->
+      a_field = b_field && equal_echo a b
   | _ -> false
 
 let rec pp_pat ppf = function
@@ -169,14 +171,17 @@ let rec pp_pat ppf = function
         (Ast.Dict.pp pp_pat) m
   | Block (loc, x) ->
       F.fprintf ppf "(@[<2>Block (@,%a,@ %a@,))@]" Loc.pp loc pp x
+  | Field (loc, x, s) ->
+      F.fprintf ppf "(@[<2>Field (@,%a,@ %a,@ %S@,))@]" Loc.pp loc pp_pat x s
 
 and pp_node ppf = function
   | Text (s, triml, trimr) ->
       F.fprintf ppf "(@[<2>Text (@,%S,@ %a,@ %a@,))@]" s pp_trim triml pp_trim
         trimr
-  | Echo (l, ech, esc) ->
-      F.fprintf ppf "(@[<2>Echo (@,%a,@ %a,@ %a@,))@]" (Pp.list pp_echo) l
-        pp_echo ech pp_escape esc
+  | Echo (l, fmt, ech, esc) ->
+      F.fprintf ppf "(@[<2>Echo (@,%a,@ %a,@ %a,@ %a@,))@]"
+        (Pp.list (Pp.pair pp_echo_format pp_echo))
+        l pp_echo_format fmt pp_echo ech pp_escape esc
   | Match (loc, pats, cases) ->
       F.fprintf ppf "(@[<2>Match (@,%a,@ %a,@ %a@,))@]" Loc.pp loc
         (Nonempty.pp pp_pat) pats (Nonempty.pp pp_case) cases
@@ -218,14 +223,17 @@ let rec equal_pat a b =
   | Record (_, a), Record (_, b) -> Record.equal equal_pat a b
   | Dict (_, a), Dict (_, b) -> Ast.Dict.equal equal_pat a b
   | Block (_, a), Block (_, b) -> equal a b
+  | Field (_, a_pat, a_field), Field (_, b_pat, b_field) ->
+      a_field = b_field && equal_pat a_pat b_pat
   | _ -> false
 
 and equal_node a b =
   match (a, b) with
   | Text (a, a_triml, a_trimr), Text (b, b_triml, b_trimr) ->
       a = b && equal_trim a_triml b_triml && equal_trim a_trimr b_trimr
-  | Echo (a_l, a_ech, a_esc), Echo (b_l, b_ech, b_esc) ->
-      List.equal equal_echo a_l b_l
+  | Echo (a_l, a_fmt, a_ech, a_esc), Echo (b_l, b_fmt, b_ech, b_esc) ->
+      List.equal (equal_pair equal_echo_format equal_echo) a_l b_l
+      && equal_echo_format a_fmt b_fmt
       && equal_echo a_ech b_ech && equal_escape a_esc b_esc
   | Match (_, a_pats, a_cases), Match (_, b_pats, b_cases) ->
       Nonempty.equal equal_pat a_pats b_pats
