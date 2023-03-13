@@ -14,7 +14,8 @@ module L = Lexing
 open Parser
 exception Error
 
-type mode = Text | Expr | Echo | Echo_format | Queue of token list * mode
+type mode = Text | Expr | Echo | Format of mode | Queue of token list * mode
+
 type state = mode ref
 
 let make_state () = ref Text
@@ -70,9 +71,38 @@ and comment depth = parse
   | eof           { raise Error }
   | _             { comment depth lexbuf }
 
+(** The strings %} ~%} }} }}} ~}} and ~}}} need special treatment. They can
+    either mark the end of an expression or they can be part of a pattern, such
+    as }} which could end a nested record. We need to compare them to the
+    state's current mode to determine which token(s) to return. *)
+
 and expr state = parse
-  | "%}"            { state := Text; text state (B.create 256) lexbuf }
-  | "~%}"           { state := Text; TILDE_LEFT }
+  | "%}"  {
+      match !state with
+      | Expr -> state := Text; text state (B.create 256) lexbuf
+      | mode -> state := Queue ([RIGHT_BRACE], mode); PERCENT }
+  | "~%}" {
+      match !state with
+      | Expr -> state := Text; TILDE_LEFT
+      | mode -> state := Queue ([PERCENT; RIGHT_BRACE], mode); TILDE_LEFT }
+  | "}}"  {
+      match !state with
+      | Echo -> state := Text; ECHO_END
+      | mode -> state := Queue ([RIGHT_BRACE], mode); RIGHT_BRACE }
+  | "~}}" {
+      match !state with
+      | Echo -> state := Queue ([TILDE_LEFT], Text); ECHO_END
+      | mode -> state := Queue ([RIGHT_BRACE; RIGHT_BRACE], mode); TILDE_LEFT }
+  | "}}}" {
+      match !state with
+      | Echo -> state := Text; TRIPLE_ECHO_END
+      | mode -> state := Queue ([RIGHT_BRACE; RIGHT_BRACE], mode); RIGHT_BRACE }
+  | "~}}}" {
+      match !state with
+      | Echo -> state := Queue ([TILDE_LEFT], Text); TRIPLE_ECHO_END
+      | mode ->
+        state := Queue ([RIGHT_BRACE; RIGHT_BRACE; RIGHT_BRACE], mode);
+        TILDE_LEFT }
   | "match"         { MATCH }
   | "with"          { WITH }
   | "map"           { MAP }
@@ -107,35 +137,11 @@ and expr state = parse
   | '?'             { QUESTION }
   | '.'             { DOT }
   | "..."           { ELLIPSIS }
+  | '%'             { state := Format !state; PERCENT }
   | eof             { raise Error }
   | _               { raise Error }
 
-(* Echo expressions are specialized to avoid confusion with }} in patterns. *)
-and echo state = parse
-  | "}}"            { state := Text; ECHO_END }
-  | "~}}"           { state := Queue ([TILDE_LEFT], Text); ECHO_END }
-  | "}}}"           { state := Text; TRIPLE_ECHO_END }
-  | "~}}}"          { state := Queue ([TILDE_LEFT], Text); TRIPLE_ECHO_END }
-  | "match"
-  | "with"
-  | "map"
-  | "map_dict"
-  | "null"
-  | "true"
-  | "false"
-  | "interface"     { raise Error }
-  | id as s         { ID s }
-  | component as s  { COMPONENT s }
-  | white           { echo state lexbuf }
-  | newline         { L.new_line lexbuf; echo state lexbuf }
-  | '"'             { string lexbuf.lex_start_p (B.create 16) lexbuf }
-  | '?'             { QUESTION }
-  | '.'             { DOT }
-  | '%'             { state := Echo_format; PERCENT }
-  | eof             { raise Error }
-  | _               { raise Error }
-
-and echo_format state = parse
+and echo_format prev_state state = parse
   | 'i'         { CHAR_I }
   | 'f'         { CHAR_F }
   | 'e'         { CHAR_E }
@@ -144,12 +150,11 @@ and echo_format state = parse
   | ','         { COMMA }
   | '.'         { DOT }
   | digit+ as i { INT (int_of_string i) }
-  | newline     { L.new_line lexbuf; state := Echo; echo state lexbuf }
-  | white       { state := Echo; echo state lexbuf }
+  | newline     { L.new_line lexbuf; state := prev_state; expr state lexbuf }
+  | white       { state := prev_state; expr state lexbuf }
   | _           { raise Error }
 
-and string pos buf =
-  parse
+and string pos buf = parse
   | '"'                 { lexbuf.lex_start_p <- pos; STRING (B.contents buf) }
   | '\\' '"'            { B.add_char buf '"'; string pos buf lexbuf }
   | '\\' '/'            { B.add_char buf '/'; string pos buf lexbuf }
@@ -167,9 +172,8 @@ and string pos buf =
 let rec acutis state lexbuf =
   match !state with
   | Text -> text state (B.create 256) lexbuf
-  | Expr -> expr state lexbuf
-  | Echo -> echo state lexbuf
-  | Echo_format -> echo_format state lexbuf
+  | Expr | Echo -> expr state lexbuf
+  | Format prev_state -> echo_format prev_state state lexbuf
   | Queue ([], state') ->
       state := state';
       acutis state lexbuf

@@ -15,9 +15,9 @@ let illegal_chars () =
   check_raises "Illegal character 2"
     (E "File \"<test>\", 1:4-1:5\nSyntax error.\n") (render "{% +a %}");
   check_raises "Illegal character 3"
-    (E "File \"<test>\", 1:12-1:13\nSyntax error.\n") (render "{% match a %%}");
+    (E "File \"<test>\", 1:12-1:13\nSyntax error.\n") (render "{% match a &%}");
   check_raises "Illegal character 4"
-    (E "File \"<test>\", 1:6-1:7\nSyntax error.\n") (render "{{ a }%}")
+    (E "File \"<test>\", 1:6-1:7\nSyntax error.\n") (render "{{ a &%}")
 
 let number_parsing () =
   let open Alcotest in
@@ -28,11 +28,14 @@ let number_parsing () =
 let illegal_names () =
   let open Alcotest in
   check_raises "Illegal name: echo null"
-    (E "File \"<test>\", 1:4-1:8\nSyntax error.\n") (render "{{ null }}");
+    (E "File \"<test>\", 1:4-1:8\nParse error.\nThis is not a valid echo.\n")
+    (render "{{ null }}");
   check_raises "Illegal name: echo false"
-    (E "File \"<test>\", 1:4-1:9\nSyntax error.\n") (render "{{ false }}");
+    (E "File \"<test>\", 1:4-1:9\nParse error.\nThis is not a valid echo.\n")
+    (render "{{ false }}");
   check_raises "Illegal name: echo true"
-    (E "File \"<test>\", 1:4-1:8\nSyntax error.\n") (render "{{ true }}");
+    (E "File \"<test>\", 1:4-1:8\nParse error.\nThis is not a valid echo.\n")
+    (render "{{ true }}");
   check_raises "Illegal name: _"
     (E
        "File \"<test>\", 1:9-1:10\n\

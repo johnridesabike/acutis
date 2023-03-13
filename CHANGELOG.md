@@ -5,6 +5,7 @@ Most changes are breaking changes.
 ## 0.21.0
 
 - Add `.` record access syntax: `{{ book.title }}`.
+- Simplify the lexer.
 
 ## 0.20.0
 
