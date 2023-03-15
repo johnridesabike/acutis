@@ -33,6 +33,7 @@ val var_unused : Loc.t -> string -> _
 val pat_num_mismatch : Loc.t -> _
 val map_pat_num_mismatch : Loc.t -> _
 val component_name_mismatch : Loc.t -> string -> string -> _
+val component_extra_prop : Loc.t -> string -> string -> _
 
 (** {2 Interface errors.} *)
 

@@ -107,6 +107,13 @@ let component_name_mismatch loc a b =
   in
   raise @@ Acutis_error (pp_ty loc f)
 
+let component_extra_prop loc name s =
+  let f =
+    F.dprintf "Component '%s' does not accept this prop:@;<1 2>%a." name
+      Pp.field s
+  in
+  raise @@ Acutis_error (pp_ty loc f)
+
 let interface_duplicate loc id =
   let f = F.dprintf "Prop '%s' is already defined in the interface." id in
   raise @@ Acutis_error (pp_ty loc f)

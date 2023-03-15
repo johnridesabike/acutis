@@ -1,8 +1,8 @@
 open Acutis
 module RenderSync = Render.Make (Sync) (Acutis_json.Data)
 
-let render ?(json = "{}") src () =
-  let temp = Compile.(from_string ~fname:"<test>" Components.empty src) in
+let render ?(json = "{}") ?(components = Compile.Components.empty) src () =
+  let temp = Compile.(from_string ~fname:"<test>" components src) in
   let json = Yojson.Basic.from_string json in
   ignore @@ RenderSync.make temp json
 
@@ -826,7 +826,17 @@ let component_typechecker () =
        \  A.\n\
         Received:\n\
        \  B.")
-    (render "{% A %} {% /B %}")
+    (render "{% A %} {% /B %}");
+  let comp =
+    Compile.Components.parse_string ~fname:"comp" ~name:"Comp" "{{ a }} {{ b }}"
+  in
+  check_raises "Components can't take extra props"
+    (E
+       "File \"<test>\", 1:4-1:16\n\
+        Type error.\n\
+        Component 'Comp' does not accept this prop:\n\
+       \  c.")
+    (render ~components:(Compile.Components.make [ comp ]) "{% Comp a b c / %}")
 
 let unused_bindings () =
   let open Alcotest in

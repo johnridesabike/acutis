@@ -7,6 +7,7 @@ Most changes are breaking changes.
 - Add `.` record access syntax: `{{ book.title }}`.
 - Simplify the lexer.
 - Support the `unknown` data type for function components.
+- Calling a component with an extra prop is now a type error.
 
 ## 0.20.0
 

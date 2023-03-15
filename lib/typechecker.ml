@@ -708,9 +708,20 @@ and make_record var_action loc mode tyvars m =
         (fun k pat ty ->
           match (pat, ty) with
           | Some pat, Some ty -> Some (make_pat var_action mode ty pat)
-          | None, Some ty -> Error.missing_field loc k ty (* for components *)
+          | None, Some ty -> Error.missing_field loc k ty
           | _ -> None)
         m tyvars
+
+and make_component_props loc name ctx tyvars m =
+  Map.String.merge
+    (fun k pat ty ->
+      match (pat, ty) with
+      | Some pat, Some ty ->
+          Some (make_pat (Update_vars ctx) Construct_literal ty pat)
+      | None, Some ty -> Error.missing_field loc k ty
+      | Some _, None -> Error.component_extra_prop loc name k
+      | None, None -> None)
+    m tyvars
 
 (** @raises [Invalid_argument] if the list sizes are mismatched. *)
 and unify_match_cases pats tys ctx =
@@ -781,7 +792,7 @@ and make_nodes ctx nodes =
           let props =
             Ast.Dict.to_map props
             |> Map.String.merge missing_to_nullable types
-            |> make_record (Update_vars ctx) loc Construct_literal types
+            |> make_component_props loc comp ctx types
           in
           Some (TComponent (comp, props))
       | Match (loc, pats, cases) ->
