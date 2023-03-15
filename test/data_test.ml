@@ -136,6 +136,74 @@ let unions () =
   check "Unions 1 yojoson" result (render_yojson src props_json);
   check "Unions 1 js" result (render_js src props_js)
 
+let unknown () =
+  let typescheme =
+    Typescheme.(
+      make
+        [
+          ("dict", unknown ());
+          ("arr", unknown ());
+          ("arrEmpty", unknown ());
+          ("some", unknown ());
+          ("none", unknown ());
+          ("t", unknown ());
+          ("f", unknown ());
+        ])
+  in
+  let js_comp =
+    Compile.Components.from_fun ~name:"Comp" typescheme (fun x ->
+        Js._JSON##stringify x |> Js.to_string)
+  in
+  let json_comp =
+    Compile.Components.from_fun ~name:"Comp" typescheme (fun x ->
+        Yojson.Basic.to_string x)
+  in
+  let js_props =
+    Js.(
+      object%js
+        val dict =
+          object%js
+            val a = number_of_float 0.0
+            val b = string "b"
+          end
+
+        val arr = Js.array [| string "x"; string "y" |]
+        val arrEmpty = Js.array [||]
+        val some = string "some"
+        val none = null
+        val t = _true
+        val f = _false
+      end)
+  in
+  let json_props =
+    {|{
+        "dict": {"a": 0, "b": "b"},
+        "arr": ["x", "y"],
+        "arrEmpty": [],
+        "some": "some",
+        "none": null,
+        "t": true,
+        "f": false
+      }|}
+  in
+  let src =
+    {|{% match dict with {a: 0, b: "b"}%}{% with _ %}{% /match ~%}
+  {% match arr with ["x"] %}{% with _ %}{% /match ~%}
+  {% match arrEmpty with ["x"] %}{% with _ %}{% /match ~%}
+  {% match some with !"some" %}{% with _ %}{% /match ~%}
+  {% match none with !"some" %}{% with _ %}{% /match ~%}
+  {% match t with true %}{% with false %}{% /match ~%}
+  {% match f with true %}{% with false %}{% /match ~%}
+  {% Comp dict arr arrEmpty some none t f / %}|}
+  in
+  let result =
+    {|{"arr":["x",["y",null]],"arrEmpty":null,"dict":{"a":0,"b":"b"},"f":0,"none":null,"some":["some"],"t":1}|}
+  in
+  check "Encoding unknown JS data works" result
+    (render_js src ~components:[ js_comp ] js_props);
+  check "Encoding unknown JSON data works" result
+    (render_yojson src ~components:[ json_comp ] json_props)
+
 let () =
   let open Alcotest in
   run "Data"
@@ -150,4 +218,6 @@ let () =
           test_case "Booleans" `Quick booleans;
           test_case "Unions" `Quick unions;
         ] );
+      ( "Unknown data in function components",
+        [ test_case "Unknown data" `Quick unknown ] );
     ]

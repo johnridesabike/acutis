@@ -6,6 +6,7 @@ Most changes are breaking changes.
 
 - Add `.` record access syntax: `{{ book.title }}`.
 - Simplify the lexer.
+- Support the `unknown` data type for function components.
 
 ## 0.20.0
 

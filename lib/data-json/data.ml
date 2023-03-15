@@ -160,8 +160,8 @@ and to_json ty t =
   | _, Const (String s) -> `String s
   | Ty.Enum { extra = Bool; _ }, Const (Int 0) -> `Bool false
   | Ty.Enum { extra = Bool; _ }, Const (Int _) -> `Bool true
-  | (Enum _ | Int), Const (Int i) -> `Int i
-  | Nullable _, Nil -> `Null
+  | (Enum _ | Int | Unknown _), Const (Int i) -> `Int i
+  | (Nullable _ | Unknown _), Nil -> `Null
   | Nullable ty, Array [| t |] -> to_json ty t
   | List ty, t ->
       let rec aux acc = function
@@ -170,12 +170,12 @@ and to_json ty t =
         | _ -> Error.internal __POS__ "Lists may only contain Array or Nil."
       in
       aux [] t
-  | Tuple tys, Array a ->
-      let l = Array.to_list a |> List.map2 to_json tys in
-      `List l
+  | Tuple tys, Array a -> `List (Array.to_list a |> List.map2 to_json tys)
+  | Unknown _, Array a -> `List (Array.map (to_json ty) a |> Array.to_list)
   | Dict (ty, _), Dict m ->
-      let l = Map.String.map (to_json ty) m |> Map.String.bindings in
-      `Assoc l
+      `Assoc (Map.String.map (to_json ty) m |> Map.String.bindings)
+  | Unknown _, Dict m ->
+      `Assoc (Map.String.map (to_json ty) m |> Map.String.bindings)
   | Record tys, Dict m -> `Assoc (record_to_json !tys m)
   | Union (k, { cases; extra; _ }), Dict m ->
       let tag = Map.String.find k m in
@@ -197,6 +197,9 @@ and to_json ty t =
       in
       let l = record_to_json !record_tys m in
       `Assoc ((k, tag) :: l)
-  | _ -> Error.internal __POS__ "Type mismatch while encoding data."
+  | ( ( String | Int | Float | Enum _ | Nullable _ | Tuple _ | Dict _ | Record _
+      | Union _ ),
+      _ ) ->
+      Error.internal __POS__ "Type mismatch while encoding data."
 
 let encode tys j = `Assoc (record_to_json tys j)

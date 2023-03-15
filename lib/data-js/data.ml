@@ -230,9 +230,9 @@ and to_js ty t =
   | _, Const (String s) -> Js.string s |> coerce
   | Ty.Enum { extra = Bool; _ }, Const (Int 0) -> coerce Js._false
   | Ty.Enum { extra = Bool; _ }, Const (Int _) -> coerce Js._true
-  | (Enum _ | Int), Const (Int i) ->
+  | (Enum _ | Int | Unknown _), Const (Int i) ->
       float_of_int i |> Js.number_of_float |> coerce
-  | Nullable _, Nil -> Js.Unsafe.inject Js.null
+  | (Nullable _ | Unknown _), Nil -> Js.Unsafe.inject Js.null
   | Nullable ty, Array [| t |] -> to_js ty t
   | List ty, t ->
       let rec aux acc = function
@@ -243,7 +243,11 @@ and to_js ty t =
       aux [] t
   | Tuple tys, Array a ->
       Array.map2 to_js (Array.of_list tys) a |> Js.array |> coerce
+  | Unknown _, Array a -> Array.map (to_js ty) a |> Js.array |> coerce
   | Dict (ty, _), Dict m ->
+      Map.String.map (to_js ty) m
+      |> Map.String.to_seq |> Array.of_seq |> Js.Unsafe.obj
+  | Unknown _, Dict m ->
       Map.String.map (to_js ty) m
       |> Map.String.to_seq |> Array.of_seq |> Js.Unsafe.obj
   | Record tys, Dict m -> record_to_js !tys m |> Array.of_list |> Js.Unsafe.obj
@@ -267,6 +271,9 @@ and to_js ty t =
       in
       let l = record_to_js !record_tys m in
       (k, tag) :: l |> Array.of_list |> Js.Unsafe.obj
-  | _ -> Error.internal __POS__ "Type mismatch while encoding data."
+  | ( ( String | Int | Float | Enum _ | Nullable _ | Tuple _ | Dict _ | Record _
+      | Union _ ),
+      _ ) ->
+      Error.internal __POS__ "Type mismatch while encoding data."
 
 let encode tys j = record_to_js tys j |> Array.of_list |> Js.Unsafe.obj
