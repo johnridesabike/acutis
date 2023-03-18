@@ -1,6 +1,6 @@
 {
   "name": "acutis-lang",
-  "version": "0.20.0",
+  "version": "0.21.0",
   "private": false,
   "description": "A declarative, type-safe template language",
   "keywords": [
@@ -28,7 +28,7 @@
     "email": "jbpjackson+acutis@icloud.com"
   },
   "scripts": {
-    "prepublishOnly": "make release"
+    "prepublishOnly": "dune build --profile=release"
   },
   "main": "_build/default/js/acutis_js.bc.js",
   "files": [
