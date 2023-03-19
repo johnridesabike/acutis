@@ -11,7 +11,6 @@
    showTitle=true
    site
    page
-   content=null
    next=null
   %}
 <div class="font-monospace">
