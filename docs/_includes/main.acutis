@@ -26,7 +26,7 @@
    with {@tag: false} %} {%
    with {@tag: true, page}
 ~%}
-  {% Layout title description showTitle site page content next ~%}
+  {% Layout title description showTitle site page next ~%}
     {{{ content }}}
   {%~ /Layout %}
 {% /match %}
