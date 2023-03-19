@@ -1,5 +1,6 @@
 
 
+
 <!DOCTYPE html>
 <html lang="en-US">
   <head>
@@ -154,8 +155,8 @@ how the compiler parses them. You may even divide an interface across multiple
 <p>Examples:</p>
 <pre class="language-acutis"><code class="language-acutis"><span class="token acutis language-acutis"><span class="token delimiter punctuation">{%</span> <span class="token keyword">interface</span><br>  <span class="token variable">a</span> <span class="token punctuation">=</span> <span class="token variable">int</span><br>  <span class="token variable">b</span> <span class="token punctuation">=</span> <span class="token variable">float</span><br>  <span class="token variable">c</span> <span class="token punctuation">=</span> <span class="token variable">string</span><br><span class="token punctuation">/</span> <span class="token delimiter punctuation">%}</span></span></code></pre>
 <pre class="language-txt"><code class="language-txt">1<br>1.5<br>"abc"</code></pre>
-<p>The three “primitive” types are <code>int</code>, <code>float</code>, and <code>string</code>, which work as you’d
-expect from other languages.</p>
+<p>The three “primitive” types are <code>int</code>, <code>float</code>, and <code>string</code>, which work as
+you’d expect from other languages.</p>
 <h3 id="nullable" tabindex="-1">Nullable</h3>
 <p>Examples:</p>
 <pre class="language-acutis"><code class="language-acutis"><span class="token acutis language-acutis"><span class="token delimiter punctuation">{%</span> <span class="token keyword">interface</span><br>  <span class="token variable">a</span> <span class="token punctuation">=</span> <span class="token operator">?</span><span class="token variable">string</span><br><span class="token punctuation">/</span> <span class="token delimiter punctuation">%}</span></span></code></pre>
@@ -190,6 +191,9 @@ by its type.</p>
 <code>{a: int, b: string}</code>.</p>
 <p>Records are extensible. The compiler assumes that every record may contain
 additional fields which have not been specified yet.</p>
+<p>When echoing or constructing a value, you may access a record’s field with <code>.</code>
+(dot) syntax.</p>
+<pre class="language-acutis"><code class="language-acutis"><span class="token acutis language-acutis"><span class="token delimiter punctuation">{{</span> <span class="token variable">book</span><span class="token punctuation">.</span><span class="token variable">title</span> <span class="token delimiter punctuation">}}</span></span></code></pre>
 <h3 id="dictionary" tabindex="-1">Dictionary</h3>
 <p>Examples:</p>
 <pre class="language-acutis"><code class="language-acutis"><span class="token acutis language-acutis"><span class="token delimiter punctuation">{%</span> <span class="token keyword">interface</span><br>  <span class="token variable">a</span> <span class="token punctuation">=</span> <span class="token punctuation">&lt;</span><span class="token variable">int</span><span class="token punctuation">></span><br><span class="token punctuation">/</span> <span class="token delimiter punctuation">%}</span></span></code></pre>
@@ -574,4 +578,5 @@ unless you explicitly don’t, e.g. <code>{{{ header }}}</code>.</p>
           </p>
         </footer></body>
 </html>
+
 
