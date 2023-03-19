@@ -10,7 +10,7 @@
     "build": "NODE_ENV=production eleventy",
     "clean": "rm -rf _site",
     "predeploy": "npm run clean && npm run build",
-    "deploy": "gh-pages -d _site"
+    "deploy": "gh-pages -d _site -t"
   },
   "dependencies": {
     "@11ty/eleventy": "^2.0.0",
