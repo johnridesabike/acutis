@@ -12,14 +12,16 @@
     version number. You can then execute npm commands (link, publish, etc.) in
     the build context directory. *)
 
-let main = ref ""
 let version = ref ""
+let main = ref ""
+let files = ref []
 
 let () =
   Arg.parse
     [
       ("--main", Set_string main, "main JS file");
       ("--version", Set_string version, "version");
+      ("--files", Rest_all (fun l -> files := l), "other files");
     ]
     invalid_arg "Generate the package.json."
 
@@ -83,7 +85,7 @@ let json =
             ("email", S "jbpjackson+acutis@icloud.com");
           ] );
       ("main", S !main);
-      ("files", A [ S "eleventy.js" ]);
+      ("files", A (List.map (fun s -> S s) !files));
     ]
 
 let () = pp std_formatter json

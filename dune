@@ -2,13 +2,16 @@
  (name package_json))
 
 (rule
- (deps eleventy.js)
+ (target package.json)
+ (deps README.md LICENSE)
  (action
   (with-stdout-to
-   package.json
+   %{target}
    (run
     %{dep:package_json.exe}
+    --version
+    %{version:acutis_js}
     --main
     %{dep:js/acutis_js.bc.js}
-    --version
-    %{version:acutis_js}))))
+    --files
+    %{dep:eleventy.js}))))
