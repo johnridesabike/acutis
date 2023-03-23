@@ -10,7 +10,7 @@ const syntaxHighlight = require("@11ty/eleventy-plugin-syntaxhighlight");
 const MarkdownIt = require("markdown-it");
 const markdownItAnchor = require("markdown-it-anchor");
 const markdownItToc = require("markdown-it-table-of-contents");
-const acutisEleventy = require("../eleventy");
+const acutisEleventy = require("../_build/default/eleventy");
 const acutisComponents = require("./_includes/eleventyComponents");
 const { pathPrefix } = require("./_data/site");
 

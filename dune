@@ -1,0 +1,14 @@
+(executable
+ (name package_json))
+
+(rule
+ (deps eleventy.js)
+ (action
+  (with-stdout-to
+   package.json
+   (run
+    %{dep:package_json.exe}
+    --main
+    %{dep:js/acutis_js.bc.js}
+    --version
+    %{version:acutis_js}))))

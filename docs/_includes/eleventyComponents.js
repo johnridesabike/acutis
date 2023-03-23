@@ -6,7 +6,7 @@
   file, You can obtain one at http://mozilla.org/MPL/2.0/.
 */
 
-const { Component, Typescheme } = require("../..");
+const { Component, Typescheme } = require("../../_build/default");
 const site = require("../_data/site");
 
 module.exports = [
