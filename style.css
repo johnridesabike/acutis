@@ -1,1 +1,796 @@
-/*! normalize.css v8.0.1 | MIT License | github.com/necolas/normalize.css */html{-webkit-text-size-adjust:100%;line-height:1.15}body{margin:0}main{display:block}h1{font-size:2em;margin:.67em 0}hr{box-sizing:content-box;height:0;overflow:visible}pre{font-family:monospace,monospace;font-size:1em}a{background-color:transparent}abbr[title]{border-bottom:none;text-decoration:underline;text-decoration:underline dotted}b,strong{font-weight:bolder}code,kbd,samp{font-family:monospace,monospace;font-size:1em}small{font-size:80%}sub,sup{font-size:75%;line-height:0;position:relative;vertical-align:baseline}sub{bottom:-.25em}sup{top:-.5em}img{border-style:none}button,input,optgroup,select,textarea{font-family:inherit;font-size:100%;line-height:1.15;margin:0}button,input{overflow:visible}button,select{text-transform:none}[type=button],[type=reset],[type=submit],button{-webkit-appearance:button}[type=button]::-moz-focus-inner,[type=reset]::-moz-focus-inner,[type=submit]::-moz-focus-inner,button::-moz-focus-inner{border-style:none;padding:0}[type=button]:-moz-focusring,[type=reset]:-moz-focusring,[type=submit]:-moz-focusring,button:-moz-focusring{outline:1px dotted ButtonText}fieldset{padding:.35em .75em .625em}legend{box-sizing:border-box;color:inherit;display:table;max-width:100%;padding:0;white-space:normal}progress{vertical-align:baseline}textarea{overflow:auto}[type=checkbox],[type=radio]{box-sizing:border-box;padding:0}[type=number]::-webkit-inner-spin-button,[type=number]::-webkit-outer-spin-button{height:auto}[type=search]{-webkit-appearance:textfield;outline-offset:-2px}[type=search]::-webkit-search-decoration{-webkit-appearance:none}::-webkit-file-upload-button{-webkit-appearance:button;font:inherit}details{display:block}summary{display:list-item}[hidden],template{display:none}code[class*=language-],pre[class*=language-]{word-wrap:normal;background:none;color:#ccc;font-family:Consolas,Monaco,Andale Mono,Ubuntu Mono,monospace;font-size:1em;-webkit-hyphens:none;-moz-hyphens:none;-ms-hyphens:none;hyphens:none;line-height:1.5;-moz-tab-size:4;-o-tab-size:4;tab-size:4;text-align:left;white-space:pre;word-break:normal;word-spacing:normal}pre[class*=language-]{margin:.5em 0;overflow:auto;padding:1em}:not(pre)>code[class*=language-],pre[class*=language-]{background:#2d2d2d}:not(pre)>code[class*=language-]{border-radius:.3em;padding:.1em;white-space:normal}.token.block-comment,.token.cdata,.token.comment,.token.doctype,.token.prolog{color:#999}.token.punctuation{color:#ccc}.token.attr-name,.token.deleted,.token.namespace,.token.tag{color:#e2777a}.token.function-name{color:#6196cc}.token.boolean,.token.function,.token.number{color:#f08d49}.token.class-name,.token.constant,.token.property,.token.symbol{color:#f8c555}.token.atrule,.token.builtin,.token.important,.token.keyword,.token.selector{color:#cc99cd}.token.attr-value,.token.char,.token.regex,.token.string,.token.variable{color:#7ec699}.token.entity,.token.operator,.token.url{color:#67cdcc}.token.bold,.token.important{font-weight:700}.token.italic{font-style:italic}.token.entity{cursor:help}.token.inserted{color:green}:root{--font-family-serif:Georgia,"Times New Roman",serif;--font-family-sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Oxygen,Ubuntu,Cantarell,"Open Sans","Helvetica Neue",sans-serif;--font-family-mono:Menlo,Consolas,Monaco,"Andale Mono","Ubuntu Mono",monospace;--color-text:#111;--color-grey:#777;--color-link:#0645ad;--color-background:#fefefe;--font-size-body:16px;--font-size-mono:14px}body{background-color:#fefefe;background-color:var(--color-background);color:#111;color:var(--color-text);font-family:Georgia,Times New Roman,serif;font-family:var(--font-family-serif);font-size:16px;font-size:var(--font-size-body);padding:0 1em}h1,h2,h3,h4{font-family:-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,Oxygen,Ubuntu,Cantarell,Open Sans,Helvetica Neue,sans-serif;font-family:var(--font-family-sans);margin:.75em 0}h1{font-size:1.5em}h1,h2{font-weight:400}h2{border-top:1px solid #777;border-top:1px solid var(--color-grey);font-size:1.4em;padding-top:.25em}.playground__header,.toc-container-header,h3{font-size:1.1em;font-weight:700}.playground__header{border-top:none;padding-top:0}h4{font-size:.9em;font-weight:700}pre{overflow-x:auto;padding:.5em}pre[class*=language-]{font-size:14px;font-size:var(--font-size-mono)}code,code[class*=language-],pre[class*=language-]{font-family:Menlo,Consolas,Monaco,Andale Mono,Ubuntu Mono,monospace;font-family:var(--font-family-mono)}code:not([class*=language-]){background-color:#f5f2f0;color:#000;padding:0 .125em;text-shadow:0 1px #fff;white-space:nowrap}blockquote{font-family:Menlo,Consolas,Monaco,Andale Mono,Ubuntu Mono,monospace;font-family:var(--font-family-mono);font-size:.9em}table{border-collapse:collapse;font-size:1em}th{font-family:-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,Oxygen,Ubuntu,Cantarell,Open Sans,Helvetica Neue,sans-serif;font-family:var(--font-family-sans)}td{border-top:1px solid #777;border-top:1px solid var(--color-grey);padding:.5em 0}nav{font-family:-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,Oxygen,Ubuntu,Cantarell,Open Sans,Helvetica Neue,sans-serif;font-family:var(--font-family-sans)}a{font-weight:700;text-decoration:none}a,a:active,a:focus,a:hover{color:#0645ad;color:var(--color-link)}a:active,a:focus,a:hover{text-decoration:underline}a[aria-current=true]{box-shadow:0 4px 4px -4px #0645ad;box-shadow:0 4px 4px -4px var(--color-link)}li::marker{font-family:Menlo,Consolas,Monaco,Andale Mono,Ubuntu Mono,monospace;font-family:var(--font-family-mono);font-size:14px;font-size:var(--font-size-mono)}.skip-nav{clip:rect(0 0 0 0);border:0;height:1px;margin:-1px;overflow:hidden;padding:0;position:absolute;width:1px}.skip-nav:focus{clip:auto;background:#fff;height:auto;left:10px;padding:1rem;position:fixed;top:10px;width:auto;z-index:1}.font-size-small{font-size:.8em}.font-monospace{font-family:Menlo,Consolas,Monaco,Andale Mono,Ubuntu Mono,monospace;font-family:var(--font-family-mono);font-size:14px;font-size:var(--font-size-mono)}.site-header__wrapper{margin-top:1em}.site-header__title{font-family:Menlo,Consolas,Monaco,Andale Mono,Ubuntu Mono,monospace;font-family:var(--font-family-mono);font-size:2em;margin-bottom:0;margin-top:0;text-align:center}.site-header__title a{color:#111;color:var(--color-text);font-weight:400}.site-header__subtitle{font-family:Menlo,Consolas,Monaco,Andale Mono,Ubuntu Mono,monospace;font-family:var(--font-family-mono);font-size:.8em;margin:1em auto;text-align:center}.site-header__nav-list{column-count:2;padding:0}.site-header__nav li{margin-bottom:.5em;margin-left:1.5em}.site-header__nav a{font-weight:400}.table-of-contents{font-family:-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,Oxygen,Ubuntu,Cantarell,Open Sans,Helvetica Neue,sans-serif;font-family:var(--font-family-sans)}.table-of-contents li{margin-bottom:.5em;margin-top:.5em}.table-of-contents a{font-weight:400}.next__header{border:none;margin-bottom:.5em;margin-top:1em}.next__url{font-size:1.25em;font-weight:400}.playground__textarea{max-width:100%}.playground__button{display:block;font-size:1.2em;margin:auto}.playground__is-dirty{font-size:.8em;vertical-align:super}.footer{border-top:1px solid #777;border-top:1px solid var(--color-grey);font-family:-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,Oxygen,Ubuntu,Cantarell,Open Sans,Helvetica Neue,sans-serif;font-family:var(--font-family-sans);font-size:.8em;margin-top:2em}.footer__license a{font-weight:400}@media screen and (min-width:700px){td:first-child{min-width:36.6%}.footer,.main,.site-header__wrapper{margin-left:auto;margin-right:auto;width:700px}.site-header__wrapper ul{justify-content:center}.site-header__subtitle{font-size:.8em;width:100%}.site-header__nav-list{column-count:3}}
+/**
+  Copyright (c) 2022 John Jackson.
+
+  This Source Code Form is subject to the terms of the Mozilla Public
+  License, v. 2.0. If a copy of the MPL was not distributed with this
+  file, You can obtain one at http://mozilla.org/MPL/2.0/.
+*/
+
+/*! normalize.css v8.0.1 | MIT License | github.com/necolas/normalize.css */
+
+/* Document
+   ========================================================================== */
+
+/**
+ * 1. Correct the line height in all browsers.
+ * 2. Prevent adjustments of font size after orientation changes in iOS.
+ */
+
+html {
+  line-height: 1.15; /* 1 */
+  -webkit-text-size-adjust: 100%; /* 2 */
+}
+
+/* Sections
+   ========================================================================== */
+
+/**
+ * Remove the margin in all browsers.
+ */
+
+body {
+  margin: 0;
+}
+
+/**
+ * Render the `main` element consistently in IE.
+ */
+
+main {
+  display: block;
+}
+
+/**
+ * Correct the font size and margin on `h1` elements within `section` and
+ * `article` contexts in Chrome, Firefox, and Safari.
+ */
+
+h1 {
+  font-size: 2em;
+  margin: 0.67em 0;
+}
+
+/* Grouping content
+   ========================================================================== */
+
+/**
+ * 1. Add the correct box sizing in Firefox.
+ * 2. Show the overflow in Edge and IE.
+ */
+
+hr {
+  box-sizing: content-box; /* 1 */
+  height: 0; /* 1 */
+  overflow: visible; /* 2 */
+}
+
+/**
+ * 1. Correct the inheritance and scaling of font size in all browsers.
+ * 2. Correct the odd `em` font sizing in all browsers.
+ */
+
+pre {
+  font-family: monospace, monospace; /* 1 */
+  font-size: 1em; /* 2 */
+}
+
+/* Text-level semantics
+   ========================================================================== */
+
+/**
+ * Remove the gray background on active links in IE 10.
+ */
+
+a {
+  background-color: transparent;
+}
+
+/**
+ * 1. Remove the bottom border in Chrome 57-
+ * 2. Add the correct text decoration in Chrome, Edge, IE, Opera, and Safari.
+ */
+
+abbr[title] {
+  border-bottom: none; /* 1 */
+  text-decoration: underline; /* 2 */
+  text-decoration: underline dotted; /* 2 */
+}
+
+/**
+ * Add the correct font weight in Chrome, Edge, and Safari.
+ */
+
+b,
+strong {
+  font-weight: bolder;
+}
+
+/**
+ * 1. Correct the inheritance and scaling of font size in all browsers.
+ * 2. Correct the odd `em` font sizing in all browsers.
+ */
+
+code,
+kbd,
+samp {
+  font-family: monospace, monospace; /* 1 */
+  font-size: 1em; /* 2 */
+}
+
+/**
+ * Add the correct font size in all browsers.
+ */
+
+small {
+  font-size: 80%;
+}
+
+/**
+ * Prevent `sub` and `sup` elements from affecting the line height in
+ * all browsers.
+ */
+
+sub,
+sup {
+  font-size: 75%;
+  line-height: 0;
+  position: relative;
+  vertical-align: baseline;
+}
+
+sub {
+  bottom: -0.25em;
+}
+
+sup {
+  top: -0.5em;
+}
+
+/* Embedded content
+   ========================================================================== */
+
+/**
+ * Remove the border on images inside links in IE 10.
+ */
+
+img {
+  border-style: none;
+}
+
+/* Forms
+   ========================================================================== */
+
+/**
+ * 1. Change the font styles in all browsers.
+ * 2. Remove the margin in Firefox and Safari.
+ */
+
+button,
+input,
+optgroup,
+select,
+textarea {
+  font-family: inherit; /* 1 */
+  font-size: 100%; /* 1 */
+  line-height: 1.15; /* 1 */
+  margin: 0; /* 2 */
+}
+
+/**
+ * Show the overflow in IE.
+ * 1. Show the overflow in Edge.
+ */
+
+button,
+input { /* 1 */
+  overflow: visible;
+}
+
+/**
+ * Remove the inheritance of text transform in Edge, Firefox, and IE.
+ * 1. Remove the inheritance of text transform in Firefox.
+ */
+
+button,
+select { /* 1 */
+  text-transform: none;
+}
+
+/**
+ * Correct the inability to style clickable types in iOS and Safari.
+ */
+
+button,
+[type="button"],
+[type="reset"],
+[type="submit"] {
+  -webkit-appearance: button;
+}
+
+/**
+ * Remove the inner border and padding in Firefox.
+ */
+
+button::-moz-focus-inner,
+[type="button"]::-moz-focus-inner,
+[type="reset"]::-moz-focus-inner,
+[type="submit"]::-moz-focus-inner {
+  border-style: none;
+  padding: 0;
+}
+
+/**
+ * Restore the focus styles unset by the previous rule.
+ */
+
+button:-moz-focusring,
+[type="button"]:-moz-focusring,
+[type="reset"]:-moz-focusring,
+[type="submit"]:-moz-focusring {
+  outline: 1px dotted ButtonText;
+}
+
+/**
+ * Correct the padding in Firefox.
+ */
+
+fieldset {
+  padding: 0.35em 0.75em 0.625em;
+}
+
+/**
+ * 1. Correct the text wrapping in Edge and IE.
+ * 2. Correct the color inheritance from `fieldset` elements in IE.
+ * 3. Remove the padding so developers are not caught out when they zero out
+ *    `fieldset` elements in all browsers.
+ */
+
+legend {
+  box-sizing: border-box; /* 1 */
+  color: inherit; /* 2 */
+  display: table; /* 1 */
+  max-width: 100%; /* 1 */
+  padding: 0; /* 3 */
+  white-space: normal; /* 1 */
+}
+
+/**
+ * Add the correct vertical alignment in Chrome, Firefox, and Opera.
+ */
+
+progress {
+  vertical-align: baseline;
+}
+
+/**
+ * Remove the default vertical scrollbar in IE 10+.
+ */
+
+textarea {
+  overflow: auto;
+}
+
+/**
+ * 1. Add the correct box sizing in IE 10.
+ * 2. Remove the padding in IE 10.
+ */
+
+[type="checkbox"],
+[type="radio"] {
+  box-sizing: border-box; /* 1 */
+  padding: 0; /* 2 */
+}
+
+/**
+ * Correct the cursor style of increment and decrement buttons in Chrome.
+ */
+
+[type="number"]::-webkit-inner-spin-button,
+[type="number"]::-webkit-outer-spin-button {
+  height: auto;
+}
+
+/**
+ * 1. Correct the odd appearance in Chrome and Safari.
+ * 2. Correct the outline style in Safari.
+ */
+
+[type="search"] {
+  -webkit-appearance: textfield; /* 1 */
+  outline-offset: -2px; /* 2 */
+}
+
+/**
+ * Remove the inner padding in Chrome and Safari on macOS.
+ */
+
+[type="search"]::-webkit-search-decoration {
+  -webkit-appearance: none;
+}
+
+/**
+ * 1. Correct the inability to style clickable types in iOS and Safari.
+ * 2. Change font properties to `inherit` in Safari.
+ */
+
+::-webkit-file-upload-button {
+  -webkit-appearance: button; /* 1 */
+  font: inherit; /* 2 */
+}
+
+/* Interactive
+   ========================================================================== */
+
+/*
+ * Add the correct display in Edge, IE 10+, and Firefox.
+ */
+
+details {
+  display: block;
+}
+
+/*
+ * Add the correct display in all browsers.
+ */
+
+summary {
+  display: list-item;
+}
+
+/* Misc
+   ========================================================================== */
+
+/**
+ * Add the correct display in IE 10+.
+ */
+
+template {
+  display: none;
+}
+
+/**
+ * Add the correct display in IE 10.
+ */
+
+[hidden] {
+  display: none;
+}
+
+/**
+ * prism.js tomorrow night eighties for JavaScript, CoffeeScript, CSS and HTML
+ * Based on https://github.com/chriskempson/tomorrow-theme
+ * @author Rose Pritchard
+ */
+
+code[class*="language-"],
+pre[class*="language-"] {
+	color: #ccc;
+	background: none;
+	font-family: Consolas, Monaco, 'Andale Mono', 'Ubuntu Mono', monospace;
+	font-size: 1em;
+	text-align: left;
+	white-space: pre;
+	word-spacing: normal;
+	word-break: normal;
+	word-wrap: normal;
+	line-height: 1.5;
+
+	-moz-tab-size: 4;
+	-o-tab-size: 4;
+	tab-size: 4;
+
+	-webkit-hyphens: none;
+	-moz-hyphens: none;
+	-ms-hyphens: none;
+	hyphens: none;
+
+}
+
+/* Code blocks */
+
+pre[class*="language-"] {
+	padding: 1em;
+	margin: .5em 0;
+	overflow: auto;
+}
+
+:not(pre) > code[class*="language-"],
+pre[class*="language-"] {
+	background: #2d2d2d;
+}
+
+/* Inline code */
+
+:not(pre) > code[class*="language-"] {
+	padding: .1em;
+	border-radius: .3em;
+	white-space: normal;
+}
+
+.token.comment,
+.token.block-comment,
+.token.prolog,
+.token.doctype,
+.token.cdata {
+	color: #999;
+}
+
+.token.punctuation {
+	color: #ccc;
+}
+
+.token.tag,
+.token.attr-name,
+.token.namespace,
+.token.deleted {
+	color: #e2777a;
+}
+
+.token.function-name {
+	color: #6196cc;
+}
+
+.token.boolean,
+.token.number,
+.token.function {
+	color: #f08d49;
+}
+
+.token.property,
+.token.class-name,
+.token.constant,
+.token.symbol {
+	color: #f8c555;
+}
+
+.token.selector,
+.token.important,
+.token.atrule,
+.token.keyword,
+.token.builtin {
+	color: #cc99cd;
+}
+
+.token.string,
+.token.char,
+.token.attr-value,
+.token.regex,
+.token.variable {
+	color: #7ec699;
+}
+
+.token.operator,
+.token.entity,
+.token.url {
+	color: #67cdcc;
+}
+
+.token.important,
+.token.bold {
+	font-weight: bold;
+}
+
+.token.italic {
+	font-style: italic;
+}
+
+.token.entity {
+	cursor: help;
+}
+
+.token.inserted {
+	color: green;
+}
+
+:root {
+  --font-family-serif: Georgia, "Times New Roman", serif;
+  --font-family-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+    Oxygen, Ubuntu, Cantarell, "Open Sans", "Helvetica Neue", sans-serif;
+  --font-family-mono: Menlo, Consolas, Monaco, "Andale Mono", "Ubuntu Mono",
+    monospace;
+  --color-text: #111;
+  --color-grey: #777;
+  --color-link: #0645ad;
+  --color-background: #fefefe;
+  --font-size-body: 16px;
+  --font-size-mono: 14px;
+}
+
+body {
+  font-size: 16px;
+  font-size: var(--font-size-body);
+  /* A serif font provides better contrast with inline monospace code */
+  font-family: Georgia, "Times New Roman", serif;
+  font-family: var(--font-family-serif);
+  padding: 0 1em;
+  color: #111;
+  color: var(--color-text);
+  background-color: #fefefe;
+  background-color: var(--color-background);
+}
+
+h1,
+h2,
+h3,
+h4 {
+  margin: 0.75em 0;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+    Oxygen, Ubuntu, Cantarell, "Open Sans", "Helvetica Neue", sans-serif;
+  font-family: var(--font-family-sans);
+}
+
+h1 {
+  font-size: 1.5em;
+  font-weight: 400;
+}
+
+h2 {
+  border-top: 1px solid #777;
+  border-top: 1px solid var(--color-grey);
+  padding-top: 0.25em;
+  font-size: 1.4em;
+  font-weight: 400;
+}
+
+h3,
+.playground__header,
+.toc-container-header {
+  font-size: 1.1em;
+  font-weight: 700;
+}
+
+.playground__header {
+  border-top: none;
+  padding-top: 0;
+}
+
+h4 {
+  font-size: 0.9em;
+  font-weight: 700;
+}
+
+pre {
+  padding: 0.5em;
+  overflow-x: auto;
+}
+
+pre[class*="language-"] {
+  font-family: Menlo, Consolas, Monaco, "Andale Mono", "Ubuntu Mono",
+    monospace;
+  font-family: var(--font-family-mono);
+  font-size: 14px;
+  font-size: var(--font-size-mono);
+}
+
+code,
+code[class*="language-"] {
+  font-family: Menlo, Consolas, Monaco, "Andale Mono", "Ubuntu Mono",
+    monospace;
+  font-family: var(--font-family-mono);
+}
+
+/* Use Prism colors for inline code. */
+
+code:not([class*="language-"]) {
+  white-space: nowrap;
+  color: #000;
+  background-color: #f5f2f0;
+  text-shadow: 0 1px #fff;
+  padding: 0 0.125em;
+}
+
+blockquote {
+  font-family: Menlo, Consolas, Monaco, "Andale Mono", "Ubuntu Mono",
+    monospace;
+  font-family: var(--font-family-mono);
+  font-size: 0.9em;
+}
+
+table {
+  font-size: 1em;
+  border-collapse: collapse;
+}
+
+th {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+    Oxygen, Ubuntu, Cantarell, "Open Sans", "Helvetica Neue", sans-serif;
+  font-family: var(--font-family-sans);
+}
+
+td {
+  border-top: 1px solid #777;
+  border-top: 1px solid var(--color-grey);
+  padding: 0.5em 0;
+}
+
+nav {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+    Oxygen, Ubuntu, Cantarell, "Open Sans", "Helvetica Neue", sans-serif;
+  font-family: var(--font-family-sans);
+}
+
+a {
+  text-decoration: none;
+  color: #0645ad;
+  color: var(--color-link);
+  font-weight: 700;
+}
+
+a:hover,
+a:active,
+a:focus {
+  text-decoration: underline;
+  color: #0645ad;
+  color: var(--color-link);
+}
+
+a[aria-current="true"] {
+  box-shadow: 0 4px 4px -4px #0645ad;
+  box-shadow: 0 4px 4px -4px var(--color-link);
+}
+
+li::marker {
+  font-family: Menlo, Consolas, Monaco, "Andale Mono", "Ubuntu Mono",
+    monospace;
+  font-family: var(--font-family-mono);
+  font-size: 14px;
+  font-size: var(--font-size-mono);
+}
+
+.skip-nav {
+  border: 0;
+  clip: rect(0 0 0 0);
+  height: 1px;
+  width: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  position: absolute;
+}
+
+.skip-nav:focus {
+  padding: 1rem;
+  position: fixed;
+  top: 10px;
+  left: 10px;
+  background: #fff;
+  z-index: 1;
+  width: auto;
+  height: auto;
+  clip: auto;
+}
+
+.font-size-small {
+  font-size: 0.8em;
+}
+
+.font-monospace {
+  font-family: Menlo, Consolas, Monaco, "Andale Mono", "Ubuntu Mono",
+    monospace;
+  font-family: var(--font-family-mono);
+  font-size: 14px;
+  font-size: var(--font-size-mono);
+}
+
+.site-header__wrapper {
+  margin-top: 1em;
+}
+
+.site-header__title {
+  margin-top: 0;
+  margin-bottom: 0;
+  font-size: 2em;
+  text-align: center;
+  font-family: Georgia, "Times New Roman", serif;
+  font-family: var(--font-family-serif);
+}
+
+.site-header__title a {
+  color: #111;
+  color: var(--color-text);
+  font-weight: 400;
+}
+
+.site-header__subtitle {
+  margin: 1em auto;
+  text-align: center;
+  font-family: Georgia, "Times New Roman", serif;
+  font-family: var(--font-family-serif);
+  font-size: 0.8em;
+}
+
+.site-header__nav-list {
+  columns: 2;
+  padding: 0;
+}
+
+.site-header__nav li {
+  margin-left: 1.5em;
+  margin-bottom: 0.5em;
+}
+
+.site-header__nav a {
+  font-weight: 400;
+}
+
+.table-of-contents {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+    Oxygen, Ubuntu, Cantarell, "Open Sans", "Helvetica Neue", sans-serif;
+  font-family: var(--font-family-sans);
+}
+
+.table-of-contents li {
+  margin-bottom: 0.5em;
+  margin-top: 0.5em;
+}
+
+.table-of-contents a {
+  font-weight: 400;
+}
+
+.next__header {
+  border: none;
+  margin-top: 1em;
+  margin-bottom: 0.5em;
+}
+
+.next__url {
+  font-size: 1.25em;
+  font-weight: 400;
+}
+
+.playground__textarea {
+  max-width: 100%;
+}
+
+.playground__button {
+  font-size: 1.2em;
+  display: block;
+  margin: auto;
+}
+
+.playground__is-dirty {
+  font-size: 0.8em;
+  vertical-align: super;
+}
+
+.footer {
+  margin-top: 2em;
+  border-top: 1px solid #777;
+  border-top: 1px solid var(--color-grey);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+    Oxygen, Ubuntu, Cantarell, "Open Sans", "Helvetica Neue", sans-serif;
+  font-family: var(--font-family-sans);
+  font-size: 0.8em;
+}
+
+.footer__license a {
+  font-weight: 400;
+}
+
+@media screen and (min-width: 700px) {
+  td:first-child {
+    min-width: 36.6%;
+  }
+
+  .site-header__wrapper,
+  .footer,
+  .main {
+    width: 700px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  .site-header__wrapper ul {
+    justify-content: center;
+  }
+
+  .site-header__subtitle {
+    font-size: 0.8em;
+    width: 100%;
+  }
+
+  .site-header__nav-list {
+    columns: 3;
+  }
+}
