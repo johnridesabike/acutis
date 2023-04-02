@@ -15,3 +15,9 @@
     %{dep:js/acutis_js.bc.js}
     --files
     %{dep:eleventy.js}))))
+
+; Our docs folder contains symlinks to our Dune build folder, but otherwise uses
+; a completely different build system. It's easier to just manage it separately.
+; We need to exclude it so as not to confuse Dune.
+
+(dirs :standard \ docs)

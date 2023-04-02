@@ -6,11 +6,11 @@
   file, You can obtain one at http://mozilla.org/MPL/2.0/.
 */
 
+const path = require("path");
 const syntaxHighlight = require("@11ty/eleventy-plugin-syntaxhighlight");
-const MarkdownIt = require("markdown-it");
 const markdownItAnchor = require("markdown-it-anchor");
 const markdownItToc = require("markdown-it-table-of-contents");
-const acutisEleventy = require("../_build/default/eleventy");
+const acutisEleventy = require("acutis-lang/eleventy");
 const acutisComponents = require("./_includes/eleventyComponents");
 const { pathPrefix } = require("./_data/site");
 
@@ -64,25 +64,27 @@ function acutisSyntax(Prism) {
   );
 }
 
+const acutisPath = require.resolve("acutis-lang");
+const acutisDirPath = path.dirname(require.resolve("acutis-lang/package.json"));
+
 module.exports = (eleventyConfig) => {
   eleventyConfig.addPlugin(syntaxHighlight, {
     init: ({ Prism }) => acutisSyntax(Prism),
   });
   eleventyConfig.addPlugin(acutisEleventy, { components: acutisComponents });
   eleventyConfig.addPassthroughCopy("playground.js");
-  eleventyConfig.addPassthroughCopy({ "../_build/default/_doc/_html": "api" });
   eleventyConfig.addPassthroughCopy({
-    "../_build/default/js/acutis_js.bc.js": "acutis.js",
+    [path.join(acutisDirPath, "_doc", "_html")]: "api",
   });
+  eleventyConfig.addPassthroughCopy({ [acutisPath]: "acutis.js" });
   eleventyConfig.addPassthroughCopy("icon.svg");
-  eleventyConfig.addPassthroughCopy("favicon.ico");
   eleventyConfig.addPassthroughCopy(".nojekyll");
-  eleventyConfig.setLibrary(
-    "md",
-    MarkdownIt({
-      html: true,
-      typographer: true,
-    })
+  eleventyConfig.amendLibrary("md", (mdLib) =>
+    mdLib
+      .set({
+        html: true,
+        typographer: true,
+      })
       .use(markdownItAnchor)
       .use(markdownItToc, {
         containerHeaderHtml: `<details open><summary class="toc-container-header">Contents</summary>`,
@@ -91,6 +93,7 @@ module.exports = (eleventyConfig) => {
         includeLevel: [1, 2, 3],
       })
   );
+  eleventyConfig.addWatchTarget("style.css");
   return {
     markdownTemplateEngine: false,
     pathPrefix,
