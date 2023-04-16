@@ -1,0 +1,87 @@
+Formatters
+----------
+
+%i    100000000
+%,i   100,000,000
+%f    1234.567890
+%2f   1234.57
+%e    1.234568e+03
+%.2e  1.23e+03
+%g    1.23457e+3
+%.2g  1.2e+03
+%b    true
+%b    false
+
+Escaping
+--------
+
+Escaped     &amp;&quot;&apos;&gt;&lt;&#x2F;&#x60;&#x3D;
+Not escaped &"'></`=
+
+Matching
+--------
+
+8
+yes
+a
+1.500000 snd true
+Another tag!
+
+
+Mapping
+-------
+
+a is a
+b is null.
+-5
+-4
+-3
+-2
+-1
+0
+1
+2
+3
+4
+5
+0 : -5
+1 : -4
+2 : -3
+3 : -2
+4 : -1
+5 : 0
+6 : 1
+7 : 2
+8 : 3
+9 : 4
+10 : 5
+1 1 1 2 2 2 3 3 3 
+
+Level 1 null
+Level 3 true
+Level 3 false
+Level 1 null
+
+
+Constructing async blocks
+-------------------------
+
+ Nested block  Another nested block
+Component
+---------
+
+Children prop
+123
+
+Complicated pattern matching
+----------------------------
+
+ 2 3
+ Pass
+ 40
+String encoding
+---------------
+
+😇👨‍💻😇
+\" \ \ \"
+

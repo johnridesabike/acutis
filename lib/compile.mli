@@ -85,3 +85,15 @@ end
 val make : fname:string -> 'a Components.t -> Lexing.lexbuf -> 'a t
 val from_string : fname:string -> 'a Components.t -> string -> 'a t
 val from_channel : fname:string -> 'a Components.t -> in_channel -> 'a t
+
+type t2 = {
+  types_nolink : Typescheme.t Map.String.t;
+  nodes_nolink : string nodes;
+  name_nolink : string;
+  components_nolink : (string nodes, string) Typechecker.source Map.String.t;
+}
+(** An experimental type that doesn't link the trees. If this merges, then it
+    will be made more ergonomic. *)
+
+val make_nolink : fname:string -> string Components.t -> Lexing.lexbuf -> t2
+val from_string_nolink : fname:string -> string Components.t -> string -> t2

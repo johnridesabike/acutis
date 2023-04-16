@@ -59,6 +59,8 @@ module Exit = struct
   let get = Array.get
   let map = Array.map
   let unsafe_key i = i
+  let key_to_int i = i
+  let to_seqi = Array.to_seqi
 end
 
 type leaf = { names : int Map.String.t; exit : Exit.key }

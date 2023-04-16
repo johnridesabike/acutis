@@ -242,6 +242,8 @@ module Exit : sig
   val map : ('a -> 'b) -> 'a t -> 'b t
   val unsafe_key : int -> key
   val pp_key : Format.formatter -> key -> unit
+  val key_to_int : key -> int
+  val to_seqi : 'a t -> (key * 'a) Seq.t
 end
 
 type leaf = { names : int Map.String.t; exit : Exit.key }

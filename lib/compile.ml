@@ -219,3 +219,24 @@ let from_string ~fname components src =
 
 let from_channel ~fname components src =
   make ~fname components (Lexing.from_channel src)
+
+type t2 = {
+  types_nolink : Typescheme.t Map.String.t;
+  nodes_nolink : string nodes;
+  name_nolink : string;
+  components_nolink : (string nodes, string) Typechecker.source Map.String.t;
+}
+
+let make_nolink ~fname components src =
+  let nodes = parse ~fname src in
+  let ast = Typechecker.make ~root:fname components.Components.typed nodes in
+  let nodes = make_nodes ast in
+  {
+    types_nolink = ast.types;
+    nodes_nolink = nodes;
+    name_nolink = fname;
+    components_nolink = components.optimized;
+  }
+
+let from_string_nolink ~fname components src =
+  make_nolink ~fname components (Lexing.from_string src)
