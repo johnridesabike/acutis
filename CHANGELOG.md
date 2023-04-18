@@ -2,6 +2,10 @@
 
 Most changes are breaking changes.
 
+## Unreleased
+
+- Fix false positive "unused binding" error.
+
 ## 0.21.0
 
 - Add `.` record access syntax: `{{ book.title }}`.
