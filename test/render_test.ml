@@ -234,7 +234,17 @@ let tagged_unions () =
     /map ~%}|}
   in
   check "Tagged unions work" "success success success success success success "
-    (render src props)
+    (render src props);
+  let props = {|{"a": {"tag": "unexpected", "a": "a"}}|} in
+  let src =
+    {|
+    {%~ match a
+        with {@tag: "something", x}
+        with {@tag: "else", x} %} fail {{ x }}
+    {%  with _ ~%} success
+    {%~ /match ~%}|}
+  in
+  check "Decoding open tagged unions works" "success" (render src props)
 
 let constructing_values () =
   let src =

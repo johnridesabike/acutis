@@ -103,26 +103,30 @@ and record path tys = function
   | `Assoc l -> Data.dict (record_aux path !tys l)
   | j -> decode_error (Ty.internal_record tys) path j
 
-and union path ty key Ty.Variant.{ cases; extra; _ } = function
-  | `Assoc l as j ->
-      let tag, tys =
-        try
-          let tag = List.assoc key l in
-          match (tag, cases, extra) with
-          | `Bool false, VInt map, Bool ->
-              let tag = 0 in
-              (Data.bool tag, Map.Int.find tag map)
-          | `Bool true, VInt map, Bool ->
-              let tag = 1 in
-              (Data.bool tag, Map.Int.find tag map)
-          | `Int tag, VInt map, Not_bool -> (Data.int tag, Map.Int.find tag map)
-          | `String tag, VString map, Not_bool ->
-              (Data.string tag, Map.String.find tag map)
-          | _ -> raise Not_found
-        with Not_found -> decode_error ty path j
+and union path ty key Ty.Variant.{ cases; extra; row } = function
+  | `Assoc l as j -> (
+      let tag =
+        try List.assoc key l with Not_found -> decode_error ty path j
       in
-      let r = record_aux path !tys l in
-      Data.dict (Map.String.add key tag r)
+      let tag, tys =
+        match (tag, cases, extra) with
+        | `Bool false, VInt map, Bool ->
+            let tag = 0 in
+            (Data.bool tag, Map.Int.find_opt tag map)
+        | `Bool true, VInt map, Bool ->
+            let tag = 1 in
+            (Data.bool tag, Map.Int.find_opt tag map)
+        | `Int tag, VInt map, Not_bool ->
+            (Data.int tag, Map.Int.find_opt tag map)
+        | `String tag, VString map, _ ->
+            (Data.string tag, Map.String.find_opt tag map)
+        | _ -> decode_error ty path j
+      in
+      match (tys, row) with
+      | Some tys, (`Open | `Closed) ->
+          record_aux path !tys l |> Map.String.add key tag |> Data.dict
+      | None, `Open -> Map.String.singleton key tag |> Data.dict
+      | None, `Closed -> decode_error ty path j)
   | j -> decode_error ty path j
 
 and make path ty j =

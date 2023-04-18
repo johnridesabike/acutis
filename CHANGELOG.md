@@ -5,6 +5,7 @@ Most changes are breaking changes.
 ## Unreleased
 
 - Fix false positive "unused binding" error.
+- Fix bug in decoding unknown tags in open tagged unions.
 
 ## 0.21.0
 
