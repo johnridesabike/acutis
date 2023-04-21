@@ -13,7 +13,7 @@
 
 (rule ; Execute the compiled JS with some data.
  (target tojs_main_run.output)
- (deps tojs_main_test.mjs)
+ (deps tojs_main_test.mjs fixture_components.mjs)
  (action
   (with-stdout-to
    %{target}

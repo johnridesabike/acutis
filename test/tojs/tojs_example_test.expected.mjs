@@ -111,30 +111,30 @@ let error_decode_bad_union_key = "This object is missing a field.";
 let error_pattern_failure =
   "This pattern-matching failed to find a path. This probably means there's a problem with the compiler.";
 
-export default async function main(input) {
+export default async function main(input1) {
   let data = new Map();
-  if ("blogPosts" in input) {
-    if (input.blogPosts instanceof Array) {
+  if ("blogPosts" in input1) {
+    let input2 = input1.blogPosts;
+    if (input2 instanceof Array) {
       let dst_base1 = new Array(2);
       let dst1 = dst_base1;
-      for (let input_hd1 of input.blogPosts) {
+      for (let input_hd1 of input2) {
         let dst_new1 = new Array(2);
         let record1 = new Map();
         dst_new1[0] = record1;
         if ("author" in input_hd1) {
+          let input3 = input_hd1.author;
           let record2 = new Map();
           record1.set("author", record2);
-          if ("name" in input_hd1.author) {
-            if (
-              input_hd1.author.name === null ||
-              input_hd1.author.name === undefined
-            ) {
+          if ("name" in input3) {
+            let input4 = input3.name;
+            if (input4 === null || input4 === undefined) {
               record2.set("name", null);
             } else {
               let nullable1 = new Array(1);
               record2.set("name", nullable1);
-              if (typeof input_hd1.author.name === "string") {
-                nullable1[0] = input_hd1.author.name;
+              if (typeof input4 === "string") {
+                nullable1[0] = input4;
               } else {
                 throw new Error(error_decode_str);
               }
@@ -146,8 +146,9 @@ export default async function main(input) {
           throw new Error(error_decode_missing_field);
         }
         if ("content" in input_hd1) {
-          if (typeof input_hd1.content === "string") {
-            record1.set("content", input_hd1.content);
+          let input5 = input_hd1.content;
+          if (typeof input5 === "string") {
+            record1.set("content", input5);
           } else {
             throw new Error(error_decode_str);
           }
@@ -155,8 +156,9 @@ export default async function main(input) {
           throw new Error(error_decode_missing_field);
         }
         if ("date" in input_hd1) {
-          if (typeof input_hd1.date === "string") {
-            record1.set("date", input_hd1.date);
+          let input6 = input_hd1.date;
+          if (typeof input6 === "string") {
+            record1.set("date", input6);
           } else {
             throw new Error(error_decode_str);
           }
@@ -164,25 +166,28 @@ export default async function main(input) {
           throw new Error(error_decode_missing_field);
         }
         if ("image" in input_hd1) {
-          if (input_hd1.image === null || input_hd1.image === undefined) {
+          let input7 = input_hd1.image;
+          if (input7 === null || input7 === undefined) {
             record1.set("image", null);
           } else {
             let nullable2 = new Array(1);
             record1.set("image", nullable2);
             let record3 = new Map();
             nullable2[0] = record3;
-            if ("alt" in input_hd1.image) {
-              if (typeof input_hd1.image.alt === "string") {
-                record3.set("alt", input_hd1.image.alt);
+            if ("alt" in input7) {
+              let input8 = input7.alt;
+              if (typeof input8 === "string") {
+                record3.set("alt", input8);
               } else {
                 throw new Error(error_decode_str);
               }
             } else {
               throw new Error(error_decode_missing_field);
             }
-            if ("src" in input_hd1.image) {
-              if (typeof input_hd1.image.src === "string") {
-                record3.set("src", input_hd1.image.src);
+            if ("src" in input7) {
+              let input9 = input7.src;
+              if (typeof input9 === "string") {
+                record3.set("src", input9);
               } else {
                 throw new Error(error_decode_str);
               }
@@ -194,8 +199,9 @@ export default async function main(input) {
           record1.set("image", null);
         }
         if ("title" in input_hd1) {
-          if (typeof input_hd1.title === "string") {
-            record1.set("title", input_hd1.title);
+          let input10 = input_hd1.title;
+          if (typeof input10 === "string") {
+            record1.set("title", input10);
           } else {
             throw new Error(error_decode_str);
           }
@@ -213,9 +219,10 @@ export default async function main(input) {
   } else {
     throw new Error(error_decode_missing_field);
   }
-  if ("siteTitle" in input) {
-    if (typeof input.siteTitle === "string") {
-      data.set("siteTitle", input.siteTitle);
+  if ("siteTitle" in input1) {
+    let input11 = input1.siteTitle;
+    if (typeof input11 === "string") {
+      data.set("siteTitle", input11);
     } else {
       throw new Error(error_decode_str);
     }

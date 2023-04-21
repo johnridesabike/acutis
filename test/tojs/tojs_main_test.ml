@@ -13,6 +13,43 @@ let () =
 {% map list with i ~%} {{ %i i }} {%~ /map ~%}
 |}
   in
+  let external_component =
+    Compile.(
+      Components.from_fun ~name:"Stringify"
+        (interface_from_string ~fname:"foo"
+           "record = {int_enum: @8 | @40, string_enum: @\"yes\" | @\"no\"}\n\
+            tagged_record_bool =\n\
+           \    {@tag: false, a: string}\n\
+           \  | {@tag: true, b: int}\n\
+            null_string_dict = <?string>\n\
+            int_list = [int]\n\
+            tagged_record_int =\n\
+           \    {@tag: 0}\n\
+           \  | {@tag: 1, tuple: (float, string, false | true)}\n\
+            tagged_record_string =\n\
+           \    {@tag: \"a\", record_list: [{name: string, job: string}]}\n\
+           \  | {@tag: \"b\", open_enum: @0 | @1 | ...}\n\
+            tagged_record_open =\n\
+           \    {@tag: 100, a: int}\n\
+           \  | {@tag: 200, b: string}\n\
+           \  | {@tag: 300, c: float}\n\
+           \  | ...\n\
+            unknown = _\n\
+            nested_list = [[[int]]]\n\
+            nested_nullable_list = [??false | true]\n")
+        {
+          module_path = "./fixture_components.mjs";
+          function_path = "stringify";
+        })
+  in
+  let another_component_same_file =
+    Compile.(
+      Components.from_fun ~name:"Another" Map.String.empty
+        {
+          module_path = "./fixture_components.mjs";
+          function_path = "another_function";
+        })
+  in
   let src =
     {|
 {%~ interface
@@ -158,8 +195,26 @@ String encoding
 
 😇👨‍💻😇
 \" \ \ \"
+
+External JavaScript template component: stringify arbitrary data
+
+{% Stringify
+  record
+  tagged_record_bool
+  null_string_dict
+  int_list
+  tagged_record_int
+  tagged_record_string
+  tagged_record_open
+  unknown
+  nested_list
+  nested_nullable_list
+/ %}
 |}
   in
   ToJs.pp Format.std_formatter
     Compile.(
-      from_string_nolink ~fname:"<test>" (Components.make [ component ]) src)
+      from_string_nolink ~fname:"<test>"
+        (Components.make
+           [ component; external_component; another_component_same_file ])
+        src)

@@ -14,6 +14,8 @@ module D = Data
 module M = Matching
 module Ty = Typescheme
 
+type namespaced_jsfun = { namespace : string; function_path : string }
+
 module Id : sig
   (** This module controls variable IDs to keep them consistent across the
       program. *)
@@ -25,7 +27,6 @@ module Id : sig
   val error : string -> t
   val arg : int -> t
   val resolved : int -> t
-  val input : t
   val index : t
   val exit : t
   val result : t
@@ -38,6 +39,7 @@ module Id : sig
   val runtime_fmt_bool : t
   val runtime_escape : t
   val runtime_main : t
+  val of_jsfun : namespaced_jsfun -> t * string
 
   module Safe : sig
     (** This creates names that are unique for each instance of [t]. It's
@@ -56,6 +58,8 @@ module Id : sig
     val dst_base : t -> id
     val dst : t -> id
     val dst_new : t -> id
+    val input : t -> id
+    val array : t -> id
   end
 
   module Data : sig
@@ -78,7 +82,6 @@ end = struct
   let error name = Printf.sprintf "error_%s" name
   let arg i = Printf.sprintf "arg%i" i
   let resolved i = Printf.sprintf "resolved%i" i
-  let input = "input"
   let index = "index"
   let exit = "exit"
   let result = "result"
@@ -91,6 +94,7 @@ end = struct
   let runtime_fmt_bool = "fmt_bool"
   let runtime_escape = "acutis_escape"
   let runtime_main = "main"
+  let of_jsfun { namespace; function_path } = (namespace, function_path)
 
   module Safe = struct
     type t = (string, int) Hashtbl.t
@@ -117,6 +121,8 @@ end = struct
     let nullable = make "nullable"
     let record = make "record"
     let union = make "union"
+    let input = make "input"
+    let array = make "array"
   end
 
   module Data = struct
@@ -140,6 +146,7 @@ type expr =
   | Prim of keyword
   | Var of Id.t
   | Obj of obj
+  | Empty_obj
   | Not_eq of expr * expr
   | Eq of expr * expr
   | Or of expr * expr
@@ -175,6 +182,7 @@ and statement =
   | Fun of Id.t * Id.t list * statement list
   | Export_default of statement
   | Comment of string
+  | Import of string * string
 
 let pp_comma ppf () = fprintf ppf ",@ "
 
@@ -233,6 +241,7 @@ let rec pp_expr ppf = function
   | Var x -> Id.pp ppf x
   | Prim x -> pp_print_string ppf (keyword_to_string x)
   | Obj x -> pp_obj ppf x
+  | Empty_obj -> pp_print_string ppf "{}"
   | String s -> pp_js_str ppf s
   | Int i -> fprintf ppf "%i" i
   | Float f -> pp_print_float ppf f
@@ -241,7 +250,7 @@ let rec pp_expr ppf = function
   | Tern (cond, i, e) ->
       fprintf ppf "%a@ ? %a@ : %a" pp_expr cond pp_expr i pp_expr e
   | Fun_expr (args, statements) ->
-      fprintf ppf "(async function (%a) {@ @[<hv 0>%a@]@;<1 -2>})"
+      fprintf ppf "(async function (%a) {@ @[<v 0>%a@]@;<1 -2>})"
         (pp_print_list ~pp_sep:pp_comma Id.pp)
         args pp_statements statements
   | App (name, [ arg ]) -> fprintf ppf "%a(%a)" pp_expr name pp_expr arg
@@ -325,6 +334,8 @@ and pp_statement ppf = function
   | Export_default statement ->
       fprintf ppf "export default %a" pp_statement statement
   | Comment s -> fprintf ppf "// %s" s
+  | Import (namespace, filename) ->
+      fprintf ppf "import * as %s from %a;" namespace pp_js_str filename
 
 and pp_statements ppf l = pp_print_list ~pp_sep:pp_print_cut pp_statement ppf l
 
@@ -677,67 +688,68 @@ and construct_data_dict data_id dict =
     (fun l i nodes -> Let (Id.resolved i, nodes) :: l)
     [ arg ] (Queue.to_seq async_queue)
 
-let boolean ~set input cases =
+let decode_boolean ~set input cases =
   Switch
     ( input,
       Seq.concat
         (Seq.cons
            (if Set.Int.mem 0 cases then Seq.return (Prim False, [ set (Int 0) ])
            else Seq.empty)
-        @@ Seq.cons
+        @@ Seq.return
              (if Set.Int.mem 1 cases then Seq.return (Prim True, [ set (Int 1) ])
-             else Seq.empty)
-        @@ Seq.empty),
+             else Seq.empty)),
       [ Error Err.decode_bool ] )
 
-let string ~set input =
+let decode_string ~set input =
   If_else
     (Eq (Typeof input, String "string"), [ set input ], [ Error Err.decode_str ])
 
-let string_enum ~set input cases =
+let decode_string_enum ~set input cases =
   Switch
     ( input,
       Set.String.to_seq cases
       |> Seq.map (fun s -> (String s, [ set (String s) ])),
       [ Error Err.decode_str_enum ] )
 
-let int ~set input =
+let decode_int ~set input =
   If_else
     ( Eq (Typeof input, String "number"),
       [ set (To_int input) ],
       [ Error Err.decode_int ] )
 
-let int_enum ~set input cases =
+let decode_int_enum ~set input cases =
   Switch
     ( input,
       Set.Int.to_seq cases |> Seq.map (fun i -> (Int i, [ set (Int i) ])),
       [ Error Err.decode_int_enum ] )
 
-let float ~set input =
+let decode_float ~set input =
   If_else
     ( Eq (Typeof input, String "number"),
       [ set input ],
       [ Error Err.decode_float ] )
 
-let rec typescheme ~set input env ty =
+let rec decode_typescheme ~set input env ty =
   match !ty with
   | Ty.Unknown _ -> [ set input ]
-  | Nullable ty -> [ nullable ~set input env ty ]
-  | Enum { extra = Bool; cases = VInt cases; _ } -> [ boolean ~set input cases ]
-  | String | Enum { row = `Open; cases = VString _; _ } -> [ string ~set input ]
+  | Enum { extra = Bool; cases = VInt cases; _ } ->
+      [ decode_boolean ~set input cases ]
+  | String | Enum { row = `Open; cases = VString _; _ } ->
+      [ decode_string ~set input ]
   | Enum { row = `Closed; cases = VString cases; _ } ->
-      [ string_enum ~set input cases ]
-  | Int | Enum { row = `Open; cases = VInt _; _ } -> [ int ~set input ]
+      [ decode_string_enum ~set input cases ]
+  | Int | Enum { row = `Open; cases = VInt _; _ } -> [ decode_int ~set input ]
   | Enum { row = `Closed; cases = VInt cases; _ } ->
-      [ int_enum ~set input cases ]
-  | Float -> [ float ~set input ]
-  | List ty -> [ list ~set input env ty ]
-  | Tuple tys -> [ tuple ~set input env tys ]
-  | Record tys -> record ~set input env !tys
-  | Dict (ty, _) -> dict ~set input env ty
-  | Union (key, variant) -> union ~set input env key variant
+      [ decode_int_enum ~set input cases ]
+  | Float -> [ decode_float ~set input ]
+  | Nullable ty -> [ decode_nullable ~set input env ty ]
+  | List ty -> [ decode_list ~set input env ty ]
+  | Tuple tys -> [ decode_tuple ~set input env tys ]
+  | Record tys -> decode_record ~set input env !tys
+  | Dict (ty, _) -> decode_dict ~set input env ty
+  | Union (key, variant) -> decode_union ~set input env key variant
 
-and tuple ~set input env tys =
+and decode_tuple ~set input env tys =
   let tuple = Id.Safe.tuple env in
   let length = List.length tys in
   If_else
@@ -749,29 +761,31 @@ and tuple ~set input env tys =
       :: List.concat
            (List.mapi
               (fun index ty ->
-                typescheme
-                  ~set:(fun id -> Set (Field (Var tuple, Int index), id))
-                  (Field (input, Int index))
-                  env ty)
+                let input' = Id.Safe.input env in
+                Let (input', Field (input, Int index))
+                :: decode_typescheme
+                     ~set:(fun id -> Set (Field (Var tuple, Int index), id))
+                     (Var input') env ty)
               tys),
       [ Error Err.decode_array ] )
 
-and dict ~set input env ty =
+and decode_dict ~set input env ty =
   let key = Id.Safe.key env in
   let dict = Id.Safe.dict env in
+  let input' = Id.Safe.input env in
   [
     Let (dict, New (Map, []));
     set (Var dict);
     For_in
       ( key,
         input,
-        typescheme
-          ~set:(fun id -> Expr (meth_set (Var dict) (Var key) id))
-          (Field (input, Var key))
-          env ty );
+        Let (input', Field (input, Var key))
+        :: decode_typescheme
+             ~set:(fun id -> Expr (meth_set (Var dict) (Var key) id))
+             (Var input') env ty );
   ]
 
-and list ~set input env ty =
+and decode_list ~set input env ty =
   let dst_base = Id.Safe.dst_base env in
   let dst = Id.Safe.dst env in
   let dst_new = Id.Safe.dst_new env in
@@ -789,7 +803,9 @@ and list ~set input env ty =
             List.concat
               [
                 [ Let (dst_new, new_cell) ];
-                typescheme ~set:(fun id -> Set (hd, id)) (Var input_hd) env ty;
+                decode_typescheme
+                  ~set:(fun id -> Set (hd, id))
+                  (Var input_hd) env ty;
                 [
                   Set (Field (Var dst, Int 1), Var dst_new);
                   Set (Var dst, Var dst_new);
@@ -800,45 +816,48 @@ and list ~set input env ty =
       ],
       [ Error Err.decode_array ] )
 
-and nullable ~set input env ty =
+and decode_nullable ~set input env ty =
   let nullable = Id.Safe.nullable env in
   let nullable_value = Field (Var nullable, Int 0) in
   If_else
     ( Or (Eq (input, Prim Null), Eq (input, Prim Undefined)),
       [ set (Prim Null) ],
-      List.concat
-        [
-          [ Let (nullable, New (Array, [ Int 1 ])); set (Var nullable) ];
-          typescheme ~set:(fun id -> Set (nullable_value, id)) input env ty;
-        ] )
+      Let (nullable, New (Array, [ Int 1 ]))
+      :: set (Var nullable)
+      :: decode_typescheme
+           ~set:(fun id -> Set (nullable_value, id))
+           input env ty )
 
-and record_aux ~data input env tys =
+and decode_record_aux ~data input env tys =
   Map.String.to_seq tys
   |> Seq.map (fun (k, ty) ->
          let set id = Expr (meth_set data (String k) id) in
+         let input' = Id.Safe.input env in
          If_else
            ( In (k, input),
-             typescheme ~set (Field (input, String k)) env ty,
+             Let (input', Field (input, String k))
+             :: decode_typescheme ~set (Var input') env ty,
              match !ty with
              | Nullable _ | Unknown _ -> [ set (Prim Null) ]
              | _ -> [ Error Err.decode_missing_field ] ))
   |> List.of_seq
 
-and record ~set input env tys =
+and decode_record ~set input env tys =
   let record = Id.Safe.record env in
   Let (record, New (Map, []))
   :: set (Var record)
-  :: record_aux ~data:(Var record) input env tys
+  :: decode_record_aux ~data:(Var record) input env tys
 
-and union ~set input env key variant =
+and decode_union ~set input env key variant =
   let union = Id.Safe.union env in
   let set_data_key x = Expr (meth_set (Var union) (String key) x) in
-  let input_key = Field (input, String key) in
+  let input_key = Id.Safe.input env in
   [
     Let (union, New (Map, []));
     set (Var union);
+    Let (input_key, Field (input, String key));
     Switch
-      ( input_key,
+      ( Var input_key,
         (match variant with
         | { cases = VInt map; extra = Bool; _ } ->
             Map.Int.to_seq map
@@ -847,34 +866,196 @@ and union ~set input env key variant =
                    | 0 ->
                        ( Prim False,
                          set_data_key (Int k)
-                         :: record_aux ~data:(Var union) input env !v )
-                   | _ ->
+                         :: decode_record_aux ~data:(Var union) input env !v )
+                   | k ->
                        ( Prim True,
                          set_data_key (Int k)
-                         :: record_aux ~data:(Var union) input env !v ))
+                         :: decode_record_aux ~data:(Var union) input env !v ))
         | { cases = VInt map; _ } ->
             Map.Int.to_seq map
             |> Seq.map (fun (k, v) ->
                    ( Int k,
                      set_data_key (Int k)
-                     :: record_aux ~data:(Var union) input env !v ))
+                     :: decode_record_aux ~data:(Var union) input env !v ))
         | { cases = VString map; _ } ->
             Map.String.to_seq map
             |> Seq.map (fun (k, v) ->
                    ( String k,
                      set_data_key (String k)
-                     :: record_aux ~data:(Var union) input env !v ))),
+                     :: decode_record_aux ~data:(Var union) input env !v ))),
         match variant with
         | { cases = VInt _; row = `Open; _ } ->
-            typescheme
+            decode_typescheme
               ~set:(fun id -> Expr (meth_set (Var union) (String key) id))
-              input_key env (Ty.int ())
+              (Var input_key) env (Ty.int ())
         | { cases = VString _; row = `Open; _ } ->
-            typescheme
+            decode_typescheme
               ~set:(fun id -> Expr (meth_set (Var union) (String key) id))
-              input_key env (Ty.string ())
+              (Var input_key) env (Ty.string ())
         | { row = `Closed; _ } -> [ Error Err.decode_bad_union_key ] );
   ]
+
+let rec encode_typescheme ~set input env ty =
+  match !ty with
+  | Ty.Unknown _ -> [ set input ]
+  | Enum { extra = Bool; _ } ->
+      [ If_else (input, [ set (Prim True) ], [ set (Prim False) ]) ]
+  | String | Int | Float | Enum _ -> [ set input ]
+  | Nullable ty -> [ encode_nullable ~set input env ty ]
+  | List ty -> encode_list ~set input env ty
+  | Tuple tys -> encode_tuple ~set input env tys
+  | Record tys -> encode_record ~set input env !tys
+  | Dict (ty, _) -> encode_dict ~set input env ty
+  | Union (key, variant) -> encode_union ~set input env key variant
+
+and encode_nullable ~set input env ty =
+  let input' = Id.Safe.input env in
+  If_else
+    ( Eq (input, Prim Null),
+      [ set (Prim Null) ],
+      Let (input', Field (input, Int 0))
+      :: encode_typescheme ~set (Var input') env ty )
+
+and encode_list ~set input env ty =
+  let array = Id.Safe.array env in
+  let input' = Id.Safe.input env in
+  [
+    Let (array, New (Array, []));
+    set (Var array);
+    While
+      ( Not_eq (input, Prim Null),
+        List.concat
+          [
+            [ Let (input', Field (input, Int 0)) ];
+            encode_typescheme
+              ~set:(fun input -> Expr (meth_push array [ input ]))
+              (Var input') env ty;
+            [ Set (input, Field (input, Int 1)) ];
+          ] );
+  ]
+
+and encode_tuple ~set input env tys =
+  let array = Id.Safe.array env in
+  Let (array, New (Array, [ Int (List.length tys) ]))
+  :: set (Var array)
+  :: (List.mapi
+        (fun i ty ->
+          let input' = Id.Safe.input env in
+          Let (input', Field (input, Int i))
+          :: encode_typescheme
+               ~set:(fun input -> Set (Field (Var array, Int i), input))
+               (Var input') env ty)
+        tys
+     |> List.concat)
+
+and encode_record_aux ~data input env tys =
+  Map.String.to_seq tys
+  |> Seq.map (fun (k, ty) ->
+         let set id = Set (Field (data, String k), id) in
+         let input' = Id.Safe.input env in
+         Let (input', meth_get input (String k))
+         :: encode_typescheme ~set (Var input') env ty)
+  |> List.of_seq |> List.concat
+
+and encode_record ~set input env tys =
+  let record = Id.Safe.record env in
+  Let (record, Empty_obj)
+  :: set (Var record)
+  :: encode_record_aux ~data:(Var record) input env tys
+
+and encode_dict ~set input env ty =
+  let dict = Id.Safe.dict env in
+  [
+    Let (dict, Empty_obj);
+    set (Var dict);
+    For_of
+      ( Id.entry,
+        input,
+        encode_typescheme
+          ~set:(fun input -> Set (Field (Var dict, entry_index), input))
+          entry_value env ty );
+  ]
+
+and encode_union ~set input env key variant =
+  let union = Id.Safe.union env in
+  let input_key = Id.Safe.input env in
+  let set_data_key x = Set (Field (Var union, String key), x) in
+  [
+    Let (union, Empty_obj);
+    set (Var union);
+    Let (input_key, meth_get input (String key));
+    Switch
+      ( Var input_key,
+        (match variant with
+        | { cases = VInt map; extra = Bool; _ } ->
+            Map.Int.to_seq map
+            |> Seq.map (fun (k, v) ->
+                   match k with
+                   | 0 ->
+                       ( Int 0,
+                         set_data_key (Prim False)
+                         :: encode_record_aux ~data:(Var union) input env !v )
+                   | k ->
+                       ( Int k,
+                         set_data_key (Prim True)
+                         :: encode_record_aux ~data:(Var union) input env !v ))
+        | { cases = VInt map; _ } ->
+            Map.Int.to_seq map
+            |> Seq.map (fun (k, v) ->
+                   ( Int k,
+                     set_data_key (Int k)
+                     :: encode_record_aux ~data:(Var union) input env !v ))
+        | { cases = VString map; _ } ->
+            Map.String.to_seq map
+            |> Seq.map (fun (k, v) ->
+                   ( String k,
+                     set_data_key (String k)
+                     :: encode_record_aux ~data:(Var union) input env !v ))),
+        [ set_data_key (Var input_key) ] );
+  ]
+
+type components = {
+  imports : string Map.String.t;  (** Maps JS namespaces to module paths. *)
+  components :
+    (string Compile.nodes, namespaced_jsfun) Typechecker.source Map.String.t;
+}
+
+let rec add_unique_namespace i namespace module_path map =
+  let namespace =
+    match i with
+    | 0 -> Printf.sprintf "External_%s" namespace
+    | i -> Printf.sprintf "External_%s%i" namespace i
+  in
+  match Map.String.find_opt namespace map with
+  | None -> (namespace, Map.String.add namespace module_path map)
+  | Some filename when filename = module_path -> (namespace, map)
+  | Some _ -> add_unique_namespace (succ i) namespace module_path map
+
+let make_js_imports components =
+  Map.String.fold
+    (fun k v acc ->
+      match v with
+      | Typechecker.Src (k', nodes) ->
+          {
+            acc with
+            components =
+              Map.String.add k (Typechecker.Src (k', nodes)) acc.components;
+          }
+      | Typechecker.Fun (k', tys, Compile.{ module_path; function_path }) ->
+          let namespace =
+            Filename.basename module_path |> Filename.chop_extension
+          in
+          let namespace, imports =
+            add_unique_namespace 0 namespace module_path acc.imports
+          in
+          let components =
+            Map.String.add k
+              (Typechecker.Fun (k', tys, { namespace; function_path }))
+              acc.components
+          in
+          { imports; components })
+    components
+    { imports = Map.String.empty; components = Map.String.empty }
 
 (** Some of these are copied and modified from JSOO to keep them consistent
   with OCaml's formatting. *)
@@ -980,10 +1161,15 @@ function fmt_bool(b) {
 |}
 
 let pp ppf x =
+  let { imports; components } = make_js_imports x.Compile.components_nolink in
   fprintf ppf "@[<v>%a@,@,@[%a@]@," pp_statement
     (Comment "THIS FILE WAS GENERATED BY ACUTIS.") pp_print_text raw_functions;
   List.map (fun (id, str) -> Let (id, str)) Err.defs
   |> fprintf ppf "%a@,@," pp_statements;
+  Map.String.iter
+    (fun namespace filename ->
+      fprintf ppf "%a@,@," pp_statement (Import (namespace, filename)))
+    imports;
   Map.String.iter
     (fun k -> function
       | Typechecker.Src (_, l) ->
@@ -992,20 +1178,41 @@ let pp ppf x =
                ( Id.component k,
                  [ Id.Data.(to_id initial) ],
                  [ Return (nodes_string Id.Data.initial l) ] ))
-      | Fun _ -> failwith "not implemented")
-    x.Compile.components_nolink;
+      | Fun (_, tys, jsfun) ->
+          let namespace, fun_path = Id.of_jsfun jsfun in
+          let env = Id.Safe.create () in
+          let input = Id.Safe.input env in
+          fprintf ppf "%a@,@," pp_statement
+            (Fun
+               ( Id.component k,
+                 [ input ],
+                 List.concat
+                   [
+                     [ Let (Id.Data.(to_id initial), Empty_obj) ];
+                     encode_record_aux
+                       ~data:(Var Id.Data.(to_id initial))
+                       (Var input) env tys;
+                     [
+                       Return
+                         (App
+                            ( Field (Var namespace, String fun_path),
+                              [ Var Id.Data.(to_id initial) ] ));
+                     ];
+                   ] )))
+    components;
   let env = Id.Safe.create () in
+  let input = Id.Safe.input env in
   pp_statement ppf
     (Export_default
        (Fun
           ( Id.runtime_main,
-            [ Id.input ],
+            [ input ],
             List.concat
               [
                 [ Let (Id.Data.(to_id initial), New (Map, [])) ];
-                record_aux
+                decode_record_aux
                   ~data:(Var Id.Data.(to_id initial))
-                  (Var Id.input) env x.types_nolink;
+                  (Var input) env x.types_nolink;
                 [ Return (nodes_string Id.Data.initial x.nodes_nolink) ];
               ] )));
   fprintf ppf "@,@,@]"

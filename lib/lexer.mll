@@ -20,6 +20,8 @@ type state = mode ref
 
 let make_state () = ref Text
 
+let make_state_interface () = ref Expr
+
 (* If these don't parse correctly (e.g. if a number exceeds the max_int) then
   just return a syntax error. *)
 let int_of_string s = try int_of_string s with Failure _ -> raise Error
@@ -138,7 +140,7 @@ and expr state = parse
   | '.'             { DOT }
   | "..."           { ELLIPSIS }
   | '%'             { state := Format !state; PERCENT }
-  | eof             { raise Error }
+  | eof             { EOF }
   | _               { raise Error }
 
 and echo_format prev_state state = parse

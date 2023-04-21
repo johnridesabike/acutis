@@ -18,4 +18,5 @@ type state
     addition to the regular [lexbuf] state. *)
 
 val make_state : unit -> state
+val make_state_interface : unit -> state
 val acutis : state -> Lexing.lexbuf -> Parser.token

@@ -16,6 +16,14 @@ let parse ~fname lexbuf =
   | Lexer.Error -> Error.lex_error lexbuf
   | Parser.Error i -> Error.parse_error i lexbuf
 
+let parse_interface ~fname lexbuf =
+  let state = Lexer.make_state_interface () in
+  lexbuf.Lexing.lex_curr_p <-
+    { lexbuf.Lexing.lex_curr_p with pos_fname = fname };
+  try Parser.interface_standalone (Lexer.acutis state) lexbuf with
+  | Lexer.Error -> Error.lex_error lexbuf
+  | Parser.Error i -> Error.parse_error i lexbuf
+
 module StringExtra = struct
   (* The [ltrim] and [rtrim] functions are vendored from the Containers library.
      https://github.com/c-cube/ocaml-containers/blob/70703b351235b563f060ef494461e678e896da49/src/core/CCString.ml
@@ -220,11 +228,17 @@ let from_string ~fname components src =
 let from_channel ~fname components src =
   make ~fname components (Lexing.from_channel src)
 
+let interface_from_string ~fname src =
+  parse_interface ~fname (Lexing.from_string src)
+  |> Typechecker.make_interface_standalone
+
+type jsfun = { module_path : string; function_path : string }
+
 type t2 = {
   types_nolink : Typescheme.t Map.String.t;
   nodes_nolink : string nodes;
   name_nolink : string;
-  components_nolink : (string nodes, string) Typechecker.source Map.String.t;
+  components_nolink : (string nodes, jsfun) Typechecker.source Map.String.t;
 }
 
 let make_nolink ~fname components src =
