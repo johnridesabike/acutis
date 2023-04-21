@@ -19,7 +19,7 @@ let result = await main({
     tag: 999,
     b: "200",
   },
-  unknown: new Date(),
+  unknown: new Date("2023-04-09T00:00:00.000Z"),
   nested_list: [
     [
       [1, 1, 1],
