@@ -229,7 +229,6 @@ export default async function main(input1) {
     throw new Error(error_decode_missing_field);
   }
   return (await Promise.all([
-    "",
     "<h1> Blog posts for ",
     acutis_escape(data.get("siteTitle")),
     " </h1>",
@@ -263,7 +262,7 @@ export default async function main(input1) {
                 }
                 switch (exit) {
                   case 0:
-                    return (await Promise.all([""])).join("");
+                    return (await Promise.all([])).join("");
                   case 1:
                     return (await Promise.all([
                       "<img src=\"",

@@ -291,8 +291,6 @@ async function template_Another(input1) {
 
 async function template_Component(data) {
   return (await Promise.all([
-    "",
-    "",
     acutis_escape(data.get("optional") !== null
       ? fmt_int(data.get("optional"))
       : data.get("children")),
@@ -308,7 +306,7 @@ async function template_Component(data) {
         data1.set("i", arg0[0]);
         switch (exit) {
           case 0:
-            result.push("", acutis_escape(fmt_int(data1.get("i"))), "");
+            result.push(acutis_escape(fmt_int(data1.get("i"))));
             break;
           default:
             throw new Error(error_pattern_failure);
@@ -318,7 +316,6 @@ async function template_Component(data) {
       }
       return (await Promise.all(result)).join("");
     })(),
-    "",
   ])).join("");
 }
 
@@ -774,7 +771,6 @@ export default async function main(input1) {
     data.set("unknown", null);
   }
   return (await Promise.all([
-    "",
     "Formatters\n----------\n\n%i    ",
     acutis_escape(fmt_int(data.get("big_int"))),
     "\n%,i   ",
@@ -821,7 +817,6 @@ export default async function main(input1) {
           throw new Error(error_pattern_failure);
       }
     })(),
-    "",
     (async function () {
       let data1 = new Map(data);
       let exit = null;
@@ -843,7 +838,6 @@ export default async function main(input1) {
           throw new Error(error_pattern_failure);
       }
     })(),
-    "",
     (async function () {
       let data1 = new Map(data);
       let exit = null;
@@ -861,13 +855,11 @@ export default async function main(input1) {
       switch (exit) {
         case 0:
           return (await Promise.all([
-            "",
             acutis_escape(data1.get("a")),
             "\n",
           ])).join("");
         case 1:
           return (await Promise.all([
-            "",
             acutis_escape(fmt_int(data1.get("b"))),
             "\n",
           ])).join("");
@@ -875,7 +867,6 @@ export default async function main(input1) {
           throw new Error(error_pattern_failure);
       }
     })(),
-    "",
     (async function () {
       let data1 = new Map(data);
       let exit = null;
@@ -896,7 +887,6 @@ export default async function main(input1) {
           return (await Promise.all(["Fail\n"])).join("");
         case 1:
           return (await Promise.all([
-            "",
             acutis_escape(fmt_float(6, data1.get("a"))),
             " ",
             acutis_escape(data1.get("b")),
@@ -908,7 +898,6 @@ export default async function main(input1) {
           throw new Error(error_pattern_failure);
       }
     })(),
-    "",
     (async function () {
       let data1 = new Map(data);
       let exit = null;
@@ -952,11 +941,10 @@ export default async function main(input1) {
         }
         switch (exit) {
           case 0:
-            result.push("", acutis_escape(data1.get("key")), " is null.\n");
+            result.push(acutis_escape(data1.get("key")), " is null.\n");
             break;
           case 1:
             result.push(
-              "",
               acutis_escape(data1.get("key")),
               " is ",
               acutis_escape(data1.get("str")),
@@ -969,7 +957,6 @@ export default async function main(input1) {
       }
       return (await Promise.all(result)).join("");
     })(),
-    "",
     (async function () {
       let result = [];
       let index = 0;
@@ -981,7 +968,7 @@ export default async function main(input1) {
         data1.set("i", arg0[0]);
         switch (exit) {
           case 0:
-            result.push("", acutis_escape(fmt_int(data1.get("i"))), "\n");
+            result.push(acutis_escape(fmt_int(data1.get("i"))), "\n");
             break;
           default:
             throw new Error(error_pattern_failure);
@@ -991,7 +978,6 @@ export default async function main(input1) {
       }
       return (await Promise.all(result)).join("");
     })(),
-    "",
     (async function () {
       let result = [];
       let index = 0;
@@ -1005,7 +991,6 @@ export default async function main(input1) {
         switch (exit) {
           case 0:
             result.push(
-              "",
               acutis_escape(fmt_int(data1.get("key"))),
               " : ",
               acutis_escape(fmt_int(data1.get("i"))),
@@ -1020,7 +1005,6 @@ export default async function main(input1) {
       }
       return (await Promise.all(result)).join("");
     })(),
-    "",
     (async function () {
       let result = [];
       let index = 0;
@@ -1032,59 +1016,50 @@ export default async function main(input1) {
         data1.set("l", arg0[0]);
         switch (exit) {
           case 0:
-            result.push(
-              "",
-              (async function () {
-                let result = [];
-                let index = 0;
-                let arg0 = data1.get("l");
-                while (arg0 !== null) {
-                  let data2 = new Map(data1);
-                  let exit = null;
-                  exit = 0;
-                  data2.set("l2", arg0[0]);
-                  switch (exit) {
-                    case 0:
-                      result.push(
-                        "",
-                        (async function () {
-                          let result = [];
-                          let index = 0;
-                          let arg0 = data2.get("l2");
-                          while (arg0 !== null) {
-                            let data3 = new Map(data2);
-                            let exit = null;
-                            exit = 0;
-                            data3.set("i", arg0[0]);
-                            switch (exit) {
-                              case 0:
-                                result.push(
-                                  "",
-                                  acutis_escape(fmt_int(data3.get("i"))),
-                                  " "
-                                );
-                                break;
-                              default:
-                                throw new Error(error_pattern_failure);
-                            }
-                            index++;
-                            arg0 = arg0[1];
-                          }
-                          return (await Promise.all(result)).join("");
-                        })(),
-                        ""
-                      );
-                      break;
-                    default:
-                      throw new Error(error_pattern_failure);
-                  }
-                  index++;
-                  arg0 = arg0[1];
+            result.push((async function () {
+              let result = [];
+              let index = 0;
+              let arg0 = data1.get("l");
+              while (arg0 !== null) {
+                let data2 = new Map(data1);
+                let exit = null;
+                exit = 0;
+                data2.set("l2", arg0[0]);
+                switch (exit) {
+                  case 0:
+                    result.push((async function () {
+                      let result = [];
+                      let index = 0;
+                      let arg0 = data2.get("l2");
+                      while (arg0 !== null) {
+                        let data3 = new Map(data2);
+                        let exit = null;
+                        exit = 0;
+                        data3.set("i", arg0[0]);
+                        switch (exit) {
+                          case 0:
+                            result.push(
+                              acutis_escape(fmt_int(data3.get("i"))),
+                              " "
+                            );
+                            break;
+                          default:
+                            throw new Error(error_pattern_failure);
+                        }
+                        index++;
+                        arg0 = arg0[1];
+                      }
+                      return (await Promise.all(result)).join("");
+                    })());
+                    break;
+                  default:
+                    throw new Error(error_pattern_failure);
                 }
-                return (await Promise.all(result)).join("");
-              })(),
-              ""
-            );
+                index++;
+                arg0 = arg0[1];
+              }
+              return (await Promise.all(result)).join("");
+            })());
             break;
           default:
             throw new Error(error_pattern_failure);
@@ -1149,7 +1124,6 @@ export default async function main(input1) {
       switch (exit) {
         case 0:
           return (await Promise.all([
-            "",
             acutis_escape(data1.get("a")),
             " ",
             acutis_escape(data1.get("b")),
@@ -1258,7 +1232,6 @@ export default async function main(input1) {
           throw new Error(error_pattern_failure);
       }
     })(),
-    "",
     (async function () {
       let data1 = new Map(data);
       let exit = null;
@@ -1316,7 +1289,6 @@ export default async function main(input1) {
           throw new Error(error_pattern_failure);
       }
     })(),
-    "",
     (async function () {
       let data1 = new Map(data);
       let exit = null;
