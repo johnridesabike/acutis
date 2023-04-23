@@ -76,6 +76,8 @@ and 'a eval =
 
 and 'a nodes = 'a node list
 
+let text = function "" -> None | s -> Some (Text s)
+
 let rec make_data = function
   | Typechecker.TConst (x, _) -> Data.const x
   | TVar x -> Data.other (Var x)
@@ -96,23 +98,23 @@ let rec make_data = function
          failed."
 
 and make_nodes l =
-  List.map
+  List.filter_map
     (function
-      | Typechecker.TText (s, No_trim, No_trim) -> Text s
-      | TText (s, Trim, No_trim) -> Text (StringExtra.ltrim s)
-      | TText (s, No_trim, Trim) -> Text (StringExtra.rtrim s)
-      | TText (s, Trim, Trim) -> Text (String.trim s)
+      | Typechecker.TText (s, No_trim, No_trim) -> text s
+      | TText (s, Trim, No_trim) -> text (StringExtra.ltrim s)
+      | TText (s, No_trim, Trim) -> text (StringExtra.rtrim s)
+      | TText (s, Trim, Trim) -> text (String.trim s)
       | TEcho (nullables, fmt, default, esc) ->
-          Echo (nullables, fmt, default, esc)
+          Some (Echo (nullables, fmt, default, esc))
       | TMatch (loc, hd :: tl, tys, cases) ->
           let pats = Array.of_list (hd :: tl) |> Array.map make_data in
-          Match (pats, make_match loc tys cases)
+          Some (Match (pats, make_match loc tys cases))
       | TMap_list (loc, pat, tys, cases) ->
-          Map_list (make_data pat, make_match loc tys cases)
+          Some (Map_list (make_data pat, make_match loc tys cases))
       | TMap_dict (loc, pat, tys, cases) ->
-          Map_dict (make_data pat, make_match loc tys cases)
+          Some (Map_dict (make_data pat, make_match loc tys cases))
       | TComponent (name, props) ->
-          Component (name, Map.String.map make_data props))
+          Some (Component (name, Map.String.map make_data props)))
     l
 
 and make_match loc tys cases =

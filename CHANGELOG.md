@@ -6,6 +6,7 @@ Most changes are breaking changes.
 
 - Fix false positive "unused binding" error.
 - Fix bug in decoding unknown tags in open tagged unions.
+- Optimization: filter empty text nodes from final tree.
 
 ## 0.21.0
 
