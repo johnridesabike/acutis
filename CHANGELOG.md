@@ -2,6 +2,12 @@
 
 Most changes are breaking changes.
 
+## Unreleased
+
+- Fix false positive "unused binding" error.
+- Fix bug in decoding unknown tags in open tagged unions.
+- Optimization: filter empty text nodes from final tree.
+
 ## 0.21.0
 
 - Add `.` record access syntax: `{{ book.title }}`.

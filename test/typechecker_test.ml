@@ -442,7 +442,22 @@ let other_cases () =
                        ]) );
               ] );
         ])
-    (get_types src)
+    (get_types src);
+  let src =
+    {|{%~ match a with {a: 1, x}
+        with {b: 2, x} %} {{ x }}
+    {%  with _ %} {%~ /match ~%}|}
+  in
+  let result =
+    try
+      get_types src |> ignore;
+      "pass"
+    with Acutis.Error.Acutis_error s -> s
+  in
+  Alcotest.check Alcotest.string
+    "Binding a name twice in two 'withs' does not trigger an 'unused binding' \
+     error"
+    result "pass"
 
 let pathologic () =
   let src =

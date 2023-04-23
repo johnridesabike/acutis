@@ -23,12 +23,16 @@
  (name acutis)
  (synopsis "A declarative, type-safe template language")
  (depends
-   (ocaml (>= 4.14))
-   (menhir (= 20220210))
-   (alcotest :with-test)
-   (alcotest-lwt :with-test)
-   (lwt :with-test)
-   (ocamlformat (and (= 0.24.1) :with-test)))
+  (ocaml
+   (>= 4.14))
+  menhir
+  (alcotest :with-test)
+  (alcotest-lwt :with-test)
+  (lwt :with-test)
+  (ocamlformat
+   (and
+    (= 0.24.1)
+    :with-test)))
  (tags
   (template language parser interpreter)))
 
@@ -36,18 +40,22 @@
  (name acutis_json)
  (synopsis "Encode and decode JSON data for Acutis")
  (depends
-   (ocaml (>= 4.14))
-   (acutis (= :version))
-   yojson
-   dune-build-info))
+  (ocaml
+   (>= 4.14))
+  (acutis
+   (= :version))
+  yojson
+  dune-build-info))
 
 (package
  (name acutis_js)
  (synopsis "Encode and decode JavaScript data for Acutis")
  (depends
-   (ocaml (>= 4.14))
-   (acutis (= :version))
-   promise_jsoo
-   js_of_ocaml
-   js_of_ocaml-compiler
-   js_of_ocaml-ppx))
+  (ocaml
+   (>= 4.14))
+  (acutis
+   (= :version))
+  promise_jsoo
+  js_of_ocaml
+  js_of_ocaml-compiler
+  js_of_ocaml-ppx))

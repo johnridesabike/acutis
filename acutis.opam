@@ -12,7 +12,7 @@ bug-reports: "https://github.com/johnridesabike/acutis/issues"
 depends: [
   "dune" {>= "3.3"}
   "ocaml" {>= "4.14"}
-  "menhir" {= "20220210"}
+  "menhir"
   "alcotest" {with-test}
   "alcotest-lwt" {with-test}
   "lwt" {with-test}

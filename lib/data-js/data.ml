@@ -37,7 +37,6 @@ module Table : sig
   type t
 
   val unsafe_of_js : Js.Unsafe.any -> t
-  val find_exn : string -> t -> Js.Unsafe.any
   val find_opt : string -> t -> Js.Unsafe.any option
   val fold : (string -> Js.Unsafe.any -> 'a -> 'a) -> t -> 'a -> 'a
 end = struct
@@ -46,11 +45,6 @@ end = struct
   let unsafe_of_js j = j
   let get : t -> Js.js_string Js.t -> Js.Unsafe.any Js.Optdef.t = Js.Unsafe.get
   let unsafe_get : t -> Js.js_string Js.t -> Js.Unsafe.any = Js.Unsafe.get
-
-  let find_exn k m =
-    let r = get m (Js.string k) in
-    Js.Optdef.get r (fun () -> raise Not_found)
-
   let find_opt k m = get m (Js.string k) |> Js.Optdef.to_option
 
   let fold f m init =
@@ -166,29 +160,34 @@ and record path tys j =
   | Js_object o -> record_aux path !tys o |> Data.dict
   | _ -> decode_error (Ty.internal_record tys) path j
 
-and union path ty key Ty.Variant.{ cases; extra; _ } j =
+and union path ty key Ty.Variant.{ cases; extra; row } j =
   match classify j with
-  | Js_object o ->
-      let tag, tys =
-        try
-          let tag = Table.find_exn key o in
-          match (classify tag, cases, extra) with
-          | Js_bool false, VInt map, Bool ->
-              let tag = 0 in
-              (Data.bool tag, Map.Int.find tag map)
-          | Js_bool true, VInt map, Bool ->
-              let tag = 1 in
-              (Data.bool tag, Map.Int.find tag map)
-          | Js_float tag, VInt map, Not_bool ->
-              let tag = int_of_float tag in
-              (Data.int tag, Map.Int.find tag map)
-          | Js_string tag, VString map, Not_bool ->
-              (Data.string tag, Map.String.find tag map)
-          | _ -> raise Not_found
-        with Not_found -> decode_error ty path j
+  | Js_object o -> (
+      let tag =
+        match Table.find_opt key o with
+        | None -> decode_error ty path j
+        | Some tag -> tag
       in
-      let r = record_aux path !tys o in
-      Data.dict (Map.String.add key tag r)
+      let tag, tys =
+        match (classify tag, cases, extra) with
+        | Js_bool false, VInt map, Bool ->
+            let tag = 0 in
+            (Data.bool tag, Map.Int.find_opt tag map)
+        | Js_bool true, VInt map, Bool ->
+            let tag = 1 in
+            (Data.bool tag, Map.Int.find_opt tag map)
+        | Js_float tag, VInt map, Not_bool ->
+            let tag = int_of_float tag in
+            (Data.int tag, Map.Int.find_opt tag map)
+        | Js_string tag, VString map, Not_bool ->
+            (Data.string tag, Map.String.find_opt tag map)
+        | _ -> decode_error ty path j
+      in
+      match (tys, row) with
+      | Some tys, (`Open | `Closed) ->
+          record_aux path !tys o |> Map.String.add key tag |> Data.dict
+      | None, `Open -> Map.String.singleton key tag |> Data.dict
+      | None, `Closed -> decode_error ty path j)
   | _ -> decode_error ty path j
 
 and make path ty j =
