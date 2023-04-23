@@ -112,44 +112,6 @@ function fmt_bool(b) {
   return b ? "true" : "false";
 }
 
-async function template_Another(input1) {
-  let data = new Object();
-  return External_fixture_components.another_function(data);
-}
-
-async function template_Component(data) {
-  return (await Promise.all([
-    "",
-    "",
-    acutis_escape(data.get("optional") !== null
-      ? fmt_int(data.get("optional"))
-      : data.get("children")),
-    "\n",
-    (async function () {
-      let result = [];
-      let index = 0;
-      let arg0 = data.get("list");
-      while (arg0 !== null) {
-        let data1 = new Map(data);
-        let exit = null;
-        exit = 0;
-        data1.set("i", arg0[0]);
-        switch (exit) {
-          case 0:
-            result.push("", acutis_escape(fmt_int(data1.get("i"))), "");
-            break;
-          default:
-            throw new Error(error_pattern_failure);
-        }
-        index++;
-        arg0 = arg0[1];
-      }
-      return (await Promise.all(result)).join("");
-    })(),
-    "",
-  ])).join("");
-}
-
 async function template_Stringify(input1) {
   let data = new Object();
   let input2 = input1.get("int_list");
@@ -320,6 +282,44 @@ async function template_Stringify(input1) {
   let input25 = input1.get("unknown");
   data.unknown = input25;
   return External_fixture_components.stringify(data);
+}
+
+async function template_Another(input1) {
+  let data = new Object();
+  return External_fixture_components.another_function(data);
+}
+
+async function template_Component(data) {
+  return (await Promise.all([
+    "",
+    "",
+    acutis_escape(data.get("optional") !== null
+      ? fmt_int(data.get("optional"))
+      : data.get("children")),
+    "\n",
+    (async function () {
+      let result = [];
+      let index = 0;
+      let arg0 = data.get("list");
+      while (arg0 !== null) {
+        let data1 = new Map(data);
+        let exit = null;
+        exit = 0;
+        data1.set("i", arg0[0]);
+        switch (exit) {
+          case 0:
+            result.push("", acutis_escape(fmt_int(data1.get("i"))), "");
+            break;
+          default:
+            throw new Error(error_pattern_failure);
+        }
+        index++;
+        arg0 = arg0[1];
+      }
+      return (await Promise.all(result)).join("");
+    })(),
+    "",
+  ])).join("");
 }
 
 export default async function main(input1) {

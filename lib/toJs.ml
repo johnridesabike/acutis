@@ -14,7 +14,7 @@ module D = Data
 module M = Matching
 module Ty = Typescheme
 
-type namespaced_jsfun = { namespace : string; function_path : string }
+type filepath = Filepath of string [@@unboxed]
 
 module Id : sig
   (** This module controls variable IDs to keep them consistent across the
@@ -39,7 +39,6 @@ module Id : sig
   val runtime_fmt_bool : t
   val runtime_escape : t
   val runtime_main : t
-  val of_jsfun : namespaced_jsfun -> t * string
 
   module Safe : sig
     (** This creates names that are unique for each instance of [t]. It's
@@ -73,6 +72,14 @@ module Id : sig
     val to_id : t -> id
   end
 
+  module Map : Stdlib.Map.S with type key = t
+
+  val add_unique_namespace : filepath -> filepath Map.t -> t * filepath Map.t
+  (** Takes a given module path and a map of all existing imported module
+      paths. Returns a JavaScript namespace and an updated map. Guarantees that
+      all import namespaces are unique and that each module is only imported
+      once. *)
+
   val pp : Format.formatter -> t -> unit
 end = struct
   type t = string
@@ -94,7 +101,6 @@ end = struct
   let runtime_fmt_bool = "fmt_bool"
   let runtime_escape = "acutis_escape"
   let runtime_main = "main"
-  let of_jsfun { namespace; function_path } = (namespace, function_path)
 
   module Safe = struct
     type t = (string, int) Hashtbl.t
@@ -132,6 +138,25 @@ end = struct
     let add_scope = succ
     let to_id = function 0 -> "data" | i -> Printf.sprintf "data%i" i
   end
+
+  module Map = Map.String
+
+  let rec add_unique_namespace_aux i namespace (Filepath module_path) map =
+    let namespace =
+      match i with
+      | 0 -> Printf.sprintf "External_%s" namespace
+      | i -> Printf.sprintf "External_%s%i" namespace i
+    in
+    match Map.find_opt namespace map with
+    | None -> (namespace, Map.add namespace (Filepath module_path) map)
+    | Some (Filepath filename) when String.equal filename module_path ->
+        (namespace, map)
+    | Some _ ->
+        add_unique_namespace_aux (succ i) namespace (Filepath module_path) map
+
+  let add_unique_namespace (Filepath module_path) map =
+    let namespace = Filename.basename module_path |> Filename.chop_extension in
+    add_unique_namespace_aux 0 namespace (Filepath module_path) map
 
   let pp = pp_print_string
 end
@@ -181,7 +206,7 @@ and statement =
   | Fun of Id.t * Id.t list * statement list
   | Export_default of statement
   | Comment of string
-  | Import of string * string
+  | Import of Id.t * string
 
 let pp_comma ppf () = fprintf ppf ",@ "
 
@@ -334,7 +359,7 @@ and pp_statement ppf = function
       fprintf ppf "export default %a" pp_statement statement
   | Comment s -> fprintf ppf "/* %s */" s
   | Import (namespace, filename) ->
-      fprintf ppf "import * as %s from %a;" namespace pp_js_str filename
+      fprintf ppf "import * as %a from %a;" Id.pp namespace pp_js_str filename
 
 and pp_statements ppf l = pp_print_list ~pp_sep:pp_print_cut pp_statement ppf l
 
@@ -1013,48 +1038,39 @@ and encode_union ~set input env key variant =
         [ set_data_key (Var input_key) ] );
   ]
 
-type components = {
-  imports : string Map.String.t;  (** Maps JS namespaces to module paths. *)
-  components :
-    (string Compile.nodes, namespaced_jsfun) Typechecker.source Map.String.t;
+type namespaced_jsfun = {
+  name : string;
+  namespace : Id.t;
+  typescheme : Ty.t Map.String.t;
+  function_path : string;
 }
 
-let rec add_unique_namespace i namespace module_path map =
-  let namespace =
-    match i with
-    | 0 -> Printf.sprintf "External_%s" namespace
-    | i -> Printf.sprintf "External_%s%i" namespace i
-  in
-  match Map.String.find_opt namespace map with
-  | None -> (namespace, Map.String.add namespace module_path map)
-  | Some filename when filename = module_path -> (namespace, map)
-  | Some _ -> add_unique_namespace (succ i) namespace module_path map
+type component = { name : string; nodes : string Compile.nodes }
+
+type components = {
+  imports : filepath Id.Map.t;  (** Maps JS namespaces to module paths. *)
+  components_imports : namespaced_jsfun list;
+  components : component list;
+}
 
 let make_js_imports components =
   Map.String.fold
-    (fun k v acc ->
+    (fun _ v acc ->
       match v with
-      | Typechecker.Src (k', nodes) ->
-          {
-            acc with
-            components =
-              Map.String.add k (Typechecker.Src (k', nodes)) acc.components;
-          }
-      | Typechecker.Fun (k', tys, Compile.{ module_path; function_path }) ->
-          let namespace =
-            Filename.basename module_path |> Filename.chop_extension
-          in
+      | Typechecker.Src (name, nodes) ->
+          { acc with components = { name; nodes } :: acc.components }
+      | Typechecker.Fun
+          (name, typescheme, Compile.{ module_path; function_path }) ->
           let namespace, imports =
-            add_unique_namespace 0 namespace module_path acc.imports
+            Id.add_unique_namespace (Filepath module_path) acc.imports
           in
-          let components =
-            Map.String.add k
-              (Typechecker.Fun (k', tys, { namespace; function_path }))
-              acc.components
+          let components_imports =
+            { name; namespace; typescheme; function_path }
+            :: acc.components_imports
           in
-          { imports; components })
+          { acc with imports; components_imports })
     components
-    { imports = Map.String.empty; components = Map.String.empty }
+    { imports = Id.Map.empty; components = []; components_imports = [] }
 
 (** Some of these are copied and modified from JSOO to keep them consistent
   with OCaml's formatting. *)
@@ -1160,45 +1176,47 @@ function fmt_bool(b) {
 |}
 
 let pp ppf x =
-  let { imports; components } = make_js_imports x.Compile.components_nolink in
+  let { imports; components; components_imports } =
+    make_js_imports x.Compile.components_nolink
+  in
   fprintf ppf "@[<v>%a@,@," pp_statement
     (Comment "THIS FILE WAS GENERATED BY ACUTIS.");
-  Map.String.iter
-    (fun namespace filename ->
+  Id.Map.iter
+    (fun namespace (Filepath filename) ->
       fprintf ppf "%a@,@," pp_statement (Import (namespace, filename)))
     imports;
   List.map (fun (id, str) -> Let (id, str)) Err.defs
   |> fprintf ppf "%a@,@," pp_statements;
   fprintf ppf "@[%a@]@," pp_print_text raw_functions;
-  Map.String.iter
-    (fun k -> function
-      | Typechecker.Src (_, l) ->
-          fprintf ppf "%a@,@," pp_statement
-            (Fun
-               ( Id.component k,
-                 [ Id.Data.(to_id initial) ],
-                 [ Return (nodes_string Id.Data.initial l) ] ))
-      | Fun (_, tys, jsfun) ->
-          let namespace, fun_path = Id.of_jsfun jsfun in
-          let env = Id.Safe.create () in
-          let input = Id.Safe.input env in
-          fprintf ppf "%a@,@," pp_statement
-            (Fun
-               ( Id.component k,
-                 [ input ],
-                 List.concat
-                   [
-                     [ Let (Id.Data.(to_id initial), New (Object, [])) ];
-                     encode_record_aux
-                       ~data:(Var Id.Data.(to_id initial))
-                       (Var input) env tys;
-                     [
-                       Return
-                         (App
-                            ( Field (Var namespace, String fun_path),
-                              [ Var Id.Data.(to_id initial) ] ));
-                     ];
-                   ] )))
+  List.iter
+    (fun { name; typescheme; namespace; function_path } ->
+      let env = Id.Safe.create () in
+      let input = Id.Safe.input env in
+      fprintf ppf "%a@,@," pp_statement
+        (Fun
+           ( Id.component name,
+             [ input ],
+             List.concat
+               [
+                 [ Let (Id.Data.(to_id initial), New (Object, [])) ];
+                 encode_record_aux
+                   ~data:(Var Id.Data.(to_id initial))
+                   (Var input) env typescheme;
+                 [
+                   Return
+                     (App
+                        ( Field (Var namespace, String function_path),
+                          [ Var Id.Data.(to_id initial) ] ));
+                 ];
+               ] )))
+    components_imports;
+  List.iter
+    (fun { name; nodes } ->
+      fprintf ppf "%a@,@," pp_statement
+        (Fun
+           ( Id.component name,
+             [ Id.Data.(to_id initial) ],
+             [ Return (nodes_string Id.Data.initial nodes) ] )))
     components;
   let env = Id.Safe.create () in
   let input = Id.Safe.input env in
