@@ -294,7 +294,8 @@ async function template_Component(data) {
     acutis_escape(data.get("optional") !== null
       ? fmt_int(data.get("optional"))
       : data.get("children")),
-    "\n",
+    "\n\
+",
     (async function () {
       let result = [];
       let index = 0;
@@ -771,31 +772,54 @@ export default async function main(input1) {
     data.set("unknown", null);
   }
   return (await Promise.all([
-    "Formatters\n----------\n\n%i    ",
+    "Formatters\n\
+----------\n\
+\n\
+%i    ",
     acutis_escape(fmt_int(data.get("big_int"))),
-    "\n%,i   ",
+    "\n\
+%,i   ",
     acutis_escape(fmt_int_comma(data.get("big_int"))),
-    "\n%f    ",
+    "\n\
+%f    ",
     acutis_escape(fmt_float(6, data.get("big_float"))),
-    "\n%2f   ",
+    "\n\
+%2f   ",
     acutis_escape(fmt_float(2, data.get("big_float"))),
-    "\n%e    ",
+    "\n\
+%e    ",
     acutis_escape(fmt_float_e(6, data.get("big_float"))),
-    "\n%.2e  ",
+    "\n\
+%.2e  ",
     acutis_escape(fmt_float_e(2, data.get("big_float"))),
-    "\n%g    ",
+    "\n\
+%g    ",
     acutis_escape(fmt_float_g(6, data.get("big_float"))),
-    "\n%.2g  ",
+    "\n\
+%.2g  ",
     acutis_escape(fmt_float_g(2, data.get("big_float"))),
-    "\n%b    ",
+    "\n\
+%b    ",
     acutis_escape(fmt_bool(data.get("bool1"))),
-    "\n%b    ",
+    "\n\
+%b    ",
     acutis_escape(fmt_bool(data.get("bool2"))),
-    "\n\nEscaping\n--------\n\nEscaped     ",
+    "\n\
+\n\
+Escaping\n\
+--------\n\
+\n\
+Escaped     ",
     acutis_escape(data.get("dangerous")),
-    "\nNot escaped ",
+    "\n\
+Not escaped ",
     data.get("dangerous"),
-    "\n\nMatching\n--------\n\n",
+    "\n\
+\n\
+Matching\n\
+--------\n\
+\n\
+",
     (async function () {
       let data1 = new Map(data);
       let exit = null;
@@ -810,9 +834,11 @@ export default async function main(input1) {
       }
       switch (exit) {
         case 0:
-          return (await Promise.all(["8\n"])).join("");
+          return (await Promise.all(["8\n\
+"])).join("");
         case 1:
-          return (await Promise.all(["40\n"])).join("");
+          return (await Promise.all(["40\n\
+"])).join("");
         default:
           throw new Error(error_pattern_failure);
       }
@@ -831,9 +857,11 @@ export default async function main(input1) {
       }
       switch (exit) {
         case 0:
-          return (await Promise.all(["yes\n"])).join("");
+          return (await Promise.all(["yes\n\
+"])).join("");
         case 1:
-          return (await Promise.all(["no\n"])).join("");
+          return (await Promise.all(["no\n\
+"])).join("");
         default:
           throw new Error(error_pattern_failure);
       }
@@ -856,12 +884,14 @@ export default async function main(input1) {
         case 0:
           return (await Promise.all([
             acutis_escape(data1.get("a")),
-            "\n",
+            "\n\
+",
           ])).join("");
         case 1:
           return (await Promise.all([
             acutis_escape(fmt_int(data1.get("b"))),
-            "\n",
+            "\n\
+",
           ])).join("");
         default:
           throw new Error(error_pattern_failure);
@@ -884,7 +914,8 @@ export default async function main(input1) {
       }
       switch (exit) {
         case 0:
-          return (await Promise.all(["Fail\n"])).join("");
+          return (await Promise.all(["Fail\n\
+"])).join("");
         case 1:
           return (await Promise.all([
             acutis_escape(fmt_float(6, data1.get("a"))),
@@ -892,7 +923,8 @@ export default async function main(input1) {
             acutis_escape(data1.get("b")),
             " ",
             acutis_escape(fmt_bool(data1.get("c"))),
-            "\n",
+            "\n\
+",
           ])).join("");
         default:
           throw new Error(error_pattern_failure);
@@ -916,15 +948,22 @@ export default async function main(input1) {
           return (await Promise.all([
             " ",
             acutis_escape(data1.get("b")),
-            "\n",
+            "\n\
+",
           ])).join("");
         case 1:
-          return (await Promise.all(["Another tag!\n"])).join("");
+          return (await Promise.all(["Another tag!\n\
+"])).join("");
         default:
           throw new Error(error_pattern_failure);
       }
     })(),
-    "\n\nMapping\n-------\n\n",
+    "\n\
+\n\
+Mapping\n\
+-------\n\
+\n\
+",
     (async function () {
       let result = [];
       let arg0 = data.get("null_string_dict");
@@ -941,14 +980,16 @@ export default async function main(input1) {
         }
         switch (exit) {
           case 0:
-            result.push(acutis_escape(data1.get("key")), " is null.\n");
+            result.push(acutis_escape(data1.get("key")), " is null.\n\
+");
             break;
           case 1:
             result.push(
               acutis_escape(data1.get("key")),
               " is ",
               acutis_escape(data1.get("str")),
-              "\n"
+              "\n\
+"
             );
             break;
           default:
@@ -968,7 +1009,8 @@ export default async function main(input1) {
         data1.set("i", arg0[0]);
         switch (exit) {
           case 0:
-            result.push(acutis_escape(fmt_int(data1.get("i"))), "\n");
+            result.push(acutis_escape(fmt_int(data1.get("i"))), "\n\
+");
             break;
           default:
             throw new Error(error_pattern_failure);
@@ -994,7 +1036,8 @@ export default async function main(input1) {
               acutis_escape(fmt_int(data1.get("key"))),
               " : ",
               acutis_escape(fmt_int(data1.get("i"))),
-              "\n"
+              "\n\
+"
             );
             break;
           default:
@@ -1069,7 +1112,9 @@ export default async function main(input1) {
       }
       return (await Promise.all(result)).join("");
     })(),
-    "\n\n",
+    "\n\
+\n\
+",
     (async function () {
       let result = [];
       let index = 0;
@@ -1089,16 +1134,19 @@ export default async function main(input1) {
         }
         switch (exit) {
           case 0:
-            result.push("Level 1 null\n");
+            result.push("Level 1 null\n\
+");
             break;
           case 1:
-            result.push("Level 2 null (This shouldn't render.)\n");
+            result.push("Level 2 null (This shouldn't render.)\n\
+");
             break;
           case 2:
             result.push(
               "Level 3 ",
               acutis_escape(fmt_bool(data1.get("b"))),
-              "\n"
+              "\n\
+"
             );
             break;
           default:
@@ -1109,7 +1157,12 @@ export default async function main(input1) {
       }
       return (await Promise.all(result)).join("");
     })(),
-    "\n\nConstructing async blocks\n-------------------------\n\n",
+    "\n\
+\n\
+Constructing async blocks\n\
+-------------------------\n\
+\n\
+",
     (async function () {
       let data1 = new Map(data);
       let exit = null;
@@ -1127,13 +1180,17 @@ export default async function main(input1) {
             acutis_escape(data1.get("a")),
             " ",
             acutis_escape(data1.get("b")),
-            "\n",
+            "\n\
+",
           ])).join("");
         default:
           throw new Error(error_pattern_failure);
       }
     })(),
-    "Component\n---------\n\n",
+    "Component\n\
+---------\n\
+\n\
+",
     (async function () {
       let resolved0 = (await Promise.all(["Children prop"])).join("");
       let arg0 = new Map([
@@ -1143,7 +1200,12 @@ export default async function main(input1) {
       ]);
       return template_Component(arg0);
     })(),
-    "\n\nComplicated pattern matching\n----------------------------\n\n",
+    "\n\
+\n\
+Complicated pattern matching\n\
+----------------------------\n\
+\n\
+",
     (async function () {
       let data1 = new Map(data);
       let exit = null;
@@ -1211,23 +1273,28 @@ export default async function main(input1) {
       }
       switch (exit) {
         case 0:
-          return (await Promise.all([" 0\n"])).join("");
+          return (await Promise.all([" 0\n\
+"])).join("");
         case 1:
           return (await Promise.all([
             " 1 ",
             acutis_escape(fmt_int(data1.get("x"))),
-            "\n",
+            "\n\
+",
           ])).join("");
         case 2:
           return (await Promise.all([
             " 2 ",
             acutis_escape(fmt_int(data1.get("y"))),
-            "\n",
+            "\n\
+",
           ])).join("");
         case 3:
-          return (await Promise.all([" 3\n"])).join("");
+          return (await Promise.all([" 3\n\
+"])).join("");
         case 4:
-          return (await Promise.all([" 4\n"])).join("");
+          return (await Promise.all([" 4\n\
+"])).join("");
         default:
           throw new Error(error_pattern_failure);
       }
@@ -1276,14 +1343,17 @@ export default async function main(input1) {
       }
       switch (exit) {
         case 0:
-          return (await Promise.all(["\n"])).join("");
+          return (await Promise.all(["\n\
+"])).join("");
         case 1:
-          return (await Promise.all([" Pass\n"])).join("");
+          return (await Promise.all([" Pass\n\
+"])).join("");
         case 2:
           return (await Promise.all([
             " ",
             acutis_escape(fmt_int(data1.get("z"))),
-            "\n",
+            "\n\
+",
           ])).join("");
         default:
           throw new Error(error_pattern_failure);
@@ -1333,20 +1403,31 @@ export default async function main(input1) {
       }
       switch (exit) {
         case 0:
-          return (await Promise.all(["\n"])).join("");
+          return (await Promise.all(["\n\
+"])).join("");
         case 1:
-          return (await Promise.all([" Fail\n"])).join("");
+          return (await Promise.all([" Fail\n\
+"])).join("");
         case 2:
           return (await Promise.all([
             " ",
             acutis_escape(fmt_int(data1.get("z"))),
-            "\n",
+            "\n\
+",
           ])).join("");
         default:
           throw new Error(error_pattern_failure);
       }
     })(),
-    "String encoding\n---------------\n\n😇👨‍💻😇\n\\\" \\ \\ \\\"\n\nExternal JavaScript template component: stringify arbitrary data\n\n",
+    "String encoding\n\
+---------------\n\
+\n\
+😇👨‍💻😇\n\
+\\\" \\ \\ \\\"\n\
+\n\
+External JavaScript template component: stringify arbitrary data\n\
+\n\
+",
     (async function () {
       let arg0 = new Map([
         ["int_list", data.get("int_list")],
@@ -1362,7 +1443,8 @@ export default async function main(input1) {
       ]);
       return template_Stringify(arg0);
     })(),
-    "\n",
+    "\n\
+",
   ])).join("");
 }
 

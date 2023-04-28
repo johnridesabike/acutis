@@ -248,7 +248,10 @@ export default async function main(input1) {
         switch (exit) {
           case 0:
             result.push(
-              "\n  <article class=\"h-entry\">\n    <header>\n      ",
+              "\n\
+  <article class=\"h-entry\">\n\
+    <header>\n\
+      ",
               (async function () {
                 let data2 = new Map(data1);
                 let exit = null;
@@ -269,7 +272,8 @@ export default async function main(input1) {
                       acutis_escape(data2.get("src")),
                       "\" alt=\"",
                       acutis_escape(data2.get("alt")),
-                      "\">\n      ",
+                      "\">\n\
+      ",
                     ])).join("");
                   default:
                     throw new Error(error_pattern_failure);
@@ -277,15 +281,21 @@ export default async function main(input1) {
               })(),
               "<h2 class=\"p-name\"> ",
               acutis_escape(data1.get("title")),
-              " </h2>\n      <span class=\"p-author\"> By ",
+              " </h2>\n\
+      <span class=\"p-author\"> By ",
               acutis_escape(data1.get("name") !== null
                 ? data1.get("name")
                 : "Anonymous"),
-              " </span>\n      <span class=\"dt-published\"> Posted on ",
+              " </span>\n\
+      <span class=\"dt-published\"> Posted on ",
               acutis_escape(data1.get("date")),
-              " </span>\n    </header>\n    <div class=\"e-content\"> ",
+              " </span>\n\
+    </header>\n\
+    <div class=\"e-content\"> ",
               data1.get("content"),
-              " </div>\n  </article>\n"
+              " </div>\n\
+  </article>\n\
+"
             );
             break;
           default:
@@ -296,7 +306,8 @@ export default async function main(input1) {
       }
       return (await Promise.all(result)).join("");
     })(),
-    "\n",
+    "\n\
+",
   ])).join("");
 }
 

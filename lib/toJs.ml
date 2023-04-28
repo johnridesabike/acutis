@@ -216,22 +216,20 @@ let pp_trailing_comma =
 (** See https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String#escape_sequences *)
 let pp_js_str ppf s =
   let l = String.length s in
-  let b = Buffer.create (l + 2) in
-  Buffer.add_char b '"';
+  pp_print_char ppf '"';
   for i = 0 to l - 1 do
     let c = s.[i] in
     match c with
-    | '\b' -> Buffer.add_string b "\\b"
-    | '\t' -> Buffer.add_string b "\\t"
-    | '\n' -> Buffer.add_string b "\\n"
-    | '\012' -> Buffer.add_string b "\\f"
-    | '\r' -> Buffer.add_string b "\\r"
-    | '\\' -> Buffer.add_string b "\\\\"
-    | '"' -> Buffer.add_string b "\\\""
-    | c -> Buffer.add_char b c
+    | '\n' -> fprintf ppf "\\n\\\n"
+    | '\b' -> pp_print_string ppf "\\b"
+    | '\t' -> pp_print_string ppf "\\t"
+    | '\012' -> pp_print_string ppf "\\f"
+    | '\r' -> pp_print_string ppf "\\r"
+    | '\\' -> pp_print_string ppf "\\\\"
+    | '"' -> pp_print_string ppf "\\\""
+    | c -> pp_print_char ppf c
   done;
-  Buffer.add_char b '"';
-  pp_print_string ppf (Buffer.contents b)
+  pp_print_char ppf '"'
 
 let keyword_to_string = function
   | Null -> "null"
