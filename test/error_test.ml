@@ -84,9 +84,7 @@ let () =
   print_error "Bad echo (7)" (render "{{ x ? %i ? }}");
 
   print_error "Bad echo format (1)" (render "{{ % a }}");
-  print_error "Bad echo format (2)" (render "{{ %,b a }}");
-  print_error "Bad echo format (3)" (render "{{ %.f a }}");
-  print_error "Bad echo format (4)" (render "{{ %.2b a }}");
+  print_error "Bad echo format (2)" (render "{{ %z a }}");
 
   print_error "Bad prop (1)" (render "{% Z null=1 / %}");
   print_error "Bad prop (2)" (render "{% A a # %}");

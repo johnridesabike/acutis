@@ -76,14 +76,11 @@ end
 
 type trim = No_trim | Trim
 type escape = No_escape | Escape
-type echo_flag = No_flag | Flag_comma
 
 type echo_format =
   | Fmt_string
-  | Fmt_int of echo_flag
-  | Fmt_float of int
-  | Fmt_float_e of int
-  | Fmt_float_g of int
+  | Fmt_int
+  | Fmt_float
   | Fmt_bool
 
 type echo =
