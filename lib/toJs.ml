@@ -32,10 +32,7 @@ module Id : sig
   val result : t
   val entry : t
   val runtime_fmt_int : t
-  val runtime_fmt_int_comma : t
   val runtime_fmt_float : t
-  val runtime_fmt_float_e : t
-  val runtime_fmt_float_g : t
   val runtime_fmt_bool : t
   val runtime_escape : t
   val runtime_main : t
@@ -93,11 +90,8 @@ end = struct
   let exit = "exit"
   let result = "result"
   let entry = "entry"
-  let runtime_fmt_int = "fmt_int"
-  let runtime_fmt_int_comma = "fmt_int_comma"
-  let runtime_fmt_float = "fmt_float"
-  let runtime_fmt_float_e = "fmt_float_e"
-  let runtime_fmt_float_g = "fmt_float_g"
+  let runtime_fmt_int = "fmt_number"
+  let runtime_fmt_float = "fmt_number"
   let runtime_fmt_bool = "fmt_bool"
   let runtime_escape = "acutis_escape"
   let runtime_main = "main"
@@ -415,11 +409,8 @@ end
 
 let fmt x = function
   | C.Fmt_string -> x
-  | C.Fmt_int No_flag -> App (Var Id.runtime_fmt_int, [ x ])
-  | C.Fmt_int Flag_comma -> App (Var Id.runtime_fmt_int_comma, [ x ])
-  | C.Fmt_float i -> App (Var Id.runtime_fmt_float, [ Int i; x ])
-  | C.Fmt_float_e i -> App (Var Id.runtime_fmt_float_e, [ Int i; x ])
-  | C.Fmt_float_g i -> App (Var Id.runtime_fmt_float_g, [ Int i; x ])
+  | C.Fmt_int -> App (Var Id.runtime_fmt_int, [ x ])
+  | C.Fmt_float -> App (Var Id.runtime_fmt_float, [ x ])
   | C.Fmt_bool -> App (Var Id.runtime_fmt_bool, [ x ])
 
 let escape x = function
@@ -1092,80 +1083,8 @@ function acutis_escape(str) {
   return result;
 }
 
-function fmt_int(i) {
+function fmt_number(i) {
   return i.toString();
-}
-
-function fmt_int_comma(i) {
-  let s = i.toString();
-  let l = s.length;
-  let left = ((l - 1) % 3) + 1;
-  let result = "";
-  for (let idx = 0; idx < l; idx++) {
-    if (left === 0) {
-      result += ",";
-      left = 3;
-    }
-    left--;
-    result += s[idx];
-  }
-  return result;
-}
-
-function toFixed(prec, f) {
-  if (Math.abs(f) < 1.0) {
-    return f.toFixed(prec);
-  } else {
-    var e = parseInt(f.toString().split("+")[1]);
-    if (e > 20) {
-      e -= 20;
-      f /= Math.pow(10, e);
-      f += Array(e + 1).join("0");
-      if (prec > 0) {
-        f = f + "." + Array(prec + 1).join("0");
-      }
-      return f;
-    } else {
-      return f.toFixed(prec);
-    }
-  }
-}
-
-function fmt_float(prec, f) {
-  return toFixed(prec, f).toString();
-}
-
-function fmt_float_e(prec, f) {
-  let s = f.toExponential(prec);
-  // exponent should be at least two digits
-  let i = s.length;
-  if (s.charAt(i - 3) == "e") {
-    s = s.slice(0, i - 1) + "0" + s.slice(i - 1);
-  }
-  return s;
-}
-
-function fmt_float_g(prec, f) {
-  prec = prec === 0 ? 1 : prec;
-  let s = f.toExponential(prec - 1);
-  let j = s.indexOf("e");
-  let exp = +s.slice(j + 1);
-  if (exp < -4 || f >= 1e21 || f.toFixed(0).length > prec) {
-    // remove trailing zeroes
-    let i = j - 1;
-    while (s.charAt(i) == "0") {
-      i--;
-    }
-    if (s.charAt(i) == ".") {
-      i--;
-    }
-    s = s.slice(0, i + 1) + s.slice(j);
-    i = s.length;
-    if (s.charAt(i - 3) == "e") {
-      s = s.slice(0, i - 1) + "0" + s.slice(i - 1);
-    }
-  }
-  return s;
 }
 
 function fmt_bool(b) {

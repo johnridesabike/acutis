@@ -32,80 +32,8 @@ function acutis_escape(str) {
   return result;
 }
 
-function fmt_int(i) {
+function fmt_number(i) {
   return i.toString();
-}
-
-function fmt_int_comma(i) {
-  let s = i.toString();
-  let l = s.length;
-  let left = ((l - 1) % 3) + 1;
-  let result = "";
-  for (let idx = 0; idx < l; idx++) {
-    if (left === 0) {
-      result += ",";
-      left = 3;
-    }
-    left--;
-    result += s[idx];
-  }
-  return result;
-}
-
-function toFixed(prec, f) {
-  if (Math.abs(f) < 1.0) {
-    return f.toFixed(prec);
-  } else {
-    var e = parseInt(f.toString().split("+")[1]);
-    if (e > 20) {
-      e -= 20;
-      f /= Math.pow(10, e);
-      f += Array(e + 1).join("0");
-      if (prec > 0) {
-        f = f + "." + Array(prec + 1).join("0");
-      }
-      return f;
-    } else {
-      return f.toFixed(prec);
-    }
-  }
-}
-
-function fmt_float(prec, f) {
-  return toFixed(prec, f).toString();
-}
-
-function fmt_float_e(prec, f) {
-  let s = f.toExponential(prec);
-  // exponent should be at least two digits
-  let i = s.length;
-  if (s.charAt(i - 3) == "e") {
-    s = s.slice(0, i - 1) + "0" + s.slice(i - 1);
-  }
-  return s;
-}
-
-function fmt_float_g(prec, f) {
-  prec = prec === 0 ? 1 : prec;
-  let s = f.toExponential(prec - 1);
-  let j = s.indexOf("e");
-  let exp = +s.slice(j + 1);
-  if (exp < -4 || f >= 1e21 || f.toFixed(0).length > prec) {
-    // remove trailing zeroes
-    let i = j - 1;
-    while (s.charAt(i) == "0") {
-      i--;
-    }
-    if (s.charAt(i) == ".") {
-      i--;
-    }
-    s = s.slice(0, i + 1) + s.slice(j);
-    i = s.length;
-    if (s.charAt(i - 3) == "e") {
-      s = s.slice(0, i - 1) + "0" + s.slice(i - 1);
-    }
-  }
-  return s;
 }
 
 function fmt_bool(b) {
@@ -292,7 +220,7 @@ async function template_Another(input1) {
 async function template_Component(data) {
   return (await Promise.all([
     acutis_escape(data.get("optional") !== null
-      ? fmt_int(data.get("optional"))
+      ? fmt_number(data.get("optional"))
       : data.get("children")),
     "\n\
 ",
@@ -307,7 +235,7 @@ async function template_Component(data) {
         data1.set("i", arg0[0]);
         switch (exit) {
           case 0:
-            result.push(acutis_escape(fmt_int(data1.get("i"))));
+            result.push(acutis_escape(fmt_number(data1.get("i"))));
             break;
           default:
             throw new Error(error_pattern_failure);
@@ -776,28 +704,10 @@ export default async function main(input1) {
 ----------\n\
 \n\
 %i    ",
-    acutis_escape(fmt_int(data.get("big_int"))),
-    "\n\
-%,i   ",
-    acutis_escape(fmt_int_comma(data.get("big_int"))),
+    acutis_escape(fmt_number(data.get("big_int"))),
     "\n\
 %f    ",
-    acutis_escape(fmt_float(6, data.get("big_float"))),
-    "\n\
-%2f   ",
-    acutis_escape(fmt_float(2, data.get("big_float"))),
-    "\n\
-%e    ",
-    acutis_escape(fmt_float_e(6, data.get("big_float"))),
-    "\n\
-%.2e  ",
-    acutis_escape(fmt_float_e(2, data.get("big_float"))),
-    "\n\
-%g    ",
-    acutis_escape(fmt_float_g(6, data.get("big_float"))),
-    "\n\
-%.2g  ",
-    acutis_escape(fmt_float_g(2, data.get("big_float"))),
+    acutis_escape(fmt_number(data.get("big_float"))),
     "\n\
 %b    ",
     acutis_escape(fmt_bool(data.get("bool1"))),
@@ -889,7 +799,7 @@ Matching\n\
           ])).join("");
         case 1:
           return (await Promise.all([
-            acutis_escape(fmt_int(data1.get("b"))),
+            acutis_escape(fmt_number(data1.get("b"))),
             "\n\
 ",
           ])).join("");
@@ -918,7 +828,7 @@ Matching\n\
 "])).join("");
         case 1:
           return (await Promise.all([
-            acutis_escape(fmt_float(6, data1.get("a"))),
+            acutis_escape(fmt_number(data1.get("a"))),
             " ",
             acutis_escape(data1.get("b")),
             " ",
@@ -1009,7 +919,7 @@ Mapping\n\
         data1.set("i", arg0[0]);
         switch (exit) {
           case 0:
-            result.push(acutis_escape(fmt_int(data1.get("i"))), "\n\
+            result.push(acutis_escape(fmt_number(data1.get("i"))), "\n\
 ");
             break;
           default:
@@ -1033,9 +943,9 @@ Mapping\n\
         switch (exit) {
           case 0:
             result.push(
-              acutis_escape(fmt_int(data1.get("key"))),
+              acutis_escape(fmt_number(data1.get("key"))),
               " : ",
-              acutis_escape(fmt_int(data1.get("i"))),
+              acutis_escape(fmt_number(data1.get("i"))),
               "\n\
 "
             );
@@ -1082,7 +992,7 @@ Mapping\n\
                         switch (exit) {
                           case 0:
                             result.push(
-                              acutis_escape(fmt_int(data3.get("i"))),
+                              acutis_escape(fmt_number(data3.get("i"))),
                               " "
                             );
                             break;
@@ -1278,14 +1188,14 @@ Complicated pattern matching\n\
         case 1:
           return (await Promise.all([
             " 1 ",
-            acutis_escape(fmt_int(data1.get("x"))),
+            acutis_escape(fmt_number(data1.get("x"))),
             "\n\
 ",
           ])).join("");
         case 2:
           return (await Promise.all([
             " 2 ",
-            acutis_escape(fmt_int(data1.get("y"))),
+            acutis_escape(fmt_number(data1.get("y"))),
             "\n\
 ",
           ])).join("");
@@ -1351,7 +1261,7 @@ Complicated pattern matching\n\
         case 2:
           return (await Promise.all([
             " ",
-            acutis_escape(fmt_int(data1.get("z"))),
+            acutis_escape(fmt_number(data1.get("z"))),
             "\n\
 ",
           ])).join("");
@@ -1411,7 +1321,7 @@ Complicated pattern matching\n\
         case 2:
           return (await Promise.all([
             " ",
-            acutis_escape(fmt_int(data1.get("z"))),
+            acutis_escape(fmt_number(data1.get("z"))),
             "\n\
 ",
           ])).join("");

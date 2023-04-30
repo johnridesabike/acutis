@@ -84,13 +84,7 @@ Formatters
 ----------
 
 %i    {{ %i big_int }}
-%,i   {{ %,i big_int }}
 %f    {{ %f big_float }}
-%2f   {{ %.2f big_float }}
-%e    {{ %e big_float }}
-%.2e  {{ %.2e big_float }}
-%g    {{ %g big_float }}
-%.2g  {{ %.2g big_float }}
 %b    {{ %b bool1 }}
 %b    {{ %b bool2 }}
 

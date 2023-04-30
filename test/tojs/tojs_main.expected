@@ -2,13 +2,7 @@ Formatters
 ----------
 
 %i    100000000
-%,i   100,000,000
-%f    1234.567890
-%2f   1234.57
-%e    1.234568e+03
-%.2e  1.23e+03
-%g    1.23457e+3
-%.2g  1.2e+03
+%f    1234.56789
 %b    true
 %b    false
 
@@ -24,7 +18,7 @@ Matching
 8
 yes
 a
-1.500000 snd true
+1.5 snd true
 Another tag!
 
 
