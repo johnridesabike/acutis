@@ -312,23 +312,8 @@ This is missing a format specification.
 
 Bad echo format (2)
 ---
-File "<test>", 1:6-1:7
-Parse error.
-Expected an 'i' format type.
-
-
-Bad echo format (3)
----
-File "<test>", 1:6-1:7
-Parse error.
-Expected a number.
-
-
-Bad echo format (4)
----
-File "<test>", 1:7-1:8
-Parse error.
-Expected an 'f', 'e', or 'g' format type.
+File "<test>", 1:5-1:6
+Syntax error.
 
 
 Bad prop (1)

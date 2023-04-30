@@ -101,16 +101,10 @@ let pp_escape ppf = function
 let equal_escape a b =
   match (a, b) with No_escape, No_escape | Escape, Escape -> true | _ -> false
 
-let pp_echo_flag ppf = function
-  | No_flag -> F.pp_print_string ppf "No_flag"
-  | Flag_comma -> F.pp_print_string ppf "Flag_comma"
-
 let pp_echo_format ppf = function
   | Fmt_string -> F.pp_print_string ppf "Fmt_string"
-  | Fmt_int flag -> F.fprintf ppf "(Fmt_int %a@,)" pp_echo_flag flag
-  | Fmt_float i -> F.fprintf ppf "(Fmt_float %i)" i
-  | Fmt_float_e i -> F.fprintf ppf "(Fmt_float_e %i)" i
-  | Fmt_float_g i -> F.fprintf ppf "(Fmt_float_g %i)" i
+  | Fmt_int -> F.pp_print_string ppf "Fmt_int"
+  | Fmt_float -> F.pp_print_string ppf "Fmt_float"
   | Fmt_bool -> F.pp_print_string ppf "Fmt_bool"
 
 let rec pp_echo ppf = function
@@ -121,19 +115,13 @@ let rec pp_echo ppf = function
   | Echo_field (x, field) ->
       F.fprintf ppf "(@[<2>Echo_field (@,%a,@ %S@,))@]" pp_echo x field
 
-let equal_echo_flag a b =
-  match (a, b) with
-  | No_flag, No_flag | Flag_comma, Flag_comma -> true
-  | _ -> false
-
 let equal_echo_format a b =
   match (a, b) with
-  | Fmt_string, Fmt_string | Fmt_bool, Fmt_bool -> true
-  | Fmt_int a, Fmt_int b -> equal_echo_flag a b
-  | Fmt_float a, Fmt_float b
-  | Fmt_float_e a, Fmt_float_e b
-  | Fmt_float_g a, Fmt_float_g b ->
-      a = b
+  | Fmt_string, Fmt_string
+  | Fmt_bool, Fmt_bool
+  | Fmt_int, Fmt_int
+  | Fmt_float, Fmt_float ->
+      true
   | _ -> false
 
 let rec equal_echo a b =
