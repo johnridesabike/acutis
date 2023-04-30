@@ -60,8 +60,6 @@ open Ast
 %token PERCENT                (* % *)
 %token CHAR_I                 (* i *)
 %token CHAR_F                 (* f *)
-%token CHAR_E                 (* e *)
-%token CHAR_G                 (* g *)
 %token CHAR_B                 (* b *)
 
 %start <Ast.t> acutis
@@ -158,21 +156,11 @@ props:
 
 (** Echo rules *)
 
-echo_precision:
-  | (* empty *)   { 6 }
-  | DOT; i = INT; { i }
-
-echo_flag:
-  | (* empty *) { No_flag }
-  | COMMA;      { Flag_comma }
-
 echo_format:
-  | (* empty *)                           { Fmt_string }
-  | PERCENT; f = echo_flag; CHAR_I;       { Fmt_int f }
-  | PERCENT; i = echo_precision; CHAR_F;  { Fmt_float i }
-  | PERCENT; i = echo_precision; CHAR_E;  { Fmt_float_e i }
-  | PERCENT; i = echo_precision; CHAR_G;  { Fmt_float_g i }
-  | PERCENT; CHAR_B;                      { Fmt_bool }
+  | (* empty *)       { Fmt_string }
+  | PERCENT; CHAR_I;  { Fmt_int }
+  | PERCENT; CHAR_F;  { Fmt_float }
+  | PERCENT; CHAR_B;  { Fmt_bool }
 
 echo:
   | s = ID;                         { Echo_var ($loc, s) }

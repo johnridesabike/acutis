@@ -15,14 +15,11 @@ val parse : fname:string -> Lexing.lexbuf -> Ast.t
 (** @raise Error.Acutis_error *)
 
 type escape = Ast.escape = No_escape | Escape
-type echo_flag = Ast.echo_flag = No_flag | Flag_comma
 
 type echo_format = Ast.echo_format =
   | Fmt_string
-  | Fmt_int of echo_flag
-  | Fmt_float of int
-  | Fmt_float_e of int
-  | Fmt_float_g of int
+  | Fmt_int
+  | Fmt_float
   | Fmt_bool
 
 type echo = Typechecker.echo =

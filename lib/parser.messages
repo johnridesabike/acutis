@@ -177,18 +177,6 @@ acutis: TEXT ECHO_BEGIN PERCENT WITH
 
 This is missing a format specification.
 
-acutis: TEXT ECHO_BEGIN PERCENT COMMA WITH
-
-Expected an 'i' format type.
-
-acutis: TEXT ECHO_BEGIN PERCENT DOT WITH
-
-Expected a number.
-
-acutis: TEXT ECHO_BEGIN PERCENT DOT INT WITH
-
-Expected an 'f', 'e', or 'g' format type.
-
 ############################################################################
 # Component errors
 ############################################################################

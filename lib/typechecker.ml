@@ -504,8 +504,8 @@ let make_interface_standalone l =
 
 let make_echo_type = function
   | Ast.Fmt_string -> Ty.string ()
-  | Fmt_int _ -> Ty.int ()
-  | Fmt_float _ | Fmt_float_g _ | Fmt_float_e _ -> Ty.float ()
+  | Fmt_int -> Ty.int ()
+  | Fmt_float -> Ty.float ()
   | Fmt_bool -> Ty.boolean ()
 
 let[@tail_mod_cons] rec make_echo ctx ty = function

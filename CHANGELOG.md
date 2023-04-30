@@ -4,6 +4,7 @@ Most changes are breaking changes.
 
 ## Unreleased
 
+- Remove format specifier options. `%i` `%f` and `%b` do not take any flags now.
 - Fix false positive "unused binding" error.
 - Fix bug in decoding unknown tags in open tagged unions.
 - Optimization: filter empty text nodes from final tree.

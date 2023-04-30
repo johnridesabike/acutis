@@ -34,10 +34,10 @@ let records () =
   let props_json = {|{"a": {"a": "a", "b": 1, "c": 1.0}}|} in
   let src =
     "{% match a with {a: \"z\", b: 0, c: 0.0} %}\n\
-     {% with {a, b, c} %} {{ a }} {{ %i b }} {{ %g c }}\n\
+     {% with {a, b, c} ~%} {{ a }} {{ %i b }} {{ %f c }}\n\
      {%~ /match %}"
   in
-  let result = " a 1 1" in
+  let result = "a 1 1." in
   check "Record 1 yojoson" result (render_yojson src props_json);
   check "Record 1 js" result (render_js src props_js)
 
@@ -95,8 +95,8 @@ let tuples () =
       end)
   in
   let props_json = {|{"a": ["a", 1.0]}|} in
-  let src = "{% match a with (a, b) %} {{ a }} {{ %g b }} {% /match %}" in
-  let result = " a 1 " in
+  let src = "{% match a with (a, b) ~%} {{ a }} {{ %f b }} {%~ /match %}" in
+  let result = "a 1." in
   check "List 1 yojoson" result (render_yojson src props_json);
   check "List 1 js" result (render_js src props_js)
 

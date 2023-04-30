@@ -146,12 +146,7 @@ and expr state = parse
 and echo_format prev_state state = parse
   | 'i'         { CHAR_I }
   | 'f'         { CHAR_F }
-  | 'e'         { CHAR_E }
-  | 'g'         { CHAR_G }
   | 'b'         { CHAR_B }
-  | ','         { COMMA }
-  | '.'         { DOT }
-  | digit+ as i { INT (int_of_string i) }
   | newline     { L.new_line lexbuf; state := prev_state; expr state lexbuf }
   | white       { state := prev_state; expr state lexbuf }
   | _           { raise Error }

@@ -29,37 +29,18 @@ let basic () =
 let echo_format () =
   let props =
     {|{
-  "num": 123456,
-  "frac": 1234.56789,
-  "binaryf": false,
-  "binaryt": true
+    "num": 123456,
+    "frac": 1234.56789,
+    "binaryf": false,
+    "binaryt": true
   }|}
   in
   let src =
-    "%i: {{ %i num }} {{ %,i num }}\n\
-     %f: {{ %f frac }} {{ %.2f frac }}\n\
-     %e: {{ %e frac }} {{ %.2e frac }}\n\
-     %g: {{ %g frac }} {{ %.2g frac }}\n\
-     %b: {{ %b binaryf }} {{ %b binaryt }}"
+    "%i: {{ %i num }}\n%f: {{ %f frac }}\n%b: {{ %b binaryf }} {{ %b binaryt }}"
   in
   let result = render src props in
-  let expected =
-    "%i: 123456 123,456\n\
-     %f: 1234.567890 1234.57\n\
-     %e: 1.234568e+03 1.23e+03\n\
-     %g: 1234.57 1.2e+03\n\
-     %b: false true"
-  in
-  let expected_windows =
-    "%i: 123456 123,456\n\
-     %f: 1234.567890 1234.57\n\
-     %e: 1.234568e+003 1.23e+003\n\
-     %g: 1234.57 1.2e+003\n\
-     %b: false true"
-  in
-  if result = expected || result = expected_windows then
-    Alcotest.(check pass) "Echo formats work" expected result
-  else check "Echo formats work" expected result
+  let expected = "%i: 123456\n%f: 1234.56789\n%b: false true" in
+  check "Echo formats work" expected result
 
 let unbound_vars () =
   let src =
