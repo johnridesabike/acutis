@@ -58,12 +58,7 @@ end
 
 type trim = No_trim | Trim
 type escape = No_escape | Escape
-
-type echo_format =
-  | Fmt_string
-  | Fmt_int
-  | Fmt_float
-  | Fmt_bool
+type echo_format = Fmt_string | Fmt_int | Fmt_float | Fmt_bool
 
 (** The echo syntax is essentially a subset of the pattern syntax, one which
     only allows strings, variables, and record field access. *)

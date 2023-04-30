@@ -76,12 +76,7 @@ end
 
 type trim = No_trim | Trim
 type escape = No_escape | Escape
-
-type echo_format =
-  | Fmt_string
-  | Fmt_int
-  | Fmt_float
-  | Fmt_bool
+type echo_format = Fmt_string | Fmt_int | Fmt_float | Fmt_bool
 
 type echo =
   | Echo_var of Loc.t * string

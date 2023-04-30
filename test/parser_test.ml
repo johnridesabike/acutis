@@ -28,11 +28,11 @@ let echoes () =
   check "Echo formats parse correctly"
     [
       Text ("", No_trim, No_trim);
-      Echo ([], Fmt_int , Echo_var (loc, "i"), Escape);
+      Echo ([], Fmt_int, Echo_var (loc, "i"), Escape);
       Text (" ", No_trim, No_trim);
-      Echo ([], Fmt_float , Echo_var (loc, "f"), Escape);
+      Echo ([], Fmt_float, Echo_var (loc, "f"), Escape);
       Text (" ", No_trim, No_trim);
-      Echo ([], Fmt_bool , Echo_var (loc, "b"), Escape);
+      Echo ([], Fmt_bool, Echo_var (loc, "b"), Escape);
       Text ("", No_trim, No_trim);
     ]
     (parse src)
