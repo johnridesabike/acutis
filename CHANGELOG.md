@@ -2,7 +2,7 @@
 
 Most changes are breaking changes.
 
-## Unreleased
+## 0.22.0
 
 - Remove format specifier options. `%i` `%f` and `%b` do not take any flags now.
 - Fix false positive "unused binding" error.
