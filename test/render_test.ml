@@ -1,8 +1,4 @@
 open Acutis
-module F = Format
-
-let check = Alcotest.(check string)
-
 module RenderSync = Render.Make (Sync) (Acutis_json.Data)
 
 let render ?(components = []) src json =
@@ -12,160 +8,117 @@ let render ?(components = []) src json =
   in
   RenderSync.make temp json
 
-let basic () =
-  let props = {|{
-  "a": "Hello",
-  "b": "World",
-  "c": "&\"'></`="
-  }|} in
-  let src =
-    {|{{ a }} {{ b }}! {{ c }} {{{ c }}} {{ "<" }} {{{ "<" }}} {{ "d" }}|}
-  in
-  check "Echoes work"
-    "Hello World! &amp;&quot;&apos;&gt;&lt;&#x2F;&#x60;&#x3D; &\"'></`= &lt; < \
-     d"
-    (render src props)
+let print_result title s =
+  print_endline title;
+  print_endline "---";
+  print_endline s;
+  print_newline ()
 
-let echo_format () =
-  let props =
-    {|{
-    "num": 123456,
-    "frac": 1234.56789,
-    "binaryf": false,
-    "binaryt": true
-  }|}
-  in
-  let src =
-    "%i: {{ %i num }}\n%f: {{ %f frac }}\n%b: {{ %b binaryf }} {{ %b binaryt }}"
-  in
-  let result = render src props in
-  let expected = "%i: 123456\n%f: 1234.56789\n%b: false true" in
-  check "Echo formats work" expected result
-
-let unbound_vars () =
-  let src =
-    {|{% match a
-          with !a %} {{ a }}
-        {% with null ~%} a doesn't exist.
-      {%~ /match %}|}
-  in
-  check "Unbound variables default to null." "a doesn't exist."
-    (render src "{}")
-
-let ignore_bindings () =
-  let src = "{% match a with {x: _x} ~%} x is ignored. {%~ /match %}" in
-  check
+let () =
+  print_result "Echoes work"
+    (render
+       {|{{ a }} {{ b }}! {{ c }} {{{ c }}} {{ "<" }} {{{ "<" }}} {{ "d" }}|}
+       {|{"a": "Hello", "b": "World", "c": "&\"'></`="}|});
+  print_result "Echo formats work"
+    (render
+       "%i: {{ %i num }} %f: {{ %f frac }} %b: {{ %b binaryf }} {{ %b binaryt \
+        }}"
+       {|{
+          "num": 123456,
+          "frac": 1234.56789,
+          "binaryf": false,
+          "binaryt": true
+          }|});
+  print_result "Unbound variables default to null."
+    (render
+       {|{% match a
+            with !a %} {{ a }}
+          {% with null ~%} a doesn't exist.
+          {%~ /match %}|}
+       "{}");
+  print_result
     "Prefixing a name with an underscore suppresses unused-variable warnings."
-    "x is ignored."
-    (render src "{\"a\": {\"x\": null}}")
-
-let whitespace () =
-  let props = {|{"a": {"b": {"c": "hi"}}}|} in
-  let src =
-    "{% match a with {b: {c}} ~%}\n\t  _ {{~ c ~}} _\t \r  {%~ /match %}"
-  in
-  check "Whitespace control works (1)" "_hi_" (render src props);
-  let oh_hai =
-    Compile.Components.parse_string ~fname:"ohHai.acutis" ~name:"OhHai"
-      "{{ children }} Oh hai {{ name }}."
-  in
-  let src =
-    {|{% OhHai name="Mark" ~%} I did not. {%~ /OhHai %}
-      {%~ OhHai name="Lisa" children=#%} Cheep cheep cheep. {%~# / %}|}
-  in
-  check "Whitespace control works (2)"
-    "I did not. Oh hai Mark. Cheep cheep cheep. Oh hai Lisa."
-    (render ~components:[ oh_hai ] src "{}")
-
-let nullish_coalescing () =
-  let props = {|{"b": "b", "c": "c"}|} in
-  let comp =
-    Compile.Components.parse_string ~fname:"comp.acutis" ~name:"Comp"
-      "{{ a ? b ? c ? z }}"
-  in
-  let src =
-    {|{{ a ? b ? c }} {% Comp b z=#%}z{%# / %} {% Comp z=#%}z{%# / %}|}
-  in
-  check "Nullish coalescing works" "b b z"
-    (render ~components:[ comp ] src props)
-
-let list_literal_append () =
-  let src =
-    {|{%~ map ["a", "b", ...["c", "d"]] with x ~%} {{ x }} {% /map %}|}
-  in
-  check "Appending list literals works" "a b c d " (render src "{}")
-
-let record_field_access () =
-  let props = {|{"a": {"b": {"c": {"d": true}}, "e": {"f": {"g": "pass"}}}}|} in
-  let src =
-    {|
+    (render "{% match a with {x: _x} ~%} x is ignored. {%~ /match %}"
+       {|{"a": {"x": null}}|});
+  print_result "Whitespace control works (1)"
+    (render
+       "{% match a with {b: {c}} ~%}\n\t  _ {{~ c ~}} _\t \r  {%~ /match %}"
+       {|{"a": {"b": {"c": "hi"}}}|});
+  print_result "Whitespace control works (2)"
+    (render
+       ~components:
+         [
+           Compile.Components.parse_string ~fname:"ohHai.acutis" ~name:"OhHai"
+             "{{ children }} Oh hai {{ name }}.";
+         ]
+       {|{% OhHai name="Mark" ~%} I did not. {%~ /OhHai %}
+         {%~ OhHai name="Lisa" children=#%} Cheep cheep cheep. {%~# / %}|}
+       "{}");
+  print_result "Nullish coalescing works"
+    (render
+       ~components:
+         [
+           Compile.Components.parse_string ~fname:"comp.acutis" ~name:"Comp"
+             "{{ a ? b ? c ? z }}";
+         ]
+       {|{{ a ? b ? c }} {% Comp b z=#%}z{%# / %} {% Comp z=#%}z{%# / %}|}
+       {|{"b": "b", "c": "c"}|});
+  print_result "Appending list literals works"
+    (render {|{%~ map ["a", "b", ...["c", "d"]] with x ~%} {{ x }} {% /map %}|}
+       "{}");
+  print_result "Record field access works"
+    (render
+       {|
       {%~ match {x: a.b."c".d} with {x: true} ~%} pass {% with _ %}{% /match ~%}
-      {{~ a.e.f.z ? a.e."f".g ~}}
-    |}
-  in
-  check "Record field_access works" "pass pass" (render src props)
-
-let map_list () =
+      {{~ a.e.f.z ? a.e."f".g ~}}|}
+       {|{"a": {"b": {"c": {"d": true}}, "e": {"f": {"g": "pass"}}}}|});
   let props = {|{"a": [{"name": "John"}, {"name": "Carlo"}]}|} in
-  let src = {|{% map a with {name} %} {{~ name }} {% /map %}|} in
-  check "Mapping list variables works" "John Carlo " (render src props);
-  let src =
-    {|{% map [{"name": "John"}, {"name": "Carlo"}] with {name} %}
-      {{~ name }} {% /map %}|}
-  in
-  check "Mapping list literals works" "John Carlo " (render src "{}");
-  let src =
-    {|{% map [{"name": "Paul"}, ...a] with {name} %} {{~ name }} {% /map %}|}
-  in
-  check "Mapping list variables appended with literals works" "Paul John Carlo "
-    (render src props);
-  let src =
-    {|{% map a
+  print_result "Mapping list variables works"
+    (render {|{% map a with {name} %} {{~ name }} {% /map %}|} props);
+  print_result "Mapping list literals works"
+    (render
+       {|{% map [{"name": "John"}, {"name": "Carlo"}] with {name} %}
+          {{~ name }} {% /map %}|}
+       "{}");
+  print_result "Mapping list variables appended with literals works"
+    (render
+       {|{% map [{"name": "Paul"}, ...a] with {name} %} {{~ name }} {% /map %}|}
+       props);
+  print_result "Mapping lists with the index works"
+    (render
+       {|{% map a
          with {name}, 0 %} {{~ name ~}}
       {% with {name}    %} {{ name ~}} {% /map %}|}
-  in
-  check "Mapping lists with the index works" "John Carlo" (render src props)
-
-let map_dict () =
+       props);
   let props =
-    {|{
-      "people": {
-        "Tommy": {"job": "banking"},
-        "Lisa": {"job": "computers"}
-        }
-      }|}
+    {|{"people": {"Tommy": {"job": "banking"}, "Lisa": {"job": "computers"}}}|}
   in
-  let src =
-    {|{% map_dict people
+  print_result "Mapping dictionary variables works"
+    (render
+       {|{% map_dict people
         with {job}, key ~%} {{ key }}: {{ job }}. {% /map_dict %}|}
-  in
-  check "Mapping dictionary variables works" "Lisa: computers. Tommy: banking. "
-    (render src props);
-  let src =
-    {|{% map_dict <"Tommy": {"job": "banking"}, "Lisa": {"job": "computers"}>
+       props);
+  print_result "Mapping dictionary literals works"
+    (render
+       {|{% map_dict <"Tommy": {"job": "banking"}, "Lisa": {"job": "computers"}>
         with {job}, key ~%} {{ key }}: {{ job }}. {% /map_dict %}|}
-  in
-  check "Mapping dictionary literals works" "Lisa: computers. Tommy: banking. "
-    (render src props)
-
-let nullable_props () =
-  let a =
-    Compile.Components.parse_string ~fname:"a.acutis" ~name:"A"
-      {|{{ x ? "fail" }} {{ y ? "pass"}}|}
-  in
-  let src = {|{% A x=!"pass" / %}|} in
-  check "Nullable props default to null" "pass pass"
-    (render ~components:[ a ] src "{}")
-
-let default_children () =
-  let a =
-    Compile.Components.parse_string ~fname:"a.acutis" ~name:"A" "{{ children }}"
-  in
-  let src = "{% A ~%} a {%~ /A %} {% A children=#~%} b {%~# / %}" in
-  check "The default [children] child works" "a b"
-    (render ~components:[ a ] src "{}")
-
-let template_sections () =
+       props);
+  print_result "Nullable props default to null"
+    (render
+       ~components:
+         [
+           Compile.Components.parse_string ~fname:"a.acutis" ~name:"A"
+             {|{{ x ? "fail" }} {{ y ? "pass"}}|};
+         ]
+       {|{% A x=!"pass" / %}|} "{}");
+  print_result "The default [children] child works"
+    (render
+       ~components:
+         [
+           Compile.Components.parse_string ~fname:"a.acutis" ~name:"A"
+             "{{ children }}";
+         ]
+       "{% A ~%} a {%~ /A %} {% A children=#~%} b {%~# / %}" "{}");
   let x =
     Compile.Components.parse_string ~fname:"x.acutis" ~name:"X"
       "{{ passthroughChild }}"
@@ -174,128 +127,77 @@ let template_sections () =
     Compile.Components.parse_string ~fname:"y.acutis" ~name:"Y"
       "{% X passthroughChild=a / %}"
   in
-  let src = "{% Y a=#~%} a {%~# / %}" in
-  check "Children are passed correctly" "a"
-    (render ~components:[ x; y ] src "{}");
+  print_result "Children are passed correctly"
+    (render ~components:[ x; y ] "{% Y a=#~%} a {%~# / %}" "{}");
   let y =
     Compile.Components.parse_string ~fname:"y.acutis" ~name:"Y"
       "{% X passthroughChild / %}"
   in
-  let src = "{% Y passthroughChild=#~%} a {%~# / %}" in
-  check "Children are passed correctly (with punning)" "a"
-    (render ~components:[ x; y ] src "{}")
-
-let tagged_unions () =
-  let props =
-    {|{
-      "a": {"tag": 0,     "a": "a"},
-      "b": {"tag": 1,     "a": 1},
-      "c": {"tag": "a",   "a": "a"},
-      "d": {"tag": "b",   "a": 1},
-      "e": {"tag": true,  "a": "a"},
-      "f": {"tag": false, "a": 1}
-    }|}
-  in
-  let src =
-    {|
-    {%~ map [a, b]
-        with {@tag: 0, a: "a"}
-        with {@tag: 1, a: 1} ~%} success {%
-        with _ %} fail {%
-    /map ~%}
-    {%~ map [c, d]
-        with {@tag: "a", a: "a"}
-        with {@tag: "b", a: 1} ~%} success {%
-        with _ %} fail {%
-    /map ~%}
-    {%~ map [e, f]
-        with {@tag: true, a: "a"}
-        with {@tag: false, a: 1} ~%} success {%
-        with _ %} fail {%
-    /map ~%}|}
-  in
-  check "Tagged unions work" "success success success success success success "
-    (render src props);
-  let props = {|{"a": {"tag": "unexpected", "a": "a"}}|} in
-  let src =
-    {|
-    {%~ match a
-        with {@tag: "something", x}
-        with {@tag: "else", x} %} fail {{ x }}
-    {%  with _ ~%} success
-    {%~ /match ~%}|}
-  in
-  check "Decoding open tagged unions works" "success" (render src props)
-
-let constructing_values () =
-  let src =
-    {|{%~
-      match [(1, 2), (3, 4)],
-            [@"y", @"z"],
-            [@99, @100],
-            [!{@tag: "a", a: 1.5}, null],
-            {@tag: 0, a: !"z"},
-            <a: "a">
-      with  [(1, 2), (3, 4)],
-            [@"y", @"z"],
-            [@99, @100],
-            [!{@tag: "a", a: 1.5}, null],
-            {@tag: 0, a: !"z"},
-            <a: "a">
-    ~%} success {%~
-      with _, _, _, _, _, _ %} fail {%
-      /match ~%}|}
-  in
-  check "Constructing values works" "success" (render src "{}")
-
-let nested_blocks_data () =
-  let src =
-    {|{%~
-        match
-          {
-            a:
-              !#~%}
-                {% match b with true ~%} yes {%~ with false %} {% /match %}
-              {%~#
-          }
-        with {a: !"yes"} ~%} success
-      {%~ with _ %} fail
-      {% /match %}|}
-  in
-  check "Constructing nested template blocks inside data patterns works"
-    "success"
-    (render src {|{"b": true}|})
-
-let () =
-  let open Alcotest in
-  run "Rendering"
-    [
-      ( "Basic rendering",
-        [
-          test_case "Basic" `Quick basic;
-          test_case "Echo formats" `Quick echo_format;
-          test_case "Unbound variables" `Quick unbound_vars;
-          test_case "Ignoring bindings" `Quick ignore_bindings;
-          test_case "Whitespace control" `Quick whitespace;
-          test_case "Nullish coalescing" `Quick nullish_coalescing;
-          test_case "Append list literal" `Quick list_literal_append;
-          test_case "Record field dot access" `Quick record_field_access;
-        ] );
-      ( "Mapping",
-        [
-          test_case "map_list" `Quick map_list;
-          test_case "map_dict" `Quick map_dict;
-        ] );
-      ( "Components",
-        [
-          test_case "Components" `Quick nullable_props;
-          test_case "Default Children" `Quick default_children;
-          test_case "Template sections" `Quick template_sections;
-        ] );
-      ( "Advanced cases",
-        [
-          test_case "Tagged unions" `Quick tagged_unions;
-          test_case "Constructing values" `Quick constructing_values;
-          test_case "Nested blocks in data" `Quick nested_blocks_data;
-        ] );
-    ]
+  print_result "Children are passed correctly (with punning)"
+    (render ~components:[ x; y ] "{% Y passthroughChild=#~%} a {%~# / %}" "{}");
+  print_result "Tagged unions work"
+    (render
+       {| {%~ map [a, b]
+              with {@tag: 0, a: "a"}
+              with {@tag: 1, a: 1} ~%} success {%
+              with _ %} fail {%
+          /map ~%}
+          {%~ map [c, d]
+              with {@tag: "a", a: "a"}
+              with {@tag: "b", a: 1} ~%} success {%
+              with _ %} fail {%
+          /map ~%}
+          {%~ map [e, f]
+              with {@tag: true, a: "a"}
+              with {@tag: false, a: 1} ~%} success {%
+              with _ %} fail {%
+          /map ~%}|}
+       {|{
+          "a": {"tag": 0,     "a": "a"},
+          "b": {"tag": 1,     "a": 1},
+          "c": {"tag": "a",   "a": "a"},
+          "d": {"tag": "b",   "a": 1},
+          "e": {"tag": true,  "a": "a"},
+          "f": {"tag": false, "a": 1}
+        }|});
+  print_result "Decoding open tagged unions works"
+    (render
+       {| {%~ match a
+              with {@tag: "something", x}
+              with {@tag: "else", x} %} fail {{ x }}
+          {%  with _ ~%} success
+          {%~ /match ~%}|}
+       {|{"a": {"tag": "unexpected", "a": "a"}}|});
+  print_result "Constructing values works"
+    (render
+       {|{%~
+          match [(1, 2), (3, 4)],
+                [@"y", @"z"],
+                [@99, @100],
+                [!{@tag: "a", a: 1.5}, null],
+                {@tag: 0, a: !"z"},
+                <a: "a">
+          with  [(1, 2), (3, 4)],
+                [@"y", @"z"],
+                [@99, @100],
+                [!{@tag: "a", a: 1.5}, null],
+                {@tag: 0, a: !"z"},
+                <a: "a">
+        ~%} success {%~
+          with _, _, _, _, _, _ %} fail {%
+          /match ~%}|}
+       "{}");
+  print_result "Constructing nested template blocks inside data patterns works"
+    (render
+       {|{%~
+          match
+            {
+              a:
+                !#~%}
+                  {% match b with true ~%} yes {%~ with false %} {% /match %}
+                {%~#
+            }
+          with {a: !"yes"} ~%} success
+        {%~ with _ %} fail
+        {% /match %}|}
+       {|{"b": true}|})
