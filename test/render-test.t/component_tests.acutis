@@ -1,0 +1,7 @@
+The default 'children' child works:
+{% ChildrenProp ~%} pass {%~ /ChildrenProp %}
+{% ChildrenProp children=#~%} pass {%~# / %}
+
+Children are passed correctly
+{% PassthroughChildNest child=#~%} pass {%~# / %}
+{% PassthroughChildNestPun passthroughChild=#~%} pass {%~# / %}

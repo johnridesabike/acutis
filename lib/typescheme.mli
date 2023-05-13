@@ -34,6 +34,7 @@ module Variant : sig
     ('a -> 'a -> bool) -> ('b -> 'b -> bool) -> ('a, 'b) t -> ('a, 'b) t -> bool
 
   val pp_row : Format.formatter -> row -> unit
+  val row_to_sexp : row -> Sexp.t
 end
 
 module Enum : sig

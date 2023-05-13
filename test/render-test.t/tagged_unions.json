@@ -1,0 +1,9 @@
+{
+  "a": { "tag": 0, "a": "a" },
+  "b": { "tag": 1, "a": 1 },
+  "c": { "tag": "a", "a": "a" },
+  "d": { "tag": "b", "a": 1 },
+  "e": { "tag": true, "a": "a" },
+  "f": { "tag": false, "a": 1 },
+  "open": { "tag": "unexpected", "a": "a" }
+}

@@ -1,0 +1,29 @@
+{% match a
+   with {@tag: 1, b: "a"} %} {%
+   with {@tag: 2, b: 0} %} {%
+   with {@tag: 1} with {@tag: 2} %} {%
+  /match %}
+{% match b
+  with {@tag: "a", b: 1} %} {%
+  with {@tag: "b", b: "c"} %} {%
+  with {@tag: "a"} %} {%
+  with {@tag: "b"} %} {%
+/match %}
+{% match b with {@tag: "a", b: 2} %} {% with _ %} {% /match %}
+
+
+Mixing open and closed unions works correctly
+{% match c
+  with {@tag: "a", b: 1} %} {%
+  with {@tag: "b", b: "a"} %} {%
+  with {@tag: "a"} %} {%
+  with {@tag: "b"} %} {%
+/match %}
+{% map [{@tag: "c", b: 1.5}, {@tag: "d", b: [1]}, c, d] with _ %} {% /map %}
+{% match e
+  with {@tag: 0, b: 1} %} {%
+  with {@tag: 1, b: "a"} %} {%
+  with {@tag: 0} %} {%
+  with {@tag: 1} %} {%
+/match %}
+{% map [{@tag: 2, b: 1.5}, {@tag: 3, b: [1]}, e, f] with _ %} {% /map %}

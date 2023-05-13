@@ -62,6 +62,10 @@ module Variant = struct
     F.pp_print_seq ~pp_sep pp_case ppf cases;
     pp_row ppf row;
     F.fprintf ppf "@]"
+
+  let row_to_sexp = function
+    | `Closed -> Sexp.symbol "closed"
+    | `Open -> Sexp.symbol "open"
 end
 
 module Enum = struct
@@ -277,6 +281,6 @@ let rec pp ppf t =
 let pp_interface =
   let equals ppf (k, v) = F.fprintf ppf "@[<hv 2>%a =@ %a@]" Pp.field k pp v in
   fun ppf m ->
-    F.fprintf ppf "@[<hv>%a@]"
+    F.fprintf ppf "@[<v>%a@]"
       (F.pp_print_seq ~pp_sep:F.pp_print_space equals)
       (Map.String.to_seq m)

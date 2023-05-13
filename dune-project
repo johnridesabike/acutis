@@ -26,9 +26,6 @@
   (ocaml
    (>= 4.14))
   menhir
-  (alcotest :with-test)
-  (alcotest-lwt :with-test)
-  (lwt :with-test)
   (ocamlformat
    (and
     (= 0.24.1)

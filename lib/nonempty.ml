@@ -35,3 +35,6 @@ let pp pp_a ppf l =
   fprintf ppf "@[<2>[%a@,]@]"
     (pp_print_list ~pp_sep:Pp.sep_semicolon pp_a)
     (to_list l)
+
+let to_sexp f (hd :: tl) =
+  Sexp.seq (Seq.cons (f hd) (List.to_seq tl |> Seq.map f))

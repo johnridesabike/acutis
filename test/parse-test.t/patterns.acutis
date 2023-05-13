@@ -1,0 +1,19 @@
+Tuple:
+{% match tuple with (1, 2.5, "a") %} {% with _ %} {% /match %}
+
+List:
+{% match list with [] %} {% with [!a, null] %} {% with [z, ...tl] %}
+{% /match %}
+
+Record:
+{% match record with {a, "!#%@": b} %} {% with _ %} {% /match %}
+
+Enum:
+{% match enums with (@"a", @1, true, false) %} {% with _ %} {% /match %}
+
+Tagged union:
+{% match tagged with {@tag: true, a} %} {% with {@tag: false} %}
+{% /match %}
+
+Dictionary:
+{% match dict with <a: 1, b: 2> %} {% with _ %} {% /match %}

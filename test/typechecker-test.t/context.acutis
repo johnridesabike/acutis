@@ -1,0 +1,24 @@
+{%~ match collections with {frontPage} ~%}
+  {%~ match frontPage with [{data: {isoDate}}] ~%}
+    <updated>
+      {{ isoDate }}
+    </updated>
+  {%~ with _ %} {* Nothing! *}
+  {%~ /match ~%}
+  {% map frontPage with
+     {
+       templateContent,
+       data: {title, isoDate, page: {excerpt}, pub: {@pub: true, absoluteUrl}}
+      }
+    ~%}
+    <entry>
+      <title>{{ title }}</title>
+      <link href="{{ absoluteUrl }}" />
+      <updated>{{ isoDate }}</updated>
+      <id>{{ absoluteUrl }}</id>
+      <summary type="html">{{ excerpt }}</summary>
+      <content type="html">{{ templateContent }}</content>
+    </entry>
+  {% with {data: {pub: {@pub: false}} } %} {* Nothing! *}
+  {%~ /map %}
+{%~ /match ~%}

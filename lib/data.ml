@@ -22,6 +22,11 @@ module Const = struct
     | String _, Int _ | Float _, (Int _ | String _) -> 1
 
   let equal a b = compare a b = 0
+
+  let to_sexp = function
+    | Int i -> Sexp.int i
+    | String s -> Sexp.string s
+    | Float f -> Sexp.float f
 end
 
 type 'a t =
@@ -87,3 +92,17 @@ let fold_list f acc l =
 let fold_dict f acc = function
   | Dict m -> Map.String.fold (fun k v acc -> f ~index:(string k) acc v) m acc
   | _ -> Error.internal __POS__ "Expected Dict."
+
+let rec to_sexp f = function
+  | Other x -> f x
+  | Nil -> Sexp.symbol "nil"
+  | Array a ->
+      Sexp.list
+        [
+          Sexp.symbol "array"; Sexp.seq (Array.to_seq a |> Seq.map (to_sexp f));
+        ]
+  | Dict d -> Sexp.list [ Sexp.symbol "dict"; dict_to_sexp f d ]
+  | Const c -> Const.to_sexp c
+
+and dict_to_sexp f d =
+  Sexp.seq (Map.String.to_seq d |> Seq.map (Sexp.pair Sexp.string (to_sexp f)))

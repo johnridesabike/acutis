@@ -26,6 +26,7 @@ module Dict = struct
   let equal = Map.String.equal
   let pp = Pp.map_string
   let to_map m = m
+  let to_sexp = Sexp.map_string
 end
 
 module Record = struct
@@ -57,6 +58,21 @@ module Record = struct
     match tag with
     | `Tag (k, v) -> Tagged (k, v, Dict.empty)
     | `Notag (k, v) -> Untagged (Dict.singleton k v)
+
+  let tag_to_sexp = function
+    | Tag_int (_, i) -> Sexp.int i
+    | Tag_bool (_, i) -> Sexp.bool i
+    | Tag_string (_, s) -> Sexp.string s
+
+  let to_sexp f = function
+    | Untagged m -> Dict.to_sexp f m
+    | Tagged (s, tag, m) ->
+        Sexp.list
+          [
+            Sexp.symbol "tagged";
+            Sexp.list [ Sexp.string s; tag_to_sexp tag ];
+            Dict.to_sexp f m;
+          ]
 end
 
 module Interface = struct
@@ -72,6 +88,39 @@ module Interface = struct
     | Tuple of ty list
 
   type t = { loc : Loc.t; name : string; ty : ty }
+
+  let rec ty_to_sexp = function
+    | Named (_, s) -> Sexp.list [ Sexp.symbol "named"; Sexp.string s ]
+    | Nullable t -> Sexp.list [ Sexp.symbol "nullable"; ty_to_sexp t ]
+    | List t -> Sexp.list [ Sexp.symbol "list"; ty_to_sexp t ]
+    | Dict t -> Sexp.list [ Sexp.symbol "dict"; ty_to_sexp t ]
+    | Enum_int (l, row) ->
+        Sexp.list
+          [
+            Sexp.symbol "enum_int";
+            Typescheme.Variant.row_to_sexp row;
+            Nonempty.to_sexp Sexp.int l;
+          ]
+    | Enum_bool l ->
+        Sexp.list [ Sexp.symbol "enum_bool"; Nonempty.to_sexp Sexp.bool l ]
+    | Enum_string (l, row) ->
+        Sexp.list
+          [
+            Sexp.symbol "enum_string";
+            Typescheme.Variant.row_to_sexp row;
+            Nonempty.to_sexp Sexp.string l;
+          ]
+    | Record (l, row) ->
+        Sexp.list
+          [
+            Sexp.symbol "record";
+            Typescheme.Variant.row_to_sexp row;
+            Nonempty.to_sexp (fun (_, r) -> Record.to_sexp ty_to_sexp r) l;
+          ]
+    | Tuple l -> Sexp.seq (List.to_seq l |> Seq.map ty_to_sexp)
+
+  let to_sexp { loc = _; name; ty } =
+    Sexp.list [ Sexp.string name; ty_to_sexp ty ]
 end
 
 type trim = No_trim | Trim
@@ -110,3 +159,113 @@ and node =
 
 and case = { pats : (Loc.t * pat Nonempty.t) Nonempty.t; nodes : t }
 and t = node list
+
+let trim_to_sexp = function
+  | No_trim -> Sexp.symbol "no_trim"
+  | Trim -> Sexp.symbol "trim"
+
+let escape_to_sexp = function
+  | No_escape -> Sexp.symbol "no_escape"
+  | Escape -> Sexp.symbol "escape"
+
+let echo_format_to_sexp = function
+  | Fmt_string -> Sexp.symbol "fmt_string"
+  | Fmt_int -> Sexp.symbol "fmt_int"
+  | Fmt_float -> Sexp.symbol "fmt_float"
+  | Fmt_bool -> Sexp.symbol "fmt_bool"
+
+let rec echo_to_sexp = function
+  | Echo_var (_, s) -> Sexp.list [ Sexp.symbol "echo_var"; Sexp.string s ]
+  | Echo_string (_, s) -> Sexp.list [ Sexp.symbol "echo_string"; Sexp.string s ]
+  | Echo_field (x, field) ->
+      Sexp.list [ Sexp.symbol "echo_field"; Sexp.string field; echo_to_sexp x ]
+
+let rec pat_to_sexp = function
+  | Var (_, s) -> Sexp.list [ Sexp.symbol "var"; Sexp.string s ]
+  | Bool (_, i) -> Sexp.bool i
+  | Int (_, i) -> Sexp.int i
+  | Float (_, f) -> Sexp.float f
+  | String (_, s) -> Sexp.string s
+  | Nullable (_, None) -> Sexp.symbol "null"
+  | Nullable (_, Some t) -> Sexp.list [ Sexp.symbol "nullable"; pat_to_sexp t ]
+  | Enum_string (_, s) -> Sexp.list [ Sexp.symbol "enum_string"; Sexp.string s ]
+  | Enum_int (_, i) -> Sexp.list [ Sexp.symbol "enum_int"; Sexp.int i ]
+  | List (_, l, None) ->
+      Sexp.list [ Sexp.symbol "list"; Sexp.list (List.map pat_to_sexp l) ]
+  | List (_, l, Some t) ->
+      Sexp.list
+        [
+          Sexp.symbol "list"; Sexp.list (List.map pat_to_sexp l); pat_to_sexp t;
+        ]
+  | Tuple (_, l) -> Sexp.list (List.map pat_to_sexp l)
+  | Record (_, m) ->
+      Sexp.list [ Sexp.symbol "record"; Record.to_sexp pat_to_sexp m ]
+  | Dict (_, m) -> Sexp.list [ Sexp.symbol "dict"; Dict.to_sexp pat_to_sexp m ]
+  | Block (_, x) -> Sexp.list [ Sexp.symbol "block"; to_sexp x ]
+  | Field (_, x, s) ->
+      Sexp.list [ Sexp.symbol "field"; pat_to_sexp x; Sexp.string s ]
+
+and node_to_sexp = function
+  | Text (s, triml, trimr) ->
+      Sexp.list
+        [
+          Sexp.symbol "text";
+          trim_to_sexp triml;
+          Sexp.string s;
+          trim_to_sexp trimr;
+        ]
+  | Echo (_, fmt, ech, esc) ->
+      Sexp.list
+        [
+          Sexp.symbol "echo";
+          echo_format_to_sexp fmt;
+          echo_to_sexp ech;
+          escape_to_sexp esc;
+        ]
+  | Match (_, pats, cases) ->
+      Sexp.list
+        [
+          Sexp.symbol "match";
+          Nonempty.to_sexp pat_to_sexp pats;
+          Nonempty.to_sexp case_to_sexp cases;
+        ]
+  | Map_list (_, pat, cases) ->
+      Sexp.list
+        [
+          Sexp.symbol "map";
+          pat_to_sexp pat;
+          Nonempty.to_sexp case_to_sexp cases;
+        ]
+  | Map_dict (_, pat, cases) ->
+      Sexp.list
+        [
+          Sexp.symbol "map_dict";
+          pat_to_sexp pat;
+          Nonempty.to_sexp case_to_sexp cases;
+        ]
+  | Component (_, s1, s2, pats) ->
+      Sexp.list
+        [
+          Sexp.symbol "component";
+          Sexp.string s1;
+          Dict.to_sexp pat_to_sexp pats;
+          Sexp.string s2;
+        ]
+  | Interface (_, l) ->
+      Sexp.list
+        [ Sexp.symbol "interface"; Sexp.list (List.map Interface.to_sexp l) ]
+
+and case_to_sexp { pats; nodes } =
+  Sexp.list
+    [
+      Sexp.list
+        [
+          Sexp.symbol "pats";
+          Nonempty.to_sexp
+            (fun (_, pat) -> Nonempty.to_sexp pat_to_sexp pat)
+            pats;
+        ];
+      Sexp.list [ Sexp.symbol "nodes"; to_sexp nodes ];
+    ]
+
+and to_sexp x = Sexp.list (List.map node_to_sexp x)

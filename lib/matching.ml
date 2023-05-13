@@ -852,3 +852,128 @@ let partial_match_check loc tys tree =
   match ParMatch.check tree with
   | { flag = Exhaustive; _ } -> ()
   | { flag = Partial; pats; _ } -> Error.parmatch loc (ParMatch.pp tys) pats
+
+let debug_nest_info_to_sexp = function
+  | Not_dict -> Sexp.symbol "not_dict"
+  | Dict -> Sexp.symbol "dict"
+
+let rec tree_to_sexp :
+          'leaf 'key.
+          ('leaf -> Sexp.t) -> ('key -> Sexp.t) -> ('leaf, 'key) tree -> Sexp.t
+    =
+ fun leaf_f key_f -> function
+  | Switch { key; ids; cases; wildcard; debug_row } ->
+      Sexp.list
+        [
+          Sexp.symbol "switch";
+          Sexp.list [ Sexp.symbol "key"; key_f key ];
+          Sexp.list [ Sexp.symbol "ids"; Sexp.set_int ids ];
+          Sexp.list
+            [ Sexp.symbol "cases"; switchcase_to_sexp leaf_f key_f cases ];
+          Sexp.list
+            [
+              Sexp.symbol "wildcard";
+              (match wildcard with
+              | None -> Sexp.list []
+              | Some wildcard -> tree_to_sexp leaf_f key_f wildcard);
+            ];
+          Sexp.list
+            [ Sexp.symbol "debug_row"; Ty.Variant.row_to_sexp debug_row ];
+        ]
+  | Nest { key; ids; child; wildcard; debug } ->
+      Sexp.list
+        [
+          Sexp.symbol "nest";
+          Sexp.list [ Sexp.symbol "key"; key_f key ];
+          Sexp.list [ Sexp.symbol "ids"; Sexp.set_int ids ];
+          Sexp.list [ Sexp.symbol "child"; nest_to_sexp leaf_f key_f child ];
+          Sexp.list
+            [
+              Sexp.symbol "wildcard";
+              (match wildcard with
+              | None -> Sexp.list []
+              | Some wildcard -> tree_to_sexp leaf_f key_f wildcard);
+            ];
+          Sexp.list [ Sexp.symbol "debug"; debug_nest_info_to_sexp debug ];
+        ]
+  | Construct { key; ids; nil; cons } ->
+      Sexp.list
+        [
+          Sexp.symbol "construct";
+          Sexp.list [ Sexp.symbol "key"; key_f key ];
+          Sexp.list [ Sexp.symbol "ids"; Sexp.set_int ids ];
+          Sexp.list
+            [
+              Sexp.symbol "nil";
+              (match nil with
+              | None -> Sexp.empty
+              | Some nil -> tree_to_sexp leaf_f key_f nil);
+            ];
+          Sexp.list
+            [
+              Sexp.symbol "cons";
+              (match cons with
+              | None -> Sexp.empty
+              | Some cons -> tree_to_sexp leaf_f key_f cons);
+            ];
+        ]
+  | Wildcard { key; ids; child } ->
+      Sexp.list
+        [
+          Sexp.symbol "wildcard";
+          Sexp.list [ Sexp.symbol "key"; key_f key ];
+          Sexp.list [ Sexp.symbol "ids"; Sexp.set_int ids ];
+          Sexp.list [ Sexp.symbol "child"; tree_to_sexp leaf_f key_f child ];
+        ]
+  | End leaf -> Sexp.list [ Sexp.symbol "end"; leaf_f leaf ]
+
+and nest_to_sexp :
+      'leaf 'key.
+      ('leaf -> Sexp.t) -> ('key -> Sexp.t) -> ('leaf, 'key) nest -> Sexp.t =
+ fun leaf_f key_f -> function
+  | Int_keys tree -> tree_to_sexp (tree_to_sexp leaf_f key_f) Sexp.int tree
+  | String_keys tree ->
+      tree_to_sexp (tree_to_sexp leaf_f key_f) Sexp.string tree
+
+and switchcase_to_sexp :
+      'leaf 'key.
+      ('leaf -> Sexp.t) ->
+      ('key -> Sexp.t) ->
+      ('leaf, 'key) switchcase ->
+      Sexp.t =
+ fun leaf_f key_f { data; if_match; next } ->
+  Sexp.list
+    [
+      Sexp.list [ Sexp.symbol "data"; Data.Const.to_sexp data ];
+      Sexp.list [ Sexp.symbol "if_match"; tree_to_sexp leaf_f key_f if_match ];
+      Sexp.list
+        [
+          Sexp.symbol "next";
+          (match next with
+          | None -> Sexp.empty
+          | Some next -> switchcase_to_sexp leaf_f key_f next);
+        ];
+    ]
+
+let leaf_to_sexp { names; exit } =
+  Sexp.list
+    [
+      Sexp.symbol "leaf";
+      Sexp.list
+        [
+          Sexp.symbol "names";
+          Map.String.to_seq names
+          |> Seq.map (Sexp.pair Sexp.string Sexp.int)
+          |> Sexp.seq;
+        ];
+      Sexp.list [ Sexp.symbol "exit"; Sexp.int exit ];
+    ]
+
+let to_sexp f { tree; exits } =
+  Sexp.list
+    [
+      Sexp.list [ Sexp.symbol "tree"; tree_to_sexp leaf_to_sexp Sexp.int tree ];
+      Sexp.seq
+        (Seq.cons (Sexp.symbol "exits")
+           (Array.to_seqi exits |> Seq.map (Sexp.pair Sexp.int f)));
+    ]

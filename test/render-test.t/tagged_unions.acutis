@@ -1,0 +1,20 @@
+Tagged unions work:
+{% map [a, b]
+    with {@tag: 0, a: "a"}
+    with {@tag: 1, a: 1} ~%} success {%
+    with _ %} fail {% /map ~%}
+{%~ map [c, d]
+    with {@tag: "a", a: "a"}
+    with {@tag: "b", a: 1} ~%} success {%
+    with _ %} fail {% /map ~%}
+{%~ map [e, f]
+    with {@tag: true, a: "a"}
+    with {@tag: false, a: 1} ~%} success {%
+    with _ %} fail {% /map %}
+
+Decoding open tagged unions works:
+{% match open
+    with {@tag: "something", x}
+    with {@tag: "else", x} %} fail {{ x }}
+{%  with _ ~%} success
+{%~ /match ~%}

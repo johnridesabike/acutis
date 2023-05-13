@@ -29,6 +29,10 @@ let templates = Queue.create ()
 let set_templates fname = Queue.add fname templates
 let doc_version = " Show the version number and exit."
 
+type action = Render | Print_ast | Print_types | Print_optimized
+
+let action = ref Render
+
 let version () =
   Format.printf "Version: %s\n"
     (match Build_info.V1.version () with
@@ -42,6 +46,9 @@ let args =
       ("--data", String set_arg_data, doc_data);
       ("--output", String set_arg_output, doc_output);
       ("--version", Unit version, doc_version);
+      ("--printast", Unit (fun () -> action := Print_ast), "todo");
+      ("--printtypes", Unit (fun () -> action := Print_types), "todo");
+      ("--printopt", Unit (fun () -> action := Print_optimized), "todo");
     ]
 
 let fname_to_compname s =
@@ -52,15 +59,6 @@ let () =
     Arg.parse args set_templates usage_msg;
 
     let fname = Queue.take templates in
-
-    let data =
-      match !arg_data with
-      | None ->
-          if Unix.isatty Unix.stdin then print_endline "Enter JSON data:";
-          Yojson.Basic.from_channel stdin
-      | Some fname ->
-          In_channel.with_open_text fname (Yojson.Basic.from_channel ~fname)
-    in
 
     let components =
       Queue.fold
@@ -73,17 +71,43 @@ let () =
       |> Compile.Components.make
     in
 
-    let template =
-      In_channel.with_open_text fname (Compile.from_channel ~fname components)
-    in
-
-    let result = Render.make template data in
-
-    match !arg_output with
-    | None -> Out_channel.output_string stdout result
-    | Some fname ->
-        Out_channel.(
-          with_open_text fname (fun chan -> output_string chan result))
+    match !action with
+    | Print_ast ->
+        In_channel.with_open_text fname (fun chan ->
+            (Compile.parse ~fname) (Lexing.from_channel chan))
+        |> Ast.to_sexp
+        |> Sexp.pp Format.std_formatter
+    | Print_types ->
+        let template =
+          In_channel.with_open_text fname
+            (Compile.from_channel ~fname components)
+        in
+        Typescheme.pp_interface Format.std_formatter template.types
+    | Print_optimized ->
+        let template =
+          In_channel.with_open_text fname
+            (Compile.from_channel ~fname components)
+        in
+        Compile.to_sexp template.nodes |> Sexp.pp Format.std_formatter
+    | Render -> (
+        let data =
+          match !arg_data with
+          | None ->
+              if Unix.isatty Unix.stdin then print_endline "Enter JSON data:";
+              Yojson.Basic.from_channel stdin
+          | Some fname ->
+              In_channel.with_open_text fname (Yojson.Basic.from_channel ~fname)
+        in
+        let template =
+          In_channel.with_open_text fname
+            (Compile.from_channel ~fname components)
+        in
+        let result = Render.make template data in
+        match !arg_output with
+        | None -> Out_channel.output_string stdout result
+        | Some fname ->
+            Out_channel.(
+              with_open_text fname (fun chan -> output_string chan result)))
   with
   | Error.Acutis_error e ->
       Out_channel.output_string stderr e;

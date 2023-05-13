@@ -1,0 +1,4 @@
+Binding a name twice in two 'withs' does not trigger an 'unused binding' error.
+{%~ match a with {a: 1, x}
+    with {b: 2, x} %} {{ x }}
+{%  with _ %} {%~ /match ~%}

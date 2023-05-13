@@ -1,20 +1,6 @@
 (tests
- (names parser_test typechecker_test matching_test render_test error_test)
- (modules parser_test typechecker_test matching_test render_test error_test)
- (libraries acutis acutis_json alcotest yojson))
-
-(tests
- (names data_test)
- (modules data_test)
- (libraries acutis acutis_json acutis_js alcotest yojson)
- (modes js)
- (preprocess
-  (pps js_of_ocaml-ppx)))
-
-(tests
- (names lwt_test)
- (modules lwt_test)
- (libraries acutis acutis_json alcotest yojson lwt alcotest-lwt))
+ (names error_test)
+ (libraries acutis acutis_json yojson))
 
 (cram
- (deps %{bin:acutis}))
+ (deps %{bin:acutis} ../package.json))

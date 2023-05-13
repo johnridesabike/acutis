@@ -1,0 +1,9 @@
+{% Template
+  a=b
+  c
+  d=e
+  f
+  g=#%} {%#
+  h=#%}{% match a with b %} {% /match %}{%#
+  i=##
+/%}

@@ -1,0 +1,4 @@
+{
+  "ignored": { "x": null },
+  "a": { "b": { "c": { "d": true } }, "e": { "f": { "g": "pass" } } }
+}

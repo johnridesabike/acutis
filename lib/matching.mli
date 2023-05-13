@@ -262,3 +262,5 @@ val make : Typechecker.case Nonempty.t -> Typechecker.nodes t
 val partial_match_check : Loc.t -> Typescheme.t list -> (leaf, int) tree -> unit
 (** Searches the tree for a counterexample to prove it does not cover
     a case. Raises {!Error.Acutis_error} if it finds one. *)
+
+val to_sexp : ('a -> Sexp.t) -> 'a t -> Sexp.t

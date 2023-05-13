@@ -1,0 +1,12 @@
+{% match a
+    with
+      {
+        int: 01000,
+        frac: 010.55,
+        negint: -0999,
+        negfrac: -012.34,
+        exp1: 1.5e2,
+        exp2: -10e+2,
+        exp3: 20e-2
+      }
+%}{% with _ %}{% /match %}
