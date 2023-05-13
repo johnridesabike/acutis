@@ -20,8 +20,6 @@ module Dict : sig
   val empty : _ t
   val add : Loc.t -> string -> 'a -> 'a t -> 'a t
   val singleton : string -> 'a -> 'a t
-  val pp : (Format.formatter -> 'a -> unit) -> Format.formatter -> 'a t -> unit
-  val equal : ('a -> 'a -> bool) -> 'a t -> 'a t -> bool
   val to_map : 'a t -> 'a Map.String.t
 end
 

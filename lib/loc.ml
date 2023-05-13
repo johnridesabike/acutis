@@ -11,5 +11,3 @@
 type t = Lexing.position * Lexing.position
 
 let dummy = (Lexing.dummy_pos, Lexing.dummy_pos)
-let pp ppf _ = Format.fprintf ppf "<loc>"
-let equal _ _ = true (* Do not use location for equality in testing. *)

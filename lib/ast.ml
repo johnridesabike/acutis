@@ -23,8 +23,6 @@ module Dict = struct
 
   let empty = Map.String.empty
   let singleton = Map.String.singleton
-  let equal = Map.String.equal
-  let pp = Pp.map_string
   let to_map m = m
   let to_sexp = Sexp.map_string
 end

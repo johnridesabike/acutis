@@ -15,31 +15,9 @@ open Format
 val sep_comma : formatter -> unit -> unit
 (** Outputs [,@ ]. *)
 
-val sep_semicolon : formatter -> unit -> unit
-(** Outputs [;@ ]. *)
-
 val syntax_string : formatter -> string -> unit
 (** Equivalent to the format string ["%S"]. *)
 
-val option : (formatter -> 'a -> unit) -> formatter -> 'a option -> unit
-val list : (formatter -> 'a -> unit) -> formatter -> 'a list -> unit
-
-val pair :
-  (formatter -> 'a -> unit) ->
-  (formatter -> 'b -> unit) ->
-  formatter ->
-  'a * 'b ->
-  unit
-
-val map_string :
-  (Format.formatter -> 'a -> unit) ->
-  Format.formatter ->
-  'a Map.String.t ->
-  unit
-(** The function that [Stdlib.Map.S] is missing. *)
-
-val set_int : Format.formatter -> Set.Int.t -> unit
-(** The function that [Stdlib.Set.S] is missing. *)
 
 val field : formatter -> string -> unit
 (** Outputs either [field] or ["string field"] depending on whether the input is

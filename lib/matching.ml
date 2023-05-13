@@ -52,7 +52,6 @@ module Exit = struct
   type key = int
 
   let equal_key = Int.equal
-  let pp_key = Format.pp_print_int
 
   type 'a t = 'a array
 

@@ -14,7 +14,7 @@ type t =
   | String of string
   | Float of float
   | List of t Seq.t
-      (** Since a lot of data types will need to convert to a list, we'll just
+      (** Since a lot of data types will need to convert to this, we'll just
           use Seq.t internally. *)
 
 let symbol s = Symbol s
@@ -34,7 +34,7 @@ let map_string f m = List (Map.String.to_seq m |> Seq.map (pair string f))
 
 let rec pp ppf = function
   | Symbol s -> Format.pp_print_string ppf s
-  | String s -> Format.fprintf ppf "%S" s
+  | String s -> Pp.syntax_string ppf s
   | Int i -> Format.pp_print_int ppf i
   | Float f -> Format.pp_print_float ppf f
   | List l ->

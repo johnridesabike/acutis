@@ -22,11 +22,9 @@ Options:|}
 type action = Render | Print_ast | Print_types | Print_optimized
 
 let doc_data = " The path to a JSON data file. Default: stdin."
-let arg_data = ref None
-let set_arg_data s = arg_data := Some s
+let arg_data = ref "-"
 let doc_output = " The path to write the output. Default: stdout."
-let arg_output = ref None
-let set_arg_output s = arg_output := Some s
+let arg_output = ref "-"
 let templates = Queue.create ()
 let set_templates fname = Queue.add fname templates
 let doc_version = " Show the version number and exit."
@@ -45,8 +43,8 @@ let version () =
 let args =
   Arg.align
     [
-      ("--data", String set_arg_data, doc_data);
-      ("--output", String set_arg_output, doc_output);
+      ("--data", Set_string arg_data, doc_data);
+      ("--output", Set_string arg_output, doc_output);
       ("--version", Unit version, doc_version);
       ("--printast", Unit (fun () -> action := Print_ast), doc_printast);
       ("--printtypes", Unit (fun () -> action := Print_types), doc_printtypes);
@@ -94,10 +92,10 @@ let () =
     | Render -> (
         let data =
           match !arg_data with
-          | None ->
+          | "-" ->
               if Unix.isatty Unix.stdin then print_endline "Enter JSON data:";
               Yojson.Basic.from_channel stdin
-          | Some fname ->
+          | fname ->
               In_channel.with_open_text fname (Yojson.Basic.from_channel ~fname)
         in
         let template =
@@ -106,8 +104,8 @@ let () =
         in
         let result = Render.make template data in
         match !arg_output with
-        | None -> Out_channel.output_string stdout result
-        | Some fname ->
+        | "-" -> Out_channel.output_string stdout result
+        | fname ->
             Out_channel.(
               with_open_text fname (fun chan -> output_string chan result)))
   with
@@ -115,11 +113,11 @@ let () =
       Out_channel.output_string stderr e;
       exit 1
   | Yojson.Json_error s ->
-      Format.eprintf "@[<v>Error decoding JSON input:@;%s@;@]" s;
+      Format.eprintf "@[<v>Error decoding JSON input.@,%s@,@]" s;
       exit 1
   | Queue.Empty ->
-      Format.eprintf "@[<v>Compile error.@;You need to provide a template.@;@]";
+      Format.eprintf "@[<v>Compile error.@,You need to provide a template.@,@]";
       exit 1
   | Sys_error s ->
-      Format.eprintf "@[<v>System error:@;%s@;@]" s;
+      Format.eprintf "@[<v>System error:@,%s@,@]" s;
       exit 1
