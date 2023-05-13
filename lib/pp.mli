@@ -18,7 +18,6 @@ val sep_comma : formatter -> unit -> unit
 val syntax_string : formatter -> string -> unit
 (** Equivalent to the format string ["%S"]. *)
 
-
 val field : formatter -> string -> unit
 (** Outputs either [field] or ["string field"] depending on whether the input is
     a valid identifier. *)
