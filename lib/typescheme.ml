@@ -49,7 +49,7 @@ module Variant = struct
 
   let pp_row ppf = function
     | `Closed -> ()
-    | `Open -> F.fprintf ppf "@ @[| ...@]"
+    | `Open -> F.fprintf ppf "@ | ..."
 
   let pp_bool ppf = function
     | 0 -> F.pp_print_string ppf "false"
@@ -282,5 +282,5 @@ let pp_interface =
   let equals ppf (k, v) = F.fprintf ppf "@[<hv 2>%a =@ %a@]" Pp.field k pp v in
   fun ppf m ->
     F.fprintf ppf "@[<v>%a@]"
-      (F.pp_print_seq ~pp_sep:F.pp_print_space equals)
+      (F.pp_print_seq ~pp_sep:F.pp_print_cut equals)
       (Map.String.to_seq m)
