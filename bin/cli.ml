@@ -19,6 +19,8 @@ Usage:
 
 Options:|}
 
+type action = Render | Print_ast | Print_types | Print_optimized
+
 let doc_data = " The path to a JSON data file. Default: stdin."
 let arg_data = ref None
 let set_arg_data s = arg_data := Some s
@@ -28,9 +30,9 @@ let set_arg_output s = arg_output := Some s
 let templates = Queue.create ()
 let set_templates fname = Queue.add fname templates
 let doc_version = " Show the version number and exit."
-
-type action = Render | Print_ast | Print_types | Print_optimized
-
+let doc_printast = " Print the template's untyped AST form and exit."
+let doc_printtypes = " Print the template's type interface and exit."
+let doc_printopt = " Print the template's optimized form and exit."
 let action = ref Render
 
 let version () =
@@ -46,9 +48,9 @@ let args =
       ("--data", String set_arg_data, doc_data);
       ("--output", String set_arg_output, doc_output);
       ("--version", Unit version, doc_version);
-      ("--printast", Unit (fun () -> action := Print_ast), "todo");
-      ("--printtypes", Unit (fun () -> action := Print_types), "todo");
-      ("--printopt", Unit (fun () -> action := Print_optimized), "todo");
+      ("--printast", Unit (fun () -> action := Print_ast), doc_printast);
+      ("--printtypes", Unit (fun () -> action := Print_types), doc_printtypes);
+      ("--printopt", Unit (fun () -> action := Print_optimized), doc_printopt);
     ]
 
 let fname_to_compname s =

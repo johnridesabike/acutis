@@ -1,0 +1,88 @@
+Echoes
+{{ ech_a }} {{ "b" }} {{{ ech_d ? ech_e ? "f\"g" }}}
+{{ %i ech_i }} {{ %f ech_f }} {{ %b ech_b }}
+
+Numbers
+{% match numbers
+    with
+      {
+        int: 01000,
+        frac: 010.55,
+        negint: -0999,
+        negfrac: -012.34,
+        exp1: 1.5e2,
+        exp2: -10e+2,
+        exp3: 20e-2
+      }
+%}{% with _ %}{% /match %}
+
+Trim
+{{~ trim_a }} {{~ trim_b }} {{ trim_c ~}} {{~ trim_d ~}} {{{~ trim_e }}}
+{{{ trim_f ~}}} {{{~ trim_g ~}}}
+
+Comments
+a {* {* *} *}b{*
+ *} c
+
+Flat match
+{% match match_a with 1 with 2 %}{% with 3 %} {% with _ %} {% /match %}
+
+Nested match
+{% match match_b with c %}
+  {% match d, e with f, g %} {{ c }} {{ f }} {{ g }} {% /match %}
+{% /match %}
+
+Map list
+{% map map_l with 1 with 2 %}{% with 3, i %} {{ %i i }} {% with _ %} {% /map %}
+
+Map dict
+{% map_dict map_d
+    with 1 with 2 %}{% with 3, k %} {{ k }} {% with _ %}
+{% /map_dict %}
+
+Component with props
+{% Component
+  a_prop=b_prop
+  c_prop
+  d_prop=e_prop
+  f_prop
+  g_prop=#%} {%#
+  h_prop=#%}{% match a_prop with b_prop %} {{ b_prop }} {% /match %}{%#
+  i_prop=##
+/%}
+
+Component with implicit children
+{% Component2 %} {% /Component2 %}
+
+Patterns
+
+Tuple:
+{% match tuple with (1, 2.5, "a") %} {% with _ %} {% /match %}
+
+List:
+{% match list
+    with [] %}
+{%  with [!a, null] %} {{ a }}
+{%  with [_z, ..._tl] %}
+{% /match %}
+
+Record:
+{% match record with {a, "!#%@": b} %} {{ a }} {{ b }} {% with _ %} {% /match %}
+
+Enum:
+{% match enums with (@"a", @1, true, false) %} {% with _ %} {% /match %}
+
+Tagged union:
+{% match tagged with {@tag: true, a} %} {{ a }} {% with {@tag: false} %}
+{% /match %}
+
+Dictionary:
+{% match dict with <a: 1, b: 2> %} {% with _ %} {% /match %}
+
+! and . precedence works correctly
+{% match !!a.b.c with !!false %}{% with _ %}{% /match %}
+
+Edge cases
+
+Patterns with }} parse correctly
+{% match a with {a: {b}} %} {{ b }} {% /match %}

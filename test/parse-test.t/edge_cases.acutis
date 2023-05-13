@@ -1,2 +1,0 @@
-Patterns with }} parse correctly
-{% match a with {a: {b}} %} {{ b }} {% /match %}
