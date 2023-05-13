@@ -137,9 +137,12 @@ Usage:
   acutis [options] [template] [...templates]
 
 Options:
-  --data     The path to a JSON data file. Default: stdin.
-  --output   The path to write the output. Default: stdout.
-  --version  Show the version number and exit.
-  -help      Display this list of options
-  --help     Display this list of options
+  --data        The path to a JSON data file. Default: stdin.
+  --output      The path to write the output. Default: stdout.
+  --version     Show the version number and exit.
+  --printast    Print the template's untyped AST form and exit.
+  --printtypes  Print the template's type interface and exit.
+  --printopt    Print the template's optimized form and exit.
+  -help         Display this list of options
+  --help        Display this list of options
 ```

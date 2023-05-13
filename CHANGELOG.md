@@ -2,6 +2,10 @@
 
 Most changes are breaking changes.
 
+## Latest
+
+- Add debug commands to the CLI: `--printast` `--printtypes` `--printopt`.
+
 ## 0.22.0
 
 - Remove format specifier options. `%i` `%f` and `%b` do not take any flags now.
