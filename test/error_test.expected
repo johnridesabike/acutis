@@ -725,7 +725,7 @@ Type mismatch.
 Expected:
   {a: int}
 Received:
-    {@a: 1} | ...
+  {@a: 1} | ...
 
 Dict <> record
 ---
@@ -800,9 +800,9 @@ File "<test>", 2:10-2:11
 Type error.
 Type mismatch.
 Expected:
-    @1
+  @1
 Received:
-    @1 | @2 | ...
+  @1 | @2 | ...
 
 Enum vars with no subset are reported.
 ---
@@ -810,9 +810,9 @@ File "<test>", 3:12-3:13
 Type error.
 Type mismatch.
 Expected:
-    @1 | @2
+  @1 | @2
 Received:
-    @3 | @4
+  @3 | @4
 
 Enum vars + literals with no subset are reported.
 ---
@@ -820,9 +820,9 @@ File "<test>", 2:12-2:14
 Type error.
 Type mismatch.
 Expected:
-    @1 | @2
+  @1 | @2
 Received:
-    @3 | ...
+  @3 | ...
 
 Enum literals with no subset are reported (1).
 ---
@@ -830,9 +830,9 @@ File "<test>", 1:10-1:12
 Type error.
 Type mismatch.
 Expected:
-    @1
+  @1
 Received:
-    @0 | ...
+  @0 | ...
 
 Enum literals with no subset are reported (2).
 ---
@@ -840,9 +840,9 @@ File "<test>", 1:10-1:12
 Type error.
 Type mismatch.
 Expected:
-    @"a"
+  @"a"
 Received:
-    @0 | ...
+  @0 | ...
 
 | false | true <> only false
 ---
@@ -850,9 +850,9 @@ File "<test>", 1:10-1:14
 Type error.
 Type mismatch.
 Expected:
-    false
+  false
 Received:
-    false | true
+  false | true
 
 Int tag <> string tag
 ---
@@ -860,9 +860,9 @@ File "<test>", 1:38-1:52
 Type error.
 Type mismatch.
 Expected:
-    {@tag: 0}
+  {@tag: 0}
 Received:
-    {@tag: "a", b: _}
+  {@tag: "a", b: _}
 
 Random other tags don't compile.
 ---
@@ -877,9 +877,9 @@ File "<test>", 1:36-1:46
 Type error.
 Type mismatch.
 Expected:
-    {@a: 0}
+  {@a: 0}
 Received:
-    {@b: 1, c: _}
+  {@b: 1, c: _}
 
 Variable names must be coherent.
 ---
@@ -1180,7 +1180,7 @@ The data supplied does not match this template's interface.
 Path:
   input -> "b".
 Expected type:
-    false
+  false
 This type does not allow the given value:
   true
 
@@ -1192,7 +1192,7 @@ The data supplied does not match this template's interface.
 Path:
   input -> "a".
 Expected type:
-    @1 | @2
+  @1 | @2
 This type does not allow the given value:
   3
 
@@ -1204,7 +1204,7 @@ The data supplied does not match this template's interface.
 Path:
   input -> "a".
 Expected type:
-    @"a" | @"b"
+  @"a" | @"b"
 This type does not allow the given value:
   "c"
 
@@ -1228,7 +1228,7 @@ The data supplied does not match this template's interface.
 Path:
   input -> "a".
 Expected type:
-    {@tag: 1, a: string}
+  {@tag: 1, a: string}
 Received value:
   { "tag": "a", "a": "a" }
 
@@ -1240,7 +1240,7 @@ The data supplied does not match this template's interface.
 Path:
   input -> "a".
 Expected type:
-    {@tag: 1, a: string}
+  {@tag: 1, a: string}
 Received value:
   { "tag": 2, "a": "a" }
 
@@ -1528,7 +1528,7 @@ Type mismatch.
 Expected:
   string
 Received:
-    true
+  true
 
 Tag type error: bool <> int.
 ---
@@ -1536,7 +1536,7 @@ File "<test>", 1:41-1:44
 Type error.
 Type mismatch.
 Expected:
-    false | true
+  false | true
 Received:
   int
 
@@ -1550,7 +1550,7 @@ Prop name:
 Interface:
   int
 Implementation:
-    true
+  true
 
 Interface is missing props.
 ---
@@ -1582,9 +1582,9 @@ This interface does not match the implementation.
 Prop name:
   x
 Interface:
-    @0 | @1 | ...
+  @0 | @1 | ...
 Implementation:
-    @0 | @1 | @2 | ...
+  @0 | @1 | @2 | ...
 
 Interface is missing union cases.
 ---
@@ -1594,9 +1594,9 @@ This interface does not match the implementation.
 Prop name:
   x
 Interface:
-    {@tag: 0} | {@tag: 1, a: int} | ...
+  {@tag: 0} | {@tag: 1, a: int} | ...
 Implementation:
-    {@tag: 0} | {@tag: 1, a: string} | {@tag: 2, b: string} | ...
+  {@tag: 0} | {@tag: 1, a: string} | {@tag: 2, b: string} | ...
 
 Unknown is not equal to any other type.
 ---

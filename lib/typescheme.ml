@@ -33,17 +33,15 @@ module Variant = struct
   let equal_extra a b =
     match (a, b) with Not_bool, Not_bool | Bool, Bool -> true | _ -> false
 
-  let pp_sep ppf () = F.fprintf ppf "@ | "
-  let pp_row ppf = function `Closed -> () | `Open -> F.fprintf ppf "@ | ..."
+  let pp_sep ppf () = F.fprintf ppf " |@ "
+  let pp_row ppf = function `Closed -> () | `Open -> F.fprintf ppf " |@ ..."
 
   let pp_bool ppf = function
     | 0 -> F.pp_print_string ppf "false"
     | _ -> F.pp_print_string ppf "true"
 
   let pp ppf pp_case cases row =
-    F.fprintf ppf "@[<hv>";
-    F.pp_print_if_newline ppf ();
-    F.pp_print_string ppf "  ";
+    F.fprintf ppf "@[<hv 0>";
     F.pp_print_seq ~pp_sep pp_case ppf cases;
     pp_row ppf row;
     F.fprintf ppf "@]"
@@ -240,7 +238,7 @@ let rec pp ppf t =
           Variant.pp ppf (aux Variant.pp_bool) (Map.Int.to_seq cases) row)
 
 let pp_interface =
-  let equals ppf (k, v) = F.fprintf ppf "@[<hov 2>%a =@ %a@]" Pp.field k pp v in
+  let equals ppf (k, v) = F.fprintf ppf "@[<hv 2>%a =@ %a@]" Pp.field k pp v in
   fun ppf m ->
     F.fprintf ppf "@[<v>%a@]"
       (F.pp_print_seq ~pp_sep:F.pp_print_space equals)

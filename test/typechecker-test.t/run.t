@@ -46,17 +46,9 @@ Closed enums are inferred correctly
   i = @"a" | @"b"
   j = @1 | @2
   k = {a: @"a" | @"b"}
-  l =
-    {a: @"a" | @"b" | @"c" | ...}
+  l = {a: @"a" | @"b" | @"c" | ...}
   m = {a: @1 | @2}
-  n =
-    {
-       a:
-           @1
-         | @2
-         | @3
-         | ...
-    }
+  n = {a: @1 | @2 | @3 | ...}
 
 Booleans are inferred correctly
   $ acutis boolean.acutis --printtypes
@@ -70,10 +62,7 @@ Open tagged unions are inferred correctly
   a = {@tag: "a", b: string} | {@tag: "b", b: int} | ...
   b = {@tag: 0, b: string} | {@tag: 1, b: int} | ...
   c =
-      {@tag: "a", b: string}
-    | {@tag: "b", b: int}
-    | {@tag: "c", b: float}
-    | ...
+    {@tag: "a", b: string} | {@tag: "b", b: int} | {@tag: "c", b: float} | ...
   d = <{@tag: "a"} | {@tag: "b"} | {@tag: "c"} | ...>
 
 Closed unions are inferred correctly
@@ -82,18 +71,18 @@ Closed unions are inferred correctly
   b = {@tag: "a", b: int} | {@tag: "b", b: string}
   c = {@tag: "a", b: int} | {@tag: "b", b: string}
   d =
-      {@tag: "a", b: int}
-    | {@tag: "b", b: string}
-    | {@tag: "c", b: float}
-    | {@tag: "d", b: [int]}
-    | ...
+    {@tag: "a", b: int} |
+    {@tag: "b", b: string} |
+    {@tag: "c", b: float} |
+    {@tag: "d", b: [int]} |
+    ...
   e = {@tag: 0, b: int} | {@tag: 1, b: string}
   f =
-      {@tag: 0, b: int}
-    | {@tag: 1, b: string}
-    | {@tag: 2, b: float}
-    | {@tag: 3, b: [int]}
-    | ...
+    {@tag: 0, b: int} |
+    {@tag: 1, b: string} |
+    {@tag: 2, b: float} |
+    {@tag: 3, b: [int]} |
+    ...
 
 Boolean unions work
   $ acutis union_boolean.acutis --printtypes
@@ -144,26 +133,24 @@ The typescheme pretty-printer prints valid (and pretty) syntax
   a = {a: @0 | @1, b: @"a" | @"b"}
   b = {@tag: false, a: <?string>} | {@tag: true, a: [int]}
   c = {@tag: 0} | {@tag: 1, a: (float, false | true)}
-  d =
-      {@tag: "a", a: float}
-    | {@tag: "b", a: @0 | @1 | ...}
+  d = {@tag: "a", a: float} | {@tag: "b", a: @0 | @1 | ...}
   e =
-      {@tag: 0, a: _}
-    | {@tag: 1, b: @"a" | @"b" | ...}
-    | {@tag: 2, b: int, c: false | true}
-    | ...
+    {@tag: 0, a: _} |
+    {@tag: 1, b: @"a" | @"b" | ...} |
+    {@tag: 2, b: int, c: false | true} |
+    ...
   f =
-      @"a very looooong string enum type"
-    | @"it is so very loooooong! It just keeps going!"
-    | ...
+    @"a very looooong string enum type" |
+    @"it is so very loooooong! It just keeps going!" |
+    ...
   g =
     {
        a:
          [
-              @"another loooong enum type!"
-            | @"it is so very loooooong! It just keeps going!"
-            | @"this time it is inside a record!"
-            | ...
+            @"another loooong enum type!" |
+            @"it is so very loooooong! It just keeps going!" |
+            @"this time it is inside a record!" |
+            ...
          ]
     }
 

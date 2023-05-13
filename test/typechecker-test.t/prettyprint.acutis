@@ -1,27 +1,25 @@
 {% interface
-   a = {a: @0 | @1, b: @"a" | @"b"}
-   b = {@tag: false, a: <?string>} | {@tag: true, a: [int]}
-   c = {@tag: 0} | {@tag: 1, a: (float, false | true)}
-   d =
-       {@tag: "a", a: float}
-     | {@tag: "b", a: @0 | @1 | ...}
-   e =
-       {@tag: 0, a: _}
-     | {@tag: 1, b: @"a" | @"b" | ...}
-     | {@tag: 2, b: int, c: false | true}
-     | ...
-   f =
-       @"a very looooong string enum type"
-     | @"it is so very loooooong! It just keeps going!"
-     | ...
-   g =
-     {
-        a:
-          [
-               @"another loooong enum type!"
-             | @"it is so very loooooong! It just keeps going!"
-             | @"this time it is inside a record!"
-             | ...
-          ]
-     }
+  a = {a: @0 | @1, b: @"a" | @"b"}
+  b = {@tag: false, a: <?string>} | {@tag: true, a: [int]}
+  c = {@tag: 0} | {@tag: 1, a: (float, false | true)}
+  d = {@tag: "a", a: float} | {@tag: "b", a: @0 | @1 | ...}
+  e =
+    {@tag: 0, a: _} |
+    {@tag: 1, b: @"a" | @"b" | ...} |
+    {@tag: 2, b: int, c: false | true} |
+    ...
+  f =
+    @"a very looooong string enum type" |
+    @"it is so very loooooong! It just keeps going!" |
+    ...
+  g =
+    {
+       a:
+         [
+            @"another loooong enum type!" |
+            @"it is so very loooooong! It just keeps going!" |
+            @"this time it is inside a record!" |
+            ...
+         ]
+    }
 / %}
