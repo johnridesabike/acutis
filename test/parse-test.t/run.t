@@ -1,17 +1,21 @@
 Print the untyped AST to make sure parsing works
   $ acutis template.acutis --printast
   ((text no_trim "Echoes\n" no_trim)
-   (echo fmt_string (echo_var "ech_a") escape)
+   (echo () fmt_string (echo_var "ech_a") escape)
    (text no_trim " " no_trim)
-   (echo fmt_string (echo_string "b") escape)
+   (echo () fmt_string (echo_string "b") escape)
    (text no_trim " " no_trim)
-   (echo fmt_string (echo_string "f\"g") no_escape)
+   (echo
+    ((fmt_string (echo_var "ech_d")) (fmt_string (echo_var "ech_e")))
+    fmt_string
+    (echo_string "f\"g")
+    no_escape)
    (text no_trim "\n" no_trim)
-   (echo fmt_int (echo_var "ech_i") escape)
+   (echo () fmt_int (echo_var "ech_i") escape)
    (text no_trim " " no_trim)
-   (echo fmt_float (echo_var "ech_f") escape)
+   (echo () fmt_float (echo_var "ech_f") escape)
    (text no_trim " " no_trim)
-   (echo fmt_bool (echo_var "ech_b") escape)
+   (echo () fmt_bool (echo_var "ech_b") escape)
    (text no_trim "\n\nNumbers\n" no_trim)
    (match
     ((var "numbers"))
@@ -27,19 +31,19 @@ Print the untyped AST to make sure parsing works
       (nodes ((text no_trim "" no_trim))))
      ((pats (((var "_")))) (nodes ((text no_trim "" no_trim))))))
    (text no_trim "\n\nTrim\n" trim)
-   (echo fmt_string (echo_var "trim_a") escape)
+   (echo () fmt_string (echo_var "trim_a") escape)
    (text no_trim " " trim)
-   (echo fmt_string (echo_var "trim_b") escape)
+   (echo () fmt_string (echo_var "trim_b") escape)
    (text no_trim " " no_trim)
-   (echo fmt_string (echo_var "trim_c") escape)
+   (echo () fmt_string (echo_var "trim_c") escape)
    (text trim " " trim)
-   (echo fmt_string (echo_var "trim_d") escape)
+   (echo () fmt_string (echo_var "trim_d") escape)
    (text trim " " trim)
-   (echo fmt_string (echo_var "trim_e") no_escape)
+   (echo () fmt_string (echo_var "trim_e") no_escape)
    (text no_trim "\n" no_trim)
-   (echo fmt_string (echo_var "trim_f") no_escape)
+   (echo () fmt_string (echo_var "trim_f") no_escape)
    (text trim " " trim)
-   (echo fmt_string (echo_var "trim_g") no_escape)
+   (echo () fmt_string (echo_var "trim_g") no_escape)
    (text trim "\n\nComments\na b c\n\nFlat match\n" no_trim)
    (match
     ((var "match_a"))
@@ -57,11 +61,11 @@ Print the untyped AST to make sure parsing works
          (((pats (((var "f") (var "g"))))
            (nodes
             ((text no_trim " " no_trim)
-             (echo fmt_string (echo_var "c") escape)
+             (echo () fmt_string (echo_var "c") escape)
              (text no_trim " " no_trim)
-             (echo fmt_string (echo_var "f") escape)
+             (echo () fmt_string (echo_var "f") escape)
              (text no_trim " " no_trim)
-             (echo fmt_string (echo_var "g") escape)
+             (echo () fmt_string (echo_var "g") escape)
              (text no_trim " " no_trim))))))
         (text no_trim "\n" no_trim))))))
    (text no_trim "\n\nMap list\n" no_trim)
@@ -71,7 +75,7 @@ Print the untyped AST to make sure parsing works
      ((pats ((3 (var "i"))))
       (nodes
        ((text no_trim " " no_trim)
-        (echo fmt_int (echo_var "i") escape)
+        (echo () fmt_int (echo_var "i") escape)
         (text no_trim " " no_trim))))
      ((pats (((var "_")))) (nodes ((text no_trim " " no_trim))))))
    (text no_trim "\n\nMap dict\n" no_trim)
@@ -81,7 +85,7 @@ Print the untyped AST to make sure parsing works
      ((pats ((3 (var "k"))))
       (nodes
        ((text no_trim " " no_trim)
-        (echo fmt_string (echo_var "k") escape)
+        (echo () fmt_string (echo_var "k") escape)
         (text no_trim " " no_trim))))
      ((pats (((var "_")))) (nodes ((text no_trim "\n" no_trim))))))
    (text no_trim "\n\nComponent with props\n" no_trim)
@@ -100,7 +104,7 @@ Print the untyped AST to make sure parsing works
          (((pats (((var "b_prop"))))
            (nodes
             ((text no_trim " " no_trim)
-             (echo fmt_string (echo_var "b_prop") escape)
+             (echo () fmt_string (echo_var "b_prop") escape)
              (text no_trim " " no_trim))))))
         (text no_trim "" no_trim))))
      ("i_prop" (block ())))
@@ -122,7 +126,7 @@ Print the untyped AST to make sure parsing works
      ((pats (((list ((nullable (var "a")) null)))))
       (nodes
        ((text no_trim " " no_trim)
-        (echo fmt_string (echo_var "a") escape)
+        (echo () fmt_string (echo_var "a") escape)
         (text no_trim "\n" no_trim))))
      ((pats (((list ((var "_z")) (var "_tl")))))
       (nodes ((text no_trim "\n" no_trim))))))
@@ -132,9 +136,9 @@ Print the untyped AST to make sure parsing works
     (((pats (((record (("!#%@" (var "b")) ("a" (var "a")))))))
       (nodes
        ((text no_trim " " no_trim)
-        (echo fmt_string (echo_var "a") escape)
+        (echo () fmt_string (echo_var "a") escape)
         (text no_trim " " no_trim)
-        (echo fmt_string (echo_var "b") escape)
+        (echo () fmt_string (echo_var "b") escape)
         (text no_trim " " no_trim))))
      ((pats (((var "_")))) (nodes ((text no_trim " " no_trim))))))
    (text no_trim "\n\nEnum:\n" no_trim)
@@ -149,7 +153,7 @@ Print the untyped AST to make sure parsing works
     (((pats (((record (tagged ("tag" true) (("a" (var "a"))))))))
       (nodes
        ((text no_trim " " no_trim)
-        (echo fmt_string (echo_var "a") escape)
+        (echo () fmt_string (echo_var "a") escape)
         (text no_trim " " no_trim))))
      ((pats (((record (tagged ("tag" false) ())))))
       (nodes ((text no_trim "\n" no_trim))))))
@@ -173,7 +177,7 @@ Print the untyped AST to make sure parsing works
     (((pats (((record (("a" (record (("b" (var "b"))))))))))
       (nodes
        ((text no_trim " " no_trim)
-        (echo fmt_string (echo_var "b") escape)
+        (echo () fmt_string (echo_var "b") escape)
         (text no_trim " " no_trim))))))
    (text no_trim "\n" no_trim))
 
@@ -235,70 +239,71 @@ Print the optimized form
        (key 0)
        (ids ())
        (child
-        (switch
-         (key "exp1")
-         (ids ())
-         (cases
-          ((data 150.)
-           (if_match
-            (switch
-             (key "exp2")
-             (ids ())
-             (cases
-              ((data -1000.)
-               (if_match
-                (switch
-                 (key "exp3")
-                 (ids ())
-                 (cases
-                  ((data 0.2)
-                   (if_match
-                    (switch
-                     (key "frac")
-                     (ids ())
-                     (cases
-                      ((data 10.55)
-                       (if_match
-                        (switch
-                         (key "int")
-                         (ids ())
-                         (cases
-                          ((data 1000)
-                           (if_match
-                            (switch
-                             (key "negfrac")
-                             (ids ())
-                             (cases
-                              ((data -12.34)
-                               (if_match
-                                (switch
-                                 (key "negint")
-                                 (ids ())
-                                 (cases
-                                  ((data -999)
-                                   (if_match
-                                    (end (end (leaf (names ()) (exit 0)))))
-                                   (next ())))
-                                 (wildcard ())
-                                 (debug_row open)))
-                               (next ())))
-                             (wildcard ())
-                             (debug_row open)))
-                           (next ())))
-                         (wildcard ())
-                         (debug_row open)))
-                       (next ())))
-                     (wildcard ())
-                     (debug_row open)))
-                   (next ())))
-                 (wildcard ())
-                 (debug_row open)))
-               (next ())))
-             (wildcard ())
-             (debug_row open)))
-           (next ())))
-         (wildcard ())
-         (debug_row open)))
+        (string_keys
+         (switch
+          (key "exp1")
+          (ids ())
+          (cases
+           ((data 150.)
+            (if_match
+             (switch
+              (key "exp2")
+              (ids ())
+              (cases
+               ((data -1000.)
+                (if_match
+                 (switch
+                  (key "exp3")
+                  (ids ())
+                  (cases
+                   ((data 0.2)
+                    (if_match
+                     (switch
+                      (key "frac")
+                      (ids ())
+                      (cases
+                       ((data 10.55)
+                        (if_match
+                         (switch
+                          (key "int")
+                          (ids ())
+                          (cases
+                           ((data 1000)
+                            (if_match
+                             (switch
+                              (key "negfrac")
+                              (ids ())
+                              (cases
+                               ((data -12.34)
+                                (if_match
+                                 (switch
+                                  (key "negint")
+                                  (ids ())
+                                  (cases
+                                   ((data -999)
+                                    (if_match
+                                     (end (end (leaf (names ()) (exit 0)))))
+                                    (next ())))
+                                  (wildcard ())
+                                  (debug_row open)))
+                                (next ())))
+                              (wildcard ())
+                              (debug_row open)))
+                            (next ())))
+                          (wildcard ())
+                          (debug_row open)))
+                        (next ())))
+                      (wildcard ())
+                      (debug_row open)))
+                    (next ())))
+                  (wildcard ())
+                  (debug_row open)))
+                (next ())))
+              (wildcard ())
+              (debug_row open)))
+            (next ())))
+          (wildcard ())
+          (debug_row open))))
        (wildcard (end (leaf (names ()) (exit 1))))
        (debug not_dict)))
      (exits (0 ()) (1 ()))))
@@ -459,33 +464,34 @@ Print the optimized form
        (key 0)
        (ids ())
        (child
-        (switch
-         (key 0)
-         (ids ())
-         (cases
-          ((data 1)
-           (if_match
-            (switch
-             (key 1)
-             (ids ())
-             (cases
-              ((data 2.5)
-               (if_match
-                (switch
-                 (key 2)
-                 (ids ())
-                 (cases
-                  ((data "a")
-                   (if_match (end (end (leaf (names ()) (exit 0)))))
-                   (next ())))
-                 (wildcard ())
-                 (debug_row open)))
-               (next ())))
-             (wildcard ())
-             (debug_row open)))
-           (next ())))
-         (wildcard ())
-         (debug_row open)))
+        (int_keys
+         (switch
+          (key 0)
+          (ids ())
+          (cases
+           ((data 1)
+            (if_match
+             (switch
+              (key 1)
+              (ids ())
+              (cases
+               ((data 2.5)
+                (if_match
+                 (switch
+                  (key 2)
+                  (ids ())
+                  (cases
+                   ((data "a")
+                    (if_match (end (end (leaf (names ()) (exit 0)))))
+                    (next ())))
+                  (wildcard ())
+                  (debug_row open)))
+                (next ())))
+              (wildcard ())
+              (debug_row open)))
+            (next ())))
+          (wildcard ())
+          (debug_row open))))
        (wildcard (end (leaf (names ()) (exit 1))))
        (debug not_dict)))
      (exits (0 ((text " "))) (1 ((text " "))))))
@@ -502,54 +508,58 @@ Print the optimized form
          (key 0)
          (ids ())
          (child
-          (construct
-           (key 0)
-           (ids (1))
-           (nil
-            (wildcard
-             (key 1)
-             (ids (2))
-             (child (end (end (leaf (names (("_tl" 2) ("_z" 1))) (exit 2)))))))
-           (cons
-            (nest
-             (key 0)
-             (ids (1))
-             (child
-              (wildcard
-               (key 0)
-               (ids (0))
-               (child
-                (end
-                 (construct
-                  (key 1)
-                  (ids (2))
-                  (nil
-                   (end (end (leaf (names (("_tl" 2) ("_z" 1))) (exit 2)))))
-                  (cons
-                   (nest
+          (int_keys
+           (construct
+            (key 0)
+            (ids (1))
+            (nil
+             (wildcard
+              (key 1)
+              (ids (2))
+              (child (end (end (leaf (names (("_tl" 2) ("_z" 1))) (exit 2)))))))
+            (cons
+             (nest
+              (key 0)
+              (ids (1))
+              (child
+               (int_keys
+                (wildcard
+                 (key 0)
+                 (ids (0))
+                 (child
+                  (end
+                   (construct
                     (key 1)
                     (ids (2))
-                    (child
-                     (construct
-                      (key 0)
-                      (ids ())
-                      (nil
-                       (construct
-                        (key 1)
-                        (ids ())
-                        (nil
-                         (end (end (end (leaf (names (("a" 0))) (exit 1))))))
-                        (cons ())))
-                      (cons ())))
-                    (wildcard
+                    (nil
                      (end (end (leaf (names (("_tl" 2) ("_z" 1))) (exit 2)))))
-                    (debug not_dict))))))))
-             (wildcard
+                    (cons
+                     (nest
+                      (key 1)
+                      (ids (2))
+                      (child
+                       (int_keys
+                        (construct
+                         (key 0)
+                         (ids ())
+                         (nil
+                          (construct
+                           (key 1)
+                           (ids ())
+                           (nil
+                            (end (end (end (leaf (names (("a" 0))) (exit 1))))))
+                           (cons ())))
+                         (cons ()))))
+                      (wildcard
+                       (end (end (leaf (names (("_tl" 2) ("_z" 1))) (exit 2)))))
+                      (debug not_dict)))))))))
               (wildcard
-               (key 1)
-               (ids (2))
-               (child (end (end (leaf (names (("_tl" 2) ("_z" 1))) (exit 2)))))))
-             (debug not_dict)))))
+               (wildcard
+                (key 1)
+                (ids (2))
+                (child
+                 (end (end (leaf (names (("_tl" 2) ("_z" 1))) (exit 2)))))))
+              (debug not_dict))))))
          (wildcard ())
          (debug not_dict)))))
      (exits
@@ -564,14 +574,15 @@ Print the optimized form
        (key 0)
        (ids ())
        (child
-        (wildcard
-         (key "!#%@")
-         (ids (0))
-         (child
-          (wildcard
-           (key "a")
-           (ids (1))
-           (child (end (end (leaf (names (("a" 1) ("b" 0))) (exit 0)))))))))
+        (string_keys
+         (wildcard
+          (key "!#%@")
+          (ids (0))
+          (child
+           (wildcard
+            (key "a")
+            (ids (1))
+            (child (end (end (leaf (names (("a" 1) ("b" 0))) (exit 0))))))))))
        (wildcard (end (leaf (names ()) (exit 1))))
        (debug not_dict)))
      (exits
@@ -590,42 +601,43 @@ Print the optimized form
        (key 0)
        (ids ())
        (child
-        (switch
-         (key 0)
-         (ids ())
-         (cases
-          ((data "a")
-           (if_match
-            (switch
-             (key 1)
-             (ids ())
-             (cases
-              ((data 1)
-               (if_match
-                (switch
-                 (key 2)
-                 (ids ())
-                 (cases
-                  ((data 1)
-                   (if_match
-                    (switch
-                     (key 3)
-                     (ids ())
-                     (cases
-                      ((data 0)
-                       (if_match (end (end (leaf (names ()) (exit 0)))))
-                       (next ())))
-                     (wildcard ())
-                     (debug_row closed)))
-                   (next ())))
-                 (wildcard ())
-                 (debug_row closed)))
-               (next ())))
-             (wildcard ())
-             (debug_row open)))
-           (next ())))
-         (wildcard ())
-         (debug_row open)))
+        (int_keys
+         (switch
+          (key 0)
+          (ids ())
+          (cases
+           ((data "a")
+            (if_match
+             (switch
+              (key 1)
+              (ids ())
+              (cases
+               ((data 1)
+                (if_match
+                 (switch
+                  (key 2)
+                  (ids ())
+                  (cases
+                   ((data 1)
+                    (if_match
+                     (switch
+                      (key 3)
+                      (ids ())
+                      (cases
+                       ((data 0)
+                        (if_match (end (end (leaf (names ()) (exit 0)))))
+                        (next ())))
+                      (wildcard ())
+                      (debug_row closed)))
+                    (next ())))
+                  (wildcard ())
+                  (debug_row closed)))
+                (next ())))
+              (wildcard ())
+              (debug_row open)))
+            (next ())))
+          (wildcard ())
+          (debug_row open))))
        (wildcard (end (leaf (names ()) (exit 1))))
        (debug not_dict)))
      (exits (0 ((text " "))) (1 ((text " "))))))
@@ -637,22 +649,23 @@ Print the optimized form
        (key 0)
        (ids ())
        (child
-        (switch
-         (key "tag")
-         (ids ())
-         (cases
-          ((data 0)
-           (if_match (end (end (leaf (names ()) (exit 1)))))
-           (next
-            ((data 1)
-             (if_match
-              (wildcard
-               (key "a")
-               (ids (0))
-               (child (end (end (leaf (names (("a" 0))) (exit 0)))))))
-             (next ())))))
-         (wildcard ())
-         (debug_row closed)))
+        (string_keys
+         (switch
+          (key "tag")
+          (ids ())
+          (cases
+           ((data 0)
+            (if_match (end (end (leaf (names ()) (exit 1)))))
+            (next
+             ((data 1)
+              (if_match
+               (wildcard
+                (key "a")
+                (ids (0))
+                (child (end (end (leaf (names (("a" 0))) (exit 0)))))))
+              (next ())))))
+          (wildcard ())
+          (debug_row closed))))
        (wildcard ())
        (debug not_dict)))
      (exits
@@ -666,24 +679,25 @@ Print the optimized form
        (key 0)
        (ids ())
        (child
-        (switch
-         (key "a")
-         (ids ())
-         (cases
-          ((data 1)
-           (if_match
-            (switch
-             (key "b")
-             (ids ())
-             (cases
-              ((data 2)
-               (if_match (end (end (leaf (names ()) (exit 0)))))
-               (next ())))
-             (wildcard ())
-             (debug_row open)))
-           (next ())))
-         (wildcard ())
-         (debug_row open)))
+        (string_keys
+         (switch
+          (key "a")
+          (ids ())
+          (cases
+           ((data 1)
+            (if_match
+             (switch
+              (key "b")
+              (ids ())
+              (cases
+               ((data 2)
+                (if_match (end (end (leaf (names ()) (exit 0)))))
+                (next ())))
+              (wildcard ())
+              (debug_row open)))
+            (next ())))
+          (wildcard ())
+          (debug_row open))))
        (wildcard (end (leaf (names ()) (exit 1))))
        (debug dict)))
      (exits (0 ((text " "))) (1 ((text " "))))))
@@ -700,26 +714,28 @@ Print the optimized form
          (key 0)
          (ids ())
          (child
-          (construct
-           (key 0)
-           (ids ())
-           (nil ())
-           (cons
-            (nest
-             (key 0)
-             (ids ())
-             (child
-              (switch
-               (key 0)
-               (ids ())
-               (cases
-                ((data 0)
-                 (if_match (end (end (end (leaf (names ()) (exit 0))))))
-                 (next ())))
-               (wildcard ())
-               (debug_row closed)))
-             (wildcard ())
-             (debug not_dict)))))
+          (int_keys
+           (construct
+            (key 0)
+            (ids ())
+            (nil ())
+            (cons
+             (nest
+              (key 0)
+              (ids ())
+              (child
+               (int_keys
+                (switch
+                 (key 0)
+                 (ids ())
+                 (cases
+                  ((data 0)
+                   (if_match (end (end (end (leaf (names ()) (exit 0))))))
+                   (next ())))
+                 (wildcard ())
+                 (debug_row closed))))
+              (wildcard ())
+              (debug not_dict))))))
          (wildcard (end (leaf (names ()) (exit 1))))
          (debug not_dict)))))
      (exits (0 ()) (1 ()))))
@@ -731,16 +747,18 @@ Print the optimized form
        (key 0)
        (ids ())
        (child
-        (nest
-         (key "a")
-         (ids ())
-         (child
-          (wildcard
-           (key "b")
-           (ids (0))
-           (child (end (end (end (leaf (names (("b" 0))) (exit 0))))))))
-         (wildcard ())
-         (debug not_dict)))
+        (string_keys
+         (nest
+          (key "a")
+          (ids ())
+          (child
+           (string_keys
+            (wildcard
+             (key "b")
+             (ids (0))
+             (child (end (end (end (leaf (names (("b" 0))) (exit 0)))))))))
+          (wildcard ())
+          (debug not_dict))))
        (wildcard ())
        (debug not_dict)))
      (exits (0 ((text " ") (echo () fmt_string (var "b") escape) (text " "))))))

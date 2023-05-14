@@ -1,5 +1,5 @@
 Both the JavaScript and native runtimes should decode data identically.
-  $ node acutis.js template.acutis
+  $ node index.js template.acutis
   Record:
   a 1 1.
   
@@ -45,7 +45,7 @@ Both the JavaScript and native runtimes should decode data identically.
 
 If a function component takes an 'unknown' prop, then the value given keeps its
 internal representation intact.
-  $ node acutis.js unknowns.acutis
+  $ node index.js unknowns.acutis
   {
     "arr": [
       "x",

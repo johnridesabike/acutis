@@ -873,7 +873,7 @@ let rec tree_to_sexp :
             [
               Sexp.symbol "wildcard";
               (match wildcard with
-              | None -> Sexp.list []
+              | None -> Sexp.empty
               | Some wildcard -> tree_to_sexp leaf_f key_f wildcard);
             ];
           Sexp.list
@@ -890,7 +890,7 @@ let rec tree_to_sexp :
             [
               Sexp.symbol "wildcard";
               (match wildcard with
-              | None -> Sexp.list []
+              | None -> Sexp.empty
               | Some wildcard -> tree_to_sexp leaf_f key_f wildcard);
             ];
           Sexp.list [ Sexp.symbol "debug"; debug_nest_info_to_sexp debug ];
@@ -930,9 +930,18 @@ and nest_to_sexp :
       'leaf 'key.
       ('leaf -> Sexp.t) -> ('key -> Sexp.t) -> ('leaf, 'key) nest -> Sexp.t =
  fun leaf_f key_f -> function
-  | Int_keys tree -> tree_to_sexp (tree_to_sexp leaf_f key_f) Sexp.int tree
+  | Int_keys tree ->
+      Sexp.list
+        [
+          Sexp.symbol "int_keys";
+          tree_to_sexp (tree_to_sexp leaf_f key_f) Sexp.int tree;
+        ]
   | String_keys tree ->
-      tree_to_sexp (tree_to_sexp leaf_f key_f) Sexp.string tree
+      Sexp.list
+        [
+          Sexp.symbol "string_keys";
+          tree_to_sexp (tree_to_sexp leaf_f key_f) Sexp.string tree;
+        ]
 
 and switchcase_to_sexp :
       'leaf 'key.
@@ -958,13 +967,7 @@ let leaf_to_sexp { names; exit } =
   Sexp.list
     [
       Sexp.symbol "leaf";
-      Sexp.list
-        [
-          Sexp.symbol "names";
-          Map.String.to_seq names
-          |> Seq.map (Sexp.pair Sexp.string Sexp.int)
-          |> Sexp.seq;
-        ];
+      Sexp.list [ Sexp.symbol "names"; Sexp.map_string Sexp.int names ];
       Sexp.list [ Sexp.symbol "exit"; Sexp.int exit ];
     ]
 

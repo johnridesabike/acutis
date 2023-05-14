@@ -1,4 +1,4 @@
-  $ node acutis.js template.acutis
+  $ node index.js template.acutis
   First
   Second
   Third

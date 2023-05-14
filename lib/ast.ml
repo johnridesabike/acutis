@@ -212,10 +212,13 @@ and node_to_sexp = function
           Sexp.string s;
           trim_to_sexp trimr;
         ]
-  | Echo (_, fmt, ech, esc) ->
+  | Echo (l, fmt, ech, esc) ->
       Sexp.list
         [
           Sexp.symbol "echo";
+          List.to_seq l
+          |> Seq.map (Sexp.pair echo_format_to_sexp echo_to_sexp)
+          |> Sexp.seq;
           echo_format_to_sexp fmt;
           echo_to_sexp ech;
           escape_to_sexp esc;

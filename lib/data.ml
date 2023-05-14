@@ -104,5 +104,4 @@ let rec to_sexp f = function
   | Dict d -> Sexp.list [ Sexp.symbol "dict"; dict_to_sexp f d ]
   | Const c -> Const.to_sexp c
 
-and dict_to_sexp f d =
-  Sexp.seq (Map.String.to_seq d |> Seq.map (Sexp.pair Sexp.string (to_sexp f)))
+and dict_to_sexp f d = Sexp.map_string (to_sexp f) d
