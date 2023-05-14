@@ -1,0 +1,5 @@
+{% match x with {a, b} %} {{ a }} {{ b }} {% /match %}
+{% match y with {c} %} {{ c }} {% /match %}
+{% map [{a: "a", b: 1}, {a: "a", c: true}, x, y, z] with {a} %}
+  {{ a }}
+{% /map %}

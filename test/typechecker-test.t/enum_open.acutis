@@ -1,0 +1,11 @@
+{% match a with @"a" %} {% with @"b" %} {% with _ %} {% /match %}
+{% map [@"c", a] with _ %} {% /map %}
+{% match b with @1 %} {% with @2 %} {% with _ %} {% /match %}
+{% map [@3, b] with _ %} {% /map %}
+
+Wildcards will open enums nested inside other types
+{% match c with <k: @"a"> %} {% with <k: @"b"> %} {% with _ %} {% /match %}
+{% map [<k: @"c">, c] with _ %} {% /map %}
+
+The row is opened for variants in newly inferred record fields
+{% match d with {a: 1} %}{% with {b: @1} %}{% with {a: _} %}{% /match %}

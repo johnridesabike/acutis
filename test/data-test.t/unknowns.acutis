@@ -1,0 +1,15 @@
+{% interface
+  unknowns =
+    {
+      dict: {a: int, b: string},
+      arr: [string],
+      arrEmpty: [string],
+      some: ?string,
+      none: ?string,
+      t: false | true,
+      f: false | true
+    }
+/ ~%}
+{% match unknowns with {dict, arr, arrEmpty, some, none, t, f} ~%}
+  {% UnknownComp dict arr arrEmpty some none t f / %}
+{%~ /match ~%}

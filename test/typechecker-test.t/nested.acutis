@@ -1,0 +1,15 @@
+{% match a with {b: {c}, d } %}
+   {% match c with !1 %} {{ d }} {% with null %} {% with !_ %} {% /match %}
+{% /match %}
+
+{% match e with [{f: 1}, _g, {h: "h"}] %} {% with _ %} {% /match %}
+
+{% match i with [{@tag: 0, j: 1}, _c, {@tag: 1, k: "k"}] %}
+  {% with _ %}
+{% /match %}
+
+Multiple patterns:
+{% match x, y with {z}, 1 %}
+  {% match z with !{za: 1} %} {% with null %} {% with !_ %} {% /match %}
+{% with _, _ %}
+{% /match %}

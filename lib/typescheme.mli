@@ -30,10 +30,7 @@ module Variant : sig
     extra : extra;
   }
 
-  val equal :
-    ('a -> 'a -> bool) -> ('b -> 'b -> bool) -> ('a, 'b) t -> ('a, 'b) t -> bool
-
-  val pp_row : Format.formatter -> row -> unit
+  val row_to_sexp : row -> Sexp.t
 end
 
 module Enum : sig
@@ -45,7 +42,6 @@ module Enum : sig
   val false_and_true : unit -> t
   val false_only : unit -> t
   val true_only : unit -> t
-  val equal : t -> t -> bool
 end
 
 module Union : sig
@@ -56,7 +52,6 @@ module Union : sig
     int -> 'a Map.String.t ref -> Variant.row -> Variant.extra -> 'a t
 
   val string_singleton : string -> 'a Map.String.t ref -> Variant.row -> 'a t
-  val equal : ('a -> 'a -> bool) -> 'a t -> 'a t -> bool
 end
 
 type ty =
@@ -112,4 +107,3 @@ val internal_copy_record : t Map.String.t -> t Map.String.t
 val internal_bool : int list -> t
 val pp : Format.formatter -> t -> unit
 val pp_interface : Format.formatter -> t Map.String.t -> unit
-val equal : t -> t -> bool

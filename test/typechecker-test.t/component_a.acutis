@@ -1,0 +1,2 @@
+{% map a with x %} {{ %i x }} {% /map %}
+{% map b with x %} {{ x }} {% /map %}

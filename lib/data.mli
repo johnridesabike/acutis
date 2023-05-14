@@ -15,6 +15,7 @@ module Const : sig
 
   val equal : t -> t -> bool
   val compare : t -> t -> int
+  val to_sexp : t -> Sexp.t
 end
 
 (** The boxed representation of runtime data. *)
@@ -57,3 +58,5 @@ val is_null : _ t -> bool
 val get_nullable : 'a t -> 'a t option
 val fold_list : (index:'a t -> 'b -> 'a t -> 'b) -> 'b -> 'a t -> 'b
 val fold_dict : (index:'a t -> 'b -> 'a t -> 'b) -> 'b -> 'a t -> 'b
+val to_sexp : ('a -> Sexp.t) -> 'a t -> Sexp.t
+val dict_to_sexp : ('a -> Sexp.t) -> 'a t Map.String.t -> Sexp.t

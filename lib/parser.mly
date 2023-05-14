@@ -63,7 +63,7 @@ open Ast
 %token CHAR_B                 (* b *)
 
 %start <Ast.t> acutis
-%start <Ast.Interface.t list> interface_standalone
+%start <Ast.Interface.t> interface_standalone
 
 %%
 

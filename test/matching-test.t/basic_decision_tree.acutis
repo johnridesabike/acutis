@@ -1,0 +1,7 @@
+{% match a, b, c
+   with 10, 11, 12 %}
+{% with  _x, 21, 22 %}
+{% with 30, 31, 32 %}
+{% with 30,  _y, 42 %}
+{% with  _a,  _b,  _c %}
+{% /match %}

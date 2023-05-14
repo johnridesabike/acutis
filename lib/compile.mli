@@ -34,7 +34,7 @@ type 'a node =
   | Match of 'a eval Data.t array * 'a nodes Matching.t
   | Map_list of 'a eval Data.t * 'a nodes Matching.t
   | Map_dict of 'a eval Data.t * 'a nodes Matching.t
-  | Component of 'a * 'a eval Data.t Map.String.t
+  | Component of string * 'a * 'a eval Data.t Map.String.t
 
 and 'a eval =
   | Var of string
@@ -88,12 +88,13 @@ type jsfun = { module_path : string; function_path : string }
 
 type t2 = {
   types_nolink : Typescheme.t Map.String.t;
-  nodes_nolink : string nodes;
+  nodes_nolink : unit nodes;
   name_nolink : string;
-  components_nolink : (string nodes, jsfun) Typechecker.source Map.String.t;
+  components_nolink : (unit nodes, jsfun) Typechecker.source Map.String.t;
 }
 (** An experimental type that doesn't link the trees. If this merges, then it
     will be made more ergonomic. *)
 
 val make_nolink : fname:string -> jsfun Components.t -> Lexing.lexbuf -> t2
 val from_string_nolink : fname:string -> jsfun Components.t -> string -> t2
+val to_sexp : _ nodes -> Sexp.t

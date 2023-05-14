@@ -543,7 +543,7 @@ and node data_id = function
       App_expr (Fun_expr ([], map_list data_id arg tree), [])
   | C.Map_dict (arg, tree) ->
       App_expr (Fun_expr ([], map_dict data_id arg tree), [])
-  | C.Component (name, dict) ->
+  | C.Component (name, _, dict) ->
       App_expr
         ( Fun_expr
             ( [],
@@ -707,10 +707,10 @@ let decode_boolean ~set input cases =
       Seq.concat
         (Seq.cons
            (if Set.Int.mem 0 cases then Seq.return (Prim False, [ set (Int 0) ])
-           else Seq.empty)
+            else Seq.empty)
         @@ Seq.return
              (if Set.Int.mem 1 cases then Seq.return (Prim True, [ set (Int 1) ])
-             else Seq.empty)),
+              else Seq.empty)),
       [ Error Err.decode_bool ] )
 
 let decode_string ~set input =
@@ -1034,7 +1034,7 @@ type namespaced_jsfun = {
   function_path : string;
 }
 
-type component = { name : string; nodes : string Compile.nodes }
+type component = { name : string; nodes : unit Compile.nodes }
 
 type components = {
   imports : filepath Id.Map.t;  (** Maps JS namespaces to module paths. *)
