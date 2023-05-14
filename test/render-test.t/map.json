@@ -1,0 +1,7 @@
+{
+  "people_list": [{ "name": "John" }, { "name": "Carlo" }],
+  "people_dict": {
+    "Tommy": { "job": "banking" },
+    "Lisa": { "job": "computers" }
+  }
+}

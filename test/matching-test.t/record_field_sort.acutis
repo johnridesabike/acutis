@@ -1,0 +1,5 @@
+{% match a, b
+   with {a: 10, b: 11}, 12 %}
+{% with {b: 21, a: 20}, 22 %}
+{% with _, _ %}
+{% /match %}

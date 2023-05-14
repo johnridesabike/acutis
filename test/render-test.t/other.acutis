@@ -1,0 +1,8 @@
+{% match ignored with {x: _x} ~%}
+  Underscore was successfully ignored.
+{%~ /match %}
+
+Record field access works:
+{% match {x: a.b."c".d} with {x: true} ~%} pass {% with _ %} {% /match ~%}
+{{~ a.e.f.z ? a.e."f".g ~}}
+

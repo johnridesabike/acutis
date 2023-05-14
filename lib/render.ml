@@ -226,7 +226,7 @@ module Make (M : MONAD) (D : DATA) = struct
                 let vars = map_merge vars vars' in
                 make b nodes vars)
               b d
-        | Component (comp, args) -> (
+        | Component (_, comp, args) -> (
             let* vars = all_map (Map.String.map (eval_data vars) args) in
             match comp with
             | Compile.Src nodes -> make b nodes vars

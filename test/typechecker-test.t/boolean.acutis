@@ -1,0 +1,4 @@
+{% match a with true %} {% /match %}
+{% match b with false %} {% /match %}
+{% match c with true %} {% with false %} {% /match %}
+{% match d with true %} {% with _ %} {% /match %}

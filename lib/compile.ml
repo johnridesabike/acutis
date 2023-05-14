@@ -64,7 +64,7 @@ type 'a node =
   | Match of 'a eval Data.t array * 'a nodes Matching.t
   | Map_list of 'a eval Data.t * 'a nodes Matching.t
   | Map_dict of 'a eval Data.t * 'a nodes Matching.t
-  | Component of 'a * 'a eval Data.t Map.String.t
+  | Component of string * 'a * 'a eval Data.t Map.String.t
 
 and 'a eval =
   | Var of string
@@ -111,7 +111,7 @@ and make_nodes l =
       | TMap_dict (loc, pat, tys, cases) ->
           Some (Map_dict (make_data pat, make_match loc tys cases))
       | TComponent (name, props) ->
-          Some (Component (name, Map.String.map make_data props)))
+          Some (Component (name, (), Map.String.map make_data props)))
     l
 
 and make_match loc tys cases =
@@ -147,7 +147,7 @@ module Components = struct
 
   type 'a t = {
     typed : (T.t, 'a) T.source Map.String.t;
-    optimized : (string nodes, 'a) T.source Map.String.t;
+    optimized : (unit nodes, 'a) T.source Map.String.t;
   }
 
   let empty = { typed = Map.String.empty; optimized = Map.String.empty }
@@ -191,10 +191,10 @@ let rec link_nodes graph nodes =
           let pats = Data.map (link_data graph) pats in
           let exits = Matching.Exit.map (link_nodes graph) t.exits in
           Map_dict (pats, { t with exits })
-      | Component (name, pats) ->
+      | Component (name, (), pats) ->
           let pats = Map.String.map (Data.map (link_data graph)) pats in
           let data = Dagmap.get name graph in
-          Component (data, pats))
+          Component (name, data, pats))
     nodes
 
 and link_data graph = function
@@ -218,3 +218,44 @@ let from_string ~fname components src =
 
 let from_channel ~fname components src =
   make ~fname components (Lexing.from_channel src)
+
+let rec echo_to_sexp = function
+  | Echo_var s -> Sexp.make "var" [ Sexp.string s ]
+  | Echo_string s -> Sexp.string s
+  | Echo_field (e, s) -> Sexp.make "field" [ echo_to_sexp e; Sexp.string s ]
+
+let rec node_to_sexp = function
+  | Text s -> Sexp.make "text" [ Sexp.string s ]
+  | Echo (l, fmt, ech, esc) ->
+      Sexp.make "echo"
+        [
+          Sexp.of_seq
+            (Sexp.pair Ast.echo_format_to_sexp echo_to_sexp)
+            (List.to_seq l);
+          Ast.echo_format_to_sexp fmt;
+          echo_to_sexp ech;
+          Ast.escape_to_sexp esc;
+        ]
+  | Match (a, matching) ->
+      Sexp.make "match"
+        [
+          Sexp.of_seq (Data.to_sexp eval_to_sexp) (Array.to_seq a);
+          Matching.to_sexp to_sexp matching;
+        ]
+  | Map_list (d, matching) ->
+      Sexp.make "map_list"
+        [ Data.to_sexp eval_to_sexp d; Matching.to_sexp to_sexp matching ]
+  | Map_dict (d, matching) ->
+      Sexp.make "map_dict"
+        [ Data.to_sexp eval_to_sexp d; Matching.to_sexp to_sexp matching ]
+  | Component (name, _function, props) ->
+      Sexp.make "component"
+        [ Sexp.string name; Data.dict_to_sexp eval_to_sexp props ]
+
+and eval_to_sexp = function
+  | Var s -> Sexp.make "var" [ Sexp.string s ]
+  | Block n -> Sexp.make "block" [ to_sexp n ]
+  | Field (d, f) ->
+      Sexp.make "field" [ Data.to_sexp eval_to_sexp d; Sexp.string f ]
+
+and to_sexp l = Sexp.of_seq node_to_sexp (List.to_seq l)

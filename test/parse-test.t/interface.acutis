@@ -1,0 +1,9 @@
+{% interface
+  a = {a: @0 | @1, b: @"a" | @"b"}
+  b = {@tag: true, a: [int]} | {@tag: false, a: <?string>}
+  c = {@tag: 0} | {@tag: 1, a: (float, true | false)}
+  d = {@tag: "a", a: float} | {@tag: "b", a: @0 | @1 | ...}
+  e = {@tag: 0, a: _} | {@tag: 1, b: @"a" | @"b" | ...} | ...
+  children = string
+  optionalChildren = ?string
+/ %}

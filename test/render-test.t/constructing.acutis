@@ -1,0 +1,33 @@
+Constructing values works:
+{%
+  match [(1, 2), (3, 4)],
+        [@"y", @"z"],
+        [@99, @100],
+        [!{@tag: "a", a: 1.5}, null],
+        {@tag: 0, a: !"z"},
+        <a: "a">
+  with  [(1, 2), (3, 4)],
+        [@"y", @"z"],
+        [@99, @100],
+        [!{@tag: "a", a: 1.5}, null],
+        {@tag: 0, a: !"z"},
+        <a: "a">
+~%} success {%~
+  with _, _, _, _, _, _ %} fail {%
+  /match %}
+
+Constructing nested template blocks inside data patterns works:
+{%
+  match
+    {
+      a:
+        !#~%}
+          {% match b with true ~%} yes {%~ with false %} {% /match %}
+        {%~#
+    }
+  with {a: !"yes"} ~%} success
+{%~ with _ %} fail
+{% /match %}
+
+Appending to a list literal works:
+{%~ map ["pass", "pass", ...["pass", "pass"]] with x ~%} {{ x }} {% /map %}

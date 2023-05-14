@@ -34,7 +34,7 @@ type 'a node =
   | Match of 'a eval Data.t array * 'a nodes Matching.t
   | Map_list of 'a eval Data.t * 'a nodes Matching.t
   | Map_dict of 'a eval Data.t * 'a nodes Matching.t
-  | Component of 'a * 'a eval Data.t Map.String.t
+  | Component of string * 'a * 'a eval Data.t Map.String.t
 
 and 'a eval =
   | Var of string
@@ -82,3 +82,4 @@ end
 val make : fname:string -> 'a Components.t -> Lexing.lexbuf -> 'a t
 val from_string : fname:string -> 'a Components.t -> string -> 'a t
 val from_channel : fname:string -> 'a Components.t -> in_channel -> 'a t
+val to_sexp : _ nodes -> Sexp.t

@@ -14,8 +14,4 @@ type t = Lexing.position * Lexing.position
 (** This type is equivalent to Menhir's [$loc] keyword. *)
 
 val dummy : t
-val pp : Format.formatter -> t -> unit
-
-val equal : t -> t -> bool
-(** Always returns [true]. Do not use location information to test
-      equivalency. *)
+val to_sexp : t -> Sexp.t

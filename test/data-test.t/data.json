@@ -1,0 +1,19 @@
+{
+  "record": { "a": "a", "b": 1, "c": 1.0 },
+  "dict": { "a": "a", "b": "b", "c": "c" },
+  "list": ["a", "b"],
+  "nullables": ["a", null],
+  "tuple": ["a", 1.0],
+  "binaryt": true,
+  "binaryf": false,
+  "union": { "tag": 0, "a": "pass" },
+  "unknowns": {
+    "dict": { "a": 0, "b": "b" },
+    "arr": ["x", "y"],
+    "arrEmpty": [],
+    "some": "some",
+    "none": null,
+    "t": true,
+    "f": false
+  }
+}

@@ -27,7 +27,4 @@ val map : ('a -> 'b) -> 'a t -> 'b t
 val map2 : ('a -> 'b -> 'c) -> 'a t -> 'b t -> 'c t
 (** Calls [Stdlib.List.map2]. *)
 
-val equal : ('a -> 'a -> bool) -> 'a t -> 'a t -> bool
-(** Calls [Stdlib.List.equal]. *)
-
-val pp : (Format.formatter -> 'a -> unit) -> Format.formatter -> 'a t -> unit
+val to_sexp : ('a -> Sexp.t) -> 'a t -> Sexp.t

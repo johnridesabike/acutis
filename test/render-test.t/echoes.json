@@ -1,0 +1,9 @@
+{
+  "a": "Hello",
+  "b": "World",
+  "c": "&\"\"''></`=",
+  "num": 123456,
+  "frac": 1234.56789,
+  "binaryf": false,
+  "binaryt": true
+}
