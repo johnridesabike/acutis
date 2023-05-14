@@ -51,7 +51,8 @@ module Interface : sig
     | Record of (Loc.t * ty Record.t) Nonempty.t * Typescheme.Variant.row
     | Tuple of ty list
 
-  type t = { loc : Loc.t; name : string; ty : ty }
+  type prop = { loc : Loc.t; name : string; ty : ty }
+  type t = prop list
 end
 
 type trim = No_trim | Trim
@@ -89,7 +90,7 @@ and node =
   | Map_list of Loc.t * pat * case Nonempty.t
   | Map_dict of Loc.t * pat * case Nonempty.t
   | Component of Loc.t * string * string * pat Dict.t
-  | Interface of Loc.t * Interface.t list
+  | Interface of Loc.t * Interface.t
 
 and case = { pats : (Loc.t * pat Nonempty.t) Nonempty.t; nodes : t }
 and t = node list

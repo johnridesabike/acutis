@@ -11,3 +11,7 @@
 type t = Lexing.position * Lexing.position
 
 let dummy = (Lexing.dummy_pos, Lexing.dummy_pos)
+
+(** Don't show locations.
+    In development, this can be modified to show information as needed. *)
+let to_sexp _ = Sexp.noop

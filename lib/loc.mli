@@ -14,3 +14,4 @@ type t = Lexing.position * Lexing.position
 (** This type is equivalent to Menhir's [$loc] keyword. *)
 
 val dummy : t
+val to_sexp : t -> Sexp.t

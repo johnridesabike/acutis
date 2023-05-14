@@ -31,7 +31,10 @@ let doc_version = " Show the version number and exit."
 let doc_printast = " Print the template's untyped AST form and exit."
 let doc_printtypes = " Print the template's type interface and exit."
 let doc_printopt = " Print the template's optimized form and exit."
-let action = ref Render
+let arg_action = ref Render
+let set_printast () = arg_action := Print_ast
+let set_printtypes () = arg_action := Print_types
+let set_printopt () = arg_action := Print_optimized
 
 let version () =
   Format.printf "Version: %s\n"
@@ -46,9 +49,9 @@ let args =
       ("--data", Set_string arg_data, doc_data);
       ("--output", Set_string arg_output, doc_output);
       ("--version", Unit version, doc_version);
-      ("--printast", Unit (fun () -> action := Print_ast), doc_printast);
-      ("--printtypes", Unit (fun () -> action := Print_types), doc_printtypes);
-      ("--printopt", Unit (fun () -> action := Print_optimized), doc_printopt);
+      ("--printast", Unit set_printast, doc_printast);
+      ("--printtypes", Unit set_printtypes, doc_printtypes);
+      ("--printopt", Unit set_printopt, doc_printopt);
     ]
 
 let fname_to_compname s =
@@ -71,7 +74,7 @@ let () =
       |> Compile.Components.make
     in
 
-    match !action with
+    match !arg_action with
     | Print_ast ->
         In_channel.with_open_text fname (fun chan ->
             (Compile.parse ~fname) (Lexing.from_channel chan))

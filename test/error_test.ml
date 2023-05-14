@@ -1,3 +1,7 @@
+(** This test is intended to cover all possible error states. Due to its high
+    number of test cases, running it as a single executable rather than a cram
+    test is easier to maintain and faster to execute. *)
+
 open Acutis
 module RenderSync = Render.Make (Sync) (Acutis_json.Data)
 

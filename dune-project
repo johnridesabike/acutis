@@ -28,7 +28,7 @@
   menhir
   (ocamlformat
    (and
-    (= 0.24.1)
+    (= 0.25.1)
     :with-test)))
  (tags
   (template language parser interpreter)))

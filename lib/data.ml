@@ -96,12 +96,8 @@ let fold_dict f acc = function
 let rec to_sexp f = function
   | Other x -> f x
   | Nil -> Sexp.symbol "nil"
-  | Array a ->
-      Sexp.list
-        [
-          Sexp.symbol "array"; Sexp.seq (Array.to_seq a |> Seq.map (to_sexp f));
-        ]
-  | Dict d -> Sexp.list [ Sexp.symbol "dict"; dict_to_sexp f d ]
+  | Array a -> Sexp.make "array" [ Sexp.of_seq (to_sexp f) (Array.to_seq a) ]
+  | Dict d -> Sexp.make "dict" [ dict_to_sexp f d ]
   | Const c -> Const.to_sexp c
 
 and dict_to_sexp f d = Sexp.map_string (to_sexp f) d

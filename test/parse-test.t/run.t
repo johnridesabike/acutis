@@ -19,17 +19,19 @@ Print the untyped AST to make sure parsing works
    (text no_trim "\n\nNumbers\n" no_trim)
    (match
     ((var "numbers"))
-    (((pats
-       (((record
-          (("exp1" 150.)
-           ("exp2" -1000.)
-           ("exp3" 0.2)
-           ("frac" 10.55)
-           ("int" 1000)
-           ("negfrac" -12.34)
-           ("negint" -999))))))
+    ((case
+      (pats
+       ((((record
+           (untagged
+            (("exp1" (float 150.))
+             ("exp2" (float -1000.))
+             ("exp3" (float 0.2))
+             ("frac" (float 10.55))
+             ("int" (int 1000))
+             ("negfrac" (float -12.34))
+             ("negint" (int -999)))))))))
       (nodes ((text no_trim "" no_trim))))
-     ((pats (((var "_")))) (nodes ((text no_trim "" no_trim))))))
+     (case (pats ((((var "_"))))) (nodes ((text no_trim "" no_trim))))))
    (text no_trim "\n\nTrim\n" trim)
    (echo () fmt_string (echo_var "trim_a") escape)
    (text no_trim " " trim)
@@ -47,18 +49,22 @@ Print the untyped AST to make sure parsing works
    (text trim "\n\nComments\na b c\n\nFlat match\n" no_trim)
    (match
     ((var "match_a"))
-    (((pats ((1) (2))) (nodes ((text no_trim "" no_trim))))
-     ((pats ((3))) (nodes ((text no_trim " " no_trim))))
-     ((pats (((var "_")))) (nodes ((text no_trim " " no_trim))))))
+    ((case
+      (pats ((((int 1))) (((int 2)))))
+      (nodes ((text no_trim "" no_trim))))
+     (case (pats ((((int 3))))) (nodes ((text no_trim " " no_trim))))
+     (case (pats ((((var "_"))))) (nodes ((text no_trim " " no_trim))))))
    (text no_trim "\n\nNested match\n" no_trim)
    (match
     ((var "match_b"))
-    (((pats (((var "c"))))
+    ((case
+      (pats ((((var "c")))))
       (nodes
        ((text no_trim "\n  " no_trim)
         (match
          ((var "d") (var "e"))
-         (((pats (((var "f") (var "g"))))
+         ((case
+           (pats ((((var "f") (var "g")))))
            (nodes
             ((text no_trim " " no_trim)
              (echo () fmt_string (echo_var "c") escape)
@@ -71,23 +77,29 @@ Print the untyped AST to make sure parsing works
    (text no_trim "\n\nMap list\n" no_trim)
    (map
     (var "map_l")
-    (((pats ((1) (2))) (nodes ((text no_trim "" no_trim))))
-     ((pats ((3 (var "i"))))
+    ((case
+      (pats ((((int 1))) (((int 2)))))
+      (nodes ((text no_trim "" no_trim))))
+     (case
+      (pats ((((int 3) (var "i")))))
       (nodes
        ((text no_trim " " no_trim)
         (echo () fmt_int (echo_var "i") escape)
         (text no_trim " " no_trim))))
-     ((pats (((var "_")))) (nodes ((text no_trim " " no_trim))))))
+     (case (pats ((((var "_"))))) (nodes ((text no_trim " " no_trim))))))
    (text no_trim "\n\nMap dict\n" no_trim)
    (map_dict
     (var "map_d")
-    (((pats ((1) (2))) (nodes ((text no_trim "" no_trim))))
-     ((pats ((3 (var "k"))))
+    ((case
+      (pats ((((int 1))) (((int 2)))))
+      (nodes ((text no_trim "" no_trim))))
+     (case
+      (pats ((((int 3) (var "k")))))
       (nodes
        ((text no_trim " " no_trim)
         (echo () fmt_string (echo_var "k") escape)
         (text no_trim " " no_trim))))
-     ((pats (((var "_")))) (nodes ((text no_trim "\n" no_trim))))))
+     (case (pats ((((var "_"))))) (nodes ((text no_trim "\n" no_trim))))))
    (text no_trim "\n\nComponent with props\n" no_trim)
    (component
     "Component"
@@ -101,7 +113,8 @@ Print the untyped AST to make sure parsing works
        ((text no_trim "" no_trim)
         (match
          ((var "a_prop"))
-         (((pats (((var "b_prop"))))
+         ((case
+           (pats ((((var "b_prop")))))
            (nodes
             ((text no_trim " " no_trim)
              (echo () fmt_string (echo_var "b_prop") escape)
@@ -117,64 +130,78 @@ Print the untyped AST to make sure parsing works
    (text no_trim "\n\nPatterns\n\nTuple:\n" no_trim)
    (match
     ((var "tuple"))
-    (((pats (((1 2.5 "a")))) (nodes ((text no_trim " " no_trim))))
-     ((pats (((var "_")))) (nodes ((text no_trim " " no_trim))))))
+    ((case
+      (pats ((((tuple ((int 1) (float 2.5) (string "a")))))))
+      (nodes ((text no_trim " " no_trim))))
+     (case (pats ((((var "_"))))) (nodes ((text no_trim " " no_trim))))))
    (text no_trim "\n\nList:\n" no_trim)
    (match
     ((var "list"))
-    (((pats (((list ())))) (nodes ((text no_trim "\n" no_trim))))
-     ((pats (((list ((nullable (var "a")) null)))))
+    ((case (pats ((((list ()))))) (nodes ((text no_trim "\n" no_trim))))
+     (case
+      (pats ((((list ((nullable (var "a")) (nullable null)))))))
       (nodes
        ((text no_trim " " no_trim)
         (echo () fmt_string (echo_var "a") escape)
         (text no_trim "\n" no_trim))))
-     ((pats (((list ((var "_z")) (var "_tl")))))
+     (case
+      (pats ((((list ((var "_z")) (var "_tl"))))))
       (nodes ((text no_trim "\n" no_trim))))))
    (text no_trim "\n\nRecord:\n" no_trim)
    (match
     ((var "record"))
-    (((pats (((record (("!#%@" (var "b")) ("a" (var "a")))))))
+    ((case
+      (pats ((((record (untagged (("!#%@" (var "b")) ("a" (var "a")))))))))
       (nodes
        ((text no_trim " " no_trim)
         (echo () fmt_string (echo_var "a") escape)
         (text no_trim " " no_trim)
         (echo () fmt_string (echo_var "b") escape)
         (text no_trim " " no_trim))))
-     ((pats (((var "_")))) (nodes ((text no_trim " " no_trim))))))
+     (case (pats ((((var "_"))))) (nodes ((text no_trim " " no_trim))))))
    (text no_trim "\n\nEnum:\n" no_trim)
    (match
     ((var "enums"))
-    (((pats ((((enum_string "a") (enum_int 1) true false))))
+    ((case
+      (pats
+       ((((tuple ((enum_string "a") (enum_int 1) (bool true) (bool false)))))))
       (nodes ((text no_trim " " no_trim))))
-     ((pats (((var "_")))) (nodes ((text no_trim " " no_trim))))))
+     (case (pats ((((var "_"))))) (nodes ((text no_trim " " no_trim))))))
    (text no_trim "\n\nTagged union:\n" no_trim)
    (match
     ((var "tagged"))
-    (((pats (((record (tagged ("tag" true) (("a" (var "a"))))))))
+    ((case
+      (pats ((((record (tagged "tag" (tag_bool true) (("a" (var "a")))))))))
       (nodes
        ((text no_trim " " no_trim)
         (echo () fmt_string (echo_var "a") escape)
         (text no_trim " " no_trim))))
-     ((pats (((record (tagged ("tag" false) ())))))
+     (case
+      (pats ((((record (tagged "tag" (tag_bool false) ()))))))
       (nodes ((text no_trim "\n" no_trim))))))
    (text no_trim "\n\nDictionary:\n" no_trim)
    (match
     ((var "dict"))
-    (((pats (((dict (("a" 1) ("b" 2)))))) (nodes ((text no_trim " " no_trim))))
-     ((pats (((var "_")))) (nodes ((text no_trim " " no_trim))))))
+    ((case
+      (pats ((((dict (("a" (int 1)) ("b" (int 2))))))))
+      (nodes ((text no_trim " " no_trim))))
+     (case (pats ((((var "_"))))) (nodes ((text no_trim " " no_trim))))))
    (text no_trim "\n\n! and . precedence works correctly\n" no_trim)
    (match
     ((nullable (nullable (field (field (var "a") "b") "c"))))
-    (((pats (((nullable (nullable false)))))
+    ((case
+      (pats ((((nullable (nullable (bool false)))))))
       (nodes ((text no_trim "" no_trim))))
-     ((pats (((var "_")))) (nodes ((text no_trim "" no_trim))))))
+     (case (pats ((((var "_"))))) (nodes ((text no_trim "" no_trim))))))
    (text
     no_trim
     "\n\nEdge cases\n\nPatterns with }} parse correctly\n"
     no_trim)
    (match
     ((var "a"))
-    (((pats (((record (("a" (record (("b" (var "b"))))))))))
+    ((case
+      (pats
+       ((((record (untagged (("a" (record (untagged (("b" (var "b")))))))))))))
       (nodes
        ((text no_trim " " no_trim)
         (echo () fmt_string (echo_var "b") escape)
@@ -185,32 +212,44 @@ Interfaces parse correctly. Use a separate file to minimize type conficts.
   $ acutis interface.acutis --printast
   ((text no_trim "" no_trim)
    (interface
-    (("a"
+    ((prop
+      "a"
       (record
        closed
-       ((("a" (enum_int closed (0 1))) ("b" (enum_string closed ("a" "b")))))))
-     ("b"
+       (((untagged
+          (("a" (enum_int closed (0 1))) ("b" (enum_string closed ("a" "b")))))))))
+     (prop
+      "b"
       (record
        closed
-       ((tagged ("tag" true) (("a" (list (named "int")))))
-        (tagged ("tag" false) (("a" (dict (nullable (named "string")))))))))
-     ("c"
+       (((tagged "tag" (tag_bool true) (("a" (list (named "int"))))))
+        ((tagged
+          "tag"
+          (tag_bool false)
+          (("a" (dict (nullable (named "string"))))))))))
+     (prop
+      "c"
       (record
        closed
-       ((tagged ("tag" 0) ())
-        (tagged ("tag" 1) (("a" ((named "float") (enum_bool (true false)))))))))
-     ("d"
+       (((tagged "tag" (tag_int 0) ()))
+        ((tagged
+          "tag"
+          (tag_int 1)
+          (("a" (tuple ((named "float") (enum_bool (true false)))))))))))
+     (prop
+      "d"
       (record
        closed
-       ((tagged ("tag" "a") (("a" (named "float"))))
-        (tagged ("tag" "b") (("a" (enum_int open (0 1))))))))
-     ("e"
+       (((tagged "tag" (tag_string "a") (("a" (named "float")))))
+        ((tagged "tag" (tag_string "b") (("a" (enum_int open (0 1)))))))))
+     (prop
+      "e"
       (record
        open
-       ((tagged ("tag" 0) (("a" (named "_"))))
-        (tagged ("tag" 1) (("b" (enum_string open ("a" "b"))))))))
-     ("children" (named "string"))
-     ("optionalChildren" (nullable (named "string")))))
+       (((tagged "tag" (tag_int 0) (("a" (named "_")))))
+        ((tagged "tag" (tag_int 1) (("b" (enum_string open ("a" "b")))))))))
+     (prop "children" (named "string"))
+     (prop "optionalChildren" (nullable (named "string")))))
    (text no_trim "\n" no_trim))
 
 Print the optimized form
@@ -234,7 +273,8 @@ Print the optimized form
    (text "\n\nNumbers\n")
    (match
     ((var "numbers"))
-    ((tree
+    (matching
+     (tree
       (nest
        (key 0)
        (ids ())
@@ -244,43 +284,50 @@ Print the optimized form
           (key "exp1")
           (ids ())
           (cases
-           ((data 150.)
+           (case
+            (data 150.)
             (if_match
              (switch
               (key "exp2")
               (ids ())
               (cases
-               ((data -1000.)
+               (case
+                (data -1000.)
                 (if_match
                  (switch
                   (key "exp3")
                   (ids ())
                   (cases
-                   ((data 0.2)
+                   (case
+                    (data 0.2)
                     (if_match
                      (switch
                       (key "frac")
                       (ids ())
                       (cases
-                       ((data 10.55)
+                       (case
+                        (data 10.55)
                         (if_match
                          (switch
                           (key "int")
                           (ids ())
                           (cases
-                           ((data 1000)
+                           (case
+                            (data 1000)
                             (if_match
                              (switch
                               (key "negfrac")
                               (ids ())
                               (cases
-                               ((data -12.34)
+                               (case
+                                (data -12.34)
                                 (if_match
                                  (switch
                                   (key "negint")
                                   (ids ())
                                   (cases
-                                   ((data -999)
+                                   (case
+                                    (data -999)
                                     (if_match
                                      (end (end (leaf (names ()) (exit 0)))))
                                     (next ())))
@@ -306,7 +353,7 @@ Print the optimized form
           (debug_row open))))
        (wildcard (end (leaf (names ()) (exit 1))))
        (debug not_dict)))
-     (exits (0 ()) (1 ()))))
+     (exits ((0 ()) (1 ())))))
    (text "\n\nTrim")
    (echo () fmt_string (var "trim_a") escape)
    (echo () fmt_string (var "trim_b") escape)
@@ -320,73 +367,85 @@ Print the optimized form
    (text "Comments\na b c\n\nFlat match\n")
    (match
     ((var "match_a"))
-    ((tree
+    (matching
+     (tree
       (switch
        (key 0)
        (ids ())
        (cases
-        ((data 1)
+        (case
+         (data 1)
          (if_match (end (leaf (names ()) (exit 0))))
          (next
-          ((data 2)
+          (case
+           (data 2)
            (if_match (end (leaf (names ()) (exit 0))))
            (next
-            ((data 3) (if_match (end (leaf (names ()) (exit 1)))) (next ())))))))
+            (case
+             (data 3)
+             (if_match (end (leaf (names ()) (exit 1))))
+             (next ())))))))
        (wildcard (end (leaf (names ()) (exit 2))))
        (debug_row open)))
-     (exits (0 ()) (1 ((text " "))) (2 ((text " "))))))
+     (exits ((0 ()) (1 ((text " "))) (2 ((text " ")))))))
    (text "\n\nNested match\n")
    (match
     ((var "match_b"))
-    ((tree
+    (matching
+     (tree
       (wildcard
        (key 0)
        (ids (0))
        (child (end (leaf (names (("c" 0))) (exit 0))))))
      (exits
-      (0
-       ((text "\n  ")
-        (match
-         ((var "d") (var "e"))
-         ((tree
-           (wildcard
-            (key 0)
-            (ids (0))
-            (child
-             (wildcard
-              (key 1)
-              (ids (1))
-              (child (end (leaf (names (("f" 0) ("g" 1))) (exit 0))))))))
-          (exits
-           (0
-            ((text " ")
-             (echo () fmt_string (var "c") escape)
-             (text " ")
-             (echo () fmt_string (var "f") escape)
-             (text " ")
-             (echo () fmt_string (var "g") escape)
-             (text " "))))))
-        (text "\n"))))))
+      ((0
+        ((text "\n  ")
+         (match
+          ((var "d") (var "e"))
+          (matching
+           (tree
+            (wildcard
+             (key 0)
+             (ids (0))
+             (child
+              (wildcard
+               (key 1)
+               (ids (1))
+               (child (end (leaf (names (("f" 0) ("g" 1))) (exit 0))))))))
+           (exits
+            ((0
+              ((text " ")
+               (echo () fmt_string (var "c") escape)
+               (text " ")
+               (echo () fmt_string (var "f") escape)
+               (text " ")
+               (echo () fmt_string (var "g") escape)
+               (text " ")))))))
+         (text "\n")))))))
    (text "\n\nMap list\n")
    (map_list
     (var "map_l")
-    ((tree
+    (matching
+     (tree
       (switch
        (key 0)
        (ids ())
        (cases
-        ((data 1)
+        (case
+         (data 1)
          (if_match
           (wildcard (key 1) (ids ()) (child (end (leaf (names ()) (exit 0))))))
          (next
-          ((data 2)
+          (case
+           (data 2)
            (if_match
             (wildcard
              (key 1)
              (ids ())
              (child (end (leaf (names ()) (exit 0))))))
            (next
-            ((data 3)
+            (case
+             (data 3)
              (if_match
               (wildcard
                (key 1)
@@ -397,29 +456,33 @@ Print the optimized form
         (wildcard (key 1) (ids ()) (child (end (leaf (names ()) (exit 2))))))
        (debug_row open)))
      (exits
-      (0 ())
-      (1 ((text " ") (echo () fmt_int (var "i") escape) (text " ")))
-      (2 ((text " "))))))
+      ((0 ())
+       (1 ((text " ") (echo () fmt_int (var "i") escape) (text " ")))
+       (2 ((text " ")))))))
    (text "\n\nMap dict\n")
    (map_dict
     (var "map_d")
-    ((tree
+    (matching
+     (tree
       (switch
        (key 0)
        (ids ())
        (cases
-        ((data 1)
+        (case
+         (data 1)
          (if_match
           (wildcard (key 1) (ids ()) (child (end (leaf (names ()) (exit 0))))))
          (next
-          ((data 2)
+          (case
+           (data 2)
            (if_match
             (wildcard
              (key 1)
              (ids ())
              (child (end (leaf (names ()) (exit 0))))))
            (next
-            ((data 3)
+            (case
+             (data 3)
              (if_match
               (wildcard
                (key 1)
@@ -430,9 +493,9 @@ Print the optimized form
         (wildcard (key 1) (ids ()) (child (end (leaf (names ()) (exit 2))))))
        (debug_row open)))
      (exits
-      (0 ())
-      (1 ((text " ") (echo () fmt_string (var "k") escape) (text " ")))
-      (2 ((text "\n"))))))
+      ((0 ())
+       (1 ((text " ") (echo () fmt_string (var "k") escape) (text " ")))
+       (2 ((text "\n")))))))
    (text "\n\nComponent with props\n")
    (component
     "Component"
@@ -445,21 +508,23 @@ Print the optimized form
       (block
        ((match
          ((var "a_prop"))
-         ((tree
+         (matching
+          (tree
            (wildcard
             (key 0)
             (ids (0))
             (child (end (leaf (names (("b_prop" 0))) (exit 0))))))
           (exits
-           (0
-            ((text " ") (echo () fmt_string (var "b_prop") escape) (text " ")))))))))
+           ((0
+             ((text " ") (echo () fmt_string (var "b_prop") escape) (text " "))))))))))
      ("i_prop" (block ()))))
    (text "\n\nComponent with implicit children\n")
    (component "Component2" (("children" (block ((text " "))))))
    (text "\n\nPatterns\n\nTuple:\n")
    (match
     ((var "tuple"))
-    ((tree
+    (matching
+     (tree
       (nest
        (key 0)
        (ids ())
@@ -469,19 +534,22 @@ Print the optimized form
           (key 0)
           (ids ())
           (cases
-           ((data 1)
+           (case
+            (data 1)
             (if_match
              (switch
               (key 1)
               (ids ())
               (cases
-               ((data 2.5)
+               (case
+                (data 2.5)
                 (if_match
                  (switch
                   (key 2)
                   (ids ())
                   (cases
-                   ((data "a")
+                   (case
+                    (data "a")
                     (if_match (end (end (leaf (names ()) (exit 0)))))
                     (next ())))
                   (wildcard ())
@@ -494,11 +562,12 @@ Print the optimized form
           (debug_row open))))
        (wildcard (end (leaf (names ()) (exit 1))))
        (debug not_dict)))
-     (exits (0 ((text " "))) (1 ((text " "))))))
+     (exits ((0 ((text " "))) (1 ((text " ")))))))
    (text "\n\nList:\n")
    (match
     ((var "list"))
-    ((tree
+    (matching
+     (tree
       (construct
        (key 0)
        (ids ())
@@ -563,13 +632,14 @@ Print the optimized form
          (wildcard ())
          (debug not_dict)))))
      (exits
-      (0 ((text "\n")))
-      (1 ((text " ") (echo () fmt_string (var "a") escape) (text "\n")))
-      (2 ((text "\n"))))))
+      ((0 ((text "\n")))
+       (1 ((text " ") (echo () fmt_string (var "a") escape) (text "\n")))
+       (2 ((text "\n")))))))
    (text "\n\nRecord:\n")
    (match
     ((var "record"))
-    ((tree
+    (matching
+     (tree
       (nest
        (key 0)
        (ids ())
@@ -586,17 +656,18 @@ Print the optimized form
        (wildcard (end (leaf (names ()) (exit 1))))
        (debug not_dict)))
      (exits
-      (0
-       ((text " ")
-        (echo () fmt_string (var "a") escape)
-        (text " ")
-        (echo () fmt_string (var "b") escape)
-        (text " ")))
-      (1 ((text " "))))))
+      ((0
+        ((text " ")
+         (echo () fmt_string (var "a") escape)
+         (text " ")
+         (echo () fmt_string (var "b") escape)
+         (text " ")))
+       (1 ((text " ")))))))
    (text "\n\nEnum:\n")
    (match
     ((var "enums"))
-    ((tree
+    (matching
+     (tree
       (nest
        (key 0)
        (ids ())
@@ -606,25 +677,29 @@ Print the optimized form
           (key 0)
           (ids ())
           (cases
-           ((data "a")
+           (case
+            (data "a")
             (if_match
              (switch
               (key 1)
               (ids ())
               (cases
-               ((data 1)
+               (case
+                (data 1)
                 (if_match
                  (switch
                   (key 2)
                   (ids ())
                   (cases
-                   ((data 1)
+                   (case
+                    (data 1)
                     (if_match
                      (switch
                       (key 3)
                       (ids ())
                       (cases
-                       ((data 0)
+                       (case
+                        (data 0)
                         (if_match (end (end (leaf (names ()) (exit 0)))))
                         (next ())))
                       (wildcard ())
@@ -640,11 +715,12 @@ Print the optimized form
           (debug_row open))))
        (wildcard (end (leaf (names ()) (exit 1))))
        (debug not_dict)))
-     (exits (0 ((text " "))) (1 ((text " "))))))
+     (exits ((0 ((text " "))) (1 ((text " ")))))))
    (text "\n\nTagged union:\n")
    (match
     ((var "tagged"))
-    ((tree
+    (matching
+     (tree
       (nest
        (key 0)
        (ids ())
@@ -654,10 +730,12 @@ Print the optimized form
           (key "tag")
           (ids ())
           (cases
-           ((data 0)
+           (case
+            (data 0)
             (if_match (end (end (leaf (names ()) (exit 1)))))
             (next
-             ((data 1)
+             (case
+              (data 1)
               (if_match
                (wildcard
                 (key "a")
@@ -669,12 +747,13 @@ Print the optimized form
        (wildcard ())
        (debug not_dict)))
      (exits
-      (0 ((text " ") (echo () fmt_string (var "a") escape) (text " ")))
-      (1 ((text "\n"))))))
+      ((0 ((text " ") (echo () fmt_string (var "a") escape) (text " ")))
+       (1 ((text "\n")))))))
    (text "\n\nDictionary:\n")
    (match
     ((var "dict"))
-    ((tree
+    (matching
+     (tree
       (nest
        (key 0)
        (ids ())
@@ -684,13 +763,15 @@ Print the optimized form
           (key "a")
           (ids ())
           (cases
-           ((data 1)
+           (case
+            (data 1)
             (if_match
              (switch
               (key "b")
               (ids ())
               (cases
-               ((data 2)
+               (case
+                (data 2)
                 (if_match (end (end (leaf (names ()) (exit 0)))))
                 (next ())))
               (wildcard ())
@@ -700,11 +781,12 @@ Print the optimized form
           (debug_row open))))
        (wildcard (end (leaf (names ()) (exit 1))))
        (debug dict)))
-     (exits (0 ((text " "))) (1 ((text " "))))))
+     (exits ((0 ((text " "))) (1 ((text " ")))))))
    (text "\n\n! and . precedence works correctly\n")
    (match
     ((array ((array ((field (field (var "a") "b") "c"))))))
-    ((tree
+    (matching
+     (tree
       (construct
        (key 0)
        (ids ())
@@ -729,7 +811,8 @@ Print the optimized form
                  (key 0)
                  (ids ())
                  (cases
-                  ((data 0)
+                  (case
+                   (data 0)
                    (if_match (end (end (end (leaf (names ()) (exit 0))))))
                    (next ())))
                  (wildcard ())
@@ -738,11 +821,12 @@ Print the optimized form
               (debug not_dict))))))
          (wildcard (end (leaf (names ()) (exit 1))))
          (debug not_dict)))))
-     (exits (0 ()) (1 ()))))
+     (exits ((0 ()) (1 ())))))
    (text "\n\nEdge cases\n\nPatterns with }} parse correctly\n")
    (match
     ((var "a"))
-    ((tree
+    (matching
+     (tree
       (nest
        (key 0)
        (ids ())
@@ -761,5 +845,6 @@ Print the optimized form
           (debug not_dict))))
        (wildcard ())
        (debug not_dict)))
-     (exits (0 ((text " ") (echo () fmt_string (var "b") escape) (text " "))))))
+     (exits
+      ((0 ((text " ") (echo () fmt_string (var "b") escape) (text " ")))))))
    (text "\n"))

@@ -12,15 +12,24 @@ type t
 (** The internal S-expression type. We use it as a serialization format for
     debugging things like the AST. *)
 
+val make : string -> t list -> t
+(** [make atom [a; b; c;]] returns the S-exp [(atom a b c)].*)
+
+val empty : t
+(** Equivalent to the expression [()]. *)
+
+val noop : t
+(** This is always ignored when printing. *)
+
 val symbol : string -> t
 val string : string -> t
 val int : int -> t
 val bool : int -> t
 val float : float -> t
-val list : t list -> t
-val seq : t Seq.t -> t
-val empty : t
-val pair : ('a -> t) -> ('b -> t) -> 'a * 'b -> t
-val set_int : Set.Int.t -> t
-val map_string : ('a -> t) -> 'a Map.String.t -> t
+val of_seq : ('a -> t) -> 'a Seq.t -> t
 val pp : Format.formatter -> t -> unit
+
+(** Convenience functions *)
+
+val pair : ('a -> t) -> ('b -> t) -> 'a * 'b -> t
+val map_string : ('a -> t) -> 'a Map.String.t -> t

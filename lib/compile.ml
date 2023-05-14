@@ -220,58 +220,42 @@ let from_channel ~fname components src =
   make ~fname components (Lexing.from_channel src)
 
 let rec echo_to_sexp = function
-  | Echo_var s -> Sexp.list [ Sexp.symbol "var"; Sexp.string s ]
+  | Echo_var s -> Sexp.make "var" [ Sexp.string s ]
   | Echo_string s -> Sexp.string s
-  | Echo_field (e, s) ->
-      Sexp.list [ Sexp.symbol "field"; echo_to_sexp e; Sexp.string s ]
+  | Echo_field (e, s) -> Sexp.make "field" [ echo_to_sexp e; Sexp.string s ]
 
 let rec node_to_sexp = function
-  | Text s -> Sexp.list [ Sexp.symbol "text"; Sexp.string s ]
+  | Text s -> Sexp.make "text" [ Sexp.string s ]
   | Echo (l, fmt, ech, esc) ->
-      Sexp.list
+      Sexp.make "echo"
         [
-          Sexp.symbol "echo";
-          Sexp.seq
-            (List.to_seq l
-            |> Seq.map (Sexp.pair Ast.echo_format_to_sexp echo_to_sexp));
+          Sexp.of_seq
+            (Sexp.pair Ast.echo_format_to_sexp echo_to_sexp)
+            (List.to_seq l);
           Ast.echo_format_to_sexp fmt;
           echo_to_sexp ech;
           Ast.escape_to_sexp esc;
         ]
   | Match (a, matching) ->
-      Sexp.list
+      Sexp.make "match"
         [
-          Sexp.symbol "match";
-          Sexp.seq (Array.to_seq a |> Seq.map (Data.to_sexp eval_to_sexp));
+          Sexp.of_seq (Data.to_sexp eval_to_sexp) (Array.to_seq a);
           Matching.to_sexp to_sexp matching;
         ]
   | Map_list (d, matching) ->
-      Sexp.list
-        [
-          Sexp.symbol "map_list";
-          Data.to_sexp eval_to_sexp d;
-          Matching.to_sexp to_sexp matching;
-        ]
+      Sexp.make "map_list"
+        [ Data.to_sexp eval_to_sexp d; Matching.to_sexp to_sexp matching ]
   | Map_dict (d, matching) ->
-      Sexp.list
-        [
-          Sexp.symbol "map_dict";
-          Data.to_sexp eval_to_sexp d;
-          Matching.to_sexp to_sexp matching;
-        ]
+      Sexp.make "map_dict"
+        [ Data.to_sexp eval_to_sexp d; Matching.to_sexp to_sexp matching ]
   | Component (name, _function, props) ->
-      Sexp.list
-        [
-          Sexp.symbol "component";
-          Sexp.string name;
-          Data.dict_to_sexp eval_to_sexp props;
-        ]
+      Sexp.make "component"
+        [ Sexp.string name; Data.dict_to_sexp eval_to_sexp props ]
 
 and eval_to_sexp = function
-  | Var s -> Sexp.list [ Sexp.symbol "var"; Sexp.string s ]
-  | Block n -> Sexp.list [ Sexp.symbol "block"; to_sexp n ]
+  | Var s -> Sexp.make "var" [ Sexp.string s ]
+  | Block n -> Sexp.make "block" [ to_sexp n ]
   | Field (d, f) ->
-      Sexp.list
-        [ Sexp.symbol "field"; Data.to_sexp eval_to_sexp d; Sexp.string f ]
+      Sexp.make "field" [ Data.to_sexp eval_to_sexp d; Sexp.string f ]
 
-and to_sexp l = Sexp.seq (List.to_seq l |> Seq.map node_to_sexp)
+and to_sexp l = Sexp.of_seq node_to_sexp (List.to_seq l)

@@ -28,5 +28,4 @@ let map2 f (hd1 :: tl1) (hd2 :: tl2) =
   let hd = f hd1 hd2 in
   hd :: List.map2 f tl1 tl2
 
-let to_sexp f (hd :: tl) =
-  Sexp.seq (Seq.cons (f hd) (List.to_seq tl |> Seq.map f))
+let to_sexp f (hd :: tl) = Sexp.of_seq f (Seq.cons hd @@ List.to_seq tl)
