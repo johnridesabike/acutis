@@ -4,7 +4,7 @@ Most changes are breaking changes.
 
 ## Latest
 
-- Add debug commands to the CLI: `--printast` `--printtypes` `--printopt`.
+- Add debug commands to the CLI: `--printast`, `--printtypes`, and `--printopt`.
 
 ## 0.22.0
 
