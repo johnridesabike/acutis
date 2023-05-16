@@ -9,7 +9,7 @@
 (**************************************************************************)
 
 open Acutis
-module Render = Render.Make (Sync) (Acutis_json.Data)
+module Render = Render.Make (Sync) (DataJson)
 
 let usage_msg =
   {|Parse and execute Acutis language templates.

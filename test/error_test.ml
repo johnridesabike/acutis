@@ -3,7 +3,7 @@
     test is easier to maintain and faster to execute. *)
 
 open Acutis
-module RenderSync = Render.Make (Sync) (Acutis_json.Data)
+module RenderSync = Render.Make (Sync) (DataJson)
 
 let render ?(json = "{}") ?(components = Compile.Components.empty) src () =
   let temp = Compile.(from_string ~fname:"<test>" components src) in

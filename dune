@@ -10,7 +10,7 @@
    (run
     %{dep:package_json.exe}
     --version
-    %{version:acutis_js}
+    %{version:acutis}
     --main
     %{dep:js/acutis_js.bc.js}
     --files

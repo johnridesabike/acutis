@@ -13,7 +13,6 @@ open Js_of_ocaml
 module Ty = Typescheme
 module EPath = Error.DecodePath
 
-type 'a map = 'a Stdlib.Map.Make(String).t
 type t = Js.Unsafe.any
 
 let stringify (j : t) =

@@ -1,6 +1,6 @@
 (tests
  (names error_test)
- (libraries acutis acutis_json yojson))
+ (libraries acutis yojson))
 
 (cram
  (deps %{bin:acutis} ../package.json))

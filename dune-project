@@ -26,6 +26,8 @@
   (ocaml
    (>= 4.14))
   menhir
+  yojson
+  dune-build-info
   (ocamlformat
    (and
     (= 0.25.1)
@@ -34,19 +36,9 @@
   (template language parser interpreter)))
 
 (package
- (name acutis_json)
- (synopsis "Encode and decode JSON data for Acutis")
- (depends
-  (ocaml
-   (>= 4.14))
-  (acutis
-   (= :version))
-  yojson
-  dune-build-info))
-
-(package
  (name acutis_js)
- (synopsis "Encode and decode JavaScript data for Acutis")
+ (synopsis "A virtual package containing the Acutis JavaScript dependencies")
+ (allow_empty)
  (depends
   (ocaml
    (>= 4.14))
