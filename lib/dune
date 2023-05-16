@@ -1,5 +1,6 @@
 (library
- (public_name acutis))
+ (public_name acutis)
+ (libraries yojson))
 
 (ocamllex lexer)
 

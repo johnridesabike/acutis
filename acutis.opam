@@ -13,6 +13,8 @@ depends: [
   "dune" {>= "3.3"}
   "ocaml" {>= "4.14"}
   "menhir"
+  "yojson"
+  "dune-build-info"
   "ocamlformat" {= "0.25.1" & with-test}
   "odoc" {with-doc}
 ]

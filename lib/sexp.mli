@@ -8,9 +8,10 @@
 (*                                                                        *)
 (**************************************************************************)
 
+(** Serialize internal data into S-expressions for debugging. *)
+
 type t
-(** The internal S-expression type. We use it as a serialization format for
-    debugging things like the AST. *)
+(** The internal S-expression type. *)
 
 val make : string -> t list -> t
 (** [make atom [a; b; c;]] returns the S-exp [(atom a b c)].*)

@@ -8,11 +8,8 @@
 (*                                                                        *)
 (**************************************************************************)
 
-open Acutis
 module Ty = Typescheme
 module EPath = Error.DecodePath
-
-type 'a map = 'a Stdlib.Map.Make(String).t
 
 type t =
   [ `Null
