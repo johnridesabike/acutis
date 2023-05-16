@@ -43,16 +43,6 @@ and 'a eval =
 
 and 'a nodes = 'a node list
 
-type 'a template =
-  | Src of 'a template nodes
-  | Fun of Typescheme.t Map.String.t * 'a
-
-type 'a t = {
-  types : Typescheme.t Map.String.t;
-  nodes : 'a template nodes;
-  name : string;
-}
-
 module Components : sig
   type 'a source
 
@@ -79,6 +69,17 @@ module Components : sig
       @raise Error.Acutis_error *)
 end
 
+type 'a template =
+  | Src of 'a template nodes
+  | Fun of Typescheme.t Map.String.t * 'a
+
+type 'a t = {
+  name : string;
+  types : Typescheme.t Map.String.t;
+  nodes : 'a template nodes;
+  components : 'a template Map.String.t;
+}
+
 val make : fname:string -> 'a Components.t -> Lexing.lexbuf -> 'a t
 val from_string : fname:string -> 'a Components.t -> string -> 'a t
 val from_channel : fname:string -> 'a Components.t -> in_channel -> 'a t
@@ -86,15 +87,4 @@ val interface_from_string : fname:string -> string -> Typescheme.t Map.String.t
 
 type jsfun = { module_path : string; function_path : string }
 
-type t2 = {
-  types_nolink : Typescheme.t Map.String.t;
-  nodes_nolink : unit nodes;
-  name_nolink : string;
-  components_nolink : (unit nodes, jsfun) Typechecker.source Map.String.t;
-}
-(** An experimental type that doesn't link the trees. If this merges, then it
-    will be made more ergonomic. *)
-
-val make_nolink : fname:string -> jsfun Components.t -> Lexing.lexbuf -> t2
-val from_string_nolink : fname:string -> jsfun Components.t -> string -> t2
 val to_sexp : _ nodes -> Sexp.t

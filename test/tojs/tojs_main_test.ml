@@ -208,7 +208,7 @@ External JavaScript template component: stringify arbitrary data
   in
   ToJs.pp Format.std_formatter
     Compile.(
-      from_string_nolink ~fname:"<test>"
+      from_string ~fname:"<test>"
         (Components.make
            [ component; external_component; another_component_same_file ])
         src)

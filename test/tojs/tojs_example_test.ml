@@ -35,4 +35,4 @@ let () =
 |}
   in
   ToJs.pp Format.std_formatter
-    Compile.(from_string_nolink ~fname:"<test>" Components.empty src)
+    Compile.(from_string ~fname:"<test>" Components.empty src)

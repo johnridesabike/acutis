@@ -130,16 +130,6 @@ and make_match loc tys cases =
 
 let make_nodes Typechecker.{ nodes; _ } = make_nodes nodes
 
-type 'a template =
-  | Src of 'a template nodes
-  | Fun of Typescheme.t Map.String.t * 'a
-
-type 'a t = {
-  types : Typescheme.t Map.String.t;
-  nodes : 'a template nodes;
-  name : string;
-}
-
 module Components = struct
   module T = Typechecker
 
@@ -183,6 +173,17 @@ module Components = struct
     { typed; optimized }
 end
 
+type 'a template =
+  | Src of 'a template nodes
+  | Fun of Typescheme.t Map.String.t * 'a
+
+type 'a t = {
+  name : string;
+  types : Typescheme.t Map.String.t;
+  nodes : 'a template nodes;
+  components : 'a template Map.String.t;
+}
+
 let rec link_nodes graph nodes =
   List.map
     (function
@@ -216,10 +217,11 @@ let link_src graph = function
 
 let make ~fname components src =
   let nodes = parse ~fname src in
-  let ast = Typechecker.make ~root:fname components.Components.typed nodes in
+  let typed = Typechecker.make ~root:fname components.Components.typed nodes in
   let g = Dagmap.make ~f:link_src ~root:fname components.optimized in
-  let nodes = make_nodes ast |> link_nodes g in
-  { types = ast.types; nodes; name = fname }
+  let nodes = make_nodes typed |> link_nodes g in
+  let components = Map.String.map (link_src g) components.optimized in
+  { name = fname; types = typed.types; nodes; components }
 
 let from_string ~fname components src =
   make ~fname components (Lexing.from_string src)
@@ -232,27 +234,6 @@ let interface_from_string ~fname src =
   |> Typechecker.make_interface_standalone
 
 type jsfun = { module_path : string; function_path : string }
-
-type t2 = {
-  types_nolink : Typescheme.t Map.String.t;
-  nodes_nolink : unit nodes;
-  name_nolink : string;
-  components_nolink : (unit nodes, jsfun) Typechecker.source Map.String.t;
-}
-
-let make_nolink ~fname components src =
-  let nodes = parse ~fname src in
-  let ast = Typechecker.make ~root:fname components.Components.typed nodes in
-  let nodes = make_nodes ast in
-  {
-    types_nolink = ast.types;
-    nodes_nolink = nodes;
-    name_nolink = fname;
-    components_nolink = components.optimized;
-  }
-
-let from_string_nolink ~fname components src =
-  make_nolink ~fname components (Lexing.from_string src)
 
 let rec echo_to_sexp = function
   | Echo_var s -> Sexp.make "var" [ Sexp.string s ]

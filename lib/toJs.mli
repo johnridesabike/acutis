@@ -8,4 +8,4 @@
 (*                                                                        *)
 (**************************************************************************)
 
-val pp : Format.formatter -> Compile.t2 -> unit
+val pp : Format.formatter -> Compile.jsfun Compile.t -> unit

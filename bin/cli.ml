@@ -32,6 +32,7 @@ let doc_printast = " Print the template's untyped AST form and exit."
 let doc_printtypes = " Print the template's type interface and exit."
 let doc_printopt = " Print the template's optimized form and exit."
 let arg_action = ref Render
+let arg_jsmodules = Queue.create ()
 let set_printast () = arg_action := Print_ast
 let set_printtypes () = arg_action := Print_types
 let set_printopt () = arg_action := Print_optimized
@@ -48,6 +49,22 @@ let args =
     [
       ("--data", Set_string arg_data, doc_data);
       ("--output", Set_string arg_output, doc_output);
+      ( "--jsmodule",
+        Tuple
+          (let module_path = ref "" in
+           let function_path = ref "" in
+           let interface_path = ref "" in
+           [
+             Set_string module_path;
+             Set_string function_path;
+             Set_string interface_path;
+             Unit
+               (fun () ->
+                 Queue.add
+                   (!module_path, !function_path, !interface_path)
+                   arg_jsmodules);
+           ]),
+        "TODO" );
       ("--version", Unit version, doc_version);
       ("--printast", Unit set_printast, doc_printast);
       ("--printtypes", Unit set_printtypes, doc_printtypes);

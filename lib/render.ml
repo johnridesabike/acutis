@@ -237,7 +237,7 @@ module Make (M : MONAD) (D : DATA) = struct
                 M.return b))
       b nodes
 
-  let make { Compile.nodes; types; name } props =
+  let make { Compile.nodes; types; name; _ } props =
     (* Wrap the props in a monad so it can catch decode exceptions. *)
     let* props = M.return props in
     let vars = D.decode ~name types props in
