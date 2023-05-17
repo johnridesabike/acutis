@@ -233,6 +233,10 @@ let interface_from_string ~fname src =
   parse_interface ~fname (Lexing.from_string src)
   |> Typechecker.make_interface_standalone
 
+let interface_from_channel ~fname src =
+  parse_interface ~fname (Lexing.from_channel src)
+  |> Typechecker.make_interface_standalone
+
 type jsfun = { module_path : string; function_path : string }
 
 let rec echo_to_sexp = function

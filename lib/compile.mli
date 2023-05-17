@@ -85,6 +85,9 @@ val from_string : fname:string -> 'a Components.t -> string -> 'a t
 val from_channel : fname:string -> 'a Components.t -> in_channel -> 'a t
 val interface_from_string : fname:string -> string -> Typescheme.t Map.String.t
 
+val interface_from_channel :
+  fname:string -> in_channel -> Typescheme.t Map.String.t
+
 type jsfun = { module_path : string; function_path : string }
 
 val to_sexp : _ nodes -> Sexp.t

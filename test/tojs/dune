@@ -1,79 +1,18 @@
-(executables
- (names tojs_main_test tojs_example_test tojs_error)
- (libraries acutis))
-
-; Main test with every construct in it.
-
-(rule ; Generate the compiled JS.
- (target tojs_main_test.mjs)
- (action
-  (with-stdout-to
-   %{target}
-   (run %{dep:tojs_main_test.exe}))))
-
-(rule ; Execute the compiled JS with some data.
- (target tojs_main_run.output)
- (deps tojs_main_test.mjs fixture_components.mjs)
- (action
-  (with-stdout-to
-   %{target}
-   (run node %{dep:tojs_main_run.mjs}))))
-
-(rule ; Diff the output after executing the compiled JS.
- (alias runtest)
- (action
-  (diff %{dep:tojs_main.expected} %{dep:tojs_main_run.output})))
-
-(rule ; Diff the compiled JS.
- (alias runtest)
- (action
-  (diff %{dep:tojs_main_test.expected.mjs} %{dep:tojs_main_test.mjs})))
+(cram
+ (deps %{bin:acutis}))
 
 ; Basic example file
 
 (rule ; Generate the compiled JS.
- (target tojs_example_test.mjs)
+ (target tojs_example_compiled.output)
  (action
   (with-stdout-to
    %{target}
-   (run %{dep:tojs_example_test.exe}))))
-
-(rule ; Execute the compiled JS with some data.
- (target tojs_example.output)
- (deps tojs_example_test.mjs)
- (action
-  (with-stdout-to
-   %{target}
-   (run node %{dep:tojs_example_run.mjs}))))
-
-(rule ; Diff the output after executing the compiled JS.
- (alias runtest)
- (action
-  (diff %{dep:tojs_example.expected.html} %{dep:tojs_example.output})))
+   (run %{bin:acutis} --js %{dep:tojs_example.acutis}))))
 
 (rule ; Diff the compiled JS.
  (alias runtest)
  (action
-  (diff %{dep:tojs_example_test.expected.mjs} %{dep:tojs_example_test.mjs})))
-
-; Errors
-
-(rule ; Generate the compiled JS.
- (target tojs_error.mjs)
- (action
-  (with-stdout-to
-   %{target}
-   (run %{dep:tojs_error.exe}))))
-
-(rule ; Execute the compiled JS with some data.
- (target tojs_error.output)
- (deps tojs_error.mjs)
- (action
-  (with-stdout-to
-   %{target}
-   (run node %{dep:tojs_error_run.mjs}))))
-
-(rule ; Diff the output after executing the compiled JS.
- (alias runtest)
- (action
-  (diff %{dep:tojs_error.expected} %{dep:tojs_error.output})))
+  (diff
+   %{dep:tojs_example_compiled.mjs}
+   %{dep:tojs_example_compiled.output})))

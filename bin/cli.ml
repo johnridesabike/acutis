@@ -19,7 +19,7 @@ Usage:
 
 Options:|}
 
-type action = Render | Print_ast | Print_types | Print_optimized
+type action = Render | Print_ast | Print_types | Print_optimized | Make_js
 
 let doc_data = " The path to a JSON data file. Default: stdin."
 let arg_data = ref "-"
@@ -32,10 +32,11 @@ let doc_printast = " Print the template's untyped AST form and exit."
 let doc_printtypes = " Print the template's type interface and exit."
 let doc_printopt = " Print the template's optimized form and exit."
 let arg_action = ref Render
-let arg_jsmodules = Queue.create ()
+let jsmodules = Queue.create ()
 let set_printast () = arg_action := Print_ast
 let set_printtypes () = arg_action := Print_types
 let set_printopt () = arg_action := Print_optimized
+let set_buildjs () = arg_action := Make_js
 
 let version () =
   Format.printf "Version: %s\n"
@@ -49,6 +50,7 @@ let args =
     [
       ("--data", Set_string arg_data, doc_data);
       ("--output", Set_string arg_output, doc_output);
+      ("--js", Unit set_buildjs, "TODO");
       ( "--jsmodule",
         Tuple
           (let module_path = ref "" in
@@ -62,7 +64,7 @@ let args =
                (fun () ->
                  Queue.add
                    (!module_path, !function_path, !interface_path)
-                   arg_jsmodules);
+                   jsmodules);
            ]),
         "TODO" );
       ("--version", Unit version, doc_version);
@@ -74,22 +76,36 @@ let args =
 let fname_to_compname s =
   Filename.basename s |> Filename.remove_extension |> String.capitalize_ascii
 
+let make_components_aux () =
+  Queue.fold
+    (fun acc fname ->
+      In_channel.with_open_text fname
+        (Compile.Components.parse_channel ~fname ~name:(fname_to_compname fname))
+      :: acc)
+    [] templates
+
+let make_components () = make_components_aux () |> Compile.Components.make
+
+let make_components_js () =
+  let l = make_components_aux () in
+  Queue.fold
+    (fun acc (module_path, function_path, interface_path) ->
+      let typescheme =
+        In_channel.with_open_text interface_path
+          (Compile.interface_from_channel ~fname:interface_path)
+      in
+      let name = fname_to_compname function_path in
+      Compile.Components.from_fun ~name typescheme
+        Compile.{ module_path; function_path }
+      :: acc)
+    l jsmodules
+  |> Compile.Components.make
+
 let () =
   try
     Arg.parse args set_templates usage_msg;
 
     let fname = Queue.take templates in
-
-    let components =
-      Queue.fold
-        (fun acc fname ->
-          In_channel.with_open_text fname
-            (Compile.Components.parse_channel ~fname
-               ~name:(fname_to_compname fname))
-          :: acc)
-        [] templates
-      |> Compile.Components.make
-    in
 
     match !arg_action with
     | Print_ast ->
@@ -98,18 +114,21 @@ let () =
         |> Ast.to_sexp
         |> Sexp.pp Format.std_formatter
     | Print_types ->
+        let components = make_components_js () in
         let template =
           In_channel.with_open_text fname
             (Compile.from_channel ~fname components)
         in
         Typescheme.pp_interface Format.std_formatter template.types
     | Print_optimized ->
+        let components = make_components_js () in
         let template =
           In_channel.with_open_text fname
             (Compile.from_channel ~fname components)
         in
         Compile.to_sexp template.nodes |> Sexp.pp Format.std_formatter
     | Render -> (
+        let components = make_components () in
         let data =
           match !arg_data with
           | "-" ->
@@ -128,6 +147,17 @@ let () =
         | fname ->
             Out_channel.(
               with_open_text fname (fun chan -> output_string chan result)))
+    | Make_js -> (
+        let components = make_components_js () in
+        let template =
+          In_channel.with_open_text fname
+            (Compile.from_channel ~fname components)
+        in
+        match !arg_output with
+        | "-" -> ToJs.pp Format.std_formatter template
+        | fname ->
+            Out_channel.with_open_text fname (fun chan ->
+                ToJs.pp (Format.formatter_of_out_channel chan) template))
   with
   | Error.Acutis_error e ->
       Out_channel.output_string stderr e;

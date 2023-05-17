@@ -30,14 +30,6 @@ function acutis_escape(str) {
   return result;
 }
 
-function fmt_number(i) {
-  return i.toString();
-}
-
-function fmt_bool(b) {
-  return b ? "true" : "false";
-}
-
 export default async function main(input1) {
   let data = new Map();
   if ("blogPosts" in input1) {

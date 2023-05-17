@@ -31,9 +31,6 @@ module Id : sig
   val exit : t
   val result : t
   val entry : t
-  val runtime_fmt_int : t
-  val runtime_fmt_float : t
-  val runtime_fmt_bool : t
   val runtime_escape : t
   val runtime_main : t
 
@@ -90,9 +87,6 @@ end = struct
   let exit = "exit"
   let result = "result"
   let entry = "entry"
-  let runtime_fmt_int = "fmt_number"
-  let runtime_fmt_float = "fmt_number"
-  let runtime_fmt_bool = "fmt_bool"
   let runtime_escape = "acutis_escape"
   let runtime_main = "main"
 
@@ -409,9 +403,8 @@ end
 
 let fmt x = function
   | C.Fmt_string -> x
-  | C.Fmt_int -> App (Var Id.runtime_fmt_int, [ x ])
-  | C.Fmt_float -> App (Var Id.runtime_fmt_float, [ x ])
-  | C.Fmt_bool -> App (Var Id.runtime_fmt_bool, [ x ])
+  | C.Fmt_int | C.Fmt_float -> App (Field (x, String "toString"), [])
+  | C.Fmt_bool -> Tern (x, String "true", String "false")
 
 let escape x = function
   | C.No_escape -> x
@@ -1080,14 +1073,6 @@ function acutis_escape(str) {
     result += escapes[c] || c;
   }
   return result;
-}
-
-function fmt_number(i) {
-  return i.toString();
-}
-
-function fmt_bool(b) {
-  return b ? "true" : "false";
 }
 |}
 
