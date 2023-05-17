@@ -77,29 +77,28 @@ let fname_to_compname s =
   Filename.basename s |> Filename.remove_extension |> String.capitalize_ascii
 
 let make_components_aux () =
-  Queue.fold
-    (fun acc fname ->
-      In_channel.with_open_text fname
-        (Compile.Components.parse_channel ~fname ~name:(fname_to_compname fname))
-      :: acc)
-    [] templates
+  Queue.to_seq templates
+  |> Seq.map (fun fname ->
+         In_channel.with_open_text fname
+           (Compile.Components.parse_channel ~fname
+              ~name:(fname_to_compname fname)))
 
-let make_components () = make_components_aux () |> Compile.Components.make
+let make_components () = make_components_aux () |> Compile.Components.of_seq
 
 let make_components_js () =
   let l = make_components_aux () in
-  Queue.fold
-    (fun acc (module_path, function_path, interface_path) ->
-      let typescheme =
-        In_channel.with_open_text interface_path
-          (Compile.interface_from_channel ~fname:interface_path)
-      in
-      let name = fname_to_compname function_path in
-      Compile.Components.from_fun ~name typescheme
-        Compile.{ module_path; function_path }
-      :: acc)
-    l jsmodules
-  |> Compile.Components.make
+  let jsl =
+    Queue.to_seq jsmodules
+    |> Seq.map (fun (module_path, function_path, interface_path) ->
+           let typescheme =
+             In_channel.with_open_text interface_path
+               (Compile.interface_from_channel ~fname:interface_path)
+           in
+           let name = fname_to_compname function_path in
+           Compile.Components.from_fun ~name typescheme
+             Compile.{ module_path; function_path })
+  in
+  Seq.append l jsl |> Compile.Components.of_seq
 
 let () =
   try

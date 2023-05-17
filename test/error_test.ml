@@ -228,7 +228,7 @@ let () =
          {% match a.b.c with 1 %}{% with _ %}{% /match %}|});
   let comps =
     Compile.Components.(
-      make [ parse_string ~fname:"a.acutis" ~name:"A" "{{ a }}" ])
+      of_seq @@ Seq.return @@ parse_string ~fname:"a.acutis" ~name:"A" "{{ a }}")
   in
   print_error "Records with missing fields (Component)" (fun () ->
       ignore @@ Compile.from_string ~fname:"<test>" comps "{% A / %}");
@@ -279,7 +279,9 @@ let () =
     Compile.Components.parse_string ~fname:"comp" ~name:"Comp" "{{ a }} {{ b }}"
   in
   print_error "Components can't take extra props"
-    (render ~components:(Compile.Components.make [ comp ]) "{% Comp a b c / %}");
+    (render
+       ~components:(Compile.Components.of_seq @@ Seq.return comp)
+       "{% Comp a b c / %}");
 
   print_error "Basic unused bindings are reported."
     (render "{% match a with {x} %} {% /match %}");
@@ -391,12 +393,12 @@ let () =
     Compile.Components.parse_string ~fname:"d.acutis" ~name:"D" "{% B /%}"
   in
   print_error "Cyclic dependencies are reported." (fun () ->
-      ignore @@ Compile.Components.make [ a; b; c; d ]);
+      ignore @@ Compile.Components.of_seq @@ List.to_seq [ a; b; c; d ]);
   print_error "Missing components are reported." (fun () ->
-      ignore @@ Compile.Components.make [ a; b; c ]);
+      ignore @@ Compile.Components.of_seq @@ List.to_seq [ a; b; c ]);
   print_error "Missing components are reported (by root)." (render "{% A /%}");
   print_error "Duplicate names are reported." (fun () ->
-      ignore @@ Compile.Components.make [ a; b; a ]);
+      ignore @@ Compile.Components.of_seq @@ List.to_seq [ a; b; a ]);
 
   print_error
     "This error is incorrect. The compiler fails to detect the first unused\n\

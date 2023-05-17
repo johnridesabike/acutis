@@ -64,7 +64,7 @@ module Components : sig
 
   val empty : _ t
 
-  val make : 'a source list -> 'a t
+  val of_seq : 'a source Seq.t -> 'a t
   (** Type-checks and optimizes the components.
       @raise Error.Acutis_error *)
 end

@@ -55,7 +55,7 @@ let () =
   Js.export "Compile"
     (object%js
        method components a =
-         Js.to_array a |> Array.to_list |> Compile.Components.make
+         Js.to_array a |> Array.to_seq |> Compile.Components.of_seq
 
        method string fname components src =
          Compile.from_string ~fname:(Js.to_string fname) components
