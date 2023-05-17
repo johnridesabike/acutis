@@ -1053,8 +1053,6 @@ let make_js_imports components =
     components
     { imports = Id.Map.empty; components = []; components_imports = [] }
 
-(** Some of these are copied and modified from JSOO to keep them consistent
-  with OCaml's formatting. *)
 let raw_functions =
   {|let escapes = {
   "&": "&amp;",
