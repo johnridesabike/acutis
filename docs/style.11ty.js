@@ -16,7 +16,6 @@ const readFile = util.promisify(fs.readFile);
 const postcssWithOptions = postcss([
   require("postcss-import"),
   require("postcss-custom-properties")(),
-  require("cssnano"),
 ]);
 
 const cssPath = "style.css";

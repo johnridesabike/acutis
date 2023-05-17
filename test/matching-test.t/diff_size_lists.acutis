@@ -1,0 +1,5 @@
+{% match a
+   with [] %}
+{% with [_x] %}
+{% with [_x, ..._y] %}
+{% /match %}

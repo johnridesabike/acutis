@@ -18,8 +18,8 @@ module Promise_with_fixed_bind = struct
   let bind = Promise.Syntax.( let* )
 end
 
-module RenderSync = Render.Make (Sync) (Acutis_js.Data)
-module RenderAsync = Render.Make (Promise_with_fixed_bind) (Acutis_js.Data)
+module RenderSync = Render.Make (Sync) (DataJs)
+module RenderAsync = Render.Make (Promise_with_fixed_bind) (DataJs)
 
 let fname_to_compname s =
   Filename.basename s |> Filename.remove_extension |> String.capitalize_ascii
@@ -55,7 +55,7 @@ let () =
   Js.export "Compile"
     (object%js
        method components a =
-         Js.to_array a |> Array.to_list |> Compile.Components.make
+         Js.to_array a |> Array.to_seq |> Compile.Components.of_seq
 
        method string fname components src =
          Compile.from_string ~fname:(Js.to_string fname) components

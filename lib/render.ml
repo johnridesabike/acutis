@@ -99,12 +99,8 @@ let add_escape b = function
 
 let echo_format fmt data =
   match (fmt, data) with
-  | Compile.Fmt_int No_flag, Data.Const (Int i) -> Printf.sprintf "%i" i
-  | Fmt_int Flag_comma, Const (Int i) ->
-      Printf.sprintf "%#i" i |> String.map (function '_' -> ',' | c -> c)
-  | Fmt_float pad, Const (Float i) -> Printf.sprintf "%.*f" pad i
-  | Fmt_float_e pad, Const (Float i) -> Printf.sprintf "%.*e" pad i
-  | Fmt_float_g pad, Const (Float i) -> Printf.sprintf "%.*g" pad i
+  | Compile.Fmt_int, Data.Const (Int i) -> Int.to_string i
+  | Fmt_float, Const (Float f) -> Float.to_string f
   | Fmt_bool, Const (Int 0) -> "false"
   | Fmt_bool, _ -> "true"
   | Fmt_string, Const (String s) -> s
@@ -230,7 +226,7 @@ module Make (M : MONAD) (D : DATA) = struct
                 let vars = map_merge vars vars' in
                 make b nodes vars)
               b d
-        | Component (comp, args) -> (
+        | Component (_, comp, args) -> (
             let* vars = all_map (Map.String.map (eval_data vars) args) in
             match comp with
             | Compile.Src nodes -> make b nodes vars

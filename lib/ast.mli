@@ -20,8 +20,6 @@ module Dict : sig
   val empty : _ t
   val add : Loc.t -> string -> 'a -> 'a t -> 'a t
   val singleton : string -> 'a -> 'a t
-  val pp : (Format.formatter -> 'a -> unit) -> Format.formatter -> 'a t -> unit
-  val equal : ('a -> 'a -> bool) -> 'a t -> 'a t -> bool
   val to_map : 'a t -> 'a Map.String.t
 end
 
@@ -53,20 +51,13 @@ module Interface : sig
     | Record of (Loc.t * ty Record.t) Nonempty.t * Typescheme.Variant.row
     | Tuple of ty list
 
-  type t = { loc : Loc.t; name : string; ty : ty }
+  type prop = { loc : Loc.t; name : string; ty : ty }
+  type t = prop list
 end
 
 type trim = No_trim | Trim
 type escape = No_escape | Escape
-type echo_flag = No_flag | Flag_comma
-
-type echo_format =
-  | Fmt_string
-  | Fmt_int of echo_flag
-  | Fmt_float of int
-  | Fmt_float_e of int
-  | Fmt_float_g of int
-  | Fmt_bool
+type echo_format = Fmt_string | Fmt_int | Fmt_float | Fmt_bool
 
 (** The echo syntax is essentially a subset of the pattern syntax, one which
     only allows strings, variables, and record field access. *)
@@ -99,7 +90,11 @@ and node =
   | Map_list of Loc.t * pat * case Nonempty.t
   | Map_dict of Loc.t * pat * case Nonempty.t
   | Component of Loc.t * string * string * pat Dict.t
-  | Interface of Loc.t * Interface.t list
+  | Interface of Loc.t * Interface.t
 
 and case = { pats : (Loc.t * pat Nonempty.t) Nonempty.t; nodes : t }
 and t = node list
+
+val echo_format_to_sexp : echo_format -> Sexp.t
+val escape_to_sexp : escape -> Sexp.t
+val to_sexp : t -> Sexp.t

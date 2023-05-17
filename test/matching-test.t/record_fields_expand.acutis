@@ -1,0 +1,6 @@
+{% match a
+   with {b: 10} %}
+{% with {a: 20} %}
+{% with {c: 30} %}
+{% with _x %}
+{% /match %}

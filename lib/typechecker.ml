@@ -358,10 +358,7 @@ module Context = struct
               Map.String.update name
                 (function
                   | Some _ -> Error.name_bound_too_many loc name
-                  | None ->
-                      let binding = { loc; used = Unused; name; ty } in
-                      Queue.add binding ctx.all_bindings;
-                      Some binding)
+                  | None -> Some { loc; used = Unused; name; ty })
                 var_map)
             Map.String.empty var_row
           :: var_matrix)
@@ -388,7 +385,14 @@ module Context = struct
                 acc m)
             hd vars
           (* Add them to the scope, replacing (shadowing) the old variables. *)
-          |> Map.String.union (fun _k _oldvar newvar -> Some newvar) ctx.scope
+          |> Map.String.merge
+               (fun _k oldvar newvar ->
+                 match newvar with
+                 | Some newvar ->
+                     Queue.add newvar ctx.all_bindings;
+                     Some newvar
+                 | None -> oldvar)
+               ctx.scope
         in
         { ctx with scope }
 end
@@ -489,8 +493,8 @@ end
 
 let make_echo_type = function
   | Ast.Fmt_string -> Ty.string ()
-  | Fmt_int _ -> Ty.int ()
-  | Fmt_float _ | Fmt_float_g _ | Fmt_float_e _ -> Ty.float ()
+  | Fmt_int -> Ty.int ()
+  | Fmt_float -> Ty.float ()
   | Fmt_bool -> Ty.boolean ()
 
 let[@tail_mod_cons] rec make_echo ctx ty = function

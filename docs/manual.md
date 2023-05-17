@@ -72,33 +72,21 @@ value.
 My favorite color is {{{ color }}}.
 ```
 
-### Formatted echoes
+### Format specifiers
 
 Printing the contents of a string is simple, but other data types are less
 straightforward. To echo numbers or boolean values, then you must prefix them
 with a format specification. If you've ever used "printf" style tools, then this
 will look similar.
 
-A format specifier begins with a `%` (percent) followed by optional flags and
-ends with a character code for its type.
+A format specifier begins with a `%` (percent) followed a character code for its
+type.
 
-`% [option] type`
+These are the character codes and their types:
 
-These are the types and their conversions:
-
-- `i`: integer, converted to decimal notation. By default, this prints a plain
-  sequence of digits. You may add the flag `,` to use a comma as a thousands
-  separator.
-- `f`: floating point number, converted to decimal notation. By default, this
-  prints six digits after the decimal. You may change this with the flag `.`
-  followed by your requested number of digits.
-- `e`: floating point number, converted to exponent notation. This follows the
-  same rules as `f` to determine the number of digits after the decimal.
-- `g`: floating point number, converted to either `f` or `e` format, whichever
-  is shorter. This will also remove trailing zeros. By default, this prints six
-  _total_ digits. You can control that number of digits with the same
-  `.[number]` flag as you can with `f`.
-- `b`: boolean, converted to either `"true"` or `"false"`.
+- `i`: integer. This only prints digits without any additional formatting.
+- `f`: floating point number. The exact format that this uses is unspecified.
+- `b`: boolean. This prints either `false` or `true`.
 
 Example data:
 
@@ -117,20 +105,14 @@ Example template usage:
 Format specification  Output
 --------------------  ------------
 {{ %i num }}          123456
-{{ %,i num }}         123,456
-{{ %f frac }}         1234.567890
-{{ %.2f frac }}       1234.57
-{{ %e frac }}         1.234568e+03
-{{ %.2e frac }}       1.23e+03
-{{ %g frac }}         1234.57
-{{ %.2g frac }}       1.2e+03
+{{ %f frac }}         1234.56789
 {{ %b binaryf }}      false
 {{ %b binaryt }}      true
 ```
 
-These format specifications are intended to cover the common basic use cases. If
-you require more advanced format rules, then you will need to preprocess your
-data or use component functions.
+These format specifications are designed to cover only basic use cases. If you
+require more advanced format rules, then you will need to preprocess your data
+or use component functions.
 
 ## Comments
 

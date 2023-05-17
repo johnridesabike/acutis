@@ -1,0 +1,2 @@
+{% match a with !1 %} {% with null %} {% with !_ %} {% /match %}
+{% match b with !!"b" %} {% with null %} {% with !_ %} {% /match %}

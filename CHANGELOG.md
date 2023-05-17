@@ -2,6 +2,17 @@
 
 Most changes are breaking changes.
 
+## Latest
+
+- Add debug commands to the CLI: `--printast`, `--printtypes`, and `--printopt`.
+
+## 0.22.0
+
+- Remove format specifier options. `%i` `%f` and `%b` do not take any flags now.
+- Fix false positive "unused binding" error.
+- Fix bug in decoding unknown tags in open tagged unions.
+- Optimization: filter empty text nodes from final tree.
+
 ## 0.21.0
 
 - Add `.` record access syntax: `{{ book.title }}`.

@@ -5,7 +5,7 @@
   License, v. 2.0. If a copy of the MPL was not distributed with this
   file, You can obtain one at http://mozilla.org/MPL/2.0/.
 *}
-{% interface
+{%~ interface
   description = ?string
   next = ?{text: string, url: string}
   page = {url: string}
@@ -19,7 +19,7 @@
     }
   title = string
   children = string
-/ %}
+/ ~%}
 <!DOCTYPE html>
 <html lang="en-US">
   <head>
@@ -34,7 +34,6 @@
     />
     <link rel="stylesheet" href="{{ site.url }}/style.css" />
     <link rel="icon" href="{{ site.url}}/icon.svg" type="image/svg+xml" />
-    <link rel="icon" href="{{ site.url}}/favicon.ico" />
   </head>
   <body>
     <a class="skip-nav" href="#content">Skip to content.</a>

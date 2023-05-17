@@ -179,7 +179,7 @@ li::marker {
   margin-bottom: 0;
   font-size: 2em;
   text-align: center;
-  font-family: var(--font-family-mono);
+  font-family: var(--font-family-serif);
 }
 
 .site-header__title a {
@@ -190,7 +190,7 @@ li::marker {
 .site-header__subtitle {
   margin: 1em auto;
   text-align: center;
-  font-family: var(--font-family-mono);
+  font-family: var(--font-family-serif);
   font-size: 0.8em;
 }
 

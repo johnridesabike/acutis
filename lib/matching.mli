@@ -241,7 +241,6 @@ module Exit : sig
   val get : 'a t -> key -> 'a
   val map : ('a -> 'b) -> 'a t -> 'b t
   val unsafe_key : int -> key
-  val pp_key : Format.formatter -> key -> unit
 end
 
 type leaf = { names : int Map.String.t; exit : Exit.key }
@@ -249,16 +248,10 @@ type 'a t = { tree : (leaf, int) tree; exits : 'a Exit.t }
 
 (** {1 Functions.} *)
 
-val equal_tree :
-  ('leaf -> 'leaf -> bool) ->
-  ('key -> 'key -> bool) ->
-  ('leaf, 'key) tree ->
-  ('leaf, 'key) tree ->
-  bool
-
-val equal_leaf : leaf -> leaf -> bool
 val make : Typechecker.case Nonempty.t -> Typechecker.nodes t
 
 val partial_match_check : Loc.t -> Typescheme.t list -> (leaf, int) tree -> unit
 (** Searches the tree for a counterexample to prove it does not cover
     a case. Raises {!Error.Acutis_error} if it finds one. *)
+
+val to_sexp : ('a -> Sexp.t) -> 'a t -> Sexp.t

@@ -1,0 +1,20 @@
+{% match a with @"a" %} {% with @"b" %} {% /match %}
+{% match a with @"a" %} {% with _ %} {% /match %}
+{% match b with @1 %} {% with @2 %} {% /match %}
+{% match b with @3 %} {% with _ %} {% /match %}
+
+Closed enums are inferred correctly (nested in constructs)
+{% match c with @"a" %} {% with @"b" %} {% /match %}
+{% map [@"c", @"d", c, d] with _ %} {% /map %}
+{% match e with @1 %} {% with @2 %} {% /match %}
+{% map [@3, @4, e, f] with _ %} {% /map %}
+{% match g with {a: @"a"} %} {% with {a: @"b"} %} {% /match %}
+{% match h with {a: @1} %} {% with {a: @2} %} {% /match %}
+
+Closed enums are inferred correctly (created nested in constructs)
+{% map [@"a", i] with @"a" %} {% with @"b" %} {% /map %}
+{% map [@1, j] with @1 %} {% with @2 %} {% /map %}
+{% match k with {a: @"a"} %} {% with {a: @"b"} %} {% /match %}
+{% map [{a: @"c"}, k, l] with _ %} {% /map %}
+{% match m with {a: @1} %} {% with {a: @2} %} {% /match %}
+{% map [{a: @3}, m, n] with _ %} {% /map %}

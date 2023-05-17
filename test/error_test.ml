@@ -1,885 +1,308 @@
+(** This test is intended to cover all possible error states. Due to its high
+    number of test cases, running it as a single executable rather than a cram
+    test is easier to maintain and faster to execute. *)
+
 open Acutis
-module RenderSync = Render.Make (Sync) (Acutis_json.Data)
+module RenderSync = Render.Make (Sync) (DataJson)
 
 let render ?(json = "{}") ?(components = Compile.Components.empty) src () =
   let temp = Compile.(from_string ~fname:"<test>" components src) in
   let json = Yojson.Basic.from_string json in
   ignore @@ RenderSync.make temp json
 
-exception E = Error.Acutis_error
+let print_error title f =
+  let s =
+    try
+      f ();
+      "no error"
+    with Error.Acutis_error s -> s
+  in
+  print_endline title;
+  print_endline "---";
+  print_endline s;
+  print_newline ()
 
-let illegal_chars () =
-  let open Alcotest in
-  check_raises "Illegal character 1"
-    (E "File \"<test>\", 1:9-1:10\nSyntax error.\n") (render "{% match*");
-  check_raises "Illegal character 2"
-    (E "File \"<test>\", 1:4-1:5\nSyntax error.\n") (render "{% +a %}");
-  check_raises "Illegal character 3"
-    (E "File \"<test>\", 1:12-1:13\nSyntax error.\n") (render "{% match a &%}");
-  check_raises "Illegal character 4"
-    (E "File \"<test>\", 1:6-1:7\nSyntax error.\n") (render "{{ a &%}")
+let () =
+  print_error "Illegal character 1" (render "{% match*");
+  print_error "Illegal character 2" (render "{% +a %}");
+  print_error "Illegal character 3" (render "{% match a &%}");
+  print_error "Illegal character 4" (render "{{ a &%}");
 
-let number_parsing () =
-  let open Alcotest in
-  check_raises "A number greater than the maximum integer is a syntax error."
-    (E "File \"<test>\", 1:10-1:29\nSyntax error.\n")
-    (render "{% match 9999999999999999999")
+  print_error "A number greater than the maximum integer is a syntax error."
+    (render "{% match 9999999999999999999");
 
-let illegal_names () =
-  let open Alcotest in
-  check_raises "Illegal name: echo null"
-    (E "File \"<test>\", 1:4-1:8\nParse error.\nThis is not a valid echo.\n")
-    (render "{{ null }}");
-  check_raises "Illegal name: echo false"
-    (E "File \"<test>\", 1:4-1:9\nParse error.\nThis is not a valid echo.\n")
-    (render "{{ false }}");
-  check_raises "Illegal name: echo true"
-    (E "File \"<test>\", 1:4-1:8\nParse error.\nThis is not a valid echo.\n")
-    (render "{{ true }}");
-  check_raises "Illegal name: _"
-    (E
-       "File \"<test>\", 1:9-1:10\n\
-        Type error.\n\
-        Underscore ('_') is not a valid name.")
-    (render "{% map [_] with x %} {{ x }} {% /map %}")
+  print_error "Illegal name: echo null" (render "{{ null }}");
+  print_error "Illegal name: echo false" (render "{{ false }}");
+  print_error "Illegal name: echo true" (render "{{ true }}");
+  print_error "Illegal name: _"
+    (render "{% map [_] with x %} {{ x }} {% /map %}");
 
-let unterminated () =
-  let open Alcotest in
-  check_raises "Unterminated strings"
-    (E "File \"<test>\", 1:6-1:6\nSyntax error.\n") (render {|{{ "a|});
-  check_raises "Unterminated comments"
-    (E "File \"<test>\", 1:11-1:11\nSyntax error.\n") (render "{* {* a *}");
-  check_raises "Unterminated expressions"
-    (E "File \"<test>\", 1:9-1:9\nSyntax error.\n") (render "{% match")
+  print_error "Unterminated strings" (render {|{{ "a|});
+  print_error "Unterminated comments" (render "{* {* a *}");
+  print_error "Unterminated expressions" (render "{% match");
+  print_error "Illegal escape sequence" (render {|{{ "\a" }}|});
 
-let illegal_escape () =
-  let open Alcotest in
-  check_raises "Illegal escape sequence"
-    (E "File \"<test>\", 1:5-1:6\nSyntax error.\n") (render {|{{ "\a" }}|})
-
-let parser_errors () =
-  let open Alcotest in
-  check_raises "Missing a closing component name"
-    (E "File \"<test>\", 1:19-1:20\nParse error.\nExpected a component name.\n")
+  print_error "Missing a closing component name"
     (render "{% A %} abcd {% / a %}");
 
-  check_raises "Unclosed components (this one is confusing.)"
-    (E "File \"<test>\", 1:16-1:16\nParse error.\nUnclosed component.\n")
+  print_error "Unclosed components (this one is confusing.)"
     (render "{% A /A %} abcd");
 
-  check_raises "Unexpected tokens (1)"
-    (E
-       "File \"<test>\", 1:4-1:5\n\
-        Parse error.\n\
-        Expected a '%}', 'match', 'map', 'map_dict', or a component name.\n")
-    (render "{% a %}");
-  check_raises "Unexpected tokens (2)"
-    (E
-       "File \"<test>\", 1:5-1:6\n\
-        Parse error.\n\
-        Expected a '%}', 'match', 'map', 'map_dict', or a component name.\n")
-    (render "{%~ a %}");
-  check_raises "Unexpected tokens (3)"
-    (E
-       "File \"<test>\", 1:5-1:9\n\
-        Parse error.\n\
-        Expected a '%}', 'match', 'map', 'map_dict', or a component name.\n")
-    (render "{%~ with %}");
-  check_raises "Unexpected tokens (4)"
-    (E
-       "File \"<test>\", 1:10-1:11\n\
-        Parse error.\n\
-        Expected a '%}', 'match', 'map', 'map_dict', or a component name.\n")
-    (render "{% %}{%~ a %}");
-  check_raises "Unexpected tokens (5)"
-    (E "File \"<test>\", 1:40-1:41\nParse error.\nExpected a '%}'.\n")
+  print_error "Unexpected tokens (1)" (render "{% a %}");
+  print_error "Unexpected tokens (2)" (render "{%~ a %}");
+  print_error "Unexpected tokens (3)" (render "{%~ with %}");
+  print_error "Unexpected tokens (4)" (render "{% %}{%~ a %}");
+  print_error "Unexpected tokens (5)"
     (render "{% A %} {% match a with _ %} {% /match /A %}");
-  check_raises "Unexpected tokens (inside # blocks)"
-    (E
-       "File \"<test>\", 1:20-1:24\n\
-        Parse error.\n\
-        Expected a '%}', '#', 'match', 'map', 'map_dict', or a component name.\n")
+  print_error "Unexpected tokens (inside # blocks)"
     (render "{% A a=#%} abcd {% with /A %}");
 
-  check_raises "Bad pattern (1)"
-    (E
-       "File \"<test>\", 1:10-1:13\n\
-        Parse error.\n\
-        This is not a valid pattern.\n")
-    (render "{% match ABC with a %} {% /match %}");
-  check_raises "Bad pattern (2)"
-    (E
-       "File \"<test>\", 1:11-1:14\n\
-        Parse error.\n\
-        This is not a valid pattern.\n")
-    (render "{% match !ABC with a %} {% /match %}");
-  check_raises "Bad pattern (3)"
-    (E
-       "File \"<test>\", 1:11-1:14\n\
-        Parse error.\n\
-        This is not a valid pattern.\n")
-    (render "{% match !ABC with a %} {% /match %}");
-  check_raises "Bad pattern (4)"
-    (E
-       "File \"<test>\", 1:11-1:14\n\
-        Parse error.\n\
-        This is not a valid pattern.\n")
-    (render "{% match @ABC with a %} {% /match %}");
-  check_raises "Bad pattern (5)"
-    (E
-       "File \"<test>\", 1:13-1:16\n\
-        Parse error.\n\
-        This is not a valid pattern.\n")
+  print_error "Bad pattern (1)" (render "{% match ABC with a %} {% /match %}");
+  print_error "Bad pattern (2)" (render "{% match !ABC with a %} {% /match %}");
+  print_error "Bad pattern (3)" (render "{% match !ABC with a %} {% /match %}");
+  print_error "Bad pattern (4)" (render "{% match @ABC with a %} {% /match %}");
+  print_error "Bad pattern (5)"
     (render "{% match a, ABC with a %} {% /match %}");
-  check_raises "Bad pattern (6)"
-    (E
-       "File \"<test>\", 1:13-1:16\n\
-        Parse error.\n\
-        This is not a valid pattern.\n")
+  print_error "Bad pattern (6)"
     (render "{% map_dict ABC with a %} {% /map_dict %}");
-  check_raises "Bad pattern (7)"
-    (E "File \"<test>\", 1:8-1:11\nParse error.\nThis is not a valid pattern.\n")
-    (render "{% map ABC with a %} {% /map %}");
-  check_raises "Bad pattern (8)"
-    (E
-       "File \"<test>\", 1:14-1:18\n\
-        Parse error.\n\
-        This is not a valid pattern.\n")
-    (render "{% match {a: with %} {% /match %}");
-  check_raises "Bad pattern (9)"
-    (E
-       "File \"<test>\", 1:12-1:16\n\
-        Parse error.\n\
-        This is not a valid pattern.\n")
-    (render "{% match ( with %} {% /match %}");
-  check_raises "Bad pattern (10)"
-    (E
-       "File \"<test>\", 1:12-1:16\n\
-        Parse error.\n\
-        This is not a valid pattern.\n")
-    (render "{% match [ with %} {% /match %}");
-  check_raises "Bad pattern (11)"
-    (E
-       "File \"<test>\", 1:15-1:19\n\
-        Parse error.\n\
-        This is not a valid pattern.\n")
-    (render "{% match [... with %} {% /match %}");
-  check_raises "Bad pattern (12)"
-    (E
-       "File \"<test>\", 1:14-1:18\n\
-        Parse error.\n\
-        This is not a valid pattern.\n")
-    (render "{% match [a, with %} {% /match %}");
-  check_raises "Bad pattern (13)"
-    (E
-       "File \"<test>\", 1:18-1:22\n\
-        Parse error.\n\
-        This is not a valid pattern.\n")
+  print_error "Bad pattern (7)" (render "{% map ABC with a %} {% /map %}");
+  print_error "Bad pattern (8)" (render "{% match {a: with %} {% /match %}");
+  print_error "Bad pattern (9)" (render "{% match ( with %} {% /match %}");
+  print_error "Bad pattern (10)" (render "{% match [ with %} {% /match %}");
+  print_error "Bad pattern (11)" (render "{% match [... with %} {% /match %}");
+  print_error "Bad pattern (12)" (render "{% match [a, with %} {% /match %}");
+  print_error "Bad pattern (13)"
     (render "{% match [a, ... with %} {% /match %}");
-  check_raises "Unclosed < (4)"
-    (E
-       "File \"<test>\", 1:14-1:18\n\
-        Parse error.\n\
-        This is not a valid pattern.\n")
-    (render "{% match <a: with %} {% /match %}");
-  check_raises "Illegal pattern after with"
-    (E
-       "File \"<test>\", 1:17-1:20\n\
-        Parse error.\n\
-        This is not a valid pattern.\n")
+  print_error "Unclosed < (4)" (render "{% match <a: with %} {% /match %}");
+  print_error "Illegal pattern after with"
     (render "{% match a with Abc %} {% /match %}");
-  check_raises "Bad pattern (14)"
-    (E "File \"<test>\", 1:8-1:11\nParse error.\nThis is not a valid pattern.\n")
-    (render "{% Z a=ABC / %}");
-  check_raises "Bad pattern (15)"
-    (E
-       "File \"<test>\", 1:15-1:18\n\
-        Parse error.\n\
-        This is not a valid pattern.\n")
-    (render "{% match null ~%}");
+  print_error "Bad pattern (14)" (render "{% Z a=ABC / %}");
+  print_error "Bad pattern (15)" (render "{% match null ~%}");
 
-  check_raises "Bad echo (1)"
-    (E "File \"<test>\", 1:4-1:5\nParse error.\nThis is not a valid echo.\n")
-    (render "{{ ? }}");
-  check_raises "Bad echo (2)"
-    (E "File \"<test>\", 1:5-1:6\nParse error.\nThis is not a valid echo.\n")
-    (render "{{{ A }}}");
-  check_raises "Bad echo (3)"
-    (E "File \"<test>\", 1:8-1:9\nParse error.\nThis is not a valid echo.\n")
-    (render "{{ a ? ? }}");
-  check_raises "Bad echo (4)"
-    (E "File \"<test>\", 1:7-1:8\nParse error.\nThis is not a valid echo.\n")
-    (render "{{ %i ? }}");
-  check_raises "Bad echo (5)"
-    (E "File \"<test>\", 1:7-1:9\nParse error.\nExpected a '}}}'.\n")
-    (render "{{{ a }}");
-  check_raises "Bad echo (6)"
-    (E "File \"<test>\", 1:6-1:9\nParse error.\nExpected a '}}'.\n")
-    (render "{{ a }}}");
-  check_raises "Bad echo (7)"
-    (E "File \"<test>\", 1:11-1:12\nParse error.\nThis is not a valid echo.\n")
-    (render "{{ x ? %i ? }}");
+  print_error "Bad echo (1)" (render "{{ ? }}");
+  print_error "Bad echo (2)" (render "{{{ A }}}");
+  print_error "Bad echo (3)" (render "{{ a ? ? }}");
+  print_error "Bad echo (4)" (render "{{ %i ? }}");
+  print_error "Bad echo (5)" (render "{{{ a }}");
+  print_error "Bad echo (6)" (render "{{ a }}}");
+  print_error "Bad echo (7)" (render "{{ x ? %i ? }}");
 
-  check_raises "Bad echo format (1)"
-    (E
-       "File \"<test>\", 1:6-1:7\n\
-        Parse error.\n\
-        This is missing a format specification.\n")
-    (render "{{ % a }}");
-  check_raises "Bad echo format (2)"
-    (E "File \"<test>\", 1:6-1:7\nParse error.\nExpected an 'i' format type.\n")
-    (render "{{ %,b a }}");
-  check_raises "Bad echo format (3)"
-    (E "File \"<test>\", 1:6-1:7\nParse error.\nExpected a number.\n")
-    (render "{{ %.f a }}");
-  check_raises "Bad echo format (4)"
-    (E
-       "File \"<test>\", 1:7-1:8\n\
-        Parse error.\n\
-        Expected an 'f', 'e', or 'g' format type.\n")
-    (render "{{ %.2b a }}");
+  print_error "Bad echo format (1)" (render "{{ % a }}");
+  print_error "Bad echo format (2)" (render "{{ %z a }}");
 
-  check_raises "Bad prop (1)"
-    (E
-       "File \"<test>\", 1:6-1:10\n\
-        Parse error.\n\
-        This is not a valid component prop.\n")
-    (render "{% Z null=1 / %}");
-  check_raises "Bad prop (2)"
-    (E
-       "File \"<test>\", 1:8-1:9\n\
-        Parse error.\n\
-        This is not a valid component prop.\n")
-    (render "{% A a # %}");
-  check_raises "Bad prop (3)"
-    (E
-       "File \"<test>\", 1:8-1:9\n\
-        Parse error.\n\
-        This is not a valid component prop.\n")
-    (render "{% A b # %}");
-  check_raises "Bad prop (4)"
-    (E
-       "File \"<test>\", 1:12-1:16\n\
-        Parse error.\n\
-        This is not a valid component prop.\n")
-    (render "{% A b = 1 with %}");
+  print_error "Bad prop (1)" (render "{% Z null=1 / %}");
+  print_error "Bad prop (2)" (render "{% A a # %}");
+  print_error "Bad prop (3)" (render "{% A b # %}");
+  print_error "Bad prop (4)" (render "{% A b = 1 with %}");
 
-  check_raises "Illegal field name (1)"
-    (E
-       "File \"<test>\", 1:12-1:16\n\
-        Parse error.\n\
-        This is not a valid field name.\n")
+  print_error "Illegal field name (1)"
     (render "{% match { with %} {% /match %}");
-  check_raises "Illegal field name (2)"
-    (E
-       "File \"<test>\", 1:13-1:17\n\
-        Parse error.\n\
-        This is not a valid field name.\n")
+  print_error "Illegal field name (2)"
     (render "{% match {@ with %} {% /match %}");
-  check_raises "Illegal field name (3)"
-    (E
-       "File \"<test>\", 1:14-1:18\n\
-        Parse error.\n\
-        This is not a valid field name.\n")
+  print_error "Illegal field name (3)"
     (render "{% match {a, with %} {% /match %}");
-  check_raises "Illegal field name (4)"
-    (E
-       "File \"<test>\", 1:12-1:16\n\
-        Parse error.\n\
-        This is not a valid field name.\n")
+  print_error "Illegal field name (4)"
     (render "{% match < with %} {% /match %}");
-  check_raises "Illegal field name (5)"
-    (E
-       "File \"<test>\", 1:14-1:18\n\
-        Parse error.\n\
-        This is not a valid field name.\n")
+  print_error "Illegal field name (5)"
     (render "{% match <a, with %} {% /match %}");
 
-  check_raises "Unclosed { (1)"
-    (E
-       "File \"<test>\", 1:13-1:17\n\
-        Parse error.\n\
-        Expected a ',', ':', or '}'.\n")
-    (render "{% match {a with %} {% /match %}");
-  check_raises "Unclosed { (2)"
-    (E
-       "File \"<test>\", 1:23-1:27\n\
-        Parse error.\n\
-        Expected a ',', ':', or '}'.\n")
+  print_error "Unclosed { (1)" (render "{% match {a with %} {% /match %}");
+  print_error "Unclosed { (2)"
     (render "{% match a with {@tag with} %} {% /match %}");
-  check_raises "Unclosed { (3)"
-    (E "File \"<test>\", 1:15-1:19\nParse error.\nExpected a ':'.\n")
-    (render "{% match {\"a\" with %} {% /match %}");
-  check_raises "Unclosed { (4)"
-    (E "File \"<test>\", 1:15-1:19\nParse error.\nExpected a ',' or '}'.\n")
-    (render "{% match {a:0 with %} {% /match %}");
-  check_raises "Unclosed { (5)"
-    (E "File \"<test>\", 1:16-1:20\nParse error.\nExpected a ',' or '}'.\n")
-    (render "{% match {@a:0 with %} {% /match %}");
+  print_error "Unclosed { (3)" (render "{% match {\"a\" with %} {% /match %}");
+  print_error "Unclosed { (4)" (render "{% match {a:0 with %} {% /match %}");
+  print_error "Unclosed { (5)" (render "{% match {@a:0 with %} {% /match %}");
 
-  check_raises "Unclosed ("
-    (E "File \"<test>\", 1:13-1:17\nParse error.\nExpected a ',' or ')'.\n")
-    (render "{% match (a with %} {% /match %}");
+  print_error "Unclosed (" (render "{% match (a with %} {% /match %}");
 
-  check_raises "Unclosed [ (1)"
-    (E
-       "File \"<test>\", 1:13-1:17\n\
-        Parse error.\n\
-        Expected a ',', '...', or ']'.\n")
-    (render "{% match [a with %} {% /match %}");
-  check_raises "Unclosed [ (2)"
-    (E "File \"<test>\", 1:19-1:23\nParse error.\nExpected a ']'.\n")
-    (render "{% match [a, ...b with %} {% /match %}");
-  check_raises "Unclosed [ (3)"
-    (E "File \"<test>\", 1:16-1:20\nParse error.\nExpected a ']'.\n")
-    (render "{% match [...b with %} {% /match %}");
+  print_error "Unclosed [ (1)" (render "{% match [a with %} {% /match %}");
+  print_error "Unclosed [ (2)" (render "{% match [a, ...b with %} {% /match %}");
+  print_error "Unclosed [ (3)" (render "{% match [...b with %} {% /match %}");
 
-  check_raises "Unclosed < (1)"
-    (E
-       "File \"<test>\", 1:13-1:17\n\
-        Parse error.\n\
-        Expected a ',', ':', or '>'.\n")
-    (render "{% match <a with %} {% /match %}");
-  check_raises "Unclosed < (2)"
-    (E "File \"<test>\", 1:15-1:19\nParse error.\nExpected a ':'.\n")
-    (render "{% match <\"a\" with %} {% /match %}");
-  check_raises "Unclosed < (3)"
-    (E "File \"<test>\", 1:15-1:19\nParse error.\nExpected a ',' or '>'.\n")
-    (render "{% match <a:0 with %} {% /match %}");
+  print_error "Unclosed < (1)" (render "{% match <a with %} {% /match %}");
+  print_error "Unclosed < (2)" (render "{% match <\"a\" with %} {% /match %}");
+  print_error "Unclosed < (3)" (render "{% match <a:0 with %} {% /match %}");
 
-  check_raises "Missing commas in match/map patterns (1)"
-    (E
-       "File \"<test>\", 1:12-1:13\n\
-        Parse error.\n\
-        Sequential patterns must be separated by a ','.\n")
+  print_error "Missing commas in match/map patterns (1)"
     (render "{% match a b with a b %} {% /match %}");
-  check_raises "Missing commas in match/map patterns (2)"
-    (E
-       "File \"<test>\", 1:15-1:16\n\
-        Parse error.\n\
-        Sequential patterns must be separated by a ','.\n")
+  print_error "Missing commas in match/map patterns (2)"
     (render "{% map_dict a b with a %} {% /map_dict %}");
-  check_raises "Missing commas in match/map patterns (3)"
-    (E
-       "File \"<test>\", 1:10-1:11\n\
-        Parse error.\n\
-        Sequential patterns must be separated by a ','.\n")
+  print_error "Missing commas in match/map patterns (3)"
     (render "{% map a b with a %} {% /map %}");
-  check_raises "Missing commas in match/map patterns (4)"
-    (E
-       "File \"<test>\", 1:16-1:20\n\
-        Parse error.\n\
-        Sequential patterns must be separated by a ','.\n")
+  print_error "Missing commas in match/map patterns (4)"
     (render "{% match !null null with a %} {% /match %}");
-  check_raises "Missing commas in match/map patterns (5)"
-    (E
-       "File \"<test>\", 1:25-1:26\n\
-        Parse error.\n\
-        Sequential patterns must be separated by a ','.\n")
+  print_error "Missing commas in match/map patterns (5)"
     (render "{% match null with null ) %}");
-  check_raises "Missing commas in match/map patterns (5)"
-    (E
-       "File \"<test>\", 1:21-1:22\n\
-        Parse error.\n\
-        Sequential patterns must be separated by a ','.\n")
+  print_error "Missing commas in match/map patterns (5)"
     (render "{% match null, null } %}");
 
-  check_raises "Unmatched match"
-    (E
-       "File \"<test>\", 1:26-1:26\n\
-        Parse error.\n\
-        Unclosed block. Expected a '{% /' somewhere.\n")
-    (render "{% match x with true %} b");
+  print_error "Unmatched match" (render "{% match x with true %} b");
 
-  check_raises "Missing /match"
-    (E "File \"<test>\", 1:26-1:29\nParse error.\nExpected a '/match'.\n")
-    (render "{% match x with x %} {% /map %}");
-  check_raises "Missing /map"
-    (E "File \"<test>\", 1:24-1:29\nParse error.\nExpected a '/map'.\n")
-    (render "{% map x with x %} {% /match %}");
-  check_raises "Missing /map_dict"
-    (E "File \"<test>\", 1:29-1:32\nParse error.\nExpected a '/map_dict'.\n")
-    (render "{% map_dict x with x %} {% /map %}");
+  print_error "Missing /match" (render "{% match x with x %} {% /map %}");
+  print_error "Missing /map" (render "{% map x with x %} {% /match %}");
+  print_error "Missing /map_dict" (render "{% map_dict x with x %} {% /map %}");
 
-  check_raises "Unseparated echoes (1)"
-    (E
-       "File \"<test>\", 1:6-1:7\n\
-        Parse error.\n\
-        Sequential echoes must be separated by a '?'.\n")
-    (render "{{ a b }}");
-  check_raises "Unseparated echoes (2)"
-    (E
-       "File \"<test>\", 1:10-1:11\n\
-        Parse error.\n\
-        Sequential echoes must be separated by a '?'.\n")
-    (render "{{ a ? b c }}");
+  print_error "Unseparated echoes (1)" (render "{{ a b }}");
+  print_error "Unseparated echoes (2)" (render "{{ a ? b c }}");
 
-  check_raises "# Blocks must contain text"
-    (E "File \"<test>\", 1:10-1:13\nParse error.\nExpected a '%}'.\n")
-    (render "{% A a=# abc # / %}");
+  print_error "# Blocks must contain text" (render "{% A a=# abc # / %}");
 
-  check_raises "Bad record field access (1)"
-    (E
-       "File \"<test>\", 1:12-1:13\n\
-        Parse error.\n\
-        This is not a valid field name.\n")
-    (render "{% match a.1 with %}");
-  check_raises "Bad record field access (2)"
-    (E
-       "File \"<test>\", 1:6-1:7\n\
-        Parse error.\n\
-        This is not a valid field name.\n")
-    (render "{{ a.% }}")
+  print_error "Bad record field access (1)" (render "{% match a.1 with %}");
+  print_error "Bad record field access (2)" (render "{{ a.% }}");
 
-let dup_record_field () =
-  let open Alcotest in
-  check_raises "Duplicate field"
-    (E "File \"<test>\", 1:18-1:30\nParse error.\nDuplicate field 'a'.")
+  print_error "Duplicate field"
     (render {|{% match a with {a: 0, a: "a"} %} {% with _ %} {% /match %}|});
-  check_raises "Duplicate tag field"
-    (E "File \"<test>\", 1:18-1:31\nParse error.\nDuplicate field 'a'.")
+  print_error "Duplicate tag field"
     (render {|{% match a with {@a: 0, a: "a"} %} {% with _ %} {% /match %}|});
-  check_raises "Duplicate dict field"
-    (E "File \"<test>\", 1:18-1:30\nParse error.\nDuplicate field 'a'.")
+  print_error "Duplicate dict field"
     (render {|{% match a with <a: 0, a: "a"> %} {% with _ %} {% /match %}|});
-  check_raises "Multiple record tags"
-    (E
-       "File \"<test>\", 1:18-1:32\n\
-        Parse error.\n\
-        This tagged record has multiple tags.")
-    (render {|{% match a with {@a: 0, @b: "a"} %} {% with _ %} {% /match %}|})
+  print_error "Multiple record tags"
+    (render {|{% match a with {@a: 0, @b: "a"} %} {% with _ %} {% /match %}|});
 
-let pat_count_mismatch () =
-  let open Alcotest in
-  check_raises "Pattern count mismatch 1"
-    (E "File \"<test>\", 1:4-1:42\nType error.\nPattern count mismatch.")
+  print_error "Pattern count mismatch 1"
     (render "{% match a, b, c with 1, 2 %} d {% /match %}");
-  check_raises "Pattern count mismatch 2"
-    (E "File \"<test>\", 1:30-1:42\nType error.\nPattern count mismatch.")
+  print_error "Pattern count mismatch 2"
     (render "{% match a with 1, 2 %} d {% with 1, 2, 3 %} z {% /match %}");
-  check_raises "Pattern count mismatch (map)"
-    (E
-       "File \"<test>\", 1:4-1:56\n\
-        Type error.\n\
-        Expressions 'map' and 'map_dict' can only have one or two patterns for \
-        each\n\
-        'with' expression.")
-    (render "{% map a with 1, 2, 3 %} d {% with 4, 5, 6 %} z {% /map %}")
+  print_error "Pattern count mismatch (map)"
+    (render "{% map a with 1, 2, 3 %} d {% with 4, 5, 6 %} z {% /map %}");
 
-let dup_name_destructure () =
-  let open Alcotest in
-  check_raises "You can't bind a name more than once when destructuring."
-    (E
-       "File \"<test>\", 1:21-1:22\n\
-        Type error.\n\
-        The name 'x' is already bound in this pattern.")
-    (render "{% match a with [x, x] %} a {% with _ %} b {% /match %}")
+  print_error "You can't bind a name more than once when destructuring."
+    (render "{% match a with [x, x] %} a {% with _ %} b {% /match %}");
 
-let type_error_echo () =
-  let open Alcotest in
-  check_raises "Echoed string literals cannot appear before a ?."
-    (E
-       "File \"<test>\", 1:4-1:8\n\
-        Type error.\n\
-        Type mismatch.\n\
-        Expected:\n\
-       \  ?string\n\
-        Received:\n\
-       \  string")
+  print_error "Echoed string literals cannot appear before a ?."
     (render {|{{ "ab" ? "cd" }}|});
-  check_raises "Record field access type errors fail correctly."
-    (E
-       "File \"<test>\", 1:17-1:18\n\
-        Type error.\n\
-        Type mismatch.\n\
-        Expected:\n\
-       \  {b: int}\n\
-        Received:\n\
-       \  {b: string}")
-    (render {|{{ a.b }} {{ %i a.b }}|})
+  print_error "Record field access type errors fail correctly."
+    (render {|{{ a.b }} {{ %i a.b }}|});
 
-let type_error_const () =
-  let open Alcotest in
-  check_raises "String <> int"
-    (E
-       "File \"<test>\", 1:32-1:33\n\
-        Type error.\n\
-        Type mismatch.\n\
-        Expected:\n\
-       \  string\n\
-        Received:\n\
-       \  int")
+  print_error "String <> int"
     (render {|{% match a with "a" %} {% with 1 %} {% with _ %} {% /match %}|});
-  check_raises "Float <> int"
-    (E
-       "File \"<test>\", 1:32-1:33\n\
-        Type error.\n\
-        Type mismatch.\n\
-        Expected:\n\
-       \  float\n\
-        Received:\n\
-       \  int")
+  print_error "Float <> int"
     (render {|{% match a with 0.0 %} {% with 1 %} {% with _ %} {% /match %}|});
-  check_raises "String <> float"
-    (E
-       "File \"<test>\", 1:32-1:35\n\
-        Type error.\n\
-        Type mismatch.\n\
-        Expected:\n\
-       \  string\n\
-        Received:\n\
-       \  float")
+  print_error "String <> float"
     (render {|{% match a with "a" %} {% with 1.0 %} {% with _ %} {% /match %}|});
-  check_raises "Map list key type mismatch."
-    (E
-       "File \"<test>\", 1:4-1:55\n\
-        Type error.\n\
-        Type mismatch.\n\
-        Expected:\n\
-       \  int\n\
-        Received:\n\
-       \  string")
+  print_error "Map list key type mismatch."
     (render "{% map [1] with a, \"b\" %} {{ a }} {% with _ %} {% /map %}");
-  check_raises "Map dict key type mismatch."
-    (E
-       "File \"<test>\", 1:4-2:13\n\
-        Type error.\n\
-        Type mismatch.\n\
-        Expected:\n\
-       \  string\n\
-        Received:\n\
-       \  int")
+  print_error "Map dict key type mismatch."
     (render
        "{% map_dict <\"a\": 1> with a, 1 %} {{ a }} {% with _ %}\n\
-        {% /map_dict %}")
+        {% /map_dict %}");
 
-let type_error_nest () =
-  let open Alcotest in
-  check_raises "[int] <> [string]"
-    (E
-       "File \"<test>\", 2:10-2:11\n\
-        Type error.\n\
-        Type mismatch.\n\
-        Expected:\n\
-       \  [int]\n\
-        Received:\n\
-       \  [string]")
+  print_error "[int] <> [string]"
     (render
        "{% match a with [\"a\"] %} {% with _ %} {% /match %}\n\
         {% match a with [1] %} {% with _ %} {% /match %}");
-  check_raises "{a: int} <> {a: float}"
-    (E
-       "File \"<test>\", 2:10-2:11\n\
-        Type error.\n\
-        Type mismatch.\n\
-        Expected:\n\
-       \  {a: float}\n\
-        Received:\n\
-       \  {a: int}")
+  print_error "{a: int} <> {a: float}"
     (render
        "{% match a with {a: 1} %} {% with _ %} {% /match %}\n\
         {% match a with {a: 0.0} %} {% with _ %} {% /match %}");
-  check_raises "(string, _) <> (float, _)"
-    (E
-       "File \"<test>\", 2:10-2:11\n\
-        Type error.\n\
-        Type mismatch.\n\
-        Expected:\n\
-       \  (float, string)\n\
-        Received:\n\
-       \  (string, string)")
+  print_error "(string, _) <> (float, _)"
     (render
        "{% match a with (\"a\", a) %} {{ a }} {% with _ %} {% /match %}\n\
         {% match a with (1.0, a) %} {{ a }} {% with _ %} {% /match %}");
-  check_raises "Tagged record <> untagged record"
-    (E
-       "File \"<test>\", 2:10-2:11\n\
-        Type error.\n\
-        Type mismatch.\n\
-        Expected:\n\
-       \  {a: int}\n\
-        Received:\n\
-       \    {@a: 1} | ...")
+  print_error "Tagged record <> untagged record"
     (render
        "{% match a with {@a: 1} %} {% with _ %} {% /match %}\n\
         {% match a with {a: 1} %} {% with _ %} {% /match %}");
-  check_raises "Dict <> record"
-    (E
-       "File \"<test>\", 2:10-2:11\n\
-        Type error.\n\
-        Type mismatch.\n\
-        Expected:\n\
-       \  {a: int}\n\
-        Received:\n\
-       \  <int>")
+  print_error "Dict <> record"
     (render
        "{% match a with <a: 1> %} {% with _ %} {% /match %}\n\
         {% match a with {a: 1} %} {% with _ %} {% /match %}");
-  check_raises "?int <> int"
-    (E
-       "File \"<test>\", 2:10-2:11\n\
-        Type error.\n\
-        Type mismatch.\n\
-        Expected:\n\
-       \  int\n\
-        Received:\n\
-       \  ?int")
+  print_error "?int <> int"
     (render
        "{% match a with !1 %} {% with _ %} {% /match %}\n\
         {% match a with 1 %} {% with _ %} {% /match %}");
-  check_raises "2-tuple <> 3-tuple"
-    (E
-       "File \"<test>\", 2:10-2:11\n\
-        Type error.\n\
-        Type mismatch.\n\
-        Expected:\n\
-       \  (int, int, int)\n\
-        Received:\n\
-       \  (int, int)")
+  print_error "2-tuple <> 3-tuple"
     (render
        "{% match a with (1, 2) %} {% with _ %} {% /match %}\n\
-        {% match a with (1, 2, 3) %} {% with _ %} {% /match %}")
+        {% match a with (1, 2, 3) %} {% with _ %} {% /match %}");
 
-let type_error_record () =
-  let open Alcotest in
-  check_raises "Records with missing fields (1)"
-    (E
-       "File \"<test>\", 1:26-1:32\n\
-        Type error.\n\
-        Type mismatch.\n\
-        Expected:\n\
-       \  {a: int}\n\
-        Received:\n\
-       \  {b: _}")
+  print_error "Records with missing fields (1)"
     (render
        "{% map [(1, {a: 1}), (2, {b: 2})] with (i, {a}) %}\n\
        \  {{ %i i }} {{ %i a }} {% /map %}");
-  check_raises "Records with missing fields (2)"
-    (E
-       "File \"<test>\", 1:10-1:16\n\
-        Type error.\n\
-        Type mismatch.\n\
-        Expected:\n\
-       \  {a: _, b: _}\n\
-        Received:\n\
-       \  {a: _}")
+  print_error "Records with missing fields (2)"
     (render "{% match {a: 1} with {a: _, b: _} %} {% /match %}");
-  check_raises "Record field access type errors fail correctly."
-    (E
-       "File \"<test>\", 2:19-2:20\n\
-        Type error.\n\
-        Type mismatch.\n\
-        Expected:\n\
-       \  {b: {c: int}}\n\
-        Received:\n\
-       \  {b: {c: false | true}}")
+  print_error "Record field access type errors fail correctly."
     (render
        {|{% match a.b.c with true %}{% with false %}{% /match %}
          {% match a.b.c with 1 %}{% with _ %}{% /match %}|});
   let comps =
     Compile.Components.(
-      make [ parse_string ~fname:"a.acutis" ~name:"A" "{{ a }}" ])
+      of_seq @@ Seq.return @@ parse_string ~fname:"a.acutis" ~name:"A" "{{ a }}")
   in
-  check_raises "Records with missing fields (Component)"
-    (E
-       "File \"<test>\", 1:4-1:7\n\
-        Type error.\n\
-        This is missing key 'a' of type:\n\
-       \  string") (fun () ->
-      ignore @@ Compile.from_string ~fname:"<test>" comps "{% A / %}")
+  print_error "Records with missing fields (Component)" (fun () ->
+      ignore @@ Compile.from_string ~fname:"<test>" comps "{% A / %}");
 
-let type_error_enum () =
-  let open Alcotest in
-  check_raises "Closed enum <> open enum"
-    (E
-       "File \"<test>\", 2:10-2:11\n\
-        Type error.\n\
-        Type mismatch.\n\
-        Expected:\n\
-       \    @1\n\
-        Received:\n\
-       \    @1 | @2 | ...")
+  print_error "Closed enum <> open enum"
     (render
        "{% match a with @1 %} {% with @2 %} {% with _ %} {% /match %}\n\
         {% match a with @1 %} {% /match %}");
-  check_raises "Enum vars with no subset are reported."
-    (E
-       "File \"<test>\", 3:12-3:13\n\
-        Type error.\n\
-        Type mismatch.\n\
-        Expected:\n\
-       \    @1 | @2\n\
-        Received:\n\
-       \    @3 | @4")
+  print_error "Enum vars with no subset are reported."
     (render
        "{% match a with @1 %} {% with @2 %} {% /match %}\n\
         {% match b with @3 %} {% with @4 %} {% /match %}\n\
         {% map [a, b] with _ %} {% /map %}");
-  check_raises "Enum vars + literals with no subset are reported."
-    (E
-       "File \"<test>\", 2:12-2:14\n\
-        Type error.\n\
-        Type mismatch.\n\
-        Expected:\n\
-       \    @1 | @2\n\
-        Received:\n\
-       \    @3 | ...")
+  print_error "Enum vars + literals with no subset are reported."
     (render
        "{% match a with @1 %} {% with @2 %} {% /match %}\n\
         {% map [a, @3] with _ %} {% /map %}");
-  check_raises "Enum literals with no subset are reported (1)."
-    (E
-       "File \"<test>\", 1:10-1:12\n\
-        Type error.\n\
-        Type mismatch.\n\
-        Expected:\n\
-       \    @1\n\
-        Received:\n\
-       \    @0 | ...")
+  print_error "Enum literals with no subset are reported (1)."
     (render "{% match @0 with @1 %} {% /match %}");
-  check_raises "Enum literals with no subset are reported (2)."
-    (E
-       "File \"<test>\", 1:10-1:12\n\
-        Type error.\n\
-        Type mismatch.\n\
-        Expected:\n\
-       \    @\"a\"\n\
-        Received:\n\
-       \    @0 | ...")
+  print_error "Enum literals with no subset are reported (2)."
     (render "{% match @0 with @\"a\" %} {% /match %}");
-  check_raises "| false | true <> only false"
-    (E
-       "File \"<test>\", 1:10-1:14\n\
-        Type error.\n\
-        Type mismatch.\n\
-        Expected:\n\
-       \    false\n\
-        Received:\n\
-       \    false | true")
-    (render "{% match true with false %} {% /match %}")
+  print_error "| false | true <> only false"
+    (render "{% match true with false %} {% /match %}");
 
-let type_error_union () =
-  let open Alcotest in
-  check_raises "Int tag <> string tag"
-    (E
-       "File \"<test>\", 1:38-1:52\n\
-        Type error.\n\
-        Type mismatch.\n\
-        Expected:\n\
-       \    {@tag: 0}\n\
-        Received:\n\
-       \    {@tag: \"a\", b: _}")
+  print_error "Int tag <> string tag"
     (render
        "{% match a with {@tag: 0} %} {% with {@tag: \"a\", b} %} {{ b }}\n\
         {% /match %}");
-  check_raises "Random other tags don't compile."
-    (E
-       "File \"<test>\", 1:24-1:25\n\
-        Parse error.\n\
-        Only literal integer, string, and boolean values may be union tags.\n")
+  print_error "Random other tags don't compile."
     (render "{% match a with {@tag: []} %} {% /match %}");
-  check_raises "Tag names must be coherent."
-    (E
-       "File \"<test>\", 1:36-1:46\n\
-        Type error.\n\
-        Type mismatch.\n\
-        Expected:\n\
-       \    {@a: 0}\n\
-        Received:\n\
-       \    {@b: 1, c: _}")
+  print_error "Tag names must be coherent."
     (render
-       "{% match a with {@a: 0} %} {% with {@b: 1, c} %} {{ c }} {% /match %}")
+       "{% match a with {@a: 0} %} {% with {@b: 1, c} %} {{ c }} {% /match %}");
 
-let vars_with_clauses () =
-  let open Alcotest in
-  check_raises "Variable names must be coherent."
-    (E
-       "File \"<test>\", 2:16-2:17\n\
-        Type error.\n\
-        Variable 'b' must occur in each 'with' pattern.")
+  print_error "Variable names must be coherent."
     (render
        "{% match a, b\n\
        \   with null, !b\n\
        \   with !a, null %}\n\
         {% with !_, !_ with null, null %}\n\
         {% /match %}");
-  check_raises "Variable types must be coherent."
-    (E
-       "File \"<test>\", 1:38-1:39\n\
-        Type error.\n\
-        Type mismatch.\n\
-        Expected:\n\
-       \  int\n\
-        Received:\n\
-       \  string")
+  print_error "Variable types must be coherent."
     (render
-       "{% match a, b with 1, \"a\" %} {% with a, _ with _, a %} {% /match %}")
+       "{% match a, b with 1, \"a\" %} {% with a, _ with _, a %} {% /match %}");
 
-let component_typechecker () =
-  let open Alcotest in
-  check_raises "Component names match"
-    (E
-       "File \"<test>\", 1:4-1:14\n\
-        Type error.\n\
-        Component name mismatch.\n\
-        Expected:\n\
-       \  A.\n\
-        Received:\n\
-       \  B.")
-    (render "{% A %} {% /B %}");
+  print_error "Component names match" (render "{% A %} {% /B %}");
   let comp =
     Compile.Components.parse_string ~fname:"comp" ~name:"Comp" "{{ a }} {{ b }}"
   in
-  check_raises "Components can't take extra props"
-    (E
-       "File \"<test>\", 1:4-1:16\n\
-        Type error.\n\
-        Component 'Comp' does not accept this prop:\n\
-       \  c.")
-    (render ~components:(Compile.Components.make [ comp ]) "{% Comp a b c / %}")
+  print_error "Components can't take extra props"
+    (render
+       ~components:(Compile.Components.of_seq @@ Seq.return comp)
+       "{% Comp a b c / %}");
 
-let unused_bindings () =
-  let open Alcotest in
-  check_raises "Basic unused bindings are reported."
-    (E
-       "File \"<test>\", 1:18-1:19\n\
-        Type error.\n\
-        This variable is bound but never used:\n\
-       \  x")
+  print_error "Basic unused bindings are reported."
     (render "{% match a with {x} %} {% /match %}");
-  check_raises "Unused bindings are reported in the order they appear."
-    (E
-       "File \"<test>\", 1:21-1:22\n\
-        Type error.\n\
-        This variable is bound but never used:\n\
-       \  y")
+  print_error "Unused bindings are reported in the order they appear."
     (render
        "{% match a with {x, y} %}\n\
        \  {% match x with {z} %} {% /match %}\n\
         {% /match %}");
-  check_raises "Shadowing bindings can report them as unused."
-    (E
-       "File \"<test>\", 1:26-1:27\n\
-        Type error.\n\
-        This variable is bound but never used:\n\
-       \  y")
+  print_error "Shadowing bindings can report them as unused."
     (render
        "{% match a, b with {x}, {y} %}\n\
        \  {% match x with {y} %} {{ y }} {%/ match %}\n\
-        {% /match %}")
-
-let matching_unused () =
-  let open Alcotest in
-  check_raises "Basic pattern (1)."
-    (E "File \"<test>\", 4:4-4:19\nMatching error.\nThis match case is unused.")
+        {% /match %}");
+  print_error "Basic pattern (1)."
     (render
        "{% match a, b, c\n\
        \   with 10, 11, 12 %}\n\
         {% with _x, 21, 22 %}\n\
         {% with 10, 11, 12 %}\n\
         {% /match %}");
-  check_raises "Basic pattern (2)."
-    (E "File \"<test>\", 6:4-6:19\nMatching error.\nThis match case is unused.")
+  print_error "Basic pattern (2)."
     (render
        "{% match a, b, c\n\
        \   with 10, 11, 12 %}\n\
@@ -888,151 +311,60 @@ let matching_unused () =
         {% with 30, _y, 42 %}\n\
         {% with 30, 31, 42 %}\n\
         {% /match %}");
-  check_raises "Nest patterns merge into wildcard patterns correctly (1)."
-    (E "File \"<test>\", 1:33-1:48\nMatching error.\nThis match case is unused.")
+  print_error "Nest patterns merge into wildcard patterns correctly (1)."
     (render "{% match a, b with _x, _y %} {% with (_, _), 40 %} {% /match %}");
-  check_raises "Nest patterns merge into wildcard patterns correctly (2)."
-    (E "File \"<test>\", 4:4-4:22\nMatching error.\nThis match case is unused.")
+  print_error "Nest patterns merge into wildcard patterns correctly (2)."
     (render
        "{% match a, b\n\
        \   with _x, 1 %}\n\
         {% with (\"a\", \"b\"), 10 %}\n\
         {% with (\"a\", \"b\"), 1 %}\n\
-        {% /match %}")
+        {% /match %}");
 
-let parmatch () =
-  let open Alcotest in
-  check_raises "Partial matching with integers."
-    (E
-       "File \"<test>\", 1:4-1:55\n\
-        Matching error.\n\
-        This pattern-matching is not exhaustive.\n\
-        Here's an example of a pattern which is not matched:\n\
-       \  _")
+  print_error "Partial matching with integers."
     (render "{% match a with 0 with 10 with 20 with 30 %} {% /match %}");
-  check_raises "Partial matching with lists (1)."
-    (E
-       "File \"<test>\", 1:4-1:41\n\
-        Matching error.\n\
-        This pattern-matching is not exhaustive.\n\
-        Here's an example of a pattern which is not matched:\n\
-       \  [_, ..._]")
+  print_error "Partial matching with lists (1)."
     (render "{% match a with [] with [_] %} {% /match %}");
-  check_raises "Partial matching with lists (2)."
-    (E
-       "File \"<test>\", 1:4-1:33\n\
-        Matching error.\n\
-        This pattern-matching is not exhaustive.\n\
-        Here's an example of a pattern which is not matched:\n\
-       \  []")
+  print_error "Partial matching with lists (2)."
     (render "{% match a with [_] %} {% /match %}");
-  check_raises "Partial matching with Nullables (1)."
-    (E
-       "File \"<test>\", 1:4-1:34\n\
-        Matching error.\n\
-        This pattern-matching is not exhaustive.\n\
-        Here's an example of a pattern which is not matched:\n\
-       \  !_")
+  print_error "Partial matching with Nullables (1)."
     (render "{% match a with null %} {% /match %}");
-  check_raises "Partial matching with Nullables (2)."
-    (E
-       "File \"<test>\", 1:4-1:32\n\
-        Matching error.\n\
-        This pattern-matching is not exhaustive.\n\
-        Here's an example of a pattern which is not matched:\n\
-       \  null")
+  print_error "Partial matching with Nullables (2)."
     (render "{% match a with !_ %} {% /match %}");
-  check_raises "Partial matching with Nullables (3)."
-    (E
-       "File \"<test>\", 1:4-1:48\n\
-        Matching error.\n\
-        This pattern-matching is not exhaustive.\n\
-        Here's an example of a pattern which is not matched:\n\
-       \  !_")
+  print_error "Partial matching with Nullables (3)."
     (render "{% match a with !1 %} {% with null %} {% /match %}");
-  check_raises "Partial matching with enums nested in nullables."
-    (E
-       "File \"<test>\", 1:4-1:58\n\
-        Matching error.\n\
-        This pattern-matching is not exhaustive.\n\
-        Here's an example of a pattern which is not matched:\n\
-       \  !@1, _")
+  print_error "Partial matching with enums nested in nullables."
     (render "{% match a, b with !@1, 2 %} {% with null, _ %} {% /match %}");
-  check_raises "Partial matching with records."
-    (E
-       "File \"<test>\", 1:4-1:56\n\
-        Matching error.\n\
-        This pattern-matching is not exhaustive.\n\
-        Here's an example of a pattern which is not matched:\n\
-       \  {a: _, b: _}")
+  print_error "Partial matching with records."
     (render "{% match a with {b: 10} %} {% with {a: 20} %} {% /match %}");
-  check_raises "Partial matching with dictionaries."
-    (E
-       "File \"<test>\", 1:4-1:61\n\
-        Matching error.\n\
-        This pattern-matching is not exhaustive.\n\
-        Here's an example of a pattern which is not matched:\n\
-       \  _")
+  print_error "Partial matching with dictionaries."
     (render "{% match a with <a: true> %} {% with <a: false> %} {% /match %}");
-  check_raises "Partial matching with unions (1)."
-    (E
-       "File \"<test>\", 1:4-2:10\n\
-        Matching error.\n\
-        This pattern-matching is not exhaustive.\n\
-        Here's an example of a pattern which is not matched:\n\
-       \  {@tag: 0, a: _}")
+  print_error "Partial matching with unions (1)."
     (render
        "{% match a with {@tag: 0, a: 10} %} {% with {@tag: 1, b: 20} %}\n\
         {% /match %}");
-  check_raises "Partial matching with unions (2)."
-    (E
-       "File \"<test>\", 1:4-2:10\n\
-        Matching error.\n\
-        This pattern-matching is not exhaustive.\n\
-        Here's an example of a pattern which is not matched:\n\
-       \  {@tag: false, b: _}")
+  print_error "Partial matching with unions (2)."
     (render
        "{% match a with {@tag: true, a: 10} %}{% with {@tag: false, b: 20} %}\n\
         {% /match %}");
-  check_raises "Partial matching with unions (3)."
-    (E
-       "File \"<test>\", 1:4-2:10\n\
-        Matching error.\n\
-        This pattern-matching is not exhaustive.\n\
-        Here's an example of a pattern which is not matched:\n\
-       \  {@tag: true, a: _}")
+  print_error "Partial matching with unions (3)."
     (render
        "{% match a with {@tag: true, a: 10} %} {% with {@tag: false, b: _} %}\n\
         {% /match %}");
-  check_raises "Partial matching with records."
-    (E
-       "File \"<test>\", 1:4-3:10\n\
-        Matching error.\n\
-        This pattern-matching is not exhaustive.\n\
-        Here's an example of a pattern which is not matched:\n\
-       \  {favoriteColor: _, firstName: _}")
+  print_error "Partial matching with records."
     (render
        "{% match a with {firstName: name, favoriteColor: \"green\"} %}\n\
         {{ name }}'s favorite color is green.\n\
         {% /match %}");
-  check_raises "Partial lists print correctly."
-    (E
-       "File \"<test>\", 1:5-5:10\n\
-        Matching error.\n\
-        This pattern-matching is not exhaustive.\n\
-        Here's an example of a pattern which is not matched:\n\
-       \  {@kind: \"anonymous\", books: _}")
+  print_error "Partial lists print correctly."
     (render
        "{%~ match author\n\
        \    with {@kind: \"person\", name: _, books: [_newest, ..._older]} %}\n\
         {%~  with {@kind: \"anonymous\", books: []} %}\n\
        \  This author hasn't published any books.\n\
-        {% /match %}")
+        {% /match %}");
 
-let merge_expanded_trees () =
-  let open Alcotest in
-  check_raises "Both nil and cons paths fail to merge into a wildcard."
-    (E "File \"<test>\", 6:9-6:19\nMatching error.\nThis match case is unused.")
+  print_error "Both nil and cons paths fail to merge into a wildcard."
     (render
        {|
     {% match a, b
@@ -1041,25 +373,13 @@ let merge_expanded_trees () =
     {%  with _, null %}
     {%  with 1, !2 %}
     {%  with _, _ %}
-    {% /match %}|})
+    {% /match %}|});
 
-let bad_destructure () =
-  let open Alcotest in
-  check_raises "Template blocks are not allowed in destructure patterns."
-    (E
-       "File \"<test>\", 1:21-1:28\n\
-        Type error.\n\
-        Template blocks are not allowed in a destructure pattern.")
+  print_error "Template blocks are not allowed in destructure patterns."
     (render "{% match a with {b: #%} {%#} %} {% /match %}");
-  check_raises "Record accessors are not allowed in destructure patterns."
-    (E
-       "File \"<test>\", 1:21-1:24\n\
-        Type error.\n\
-        Record '.' access is not allowed in a destructure pattern.")
-    (render "{% match a with {b: x.z} %} {% /match %}")
+  print_error "Record accessors are not allowed in destructure patterns."
+    (render "{% match a with {b: x.z} %} {% /match %}");
 
-let component_graph () =
-  let open Alcotest in
   let a =
     Compile.Components.parse_string ~fname:"a.acutis" ~name:"A" "{% B /%}"
   in
@@ -1072,170 +392,47 @@ let component_graph () =
   let d =
     Compile.Components.parse_string ~fname:"d.acutis" ~name:"D" "{% B /%}"
   in
-  check_raises "Cyclic dependencies are reported."
-    (E "Compile error.\nDependency cycle detected.\nA -> B -> C -> D -> B")
-    (fun () -> ignore @@ Compile.Components.make [ a; b; c; d ]);
-  check_raises "Missing components are reported."
-    (E "Compile error.\nMissing template:\n  D\nRequired by:\n  C") (fun () ->
-      ignore @@ Compile.Components.make [ a; b; c ]);
-  check_raises "Missing components are reported (by root)."
-    (E "Compile error.\nMissing template:\n  A\nRequired by:\n  <test>")
-    (render "{% A /%}");
-  check_raises "Duplicate names are reported."
-    (E "Compile error.\nThere are multiple components with the name 'A'.")
-    (fun () -> ignore @@ Compile.Components.make [ a; b; a ])
+  print_error "Cyclic dependencies are reported." (fun () ->
+      ignore @@ Compile.Components.of_seq @@ List.to_seq [ a; b; c; d ]);
+  print_error "Missing components are reported." (fun () ->
+      ignore @@ Compile.Components.of_seq @@ List.to_seq [ a; b; c ]);
+  print_error "Missing components are reported (by root)." (render "{% A /%}");
+  print_error "Duplicate names are reported." (fun () ->
+      ignore @@ Compile.Components.of_seq @@ List.to_seq [ a; b; a ]);
 
-let known_broken () =
-  let open Alcotest in
-  check_raises
-    "This error is incorrect. The compiler fails to detect the first unused \
-     wildcard case. I'm not fixing this error yet, but I'm keeping this test \
+  print_error
+    "This error is incorrect. The compiler fails to detect the first unused\n\
+     wildcard case. I'm not fixing this error yet, but I'm keeping this test\n\
      to track when it changes."
-    (E "File \"<test>\", 1:43-1:49\nMatching error.\nThis match case is unused.")
-    (render "{% match a with (_, _) %} {% with _ %} {% with _ %} {% /match %}")
+    (render "{% match a with (_, _) %} {% with _ %} {% with _ %} {% /match %}");
 
-let decode_mismatch () =
-  let open Alcotest in
-  check_raises "Basic type mismatch."
-    (E
-       "File \"<test>\"\n\
-        Render error.\n\
-        The data supplied does not match this template's interface.\n\
-        Path:\n\
-       \  input -> \"a\" -> \"b\".\n\
-        Expected type:\n\
-       \  string\n\
-        Received value:\n\
-       \  []")
+  print_error "Basic type mismatch."
     (render "{% match a with {b} %} {{ b }} {% /match %}"
        ~json:{|{"a": {"b": []}}|});
   let json = {|{"a": "a", "b": true, "c": []}|} in
-  check_raises "Map type mismatch (1)."
-    (E
-       "File \"<test>\"\n\
-        Render error.\n\
-        The data supplied does not match this template's interface.\n\
-        Path:\n\
-       \  input -> \"a\".\n\
-        Expected type:\n\
-       \  [{a: string}]\n\
-        Received value:\n\
-       \  \"a\"")
+  print_error "Map type mismatch (1)."
     (render "{% map a with {a} %}{{ a }}{% /map %}" ~json);
-  check_raises "Map type mismatch (2)."
-    (E
-       "File \"<test>\"\n\
-        Render error.\n\
-        The data supplied does not match this template's interface.\n\
-        Path:\n\
-       \  input -> \"a\".\n\
-        Expected type:\n\
-       \  [int]\n\
-        Received value:\n\
-       \  \"a\"")
+  print_error "Map type mismatch (2)."
     (render "{% map [1, 2, ...a] with a %}{{ %i a }}{% /map %}" ~json);
-  check_raises "Missing bindings are reported"
-    (E
-       "File \"<test>\"\n\
-        Render error.\n\
-        The data supplied does not match this template's interface.\n\
-        Path:\n\
-       \  input.\n\
-        Expected type:\n\
-       \  {z: string}\n\
-        Input is missing key:\n\
-       \  z")
-    (render "{{ z }}" ~json);
-  check_raises "Bad enums are reported: boolean."
-    (E
-       "File \"<test>\"\n\
-        Render error.\n\
-        The data supplied does not match this template's interface.\n\
-        Path:\n\
-       \  input -> \"b\".\n\
-        Expected type:\n\
-       \    false\n\
-        This type does not allow the given value:\n\
-       \  true")
+  print_error "Missing bindings are reported" (render "{{ z }}" ~json);
+  print_error "Bad enums are reported: boolean."
     (render "{% match b with false %} {% /match %}" ~json);
-  check_raises "Bad enums are reported: int."
-    (E
-       "File \"<test>\"\n\
-        Render error.\n\
-        The data supplied does not match this template's interface.\n\
-        Path:\n\
-       \  input -> \"a\".\n\
-        Expected type:\n\
-       \    @1 | @2\n\
-        This type does not allow the given value:\n\
-       \  3")
+  print_error "Bad enums are reported: int."
     (render "{% match a with @1 %} {% with @2 %} {% /match %}"
        ~json:{|{"a": 3}|});
-  check_raises "Bad enums are reported: int."
-    (E
-       "File \"<test>\"\n\
-        Render error.\n\
-        The data supplied does not match this template's interface.\n\
-        Path:\n\
-       \  input -> \"a\".\n\
-        Expected type:\n\
-       \    @\"a\" | @\"b\"\n\
-        This type does not allow the given value:\n\
-       \  \"c\"")
+  print_error "Bad enums are reported: int."
     (render "{% match a with @\"a\" %} {% with @\"b\" %} {% /match %}"
        ~json:{|{"a": "c"}|});
-  check_raises "Tuple size mismatch."
-    (E
-       "File \"<test>\"\n\
-        Render error.\n\
-        The data supplied does not match this template's interface.\n\
-        Path:\n\
-       \  input -> \"a\".\n\
-        Expected type:\n\
-       \  (string, string)\n\
-        Received value:\n\
-       \  [ \"a\" ]")
+  print_error "Tuple size mismatch."
     (render "{% match a with (a, b) %} {{ a }} {{ b }} {% /match %}"
        ~json:{|{"a": ["a"]}|});
-  check_raises "Bad unions are reported (1)."
-    (E
-       "File \"<test>\"\n\
-        Render error.\n\
-        The data supplied does not match this template's interface.\n\
-        Path:\n\
-       \  input -> \"a\".\n\
-        Expected type:\n\
-       \    {@tag: 1, a: string}\n\
-        Received value:\n\
-       \  { \"tag\": \"a\", \"a\": \"a\" }")
+  print_error "Bad unions are reported (1)."
     (render "{% match a with {@tag: 1, a} %} {{ a }} {% /match %}"
        ~json:{|{"a": {"tag": "a", "a": "a"}}|});
-  check_raises "Bad unions are reported (2)."
-    (E
-       "File \"<test>\"\n\
-        Render error.\n\
-        The data supplied does not match this template's interface.\n\
-        Path:\n\
-       \  input -> \"a\".\n\
-        Expected type:\n\
-       \    {@tag: 1, a: string}\n\
-        Received value:\n\
-       \  { \"tag\": 2, \"a\": \"a\" }")
+  print_error "Bad unions are reported (2)."
     (render "{% match a with {@tag: 1, a} %} {{ a }} {% /match %}"
        ~json:{|{"a": {"tag": 2, "a": "a"}}|});
-  check_raises "Looong paths format correctly."
-    (E
-       "File \"<test>\"\n\
-        Render error.\n\
-        The data supplied does not match this template's interface.\n\
-        Path:\n\
-       \  input -> \"abc\" -> \"def\" -> \"ghi\" -> \"jkl\" -> \"mno\" -> \
-        \"pqr\" -> \"stu\"\n\
-       \  -> \"vwx\" -> \"yz\".\n\
-        Expected type:\n\
-       \  int\n\
-        Received value:\n\
-       \  \"a\"")
+  print_error "Looong paths format correctly."
     (render
        "{% match abc\n\
         with {def: {ghi: {jkl: {mno: {pqr: {stu: {vwx: {yz: 1}}}}}}}} %}\n\
@@ -1244,280 +441,95 @@ let decode_mismatch () =
          {|{"abc":
               {"def": {"ghi": {"jkl": {"mno": {"pqr": {"stu": {"vwx":
                 {"yz": "a"}}}}}}}}
-            }|})
+            }|});
 
-let interface_parse () =
-  let open Alcotest in
-  check_raises "Invalid field names."
-    (E
-       "File \"<test>\", 1:27-1:31\n\
-        Parse error.\n\
-        This is not a valid field name.\n")
+  (* Interface parse *)
+  print_error "Invalid field names."
     (render "{% interface a = {a: int, with: string } / %}");
-  check_raises "Missing , or }."
-    (E "File \"<test>\", 1:26-1:27\nParse error.\nExpected a ',' or '}'.\n")
+  print_error "Missing , or }."
     (render "{% interface a = {a: int b: string } / %}");
 
-  check_raises "Bad prop name (1)."
-    (E
-       "File \"<test>\", 1:14-1:18\n\
-        Parse error.\n\
-        This is not a valid prop name.\n")
-    (render "{% interface with = int / %}");
-  check_raises "Bad prop name (2)."
-    (E
-       "File \"<test>\", 1:22-1:26\n\
-        Parse error.\n\
-        This is not a valid prop name.\n")
+  print_error "Bad prop name (1)." (render "{% interface with = int / %}");
+  print_error "Bad prop name (2)."
     (render "{% interface x = int with = int / %}");
 
-  check_raises "Bad token after a variant (1)."
-    (E
-       "File \"<test>\", 1:24-1:28\n\
-        Parse error.\n\
-        This is not a valid prop name. You possibly forgot a '|'.\n")
+  print_error "Bad token after a variant (1)."
     (render "{% interface x={@a: 1} with / %}");
-  check_raises "Bad token after a variant (2)."
-    (E
-       "File \"<test>\", 1:21-1:25\n\
-        Parse error.\n\
-        This is not a valid prop name. You possibly forgot a '|'.\n")
+  print_error "Bad token after a variant (2)."
     (render "{% interface x=@\"a\" with / %}");
-  check_raises "Bad token after a variant (3)."
-    (E
-       "File \"<test>\", 1:19-1:23\n\
-        Parse error.\n\
-        This is not a valid prop name. You possibly forgot a '|'.\n")
+  print_error "Bad token after a variant (3)."
     (render "{% interface x=@0 with / %}");
-  check_raises "Bad token after a variant (4)."
-    (E
-       "File \"<test>\", 1:22-1:26\n\
-        Parse error.\n\
-        This is not a valid prop name. You possibly forgot a '|'.\n")
+  print_error "Bad token after a variant (4)."
     (render "{% interface x=false with / %}");
 
-  check_raises "Missing equals."
-    (E "File \"<test>\", 1:16-1:19\nParse error.\nExpected an '='.\n")
-    (render "{% interface x int / %}");
+  print_error "Missing equals." (render "{% interface x int / %}");
 
-  check_raises "Invalid type (1)."
-    (E "File \"<test>\", 1:16-1:20\nParse error.\nThis is not a valid type.\n")
-    (render "{% interface x=with / %}");
-  check_raises "Invalid type (2)."
-    (E "File \"<test>\", 1:17-1:21\nParse error.\nThis is not a valid type.\n")
-    (render "{% interface x=?with / %}");
-  check_raises "Invalid type (3)."
-    (E "File \"<test>\", 1:17-1:21\nParse error.\nThis is not a valid type.\n")
-    (render "{% interface x=[with] / %}");
-  check_raises "Invalid type (4)."
-    (E "File \"<test>\", 1:17-1:21\nParse error.\nThis is not a valid type.\n")
-    (render "{% interface x={with: int} / %}");
-  check_raises "Invalid type (5)."
-    (E "File \"<test>\", 1:18-1:22\nParse error.\nThis is not a valid type.\n")
-    (render "{% interface x={@with: 1} / %}");
-  check_raises "Invalid type (6)."
-    (E "File \"<test>\", 1:20-1:24\nParse error.\nThis is not a valid type.\n")
-    (render "{% interface x={a: with} / %}");
-  check_raises "Invalid type (7)."
-    (E "File \"<test>\", 1:17-1:21\nParse error.\nThis is not a valid type.\n")
-    (render "{% interface x=<with> / %}");
-  check_raises "Invalid type (8)."
-    (E "File \"<test>\", 1:17-1:21\nParse error.\nThis is not a valid type.\n")
-    (render "{% interface x=(with) / %}");
-  check_raises "Invalid type (9)."
-    (E "File \"<test>\", 1:22-1:26\nParse error.\nThis is not a valid type.\n")
-    (render "{% interface x=(int, with) / %}");
+  print_error "Invalid type (1)." (render "{% interface x=with / %}");
+  print_error "Invalid type (2)." (render "{% interface x=?with / %}");
+  print_error "Invalid type (3)." (render "{% interface x=[with] / %}");
+  print_error "Invalid type (4)." (render "{% interface x={with: int} / %}");
+  print_error "Invalid type (5)." (render "{% interface x={@with: 1} / %}");
+  print_error "Invalid type (6)." (render "{% interface x={a: with} / %}");
+  print_error "Invalid type (7)." (render "{% interface x=<with> / %}");
+  print_error "Invalid type (8)." (render "{% interface x=(with) / %}");
+  print_error "Invalid type (9)." (render "{% interface x=(int, with) / %}");
 
-  check_raises "Missing colon (1)."
-    (E "File \"<test>\", 1:19-1:20\nParse error.\nExpected a ':'.\n")
-    (render "{% interface x={a b} / %}");
-  check_raises "Missing colon (2)."
-    (E "File \"<test>\", 1:20-1:21\nParse error.\nExpected a ':'.\n")
-    (render "{% interface x={@a b} / %}");
+  print_error "Missing colon (1)." (render "{% interface x={a b} / %}");
+  print_error "Missing colon (2)." (render "{% interface x={@a b} / %}");
 
-  check_raises "Bad enum"
-    (E
-       "File \"<test>\", 1:17-1:18\n\
-        Parse error.\n\
-        Expected a string or an integer.\n")
-    (render "{% interface x=@a / %}");
+  print_error "Bad enum" (render "{% interface x=@a / %}");
 
-  check_raises "Bad token after record pipe."
-    (E
-       "File \"<test>\", 1:26-1:27\n\
-        Parse error.\n\
-        Expected a record type or an '...'.\n")
+  print_error "Bad token after record pipe."
     (render "{% interface x={@a: 1} | y / %}");
-  check_raises "Bad token after string enum pipe."
-    (E
-       "File \"<test>\", 1:23-1:24\n\
-        Parse error.\n\
-        Expected an enum value or an '...'.\n")
+  print_error "Bad token after string enum pipe."
     (render "{% interface x=@\"a\" | y / %}");
-  check_raises "Bad token after int enum pipe."
-    (E
-       "File \"<test>\", 1:21-1:22\n\
-        Parse error.\n\
-        Expected an enum value or an '...'.\n")
+  print_error "Bad token after int enum pipe."
     (render "{% interface x=@0 | y / %}");
 
-  check_raises "Missing >"
-    (E "File \"<test>\", 1:20-1:21\nParse error.\nExpected a '>'.\n")
-    (render "{% interface x=<int} / %}");
-  check_raises "Missing ]"
-    (E "File \"<test>\", 1:20-1:21\nParse error.\nExpected a ']'.\n")
-    (render "{% interface x=[int} / %}");
-  check_raises "Missing )"
-    (E "File \"<test>\", 1:20-1:21\nParse error.\nExpected a ')'.\n")
-    (render "{% interface x=(int} / %}");
+  print_error "Missing >" (render "{% interface x=<int} / %}");
+  print_error "Missing ]" (render "{% interface x=[int} / %}");
+  print_error "Missing )" (render "{% interface x=(int} / %}");
 
-  check_raises "Bad string enum"
-    (E "File \"<test>\", 1:24-1:25\nParse error.\nExpected a string.\n")
-    (render "{% interface x=@\"a\" | @0 / %}");
-  check_raises "Bad int enum"
-    (E "File \"<test>\", 1:22-1:25\nParse error.\nExpected an integer.\n")
-    (render "{% interface x=@0 | @\"a\" / %}");
-  check_raises "Bad boolean"
-    (E "File \"<test>\", 1:24-1:25\nParse error.\nExpected a boolean.\n")
-    (render "{% interface x=false | @0 / %}");
+  print_error "Bad string enum" (render "{% interface x=@\"a\" | @0 / %}");
+  print_error "Bad int enum" (render "{% interface x=@0 | @\"a\" / %}");
+  print_error "Bad boolean" (render "{% interface x=false | @0 / %}");
 
-  check_raises "Bad union tag type"
-    (E
-       "File \"<test>\", 1:21-1:22\n\
-        Parse error.\n\
-        Only literal integer, string, and boolean values may be union tags.\n")
-    (render "{% interface x={@x: [int]} / %}")
+  print_error "Bad union tag type" (render "{% interface x={@x: [int]} / %}");
 
-let interface_type_parse () =
-  let open Alcotest in
-  check_raises "Duplicate declarations"
-    (E
-       "File \"<test>\", 1:20-1:28\n\
-        Type error.\n\
-        Prop 'x' is already defined in the interface.")
+  (* Interface type parse *)
+  print_error "Duplicate declarations"
     (render "{% interface x=int x=string / %}");
-  check_raises "Non-existent type names."
-    (E "File \"<test>\", 1:16-1:20\nType error.\nThere is no type named 'lmao'.")
-    (render "{% interface x=lmao / %}");
-  check_raises "Untagged unions (1)"
-    (E
-       "File \"<test>\", 1:18-1:26\n\
-        Type error.\n\
-        You cannot union records without a '@' tag field.")
+  print_error "Non-existent type names." (render "{% interface x=lmao / %}");
+  print_error "Untagged unions (1)"
     (render "{% interface x = {a: int} | {b: string} / %}");
-  check_raises "Untagged unions (2)"
-    (E
-       "File \"<test>\", 1:38-1:49\n\
-        Type error.\n\
-        You cannot union records without a '@' tag field.")
+  print_error "Untagged unions (2)"
     (render "{% interface x = {@tag: 1, a: int} | {b: string} / %}");
-  check_raises "Tagged unions with mismatched tag names"
-    (E
-       "File \"<test>\", 1:30-1:42\n\
-        Type error.\n\
-        This record has tag field '@badtag' instead of '@tag'.")
+  print_error "Tagged unions with mismatched tag names"
     (render "{% interface x = {@tag: 1} | {@badtag: 2} / %}");
-  check_raises "Duplicate tags."
-    (E
-       "File \"<test>\", 1:30-1:39\n\
-        Type error.\n\
-        Tag value '1' is already used in this union.")
+  print_error "Duplicate tags."
     (render "{% interface x = {@tag: 1} | {@tag: 1} / %}");
-  check_raises "Tag type error: int <> string."
-    (E
-       "File \"<test>\", 1:37-1:40\n\
-        Type error.\n\
-        Type mismatch.\n\
-        Expected:\n\
-       \  int\n\
-        Received:\n\
-       \  string")
+  print_error "Tag type error: int <> string."
     (render "{% interface x = {@tag: 1} | {@tag: \"a\"} / %}");
-  check_raises "Tag type error: string <> bool."
-    (E
-       "File \"<test>\", 1:39-1:43\n\
-        Type error.\n\
-        Type mismatch.\n\
-        Expected:\n\
-       \  string\n\
-        Received:\n\
-       \    true")
+  print_error "Tag type error: string <> bool."
     (render "{% interface x = {@tag: \"a\"} | {@tag: true} / %}");
-  check_raises "Tag type error: bool <> int."
-    (E
-       "File \"<test>\", 1:41-1:44\n\
-        Type error.\n\
-        Type mismatch.\n\
-        Expected:\n\
-       \    false | true\n\
-        Received:\n\
-       \  int")
-    (render "{% interface x = {@tag: false} | {@tag: 100} / %}")
+  print_error "Tag type error: bool <> int."
+    (render "{% interface x = {@tag: false} | {@tag: 100} / %}");
 
-let interface_typecheck () =
-  let open Alcotest in
-  check_raises "Interface type error: bool <> int."
-    (E
-       "File \"<test>\", 1:14-1:21\n\
-        Type error.\n\
-        This interface does not match the implementation.\n\
-        Prop name:\n\
-       \  x\n\
-        Interface:\n\
-       \  int\n\
-        Implementation:\n\
-       \    true")
+  (* Interface type check *)
+  print_error "Interface type error: bool <> int."
     (render "{% interface x = int / %}{% match x with true %}{% /match %}");
-  check_raises "Interface is missing props."
-    (E
-       "File \"<test>\", 1:4-1:23\n\
-        Type error.\n\
-        This interface does not match the implementation.\n\
-        Missing prop name:\n\
-       \  y\n\
-        Of type:\n\
-       \  string")
+  print_error "Interface is missing props."
     (render "{% interface x = int / %} {{ y }}");
-  check_raises "Interface is missing record fields."
-    (E
-       "File \"<test>\", 1:14-1:26\n\
-        Type error.\n\
-        This interface does not match the implementation.\n\
-        Prop name:\n\
-       \  x\n\
-        Interface:\n\
-       \  {a: int}\n\
-        Implementation:\n\
-       \  {a: string, b: string}")
+  print_error "Interface is missing record fields."
     (render
        "{% interface x = {a: int} / %} \n\
         {% match x with {a, b} %} {{ a }} {{ b }} {% /match %}");
-  check_raises "Interface is missing enum cases."
-    (E
-       "File \"<test>\", 1:14-1:31\n\
-        Type error.\n\
-        This interface does not match the implementation.\n\
-        Prop name:\n\
-       \  x\n\
-        Interface:\n\
-       \    @0 | @1 | ...\n\
-        Implementation:\n\
-       \    @0 | @1 | @2 | ...")
+  print_error "Interface is missing enum cases."
     (render
        "{% interface x = @0 | @1 | ... / %} \n\
         {% match x with @0 %} {% with @1 %} {% with @2 %} {% with _ %}\n\
         {% /match %}");
-  check_raises "Interface is missing union cases."
-    (E
-       "File \"<test>\", 1:14-1:53\n\
-        Type error.\n\
-        This interface does not match the implementation.\n\
-        Prop name:\n\
-       \  x\n\
-        Interface:\n\
-       \    {@tag: 0} | {@tag: 1, a: int} | ...\n\
-        Implementation:\n\
-       \    {@tag: 0} | {@tag: 1, a: string} | {@tag: 2, b: string} | ...")
+  print_error "Interface is missing union cases."
     (render
        "{% interface x = {@tag: 0} | {@tag: 1, a: int} | ... / %} \n\
         {% match x\n\
@@ -1526,65 +538,7 @@ let interface_typecheck () =
         {% with {@tag: 2, b} %} {{ b }}\n\
         {% with _ %}\n\
         {% /match %}");
-  check_raises "Unknown is not equal to any other type."
-    (E
-       "File \"<test>\", 1:14-1:19\n\
-        Type error.\n\
-        This interface does not match the implementation.\n\
-        Prop name:\n\
-       \  x\n\
-        Interface:\n\
-       \  _\n\
-        Implementation:\n\
-       \  string")
-    (render "{% interface x = _ / %} {{ x }}")
+  print_error "Unknown is not equal to any other type."
+    (render "{% interface x = _ / %} {{ x }}");
 
-let () =
-  let open Alcotest in
-  run "Errors"
-    [
-      ( "Parser & lexer errors",
-        [
-          test_case "Illegal characters" `Quick illegal_chars;
-          test_case "Number parsing" `Quick number_parsing;
-          test_case "Illegal names" `Quick illegal_names;
-          test_case "Unterminated sections" `Quick unterminated;
-          test_case "Illegal escape sequences" `Quick illegal_escape;
-          test_case "Duplicate fields" `Quick dup_record_field;
-          test_case "Parser errors" `Quick parser_errors;
-          test_case "Interface parser errors" `Quick interface_parse;
-          test_case "Interface type parser errors" `Quick interface_type_parse;
-        ] );
-      ( "Type clash",
-        [
-          test_case "Echoes" `Quick type_error_echo;
-          test_case "Constants" `Quick type_error_const;
-          test_case "Nested types" `Quick type_error_nest;
-          test_case "Records" `Quick type_error_record;
-          test_case "Enums" `Quick type_error_enum;
-          test_case "Tagged unions" `Quick type_error_union;
-          test_case "Interface type errors" `Quick interface_typecheck;
-        ] );
-      ( "Typechecker errors",
-        [
-          test_case "Pattern count mismatch" `Quick pat_count_mismatch;
-          test_case "Multiple names bound" `Quick dup_name_destructure;
-          test_case "Variables in with clauses" `Quick vars_with_clauses;
-          test_case "Component errors" `Quick component_typechecker;
-          test_case "Unused bindings" `Quick unused_bindings;
-        ] );
-      ( "Matching errors",
-        [
-          test_case "Unused patterns" `Quick matching_unused;
-          test_case "Partial patterns" `Quick parmatch;
-          test_case "Partial patterns with complex trees" `Quick
-            merge_expanded_trees;
-          test_case "Other errors" `Quick bad_destructure;
-        ] );
-      ( "Other compile errors",
-        [
-          test_case "Dependency graphs" `Quick component_graph;
-          test_case "Known broken cases" `Quick known_broken;
-        ] );
-      ("Render errors", [ test_case "Decode errors" `Quick decode_mismatch ]);
-    ]
+  ()

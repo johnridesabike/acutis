@@ -1,0 +1,6 @@
+{% match a with {b: {c}} ~%}
+  _ {{~ c ~}} _ 
+{%~ /match %}
+
+{% OhHai name="Mark" ~%} I did not. {%~ /OhHai %}
+{%~ OhHai name="Lisa" children=#%} Cheep cheep cheep. {%~# / %}

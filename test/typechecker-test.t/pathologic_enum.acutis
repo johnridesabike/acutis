@@ -1,0 +1,2 @@
+{% match a with {b: _} %} {% with {b: @1 } %} {% /match %}
+{{ a.b }}

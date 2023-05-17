@@ -15,14 +15,11 @@ val parse : fname:string -> Lexing.lexbuf -> Ast.t
 (** @raise Error.Acutis_error *)
 
 type escape = Ast.escape = No_escape | Escape
-type echo_flag = Ast.echo_flag = No_flag | Flag_comma
 
 type echo_format = Ast.echo_format =
   | Fmt_string
-  | Fmt_int of echo_flag
-  | Fmt_float of int
-  | Fmt_float_e of int
-  | Fmt_float_g of int
+  | Fmt_int
+  | Fmt_float
   | Fmt_bool
 
 type echo = Typechecker.echo =
@@ -37,7 +34,7 @@ type 'a node =
   | Match of 'a eval Data.t array * 'a nodes Matching.t
   | Map_list of 'a eval Data.t * 'a nodes Matching.t
   | Map_dict of 'a eval Data.t * 'a nodes Matching.t
-  | Component of 'a * 'a eval Data.t Map.String.t
+  | Component of string * 'a * 'a eval Data.t Map.String.t
 
 and 'a eval =
   | Var of string
@@ -77,7 +74,7 @@ module Components : sig
 
   val empty : _ t
 
-  val make : 'a source list -> 'a t
+  val of_seq : 'a source Seq.t -> 'a t
   (** Type-checks and optimizes the components.
       @raise Error.Acutis_error *)
 end
@@ -85,3 +82,4 @@ end
 val make : fname:string -> 'a Components.t -> Lexing.lexbuf -> 'a t
 val from_string : fname:string -> 'a Components.t -> string -> 'a t
 val from_channel : fname:string -> 'a Components.t -> in_channel -> 'a t
+val to_sexp : _ nodes -> Sexp.t
