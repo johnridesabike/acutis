@@ -64,14 +64,12 @@ let () =
     let fname = Queue.take templates in
 
     let components =
-      Queue.fold
-        (fun acc fname ->
-          In_channel.with_open_text fname
-            (Compile.Components.parse_channel ~fname
-               ~name:(fname_to_compname fname))
-          :: acc)
-        [] templates
-      |> Compile.Components.make
+      Queue.to_seq templates
+      |> Seq.map (fun fname ->
+             In_channel.with_open_text fname
+               (Compile.Components.parse_channel ~fname
+                  ~name:(fname_to_compname fname)))
+      |> Compile.Components.of_seq
     in
 
     match !arg_action with

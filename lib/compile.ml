@@ -152,9 +152,9 @@ module Components = struct
 
   let empty = { typed = Map.String.empty; optimized = Map.String.empty }
 
-  let make l =
+  let of_seq l =
     let untyped =
-      List.fold_left
+      Seq.fold_left
         (fun acc -> function
           | T.Src (name, src) ->
               if Map.String.mem name acc then Error.duplicate_name name;
