@@ -13,6 +13,4 @@
 (rule ; Diff the compiled JS.
  (alias runtest)
  (action
-  (diff
-   %{dep:tojs_example_compiled.mjs}
-   %{dep:tojs_example_compiled.output})))
+  (diff %{dep:tojs_example_compiled.mjs} %{dep:tojs_example_compiled.output})))
