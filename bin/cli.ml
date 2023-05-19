@@ -19,7 +19,14 @@ Usage:
 
 Options:|}
 
-type action = Render | Print_ast | Print_types | Print_optimized | Make_js
+type jstype = CommonJs | ESModule
+
+type action =
+  | Render
+  | Print_ast
+  | Print_types
+  | Print_optimized
+  | Make_js of jstype
 
 let doc_data = " The path to a JSON data file. Default: stdin."
 let arg_data = ref "-"
@@ -36,7 +43,8 @@ let jsmodules = Queue.create ()
 let set_printast () = arg_action := Print_ast
 let set_printtypes () = arg_action := Print_types
 let set_printopt () = arg_action := Print_optimized
-let set_buildjs () = arg_action := Make_js
+let set_cjs () = arg_action := Make_js CommonJs
+let set_esm () = arg_action := Make_js ESModule
 
 let version () =
   Format.printf "Version: %s\n"
@@ -50,7 +58,8 @@ let args =
     [
       ("--data", Set_string arg_data, doc_data);
       ("--output", Set_string arg_output, doc_output);
-      ("--js", Unit set_buildjs, "TODO");
+      ("--js", Unit set_esm, " TODO");
+      ("--cjs", Unit set_cjs, " TODO");
       ( "--jsmodule",
         Tuple
           (let module_path = ref "" in
@@ -66,7 +75,7 @@ let args =
                    (!module_path, !function_path, !interface_path)
                    jsmodules);
            ]),
-        "TODO" );
+        " TODO" );
       ("--version", Unit version, doc_version);
       ("--printast", Unit set_printast, doc_printast);
       ("--printtypes", Unit set_printtypes, doc_printtypes);
@@ -146,17 +155,20 @@ let () =
         | fname ->
             Out_channel.(
               with_open_text fname (fun chan -> output_string chan result)))
-    | Make_js -> (
+    | Make_js ty -> (
+        let printer =
+          match ty with CommonJs -> ToJs.cjs | ESModule -> ToJs.esm
+        in
         let components = make_components_js () in
         let template =
           In_channel.with_open_text fname
             (Compile.from_channel ~fname components)
         in
         match !arg_output with
-        | "-" -> ToJs.pp Format.std_formatter template
+        | "-" -> printer Format.std_formatter template
         | fname ->
             Out_channel.with_open_text fname (fun chan ->
-                ToJs.pp (Format.formatter_of_out_channel chan) template))
+                printer (Format.formatter_of_out_channel chan) template))
   with
   | Error.Acutis_error e ->
       Out_channel.output_string stderr e;

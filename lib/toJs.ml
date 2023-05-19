@@ -8,7 +8,6 @@
 (*                                                                        *)
 (**************************************************************************)
 
-open Format
 module C = Compile
 module D = Data
 module M = Matching
@@ -146,7 +145,7 @@ end = struct
     let namespace = Filename.basename module_path |> Filename.chop_extension in
     add_unique_namespace_aux 0 namespace (Filepath module_path) map
 
-  let pp = pp_print_string
+  let pp = Format.pp_print_string
 end
 
 type keyword = Null | Undefined | False | True
@@ -196,13 +195,16 @@ and statement =
   | Comment of string
   | Import of Id.t * string
 
-let pp_comma ppf () = fprintf ppf ",@ "
+type jstype = CommonJs | ESModule
+
+let pp_comma ppf () = Format.fprintf ppf ",@ "
 
 let pp_trailing_comma =
-  pp_print_custom_break ~fits:("", 0, "") ~breaks:(",", -2, "")
+  Format.pp_print_custom_break ~fits:("", 0, "") ~breaks:(",", -2, "")
 
 (** See https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String#escape_sequences *)
 let pp_js_str ppf s =
+  let open Format in
   let l = String.length s in
   pp_print_char ppf '"';
   for i = 0 to l - 1 do
@@ -231,7 +233,7 @@ let obj_to_string = function
   | Map -> "Map"
   | Promise -> "Promise"
 
-let pp_obj ppf x = pp_print_string ppf (obj_to_string x)
+let pp_obj ppf x = Format.pp_print_string ppf (obj_to_string x)
 
 let is_js_id =
   let id_start_char = function
@@ -244,110 +246,125 @@ let is_js_id =
   in
   fun s -> id_start_char s.[0] && String.for_all id_char s
 
-let rec pp_expr ppf = function
-  | Eq (a, b) -> fprintf ppf "%a ===@ %a" pp_expr a pp_expr b
-  | Not_eq (a, b) -> fprintf ppf "%a !== %a" pp_expr a pp_expr b
-  | Or (a, b) -> fprintf ppf "@[<hv>%a ||@]@ @[<hv>%a@]" pp_expr a pp_expr b
-  | And (a, b) -> fprintf ppf "@[<hv>%a &&@]@ @[<hv>%a@]" pp_expr a pp_expr b
-  | Var x -> Id.pp ppf x
-  | Prim x -> pp_print_string ppf (keyword_to_string x)
-  | Obj x -> pp_obj ppf x
-  | String s -> pp_js_str ppf s
-  | Int i -> fprintf ppf "%i" i
-  | Float f -> pp_print_float ppf f
-  | Field (a, String s) when is_js_id s -> fprintf ppf "%a.%s" pp_expr a s
-  | Field (a, b) -> fprintf ppf "%a[%a]" pp_expr a pp_expr b
-  | Tern (cond, i, e) ->
-      fprintf ppf "%a@ ? %a@ : %a" pp_expr cond pp_expr i pp_expr e
-  | Fun_expr (args, statements) ->
-      fprintf ppf "(async function (%a) {@ @[<v 0>%a@]@;<1 -2>})"
-        (pp_print_list ~pp_sep:pp_comma Id.pp)
-        args pp_statements statements
-  | App (name, [ arg ]) -> fprintf ppf "%a(%a)" pp_expr name pp_expr arg
-  | App (name, args) ->
-      fprintf ppf "@[<hv 2>%a(@,%a@;<0 -2>)@]" pp_expr name
-        (pp_print_list ~pp_sep:pp_comma (fun ppf expr ->
-             fprintf ppf "@[<hv 2>%a@]" pp_expr expr))
-        args
-  | New (name, [ arg ]) -> fprintf ppf "new %a(%a)" pp_obj name pp_expr arg
-  | New (name, args) ->
-      fprintf ppf "@[<hv 2>new %a(@,%a@;<0 -2>)@]" pp_obj name
-        (pp_print_list ~pp_sep:pp_comma (fun ppf expr ->
-             fprintf ppf "@[<hv 2>%a@]" pp_expr expr))
-        args
-  | App_expr (expr, args) ->
-      fprintf ppf "%a(%a)" pp_expr expr
-        (pp_print_list ~pp_sep:pp_comma pp_expr)
-        args
-  | Await expr -> fprintf ppf "(await %a)" pp_expr expr
-  | Arr a ->
-      fprintf ppf "[@,%a%t]"
-        (pp_print_seq ~pp_sep:pp_comma (fun ppf expr ->
-             fprintf ppf "@[<hv 2>%a@]" pp_expr expr))
-        a pp_trailing_comma
-  | Typeof expr -> fprintf ppf "typeof %a" pp_expr expr
-  | Instanceof (a, b) -> fprintf ppf "%a instanceof %a" pp_expr a pp_obj b
-  | To_int expr -> fprintf ppf "%a | 0" pp_expr expr
-  | In (key, expr) -> fprintf ppf "%a in %a" pp_js_str key pp_expr expr
+let pp_statement ty =
+  let open Format in
+  let pp_import =
+    match ty with
+    | CommonJs -> fun ppf -> fprintf ppf "const %a = require(%a);"
+    | ESModule -> fun ppf -> fprintf ppf "import * as %a from %a;"
+  in
+  let pp_export =
+    match ty with
+    | CommonJs -> fun ppf -> fprintf ppf "module.exports = %a"
+    | ESModule -> fun ppf -> fprintf ppf "export default %a"
+  in
+  let rec pp_expr ppf = function
+    | Eq (a, b) -> fprintf ppf "%a ===@ %a" pp_expr a pp_expr b
+    | Not_eq (a, b) -> fprintf ppf "%a !== %a" pp_expr a pp_expr b
+    | Or (a, b) -> fprintf ppf "@[<hv>%a ||@]@ @[<hv>%a@]" pp_expr a pp_expr b
+    | And (a, b) -> fprintf ppf "@[<hv>%a &&@]@ @[<hv>%a@]" pp_expr a pp_expr b
+    | Var x -> Id.pp ppf x
+    | Prim x -> pp_print_string ppf (keyword_to_string x)
+    | Obj x -> pp_obj ppf x
+    | String s -> pp_js_str ppf s
+    | Int i -> fprintf ppf "%i" i
+    | Float f -> pp_print_float ppf f
+    | Field (a, String s) when is_js_id s -> fprintf ppf "%a.%s" pp_expr a s
+    | Field (a, b) -> fprintf ppf "%a[%a]" pp_expr a pp_expr b
+    | Tern (cond, i, e) ->
+        fprintf ppf "%a@ ? %a@ : %a" pp_expr cond pp_expr i pp_expr e
+    | Fun_expr (args, statements) ->
+        fprintf ppf "(async function (%a) {@ @[<v 0>%a@]@;<1 -2>})"
+          (pp_print_list ~pp_sep:pp_comma Id.pp)
+          args pp_statements statements
+    | App (name, [ arg ]) -> fprintf ppf "%a(%a)" pp_expr name pp_expr arg
+    | App (name, args) ->
+        fprintf ppf "@[<hv 2>%a(@,%a@;<0 -2>)@]" pp_expr name
+          (pp_print_list ~pp_sep:pp_comma (fun ppf expr ->
+               fprintf ppf "@[<hv 2>%a@]" pp_expr expr))
+          args
+    | New (name, [ arg ]) -> fprintf ppf "new %a(%a)" pp_obj name pp_expr arg
+    | New (name, args) ->
+        fprintf ppf "@[<hv 2>new %a(@,%a@;<0 -2>)@]" pp_obj name
+          (pp_print_list ~pp_sep:pp_comma (fun ppf expr ->
+               fprintf ppf "@[<hv 2>%a@]" pp_expr expr))
+          args
+    | App_expr (expr, args) ->
+        fprintf ppf "%a(%a)" pp_expr expr
+          (pp_print_list ~pp_sep:pp_comma pp_expr)
+          args
+    | Await expr -> fprintf ppf "(await %a)" pp_expr expr
+    | Arr a ->
+        fprintf ppf "[@,%a%t]"
+          (pp_print_seq ~pp_sep:pp_comma (fun ppf expr ->
+               fprintf ppf "@[<hv 2>%a@]" pp_expr expr))
+          a pp_trailing_comma
+    | Typeof expr -> fprintf ppf "typeof %a" pp_expr expr
+    | Instanceof (a, b) -> fprintf ppf "%a instanceof %a" pp_expr a pp_obj b
+    | To_int expr -> fprintf ppf "%a | 0" pp_expr expr
+    | In (key, expr) -> fprintf ppf "%a in %a" pp_js_str key pp_expr expr
+  and pp_statement ppf = function
+    | Let (ident, expr) ->
+        fprintf ppf "@[<hv 2>let %a = %a;@]" Id.pp ident pp_expr expr
+    | Set (subj, pred) ->
+        fprintf ppf "@[<hv 2>%a =@ @[<hv 2>%a@];@]" pp_expr subj pp_expr pred
+    | Switch (expr, cases, default) ->
+        fprintf ppf "@[<v 2>@[<hv 2>switch (%a)@] {@ " pp_expr expr;
+        pp_print_seq ~pp_sep:pp_print_cut
+          (fun ppf (expr, statements) ->
+            match statements with
+            | [ (Return _ as statement) ] ->
+                fprintf ppf "@[<v 2>case %a:@ %a@]" pp_expr expr pp_statement
+                  statement
+            | statements ->
+                fprintf ppf "@[<v 2>case %a:@ %a@ break;@]" pp_expr expr
+                  pp_statements statements)
+          ppf cases;
+        (match default with
+        | [] -> ()
+        | l ->
+            fprintf ppf "@ @[<v 2>default:@ ";
+            pp_statements ppf l;
+            fprintf ppf "@]");
+        fprintf ppf "@;<1 -2>}@]"
+    | If_else (expr, ifs, elses) ->
+        fprintf ppf "@[<v 2>@[<hv 2>if (@,%a@;<0 -2>)@] {@ " pp_expr expr;
+        pp_statements ppf ifs;
+        (match elses with
+        | [] -> ()
+        | l ->
+            fprintf ppf "@;<1 -2>} else {@ ";
+            pp_statements ppf l);
+        fprintf ppf "@;<1 -2>}@]"
+    | While (cond, statements) ->
+        fprintf ppf "@[<v 2>while (%a) {@ %a@;<1 -2>}@]" pp_expr cond
+          pp_statements statements
+    | For_in (prop, expr, statements) ->
+        fprintf ppf "@[<v 2>for (let %a in %a) {@ %a@;<1 -2>}@]" Id.pp prop
+          pp_expr expr pp_statements statements
+    | For_of (prop, expr, statements) ->
+        fprintf ppf "@[<v 2>for (let %a of %a) {@ %a@;<1 -2>}@]" Id.pp prop
+          pp_expr expr pp_statements statements
+    | Expr expr -> fprintf ppf "@[<hv 2>%a;@]" pp_expr expr
+    | Incr id -> fprintf ppf "%a++;" Id.pp id
+    | Error s -> fprintf ppf "throw new Error(%a);" Id.pp s
+    | Return expr -> fprintf ppf "@[<hv 2>return %a;@]" pp_expr expr
+    | Fun (name, args, statements) ->
+        fprintf ppf "async function %a(%a) {@;<0 2>@[<v 0>%a@]@;<1 -2>}" Id.pp
+          name
+          (pp_print_list ~pp_sep:pp_comma Id.pp)
+          args pp_statements statements
+    | Export_default statement -> pp_export ppf pp_statement statement
+    | Comment s -> fprintf ppf "/* %s */" s
+    | Import (namespace, filename) ->
+        pp_import ppf Id.pp namespace pp_js_str filename
+  and pp_statements ppf l =
+    pp_print_list ~pp_sep:pp_print_cut pp_statement ppf l
+  in
+  pp_statement
 
-and pp_statement ppf = function
-  | Let (ident, expr) ->
-      fprintf ppf "@[<hv 2>let %a = %a;@]" Id.pp ident pp_expr expr
-  | Set (subj, pred) ->
-      fprintf ppf "@[<hv 2>%a =@ @[<hv 2>%a@];@]" pp_expr subj pp_expr pred
-  | Switch (expr, cases, default) ->
-      fprintf ppf "@[<v 2>@[<hv 2>switch (%a)@] {@ " pp_expr expr;
-      pp_print_seq ~pp_sep:pp_print_cut
-        (fun ppf (expr, statements) ->
-          match statements with
-          | [ (Return _ as statement) ] ->
-              fprintf ppf "@[<v 2>case %a:@ %a@]" pp_expr expr pp_statement
-                statement
-          | statements ->
-              fprintf ppf "@[<v 2>case %a:@ %a@ break;@]" pp_expr expr
-                pp_statements statements)
-        ppf cases;
-      (match default with
-      | [] -> ()
-      | l ->
-          fprintf ppf "@ @[<v 2>default:@ ";
-          pp_statements ppf l;
-          fprintf ppf "@]");
-      fprintf ppf "@;<1 -2>}@]"
-  | If_else (expr, ifs, elses) ->
-      fprintf ppf "@[<v 2>@[<hv 2>if (@,%a@;<0 -2>)@] {@ " pp_expr expr;
-      pp_statements ppf ifs;
-      (match elses with
-      | [] -> ()
-      | l ->
-          fprintf ppf "@;<1 -2>} else {@ ";
-          pp_statements ppf l);
-      fprintf ppf "@;<1 -2>}@]"
-  | While (cond, statements) ->
-      fprintf ppf "@[<v 2>while (%a) {@ %a@;<1 -2>}@]" pp_expr cond
-        pp_statements statements
-  | For_in (prop, expr, statements) ->
-      fprintf ppf "@[<v 2>for (let %a in %a) {@ %a@;<1 -2>}@]" Id.pp prop
-        pp_expr expr pp_statements statements
-  | For_of (prop, expr, statements) ->
-      fprintf ppf "@[<v 2>for (let %a of %a) {@ %a@;<1 -2>}@]" Id.pp prop
-        pp_expr expr pp_statements statements
-  | Expr expr -> fprintf ppf "@[<hv 2>%a;@]" pp_expr expr
-  | Incr id -> fprintf ppf "%a++;" Id.pp id
-  | Error s -> fprintf ppf "throw new Error(%a);" Id.pp s
-  | Return expr -> fprintf ppf "@[<hv 2>return %a;@]" pp_expr expr
-  | Fun (name, args, statements) ->
-      fprintf ppf "async function %a(%a) {@;<0 2>@[<v 0>%a@]@;<1 -2>}" Id.pp
-        name
-        (pp_print_list ~pp_sep:pp_comma Id.pp)
-        args pp_statements statements
-  | Export_default statement ->
-      fprintf ppf "export default %a" pp_statement statement
-  | Comment s -> fprintf ppf "/* %s */" s
-  | Import (namespace, filename) ->
-      fprintf ppf "import * as %a from %a;" Id.pp namespace pp_js_str filename
-
-and pp_statements ppf l = pp_print_list ~pp_sep:pp_print_cut pp_statement ppf l
+let pp_statements ty ppf l =
+  Format.(pp_print_list ~pp_sep:pp_print_cut (pp_statement ty) ppf l)
 
 let meth_get x k = App (Field (x, String "get"), [ k ])
 let meth_set x k v = App (Field (x, String "set"), [ k; v ])
@@ -1074,7 +1091,10 @@ function acutis_escape(str) {
 }
 |}
 
-let pp ppf x =
+let pp ty ppf x =
+  let open Format in
+  let pp_statements = pp_statements ty in
+  let pp_statement = pp_statement ty in
   let { imports; components; components_imports } =
     make_js_imports x.Compile.components
   in
@@ -1133,3 +1153,6 @@ let pp ppf x =
                 [ Return (nodes_string Id.Data.initial x.nodes) ];
               ] )));
   fprintf ppf "@,@,@]"
+
+let cjs = pp CommonJs
+let esm = pp ESModule

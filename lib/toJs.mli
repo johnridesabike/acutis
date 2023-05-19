@@ -8,4 +8,5 @@
 (*                                                                        *)
 (**************************************************************************)
 
-val pp : Format.formatter -> Compile.jsfun Compile.t -> unit
+val cjs : Format.formatter -> Compile.jsfun Compile.t -> unit
+val esm : Format.formatter -> Compile.jsfun Compile.t -> unit
