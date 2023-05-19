@@ -7,14 +7,23 @@
   import * as External_jsfile from "./jsfile.cjs";
   
   let error_decode_bool = "This field must be a boolean.";
+  
   let error_decode_str = "This field must be a string.";
+  
   let error_decode_str_enum = "This field must be a string enum.";
+  
   let error_decode_int = "This field must be an int.";
+  
   let error_decode_int_enum = "This field must be an int enum.";
+  
   let error_decode_float = "This field must be a float.";
+  
   let error_decode_array = "This field must be an array.";
+  
   let error_decode_missing_field = "This object is missing a field.";
+  
   let error_decode_bad_union_key = "This object is missing a field.";
+  
   let error_pattern_failure = "This pattern-matching failed to find a path. This probably means there's a problem with the compiler.";
   
   let escapes = {
@@ -66,14 +75,23 @@
   const External_jsfile = require("./jsfile.cjs");
   
   let error_decode_bool = "This field must be a boolean.";
+  
   let error_decode_str = "This field must be a string.";
+  
   let error_decode_str_enum = "This field must be a string enum.";
+  
   let error_decode_int = "This field must be an int.";
+  
   let error_decode_int_enum = "This field must be an int enum.";
+  
   let error_decode_float = "This field must be a float.";
+  
   let error_decode_array = "This field must be an array.";
+  
   let error_decode_missing_field = "This object is missing a field.";
+  
   let error_decode_bad_union_key = "This object is missing a field.";
+  
   let error_pattern_failure = "This pattern-matching failed to find a path. This probably means there's a problem with the compiler.";
   
   let escapes = {
