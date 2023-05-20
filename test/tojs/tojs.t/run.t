@@ -1,11 +1,11 @@
   $ acutis \
-  >   --js \
+  >   --mode js \
   >   template.acutis \
   >   component.acutis \
   >   unused.acutis \
-  >   --jsmodule ./jscomponents.mjs stringify ./stringify_interface \
-  >   --jsmodule ./jscomponents.mjs another_function ./empty_interface \
-  >   --jsmodule ./jscomponents.mjs an_unused_function ./empty_interface \
+  >   --fun ./jscomponents.mjs stringify ./stringify_interface \
+  >   --fun ./jscomponents.mjs another_function ./empty_interface \
+  >   --fun ./jscomponents.mjs an_unused_function ./empty_interface \
   >   > compiled.mjs
 
   $ cat compiled.mjs

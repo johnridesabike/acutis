@@ -8,7 +8,7 @@
  (action
   (with-stdout-to
    %{target}
-   (run %{bin:acutis} --js %{dep:tojs_example.acutis}))))
+   (run %{bin:acutis} --mode js %{dep:tojs_example.acutis}))))
 
 (rule ; Diff the compiled JS.
  (alias runtest)

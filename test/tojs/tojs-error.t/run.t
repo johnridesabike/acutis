@@ -1,4 +1,4 @@
-  $ acutis --js template.acutis > compiled.mjs
+  $ acutis --mode js template.acutis > compiled.mjs
 
   $ cat > run.mjs << EOF
   >   import main from "./compiled.mjs";

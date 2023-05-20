@@ -12,7 +12,7 @@ open Acutis
 module Render = Render.Make (Sync) (DataJson)
 
 let usage_msg =
-  {|Parse and execute Acutis language templates.
+  {|Compile and execute Acutis language templates.
 
 Usage:
   acutis [options] [template] [...templates]
@@ -20,155 +20,160 @@ Usage:
 Options:|}
 
 type jstype = CommonJs | ESModule
+type mode = Render | Make_js of jstype
 
-type action =
-  | Render
-  | Print_ast
-  | Print_types
-  | Print_optimized
-  | Make_js of jstype
-
-let doc_data = " The path to a JSON data file. Default: stdin."
+let arg_mode = ref Render
 let arg_data = ref "-"
-let doc_output = " The path to write the output. Default: stdout."
 let arg_output = ref "-"
+let arg_version = ref false
+let arg_printast = ref false
+let arg_printtypes = ref false
+let arg_printopt = ref false
 let templates = Queue.create ()
-let set_templates fname = Queue.add fname templates
-let doc_version = " Show the version number and exit."
-let doc_printast = " Print the template's untyped AST form and exit."
-let doc_printtypes = " Print the template's type interface and exit."
-let doc_printopt = " Print the template's optimized form and exit."
-let arg_action = ref Render
-let jsmodules = Queue.create ()
-let set_printast () = arg_action := Print_ast
-let set_printtypes () = arg_action := Print_types
-let set_printopt () = arg_action := Print_optimized
-let set_cjs () = arg_action := Make_js CommonJs
-let set_esm () = arg_action := Make_js ESModule
-
-let version () =
-  Format.printf "Version: %s\n"
-    (match Build_info.V1.version () with
-    | None -> "n/a"
-    | Some v -> Build_info.V1.Version.to_string v);
-  exit 0
+let arg_funs = Queue.create ()
 
 let args =
-  Arg.align
-    [
-      ("--data", Set_string arg_data, doc_data);
-      ("--output", Set_string arg_output, doc_output);
-      ("--js", Unit set_esm, " TODO");
-      ("--cjs", Unit set_cjs, " TODO");
-      ( "--jsmodule",
-        Tuple
-          (let module_path = ref "" in
-           let function_path = ref "" in
-           let interface_path = ref "" in
-           [
-             Set_string module_path;
-             Set_string function_path;
-             Set_string interface_path;
-             Unit
-               (fun () ->
-                 Queue.add
-                   (!module_path, !function_path, !interface_path)
-                   jsmodules);
-           ]),
-        " TODO" );
-      ("--version", Unit version, doc_version);
-      ("--printast", Unit set_printast, doc_printast);
-      ("--printtypes", Unit set_printtypes, doc_printtypes);
-      ("--printopt", Unit set_printopt, doc_printopt);
-    ]
+  [
+    ( "--mode",
+      Arg.Symbol
+        ( [ "render"; "js"; "cjs" ],
+          function
+          | "js" -> arg_mode := Make_js ESModule
+          | "cjs" -> arg_mode := Make_js CommonJs
+          | _ -> arg_mode := Render ),
+      " Select 'render' to execute the template with JSON data, 'js' to \
+       compile to a ECMAScript module, or 'cjs' to compile to a CommonJS \
+       module. Default: render." );
+    ( "--output",
+      Arg.Set_string arg_output,
+      " The path to write the output. Default: stdout." );
+    ( "--data",
+      Arg.Set_string arg_data,
+      " The path to a JSON data file. Default: stdin." );
+    ( "--fun",
+      Arg.Tuple
+        (let module_path = ref "" in
+         let function_path = ref "" in
+         let interface_path = ref "" in
+         [
+           Arg.Set_string module_path;
+           Arg.Set_string function_path;
+           Arg.Set_string interface_path;
+           Arg.Unit
+             (fun () ->
+               Queue.add
+                 (!module_path, !function_path, !interface_path)
+                 arg_funs);
+         ]),
+      " Add an external JavaScript function as a template. This takes three \
+       arguments: file path, function name, and interface path." );
+    ("--version", Arg.Set arg_version, " Print the version number and exit.");
+    ( "--printast",
+      Arg.Set arg_printast,
+      " Print the template's untyped AST form and exit." );
+    ( "--printtypes",
+      Arg.Set arg_printtypes,
+      " Print the template's type interface and exit." );
+    ( "--printopt",
+      Arg.Set arg_printopt,
+      " Print the template's optimized form and exit." );
+  ]
 
 let fname_to_compname s =
   Filename.basename s |> Filename.remove_extension |> String.capitalize_ascii
 
 let make_components_aux () =
   Queue.to_seq templates
-  |> Seq.map (fun fname ->
-         In_channel.with_open_text fname
-           (Compile.Components.parse_channel ~fname
-              ~name:(fname_to_compname fname)))
+  |> Seq.map @@ fun fname ->
+     In_channel.with_open_text fname
+     @@ Compile.Components.parse_channel ~fname ~name:(fname_to_compname fname)
 
 let make_components () = make_components_aux () |> Compile.Components.of_seq
 
 let make_components_js () =
   let l = make_components_aux () in
-  let jsl =
-    Queue.to_seq jsmodules
-    |> Seq.map (fun (module_path, function_path, interface_path) ->
-           let typescheme =
-             In_channel.with_open_text interface_path
-               (Compile.interface_from_channel ~fname:interface_path)
-           in
-           let name = fname_to_compname function_path in
-           Compile.Components.from_fun ~name typescheme
-             Compile.{ module_path; function_path })
+  let funl =
+    Queue.to_seq arg_funs
+    |> Seq.map @@ fun (module_path, function_path, interface_path) ->
+       let typescheme =
+         In_channel.with_open_text interface_path
+         @@ Compile.interface_from_channel ~fname:interface_path
+       in
+       let name = fname_to_compname function_path in
+       Compile.Components.from_fun ~name typescheme
+         Compile.{ module_path; function_path }
   in
-  Seq.append l jsl |> Compile.Components.of_seq
+  Seq.append l funl |> Compile.Components.of_seq
 
 let () =
   try
-    Arg.parse args set_templates usage_msg;
-
-    let fname = Queue.take templates in
-
-    match !arg_action with
-    | Print_ast ->
-        In_channel.with_open_text fname (fun chan ->
-            (Compile.parse ~fname) (Lexing.from_channel chan))
+    Arg.parse (Arg.align args)
+      (fun fname -> Queue.add fname templates)
+      usage_msg;
+    if !arg_version then
+      Format.printf "Version: %s\n"
+        (match Build_info.V1.version () with
+        | None -> "n/a"
+        | Some v -> Build_info.V1.Version.to_string v)
+    else
+      let fname = Queue.take templates in
+      if !arg_printast then
+        In_channel.with_open_text fname @@ fun chan ->
+        Compile.parse ~fname @@ Lexing.from_channel chan
         |> Ast.to_sexp
         |> Sexp.pp Format.std_formatter
-    | Print_types ->
+      else if !arg_printtypes then
         let components = make_components_js () in
         let template =
           In_channel.with_open_text fname
-            (Compile.from_channel ~fname components)
+          @@ Compile.from_channel ~fname components
         in
         Typescheme.pp_interface Format.std_formatter template.types
-    | Print_optimized ->
+      else if !arg_printopt then
         let components = make_components_js () in
         let template =
           In_channel.with_open_text fname
-            (Compile.from_channel ~fname components)
+          @@ Compile.from_channel ~fname components
         in
         Compile.to_sexp template.nodes |> Sexp.pp Format.std_formatter
-    | Render -> (
-        let components = make_components () in
-        let data =
-          match !arg_data with
-          | "-" ->
-              if Unix.isatty Unix.stdin then print_endline "Enter JSON data:";
-              Yojson.Basic.from_channel stdin
-          | fname ->
-              In_channel.with_open_text fname (Yojson.Basic.from_channel ~fname)
-        in
-        let template =
-          In_channel.with_open_text fname
-            (Compile.from_channel ~fname components)
-        in
-        let result = Render.make template data in
-        match !arg_output with
-        | "-" -> Out_channel.output_string stdout result
-        | fname ->
-            Out_channel.(
-              with_open_text fname (fun chan -> output_string chan result)))
-    | Make_js ty -> (
-        let printer =
-          match ty with CommonJs -> ToJs.cjs | ESModule -> ToJs.esm
-        in
-        let components = make_components_js () in
-        let template =
-          In_channel.with_open_text fname
-            (Compile.from_channel ~fname components)
-        in
-        match !arg_output with
-        | "-" -> printer Format.std_formatter template
-        | fname ->
-            Out_channel.with_open_text fname (fun chan ->
-                printer (Format.formatter_of_out_channel chan) template))
+      else
+        match !arg_mode with
+        | Render -> (
+            let components = make_components () in
+            let data =
+              match !arg_data with
+              | "-" ->
+                  if Unix.isatty Unix.stdin then
+                    print_endline "Enter JSON data:";
+                  Yojson.Basic.from_channel stdin
+              | fname ->
+                  In_channel.with_open_text fname
+                  @@ Yojson.Basic.from_channel ~fname
+            in
+            let template =
+              In_channel.with_open_text fname
+              @@ Compile.from_channel ~fname components
+            in
+            let result = Render.make template data in
+            match !arg_output with
+            | "-" -> Out_channel.output_string stdout result
+            | fname ->
+                Out_channel.with_open_text fname @@ fun chan ->
+                Out_channel.output_string chan result)
+        | Make_js ty -> (
+            let printer =
+              match ty with CommonJs -> ToJs.cjs | ESModule -> ToJs.esm
+            in
+            let components = make_components_js () in
+            let template =
+              In_channel.with_open_text fname
+              @@ Compile.from_channel ~fname components
+            in
+            match !arg_output with
+            | "-" -> printer Format.std_formatter template
+            | fname ->
+                Out_channel.with_open_text fname @@ fun chan ->
+                printer (Format.formatter_of_out_channel chan) template)
   with
   | Error.Acutis_error e ->
       Out_channel.output_string stderr e;
