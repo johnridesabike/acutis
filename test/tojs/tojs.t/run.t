@@ -2,8 +2,10 @@
   >   --js \
   >   template.acutis \
   >   component.acutis \
+  >   unused.acutis \
   >   --jsmodule ./jscomponents.mjs stringify ./stringify_interface \
   >   --jsmodule ./jscomponents.mjs another_function ./empty_interface \
+  >   --jsmodule ./jscomponents.mjs an_unused_function ./empty_interface \
   >   > compiled.mjs
 
   $ cat compiled.mjs
@@ -1122,6 +1124,13 @@
       })(),
       "\n\
   \n\
+  ",
+      (async function () {
+        let arg0 = new Map([]);
+        return template_Another_function(arg0);
+      })(),
+      "\n\
+  \n\
   Complicated pattern matching\n\
   ----------------------------\n\
   \n\
@@ -1472,6 +1481,8 @@
   
   Children prop
   123
+  
+  success
   
   Complicated pattern matching
   ----------------------------

@@ -107,6 +107,8 @@ Component
 
 {% Component list=[1, 2, 3] ~%} Children prop {%~ /Component %}
 
+{% Another_function / %}
+
 Complicated pattern matching
 ----------------------------
 

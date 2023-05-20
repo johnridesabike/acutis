@@ -220,8 +220,7 @@ let make ~fname components src =
   let typed = Typechecker.make ~root:fname components.Components.typed nodes in
   let g = Dagmap.make ~f:link_src ~root:fname components.optimized in
   let nodes = make_nodes typed |> link_nodes g in
-  let components = Map.String.map (link_src g) components.optimized in
-  { name = fname; types = typed.types; nodes; components }
+  { name = fname; types = typed.types; nodes; components = Dagmap.linked g }
 
 let from_string ~fname components src =
   make ~fname components (Lexing.from_string src)
