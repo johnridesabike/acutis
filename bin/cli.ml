@@ -12,10 +12,10 @@ open Acutis
 module Render = Render.Make (Sync) (DataJson)
 
 let usage_msg =
-  {|Compile and execute Acutis language templates.
-
-Usage:
+  {|Usage:
   acutis [options] [template] [...templates]
+
+Compile and render Acutis language templates.
 
 Options:|}
 
@@ -41,15 +41,15 @@ let args =
           | "js" -> arg_mode := Make_js ESModule
           | "cjs" -> arg_mode := Make_js CommonJs
           | _ -> arg_mode := Render ),
-      " Select 'render' to execute the template with JSON data, 'js' to \
-       compile to a ECMAScript module, or 'cjs' to compile to a CommonJS \
-       module. Default: render." );
+      " Either render the template, compile it to a JavaScript module, or \
+       compile it to a CommonJS module. Default: render." );
     ( "--output",
       Arg.Set_string arg_output,
       " The path to write the output. Default: stdout." );
     ( "--data",
       Arg.Set_string arg_data,
-      " The path to a JSON data file. Default: stdin." );
+      " The path to a JSON file to be used with --mode=render. Default: stdin."
+    );
     ( "--fun",
       Arg.Tuple
         (let module_path = ref "" in
@@ -179,7 +179,9 @@ let () =
       Format.eprintf "@[<v>Error decoding JSON input.@,%s@,@]" s;
       exit 1
   | Queue.Empty ->
-      Format.eprintf "@[<v>Compile error.@,You need to provide a template.@,@]";
+      Out_channel.output_string stderr "You need to provide a template.\n\n";
+      Out_channel.output_string stderr
+      @@ Arg.usage_string (Arg.align args) usage_msg;
       exit 1
   | Sys_error s ->
       Format.eprintf "@[<v>System error:@,%s@,@]" s;

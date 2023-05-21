@@ -23,16 +23,16 @@ Output to stdout as an argument.
 
 Display the help.
   $ acutis --help
-  Compile and execute Acutis language templates.
-  
   Usage:
     acutis [options] [template] [...templates]
   
+  Compile and render Acutis language templates.
+  
   Options:
     --mode {render|js|cjs}
-                  Select 'render' to execute the template with JSON data, 'js' to compile to a ECMAScript module, or 'cjs' to compile to a CommonJS module. Default: render.
+                  Either render the template, compile it to a JavaScript module, or compile it to a CommonJS module. Default: render.
     --output      The path to write the output. Default: stdout.
-    --data        The path to a JSON data file. Default: stdin.
+    --data        The path to a JSON file to be used with --mode=render. Default: stdin.
     --fun         Add an external JavaScript function as a template. This takes three arguments: file path, function name, and type interface.
     --version     Print the version number and exit.
     --printast    Print the template's untyped AST form and exit.
@@ -51,8 +51,25 @@ Errors
   [1]
 
   $ acutis --data=data.json
-  Compile error.
   You need to provide a template.
+  
+  Usage:
+    acutis [options] [template] [...templates]
+  
+  Compile and render Acutis language templates.
+  
+  Options:
+    --mode {render|js|cjs}
+                  Either render the template, compile it to a JavaScript module, or compile it to a CommonJS module. Default: render.
+    --output      The path to write the output. Default: stdout.
+    --data        The path to a JSON file to be used with --mode=render. Default: stdin.
+    --fun         Add an external JavaScript function as a template. This takes three arguments: file path, function name, and type interface.
+    --version     Print the version number and exit.
+    --printast    Print the template's untyped AST form and exit.
+    --printtypes  Print the template's type interface and exit.
+    --printopt    Print the template's optimized form and exit.
+    -help         Display this list of options
+    --help        Display this list of options
   [1]
 
   $ acutis --data=data.json notfound.acutis
@@ -62,16 +79,16 @@ Errors
 
   $ acutis --mode z0r
   acutis: wrong argument 'z0r'; option '--mode' expects one of: render js cjs.
-  Compile and execute Acutis language templates.
-  
   Usage:
     acutis [options] [template] [...templates]
   
+  Compile and render Acutis language templates.
+  
   Options:
     --mode {render|js|cjs}
-                  Select 'render' to execute the template with JSON data, 'js' to compile to a ECMAScript module, or 'cjs' to compile to a CommonJS module. Default: render.
+                  Either render the template, compile it to a JavaScript module, or compile it to a CommonJS module. Default: render.
     --output      The path to write the output. Default: stdout.
-    --data        The path to a JSON data file. Default: stdin.
+    --data        The path to a JSON file to be used with --mode=render. Default: stdin.
     --fun         Add an external JavaScript function as a template. This takes three arguments: file path, function name, and type interface.
     --version     Print the version number and exit.
     --printast    Print the template's untyped AST form and exit.
