@@ -33,7 +33,7 @@ Display the help.
                   Select 'render' to execute the template with JSON data, 'js' to compile to a ECMAScript module, or 'cjs' to compile to a CommonJS module. Default: render.
     --output      The path to write the output. Default: stdout.
     --data        The path to a JSON data file. Default: stdin.
-    --fun         Add an external JavaScript function as a template. This takes three arguments: file path, function name, and interface path.
+    --fun         Add an external JavaScript function as a template. This takes three arguments: file path, function name, and type interface.
     --version     Print the version number and exit.
     --printast    Print the template's untyped AST form and exit.
     --printtypes  Print the template's type interface and exit.
@@ -72,7 +72,7 @@ Errors
                   Select 'render' to execute the template with JSON data, 'js' to compile to a ECMAScript module, or 'cjs' to compile to a CommonJS module. Default: render.
     --output      The path to write the output. Default: stdout.
     --data        The path to a JSON data file. Default: stdin.
-    --fun         Add an external JavaScript function as a template. This takes three arguments: file path, function name, and interface path.
+    --fun         Add an external JavaScript function as a template. This takes three arguments: file path, function name, and type interface.
     --version     Print the version number and exit.
     --printast    Print the template's untyped AST form and exit.
     --printtypes  Print the template's type interface and exit.

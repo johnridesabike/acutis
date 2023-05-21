@@ -3,9 +3,9 @@
   >   template.acutis \
   >   component.acutis \
   >   unused.acutis \
-  >   --fun ./jscomponents.mjs stringify ./stringify_interface \
-  >   --fun ./jscomponents.mjs another_function ./empty_interface \
-  >   --fun ./jscomponents.mjs an_unused_function ./empty_interface \
+  >   --fun ./jscomponents.mjs stringify "$(< stringify_interface)" \
+  >   --fun ./jscomponents.mjs another_function "" \
+  >   --fun ./jscomponents.mjs an_unused_function "" \
   >   > compiled.mjs
 
   $ cat compiled.mjs

@@ -66,7 +66,7 @@ let args =
                  arg_funs);
          ]),
       " Add an external JavaScript function as a template. This takes three \
-       arguments: file path, function name, and interface path." );
+       arguments: file path, function name, and type interface." );
     ("--version", Arg.Set arg_version, " Print the version number and exit.");
     ( "--printast",
       Arg.Set arg_printast,
@@ -94,11 +94,8 @@ let make_components_js () =
   let l = make_components_aux () in
   let funl =
     Queue.to_seq arg_funs
-    |> Seq.map @@ fun (module_path, function_path, interface_path) ->
-       let typescheme =
-         In_channel.with_open_text interface_path
-         @@ Compile.interface_from_channel ~fname:interface_path
-       in
+    |> Seq.map @@ fun (module_path, function_path, interface) ->
+       let typescheme = Compile.interface_from_string ~fname:"-" interface in
        let name = fname_to_compname function_path in
        Compile.Components.from_fun ~name typescheme
          Compile.{ module_path; function_path }
