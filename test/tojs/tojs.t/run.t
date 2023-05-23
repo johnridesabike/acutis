@@ -1,25 +1,3 @@
-  $ echo "$(cat stringify_interface)"
-  record = {int_enum: @8 | @40, string_enum: @"yes" | @"no"}
-  tagged_record_bool =
-      {@tag: false, a: string}
-    | {@tag: true, b: int}
-  null_string_dict = <?string>
-  int_list = [int]
-  tagged_record_int =
-      {@tag: 0}
-    | {@tag: 1, tuple: (float, string, false | true)}
-  tagged_record_string =
-      {@tag: "a", record_list: [{name: string, job: string}]}
-    | {@tag: "b", open_enum: @0 | @1 | ...}
-  tagged_record_open =
-      {@tag: 100, a: int}
-    | {@tag: 200, b: string}
-    | {@tag: 300, c: float}
-    | ...
-  unknown = _
-  nested_list = [[[int]]]
-  nested_nullable_list = [??false | true]
-
   $ acutis \
   >   --mode js \
   >   template.acutis \
