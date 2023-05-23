@@ -1,4 +1,4 @@
-  $ echo "$(< stringify_interface)"
+  $ echo "$(cat stringify_interface)"
   record = {int_enum: @8 | @40, string_enum: @"yes" | @"no"}
   tagged_record_bool =
       {@tag: false, a: string}
@@ -25,7 +25,7 @@
   >   template.acutis \
   >   component.acutis \
   >   unused.acutis \
-  >   --fun ./jscomponents.mjs stringify "$(< stringify_interface)" \
+  >   --fun ./jscomponents.mjs stringify "$(cat stringify_interface)" \
   >   --fun ./jscomponents.mjs another_function "" \
   >   --fun ./jscomponents.mjs an_unused_function "" \
   >   > compiled.mjs
