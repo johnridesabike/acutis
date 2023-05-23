@@ -71,7 +71,10 @@ module.exports = (eleventyConfig) => {
   eleventyConfig.addPlugin(syntaxHighlight, {
     init: ({ Prism }) => acutisSyntax(Prism),
   });
-  eleventyConfig.addPlugin(acutisEleventy, { components: acutisComponents });
+  //eleventyConfig.addPlugin(acutisEleventy, { components: acutisComponents });
+  eleventyConfig.addPlugin(acutisEleventy.toJs, {
+    components: "./_includes/eleventyComponents",
+  });
   eleventyConfig.addPassthroughCopy("playground.js");
   eleventyConfig.addPassthroughCopy({
     [path.join(acutisDirPath, "_doc", "_html")]: "api",
@@ -97,5 +100,8 @@ module.exports = (eleventyConfig) => {
   return {
     markdownTemplateEngine: false,
     pathPrefix,
+    dir: {
+      layouts: "_layouts",
+    },
   };
 };

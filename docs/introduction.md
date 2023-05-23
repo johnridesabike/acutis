@@ -2,7 +2,7 @@
 title: Getting started with the Acutis language
 description: How to install and start using the Acutis template language.
 showTitle: true
-layout: main.acutis
+layout: main.acutis.js
 next:
   text: Read the language manual 👉
   url: /manual/

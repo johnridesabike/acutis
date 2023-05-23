@@ -236,8 +236,6 @@ let interface_from_channel ~fname src =
   parse_interface ~fname (Lexing.from_channel src)
   |> Typechecker.make_interface_standalone
 
-type jsfun = { module_path : string; function_path : string }
-
 let rec echo_to_sexp = function
   | Echo_var s -> Sexp.make "var" [ Sexp.string s ]
   | Echo_string s -> Sexp.string s

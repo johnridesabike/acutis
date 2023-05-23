@@ -2,7 +2,7 @@
 title: Acutis
 description: Acutis is a template language for the web & beyond.
 showTitle: false
-layout: main.acutis
+layout: main.acutis.js
 next:
   text: Read how to get started 👉
   url: /introduction/

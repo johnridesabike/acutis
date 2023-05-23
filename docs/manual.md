@@ -2,7 +2,7 @@
 title: Acutis language manual
 description: The manual for how to use the Acutis template language.
 showTitle: true
-layout: main.acutis
+layout: main.acutis.js
 next: null
 ---
 

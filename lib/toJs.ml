@@ -142,7 +142,9 @@ end = struct
         add_unique_namespace_aux (succ i) namespace (Filepath module_path) map
 
   let add_unique_namespace (Filepath module_path) map =
-    let namespace = Filename.basename module_path |> Filename.chop_extension in
+    let namespace =
+      Filename.basename module_path |> Filename.remove_extension
+    in
     add_unique_namespace_aux 0 namespace (Filepath module_path) map
 
   let pp = Format.pp_print_string
@@ -1048,10 +1050,12 @@ type namespaced_jsfun = {
   function_path : string;
 }
 
+type jsfun = { module_path : string; function_path : string }
+
 type components = {
   import_map : filepath Id.Map.t;  (** Maps JS namespaces to module paths. *)
   components_imports : namespaced_jsfun list;
-  components : (string * C.jsfun C.template C.nodes) list;
+  components : (string * jsfun C.template C.nodes) list;
 }
 
 let make_js_imports C.{ components; _ } =
@@ -1059,7 +1063,7 @@ let make_js_imports C.{ components; _ } =
     (fun name v acc ->
       match v with
       | C.Src nodes -> { acc with components = (name, nodes) :: acc.components }
-      | C.Fun (typescheme, C.{ module_path; function_path }) ->
+      | C.Fun (typescheme, { module_path; function_path }) ->
           let namespace, import_map =
             Id.add_unique_namespace (Filepath module_path) acc.import_map
           in

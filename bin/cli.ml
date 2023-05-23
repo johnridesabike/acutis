@@ -98,7 +98,7 @@ let make_components_js () =
        let typescheme = Compile.interface_from_string ~fname:"-" interface in
        let name = fname_to_compname function_path in
        Compile.Components.from_fun ~name typescheme
-         Compile.{ module_path; function_path }
+         ToJs.{ module_path; function_path }
   in
   Seq.append l funl |> Compile.Components.of_seq
 
