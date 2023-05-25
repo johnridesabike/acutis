@@ -8,7 +8,11 @@
 (*                                                                        *)
 (**************************************************************************)
 
-type jsfun = { module_path : string; function_path : string }
+type jsfun
 
-val cjs : Format.formatter -> jsfun Compile.t -> unit
-val esm : Format.formatter -> jsfun Compile.t -> unit
+val jsfun : module_path:string -> function_path:string -> jsfun
+
+type t = jsfun Compile.t
+
+val cjs : Format.formatter -> t -> unit
+val esm : Format.formatter -> t -> unit

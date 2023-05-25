@@ -10,8 +10,8 @@ const path = require("path");
 const fs = require("fs/promises");
 const { Compile, Component, Render, Utils } = require(".");
 
-const default_ignores = new Set([".git"]);
-const global_ignores = new Set(["node_modules"]);
+const defaultIgnores = new Set([".git"]);
+const globalIgnores = new Set(["node_modules"]);
 
 function forEachFiles(ignores, filePath, f) {
   if (ignores.has(filePath)) {
@@ -23,15 +23,15 @@ function forEachFiles(ignores, filePath, f) {
           .readdir(filePath)
           .then((files) =>
             Promise.all(
-              files
-                .filter((file) => !global_ignores.has(file))
-                .map((file) =>
-                  forEachFiles(ignores, path.join(filePath, file), f)
-                )
+              files.map((file) =>
+                globalIgnores.has(file)
+                  ? Promise.resolve()
+                  : forEachFiles(ignores, path.join(filePath, file), f)
+              )
             )
           );
       } else if (filePath.toLowerCase().endsWith(".acutis")) {
-        return fs.readFile(filePath).then((src) => f(filePath, src));
+        return fs.readFile(filePath).then((src) => f(stats, filePath, src));
       } else {
         return Promise.resolve();
       }
@@ -61,6 +61,10 @@ function getFuncs(obj) {
   return result;
 }
 
+/**
+ * 1. The interpreted implementation.
+ */
+
 module.exports = function (eleventyConfig, config) {
   eleventyConfig.versionCheck(">= 1.0");
   let components = Compile.components([]);
@@ -80,9 +84,9 @@ module.exports = function (eleventyConfig, config) {
               Component.funAsync(key, f.interface, f)
             )
           : [];
-      const ignores = default_ignores;
+      const ignores = defaultIgnores;
       const dir = this.config.dir;
-      function f(filePath, src) {
+      function f(_stats, filePath, src) {
         result.push(Component.uint8Array(filePath, src));
       }
       return Promise.all([
@@ -135,48 +139,117 @@ module.exports = function (eleventyConfig, config) {
   });
 };
 
+/**
+ * 2. The compile-to-JS implementation.
+ */
+
+// When building to JS files, we have to bypass Eleventy's own build system and
+// so we need to use our own. This is a very rudimentary script but it should
+// get the job done.
+//
+// Instead of creating a regular custom language extension, we output JS files
+// that use Eleventy's own JS template engine. If we aren't careful, this can
+// cause an infinite recompiliation loop in watch mode, which is why it's
+// important to track which files have changed.
+
+// We must store stats from each previous build so we know which templates we
+// need to rebuild.
+
+function RebuildOracle() {
+  this.shouldBuild = true;
+  this.prevConfig = null;
+  this.prevComponents = new Map();
+  this.prevTemplates = new Map();
+  this.currConfig = null;
+  this.currComponents = new Map();
+  this.currTemplates = new Map();
+}
+
+RebuildOracle.prototype.reset = function () {
+  this.shouldBuild = false;
+  this.prevConfig = this.currConfig;
+  this.prevComponents = this.currComponents;
+  this.prevTemplates = this.currTemplates;
+  this.currConfig = null;
+  this.currComponents = new Map();
+  this.currTemplates = new Map();
+};
+
+RebuildOracle.prototype.addConfig = function (config) {
+  this.currConfig = config;
+  if (!this.shouldBuild && config && this.prevConfig) {
+    this.shouldBuild =
+      config.componentsPath !== this.prevConfig.componentsPath ||
+      config.components !== this.prevConfig.components;
+  }
+};
+
+RebuildOracle.prototype.addComponent = function (filePath, mtime) {
+  this.currComponents.set(filePath, mtime);
+  if (!this.shouldBuild) {
+    const prevMtime = this.prevComponents.get(filePath);
+    this.shouldBuild = prevMtime ? mtime > prevMtime : true;
+  }
+};
+
+RebuildOracle.prototype.addTemplate = function (filePath, mtime) {
+  this.currTemplates.set(filePath, mtime);
+  if (this.shouldBuild) {
+    return true;
+  } else {
+    const prevMtime = this.prevTemplates.get(filePath);
+    return prevMtime ? mtime > prevMtime : true;
+  }
+};
+
+const oracle = new RebuildOracle();
+
+// Before each Eleventy build, we need to rebuild any .acutis files which
+// changed.
+
 module.exports.toJs = function (eleventyConfig, config) {
-  eleventyConfig.versionCheck(">= 1.0");
+  eleventyConfig.versionCheck(">= 2.0");
   eleventyConfig.on("eleventy.before", ({ dir }) => {
-    const components_funs =
-      config && "components" in config
-        ? getFuncs(require(path.join(process.cwd(), config.components)))
-        : [];
-    const components_module =
-      config && "components" in config ? config.components : "";
-    const components = [];
-    const input_ignores = new Set(default_ignores);
-    input_ignores.add(dir.includes);
-    input_ignores.add(dir.data);
-    input_ignores.add(dir.output);
-    const includes = path.join(dir.input, dir.includes);
-    function f(filePath, src) {
-      components.push(Component.uint8Array(filePath, src));
+    oracle.addConfig(config);
+    const compPath =
+      config && "componentsPath" in config ? config.componentsPath : "";
+    const compFuns =
+      config && "components" in config ? getFuncs(config.components) : {};
+    const compSrc = [];
+    function f(stats, filePath, src) {
+      oracle.addComponent(filePath, stats.mtimeMs);
+      compSrc.push(Component.uint8Array(filePath, src));
     }
-    return forEachFiles(default_ignores, includes, f)
-      .then(() => {
-        return forEachFiles(input_ignores, dir.input, (filePath, src) => {
-          const funsPath =
-            "." +
-            path.sep +
-            path.relative(path.dirname(filePath), components_module);
-          const components_compiled = Compile.components(
-            components_funs
-              .map(({ key, f }) =>
-                Component.funToJs(funsPath, key, f.interface)
-              )
-              .concat(components)
-          );
-          const template = Compile.uint8Array(
-            filePath,
-            components_compiled,
-            src
-          );
-          const js = Compile.toStringCjs(template);
-          return fs.writeFile(filePath + ".js", js);
-        });
-      })
-      .catch((e) => console.log(acutisErrorToJsError(e)));
+    const dirIncludes = path.join(dir.input, dir.includes);
+    const inputIgnores = new Set(defaultIgnores);
+    inputIgnores.add(dirIncludes);
+    inputIgnores.add(path.join(dir.input, dir.data));
+    inputIgnores.add(dir.output); // Not relative to input
+    return forEachFiles(defaultIgnores, dirIncludes, f)
+      .then(() =>
+        forEachFiles(inputIgnores, dir.input, (stats, filePath, src) => {
+          const shouldBuild = oracle.addTemplate(filePath, stats.mtimeMs);
+          if (shouldBuild) {
+            const relativeCompPath =
+              "." + path.sep + path.relative(path.dirname(filePath), compPath);
+            const components = Compile.components(
+              compFuns
+                .map(({ key, f }) =>
+                  Component.funToJs(relativeCompPath, key, f.interface)
+                )
+                .concat(compSrc)
+            );
+            const template = Compile.uint8Array(filePath, components, src);
+            const js = Compile.toCJSString(template);
+            return fs.writeFile(filePath + ".js", js);
+          } else {
+            return Promise.resolve();
+          }
+        })
+      )
+      .then(() => oracle.reset())
+      .catch(acutisErrorToJsError);
   });
   eleventyConfig.addExtension("acutis.js", { key: "11ty.js" });
+  eleventyConfig.addWatchTarget("**/*.acutis");
 };

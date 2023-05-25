@@ -73,7 +73,8 @@ module.exports = (eleventyConfig) => {
   });
   //eleventyConfig.addPlugin(acutisEleventy, { components: acutisComponents });
   eleventyConfig.addPlugin(acutisEleventy.toJs, {
-    components: "./_includes/eleventyComponents",
+    components: require("./_includes/eleventyComponents"),
+    componentsPath: "./_includes/eleventyComponents",
   });
   eleventyConfig.addPassthroughCopy("playground.js");
   eleventyConfig.addPassthroughCopy({

@@ -6,42 +6,23 @@
   file, You can obtain one at http://mozilla.org/MPL/2.0/.
 */
 
-const { Component, Typescheme } = require("../../_build/default");
+const { Typescheme } = require("acutis-lang");
 const site = require("../_data/site");
 
-module.exports.Log = function Log(props) {
-  console.log(props);
-  return Promise.resolve("");
-};
-module.exports.Log.interface = Typescheme.make([["val", Typescheme.unknown()]]);
-
-module.exports.Debugger = function Debugger(_props) {
-  debugger;
-  return Promise.resolve("");
-};
-module.exports.Debugger.interface = Typescheme.make([
-  ["val", Typescheme.unknown()],
-]);
-
 module.exports.Footer = function Footer(props) {
-  if (!props.year) {
-    props.year = new Date().getFullYear();
-  }
-  var link;
-  if (props.link == null) {
-    link = props.name;
-  } else {
-    link = `<a href="${props.link}">${props.name}</a>`;
-  }
+  const year = props.year ? props.year : new Date().getFullYear();
+  const name = props.link
+    ? `<a href="${props.link}">${props.name}</a>`
+    : props.name;
   return Promise.resolve(`
-        <footer class="footer">
-          <p>
-            Published in ${props.year} by ${link}.
-          </p>
-          <p class="footer__license">
-            <a href="${props.siteUrl}/license/">View the license</a>.
-          </p>
-        </footer>`);
+    <footer class="footer">
+      <p>
+        Published in ${year} by ${name}.
+      </p>
+      <p class="footer__license">
+        <a href="${props.siteUrl}/license/">View the license</a>.
+      </p>
+    </footer>`);
 };
 module.exports.Footer.interface = Typescheme.make([
   ["year", Typescheme.nullable(Typescheme.string())],

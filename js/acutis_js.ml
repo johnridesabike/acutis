@@ -54,7 +54,7 @@ let () =
          let function_path = Js.to_string name in
          let module_path = Js.to_string module_path in
          Compile.Components.from_fun ~name:function_path ty
-           ToJs.{ module_path; function_path }
+           (ToJs.jsfun ~module_path ~function_path)
     end)
 
 let () =
@@ -71,11 +71,11 @@ let () =
          Compile.from_string ~fname:(Js.to_string fname) components
            (Typed_array.String.of_uint8Array src)
 
-       method toStringJs x =
+       method toJSString x =
          ToJs.esm Format.str_formatter x;
          Format.flush_str_formatter () |> Js.string
 
-       method toStringCjs x =
+       method toCJSString x =
          ToJs.cjs Format.str_formatter x;
          Format.flush_str_formatter () |> Js.string
     end)

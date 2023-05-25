@@ -1043,14 +1043,18 @@ and encode_union ~set input env key variant =
         [ set_data_key (Var input_key) ] );
   ]
 
+type jsfun = { module_path : string; function_path : string }
+
+let jsfun ~module_path ~function_path = { module_path; function_path }
+
+type t = jsfun Compile.t
+
 type namespaced_jsfun = {
   name : string;
   namespace : Id.t;
   typescheme : Ty.t Map.String.t;
   function_path : string;
 }
-
-type jsfun = { module_path : string; function_path : string }
 
 type components = {
   import_map : filepath Id.Map.t;  (** Maps JS namespaces to module paths. *)
