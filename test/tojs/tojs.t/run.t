@@ -13,25 +13,26 @@
   
   import * as External_jscomponents from "./jscomponents.mjs";
   
-  let error_decode_bool = "This field must be a boolean.";
+  async function pattern_failure_error() {
+    throw new Error("This pattern-matching failed to find a path.\n\
+  This probably means there's a problem with the compiler.");
+  }
   
-  let error_decode_str = "This field must be a string.";
-  
-  let error_decode_str_enum = "This field must be a string enum.";
-  
-  let error_decode_int = "This field must be an int.";
-  
-  let error_decode_int_enum = "This field must be an int enum.";
-  
-  let error_decode_float = "This field must be a float.";
-  
-  let error_decode_array = "This field must be an array.";
-  
-  let error_decode_missing_field = "This object is missing a field.";
-  
-  let error_decode_bad_union_key = "This object is missing a field.";
-  
-  let error_pattern_failure = "This pattern-matching failed to find a path. This probably means there's a problem with the compiler.";
+  async function decode_error(arg0, arg1, debug_stack) {
+    throw new Error([
+      "Decode error.\n\
+  Expected type:\n\
+    ",
+      arg0,
+      "\n\
+  Recieved value:\n\
+    ",
+      arg1,
+      "\n\
+  In field: ",
+      debug_stack.join(" -> "),
+    ].join(""));
+  }
   
   let escapes = {
     "&": "&amp;",
@@ -250,7 +251,7 @@
               result.push(acutis_escape(data1.get("i").toString()));
               break;
             default:
-              throw new Error(error_pattern_failure);
+              return pattern_failure_error();
           }
           index++;
           arg0 = arg0[1];
@@ -262,27 +263,33 @@
   
   export default async function main(input1) {
     let data = new Map();
+    let debug_stack = new Array();
     if ("big_float" in input1) {
+      debug_stack.push("big_float");
       let input2 = input1.big_float;
       if (typeof input2 === "number") {
         data.set("big_float", input2);
       } else {
-        throw new Error(error_decode_float);
+        return decode_error("float", input2, debug_stack);
       }
+      debug_stack.pop();
     } else {
-      throw new Error(error_decode_missing_field);
+      return decode_error("float", input1, debug_stack);
     }
     if ("big_int" in input1) {
+      debug_stack.push("big_int");
       let input3 = input1.big_int;
       if (typeof input3 === "number") {
         data.set("big_int", input3 | 0);
       } else {
-        throw new Error(error_decode_int);
+        return decode_error("int", input3, debug_stack);
       }
+      debug_stack.pop();
     } else {
-      throw new Error(error_decode_missing_field);
+      return decode_error("int", input1, debug_stack);
     }
     if ("bool1" in input1) {
+      debug_stack.push("bool1");
       let input4 = input1.bool1;
       switch (input4) {
         case false:
@@ -292,12 +299,14 @@
           data.set("bool1", 1);
           break;
         default:
-          throw new Error(error_decode_bool);
+          return decode_error("false | true", input4, debug_stack);
       }
+      debug_stack.pop();
     } else {
-      throw new Error(error_decode_missing_field);
+      return decode_error("false | true", input1, debug_stack);
     }
     if ("bool2" in input1) {
+      debug_stack.push("bool2");
       let input5 = input1.bool2;
       switch (input5) {
         case false:
@@ -307,99 +316,121 @@
           data.set("bool2", 1);
           break;
         default:
-          throw new Error(error_decode_bool);
+          return decode_error("false | true", input5, debug_stack);
       }
+      debug_stack.pop();
     } else {
-      throw new Error(error_decode_missing_field);
+      return decode_error("false | true", input1, debug_stack);
     }
     if ("dangerous" in input1) {
+      debug_stack.push("dangerous");
       let input6 = input1.dangerous;
       if (typeof input6 === "string") {
         data.set("dangerous", input6);
       } else {
-        throw new Error(error_decode_str);
+        return decode_error("string", input6, debug_stack);
       }
+      debug_stack.pop();
     } else {
-      throw new Error(error_decode_missing_field);
+      return decode_error("string", input1, debug_stack);
     }
     if ("int_list" in input1) {
+      debug_stack.push("int_list");
       let input7 = input1.int_list;
       if (input7 instanceof Array) {
+        debug_stack.push(-1);
         let dst_base1 = new Array(2);
         let dst1 = dst_base1;
         for (let input_hd1 of input7) {
+          debug_stack[debug_stack.length - 1]++;
           let dst_new1 = new Array(2);
           if (typeof input_hd1 === "number") {
             dst_new1[0] = input_hd1 | 0;
           } else {
-            throw new Error(error_decode_int);
+            return decode_error("int", input_hd1, debug_stack);
           }
           dst1[1] = dst_new1;
           dst1 = dst_new1;
         }
         dst1[1] = null;
         data.set("int_list", dst_base1[1]);
+        debug_stack.pop();
       } else {
-        throw new Error(error_decode_array);
+        return decode_error("int", input7, debug_stack);
       }
+      debug_stack.pop();
     } else {
-      throw new Error(error_decode_missing_field);
+      return decode_error("[int]", input1, debug_stack);
     }
     if ("nested_list" in input1) {
+      debug_stack.push("nested_list");
       let input8 = input1.nested_list;
       if (input8 instanceof Array) {
+        debug_stack.push(-1);
         let dst_base2 = new Array(2);
         let dst2 = dst_base2;
         for (let input_hd2 of input8) {
+          debug_stack[debug_stack.length - 1]++;
           let dst_new2 = new Array(2);
           if (input_hd2 instanceof Array) {
+            debug_stack.push(-1);
             let dst_base3 = new Array(2);
             let dst3 = dst_base3;
             for (let input_hd3 of input_hd2) {
+              debug_stack[debug_stack.length - 1]++;
               let dst_new3 = new Array(2);
               if (input_hd3 instanceof Array) {
+                debug_stack.push(-1);
                 let dst_base4 = new Array(2);
                 let dst4 = dst_base4;
                 for (let input_hd4 of input_hd3) {
+                  debug_stack[debug_stack.length - 1]++;
                   let dst_new4 = new Array(2);
                   if (typeof input_hd4 === "number") {
                     dst_new4[0] = input_hd4 | 0;
                   } else {
-                    throw new Error(error_decode_int);
+                    return decode_error("int", input_hd4, debug_stack);
                   }
                   dst4[1] = dst_new4;
                   dst4 = dst_new4;
                 }
                 dst4[1] = null;
                 dst_new3[0] = dst_base4[1];
+                debug_stack.pop();
               } else {
-                throw new Error(error_decode_array);
+                return decode_error("int", input_hd3, debug_stack);
               }
               dst3[1] = dst_new3;
               dst3 = dst_new3;
             }
             dst3[1] = null;
             dst_new2[0] = dst_base3[1];
+            debug_stack.pop();
           } else {
-            throw new Error(error_decode_array);
+            return decode_error("[int]", input_hd2, debug_stack);
           }
           dst2[1] = dst_new2;
           dst2 = dst_new2;
         }
         dst2[1] = null;
         data.set("nested_list", dst_base2[1]);
+        debug_stack.pop();
       } else {
-        throw new Error(error_decode_array);
+        return decode_error("[[int]]", input8, debug_stack);
       }
+      debug_stack.pop();
     } else {
-      throw new Error(error_decode_missing_field);
+      return decode_error("[[[int]]]", input1, debug_stack);
     }
     if ("nested_nullable_list" in input1) {
+      debug_stack.push("nested_nullable_list");
       let input9 = input1.nested_nullable_list;
       if (input9 instanceof Array) {
+        debug_stack.push(-1);
         let dst_base5 = new Array(2);
         let dst5 = dst_base5;
         for (let input_hd5 of input9) {
+          debug_stack[debug_stack.length - 1]++;
           let dst_new5 = new Array(2);
           if (input_hd5 === null || input_hd5 === undefined) {
             dst_new5[0] = null;
@@ -419,7 +450,7 @@
                   nullable2[0] = 1;
                   break;
                 default:
-                  throw new Error(error_decode_bool);
+                  return decode_error("false | true", input_hd5, debug_stack);
               }
             }
           }
@@ -428,17 +459,21 @@
         }
         dst5[1] = null;
         data.set("nested_nullable_list", dst_base5[1]);
+        debug_stack.pop();
       } else {
-        throw new Error(error_decode_array);
+        return decode_error("??false | true", input9, debug_stack);
       }
+      debug_stack.pop();
     } else {
-      throw new Error(error_decode_missing_field);
+      return decode_error("[??false | true]", input1, debug_stack);
     }
     if ("null_string_dict" in input1) {
+      debug_stack.push("null_string_dict");
       let input10 = input1.null_string_dict;
       let dict1 = new Map();
       data.set("null_string_dict", dict1);
       for (let key1 in input10) {
+        debug_stack.push(key1);
         let input11 = input10[key1];
         if (input11 === null || input11 === undefined) {
           dict1.set(key1, null);
@@ -448,18 +483,22 @@
           if (typeof input11 === "string") {
             nullable3[0] = input11;
           } else {
-            throw new Error(error_decode_str);
+            return decode_error("string", input11, debug_stack);
           }
         }
+        debug_stack.pop();
       }
+      debug_stack.pop();
     } else {
-      throw new Error(error_decode_missing_field);
+      return decode_error("<?string>", input1, debug_stack);
     }
     if ("record" in input1) {
+      debug_stack.push("record");
       let input12 = input1.record;
       let record1 = new Map();
       data.set("record", record1);
       if ("int_enum" in input12) {
+        debug_stack.push("int_enum");
         let input13 = input12.int_enum;
         switch (input13) {
           case 8:
@@ -469,12 +508,14 @@
             record1.set("int_enum", 40);
             break;
           default:
-            throw new Error(error_decode_int_enum);
+            return decode_error("@8 | @40", input13, debug_stack);
         }
+        debug_stack.pop();
       } else {
-        throw new Error(error_decode_missing_field);
+        return decode_error("@8 | @40", input12, debug_stack);
       }
       if ("string_enum" in input12) {
+        debug_stack.push("string_enum");
         let input14 = input12.string_enum;
         switch (input14) {
           case "no":
@@ -484,15 +525,22 @@
             record1.set("string_enum", "yes");
             break;
           default:
-            throw new Error(error_decode_str_enum);
+            return decode_error("@\"no\" | @\"yes\"", input14, debug_stack);
         }
+        debug_stack.pop();
       } else {
-        throw new Error(error_decode_missing_field);
+        return decode_error("@\"no\" | @\"yes\"", input12, debug_stack);
       }
+      debug_stack.pop();
     } else {
-      throw new Error(error_decode_missing_field);
+      return decode_error(
+        "{int_enum: @8 | @40, string_enum: @\"no\" | @\"yes\"}",
+        input1,
+        debug_stack
+      );
     }
     if ("tagged_record_bool" in input1) {
+      debug_stack.push("tagged_record_bool");
       let input15 = input1.tagged_record_bool;
       let union1 = new Map();
       data.set("tagged_record_bool", union1);
@@ -501,36 +549,50 @@
         case false:
           union1.set("tag", 0);
           if ("a" in input15) {
+            debug_stack.push("a");
             let input24 = input15.a;
             if (typeof input24 === "string") {
               union1.set("a", input24);
             } else {
-              throw new Error(error_decode_str);
+              return decode_error("string", input24, debug_stack);
             }
+            debug_stack.pop();
           } else {
-            throw new Error(error_decode_missing_field);
+            return decode_error("string", input15, debug_stack);
           }
           break;
         case true:
           union1.set("tag", 1);
           if ("b" in input15) {
+            debug_stack.push("b");
             let input25 = input15.b;
             if (typeof input25 === "number") {
               union1.set("b", input25 | 0);
             } else {
-              throw new Error(error_decode_int);
+              return decode_error("int", input25, debug_stack);
             }
+            debug_stack.pop();
           } else {
-            throw new Error(error_decode_missing_field);
+            return decode_error("int", input15, debug_stack);
           }
           break;
         default:
-          throw new Error(error_decode_bad_union_key);
+          return decode_error(
+            "{@tag: false, a: string} | {@tag: true, b: int}",
+            input15,
+            debug_stack
+          );
       }
+      debug_stack.pop();
     } else {
-      throw new Error(error_decode_missing_field);
+      return decode_error(
+        "{@tag: false, a: string} | {@tag: true, b: int}",
+        input1,
+        debug_stack
+      );
     }
     if ("tagged_record_int" in input1) {
+      debug_stack.push("tagged_record_int");
       let input17 = input1.tagged_record_int;
       let union2 = new Map();
       data.set("tagged_record_int", union2);
@@ -542,22 +604,28 @@
         case 1:
           union2.set("tag", 1);
           if ("tuple" in input17) {
+            debug_stack.push("tuple");
             let input26 = input17.tuple;
             if (input26 instanceof Array && input26.length === 3) {
               let tuple1 = new Array(3);
               union2.set("tuple", tuple1);
+              debug_stack.push(0);
               let input27 = input26[0];
               if (typeof input27 === "number") {
                 tuple1[0] = input27;
               } else {
-                throw new Error(error_decode_float);
+                return decode_error("float", input27, debug_stack);
               }
+              debug_stack.pop();
+              debug_stack.push(1);
               let input28 = input26[1];
               if (typeof input28 === "string") {
                 tuple1[1] = input28;
               } else {
-                throw new Error(error_decode_str);
+                return decode_error("string", input28, debug_stack);
               }
+              debug_stack.pop();
+              debug_stack.push(2);
               let input29 = input26[2];
               switch (input29) {
                 case false:
@@ -567,22 +635,42 @@
                   tuple1[2] = 1;
                   break;
                 default:
-                  throw new Error(error_decode_bool);
+                  return decode_error("false | true", input29, debug_stack);
               }
+              debug_stack.pop();
             } else {
-              throw new Error(error_decode_array);
+              return decode_error(
+                "(float, string, false | true)",
+                input26,
+                debug_stack
+              );
             }
+            debug_stack.pop();
           } else {
-            throw new Error(error_decode_missing_field);
+            return decode_error(
+              "(float, string, false | true)",
+              input17,
+              debug_stack
+            );
           }
           break;
         default:
-          throw new Error(error_decode_bad_union_key);
+          return decode_error(
+            "{@tag: 0} | {@tag: 1, tuple: (float, string, false | true)}",
+            input17,
+            debug_stack
+          );
       }
+      debug_stack.pop();
     } else {
-      throw new Error(error_decode_missing_field);
+      return decode_error(
+        "{@tag: 0} | {@tag: 1, tuple: (float, string, false | true)}",
+        input1,
+        debug_stack
+      );
     }
     if ("tagged_record_open" in input1) {
+      debug_stack.push("tagged_record_open");
       let input19 = input1.tagged_record_open;
       let union3 = new Map();
       data.set("tagged_record_open", union3);
@@ -591,53 +679,65 @@
         case 100:
           union3.set("tag", 100);
           if ("a" in input19) {
+            debug_stack.push("a");
             let input30 = input19.a;
             if (typeof input30 === "number") {
               union3.set("a", input30 | 0);
             } else {
-              throw new Error(error_decode_int);
+              return decode_error("int", input30, debug_stack);
             }
+            debug_stack.pop();
           } else {
-            throw new Error(error_decode_missing_field);
+            return decode_error("int", input19, debug_stack);
           }
           break;
         case 200:
           union3.set("tag", 200);
           if ("b" in input19) {
+            debug_stack.push("b");
             let input31 = input19.b;
             if (typeof input31 === "string") {
               union3.set("b", input31);
             } else {
-              throw new Error(error_decode_str);
+              return decode_error("string", input31, debug_stack);
             }
+            debug_stack.pop();
           } else {
-            throw new Error(error_decode_missing_field);
+            return decode_error("string", input19, debug_stack);
           }
           break;
         case 300:
           union3.set("tag", 300);
           if ("c" in input19) {
+            debug_stack.push("c");
             let input32 = input19.c;
             if (typeof input32 === "number") {
               union3.set("c", input32);
             } else {
-              throw new Error(error_decode_float);
+              return decode_error("float", input32, debug_stack);
             }
+            debug_stack.pop();
           } else {
-            throw new Error(error_decode_missing_field);
+            return decode_error("float", input19, debug_stack);
           }
           break;
         default:
           if (typeof input20 === "number") {
             union3.set("tag", input20 | 0);
           } else {
-            throw new Error(error_decode_int);
+            return decode_error("int", input20, debug_stack);
           }
       }
+      debug_stack.pop();
     } else {
-      throw new Error(error_decode_missing_field);
+      return decode_error(
+        "{@tag: 100, a: int} | {@tag: 200, b: string} | {@tag: 300, c: float} | ...",
+        input1,
+        debug_stack
+      );
     }
     if ("tagged_record_string" in input1) {
+      debug_stack.push("tagged_record_string");
       let input21 = input1.tagged_record_string;
       let union4 = new Map();
       data.set("tagged_record_string", union4);
@@ -646,68 +746,100 @@
         case "a":
           union4.set("tag", "a");
           if ("record_list" in input21) {
+            debug_stack.push("record_list");
             let input33 = input21.record_list;
             if (input33 instanceof Array) {
+              debug_stack.push(-1);
               let dst_base6 = new Array(2);
               let dst6 = dst_base6;
               for (let input_hd6 of input33) {
+                debug_stack[debug_stack.length - 1]++;
                 let dst_new6 = new Array(2);
                 let record2 = new Map();
                 dst_new6[0] = record2;
                 if ("job" in input_hd6) {
+                  debug_stack.push("job");
                   let input34 = input_hd6.job;
                   if (typeof input34 === "string") {
                     record2.set("job", input34);
                   } else {
-                    throw new Error(error_decode_str);
+                    return decode_error("string", input34, debug_stack);
                   }
+                  debug_stack.pop();
                 } else {
-                  throw new Error(error_decode_missing_field);
+                  return decode_error("string", input_hd6, debug_stack);
                 }
                 if ("name" in input_hd6) {
+                  debug_stack.push("name");
                   let input35 = input_hd6.name;
                   if (typeof input35 === "string") {
                     record2.set("name", input35);
                   } else {
-                    throw new Error(error_decode_str);
+                    return decode_error("string", input35, debug_stack);
                   }
+                  debug_stack.pop();
                 } else {
-                  throw new Error(error_decode_missing_field);
+                  return decode_error("string", input_hd6, debug_stack);
                 }
                 dst6[1] = dst_new6;
                 dst6 = dst_new6;
               }
               dst6[1] = null;
               union4.set("record_list", dst_base6[1]);
+              debug_stack.pop();
             } else {
-              throw new Error(error_decode_array);
+              return decode_error(
+                "{job: string, name: string}",
+                input33,
+                debug_stack
+              );
             }
+            debug_stack.pop();
           } else {
-            throw new Error(error_decode_missing_field);
+            return decode_error(
+              "[{job: string, name: string}]",
+              input21,
+              debug_stack
+            );
           }
           break;
         case "b":
           union4.set("tag", "b");
           if ("open_enum" in input21) {
+            debug_stack.push("open_enum");
             let input36 = input21.open_enum;
             if (typeof input36 === "number") {
               union4.set("open_enum", input36 | 0);
             } else {
-              throw new Error(error_decode_int);
+              return decode_error("@0 | @1 | ...", input36, debug_stack);
             }
+            debug_stack.pop();
           } else {
-            throw new Error(error_decode_missing_field);
+            return decode_error("@0 | @1 | ...", input21, debug_stack);
           }
           break;
         default:
-          throw new Error(error_decode_bad_union_key);
+          return decode_error(
+            "{@tag: \"a\", record_list: [{job: string, name: string}]} |\n\
+  {@tag: \"b\", open_enum: @0 | @1 | ...}",
+            input21,
+            debug_stack
+          );
       }
+      debug_stack.pop();
     } else {
-      throw new Error(error_decode_missing_field);
+      return decode_error(
+        "{@tag: \"a\", record_list: [{job: string, name: string}]} |\n\
+  {@tag: \"b\", open_enum: @0 | @1 | ...}",
+        input1,
+        debug_stack
+      );
     }
     if ("unknown" in input1) {
+      debug_stack.push("unknown");
       let input23 = input1.unknown;
       data.set("unknown", input23);
+      debug_stack.pop();
     } else {
       data.set("unknown", null);
     }
@@ -762,7 +894,7 @@
             return (await Promise.all(["40\n\
   "])).join("");
           default:
-            throw new Error(error_pattern_failure);
+            return pattern_failure_error();
         }
       })(),
       (async function () {
@@ -785,7 +917,7 @@
             return (await Promise.all(["no\n\
   "])).join("");
           default:
-            throw new Error(error_pattern_failure);
+            return pattern_failure_error();
         }
       })(),
       (async function () {
@@ -816,7 +948,7 @@
   ",
             ])).join("");
           default:
-            throw new Error(error_pattern_failure);
+            return pattern_failure_error();
         }
       })(),
       (async function () {
@@ -849,7 +981,7 @@
   ",
             ])).join("");
           default:
-            throw new Error(error_pattern_failure);
+            return pattern_failure_error();
         }
       })(),
       (async function () {
@@ -877,7 +1009,7 @@
             return (await Promise.all(["Another tag!\n\
   "])).join("");
           default:
-            throw new Error(error_pattern_failure);
+            return pattern_failure_error();
         }
       })(),
       "\n\
@@ -915,7 +1047,7 @@
               );
               break;
             default:
-              throw new Error(error_pattern_failure);
+              return pattern_failure_error();
           }
         }
         return (await Promise.all(result)).join("");
@@ -935,7 +1067,7 @@
   ");
               break;
             default:
-              throw new Error(error_pattern_failure);
+              return pattern_failure_error();
           }
           index++;
           arg0 = arg0[1];
@@ -963,7 +1095,7 @@
               );
               break;
             default:
-              throw new Error(error_pattern_failure);
+              return pattern_failure_error();
           }
           index++;
           arg0 = arg0[1];
@@ -1009,7 +1141,7 @@
                               );
                               break;
                             default:
-                              throw new Error(error_pattern_failure);
+                              return pattern_failure_error();
                           }
                           index++;
                           arg0 = arg0[1];
@@ -1018,7 +1150,7 @@
                       })());
                       break;
                     default:
-                      throw new Error(error_pattern_failure);
+                      return pattern_failure_error();
                   }
                   index++;
                   arg0 = arg0[1];
@@ -1027,7 +1159,7 @@
               })());
               break;
             default:
-              throw new Error(error_pattern_failure);
+              return pattern_failure_error();
           }
           index++;
           arg0 = arg0[1];
@@ -1072,7 +1204,7 @@
               );
               break;
             default:
-              throw new Error(error_pattern_failure);
+              return pattern_failure_error();
           }
           index++;
           arg0 = arg0[1];
@@ -1106,7 +1238,7 @@
   ",
             ])).join("");
           default:
-            throw new Error(error_pattern_failure);
+            return pattern_failure_error();
         }
       })(),
       "Component\n\
@@ -1225,7 +1357,7 @@
             return (await Promise.all([" 4\n\
   "])).join("");
           default:
-            throw new Error(error_pattern_failure);
+            return pattern_failure_error();
         }
       })(),
       (async function () {
@@ -1285,7 +1417,7 @@
   ",
             ])).join("");
           default:
-            throw new Error(error_pattern_failure);
+            return pattern_failure_error();
         }
       })(),
       (async function () {
@@ -1345,7 +1477,7 @@
   ",
             ])).join("");
           default:
-            throw new Error(error_pattern_failure);
+            return pattern_failure_error();
         }
       })(),
       "String encoding\n\

@@ -23,7 +23,8 @@ module Id : sig
   type id = t
 
   val component : string -> t
-  val error : string -> t
+  val error_pattern_failure : t
+  val error_decode : t
   val arg : int -> t
   val resolved : int -> t
   val index : t
@@ -32,6 +33,7 @@ module Id : sig
   val entry : t
   val runtime_escape : t
   val runtime_main : t
+  val debug_stack : t
 
   module Safe : sig
     (** This creates names that are unique for each instance of [t]. It's
@@ -79,7 +81,8 @@ end = struct
   type id = t
 
   let component name = Printf.sprintf "template_%s" name
-  let error name = Printf.sprintf "error_%s" name
+  let error_pattern_failure = "pattern_failure_error"
+  let error_decode = "decode_error"
   let arg i = Printf.sprintf "arg%i" i
   let resolved i = Printf.sprintf "resolved%i" i
   let index = "index"
@@ -88,6 +91,7 @@ end = struct
   let entry = "entry"
   let runtime_escape = "acutis_escape"
   let runtime_main = "main"
+  let debug_stack = "debug_stack"
 
   module Safe = struct
     type t = (string, int) Hashtbl.t
@@ -179,6 +183,7 @@ type expr =
   | Instanceof of expr * obj
   | To_int of expr
   | In of string * expr
+  | Minus of expr * int
 
 and statement =
   | Let of Id.t * expr
@@ -189,8 +194,8 @@ and statement =
   | For_in of Id.t * expr * statement list
   | For_of of Id.t * expr * statement list
   | Expr of expr
-  | Incr of Id.t
-  | Error of Id.t
+  | Incr of expr
+  | Error of expr
   | Return of expr
   | Fun of Id.t * Id.t list * statement list
   | Export_default of statement
@@ -280,9 +285,10 @@ let pp_statement ty =
         fprintf ppf "(async function (%a) {@ @[<v 0>%a@]@;<1 -2>})"
           (pp_print_list ~pp_sep:pp_comma Id.pp)
           args pp_statements statements
+    | App (name, []) -> fprintf ppf "%a()" pp_expr name
     | App (name, [ arg ]) -> fprintf ppf "%a(%a)" pp_expr name pp_expr arg
     | App (name, args) ->
-        fprintf ppf "@[<hv 2>%a(@,%a@;<0 -2>)@]" pp_expr name
+        fprintf ppf "%a(@,%a@;<0 -2>)" pp_expr name
           (pp_print_list ~pp_sep:pp_comma (fun ppf expr ->
                fprintf ppf "@[<hv 2>%a@]" pp_expr expr))
           args
@@ -306,6 +312,7 @@ let pp_statement ty =
     | Instanceof (a, b) -> fprintf ppf "%a instanceof %a" pp_expr a pp_obj b
     | To_int expr -> fprintf ppf "%a | 0" pp_expr expr
     | In (key, expr) -> fprintf ppf "%a in %a" pp_js_str key pp_expr expr
+    | Minus (expr, i) -> fprintf ppf "@[<hv 2>%a - %i@]" pp_expr expr i
   and pp_statement ppf = function
     | Let (ident, expr) ->
         fprintf ppf "@[<hv 2>let %a = %a;@]" Id.pp ident pp_expr expr
@@ -349,11 +356,12 @@ let pp_statement ty =
         fprintf ppf "@[<v 2>for (let %a of %a) {@ %a@;<1 -2>}@]" Id.pp prop
           pp_expr expr pp_statements statements
     | Expr expr -> fprintf ppf "@[<hv 2>%a;@]" pp_expr expr
-    | Incr id -> fprintf ppf "%a++;" Id.pp id
-    | Error s -> fprintf ppf "throw new Error(%a);" Id.pp s
+    | Incr id -> fprintf ppf "%a++;" pp_expr id
+    | Error expr -> fprintf ppf "@[<hv 2>throw new Error(%a);@]" pp_expr expr
     | Return expr -> fprintf ppf "@[<hv 2>return %a;@]" pp_expr expr
     | Fun (name, args, statements) ->
-        fprintf ppf "async function %a(%a) {@;<0 2>@[<v 0>%a@]@;<1 -2>}" Id.pp
+        fprintf ppf
+          "async function %a(@[<hv 2>@,%a@]) {@;<0 2>@[<v 0>%a@]@;<1 -2>}" Id.pp
           name
           (pp_print_list ~pp_sep:pp_comma Id.pp)
           args pp_statements statements
@@ -374,55 +382,66 @@ let pp_statement ty ppf x =
 
 let meth_get x k = App (Field (x, String "get"), [ k ])
 let meth_set x k v = App (Field (x, String "set"), [ k; v ])
-let meth_join x = App (Field (x, String "join"), [ String "" ])
+let meth_join x s = App (Field (x, String "join"), [ String s ])
 let meth_push x v = App (Field (Var x, String "push"), v)
+let meth_pop x = App (Field (Var x, String "pop"), [])
 let promise_all x = Await (App (Field (Obj Promise, String "all"), [ x ]))
+
+let pp_runtime ty ppf =
+  pp_statement ty ppf
+  @@ Fun
+       ( Id.error_pattern_failure,
+         [],
+         [
+           Error
+             (String
+                "This pattern-matching failed to find a path.\n\
+                 This probably means there's a problem with the compiler.");
+         ] );
+  let expected = Id.arg 0 in
+  let recieved = Id.arg 1 in
+  pp_statement ty ppf
+  @@ Fun
+       ( Id.error_decode,
+         [ expected; recieved; Id.debug_stack ],
+         [
+           Error
+             (meth_join
+                (Arr
+                   (Seq.cons (String "Decode error.\nExpected type:\n  ")
+                   @@ Seq.cons (Var expected)
+                   @@ Seq.cons (String "\nRecieved value:\n  ")
+                   @@ Seq.cons (Var recieved)
+                   @@ Seq.cons (String "\nIn field: ")
+                   @@ Seq.return (meth_join (Var Id.debug_stack) " -> ")))
+                "");
+         ] );
+  let raw_functions =
+    {|let escapes = {
+  "&": "&amp;",
+  '"': "&quot;",
+  "'": "&apos;",
+  ">": "&gt;",
+  "<": "&lt;",
+  "/": "&#x2F;",
+  "`": "&#x60;",
+  "=": "&#x3D;",
+};
+
+function acutis_escape(str) {
+  let result = "";
+  for (let c of str) {
+    result += escapes[c] || c;
+  }
+  return result;
+}|}
+  in
+  pp_statement ty ppf (Raw raw_functions)
 
 let of_const = function
   | Data.Const.String s -> String s
   | Data.Const.Int i -> Int i
   | Data.Const.Float f -> Float f
-
-module Err = struct
-  let decode_bool = Id.error "decode_bool"
-  let decode_bool_msg = String "This field must be a boolean."
-  let decode_str = Id.error "decode_str"
-  let decode_str_msg = String "This field must be a string."
-  let decode_str_enum = Id.error "decode_str_enum"
-  let decode_str_enum_msg = String "This field must be a string enum."
-  let decode_int = Id.error "decode_int"
-  let decode_int_msg = String "This field must be an int."
-  let decode_int_enum = Id.error "decode_int_enum"
-  let decode_int_enum_msg = String "This field must be an int enum."
-  let decode_float = Id.error "decode_float"
-  let decode_float_msg = String "This field must be a float."
-  let decode_array = Id.error "decode_array"
-  let decode_array_msg = String "This field must be an array."
-  let decode_missing_field = Id.error "decode_missing_field"
-  let decode_missing_field_msg = String "This object is missing a field."
-  let decode_bad_union_key = Id.error "decode_bad_union_key"
-  let decode_bad_union_key_msg = String "This object is missing a field."
-  let pattern_failure = Id.error "pattern_failure"
-
-  let pattern_failure_msg =
-    String
-      "This pattern-matching failed to find a path. This probably means \
-       there's a problem with the compiler."
-
-  let defs =
-    [
-      (decode_bool, decode_bool_msg);
-      (decode_str, decode_str_msg);
-      (decode_str_enum, decode_str_enum_msg);
-      (decode_int, decode_int_msg);
-      (decode_int_enum, decode_int_enum_msg);
-      (decode_float, decode_float_msg);
-      (decode_array, decode_array_msg);
-      (decode_missing_field, decode_missing_field_msg);
-      (decode_bad_union_key, decode_bad_union_key_msg);
-      (pattern_failure, pattern_failure_msg);
-    ]
-end
 
 let fmt x = function
   | C.Fmt_string -> x
@@ -548,7 +567,7 @@ let match_leaf data_id ~vars M.{ names; exit } =
        names []
 
 let rec nodes_array data_id l = Arr (List.to_seq l |> Seq.map (node data_id))
-and nodes_string data_id l = meth_join (promise_all (nodes_array data_id l))
+and nodes_string data_id l = meth_join (promise_all (nodes_array data_id l)) ""
 
 and node data_id = function
   | C.Text s -> String s
@@ -586,7 +605,7 @@ and match_ data_id args M.{ tree; exits } =
             |> Seq.map (fun (i, l) ->
                    ( Int (M.Exit.key_to_int i),
                      [ Return (nodes_string data_id' l) ] )),
-            [ Error Err.pattern_failure ] );
+            [ Return (App (Var Id.error_pattern_failure, [])) ] );
       ];
     ]
 
@@ -620,13 +639,13 @@ and map_list data_id arg M.{ tree; exits } =
                                    (meth_push Id.result
                                       (List.map (node data_id') l));
                                ] )),
-                      [ Error Err.pattern_failure ] );
-                  Incr Id.index;
+                      [ Return (App (Var Id.error_pattern_failure, [])) ] );
+                  Incr (Var Id.index);
                   Set (Var (Id.arg 0), list_tl);
                 ];
               ] );
       ];
-      [ Return (meth_join (promise_all (Var Id.result))) ];
+      [ Return (meth_join (promise_all (Var Id.result)) "") ];
     ]
 
 and map_dict data_id arg M.{ tree; exits } =
@@ -660,11 +679,11 @@ and map_dict data_id arg M.{ tree; exits } =
                                    (meth_push Id.result
                                       (List.map (node data_id') l));
                                ] )),
-                      [ Error Err.pattern_failure ] );
+                      [ Return (App (Var Id.error_pattern_failure, [])) ] );
                 ];
               ] );
       ];
-      [ Return (meth_join (promise_all (Var Id.result))) ];
+      [ Return (meth_join (promise_all (Var Id.result)) "") ];
     ]
 
 and construct_data_aux data_id async_queue = function
@@ -717,7 +736,14 @@ and construct_data_dict data_id dict =
     (fun l i nodes -> Let (Id.resolved i, nodes) :: l)
     [ arg ] (Queue.to_seq async_queue)
 
-let decode_boolean ~set input cases =
+let error ty input =
+  Return
+    (App
+       ( Var Id.error_decode,
+         [ String (Format.asprintf "%a" Ty.pp ty); input; Var Id.debug_stack ]
+       ))
+
+let decode_boolean ~set input cases ty =
   Switch
     ( input,
       Seq.concat
@@ -727,58 +753,55 @@ let decode_boolean ~set input cases =
         @@ Seq.return
              (if Set.Int.mem 1 cases then Seq.return (Prim True, [ set (Int 1) ])
               else Seq.empty)),
-      [ Error Err.decode_bool ] )
+      [ error ty input ] )
 
-let decode_string ~set input =
-  If_else
-    (Eq (Typeof input, String "string"), [ set input ], [ Error Err.decode_str ])
+let decode_string ~set input ty =
+  If_else (Eq (Typeof input, String "string"), [ set input ], [ error ty input ])
 
-let decode_string_enum ~set input cases =
+let decode_string_enum ~set input cases ty =
   Switch
     ( input,
       Set.String.to_seq cases
       |> Seq.map (fun s -> (String s, [ set (String s) ])),
-      [ Error Err.decode_str_enum ] )
+      [ error ty input ] )
 
-let decode_int ~set input =
+let decode_int ~set input ty =
   If_else
     ( Eq (Typeof input, String "number"),
       [ set (To_int input) ],
-      [ Error Err.decode_int ] )
+      [ error ty input ] )
 
-let decode_int_enum ~set input cases =
+let decode_int_enum ~set input cases ty =
   Switch
     ( input,
       Set.Int.to_seq cases |> Seq.map (fun i -> (Int i, [ set (Int i) ])),
-      [ Error Err.decode_int_enum ] )
+      [ error ty input ] )
 
-let decode_float ~set input =
-  If_else
-    ( Eq (Typeof input, String "number"),
-      [ set input ],
-      [ Error Err.decode_float ] )
+let decode_float ~set input ty =
+  If_else (Eq (Typeof input, String "number"), [ set input ], [ error ty input ])
 
 let rec decode_typescheme ~set input env ty =
   match !ty with
   | Ty.Unknown _ -> [ set input ]
   | Enum { extra = Bool; cases = VInt cases; _ } ->
-      [ decode_boolean ~set input cases ]
+      [ decode_boolean ~set input cases ty ]
   | String | Enum { row = `Open; cases = VString _; _ } ->
-      [ decode_string ~set input ]
+      [ decode_string ~set input ty ]
   | Enum { row = `Closed; cases = VString cases; _ } ->
-      [ decode_string_enum ~set input cases ]
-  | Int | Enum { row = `Open; cases = VInt _; _ } -> [ decode_int ~set input ]
+      [ decode_string_enum ~set input cases ty ]
+  | Int | Enum { row = `Open; cases = VInt _; _ } ->
+      [ decode_int ~set input ty ]
   | Enum { row = `Closed; cases = VInt cases; _ } ->
-      [ decode_int_enum ~set input cases ]
-  | Float -> [ decode_float ~set input ]
+      [ decode_int_enum ~set input cases ty ]
+  | Float -> [ decode_float ~set input ty ]
   | Nullable ty -> [ decode_nullable ~set input env ty ]
   | List ty -> [ decode_list ~set input env ty ]
-  | Tuple tys -> [ decode_tuple ~set input env tys ]
+  | Tuple tys -> [ decode_tuple ~set input env tys ty ]
   | Record tys -> decode_record ~set input env !tys
   | Dict (ty, _) -> decode_dict ~set input env ty
-  | Union (key, variant) -> decode_union ~set input env key variant
+  | Union (key, variant) -> decode_union ~set input env key variant ty
 
-and decode_tuple ~set input env tys =
+and decode_tuple ~set input env tys ty =
   let tuple = Id.Safe.tuple env in
   let length = List.length tys in
   If_else
@@ -791,12 +814,19 @@ and decode_tuple ~set input env tys =
            (List.mapi
               (fun index ty ->
                 let input' = Id.Safe.input env in
-                Let (input', Field (input, Int index))
-                :: decode_typescheme
-                     ~set:(fun id -> Set (Field (Var tuple, Int index), id))
-                     (Var input') env ty)
+                List.concat
+                  [
+                    [
+                      Expr (meth_push Id.debug_stack [ Int index ]);
+                      Let (input', Field (input, Int index));
+                    ];
+                    decode_typescheme
+                      ~set:(fun id -> Set (Field (Var tuple, Int index), id))
+                      (Var input') env ty;
+                    [ Expr (meth_pop Id.debug_stack) ];
+                  ])
               tys),
-      [ Error Err.decode_array ] )
+      [ error ty input ] )
 
 and decode_dict ~set input env ty =
   let key = Id.Safe.key env in
@@ -808,10 +838,17 @@ and decode_dict ~set input env ty =
     For_in
       ( key,
         input,
-        Let (input', Field (input, Var key))
-        :: decode_typescheme
-             ~set:(fun id -> Expr (meth_set (Var dict) (Var key) id))
-             (Var input') env ty );
+        List.concat
+          [
+            [
+              Expr (meth_push Id.debug_stack [ Var key ]);
+              Let (input', Field (input, Var key));
+            ];
+            decode_typescheme
+              ~set:(fun id -> Expr (meth_set (Var dict) (Var key) id))
+              (Var input') env ty;
+            [ Expr (meth_pop Id.debug_stack) ];
+          ] );
   ]
 
 and decode_list ~set input env ty =
@@ -824,6 +861,7 @@ and decode_list ~set input env ty =
   If_else
     ( Instanceof (input, Array),
       [
+        Expr (meth_push Id.debug_stack [ Int (-1) ]);
         Let (dst_base, new_cell);
         Let (dst, Var dst_base);
         For_of
@@ -831,7 +869,14 @@ and decode_list ~set input env ty =
             input,
             List.concat
               [
-                [ Let (dst_new, new_cell) ];
+                [
+                  Incr
+                    (Field
+                       ( Var Id.debug_stack,
+                         Minus (Field (Var Id.debug_stack, String "length"), 1)
+                       ));
+                  Let (dst_new, new_cell);
+                ];
                 decode_typescheme
                   ~set:(fun id -> Set (hd, id))
                   (Var input_hd) env ty;
@@ -842,8 +887,9 @@ and decode_list ~set input env ty =
               ] );
         Set (Field (Var dst, Int 1), Prim Null);
         set (Field (Var dst_base, Int 1));
+        Expr (meth_pop Id.debug_stack);
       ],
-      [ Error Err.decode_array ] )
+      [ error ty input ] )
 
 and decode_nullable ~set input env ty =
   let nullable = Id.Safe.nullable env in
@@ -864,11 +910,18 @@ and decode_record_aux ~data input env tys =
          let input' = Id.Safe.input env in
          If_else
            ( In (k, input),
-             Let (input', Field (input, String k))
-             :: decode_typescheme ~set (Var input') env ty,
+             List.concat
+               [
+                 [
+                   Expr (meth_push Id.debug_stack [ String k ]);
+                   Let (input', Field (input, String k));
+                 ];
+                 decode_typescheme ~set (Var input') env ty;
+                 [ Expr (meth_pop Id.debug_stack) ];
+               ],
              match !ty with
              | Nullable _ | Unknown _ -> [ set (Prim Null) ]
-             | _ -> [ Error Err.decode_missing_field ] ))
+             | _ -> [ error ty input ] ))
   |> List.of_seq
 
 and decode_record ~set input env tys =
@@ -877,7 +930,7 @@ and decode_record ~set input env tys =
   :: set (Var record)
   :: decode_record_aux ~data:(Var record) input env tys
 
-and decode_union ~set input env key variant =
+and decode_union ~set input env key variant ty =
   let union = Id.Safe.union env in
   let set_data_key x = Expr (meth_set (Var union) (String key) x) in
   let input_key = Id.Safe.input env in
@@ -921,7 +974,7 @@ and decode_union ~set input env key variant =
             decode_typescheme
               ~set:(fun id -> Expr (meth_set (Var union) (String key) id))
               (Var input_key) env (Ty.string ())
-        | { row = `Closed; _ } -> [ Error Err.decode_bad_union_key ] );
+        | { row = `Closed; _ } -> [ error ty input ] );
   ]
 
 let rec encode_typescheme ~set input env ty =
@@ -1079,26 +1132,6 @@ let make_js_imports C.{ components; _ } =
     components
     { import_map = Id.Map.empty; components_imports = []; components = [] }
 
-let raw_functions =
-  {|let escapes = {
-  "&": "&amp;",
-  '"': "&quot;",
-  "'": "&apos;",
-  ">": "&gt;",
-  "<": "&lt;",
-  "/": "&#x2F;",
-  "`": "&#x60;",
-  "=": "&#x3D;",
-};
-
-function acutis_escape(str) {
-  let result = "";
-  for (let c of str) {
-    result += escapes[c] || c;
-  }
-  return result;
-}|}
-
 let pp ty ppf compiled =
   let { import_map; components; components_imports } =
     make_js_imports compiled
@@ -1109,8 +1142,7 @@ let pp ty ppf compiled =
     (fun namespace (Filepath filename) ->
       pp_statement ty ppf @@ Import (namespace, filename))
     import_map;
-  List.iter (fun (id, str) -> pp_statement ty ppf @@ Let (id, str)) Err.defs;
-  pp_statement ty ppf (Raw raw_functions);
+  pp_runtime ty ppf;
   List.iter
     (fun { name; typescheme; namespace; function_path } ->
       let env = Id.Safe.create () in
@@ -1150,7 +1182,10 @@ let pp ty ppf compiled =
             [ input ],
             List.concat
               [
-                [ Let (Id.Data.(to_id initial), New (Map, [])) ];
+                [
+                  Let (Id.Data.(to_id initial), New (Map, []));
+                  Let (Id.debug_stack, New (Array, []));
+                ];
                 decode_record_aux
                   ~data:(Var Id.Data.(to_id initial))
                   (Var input) env compiled.types;

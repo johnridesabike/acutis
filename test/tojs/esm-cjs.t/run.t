@@ -6,25 +6,26 @@
   
   import * as External_jsfile from "./jsfile.cjs";
   
-  let error_decode_bool = "This field must be a boolean.";
+  async function pattern_failure_error() {
+    throw new Error("This pattern-matching failed to find a path.\n\
+  This probably means there's a problem with the compiler.");
+  }
   
-  let error_decode_str = "This field must be a string.";
-  
-  let error_decode_str_enum = "This field must be a string enum.";
-  
-  let error_decode_int = "This field must be an int.";
-  
-  let error_decode_int_enum = "This field must be an int enum.";
-  
-  let error_decode_float = "This field must be a float.";
-  
-  let error_decode_array = "This field must be an array.";
-  
-  let error_decode_missing_field = "This object is missing a field.";
-  
-  let error_decode_bad_union_key = "This object is missing a field.";
-  
-  let error_pattern_failure = "This pattern-matching failed to find a path. This probably means there's a problem with the compiler.";
+  async function decode_error(arg0, arg1, debug_stack) {
+    throw new Error([
+      "Decode error.\n\
+  Expected type:\n\
+    ",
+      arg0,
+      "\n\
+  Recieved value:\n\
+    ",
+      arg1,
+      "\n\
+  In field: ",
+      debug_stack.join(" -> "),
+    ].join(""));
+  }
   
   let escapes = {
     "&": "&amp;",
@@ -54,6 +55,7 @@
   
   export default async function main(input1) {
     let data = new Map();
+    let debug_stack = new Array();
     return (await Promise.all([
       (async function () {
         let resolved0 = (await Promise.all([" text "])).join("");
@@ -74,25 +76,26 @@
   
   const External_jsfile = require("./jsfile.cjs");
   
-  let error_decode_bool = "This field must be a boolean.";
+  async function pattern_failure_error() {
+    throw new Error("This pattern-matching failed to find a path.\n\
+  This probably means there's a problem with the compiler.");
+  }
   
-  let error_decode_str = "This field must be a string.";
-  
-  let error_decode_str_enum = "This field must be a string enum.";
-  
-  let error_decode_int = "This field must be an int.";
-  
-  let error_decode_int_enum = "This field must be an int enum.";
-  
-  let error_decode_float = "This field must be a float.";
-  
-  let error_decode_array = "This field must be an array.";
-  
-  let error_decode_missing_field = "This object is missing a field.";
-  
-  let error_decode_bad_union_key = "This object is missing a field.";
-  
-  let error_pattern_failure = "This pattern-matching failed to find a path. This probably means there's a problem with the compiler.";
+  async function decode_error(arg0, arg1, debug_stack) {
+    throw new Error([
+      "Decode error.\n\
+  Expected type:\n\
+    ",
+      arg0,
+      "\n\
+  Recieved value:\n\
+    ",
+      arg1,
+      "\n\
+  In field: ",
+      debug_stack.join(" -> "),
+    ].join(""));
+  }
   
   let escapes = {
     "&": "&amp;",
@@ -122,6 +125,7 @@
   
   module.exports = async function main(input1) {
     let data = new Map();
+    let debug_stack = new Array();
     return (await Promise.all([
       (async function () {
         let resolved0 = (await Promise.all([" text "])).join("");
