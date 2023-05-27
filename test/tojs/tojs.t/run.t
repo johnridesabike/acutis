@@ -20,14 +20,25 @@
   
   function decode_error(expected, recieved, debug_stack) {
     throw new Error([
-      "Decode error.\n\
+      "Decode error in field: ",
+      debug_stack.join(" -> "),
+      "\n\
   Expected type:\n\
-    ",
+  ",
       expected,
       "\n\
   Recieved value:\n\
-    ",
+  ",
       recieved,
+    ].join(""));
+  }
+  
+  function decode_error_field(field, debug_stack) {
+    throw new Error([
+      "Decode error.\n\
+  An object is missing the field:\n\
+  ",
+      field,
       "\n\
   In field: ",
       debug_stack.join(" -> "),
@@ -36,34 +47,35 @@
   
   function acutis_escape(str) {
     let result = "";
-    for (let c of str) {
+    for (let index = 0; index < str.length; index++) {
+      let c = str[index];
       switch (c) {
         case "&":
-          result = result + "&amp;";
+          result += "&amp;"
           break;
         case "\"":
-          result = result + "&quot;";
+          result += "&quot;"
           break;
         case "'":
-          result = result + "&apos;";
+          result += "&apos;"
           break;
         case ">":
-          result = result + "&gt;";
+          result += "&gt;"
           break;
         case "<":
-          result = result + "&lt;";
+          result += "&lt;"
           break;
         case "/":
-          result = result + "&#x2F;";
+          result += "&#x2F;"
           break;
         case "`":
-          result = result + "&#x60;";
+          result += "&#x60;"
           break;
         case "=":
-          result = result + "&#x3D;";
+          result += "&#x3D;"
           break;
         default:
-          result = result + c;
+          result += c
       }
     }
     return result;
@@ -290,7 +302,7 @@
       }
       debug_stack.pop();
     } else {
-      return decode_error("float", input1, debug_stack);
+      return decode_error_field("big_float", debug_stack);
     }
     if ("big_int" in input1) {
       debug_stack.push("big_int");
@@ -302,7 +314,7 @@
       }
       debug_stack.pop();
     } else {
-      return decode_error("int", input1, debug_stack);
+      return decode_error_field("big_int", debug_stack);
     }
     if ("bool1" in input1) {
       debug_stack.push("bool1");
@@ -319,7 +331,7 @@
       }
       debug_stack.pop();
     } else {
-      return decode_error("false | true", input1, debug_stack);
+      return decode_error_field("bool1", debug_stack);
     }
     if ("bool2" in input1) {
       debug_stack.push("bool2");
@@ -336,7 +348,7 @@
       }
       debug_stack.pop();
     } else {
-      return decode_error("false | true", input1, debug_stack);
+      return decode_error_field("bool2", debug_stack);
     }
     if ("dangerous" in input1) {
       debug_stack.push("dangerous");
@@ -348,17 +360,17 @@
       }
       debug_stack.pop();
     } else {
-      return decode_error("string", input1, debug_stack);
+      return decode_error_field("dangerous", debug_stack);
     }
     if ("int_list" in input1) {
       debug_stack.push("int_list");
       let input7 = input1.int_list;
       if (input7 instanceof Array) {
-        debug_stack.push(-1);
         let dst_base1 = new Array(2);
         let dst1 = dst_base1;
-        for (let input_hd1 of input7) {
-          debug_stack[debug_stack.length - 1]++;
+        for (let index = 0; index < input7.length; index++) {
+          let input_hd1 = input7[index];
+          debug_stack.push(index);
           let dst_new1 = new Array(2);
           if (typeof input_hd1 === "number") {
             dst_new1[0] = input_hd1 | 0;
@@ -367,40 +379,40 @@
           }
           dst1[1] = dst_new1;
           dst1 = dst_new1;
+          debug_stack.pop();
         }
         dst1[1] = null;
         data.set("int_list", dst_base1[1]);
-        debug_stack.pop();
       } else {
         return decode_error("int", input7, debug_stack);
       }
       debug_stack.pop();
     } else {
-      return decode_error("[int]", input1, debug_stack);
+      return decode_error_field("int_list", debug_stack);
     }
     if ("nested_list" in input1) {
       debug_stack.push("nested_list");
       let input8 = input1.nested_list;
       if (input8 instanceof Array) {
-        debug_stack.push(-1);
         let dst_base2 = new Array(2);
         let dst2 = dst_base2;
-        for (let input_hd2 of input8) {
-          debug_stack[debug_stack.length - 1]++;
+        for (let index = 0; index < input8.length; index++) {
+          let input_hd2 = input8[index];
+          debug_stack.push(index);
           let dst_new2 = new Array(2);
           if (input_hd2 instanceof Array) {
-            debug_stack.push(-1);
             let dst_base3 = new Array(2);
             let dst3 = dst_base3;
-            for (let input_hd3 of input_hd2) {
-              debug_stack[debug_stack.length - 1]++;
+            for (let index = 0; index < input_hd2.length; index++) {
+              let input_hd3 = input_hd2[index];
+              debug_stack.push(index);
               let dst_new3 = new Array(2);
               if (input_hd3 instanceof Array) {
-                debug_stack.push(-1);
                 let dst_base4 = new Array(2);
                 let dst4 = dst_base4;
-                for (let input_hd4 of input_hd3) {
-                  debug_stack[debug_stack.length - 1]++;
+                for (let index = 0; index < input_hd3.length; index++) {
+                  let input_hd4 = input_hd3[index];
+                  debug_stack.push(index);
                   let dst_new4 = new Array(2);
                   if (typeof input_hd4 === "number") {
                     dst_new4[0] = input_hd4 | 0;
@@ -409,44 +421,44 @@
                   }
                   dst4[1] = dst_new4;
                   dst4 = dst_new4;
+                  debug_stack.pop();
                 }
                 dst4[1] = null;
                 dst_new3[0] = dst_base4[1];
-                debug_stack.pop();
               } else {
                 return decode_error("int", input_hd3, debug_stack);
               }
               dst3[1] = dst_new3;
               dst3 = dst_new3;
+              debug_stack.pop();
             }
             dst3[1] = null;
             dst_new2[0] = dst_base3[1];
-            debug_stack.pop();
           } else {
             return decode_error("[int]", input_hd2, debug_stack);
           }
           dst2[1] = dst_new2;
           dst2 = dst_new2;
+          debug_stack.pop();
         }
         dst2[1] = null;
         data.set("nested_list", dst_base2[1]);
-        debug_stack.pop();
       } else {
         return decode_error("[[int]]", input8, debug_stack);
       }
       debug_stack.pop();
     } else {
-      return decode_error("[[[int]]]", input1, debug_stack);
+      return decode_error_field("nested_list", debug_stack);
     }
     if ("nested_nullable_list" in input1) {
       debug_stack.push("nested_nullable_list");
       let input9 = input1.nested_nullable_list;
       if (input9 instanceof Array) {
-        debug_stack.push(-1);
         let dst_base5 = new Array(2);
         let dst5 = dst_base5;
-        for (let input_hd5 of input9) {
-          debug_stack[debug_stack.length - 1]++;
+        for (let index = 0; index < input9.length; index++) {
+          let input_hd5 = input9[index];
+          debug_stack.push(index);
           let dst_new5 = new Array(2);
           if (input_hd5 === null || input_hd5 === undefined) {
             dst_new5[0] = null;
@@ -472,16 +484,16 @@
           }
           dst5[1] = dst_new5;
           dst5 = dst_new5;
+          debug_stack.pop();
         }
         dst5[1] = null;
         data.set("nested_nullable_list", dst_base5[1]);
-        debug_stack.pop();
       } else {
         return decode_error("??false | true", input9, debug_stack);
       }
       debug_stack.pop();
     } else {
-      return decode_error("[??false | true]", input1, debug_stack);
+      return decode_error_field("nested_nullable_list", debug_stack);
     }
     if ("null_string_dict" in input1) {
       debug_stack.push("null_string_dict");
@@ -506,7 +518,7 @@
       }
       debug_stack.pop();
     } else {
-      return decode_error("<?string>", input1, debug_stack);
+      return decode_error_field("null_string_dict", debug_stack);
     }
     if ("record" in input1) {
       debug_stack.push("record");
@@ -528,7 +540,7 @@
         }
         debug_stack.pop();
       } else {
-        return decode_error("@8 | @40", input12, debug_stack);
+        return decode_error_field("int_enum", debug_stack);
       }
       if ("string_enum" in input12) {
         debug_stack.push("string_enum");
@@ -545,15 +557,11 @@
         }
         debug_stack.pop();
       } else {
-        return decode_error("@\"no\" | @\"yes\"", input12, debug_stack);
+        return decode_error_field("string_enum", debug_stack);
       }
       debug_stack.pop();
     } else {
-      return decode_error(
-        "{int_enum: @8 | @40, string_enum: @\"no\" | @\"yes\"}",
-        input1,
-        debug_stack
-      );
+      return decode_error_field("record", debug_stack);
     }
     if ("tagged_record_bool" in input1) {
       debug_stack.push("tagged_record_bool");
@@ -574,7 +582,7 @@
             }
             debug_stack.pop();
           } else {
-            return decode_error("string", input15, debug_stack);
+            return decode_error_field("a", debug_stack);
           }
           break;
         case true:
@@ -589,7 +597,7 @@
             }
             debug_stack.pop();
           } else {
-            return decode_error("int", input15, debug_stack);
+            return decode_error_field("b", debug_stack);
           }
           break;
         default:
@@ -601,11 +609,7 @@
       }
       debug_stack.pop();
     } else {
-      return decode_error(
-        "{@tag: false, a: string} | {@tag: true, b: int}",
-        input1,
-        debug_stack
-      );
+      return decode_error_field("tagged_record_bool", debug_stack);
     }
     if ("tagged_record_int" in input1) {
       debug_stack.push("tagged_record_int");
@@ -663,11 +667,7 @@
             }
             debug_stack.pop();
           } else {
-            return decode_error(
-              "(float, string, false | true)",
-              input17,
-              debug_stack
-            );
+            return decode_error_field("tuple", debug_stack);
           }
           break;
         default:
@@ -679,11 +679,7 @@
       }
       debug_stack.pop();
     } else {
-      return decode_error(
-        "{@tag: 0} | {@tag: 1, tuple: (float, string, false | true)}",
-        input1,
-        debug_stack
-      );
+      return decode_error_field("tagged_record_int", debug_stack);
     }
     if ("tagged_record_open" in input1) {
       debug_stack.push("tagged_record_open");
@@ -704,7 +700,7 @@
             }
             debug_stack.pop();
           } else {
-            return decode_error("int", input19, debug_stack);
+            return decode_error_field("a", debug_stack);
           }
           break;
         case 200:
@@ -719,7 +715,7 @@
             }
             debug_stack.pop();
           } else {
-            return decode_error("string", input19, debug_stack);
+            return decode_error_field("b", debug_stack);
           }
           break;
         case 300:
@@ -734,7 +730,7 @@
             }
             debug_stack.pop();
           } else {
-            return decode_error("float", input19, debug_stack);
+            return decode_error_field("c", debug_stack);
           }
           break;
         default:
@@ -746,11 +742,7 @@
       }
       debug_stack.pop();
     } else {
-      return decode_error(
-        "{@tag: 100, a: int} | {@tag: 200, b: string} | {@tag: 300, c: float} | ...",
-        input1,
-        debug_stack
-      );
+      return decode_error_field("tagged_record_open", debug_stack);
     }
     if ("tagged_record_string" in input1) {
       debug_stack.push("tagged_record_string");
@@ -765,11 +757,11 @@
             debug_stack.push("record_list");
             let input33 = input21.record_list;
             if (input33 instanceof Array) {
-              debug_stack.push(-1);
               let dst_base6 = new Array(2);
               let dst6 = dst_base6;
-              for (let input_hd6 of input33) {
-                debug_stack[debug_stack.length - 1]++;
+              for (let index = 0; index < input33.length; index++) {
+                let input_hd6 = input33[index];
+                debug_stack.push(index);
                 let dst_new6 = new Array(2);
                 let record2 = new Map();
                 dst_new6[0] = record2;
@@ -783,7 +775,7 @@
                   }
                   debug_stack.pop();
                 } else {
-                  return decode_error("string", input_hd6, debug_stack);
+                  return decode_error_field("job", debug_stack);
                 }
                 if ("name" in input_hd6) {
                   debug_stack.push("name");
@@ -795,14 +787,14 @@
                   }
                   debug_stack.pop();
                 } else {
-                  return decode_error("string", input_hd6, debug_stack);
+                  return decode_error_field("name", debug_stack);
                 }
                 dst6[1] = dst_new6;
                 dst6 = dst_new6;
+                debug_stack.pop();
               }
               dst6[1] = null;
               union4.set("record_list", dst_base6[1]);
-              debug_stack.pop();
             } else {
               return decode_error(
                 "{job: string, name: string}",
@@ -812,11 +804,7 @@
             }
             debug_stack.pop();
           } else {
-            return decode_error(
-              "[{job: string, name: string}]",
-              input21,
-              debug_stack
-            );
+            return decode_error_field("record_list", debug_stack);
           }
           break;
         case "b":
@@ -831,7 +819,7 @@
             }
             debug_stack.pop();
           } else {
-            return decode_error("@0 | @1 | ...", input21, debug_stack);
+            return decode_error_field("open_enum", debug_stack);
           }
           break;
         default:
@@ -844,12 +832,7 @@
       }
       debug_stack.pop();
     } else {
-      return decode_error(
-        "{@tag: \"a\", record_list: [{job: string, name: string}]} |\n\
-  {@tag: \"b\", open_enum: @0 | @1 | ...}",
-        input1,
-        debug_stack
-      );
+      return decode_error_field("tagged_record_string", debug_stack);
     }
     if ("unknown" in input1) {
       debug_stack.push("unknown");

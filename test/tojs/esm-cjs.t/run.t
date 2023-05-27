@@ -13,14 +13,25 @@
   
   function decode_error(expected, recieved, debug_stack) {
     throw new Error([
-      "Decode error.\n\
+      "Decode error in field: ",
+      debug_stack.join(" -> "),
+      "\n\
   Expected type:\n\
-    ",
+  ",
       expected,
       "\n\
   Recieved value:\n\
-    ",
+  ",
       recieved,
+    ].join(""));
+  }
+  
+  function decode_error_field(field, debug_stack) {
+    throw new Error([
+      "Decode error.\n\
+  An object is missing the field:\n\
+  ",
+      field,
       "\n\
   In field: ",
       debug_stack.join(" -> "),
@@ -29,34 +40,35 @@
   
   function acutis_escape(str) {
     let result = "";
-    for (let c of str) {
+    for (let index = 0; index < str.length; index++) {
+      let c = str[index];
       switch (c) {
         case "&":
-          result = result + "&amp;";
+          result += "&amp;"
           break;
         case "\"":
-          result = result + "&quot;";
+          result += "&quot;"
           break;
         case "'":
-          result = result + "&apos;";
+          result += "&apos;"
           break;
         case ">":
-          result = result + "&gt;";
+          result += "&gt;"
           break;
         case "<":
-          result = result + "&lt;";
+          result += "&lt;"
           break;
         case "/":
-          result = result + "&#x2F;";
+          result += "&#x2F;"
           break;
         case "`":
-          result = result + "&#x60;";
+          result += "&#x60;"
           break;
         case "=":
-          result = result + "&#x3D;";
+          result += "&#x3D;"
           break;
         default:
-          result = result + c;
+          result += c
       }
     }
     return result;
@@ -99,14 +111,25 @@
   
   function decode_error(expected, recieved, debug_stack) {
     throw new Error([
-      "Decode error.\n\
+      "Decode error in field: ",
+      debug_stack.join(" -> "),
+      "\n\
   Expected type:\n\
-    ",
+  ",
       expected,
       "\n\
   Recieved value:\n\
-    ",
+  ",
       recieved,
+    ].join(""));
+  }
+  
+  function decode_error_field(field, debug_stack) {
+    throw new Error([
+      "Decode error.\n\
+  An object is missing the field:\n\
+  ",
+      field,
       "\n\
   In field: ",
       debug_stack.join(" -> "),
@@ -115,34 +138,35 @@
   
   function acutis_escape(str) {
     let result = "";
-    for (let c of str) {
+    for (let index = 0; index < str.length; index++) {
+      let c = str[index];
       switch (c) {
         case "&":
-          result = result + "&amp;";
+          result += "&amp;"
           break;
         case "\"":
-          result = result + "&quot;";
+          result += "&quot;"
           break;
         case "'":
-          result = result + "&apos;";
+          result += "&apos;"
           break;
         case ">":
-          result = result + "&gt;";
+          result += "&gt;"
           break;
         case "<":
-          result = result + "&lt;";
+          result += "&lt;"
           break;
         case "/":
-          result = result + "&#x2F;";
+          result += "&#x2F;"
           break;
         case "`":
-          result = result + "&#x60;";
+          result += "&#x60;"
           break;
         case "=":
-          result = result + "&#x3D;";
+          result += "&#x3D;"
           break;
         default:
-          result = result + c;
+          result += c
       }
     }
     return result;

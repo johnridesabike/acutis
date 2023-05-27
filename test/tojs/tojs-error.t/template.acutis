@@ -5,3 +5,8 @@
 {% match nested with {level_1: [_, level2]} %} {{ level2 }}
   {% with _ %}
 {% /match %}
+{% match long_type
+    with {@tag: false} %}
+{%  with {@tag: true, looong_field, another_loooong_field, yet_another_field} %}
+  {{ looong_field }} {{ another_loooong_field }} {{ yet_another_field }}
+{% /match %}

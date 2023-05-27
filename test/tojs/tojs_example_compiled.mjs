@@ -7,14 +7,25 @@ This probably means there's a problem with the compiler.");
 
 function decode_error(expected, recieved, debug_stack) {
   throw new Error([
-    "Decode error.\n\
+    "Decode error in field: ",
+    debug_stack.join(" -> "),
+    "\n\
 Expected type:\n\
-  ",
+",
     expected,
     "\n\
 Recieved value:\n\
-  ",
+",
     recieved,
+  ].join(""));
+}
+
+function decode_error_field(field, debug_stack) {
+  throw new Error([
+    "Decode error.\n\
+An object is missing the field:\n\
+",
+    field,
     "\n\
 In field: ",
     debug_stack.join(" -> "),
@@ -23,34 +34,35 @@ In field: ",
 
 function acutis_escape(str) {
   let result = "";
-  for (let c of str) {
+  for (let index = 0; index < str.length; index++) {
+    let c = str[index];
     switch (c) {
       case "&":
-        result = result + "&amp;";
+        result += "&amp;"
         break;
       case "\"":
-        result = result + "&quot;";
+        result += "&quot;"
         break;
       case "'":
-        result = result + "&apos;";
+        result += "&apos;"
         break;
       case ">":
-        result = result + "&gt;";
+        result += "&gt;"
         break;
       case "<":
-        result = result + "&lt;";
+        result += "&lt;"
         break;
       case "/":
-        result = result + "&#x2F;";
+        result += "&#x2F;"
         break;
       case "`":
-        result = result + "&#x60;";
+        result += "&#x60;"
         break;
       case "=":
-        result = result + "&#x3D;";
+        result += "&#x3D;"
         break;
       default:
-        result = result + c;
+        result += c
     }
   }
   return result;
@@ -63,11 +75,11 @@ export default async function main(input1) {
     debug_stack.push("blogPosts");
     let input2 = input1.blogPosts;
     if (input2 instanceof Array) {
-      debug_stack.push(-1);
       let dst_base1 = new Array(2);
       let dst1 = dst_base1;
-      for (let input_hd1 of input2) {
-        debug_stack[debug_stack.length - 1]++;
+      for (let index = 0; index < input2.length; index++) {
+        let input_hd1 = input2[index];
+        debug_stack.push(index);
         let dst_new1 = new Array(2);
         let record1 = new Map();
         dst_new1[0] = record1;
@@ -96,7 +108,7 @@ export default async function main(input1) {
           }
           debug_stack.pop();
         } else {
-          return decode_error("{name: ?string}", input_hd1, debug_stack);
+          return decode_error_field("author", debug_stack);
         }
         if ("content" in input_hd1) {
           debug_stack.push("content");
@@ -108,7 +120,7 @@ export default async function main(input1) {
           }
           debug_stack.pop();
         } else {
-          return decode_error("string", input_hd1, debug_stack);
+          return decode_error_field("content", debug_stack);
         }
         if ("date" in input_hd1) {
           debug_stack.push("date");
@@ -120,7 +132,7 @@ export default async function main(input1) {
           }
           debug_stack.pop();
         } else {
-          return decode_error("string", input_hd1, debug_stack);
+          return decode_error_field("date", debug_stack);
         }
         if ("image" in input_hd1) {
           debug_stack.push("image");
@@ -142,7 +154,7 @@ export default async function main(input1) {
               }
               debug_stack.pop();
             } else {
-              return decode_error("string", input7, debug_stack);
+              return decode_error_field("alt", debug_stack);
             }
             if ("src" in input7) {
               debug_stack.push("src");
@@ -154,7 +166,7 @@ export default async function main(input1) {
               }
               debug_stack.pop();
             } else {
-              return decode_error("string", input7, debug_stack);
+              return decode_error_field("src", debug_stack);
             }
           }
           debug_stack.pop();
@@ -171,14 +183,14 @@ export default async function main(input1) {
           }
           debug_stack.pop();
         } else {
-          return decode_error("string", input_hd1, debug_stack);
+          return decode_error_field("title", debug_stack);
         }
         dst1[1] = dst_new1;
         dst1 = dst_new1;
+        debug_stack.pop();
       }
       dst1[1] = null;
       data.set("blogPosts", dst_base1[1]);
-      debug_stack.pop();
     } else {
       return decode_error(
         "{\n\
@@ -194,19 +206,7 @@ export default async function main(input1) {
     }
     debug_stack.pop();
   } else {
-    return decode_error(
-      "[\n\
-   {\n\
-      author: {name: ?string},\n\
-      content: string,\n\
-      date: string,\n\
-      image: ?{alt: string, src: string},\n\
-      title: string\n\
-   }\n\
-]",
-      input1,
-      debug_stack
-    );
+    return decode_error_field("blogPosts", debug_stack);
   }
   if ("siteTitle" in input1) {
     debug_stack.push("siteTitle");
@@ -218,7 +218,7 @@ export default async function main(input1) {
     }
     debug_stack.pop();
   } else {
-    return decode_error("string", input1, debug_stack);
+    return decode_error_field("siteTitle", debug_stack);
   }
   return (await Promise.all([
     "<h1> Blog posts for ",

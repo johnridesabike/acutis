@@ -25,6 +25,7 @@ module Id : sig
   val component : string -> t
   val error_pattern_failure : t
   val error_decode : t
+  val error_decode_missing_field : t
   val arg : int -> t
   val resolved : int -> t
   val index : t
@@ -84,6 +85,7 @@ end = struct
   let component name = Printf.sprintf "template_%s" name
   let error_pattern_failure = "pattern_failure_error"
   let error_decode = "decode_error"
+  let error_decode_missing_field = "decode_error_field"
   let arg i = Printf.sprintf "arg%i" i
   let resolved i = Printf.sprintf "resolved%i" i
   let index = "index"
@@ -185,15 +187,15 @@ type expr =
   | Instanceof of expr * obj
   | To_int of expr
   | In of string * expr
-  | Minus of expr * int
-  | Plus of expr * expr
 
 and statement =
   | Let of Id.t * expr
   | Set of expr * expr
+  | Add_set of expr * expr
   | Switch of expr * (expr * statement list) Seq.t * statement list
   | If_else of expr * statement list * statement list
   | While of expr * statement list
+  | For of Id.t * expr * statement list
   | For_in of Id.t * expr * statement list
   | For_of of Id.t * expr * statement list
   | Expr of expr
@@ -299,13 +301,12 @@ let pp_statement =
     | Instanceof (a, b) -> fprintf ppf "%a instanceof %a" pp_expr a pp_obj b
     | To_int expr -> fprintf ppf "%a | 0" pp_expr expr
     | In (key, expr) -> fprintf ppf "%a in %a" pp_js_str key pp_expr expr
-    | Minus (expr, i) -> fprintf ppf "@[<hv 2>%a -@ %i@]" pp_expr expr i
-    | Plus (a, b) -> fprintf ppf "@[<hv 2>%a +@ %a@]" pp_expr a pp_expr b
   and pp_statement ppf = function
     | Let (ident, expr) ->
         fprintf ppf "@[<hv 2>let %a = %a;@]" Id.pp ident pp_expr expr
     | Set (subj, pred) ->
         fprintf ppf "@[<hv 2>%a =@ @[<hv 2>%a@];@]" pp_expr subj pp_expr pred
+    | Add_set (a, b) -> fprintf ppf "@[<hv 2>%a +=@ %a@]" pp_expr a pp_expr b
     | Switch (expr, cases, default) ->
         fprintf ppf "@[<v 2>@[<hv 2>switch (%a)@] {@ " pp_expr expr;
         pp_print_seq ~pp_sep:pp_print_cut
@@ -337,6 +338,9 @@ let pp_statement =
     | While (cond, statements) ->
         fprintf ppf "@[<v 2>while (%a) {@ %a@;<1 -2>}@]" pp_expr cond
           pp_statements statements
+    | For (i, expr, statements) ->
+        fprintf ppf "@[<v 2>for (let %a = 0; %a < %a; %a++) {@ %a@;<1 -2>}@]"
+          Id.pp i Id.pp i pp_expr expr Id.pp i pp_statements statements
     | For_in (prop, expr, statements) ->
         fprintf ppf "@[<v 2>for (let %a in %a) {@ %a@;<1 -2>}@]" Id.pp prop
           pp_expr expr pp_statements statements
@@ -409,15 +413,29 @@ let pp_runtime ppf =
            Error
              (meth_join
                 (Arr
-                   (List.to_seq
-                      [
-                        String "Decode error.\nExpected type:\n  ";
-                        Var expected;
-                        String "\nRecieved value:\n  ";
-                        Var recieved;
-                        String "\nIn field: ";
-                        meth_join (Var Id.debug_stack) " -> ";
-                      ]))
+                   (Seq.cons (String "Decode error in field: ")
+                   @@ Seq.cons (meth_join (Var Id.debug_stack) " -> ")
+                   @@ Seq.cons (String "\nExpected type:\n")
+                   @@ Seq.cons (Var expected)
+                   @@ Seq.cons (String "\nRecieved value:\n")
+                   @@ Seq.return (Var recieved)))
+                "");
+         ] );
+  let field_name = Id.unsafe "field" in
+  pp_statement ppf
+  @@ Fun
+       ( `Sync,
+         Id.error_decode_missing_field,
+         [ field_name; Id.debug_stack ],
+         [
+           Error
+             (meth_join
+                (Arr
+                   (Seq.cons
+                      (String "Decode error.\nAn object is missing the field:\n")
+                   @@ Seq.cons (Var field_name)
+                   @@ Seq.cons (String "\nIn field: ")
+                   @@ Seq.return (meth_join (Var Id.debug_stack) " -> ")))
                 "");
          ] );
   let escapes =
@@ -442,20 +460,20 @@ let pp_runtime ppf =
          [ str ],
          [
            Let (result, String "");
-           For_of
-             ( c,
-               Var str,
+           (* When I ran a benchmark it showed that this basic for loop was
+              faster than for...of or chaining str.replace(). *)
+           For
+             ( Id.index,
+               Field (Var str, String "length"),
                [
+                 Let (c, Field (Var str, Var Id.index));
                  Switch
                    ( Var c,
                      List.to_seq escapes
                      |> Seq.map (fun (char, escaped) ->
                             ( String char,
-                              [
-                                Set
-                                  (Var result, Plus (Var result, String escaped));
-                              ] )),
-                     [ Set (Var result, Plus (Var result, Var c)) ] );
+                              [ Add_set (Var result, String escaped) ] )),
+                     [ Add_set (Var result, Var c) ] );
                ] );
            Return (Var result);
          ] )
@@ -765,6 +783,11 @@ let error =
     Buffer.clear b;
     Return (App (Var Id.error_decode, [ String ty; input; Var Id.debug_stack ]))
 
+let error_field field =
+  Return
+    (App
+       (Var Id.error_decode_missing_field, [ String field; Var Id.debug_stack ]))
+
 let decode_boolean ~set input cases ty =
   Switch
     ( input,
@@ -883,20 +906,16 @@ and decode_list ~set input env ty =
   If_else
     ( Instanceof (input, Array),
       [
-        Expr (meth_push Id.debug_stack [ Int (-1) ]);
         Let (dst_base, new_cell);
         Let (dst, Var dst_base);
-        For_of
-          ( input_hd,
-            input,
+        For
+          ( Id.index,
+            Field (input, String "length"),
             List.concat
               [
                 [
-                  Incr
-                    (Field
-                       ( Var Id.debug_stack,
-                         Minus (Field (Var Id.debug_stack, String "length"), 1)
-                       ));
+                  Let (input_hd, Field (input, Var Id.index));
+                  Expr (meth_push Id.debug_stack [ Var Id.index ]);
                   Let (dst_new, new_cell);
                 ];
                 decode_typescheme
@@ -905,11 +924,11 @@ and decode_list ~set input env ty =
                 [
                   Set (Field (Var dst, Int 1), Var dst_new);
                   Set (Var dst, Var dst_new);
+                  Expr (meth_pop Id.debug_stack);
                 ];
               ] );
         Set (Field (Var dst, Int 1), Prim Null);
         set (Field (Var dst_base, Int 1));
-        Expr (meth_pop Id.debug_stack);
       ],
       [ error ty input ] )
 
@@ -943,7 +962,7 @@ and decode_record_aux ~data input env tys =
                ],
              match !ty with
              | Nullable _ | Unknown _ -> [ set (Prim Null) ]
-             | _ -> [ error ty input ] ))
+             | _ -> [ error_field k ] ))
   |> List.of_seq
 
 and decode_record ~set input env tys =
