@@ -58,15 +58,8 @@ module.exports = function (eleventyConfig, config) {
       cache.clear();
       const result =
         config && "components" in config ? config.components.slice() : [];
-      const dir = this.config.dir;
-      return Promise.all([
-        getComponents(result, path.join(dir.input, dir.includes)),
-        // Contrary to 11ty convention, this makes layouts available as regular
-        // includes. But this doesn't seem harmful, and it can be useful.
-        dir.layouts
-          ? getComponents(result, path.join(dir.input, dir.layouts))
-          : Promise.resolve(),
-      ])
+      const inc = path.join(this.config.dir.input, this.config.dir.includes);
+      return getComponents(result, inc)
         .then(() => {
           components = Compile.components(result);
         })
