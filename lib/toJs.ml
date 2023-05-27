@@ -34,6 +34,7 @@ module Id : sig
   val runtime_escape : t
   val runtime_main : t
   val debug_stack : t
+  val unsafe : string -> t
 
   module Safe : sig
     (** This creates names that are unique for each instance of [t]. It's
@@ -92,6 +93,7 @@ end = struct
   let runtime_escape = "acutis_escape"
   let runtime_main = "main"
   let debug_stack = "debug_stack"
+  let unsafe = Fun.id
 
   module Safe = struct
     type t = (string, int) Hashtbl.t
@@ -184,6 +186,7 @@ type expr =
   | To_int of expr
   | In of string * expr
   | Minus of expr * int
+  | Plus of expr * expr
 
 and statement =
   | Let of Id.t * expr
@@ -197,13 +200,7 @@ and statement =
   | Incr of expr
   | Error of expr
   | Return of expr
-  | Fun of Id.t * Id.t list * statement list
-  | Export_default of statement
-  | Comment of string
-  | Import of Id.t * string
-  | Raw of string
-
-type jstype = CommonJs | ESModule
+  | Fun of [ `Sync | `Async ] * Id.t * Id.t list * statement list
 
 let pp_comma ppf () = Format.fprintf ppf ",@ "
 
@@ -254,18 +251,8 @@ let is_js_id =
   in
   fun s -> id_start_char s.[0] && String.for_all id_char s
 
-let pp_statement ty =
+let pp_statement =
   let open Format in
-  let pp_import =
-    match ty with
-    | CommonJs -> fun ppf -> fprintf ppf "const %a = require(%a);"
-    | ESModule -> fun ppf -> fprintf ppf "import * as %a from %a;"
-  in
-  let pp_export =
-    match ty with
-    | CommonJs -> fun ppf -> fprintf ppf "module.exports = %a"
-    | ESModule -> fun ppf -> fprintf ppf "export default %a"
-  in
   let rec pp_expr ppf = function
     | Eq (a, b) -> fprintf ppf "%a ===@ %a" pp_expr a pp_expr b
     | Not_eq (a, b) -> fprintf ppf "%a !== %a" pp_expr a pp_expr b
@@ -312,7 +299,8 @@ let pp_statement ty =
     | Instanceof (a, b) -> fprintf ppf "%a instanceof %a" pp_expr a pp_obj b
     | To_int expr -> fprintf ppf "%a | 0" pp_expr expr
     | In (key, expr) -> fprintf ppf "%a in %a" pp_js_str key pp_expr expr
-    | Minus (expr, i) -> fprintf ppf "@[<hv 2>%a - %i@]" pp_expr expr i
+    | Minus (expr, i) -> fprintf ppf "@[<hv 2>%a -@ %i@]" pp_expr expr i
+    | Plus (a, b) -> fprintf ppf "@[<hv 2>%a +@ %a@]" pp_expr a pp_expr b
   and pp_statement ppf = function
     | Let (ident, expr) ->
         fprintf ppf "@[<hv 2>let %a = %a;@]" Id.pp ident pp_expr expr
@@ -359,26 +347,37 @@ let pp_statement ty =
     | Incr id -> fprintf ppf "%a++;" pp_expr id
     | Error expr -> fprintf ppf "@[<hv 2>throw new Error(%a);@]" pp_expr expr
     | Return expr -> fprintf ppf "@[<hv 2>return %a;@]" pp_expr expr
-    | Fun (name, args, statements) ->
-        fprintf ppf
-          "async function %a(@[<hv 2>@,%a@]) {@;<0 2>@[<v 0>%a@]@;<1 -2>}" Id.pp
-          name
+    | Fun (kind, name, args, statements) ->
+        fprintf ppf "%afunction %a(@[<hv 2>@,%a@]) {@;<0 2>@[<v 0>%a@]@;<1 -2>}"
+          (fun ppf -> function
+            | `Async -> pp_print_string ppf "async "
+            | `Sync -> ())
+          kind Id.pp name
           (pp_print_list ~pp_sep:pp_comma Id.pp)
           args pp_statements statements
-    | Export_default statement -> pp_export ppf pp_statement statement
-    | Comment s -> fprintf ppf "/* %s */" s
-    | Import (namespace, filename) ->
-        pp_import ppf Id.pp namespace pp_js_str filename
-    | Raw s -> fprintf ppf "@[%a@]" pp_print_text s
   and pp_statements ppf l =
     pp_print_list ~pp_sep:pp_print_cut pp_statement ppf l
   in
-  pp_statement
+  fun ppf stmt ->
+    pp_statement ppf stmt;
+    Format.pp_print_cut ppf ();
+    Format.pp_print_cut ppf ()
 
-let pp_statement ty ppf x =
-  pp_statement ty ppf x;
-  Format.pp_print_cut ppf ();
-  Format.pp_print_cut ppf ()
+let pp_comment ppf str = Format.fprintf ppf "/* %s */@,@," str
+
+let pp_cjs_require ppf namespace (Filepath filepath) =
+  Format.fprintf ppf "const %a = require(%a);@,@," Id.pp namespace pp_js_str
+    filepath
+
+let pp_esm_import ppf namespace (Filepath filepath) =
+  Format.fprintf ppf "import * as %a from %a;@,@," Id.pp namespace pp_js_str
+    filepath
+
+let pp_cjs_exports ppf stmt =
+  Format.fprintf ppf "module.exports = %a" pp_statement stmt
+
+let pp_esm_export ppf stmt =
+  Format.fprintf ppf "export default %a" pp_statement stmt
 
 let meth_get x k = App (Field (x, String "get"), [ k ])
 let meth_set x k v = App (Field (x, String "set"), [ k; v ])
@@ -387,10 +386,11 @@ let meth_push x v = App (Field (Var x, String "push"), v)
 let meth_pop x = App (Field (Var x, String "pop"), [])
 let promise_all x = Await (App (Field (Obj Promise, String "all"), [ x ]))
 
-let pp_runtime ty ppf =
-  pp_statement ty ppf
+let pp_runtime ppf =
+  pp_statement ppf
   @@ Fun
-       ( Id.error_pattern_failure,
+       ( `Sync,
+         Id.error_pattern_failure,
          [],
          [
            Error
@@ -398,45 +398,67 @@ let pp_runtime ty ppf =
                 "This pattern-matching failed to find a path.\n\
                  This probably means there's a problem with the compiler.");
          ] );
-  let expected = Id.arg 0 in
-  let recieved = Id.arg 1 in
-  pp_statement ty ppf
+  let expected = Id.unsafe "expected" in
+  let recieved = Id.unsafe "recieved" in
+  pp_statement ppf
   @@ Fun
-       ( Id.error_decode,
+       ( `Sync,
+         Id.error_decode,
          [ expected; recieved; Id.debug_stack ],
          [
            Error
              (meth_join
                 (Arr
-                   (Seq.cons (String "Decode error.\nExpected type:\n  ")
-                   @@ Seq.cons (Var expected)
-                   @@ Seq.cons (String "\nRecieved value:\n  ")
-                   @@ Seq.cons (Var recieved)
-                   @@ Seq.cons (String "\nIn field: ")
-                   @@ Seq.return (meth_join (Var Id.debug_stack) " -> ")))
+                   (List.to_seq
+                      [
+                        String "Decode error.\nExpected type:\n  ";
+                        Var expected;
+                        String "\nRecieved value:\n  ";
+                        Var recieved;
+                        String "\nIn field: ";
+                        meth_join (Var Id.debug_stack) " -> ";
+                      ]))
                 "");
          ] );
-  let raw_functions =
-    {|let escapes = {
-  "&": "&amp;",
-  '"': "&quot;",
-  "'": "&apos;",
-  ">": "&gt;",
-  "<": "&lt;",
-  "/": "&#x2F;",
-  "`": "&#x60;",
-  "=": "&#x3D;",
-};
-
-function acutis_escape(str) {
-  let result = "";
-  for (let c of str) {
-    result += escapes[c] || c;
-  }
-  return result;
-}|}
+  let escapes =
+    [
+      ("&", "&amp;");
+      ("\"", "&quot;");
+      ("'", "&apos;");
+      (">", "&gt;");
+      ("<", "&lt;");
+      ("/", "&#x2F;");
+      ("`", "&#x60;");
+      ("=", "&#x3D;");
+    ]
   in
-  pp_statement ty ppf (Raw raw_functions)
+  let str = Id.unsafe "str" in
+  let result = Id.unsafe "result" in
+  let c = Id.unsafe "c" in
+  pp_statement ppf
+  @@ Fun
+       ( `Sync,
+         Id.runtime_escape,
+         [ str ],
+         [
+           Let (result, String "");
+           For_of
+             ( c,
+               Var str,
+               [
+                 Switch
+                   ( Var c,
+                     List.to_seq escapes
+                     |> Seq.map (fun (char, escaped) ->
+                            ( String char,
+                              [
+                                Set
+                                  (Var result, Plus (Var result, String escaped));
+                              ] )),
+                     [ Set (Var result, Plus (Var result, Var c)) ] );
+               ] );
+           Return (Var result);
+         ] )
 
 let of_const = function
   | Data.Const.String s -> String s
@@ -698,7 +720,7 @@ and construct_data_aux data_id async_queue = function
               (Map.String.map (construct_data_aux data_id async_queue) d
               |> Map.String.to_seq
               |> Seq.map (fun (k, v) ->
-                     Arr (Seq.cons (String k) @@ Seq.cons v @@ Seq.empty)));
+                     Arr (Seq.cons (String k) @@ Seq.return v)));
           ] )
   | D.Const c -> of_const c
   | D.Other (C.Var s) -> meth_get (Var (Id.Data.to_id data_id)) (String s)
@@ -716,32 +738,32 @@ and construct_data data_id args =
       args
     |> Array.to_list
   in
-  Seq.fold_lefti
-    (fun l i nodes -> Let (Id.resolved i, nodes) :: l)
-    args (Queue.to_seq async_queue)
+  Queue.to_seq async_queue
+  |> Seq.fold_lefti (fun l i nodes -> Let (Id.resolved i, nodes) :: l) args
 
 and construct_datum data_id arg =
   let async_queue = Queue.create () in
   let arg = Let (Id.arg 0, construct_data_aux data_id async_queue arg) in
-  Seq.fold_lefti
-    (fun l i nodes -> Let (Id.resolved i, nodes) :: l)
-    [ arg ] (Queue.to_seq async_queue)
+  Queue.to_seq async_queue
+  |> Seq.fold_lefti (fun l i nodes -> Let (Id.resolved i, nodes) :: l) [ arg ]
 
 and construct_data_dict data_id dict =
   let async_queue = Queue.create () in
   let arg =
     Let (Id.arg 0, construct_data_aux data_id async_queue (D.Dict dict))
   in
-  Seq.fold_lefti
-    (fun l i nodes -> Let (Id.resolved i, nodes) :: l)
-    [ arg ] (Queue.to_seq async_queue)
+  Queue.to_seq async_queue
+  |> Seq.fold_lefti (fun l i nodes -> Let (Id.resolved i, nodes) :: l) [ arg ]
 
-let error ty input =
-  Return
-    (App
-       ( Var Id.error_decode,
-         [ String (Format.asprintf "%a" Ty.pp ty); input; Var Id.debug_stack ]
-       ))
+let error =
+  let b = Buffer.create 64 in
+  let ppf = Format.formatter_of_buffer b in
+  fun ty input ->
+    Ty.pp ppf ty;
+    Format.pp_print_flush ppf ();
+    let ty = Buffer.contents b in
+    Buffer.clear b;
+    Return (App (Var Id.error_decode, [ String ty; input; Var Id.debug_stack ]))
 
 let decode_boolean ~set input cases ty =
   Switch
@@ -1132,24 +1154,22 @@ let make_js_imports C.{ components; _ } =
     components
     { import_map = Id.Map.empty; components_imports = []; components = [] }
 
-let pp ty ppf compiled =
+let pp pp_import pp_export ppf compiled =
   let { import_map; components; components_imports } =
     make_js_imports compiled
   in
   Format.fprintf ppf "@[<v>";
-  pp_statement ty ppf (Comment "THIS FILE WAS GENERATED BY ACUTIS.");
-  Id.Map.iter
-    (fun namespace (Filepath filename) ->
-      pp_statement ty ppf @@ Import (namespace, filename))
-    import_map;
-  pp_runtime ty ppf;
+  pp_comment ppf "THIS FILE WAS GENERATED BY ACUTIS.";
+  Id.Map.iter (pp_import ppf) import_map;
+  pp_runtime ppf;
   List.iter
     (fun { name; typescheme; namespace; function_path } ->
       let env = Id.Safe.create () in
       let input = Id.Safe.input env in
-      pp_statement ty ppf
+      pp_statement ppf
       @@ Fun
-           ( Id.component name,
+           ( `Async,
+             Id.component name,
              [ input ],
              List.concat
                [
@@ -1167,31 +1187,32 @@ let pp ty ppf compiled =
     components_imports;
   List.iter
     (fun (name, nodes) ->
-      pp_statement ty ppf
+      pp_statement ppf
       @@ Fun
-           ( Id.component name,
+           ( `Async,
+             Id.component name,
              [ Id.Data.(to_id initial) ],
              [ Return (nodes_string Id.Data.initial nodes) ] ))
     components;
   let env = Id.Safe.create () in
   let input = Id.Safe.input env in
-  pp_statement ty ppf
-    (Export_default
-       (Fun
-          ( Id.runtime_main,
-            [ input ],
-            List.concat
-              [
-                [
-                  Let (Id.Data.(to_id initial), New (Map, []));
-                  Let (Id.debug_stack, New (Array, []));
-                ];
-                decode_record_aux
-                  ~data:(Var Id.Data.(to_id initial))
-                  (Var input) env compiled.types;
-                [ Return (nodes_string Id.Data.initial compiled.nodes) ];
-              ] )));
+  pp_export ppf
+    (Fun
+       ( `Async,
+         Id.runtime_main,
+         [ input ],
+         List.concat
+           [
+             [
+               Let (Id.Data.(to_id initial), New (Map, []));
+               Let (Id.debug_stack, New (Array, []));
+             ];
+             decode_record_aux
+               ~data:(Var Id.Data.(to_id initial))
+               (Var input) env compiled.types;
+             [ Return (nodes_string Id.Data.initial compiled.nodes) ];
+           ] ));
   Format.fprintf ppf "@]"
 
-let cjs = pp CommonJs
-let esm = pp ESModule
+let cjs = pp pp_cjs_require pp_cjs_exports
+let esm = pp pp_esm_import pp_esm_export
