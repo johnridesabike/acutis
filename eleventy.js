@@ -89,14 +89,7 @@ module.exports = function (eleventyConfig, config) {
       function f(_stats, filePath, src) {
         result.push(Component.uint8Array(filePath, src));
       }
-      return Promise.all([
-        forEachFiles(ignores, path.join(dir.input, dir.includes), f),
-        // Contrary to 11ty convention, this makes layouts available as regular
-        // includes. But this doesn't seem harmful, and it can be useful.
-        dir.layouts
-          ? forEachFiles(ignores, path.join(dir.input, dir.layouts), f)
-          : Promise.resolve(),
-      ])
+      return forEachFiles(ignores, path.join(dir.input, dir.includes), f)
         .then(() => {
           components = Compile.components(result);
         })
