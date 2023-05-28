@@ -45,23 +45,18 @@ The OCaml package manager, OPAM, can install Acutis through the git repository.
 opam pin https://github.com/johnridesabike/acutis.git
 ```
 
-This command will install three packages:
+This command will install two packages:
 
 <dl>
 <dt class="font-monospace">
   acutis
 <dd>
-  The core Acutis library.
-
-<dt class="font-monospace">
-  acutis_json
-<dd>
-  A JSON-compatible implementation. This also includes the CLI.
+  The core Acutis library and CLI.
 
 <dt class="font-monospace">
   acutis_js
 <dd>
-  A JavaScript-compatible implementation for compiling with js_of_ocaml.
+  A virtual package containing the dependencies for compiling with js_of_ocaml.
 </dl>
 
 ## Installation: JavaScript
@@ -98,14 +93,14 @@ Beware: loading Acutis in Node.js has the side-effect of modifying how all
 uncaught exceptions are handled. This should not affect well-behaved code, but
 may make debugging errors more complicated.
 
-## Running directly versus JavaScript compilation
+## Running templates directly versus JavaScript compilation
 
 Acutis supports two main targets: running the compiled template directly with
 its built-in runtime, or emitting a JavaScript file that can be run on its own.
 
-Both are available either through the CLI or the JavaScript interface. Depending
-on what your needs are, one may be more useful than the other. JavaScript
-compilation is slightly more experimental.
+Both are available either through the [CLI] or the JavaScript interface.
+Depending on what your needs are, one may be more useful than the other.
+JavaScript compilation is slightly more experimental.
 
 ## Editor plugins
 
@@ -129,9 +124,11 @@ These offer basic syntax highlighting and indentation features.
 
 ## Acutis command line interface (CLI)
 
-If you install Acutis through OPAM, then the `acutis_json` package comes with a
-command-line tool called `acutis`. This accepts JSON data and a list of template
-filenames, and it prints the rendered output.
+If you install Acutis through OPAM, then it comes with a command-line tool
+called `acutis`. This accepts JSON data and a list of template filenames, and it
+prints the rendered output.
+
+Example:
 
 ```shell
 acutis index.acutis src/**/*.acutis < data.json > dist/index.html

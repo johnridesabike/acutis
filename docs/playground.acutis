@@ -36,7 +36,10 @@
     class="playground__textarea"
     wrap="off"
   ></textarea>
-  <button id="render" class="playground__button">Render</button>
+  <div class="playground__buttons">
+    <button id="render" class="playground__button">Render</button>
+    <button id="getlink" class="playground__button">Copy link</button>
+  </div>
   <label for="jsresult" class="playground__header">Compiled JavaScript</label>
   <textarea
     id="jsresult"
