@@ -4,13 +4,15 @@
 ; Basic example file
 
 (rule ; Generate the compiled JS.
- (target tojs_example.compiled.output)
+ (target printjs_example.compiled.output)
  (action
   (with-stdout-to
    %{target}
-   (run %{bin:acutis} --mode js %{dep:tojs_example.acutis}))))
+   (run %{bin:acutis} --mode js %{dep:printjs_example.acutis}))))
 
 (rule ; Diff the compiled JS.
  (alias runtest)
  (action
-  (diff %{dep:tojs_example_compiled.mjs} %{dep:tojs_example_compiled.output})))
+  (diff
+   %{dep:printjs_example.compiled.mjs}
+   %{dep:printjs_example.compiled.output})))
