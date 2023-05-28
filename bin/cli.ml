@@ -98,7 +98,7 @@ let make_components_js () =
        let typescheme = Compile.interface_from_string ~fname:"-" interface in
        let name = fname_to_compname function_path in
        Compile.Components.from_fun ~name typescheme
-         (ToJs.jsfun ~module_path ~function_path)
+         (PrintJs.jsfun ~module_path ~function_path)
   in
   Seq.append l funl |> Compile.Components.of_seq
 
@@ -159,7 +159,7 @@ let () =
                 Out_channel.output_string chan result)
         | Make_js ty -> (
             let printer =
-              match ty with CommonJs -> ToJs.cjs | ESModule -> ToJs.esm
+              match ty with CommonJs -> PrintJs.cjs | ESModule -> PrintJs.esm
             in
             let components = make_components_js () in
             let template =

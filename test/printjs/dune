@@ -4,7 +4,7 @@
 ; Basic example file
 
 (rule ; Generate the compiled JS.
- (target tojs_example_compiled.output)
+ (target tojs_example.compiled.output)
  (action
   (with-stdout-to
    %{target}

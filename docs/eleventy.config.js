@@ -73,7 +73,7 @@ module.exports = (eleventyConfig) => {
   // eleventyConfig.addPlugin(acutisEleventy, {
   //   components: require("./_includes/eleventyComponents"),
   // });
-  eleventyConfig.addPlugin(acutisEleventy.toJs, {
+  eleventyConfig.addPlugin(acutisEleventy.printJs, {
     components: require("./_includes/eleventyComponents"),
     componentsPath: "./_includes/eleventyComponents",
   });

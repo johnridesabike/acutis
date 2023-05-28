@@ -240,7 +240,7 @@ let oracle = new RebuildOracle();
 // Before each Eleventy build, we need to rebuild any .acutis files which
 // changed.
 
-module.exports.toJs = function (eleventyConfig, config) {
+module.exports.printJs = function (eleventyConfig, config) {
   eleventyConfig.versionCheck(">= 2.0");
   eleventyConfig.on("eleventy.before", ({ dir }) => {
     oracle.addConfig(config);
@@ -270,7 +270,7 @@ module.exports.toJs = function (eleventyConfig, config) {
               let components = Compile.components(
                 compFuns
                   .map(({ key, f }) =>
-                    Component.funToJs(relativeCompPath, key, f.interface)
+                    Component.funPath(relativeCompPath, key, f.interface)
                   )
                   .concat(compSrc)
               );

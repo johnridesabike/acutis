@@ -50,11 +50,11 @@ let () =
          in
          Compile.Components.from_fun ~name:(Js.to_string name) ty fn
 
-       method funToJs module_path name ty =
+       method funPath module_path name ty =
          let function_path = Js.to_string name in
          let module_path = Js.to_string module_path in
          Compile.Components.from_fun ~name:function_path ty
-           (ToJs.jsfun ~module_path ~function_path)
+           (PrintJs.jsfun ~module_path ~function_path)
     end)
 
 let () =
@@ -72,11 +72,11 @@ let () =
            (Typed_array.String.of_uint8Array src)
 
        method toJSString x =
-         ToJs.esm Format.str_formatter x;
+         PrintJs.esm Format.str_formatter x;
          Format.flush_str_formatter () |> Js.string
 
        method toCJSString x =
-         ToJs.cjs Format.str_formatter x;
+         PrintJs.cjs Format.str_formatter x;
          Format.flush_str_formatter () |> Js.string
     end)
 
