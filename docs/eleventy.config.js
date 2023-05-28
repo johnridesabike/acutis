@@ -11,7 +11,6 @@ const syntaxHighlight = require("@11ty/eleventy-plugin-syntaxhighlight");
 const markdownItAnchor = require("markdown-it-anchor");
 const markdownItToc = require("markdown-it-table-of-contents");
 const acutisEleventy = require("acutis-lang/eleventy");
-const acutisComponents = require("./_includes/eleventyComponents");
 const { pathPrefix } = require("./_data/site");
 
 function acutisSyntax(Prism) {
@@ -71,7 +70,9 @@ module.exports = (eleventyConfig) => {
   eleventyConfig.addPlugin(syntaxHighlight, {
     init: ({ Prism }) => acutisSyntax(Prism),
   });
-  //eleventyConfig.addPlugin(acutisEleventy, { components: acutisComponents });
+  // eleventyConfig.addPlugin(acutisEleventy, {
+  //   components: require("./_includes/eleventyComponents"),
+  // });
   eleventyConfig.addPlugin(acutisEleventy.toJs, {
     components: require("./_includes/eleventyComponents"),
     componentsPath: "./_includes/eleventyComponents",
