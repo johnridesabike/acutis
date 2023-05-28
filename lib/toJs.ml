@@ -255,6 +255,7 @@ let is_js_id =
 
 let pp_statement =
   let open Format in
+  let pp_wrap_box f ppf a = fprintf ppf "@[<hv 2>%a@]" f a in
   let rec pp_expr ppf = function
     | Eq (a, b) -> fprintf ppf "%a ===@ %a" pp_expr a pp_expr b
     | Not_eq (a, b) -> fprintf ppf "%a !== %a" pp_expr a pp_expr b
@@ -280,14 +281,12 @@ let pp_statement =
         fprintf ppf "%a(%a)" pp_expr name pp_expr arg
     | App (name, args) ->
         fprintf ppf "%a(@,%a@;<0 -2>)" pp_expr name
-          (pp_print_list ~pp_sep:pp_comma (fun ppf expr ->
-               fprintf ppf "@[<hv 2>%a@]" pp_expr expr))
+          (pp_print_list ~pp_sep:pp_comma (pp_wrap_box pp_expr))
           args
     | New (name, [ arg ]) -> fprintf ppf "new %a(%a)" pp_obj name pp_expr arg
     | New (name, args) ->
         fprintf ppf "@[<hv 2>new %a(@,%a@;<0 -2>)@]" pp_obj name
-          (pp_print_list ~pp_sep:pp_comma (fun ppf expr ->
-               fprintf ppf "@[<hv 2>%a@]" pp_expr expr))
+          (pp_print_list ~pp_sep:pp_comma (pp_wrap_box pp_expr))
           args
     | App_expr (expr, args) ->
         fprintf ppf "%a(%a)" pp_expr expr
@@ -296,8 +295,7 @@ let pp_statement =
     | Await expr -> fprintf ppf "(await %a)" pp_expr expr
     | Arr a ->
         fprintf ppf "[@,%a%t]"
-          (pp_print_seq ~pp_sep:pp_comma (fun ppf expr ->
-               fprintf ppf "@[<hv 2>%a@]" pp_expr expr))
+          (pp_print_seq ~pp_sep:pp_comma (pp_wrap_box pp_expr))
           a pp_trailing_comma
     | Typeof expr -> fprintf ppf "typeof %a" pp_expr expr
     | Instanceof (a, b) -> fprintf ppf "%a instanceof %a" pp_expr a pp_obj b
@@ -462,8 +460,6 @@ let pp_runtime ppf =
          [ str ],
          [
            Let (result, String "");
-           (* When I ran a benchmark it showed that this basic for loop was
-              faster than for...of or chaining str.replace(). *)
            For
              ( Id.index,
                Field (Var str, String "length"),
