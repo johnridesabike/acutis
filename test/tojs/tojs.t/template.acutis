@@ -24,6 +24,11 @@ tagged_record_open =
 unknown = _
 nested_list = [[[int]]]
 nested_nullable_list = [??false | true]
+null_int = ?int
+null_float = ?float
+null_bool = ?false | true
+null_string = ?string
+unicode_string = string
 / ~%}
 
 Formatters
@@ -39,6 +44,11 @@ Escaping
 
 Escaped     {{ dangerous }}
 Not escaped {{{ dangerous }}}
+
+Nullable echo chaining
+----------------------
+
+{{ %i null_int ? %f null_float ? %b null_bool ? null_string ? "pass" }}
 
 Matching
 --------
@@ -137,6 +147,8 @@ String encoding
 
 😇👨‍💻😇
 \" \ \ \"
+
+{{ unicode_string }}
 
 External JavaScript template component: stringify arbitrary data
 

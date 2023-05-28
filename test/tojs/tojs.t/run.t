@@ -260,9 +260,11 @@
   
   async function template_Component(data) {
     return (await Promise.all([
-      acutis_escape(data.get("optional") !== null
-        ? data.get("optional").toString()
-        : data.get("children")),
+      acutis_escape(
+        data.get("optional") !== null
+          ? data.get("optional")[0].toString()
+          : data.get("children")
+      ),
       "\n\
   ",
       (async function () {
@@ -495,23 +497,100 @@
     } else {
       return decode_error_field("nested_nullable_list", debug_stack);
     }
+    if ("null_bool" in input1) {
+      debug_stack.push("null_bool");
+      let input10 = input1.null_bool;
+      if (input10 === null || input10 === undefined) {
+        data.set("null_bool", null);
+      } else {
+        let nullable3 = new Array(1);
+        data.set("null_bool", nullable3);
+        switch (input10) {
+          case false:
+            nullable3[0] = 0;
+            break;
+          case true:
+            nullable3[0] = 1;
+            break;
+          default:
+            return decode_error("false | true", input10, debug_stack);
+        }
+      }
+      debug_stack.pop();
+    } else {
+      data.set("null_bool", null);
+    }
+    if ("null_float" in input1) {
+      debug_stack.push("null_float");
+      let input11 = input1.null_float;
+      if (input11 === null || input11 === undefined) {
+        data.set("null_float", null);
+      } else {
+        let nullable4 = new Array(1);
+        data.set("null_float", nullable4);
+        if (typeof input11 === "number") {
+          nullable4[0] = input11;
+        } else {
+          return decode_error("float", input11, debug_stack);
+        }
+      }
+      debug_stack.pop();
+    } else {
+      data.set("null_float", null);
+    }
+    if ("null_int" in input1) {
+      debug_stack.push("null_int");
+      let input12 = input1.null_int;
+      if (input12 === null || input12 === undefined) {
+        data.set("null_int", null);
+      } else {
+        let nullable5 = new Array(1);
+        data.set("null_int", nullable5);
+        if (typeof input12 === "number") {
+          nullable5[0] = input12 | 0;
+        } else {
+          return decode_error("int", input12, debug_stack);
+        }
+      }
+      debug_stack.pop();
+    } else {
+      data.set("null_int", null);
+    }
+    if ("null_string" in input1) {
+      debug_stack.push("null_string");
+      let input13 = input1.null_string;
+      if (input13 === null || input13 === undefined) {
+        data.set("null_string", null);
+      } else {
+        let nullable6 = new Array(1);
+        data.set("null_string", nullable6);
+        if (typeof input13 === "string") {
+          nullable6[0] = input13;
+        } else {
+          return decode_error("string", input13, debug_stack);
+        }
+      }
+      debug_stack.pop();
+    } else {
+      data.set("null_string", null);
+    }
     if ("null_string_dict" in input1) {
       debug_stack.push("null_string_dict");
-      let input10 = input1.null_string_dict;
+      let input14 = input1.null_string_dict;
       let dict1 = new Map();
       data.set("null_string_dict", dict1);
-      for (let key1 in input10) {
+      for (let key1 in input14) {
         debug_stack.push(key1);
-        let input11 = input10[key1];
-        if (input11 === null || input11 === undefined) {
+        let input15 = input14[key1];
+        if (input15 === null || input15 === undefined) {
           dict1.set(key1, null);
         } else {
-          let nullable3 = new Array(1);
-          dict1.set(key1, nullable3);
-          if (typeof input11 === "string") {
-            nullable3[0] = input11;
+          let nullable7 = new Array(1);
+          dict1.set(key1, nullable7);
+          if (typeof input15 === "string") {
+            nullable7[0] = input15;
           } else {
-            return decode_error("string", input11, debug_stack);
+            return decode_error("string", input15, debug_stack);
           }
         }
         debug_stack.pop();
@@ -522,13 +601,13 @@
     }
     if ("record" in input1) {
       debug_stack.push("record");
-      let input12 = input1.record;
+      let input16 = input1.record;
       let record1 = new Map();
       data.set("record", record1);
-      if ("int_enum" in input12) {
+      if ("int_enum" in input16) {
         debug_stack.push("int_enum");
-        let input13 = input12.int_enum;
-        switch (input13) {
+        let input17 = input16.int_enum;
+        switch (input17) {
           case 8:
             record1.set("int_enum", 8);
             break;
@@ -536,16 +615,16 @@
             record1.set("int_enum", 40);
             break;
           default:
-            return decode_error("@8 | @40", input13, debug_stack);
+            return decode_error("@8 | @40", input17, debug_stack);
         }
         debug_stack.pop();
       } else {
         return decode_error_field("int_enum", debug_stack);
       }
-      if ("string_enum" in input12) {
+      if ("string_enum" in input16) {
         debug_stack.push("string_enum");
-        let input14 = input12.string_enum;
-        switch (input14) {
+        let input18 = input16.string_enum;
+        switch (input18) {
           case "no":
             record1.set("string_enum", "no");
             break;
@@ -553,7 +632,7 @@
             record1.set("string_enum", "yes");
             break;
           default:
-            return decode_error("@\"no\" | @\"yes\"", input14, debug_stack);
+            return decode_error("@\"no\" | @\"yes\"", input18, debug_stack);
         }
         debug_stack.pop();
       } else {
@@ -565,20 +644,20 @@
     }
     if ("tagged_record_bool" in input1) {
       debug_stack.push("tagged_record_bool");
-      let input15 = input1.tagged_record_bool;
+      let input19 = input1.tagged_record_bool;
       let union1 = new Map();
       data.set("tagged_record_bool", union1);
-      let input16 = input15.tag;
-      switch (input16) {
+      let input20 = input19.tag;
+      switch (input20) {
         case false:
           union1.set("tag", 0);
-          if ("a" in input15) {
+          if ("a" in input19) {
             debug_stack.push("a");
-            let input24 = input15.a;
-            if (typeof input24 === "string") {
-              union1.set("a", input24);
+            let input29 = input19.a;
+            if (typeof input29 === "string") {
+              union1.set("a", input29);
             } else {
-              return decode_error("string", input24, debug_stack);
+              return decode_error("string", input29, debug_stack);
             }
             debug_stack.pop();
           } else {
@@ -587,13 +666,13 @@
           break;
         case true:
           union1.set("tag", 1);
-          if ("b" in input15) {
+          if ("b" in input19) {
             debug_stack.push("b");
-            let input25 = input15.b;
-            if (typeof input25 === "number") {
-              union1.set("b", input25 | 0);
+            let input30 = input19.b;
+            if (typeof input30 === "number") {
+              union1.set("b", input30 | 0);
             } else {
-              return decode_error("int", input25, debug_stack);
+              return decode_error("int", input30, debug_stack);
             }
             debug_stack.pop();
           } else {
@@ -603,7 +682,7 @@
         default:
           return decode_error(
             "{@tag: false, a: string} | {@tag: true, b: int}",
-            input15,
+            input19,
             debug_stack
           );
       }
@@ -613,41 +692,41 @@
     }
     if ("tagged_record_int" in input1) {
       debug_stack.push("tagged_record_int");
-      let input17 = input1.tagged_record_int;
+      let input21 = input1.tagged_record_int;
       let union2 = new Map();
       data.set("tagged_record_int", union2);
-      let input18 = input17.tag;
-      switch (input18) {
+      let input22 = input21.tag;
+      switch (input22) {
         case 0:
           union2.set("tag", 0);
           break;
         case 1:
           union2.set("tag", 1);
-          if ("tuple" in input17) {
+          if ("tuple" in input21) {
             debug_stack.push("tuple");
-            let input26 = input17.tuple;
-            if (input26 instanceof Array && input26.length === 3) {
+            let input31 = input21.tuple;
+            if (input31 instanceof Array && input31.length === 3) {
               let tuple1 = new Array(3);
               union2.set("tuple", tuple1);
               debug_stack.push(0);
-              let input27 = input26[0];
-              if (typeof input27 === "number") {
-                tuple1[0] = input27;
+              let input32 = input31[0];
+              if (typeof input32 === "number") {
+                tuple1[0] = input32;
               } else {
-                return decode_error("float", input27, debug_stack);
+                return decode_error("float", input32, debug_stack);
               }
               debug_stack.pop();
               debug_stack.push(1);
-              let input28 = input26[1];
-              if (typeof input28 === "string") {
-                tuple1[1] = input28;
+              let input33 = input31[1];
+              if (typeof input33 === "string") {
+                tuple1[1] = input33;
               } else {
-                return decode_error("string", input28, debug_stack);
+                return decode_error("string", input33, debug_stack);
               }
               debug_stack.pop();
               debug_stack.push(2);
-              let input29 = input26[2];
-              switch (input29) {
+              let input34 = input31[2];
+              switch (input34) {
                 case false:
                   tuple1[2] = 0;
                   break;
@@ -655,13 +734,13 @@
                   tuple1[2] = 1;
                   break;
                 default:
-                  return decode_error("false | true", input29, debug_stack);
+                  return decode_error("false | true", input34, debug_stack);
               }
               debug_stack.pop();
             } else {
               return decode_error(
                 "(float, string, false | true)",
-                input26,
+                input31,
                 debug_stack
               );
             }
@@ -673,7 +752,7 @@
         default:
           return decode_error(
             "{@tag: 0} | {@tag: 1, tuple: (float, string, false | true)}",
-            input17,
+            input21,
             debug_stack
           );
       }
@@ -683,20 +762,20 @@
     }
     if ("tagged_record_open" in input1) {
       debug_stack.push("tagged_record_open");
-      let input19 = input1.tagged_record_open;
+      let input23 = input1.tagged_record_open;
       let union3 = new Map();
       data.set("tagged_record_open", union3);
-      let input20 = input19.tag;
-      switch (input20) {
+      let input24 = input23.tag;
+      switch (input24) {
         case 100:
           union3.set("tag", 100);
-          if ("a" in input19) {
+          if ("a" in input23) {
             debug_stack.push("a");
-            let input30 = input19.a;
-            if (typeof input30 === "number") {
-              union3.set("a", input30 | 0);
+            let input35 = input23.a;
+            if (typeof input35 === "number") {
+              union3.set("a", input35 | 0);
             } else {
-              return decode_error("int", input30, debug_stack);
+              return decode_error("int", input35, debug_stack);
             }
             debug_stack.pop();
           } else {
@@ -705,13 +784,13 @@
           break;
         case 200:
           union3.set("tag", 200);
-          if ("b" in input19) {
+          if ("b" in input23) {
             debug_stack.push("b");
-            let input31 = input19.b;
-            if (typeof input31 === "string") {
-              union3.set("b", input31);
+            let input36 = input23.b;
+            if (typeof input36 === "string") {
+              union3.set("b", input36);
             } else {
-              return decode_error("string", input31, debug_stack);
+              return decode_error("string", input36, debug_stack);
             }
             debug_stack.pop();
           } else {
@@ -720,13 +799,13 @@
           break;
         case 300:
           union3.set("tag", 300);
-          if ("c" in input19) {
+          if ("c" in input23) {
             debug_stack.push("c");
-            let input32 = input19.c;
-            if (typeof input32 === "number") {
-              union3.set("c", input32);
+            let input37 = input23.c;
+            if (typeof input37 === "number") {
+              union3.set("c", input37);
             } else {
-              return decode_error("float", input32, debug_stack);
+              return decode_error("float", input37, debug_stack);
             }
             debug_stack.pop();
           } else {
@@ -734,10 +813,10 @@
           }
           break;
         default:
-          if (typeof input20 === "number") {
-            union3.set("tag", input20 | 0);
+          if (typeof input24 === "number") {
+            union3.set("tag", input24 | 0);
           } else {
-            return decode_error("int", input20, debug_stack);
+            return decode_error("int", input24, debug_stack);
           }
       }
       debug_stack.pop();
@@ -746,32 +825,32 @@
     }
     if ("tagged_record_string" in input1) {
       debug_stack.push("tagged_record_string");
-      let input21 = input1.tagged_record_string;
+      let input25 = input1.tagged_record_string;
       let union4 = new Map();
       data.set("tagged_record_string", union4);
-      let input22 = input21.tag;
-      switch (input22) {
+      let input26 = input25.tag;
+      switch (input26) {
         case "a":
           union4.set("tag", "a");
-          if ("record_list" in input21) {
+          if ("record_list" in input25) {
             debug_stack.push("record_list");
-            let input33 = input21.record_list;
-            if (input33 instanceof Array) {
+            let input38 = input25.record_list;
+            if (input38 instanceof Array) {
               let dst_base6 = new Array(2);
               let dst6 = dst_base6;
-              for (let index = 0; index < input33.length; index++) {
-                let input_hd6 = input33[index];
+              for (let index = 0; index < input38.length; index++) {
+                let input_hd6 = input38[index];
                 debug_stack.push(index);
                 let dst_new6 = new Array(2);
                 let record2 = new Map();
                 dst_new6[0] = record2;
                 if ("job" in input_hd6) {
                   debug_stack.push("job");
-                  let input34 = input_hd6.job;
-                  if (typeof input34 === "string") {
-                    record2.set("job", input34);
+                  let input39 = input_hd6.job;
+                  if (typeof input39 === "string") {
+                    record2.set("job", input39);
                   } else {
-                    return decode_error("string", input34, debug_stack);
+                    return decode_error("string", input39, debug_stack);
                   }
                   debug_stack.pop();
                 } else {
@@ -779,11 +858,11 @@
                 }
                 if ("name" in input_hd6) {
                   debug_stack.push("name");
-                  let input35 = input_hd6.name;
-                  if (typeof input35 === "string") {
-                    record2.set("name", input35);
+                  let input40 = input_hd6.name;
+                  if (typeof input40 === "string") {
+                    record2.set("name", input40);
                   } else {
-                    return decode_error("string", input35, debug_stack);
+                    return decode_error("string", input40, debug_stack);
                   }
                   debug_stack.pop();
                 } else {
@@ -798,7 +877,7 @@
             } else {
               return decode_error(
                 "{job: string, name: string}",
-                input33,
+                input38,
                 debug_stack
               );
             }
@@ -809,13 +888,13 @@
           break;
         case "b":
           union4.set("tag", "b");
-          if ("open_enum" in input21) {
+          if ("open_enum" in input25) {
             debug_stack.push("open_enum");
-            let input36 = input21.open_enum;
-            if (typeof input36 === "number") {
-              union4.set("open_enum", input36 | 0);
+            let input41 = input25.open_enum;
+            if (typeof input41 === "number") {
+              union4.set("open_enum", input41 | 0);
             } else {
-              return decode_error("@0 | @1 | ...", input36, debug_stack);
+              return decode_error("@0 | @1 | ...", input41, debug_stack);
             }
             debug_stack.pop();
           } else {
@@ -826,7 +905,7 @@
           return decode_error(
             "{@tag: \"a\", record_list: [{job: string, name: string}]} |\n\
   {@tag: \"b\", open_enum: @0 | @1 | ...}",
-            input21,
+            input25,
             debug_stack
           );
       }
@@ -834,10 +913,22 @@
     } else {
       return decode_error_field("tagged_record_string", debug_stack);
     }
+    if ("unicode_string" in input1) {
+      debug_stack.push("unicode_string");
+      let input27 = input1.unicode_string;
+      if (typeof input27 === "string") {
+        data.set("unicode_string", input27);
+      } else {
+        return decode_error("string", input27, debug_stack);
+      }
+      debug_stack.pop();
+    } else {
+      return decode_error_field("unicode_string", debug_stack);
+    }
     if ("unknown" in input1) {
       debug_stack.push("unknown");
-      let input23 = input1.unknown;
-      data.set("unknown", input23);
+      let input28 = input1.unknown;
+      data.set("unknown", input28);
       debug_stack.pop();
     } else {
       data.set("unknown", null);
@@ -867,6 +958,23 @@
       "\n\
   Not escaped ",
       data.get("dangerous"),
+      "\n\
+  \n\
+  Nullable echo chaining\n\
+  ----------------------\n\
+  \n\
+  ",
+      acutis_escape(
+        data.get("null_int") !== null
+          ? data.get("null_int")[0].toString()
+          : data.get("null_float") !== null
+              ? data.get("null_float")[0].toString()
+              : data.get("null_bool") !== null
+                  ? data.get("null_bool")[0] ? "true" : "false"
+                  : data.get("null_string") !== null
+                      ? data.get("null_string")[0]
+                      : "pass"
+      ),
       "\n\
   \n\
   Matching\n\
@@ -1112,50 +1220,54 @@
           data1.set("l", arg0[0]);
           switch (exit) {
             case 0:
-              result.push((async function () {
-                let result = [];
-                let index = 0;
-                let arg0 = data1.get("l");
-                while (arg0 !== null) {
-                  let data2 = new Map(data1);
-                  let exit = null;
-                  exit = 0;
-                  data2.set("l2", arg0[0]);
-                  switch (exit) {
-                    case 0:
-                      result.push((async function () {
-                        let result = [];
-                        let index = 0;
-                        let arg0 = data2.get("l2");
-                        while (arg0 !== null) {
-                          let data3 = new Map(data2);
-                          let exit = null;
-                          exit = 0;
-                          data3.set("i", arg0[0]);
-                          switch (exit) {
-                            case 0:
-                              result.push(
-                                acutis_escape(data3.get("i").toString()),
-                                " "
-                              );
-                              break;
-                            default:
-                              return pattern_failure_error();
-                          }
-                          index++;
-                          arg0 = arg0[1];
-                        }
-                        return (await Promise.all(result)).join("");
-                      })());
-                      break;
-                    default:
-                      return pattern_failure_error();
+              result.push(
+                (async function () {
+                  let result = [];
+                  let index = 0;
+                  let arg0 = data1.get("l");
+                  while (arg0 !== null) {
+                    let data2 = new Map(data1);
+                    let exit = null;
+                    exit = 0;
+                    data2.set("l2", arg0[0]);
+                    switch (exit) {
+                      case 0:
+                        result.push(
+                          (async function () {
+                            let result = [];
+                            let index = 0;
+                            let arg0 = data2.get("l2");
+                            while (arg0 !== null) {
+                              let data3 = new Map(data2);
+                              let exit = null;
+                              exit = 0;
+                              data3.set("i", arg0[0]);
+                              switch (exit) {
+                                case 0:
+                                  result.push(
+                                    acutis_escape(data3.get("i").toString()),
+                                    " "
+                                  );
+                                  break;
+                                default:
+                                  return pattern_failure_error();
+                              }
+                              index++;
+                              arg0 = arg0[1];
+                            }
+                            return (await Promise.all(result)).join("");
+                          })()
+                        );
+                        break;
+                      default:
+                        return pattern_failure_error();
+                    }
+                    index++;
+                    arg0 = arg0[1];
                   }
-                  index++;
-                  arg0 = arg0[1];
-                }
-                return (await Promise.all(result)).join("");
-              })());
+                  return (await Promise.all(result)).join("");
+                })()
+              );
               break;
             default:
               return pattern_failure_error();
@@ -1485,6 +1597,10 @@
   😇👨‍💻😇\n\
   \\\" \\ \\ \\\"\n\
   \n\
+  ",
+      acutis_escape(data.get("unicode_string")),
+      "\n\
+  \n\
   External JavaScript template component: stringify arbitrary data\n\
   \n\
   ",
@@ -1539,6 +1655,11 @@
   >       [[3, 3, 3]],
   >     ],
   >     nested_nullable_list: [null, true, false, null],
+  >     null_int: null,
+  >     null_float: null,
+  >     null_bool: null,
+  >     null_string: null,
+  >     unicode_string: "👩‍🌾",
   >   });
   >   process.stdout.write(result);
   > EOF
@@ -1557,6 +1678,11 @@
   
   Escaped     &amp;&quot;&apos;&gt;&lt;&#x2F;&#x60;&#x3D;
   Not escaped &"'></`=
+  
+  Nullable echo chaining
+  ----------------------
+  
+  pass
   
   Matching
   --------
@@ -1626,6 +1752,8 @@
   
   😇👨‍💻😇
   \" \ \ \"
+  
+  👩‍🌾
   
   External JavaScript template component: stringify arbitrary data
   

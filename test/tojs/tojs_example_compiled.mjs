@@ -275,9 +275,11 @@ export default async function main(input1) {
               acutis_escape(data1.get("title")),
               " </h2>\n\
       <span class=\"p-author\"> By ",
-              acutis_escape(data1.get("name") !== null
-                ? data1.get("name")
-                : "Anonymous"),
+              acutis_escape(
+                data1.get("name") !== null
+                  ? data1.get("name")[0]
+                  : "Anonymous"
+              ),
               " </span>\n\
       <span class=\"dt-published\"> Posted on ",
               acutis_escape(data1.get("date")),

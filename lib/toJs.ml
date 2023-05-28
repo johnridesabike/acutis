@@ -269,13 +269,15 @@ let pp_statement =
     | Field (a, String s) when is_js_id s -> fprintf ppf "%a.%s" pp_expr a s
     | Field (a, b) -> fprintf ppf "%a[%a]" pp_expr a pp_expr b
     | Tern (cond, i, e) ->
-        fprintf ppf "%a@ ? %a@ : %a" pp_expr cond pp_expr i pp_expr e
+        fprintf ppf "%a@ ? @[<hv 2>%a@]@ : @[<hv 2>%a@]" pp_expr cond pp_expr i
+          pp_expr e
     | Fun_expr (args, statements) ->
         fprintf ppf "(async function (%a) {@ @[<v 0>%a@]@;<1 -2>})"
           (pp_print_list ~pp_sep:pp_comma Id.pp)
           args pp_statements statements
     | App (name, []) -> fprintf ppf "%a()" pp_expr name
-    | App (name, [ arg ]) -> fprintf ppf "%a(%a)" pp_expr name pp_expr arg
+    | App (name, [ ((Arr _ | String _) as arg) ]) ->
+        fprintf ppf "%a(%a)" pp_expr name pp_expr arg
     | App (name, args) ->
         fprintf ppf "%a(@,%a@;<0 -2>)" pp_expr name
           (pp_print_list ~pp_sep:pp_comma (fun ppf expr ->
@@ -321,10 +323,7 @@ let pp_statement =
           ppf cases;
         (match default with
         | [] -> ()
-        | l ->
-            fprintf ppf "@ @[<v 2>default:@ ";
-            pp_statements ppf l;
-            fprintf ppf "@]");
+        | l -> fprintf ppf "@ @[<v 2>default:@ %a@]" pp_statements l);
         fprintf ppf "@;<1 -2>}@]"
     | If_else (expr, ifs, elses) ->
         fprintf ppf "@[<v 2>@[<hv 2>if (@,%a@;<0 -2>)@] {@ " pp_expr expr;
@@ -389,6 +388,9 @@ let meth_join x s = App (Field (x, String "join"), [ String s ])
 let meth_push x v = App (Field (Var x, String "push"), v)
 let meth_pop x = App (Field (Var x, String "pop"), [])
 let promise_all x = Await (App (Field (Obj Promise, String "all"), [ x ]))
+let list_hd e = Field (e, Int 0)
+let null_value = list_hd
+let list_tl e = Field (e, Int 1)
 
 let pp_runtime ppf =
   pp_statement ppf
@@ -502,17 +504,17 @@ let rec echoes data_id default default_fmt = function
   | (f, e) :: tl ->
       let e = echo data_id e in
       Tern
-        (Not_eq (e, Prim Null), fmt e f, echoes data_id default default_fmt tl)
+        ( Not_eq (e, Prim Null),
+          fmt (null_value e) f,
+          echoes data_id default default_fmt tl )
 
 let add_vars ids arg vars =
   Set.Int.fold (fun id vars -> Map.Int.add id arg vars) ids vars
 
 let entry_index = Field (Var Id.entry, Int 0)
 let entry_value = Field (Var Id.entry, Int 1)
-let list_hd = Field (Var (Id.arg 0), Int 0)
-let list_tl = Field (Var (Id.arg 0), Int 1)
 let list_index = Var Id.index
-let arg_map = function 0 -> list_hd | _ -> list_index
+let arg_map = function 0 -> list_hd (Var (Id.arg 0)) | _ -> list_index
 let arg_map_dict = function 0 -> entry_value | _ -> entry_index
 let arg_match key = Var (Id.arg key)
 let arg_str id key = meth_get id (String key)
@@ -681,7 +683,7 @@ and map_list data_id arg M.{ tree; exits } =
                                ] )),
                       [ Return (App (Var Id.error_pattern_failure, [])) ] );
                   Incr (Var Id.index);
-                  Set (Var (Id.arg 0), list_tl);
+                  Set (Var (Id.arg 0), list_tl (Var (Id.arg 0)));
                 ];
               ] );
       ];
@@ -902,7 +904,7 @@ and decode_list ~set input env ty =
   let dst_new = Id.Safe.dst_new env in
   let input_hd = Id.Safe.input_hd env in
   let new_cell = New (Array, [ Int 2 ]) in
-  let hd = Field (Var dst_new, Int 0) in
+  let hd = list_hd (Var dst_new) in
   If_else
     ( Instanceof (input, Array),
       [
@@ -922,19 +924,19 @@ and decode_list ~set input env ty =
                   ~set:(fun id -> Set (hd, id))
                   (Var input_hd) env ty;
                 [
-                  Set (Field (Var dst, Int 1), Var dst_new);
+                  Set (list_tl (Var dst), Var dst_new);
                   Set (Var dst, Var dst_new);
                   Expr (meth_pop Id.debug_stack);
                 ];
               ] );
-        Set (Field (Var dst, Int 1), Prim Null);
-        set (Field (Var dst_base, Int 1));
+        Set (list_tl (Var dst), Prim Null);
+        set (list_tl (Var dst_base));
       ],
       [ error ty input ] )
 
 and decode_nullable ~set input env ty =
   let nullable = Id.Safe.nullable env in
-  let nullable_value = Field (Var nullable, Int 0) in
+  let nullable_value = null_value (Var nullable) in
   If_else
     ( Or (Eq (input, Prim Null), Eq (input, Prim Undefined)),
       [ set (Prim Null) ],
@@ -945,8 +947,8 @@ and decode_nullable ~set input env ty =
            input env ty )
 
 and decode_record_aux ~data input env tys =
-  Map.String.to_seq tys
-  |> Seq.map (fun (k, ty) ->
+  Map.String.bindings tys
+  |> List.map (fun (k, ty) ->
          let set id = Expr (meth_set data (String k) id) in
          let input' = Id.Safe.input env in
          If_else
@@ -963,7 +965,6 @@ and decode_record_aux ~data input env tys =
              match !ty with
              | Nullable _ | Unknown _ -> [ set (Prim Null) ]
              | _ -> [ error_field k ] ))
-  |> List.of_seq
 
 and decode_record ~set input env tys =
   let record = Id.Safe.record env in
@@ -1036,7 +1037,7 @@ and encode_nullable ~set input env ty =
   If_else
     ( Eq (input, Prim Null),
       [ set (Prim Null) ],
-      Let (input', Field (input, Int 0))
+      Let (input', null_value input)
       :: encode_typescheme ~set (Var input') env ty )
 
 and encode_list ~set input env ty =
@@ -1049,11 +1050,11 @@ and encode_list ~set input env ty =
       ( Not_eq (input, Prim Null),
         List.concat
           [
-            [ Let (input', Field (input, Int 0)) ];
+            [ Let (input', list_hd input) ];
             encode_typescheme
               ~set:(fun input -> Expr (meth_push array [ input ]))
               (Var input') env ty;
-            [ Set (input, Field (input, Int 1)) ];
+            [ Set (input, list_tl input) ];
           ] );
   ]
 
@@ -1072,13 +1073,13 @@ and encode_tuple ~set input env tys =
      |> List.concat)
 
 and encode_record_aux ~data input env tys =
-  Map.String.to_seq tys
-  |> Seq.map (fun (k, ty) ->
+  Map.String.bindings tys
+  |> List.map (fun (k, ty) ->
          let set id = Set (Field (data, String k), id) in
          let input' = Id.Safe.input env in
          Let (input', meth_get input (String k))
          :: encode_typescheme ~set (Var input') env ty)
-  |> List.of_seq |> List.concat
+  |> List.concat
 
 and encode_record ~set input env tys =
   let record = Id.Safe.record env in
