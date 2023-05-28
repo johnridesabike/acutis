@@ -13,7 +13,7 @@ module Render = Render.Make (Sync) (DataJson)
 
 let usage_msg =
   {|Usage:
-  acutis [OPTION]... [TEMPLATE] [TEMPLATES]...
+  acutis [OPTIONS...] [TEMPLATE] [COMPONENTS...]
 
 Compile and render Acutis language templates.
 
@@ -65,7 +65,7 @@ let args =
                  (!module_path, !function_path, !interface_path)
                  arg_funs);
          ]),
-      " Add an external JavaScript function as a template. This takes three \
+      " Add an external JavaScript function as a component. This takes three \
        arguments: file path, function name, and type interface." );
     ("--version", Arg.Set arg_version, " Print the version number and exit.");
     ( "--printast",

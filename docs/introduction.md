@@ -132,7 +132,7 @@ Full options:
 
 ```txt
 Usage:
-  acutis [OPTION]... [TEMPLATE] [TEMPLATES]...
+  acutis [OPTIONS...] [TEMPLATE] [COMPONENTS...]
 
 Compile and render Acutis language templates.
 
@@ -141,7 +141,7 @@ Options:
                 Either render the template, compile it to a JavaScript module, or compile it to a CommonJS module. Default: render.
   --output      The path to write the output. Default: stdout.
   --data        The path to a JSON file to be used with --mode=render. Default: stdin.
-  --fun         Add an external JavaScript function as a template. This takes three arguments: file path, function name, and type interface.
+  --fun         Add an external JavaScript function as a component. This takes three arguments: file path, function name, and type interface.
   --version     Print the version number and exit.
   --printast    Print the template's untyped AST form and exit.
   --printtypes  Print the template's type interface and exit.
