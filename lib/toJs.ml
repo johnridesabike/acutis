@@ -308,25 +308,25 @@ let pp_statement =
         fprintf ppf "@[<hv 2>let %a = %a;@]" Id.pp ident pp_expr expr
     | Set (subj, pred) ->
         fprintf ppf "@[<hv 2>%a =@ @[<hv 2>%a@];@]" pp_expr subj pp_expr pred
-    | Add_set (a, b) -> fprintf ppf "@[<hv 2>%a +=@ %a@]" pp_expr a pp_expr b
+    | Add_set (a, b) -> fprintf ppf "@[<hv 2>%a +=@ %a;@]" pp_expr a pp_expr b
     | Switch (expr, cases, default) ->
         fprintf ppf "@[<v 2>@[<hv 2>switch (%a)@] {@ " pp_expr expr;
         pp_print_seq ~pp_sep:pp_print_cut
           (fun ppf (expr, statements) ->
             match statements with
             | [ (Return _ as statement) ] ->
-                fprintf ppf "@[<v 2>case %a:@ %a@]" pp_expr expr pp_statement
+                fprintf ppf "@[<hv 2>case %a:@ %a@]" pp_expr expr pp_statement
                   statement
             | statements ->
-                fprintf ppf "@[<v 2>case %a:@ %a@ break;@]" pp_expr expr
+                fprintf ppf "@[<hv 2>case %a:@ %a@ break;@]" pp_expr expr
                   pp_statements statements)
           ppf cases;
         (match default with
         | [] -> ()
-        | l -> fprintf ppf "@ @[<v 2>default:@ %a@]" pp_statements l);
+        | l -> fprintf ppf "@ @[<hv 2>default:@ %a@]" pp_statements l);
         fprintf ppf "@;<1 -2>}@]"
     | If_else (expr, ifs, elses) ->
-        fprintf ppf "@[<v 2>@[<hv 2>if (@,%a@;<0 -2>)@] {@ " pp_expr expr;
+        fprintf ppf "@[<hv 2>@[<hv 2>if (@,%a@;<0 -2>)@] {@ " pp_expr expr;
         pp_statements ppf ifs;
         (match elses with
         | [] -> ()
@@ -335,16 +335,16 @@ let pp_statement =
             pp_statements ppf l);
         fprintf ppf "@;<1 -2>}@]"
     | While (cond, statements) ->
-        fprintf ppf "@[<v 2>while (%a) {@ %a@;<1 -2>}@]" pp_expr cond
+        fprintf ppf "@[<hv 2>while (%a) {@ %a@;<1 -2>}@]" pp_expr cond
           pp_statements statements
     | For (i, expr, statements) ->
-        fprintf ppf "@[<v 2>for (let %a = 0; %a < %a; %a++) {@ %a@;<1 -2>}@]"
+        fprintf ppf "@[<hv 2>for (let %a = 0; %a < %a; %a++) {@ %a@;<1 -2>}@]"
           Id.pp i Id.pp i pp_expr expr Id.pp i pp_statements statements
     | For_in (prop, expr, statements) ->
-        fprintf ppf "@[<v 2>for (let %a in %a) {@ %a@;<1 -2>}@]" Id.pp prop
+        fprintf ppf "@[<hv 2>for (let %a in %a) {@ %a@;<1 -2>}@]" Id.pp prop
           pp_expr expr pp_statements statements
     | For_of (prop, expr, statements) ->
-        fprintf ppf "@[<v 2>for (let %a of %a) {@ %a@;<1 -2>}@]" Id.pp prop
+        fprintf ppf "@[<hv 2>for (let %a of %a) {@ %a@;<1 -2>}@]" Id.pp prop
           pp_expr expr pp_statements statements
     | Expr expr -> fprintf ppf "@[<hv 2>%a;@]" pp_expr expr
     | Incr id -> fprintf ppf "%a++;" pp_expr id
@@ -359,7 +359,7 @@ let pp_statement =
           (pp_print_list ~pp_sep:pp_comma Id.pp)
           args pp_statements statements
   and pp_statements ppf l =
-    pp_print_list ~pp_sep:pp_print_cut pp_statement ppf l
+    pp_print_list ~pp_sep:pp_print_space pp_statement ppf l
   in
   fun ppf stmt ->
     pp_statement ppf stmt;
@@ -591,22 +591,23 @@ and switchcase :
       ('leaf, 'key) M.switchcase ->
       (expr * statement list) Seq.t =
  fun ~leafstmt ~arg ~vars M.{ data; if_match; next } ->
-  Seq.cons (of_const data, match_tree ~leafstmt ~arg ~vars if_match)
-  @@
-  match next with
-  | None -> Seq.empty
-  | Some l -> switchcase ~leafstmt ~arg ~vars l
+  Seq.cons
+    (of_const data, match_tree ~leafstmt ~arg ~vars if_match)
+    (match next with
+    | None -> Seq.empty
+    | Some l -> switchcase ~leafstmt ~arg ~vars l)
 
 let match_leaf data_id ~vars M.{ names; exit } =
   Set (Var Id.exit, Int (M.Exit.key_to_int exit))
-  :: Map.String.fold
-       (fun key id acc ->
-         Expr
-           (meth_set
-              (Var (Id.Data.to_id data_id))
-              (String key) (Map.Int.find id vars))
-         :: acc)
-       names []
+  :: List.rev
+       (Map.String.fold
+          (fun key id acc ->
+            Expr
+              (meth_set
+                 (Var (Id.Data.to_id data_id))
+                 (String key) (Map.Int.find id vars))
+            :: acc)
+          names [])
 
 let rec nodes_array data_id l = Arr (List.to_seq l |> Seq.map (node data_id))
 and nodes_string data_id l = meth_join (promise_all (nodes_array data_id l)) ""
@@ -655,7 +656,7 @@ and map_list data_id arg M.{ tree; exits } =
   let data_id' = Id.Data.add_scope data_id in
   List.concat
     [
-      [ Let (Id.result, Arr Seq.empty); Let (Id.index, Int 0) ];
+      [ Let (Id.result, New (Array, [])); Let (Id.index, Int 0) ];
       construct_datum data_id arg;
       [
         While
@@ -694,7 +695,7 @@ and map_dict data_id arg M.{ tree; exits } =
   let data_id' = Id.Data.add_scope data_id in
   List.concat
     [
-      [ Let (Id.result, Arr Seq.empty) ];
+      [ Let (Id.result, New (Array, [])) ];
       construct_datum data_id arg;
       [
         For_of

@@ -43,32 +43,15 @@
     for (let index = 0; index < str.length; index++) {
       let c = str[index];
       switch (c) {
-        case "&":
-          result += "&amp;"
-          break;
-        case "\"":
-          result += "&quot;"
-          break;
-        case "'":
-          result += "&apos;"
-          break;
-        case ">":
-          result += "&gt;"
-          break;
-        case "<":
-          result += "&lt;"
-          break;
-        case "/":
-          result += "&#x2F;"
-          break;
-        case "`":
-          result += "&#x60;"
-          break;
-        case "=":
-          result += "&#x3D;"
-          break;
-        default:
-          result += c
+        case "&": result += "&amp;"; break;
+        case "\"": result += "&quot;"; break;
+        case "'": result += "&apos;"; break;
+        case ">": result += "&gt;"; break;
+        case "<": result += "&lt;"; break;
+        case "/": result += "&#x2F;"; break;
+        case "`": result += "&#x60;"; break;
+        case "=": result += "&#x3D;"; break;
+        default: result += c;
       }
     }
     return result;
@@ -141,32 +124,15 @@
     for (let index = 0; index < str.length; index++) {
       let c = str[index];
       switch (c) {
-        case "&":
-          result += "&amp;"
-          break;
-        case "\"":
-          result += "&quot;"
-          break;
-        case "'":
-          result += "&apos;"
-          break;
-        case ">":
-          result += "&gt;"
-          break;
-        case "<":
-          result += "&lt;"
-          break;
-        case "/":
-          result += "&#x2F;"
-          break;
-        case "`":
-          result += "&#x60;"
-          break;
-        case "=":
-          result += "&#x3D;"
-          break;
-        default:
-          result += c
+        case "&": result += "&amp;"; break;
+        case "\"": result += "&quot;"; break;
+        case "'": result += "&apos;"; break;
+        case ">": result += "&gt;"; break;
+        case "<": result += "&lt;"; break;
+        case "/": result += "&#x2F;"; break;
+        case "`": result += "&#x60;"; break;
+        case "=": result += "&#x3D;"; break;
+        default: result += c;
       }
     }
     return result;

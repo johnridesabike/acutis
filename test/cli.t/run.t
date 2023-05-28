@@ -24,7 +24,7 @@ Output to stdout as an argument.
 Display the help.
   $ acutis --help
   Usage:
-    acutis [options] [template] [...templates]
+    acutis [OPTION]... [TEMPLATE] [TEMPLATES]...
   
   Compile and render Acutis language templates.
   
@@ -54,7 +54,7 @@ Errors
   You need to provide a template.
   
   Usage:
-    acutis [options] [template] [...templates]
+    acutis [OPTION]... [TEMPLATE] [TEMPLATES]...
   
   Compile and render Acutis language templates.
   
@@ -80,7 +80,7 @@ Errors
   $ acutis --mode z0r
   acutis: wrong argument 'z0r'; option '--mode' expects one of: render js cjs.
   Usage:
-    acutis [options] [template] [...templates]
+    acutis [OPTION]... [TEMPLATE] [TEMPLATES]...
   
   Compile and render Acutis language templates.
   

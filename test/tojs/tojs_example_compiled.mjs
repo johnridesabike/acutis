@@ -37,32 +37,15 @@ function acutis_escape(str) {
   for (let index = 0; index < str.length; index++) {
     let c = str[index];
     switch (c) {
-      case "&":
-        result += "&amp;"
-        break;
-      case "\"":
-        result += "&quot;"
-        break;
-      case "'":
-        result += "&apos;"
-        break;
-      case ">":
-        result += "&gt;"
-        break;
-      case "<":
-        result += "&lt;"
-        break;
-      case "/":
-        result += "&#x2F;"
-        break;
-      case "`":
-        result += "&#x60;"
-        break;
-      case "=":
-        result += "&#x3D;"
-        break;
-      default:
-        result += c
+      case "&": result += "&amp;"; break;
+      case "\"": result += "&quot;"; break;
+      case "'": result += "&apos;"; break;
+      case ">": result += "&gt;"; break;
+      case "<": result += "&lt;"; break;
+      case "/": result += "&#x2F;"; break;
+      case "`": result += "&#x60;"; break;
+      case "=": result += "&#x3D;"; break;
+      default: result += c;
     }
   }
   return result;
@@ -225,18 +208,18 @@ export default async function main(input1) {
     acutis_escape(data.get("siteTitle")),
     " </h1>",
     (async function () {
-      let result = [];
+      let result = new Array();
       let index = 0;
       let arg0 = data.get("blogPosts");
       while (arg0 !== null) {
         let data1 = new Map(data);
         let exit = null;
         exit = 0;
-        data1.set("title", arg0[0].get("title"));
-        data1.set("name", arg0[0].get("author").get("name"));
-        data1.set("image", arg0[0].get("image"));
-        data1.set("date", arg0[0].get("date"));
         data1.set("content", arg0[0].get("content"));
+        data1.set("date", arg0[0].get("date"));
+        data1.set("image", arg0[0].get("image"));
+        data1.set("name", arg0[0].get("author").get("name"));
+        data1.set("title", arg0[0].get("title"));
         switch (exit) {
           case 0:
             result.push(
@@ -252,12 +235,11 @@ export default async function main(input1) {
                   exit = 0;
                 } else {
                   exit = 1;
-                  data2.set("src", arg0[0].get("src"));
                   data2.set("alt", arg0[0].get("alt"));
+                  data2.set("src", arg0[0].get("src"));
                 }
                 switch (exit) {
-                  case 0:
-                    return (await Promise.all([])).join("");
+                  case 0: return (await Promise.all([])).join("");
                   case 1:
                     return (await Promise.all([
                       "<img src=\"",
@@ -267,8 +249,7 @@ export default async function main(input1) {
                       "\">\n\
       ",
                     ])).join("");
-                  default:
-                    return pattern_failure_error();
+                  default: return pattern_failure_error();
                 }
               })(),
               "<h2 class=\"p-name\"> ",
@@ -292,8 +273,7 @@ export default async function main(input1) {
 "
             );
             break;
-          default:
-            return pattern_failure_error();
+          default: return pattern_failure_error();
         }
         index++;
         arg0 = arg0[1];

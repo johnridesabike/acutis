@@ -50,32 +50,15 @@
     for (let index = 0; index < str.length; index++) {
       let c = str[index];
       switch (c) {
-        case "&":
-          result += "&amp;"
-          break;
-        case "\"":
-          result += "&quot;"
-          break;
-        case "'":
-          result += "&apos;"
-          break;
-        case ">":
-          result += "&gt;"
-          break;
-        case "<":
-          result += "&lt;"
-          break;
-        case "/":
-          result += "&#x2F;"
-          break;
-        case "`":
-          result += "&#x60;"
-          break;
-        case "=":
-          result += "&#x3D;"
-          break;
-        default:
-          result += c
+        case "&": result += "&amp;"; break;
+        case "\"": result += "&quot;"; break;
+        case "'": result += "&apos;"; break;
+        case ">": result += "&gt;"; break;
+        case "<": result += "&lt;"; break;
+        case "/": result += "&#x2F;"; break;
+        case "`": result += "&#x60;"; break;
+        case "=": result += "&#x3D;"; break;
+        default: result += c;
       }
     }
     return result;
@@ -124,11 +107,7 @@
           array5.push(null);
         } else {
           let input11 = input10[0];
-          if (input11) {
-            array5.push(true);
-          } else {
-            array5.push(false);
-          }
+          if (input11) { array5.push(true); } else { array5.push(false); }
         }
       }
       input8 = input8[1];
@@ -166,17 +145,14 @@
         let input27 = input17.get("b");
         union1.b = input27;
         break;
-      default:
-        union1.tag = input18;
+      default: union1.tag = input18;
     }
     let input19 = input1.get("tagged_record_int");
     let union2 = new Object();
     data.tagged_record_int = union2;
     let input20 = input19.get("tag");
     switch (input20) {
-      case 0:
-        union2.tag = 0;
-        break;
+      case 0: union2.tag = 0; break;
       case 1:
         union2.tag = 1;
         let input28 = input19.get("tuple");
@@ -187,14 +163,9 @@
         let input30 = input28[1];
         array6[1] = input30;
         let input31 = input28[2];
-        if (input31) {
-          array6[2] = true;
-        } else {
-          array6[2] = false;
-        }
+        if (input31) { array6[2] = true; } else { array6[2] = false; }
         break;
-      default:
-        union2.tag = input20;
+      default: union2.tag = input20;
     }
     let input21 = input1.get("tagged_record_open");
     let union3 = new Object();
@@ -216,8 +187,7 @@
         let input34 = input21.get("c");
         union3.c = input34;
         break;
-      default:
-        union3.tag = input22;
+      default: union3.tag = input22;
     }
     let input23 = input1.get("tagged_record_string");
     let union4 = new Object();
@@ -245,8 +215,7 @@
         let input39 = input23.get("open_enum");
         union4.open_enum = input39;
         break;
-      default:
-        union4.tag = input24;
+      default: union4.tag = input24;
     }
     let input25 = input1.get("unknown");
     data.unknown = input25;
@@ -268,7 +237,7 @@
       "\n\
   ",
       (async function () {
-        let result = [];
+        let result = new Array();
         let index = 0;
         let arg0 = data.get("list");
         while (arg0 !== null) {
@@ -280,8 +249,7 @@
             case 0:
               result.push(acutis_escape(data1.get("i").toString()));
               break;
-            default:
-              return pattern_failure_error();
+            default: return pattern_failure_error();
           }
           index++;
           arg0 = arg0[1];
@@ -322,14 +290,9 @@
       debug_stack.push("bool1");
       let input4 = input1.bool1;
       switch (input4) {
-        case false:
-          data.set("bool1", 0);
-          break;
-        case true:
-          data.set("bool1", 1);
-          break;
-        default:
-          return decode_error("false | true", input4, debug_stack);
+        case false: data.set("bool1", 0); break;
+        case true: data.set("bool1", 1); break;
+        default: return decode_error("false | true", input4, debug_stack);
       }
       debug_stack.pop();
     } else {
@@ -339,14 +302,9 @@
       debug_stack.push("bool2");
       let input5 = input1.bool2;
       switch (input5) {
-        case false:
-          data.set("bool2", 0);
-          break;
-        case true:
-          data.set("bool2", 1);
-          break;
-        default:
-          return decode_error("false | true", input5, debug_stack);
+        case false: data.set("bool2", 0); break;
+        case true: data.set("bool2", 1); break;
+        default: return decode_error("false | true", input5, debug_stack);
       }
       debug_stack.pop();
     } else {
@@ -473,12 +431,8 @@
               let nullable2 = new Array(1);
               nullable1[0] = nullable2;
               switch (input_hd5) {
-                case false:
-                  nullable2[0] = 0;
-                  break;
-                case true:
-                  nullable2[0] = 1;
-                  break;
+                case false: nullable2[0] = 0; break;
+                case true: nullable2[0] = 1; break;
                 default:
                   return decode_error("false | true", input_hd5, debug_stack);
               }
@@ -506,14 +460,9 @@
         let nullable3 = new Array(1);
         data.set("null_bool", nullable3);
         switch (input10) {
-          case false:
-            nullable3[0] = 0;
-            break;
-          case true:
-            nullable3[0] = 1;
-            break;
-          default:
-            return decode_error("false | true", input10, debug_stack);
+          case false: nullable3[0] = 0; break;
+          case true: nullable3[0] = 1; break;
+          default: return decode_error("false | true", input10, debug_stack);
         }
       }
       debug_stack.pop();
@@ -608,14 +557,9 @@
         debug_stack.push("int_enum");
         let input17 = input16.int_enum;
         switch (input17) {
-          case 8:
-            record1.set("int_enum", 8);
-            break;
-          case 40:
-            record1.set("int_enum", 40);
-            break;
-          default:
-            return decode_error("@8 | @40", input17, debug_stack);
+          case 8: record1.set("int_enum", 8); break;
+          case 40: record1.set("int_enum", 40); break;
+          default: return decode_error("@8 | @40", input17, debug_stack);
         }
         debug_stack.pop();
       } else {
@@ -625,12 +569,8 @@
         debug_stack.push("string_enum");
         let input18 = input16.string_enum;
         switch (input18) {
-          case "no":
-            record1.set("string_enum", "no");
-            break;
-          case "yes":
-            record1.set("string_enum", "yes");
-            break;
+          case "no": record1.set("string_enum", "no"); break;
+          case "yes": record1.set("string_enum", "yes"); break;
           default:
             return decode_error("@\"no\" | @\"yes\"", input18, debug_stack);
         }
@@ -697,9 +637,7 @@
       data.set("tagged_record_int", union2);
       let input22 = input21.tag;
       switch (input22) {
-        case 0:
-          union2.set("tag", 0);
-          break;
+        case 0: union2.set("tag", 0); break;
         case 1:
           union2.set("tag", 1);
           if ("tuple" in input21) {
@@ -727,12 +665,8 @@
               debug_stack.push(2);
               let input34 = input31[2];
               switch (input34) {
-                case false:
-                  tuple1[2] = 0;
-                  break;
-                case true:
-                  tuple1[2] = 1;
-                  break;
+                case false: tuple1[2] = 0; break;
+                case true: tuple1[2] = 1; break;
                 default:
                   return decode_error("false | true", input34, debug_stack);
               }
@@ -986,22 +920,15 @@
         let exit = null;
         let arg0 = data.get("record").get("int_enum");
         switch (arg0) {
-          case 8:
-            exit = 0;
-            break;
-          case 40:
-            exit = 1;
-            break;
+          case 8: exit = 0; break;
+          case 40: exit = 1; break;
         }
         switch (exit) {
-          case 0:
-            return (await Promise.all(["8\n\
+          case 0: return (await Promise.all(["8\n\
   "])).join("");
-          case 1:
-            return (await Promise.all(["40\n\
+          case 1: return (await Promise.all(["40\n\
   "])).join("");
-          default:
-            return pattern_failure_error();
+          default: return pattern_failure_error();
         }
       })(),
       (async function () {
@@ -1009,22 +936,15 @@
         let exit = null;
         let arg0 = data.get("record");
         switch (arg0.get("string_enum")) {
-          case "no":
-            exit = 1;
-            break;
-          case "yes":
-            exit = 0;
-            break;
+          case "no": exit = 1; break;
+          case "yes": exit = 0; break;
         }
         switch (exit) {
-          case 0:
-            return (await Promise.all(["yes\n\
+          case 0: return (await Promise.all(["yes\n\
   "])).join("");
-          case 1:
-            return (await Promise.all(["no\n\
+          case 1: return (await Promise.all(["no\n\
   "])).join("");
-          default:
-            return pattern_failure_error();
+          default: return pattern_failure_error();
         }
       })(),
       (async function () {
@@ -1032,14 +952,8 @@
         let exit = null;
         let arg0 = data.get("tagged_record_bool");
         switch (arg0.get("tag")) {
-          case 0:
-            exit = 0;
-            data1.set("a", arg0.get("a"));
-            break;
-          case 1:
-            exit = 1;
-            data1.set("b", arg0.get("b"));
-            break;
+          case 0: exit = 0; data1.set("a", arg0.get("a")); break;
+          case 1: exit = 1; data1.set("b", arg0.get("b")); break;
         }
         switch (exit) {
           case 0:
@@ -1054,8 +968,7 @@
               "\n\
   ",
             ])).join("");
-          default:
-            return pattern_failure_error();
+          default: return pattern_failure_error();
         }
       })(),
       (async function () {
@@ -1063,19 +976,16 @@
         let exit = null;
         let arg0 = data.get("tagged_record_int");
         switch (arg0.get("tag")) {
-          case 0:
-            exit = 0;
-            break;
+          case 0: exit = 0; break;
           case 1:
             exit = 1;
-            data1.set("c", arg0.get("tuple")[2]);
-            data1.set("b", arg0.get("tuple")[1]);
             data1.set("a", arg0.get("tuple")[0]);
+            data1.set("b", arg0.get("tuple")[1]);
+            data1.set("c", arg0.get("tuple")[2]);
             break;
         }
         switch (exit) {
-          case 0:
-            return (await Promise.all(["Fail\n\
+          case 0: return (await Promise.all(["Fail\n\
   "])).join("");
           case 1:
             return (await Promise.all([
@@ -1087,8 +997,7 @@
               "\n\
   ",
             ])).join("");
-          default:
-            return pattern_failure_error();
+          default: return pattern_failure_error();
         }
       })(),
       (async function () {
@@ -1096,14 +1005,9 @@
         let exit = null;
         let arg0 = data.get("tagged_record_open");
         switch (arg0.get("tag")) {
-          case 200:
-            exit = 0;
-            data1.set("b", arg0.get("b"));
-            break;
+          case 200: exit = 0; data1.set("b", arg0.get("b")); break;
         }
-        if (exit === null) {
-          exit = 1;
-        }
+        if (exit === null) { exit = 1; }
         switch (exit) {
           case 0:
             return (await Promise.all([
@@ -1112,11 +1016,9 @@
               "\n\
   ",
             ])).join("");
-          case 1:
-            return (await Promise.all(["Another tag!\n\
+          case 1: return (await Promise.all(["Another tag!\n\
   "])).join("");
-          default:
-            return pattern_failure_error();
+          default: return pattern_failure_error();
         }
       })(),
       "\n\
@@ -1126,7 +1028,7 @@
   \n\
   ",
       (async function () {
-        let result = [];
+        let result = new Array();
         let arg0 = data.get("null_string_dict");
         for (let entry of arg0) {
           let data1 = new Map(data);
@@ -1136,8 +1038,8 @@
             data1.set("key", entry[0]);
           } else {
             exit = 1;
-            data1.set("str", entry[1][0]);
             data1.set("key", entry[0]);
+            data1.set("str", entry[1][0]);
           }
           switch (exit) {
             case 0:
@@ -1153,14 +1055,13 @@
   "
               );
               break;
-            default:
-              return pattern_failure_error();
+            default: return pattern_failure_error();
           }
         }
         return (await Promise.all(result)).join("");
       })(),
       (async function () {
-        let result = [];
+        let result = new Array();
         let index = 0;
         let arg0 = data.get("int_list");
         while (arg0 !== null) {
@@ -1173,8 +1074,7 @@
               result.push(acutis_escape(data1.get("i").toString()), "\n\
   ");
               break;
-            default:
-              return pattern_failure_error();
+            default: return pattern_failure_error();
           }
           index++;
           arg0 = arg0[1];
@@ -1182,15 +1082,15 @@
         return (await Promise.all(result)).join("");
       })(),
       (async function () {
-        let result = [];
+        let result = new Array();
         let index = 0;
         let arg0 = data.get("int_list");
         while (arg0 !== null) {
           let data1 = new Map(data);
           let exit = null;
           exit = 0;
-          data1.set("key", index);
           data1.set("i", arg0[0]);
+          data1.set("key", index);
           switch (exit) {
             case 0:
               result.push(
@@ -1201,8 +1101,7 @@
   "
               );
               break;
-            default:
-              return pattern_failure_error();
+            default: return pattern_failure_error();
           }
           index++;
           arg0 = arg0[1];
@@ -1210,7 +1109,7 @@
         return (await Promise.all(result)).join("");
       })(),
       (async function () {
-        let result = [];
+        let result = new Array();
         let index = 0;
         let arg0 = data.get("nested_list");
         while (arg0 !== null) {
@@ -1222,7 +1121,7 @@
             case 0:
               result.push(
                 (async function () {
-                  let result = [];
+                  let result = new Array();
                   let index = 0;
                   let arg0 = data1.get("l");
                   while (arg0 !== null) {
@@ -1234,7 +1133,7 @@
                       case 0:
                         result.push(
                           (async function () {
-                            let result = [];
+                            let result = new Array();
                             let index = 0;
                             let arg0 = data2.get("l2");
                             while (arg0 !== null) {
@@ -1249,8 +1148,7 @@
                                     " "
                                   );
                                   break;
-                                default:
-                                  return pattern_failure_error();
+                                default: return pattern_failure_error();
                               }
                               index++;
                               arg0 = arg0[1];
@@ -1259,8 +1157,7 @@
                           })()
                         );
                         break;
-                      default:
-                        return pattern_failure_error();
+                      default: return pattern_failure_error();
                     }
                     index++;
                     arg0 = arg0[1];
@@ -1269,8 +1166,7 @@
                 })()
               );
               break;
-            default:
-              return pattern_failure_error();
+            default: return pattern_failure_error();
           }
           index++;
           arg0 = arg0[1];
@@ -1281,7 +1177,7 @@
   \n\
   ",
       (async function () {
-        let result = [];
+        let result = new Array();
         let index = 0;
         let arg0 = data.get("nested_nullable_list");
         while (arg0 !== null) {
@@ -1298,10 +1194,8 @@
             }
           }
           switch (exit) {
-            case 0:
-              result.push("Level 1 null\n\
-  ");
-              break;
+            case 0: result.push("Level 1 null\n\
+  "); break;
             case 1:
               result.push("Level 2 null (This shouldn't render.)\n\
   ");
@@ -1314,8 +1208,7 @@
   "
               );
               break;
-            default:
-              return pattern_failure_error();
+            default: return pattern_failure_error();
           }
           index++;
           arg0 = arg0[1];
@@ -1337,8 +1230,8 @@
         let resolved0 = (await Promise.all([" Nested block"])).join("");
         let arg0 = new Map([["a", resolved0], ["b", resolved1]]);
         exit = 0;
-        data1.set("b", arg0.get("b"));
         data1.set("a", arg0.get("a"));
+        data1.set("b", arg0.get("b"));
         switch (exit) {
           case 0:
             return (await Promise.all([
@@ -1348,8 +1241,7 @@
               "\n\
   ",
             ])).join("");
-          default:
-            return pattern_failure_error();
+          default: return pattern_failure_error();
         }
       })(),
       "Component\n\
@@ -1388,35 +1280,23 @@
           case 1:
             if (arg1 === null) {
               switch (arg2) {
-                case 0:
-                  exit = 0;
-                  break;
-                default:
-                  exit = 2;
-                  data1.set("y", arg2);
+                case 0: exit = 0; break;
+                default: exit = 2; data1.set("y", arg2);
               }
             } else {
               switch (arg1[0]) {
                 case 1:
                   switch (arg2) {
-                    case 0:
-                      exit = 0;
-                      break;
-                    case 1:
-                      exit = 3;
-                      break;
-                    default:
-                      exit = 4;
+                    case 0: exit = 0; break;
+                    case 1: exit = 3; break;
+                    default: exit = 4;
                   }
                   break;
               }
               if (exit === null) {
                 switch (arg2) {
-                  case 0:
-                    exit = 0;
-                    break;
-                  default:
-                    exit = 4;
+                  case 0: exit = 0; break;
+                  default: exit = 4;
                 }
               }
             }
@@ -1429,23 +1309,16 @@
               switch (arg1[0]) {
                 case 1:
                   switch (arg2) {
-                    case 0:
-                      exit = 1;
-                      data1.set("x", arg0);
-                      break;
-                    default:
-                      exit = 4;
+                    case 0: exit = 1; data1.set("x", arg0); break;
+                    default: exit = 4;
                   }
                   break;
               }
-              if (exit === null) {
-                exit = 4;
-              }
+              if (exit === null) { exit = 4; }
             }
         }
         switch (exit) {
-          case 0:
-            return (await Promise.all([" 0\n\
+          case 0: return (await Promise.all([" 0\n\
   "])).join("");
           case 1:
             return (await Promise.all([
@@ -1461,14 +1334,11 @@
               "\n\
   ",
             ])).join("");
-          case 3:
-            return (await Promise.all([" 3\n\
+          case 3: return (await Promise.all([" 3\n\
   "])).join("");
-          case 4:
-            return (await Promise.all([" 4\n\
+          case 4: return (await Promise.all([" 4\n\
   "])).join("");
-          default:
-            return pattern_failure_error();
+          default: return pattern_failure_error();
         }
       })(),
       (async function () {
@@ -1483,17 +1353,12 @@
                 switch (arg0[1]) {
                   case 30:
                     switch (arg1) {
-                      case 40:
-                        exit = 1;
-                        break;
-                      case 41:
-                        exit = 0;
-                        data1.set("_x", arg0);
-                        break;
+                      case 40: exit = 1; break;
+                      case 41: exit = 0; data1.set("_x", arg0); break;
                       default:
                         exit = 2;
-                        data1.set("z", arg1);
                         data1.set("_y", arg0);
+                        data1.set("z", arg1);
                     }
                     break;
                 }
@@ -1503,22 +1368,14 @@
         }
         if (exit === null) {
           switch (arg1) {
-            case 41:
-              exit = 0;
-              data1.set("_x", arg0);
-              break;
-            default:
-              exit = 2;
-              data1.set("z", arg1);
-              data1.set("_y", arg0);
+            case 41: exit = 0; data1.set("_x", arg0); break;
+            default: exit = 2; data1.set("_y", arg0); data1.set("z", arg1);
           }
         }
         switch (exit) {
-          case 0:
-            return (await Promise.all(["\n\
+          case 0: return (await Promise.all(["\n\
   "])).join("");
-          case 1:
-            return (await Promise.all([" Pass\n\
+          case 1: return (await Promise.all([" Pass\n\
   "])).join("");
           case 2:
             return (await Promise.all([
@@ -1527,8 +1384,7 @@
               "\n\
   ",
             ])).join("");
-          default:
-            return pattern_failure_error();
+          default: return pattern_failure_error();
         }
       })(),
       (async function () {
@@ -1543,17 +1399,12 @@
                 switch (arg0[1]) {
                   case 30:
                     switch (arg1) {
-                      case 40:
-                        exit = 1;
-                        break;
-                      case 41:
-                        exit = 0;
-                        data1.set("_x", arg0);
-                        break;
+                      case 40: exit = 1; break;
+                      case 41: exit = 0; data1.set("_x", arg0); break;
                       default:
                         exit = 2;
-                        data1.set("z", arg1);
                         data1.set("_y", arg0);
+                        data1.set("z", arg1);
                     }
                     break;
                 }
@@ -1563,22 +1414,14 @@
         }
         if (exit === null) {
           switch (arg1) {
-            case 41:
-              exit = 0;
-              data1.set("_x", arg0);
-              break;
-            default:
-              exit = 2;
-              data1.set("z", arg1);
-              data1.set("_y", arg0);
+            case 41: exit = 0; data1.set("_x", arg0); break;
+            default: exit = 2; data1.set("_y", arg0); data1.set("z", arg1);
           }
         }
         switch (exit) {
-          case 0:
-            return (await Promise.all(["\n\
+          case 0: return (await Promise.all(["\n\
   "])).join("");
-          case 1:
-            return (await Promise.all([" Fail\n\
+          case 1: return (await Promise.all([" Fail\n\
   "])).join("");
           case 2:
             return (await Promise.all([
@@ -1587,8 +1430,7 @@
               "\n\
   ",
             ])).join("");
-          default:
-            return pattern_failure_error();
+          default: return pattern_failure_error();
         }
       })(),
       "String encoding\n\
