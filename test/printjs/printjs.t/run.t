@@ -22,25 +22,18 @@
     throw new Error([
       "Decode error in field: ",
       debug_stack.join(" -> "),
-      "\n\
-  Expected type:\n\
-  ",
+      "\nExpected type:\n",
       expected,
-      "\n\
-  Recieved value:\n\
-  ",
+      "\nRecieved value:\n",
       recieved,
     ].join(""));
   }
   
   function decode_error_field(field, debug_stack) {
     throw new Error([
-      "Decode error.\n\
-  An object is missing the field:\n\
-  ",
+      "Decode error.\nAn object is missing the field: ",
       field,
-      "\n\
-  In field: ",
+      "\nIn field: ",
       debug_stack.join(" -> "),
     ].join(""));
   }
@@ -234,8 +227,7 @@
           ? data.get("optional")[0].toString()
           : data.get("children")
       ),
-      "\n\
-  ",
+      "\n",
       (async function () {
         let result = new Array();
         let index = 0;
@@ -262,6 +254,7 @@
   export default async function main(input1) {
     let data = new Map();
     let debug_stack = new Array();
+    debug_stack.push("<input>");
     if ("big_float" in input1) {
       debug_stack.push("big_float");
       let input2 = input1.big_float;
@@ -344,7 +337,7 @@
         dst1[1] = null;
         data.set("int_list", dst_base1[1]);
       } else {
-        return decode_error("int", input7, debug_stack);
+        return decode_error("[int]", input7, debug_stack);
       }
       debug_stack.pop();
     } else {
@@ -386,7 +379,7 @@
                 dst4[1] = null;
                 dst_new3[0] = dst_base4[1];
               } else {
-                return decode_error("int", input_hd3, debug_stack);
+                return decode_error("[int]", input_hd3, debug_stack);
               }
               dst3[1] = dst_new3;
               dst3 = dst_new3;
@@ -395,7 +388,7 @@
             dst3[1] = null;
             dst_new2[0] = dst_base3[1];
           } else {
-            return decode_error("[int]", input_hd2, debug_stack);
+            return decode_error("[[int]]", input_hd2, debug_stack);
           }
           dst2[1] = dst_new2;
           dst2 = dst_new2;
@@ -404,7 +397,7 @@
         dst2[1] = null;
         data.set("nested_list", dst_base2[1]);
       } else {
-        return decode_error("[[int]]", input8, debug_stack);
+        return decode_error("[[[int]]]", input8, debug_stack);
       }
       debug_stack.pop();
     } else {
@@ -445,7 +438,7 @@
         dst5[1] = null;
         data.set("nested_nullable_list", dst_base5[1]);
       } else {
-        return decode_error("??false | true", input9, debug_stack);
+        return decode_error("[??false | true]", input9, debug_stack);
       }
       debug_stack.pop();
     } else {
@@ -810,7 +803,7 @@
               union4.set("record_list", dst_base6[1]);
             } else {
               return decode_error(
-                "{job: string, name: string}",
+                "[{job: string, name: string}]",
                 input38,
                 debug_stack
               );
@@ -868,36 +861,19 @@
       data.set("unknown", null);
     }
     return (await Promise.all([
-      "Formatters\n\
-  ----------\n\
-  \n\
-  %i    ",
+      "Formatters\n----------\n\n%i    ",
       acutis_escape(data.get("big_int").toString()),
-      "\n\
-  %f    ",
+      "\n%f    ",
       acutis_escape(data.get("big_float").toString()),
-      "\n\
-  %b    ",
+      "\n%b    ",
       acutis_escape(data.get("bool1") ? "true" : "false"),
-      "\n\
-  %b    ",
+      "\n%b    ",
       acutis_escape(data.get("bool2") ? "true" : "false"),
-      "\n\
-  \n\
-  Escaping\n\
-  --------\n\
-  \n\
-  Escaped     ",
+      "\n\nEscaping\n--------\n\nEscaped     ",
       acutis_escape(data.get("dangerous")),
-      "\n\
-  Not escaped ",
+      "\nNot escaped ",
       data.get("dangerous"),
-      "\n\
-  \n\
-  Nullable echo chaining\n\
-  ----------------------\n\
-  \n\
-  ",
+      "\n\nNullable echo chaining\n----------------------\n\n",
       acutis_escape(
         data.get("null_int") !== null
           ? data.get("null_int")[0].toString()
@@ -909,12 +885,7 @@
                       ? data.get("null_string")[0]
                       : "pass"
       ),
-      "\n\
-  \n\
-  Matching\n\
-  --------\n\
-  \n\
-  ",
+      "\n\nMatching\n--------\n\n",
       (async function () {
         let data1 = new Map(data);
         let exit = null;
@@ -924,10 +895,8 @@
           case 40: exit = 1; break;
         }
         switch (exit) {
-          case 0: return (await Promise.all(["8\n\
-  "])).join("");
-          case 1: return (await Promise.all(["40\n\
-  "])).join("");
+          case 0: return (await Promise.all(["8\n"])).join("");
+          case 1: return (await Promise.all(["40\n"])).join("");
           default: return pattern_failure_error();
         }
       })(),
@@ -940,10 +909,8 @@
           case "yes": exit = 0; break;
         }
         switch (exit) {
-          case 0: return (await Promise.all(["yes\n\
-  "])).join("");
-          case 1: return (await Promise.all(["no\n\
-  "])).join("");
+          case 0: return (await Promise.all(["yes\n"])).join("");
+          case 1: return (await Promise.all(["no\n"])).join("");
           default: return pattern_failure_error();
         }
       })(),
@@ -959,14 +926,12 @@
           case 0:
             return (await Promise.all([
               acutis_escape(data1.get("a")),
-              "\n\
-  ",
+              "\n",
             ])).join("");
           case 1:
             return (await Promise.all([
               acutis_escape(data1.get("b").toString()),
-              "\n\
-  ",
+              "\n",
             ])).join("");
           default: return pattern_failure_error();
         }
@@ -985,8 +950,7 @@
             break;
         }
         switch (exit) {
-          case 0: return (await Promise.all(["Fail\n\
-  "])).join("");
+          case 0: return (await Promise.all(["Fail\n"])).join("");
           case 1:
             return (await Promise.all([
               acutis_escape(data1.get("a").toString()),
@@ -994,8 +958,7 @@
               acutis_escape(data1.get("b")),
               " ",
               acutis_escape(data1.get("c") ? "true" : "false"),
-              "\n\
-  ",
+              "\n",
             ])).join("");
           default: return pattern_failure_error();
         }
@@ -1013,20 +976,13 @@
             return (await Promise.all([
               " ",
               acutis_escape(data1.get("b")),
-              "\n\
-  ",
+              "\n",
             ])).join("");
-          case 1: return (await Promise.all(["Another tag!\n\
-  "])).join("");
+          case 1: return (await Promise.all(["Another tag!\n"])).join("");
           default: return pattern_failure_error();
         }
       })(),
-      "\n\
-  \n\
-  Mapping\n\
-  -------\n\
-  \n\
-  ",
+      "\n\nMapping\n-------\n\n",
       (async function () {
         let result = new Array();
         let arg0 = data.get("null_string_dict");
@@ -1043,16 +999,14 @@
           }
           switch (exit) {
             case 0:
-              result.push(acutis_escape(data1.get("key")), " is null.\n\
-  ");
+              result.push(acutis_escape(data1.get("key")), " is null.\n");
               break;
             case 1:
               result.push(
                 acutis_escape(data1.get("key")),
                 " is ",
                 acutis_escape(data1.get("str")),
-                "\n\
-  "
+                "\n"
               );
               break;
             default: return pattern_failure_error();
@@ -1071,8 +1025,7 @@
           data1.set("i", arg0[0]);
           switch (exit) {
             case 0:
-              result.push(acutis_escape(data1.get("i").toString()), "\n\
-  ");
+              result.push(acutis_escape(data1.get("i").toString()), "\n");
               break;
             default: return pattern_failure_error();
           }
@@ -1097,8 +1050,7 @@
                 acutis_escape(data1.get("key").toString()),
                 " : ",
                 acutis_escape(data1.get("i").toString()),
-                "\n\
-  "
+                "\n"
               );
               break;
             default: return pattern_failure_error();
@@ -1173,9 +1125,7 @@
         }
         return (await Promise.all(result)).join("");
       })(),
-      "\n\
-  \n\
-  ",
+      "\n\n",
       (async function () {
         let result = new Array();
         let index = 0;
@@ -1194,18 +1144,15 @@
             }
           }
           switch (exit) {
-            case 0: result.push("Level 1 null\n\
-  "); break;
+            case 0: result.push("Level 1 null\n"); break;
             case 1:
-              result.push("Level 2 null (This shouldn't render.)\n\
-  ");
+              result.push("Level 2 null (This shouldn't render.)\n");
               break;
             case 2:
               result.push(
                 "Level 3 ",
                 acutis_escape(data1.get("b") ? "true" : "false"),
-                "\n\
-  "
+                "\n"
               );
               break;
             default: return pattern_failure_error();
@@ -1215,12 +1162,7 @@
         }
         return (await Promise.all(result)).join("");
       })(),
-      "\n\
-  \n\
-  Constructing async blocks\n\
-  -------------------------\n\
-  \n\
-  ",
+      "\n\nConstructing async blocks\n-------------------------\n\n",
       (async function () {
         let data1 = new Map(data);
         let exit = null;
@@ -1238,16 +1180,12 @@
               acutis_escape(data1.get("a")),
               " ",
               acutis_escape(data1.get("b")),
-              "\n\
-  ",
+              "\n",
             ])).join("");
           default: return pattern_failure_error();
         }
       })(),
-      "Component\n\
-  ---------\n\
-  \n\
-  ",
+      "Component\n---------\n\n",
       (async function () {
         let resolved0 = (await Promise.all(["Children prop"])).join("");
         let arg0 = new Map([
@@ -1257,9 +1195,7 @@
         ]);
         return template_Component(arg0);
       })(),
-      "\n\
-  \n\
-  ",
+      "\n\n",
       (async function () {
         let arg0 = new Map([]);
         return template_Another_function(arg0);
@@ -1318,26 +1254,21 @@
             }
         }
         switch (exit) {
-          case 0: return (await Promise.all([" 0\n\
-  "])).join("");
+          case 0: return (await Promise.all([" 0\n"])).join("");
           case 1:
             return (await Promise.all([
               " 1 ",
               acutis_escape(data1.get("x").toString()),
-              "\n\
-  ",
+              "\n",
             ])).join("");
           case 2:
             return (await Promise.all([
               " 2 ",
               acutis_escape(data1.get("y").toString()),
-              "\n\
-  ",
+              "\n",
             ])).join("");
-          case 3: return (await Promise.all([" 3\n\
-  "])).join("");
-          case 4: return (await Promise.all([" 4\n\
-  "])).join("");
+          case 3: return (await Promise.all([" 3\n"])).join("");
+          case 4: return (await Promise.all([" 4\n"])).join("");
           default: return pattern_failure_error();
         }
       })(),
@@ -1373,16 +1304,13 @@
           }
         }
         switch (exit) {
-          case 0: return (await Promise.all(["\n\
-  "])).join("");
-          case 1: return (await Promise.all([" Pass\n\
-  "])).join("");
+          case 0: return (await Promise.all(["\n"])).join("");
+          case 1: return (await Promise.all([" Pass\n"])).join("");
           case 2:
             return (await Promise.all([
               " ",
               acutis_escape(data1.get("z").toString()),
-              "\n\
-  ",
+              "\n",
             ])).join("");
           default: return pattern_failure_error();
         }
@@ -1419,16 +1347,13 @@
           }
         }
         switch (exit) {
-          case 0: return (await Promise.all(["\n\
-  "])).join("");
-          case 1: return (await Promise.all([" Fail\n\
-  "])).join("");
+          case 0: return (await Promise.all(["\n"])).join("");
+          case 1: return (await Promise.all([" Fail\n"])).join("");
           case 2:
             return (await Promise.all([
               " ",
               acutis_escape(data1.get("z").toString()),
-              "\n\
-  ",
+              "\n",
             ])).join("");
           default: return pattern_failure_error();
         }
@@ -1461,8 +1386,7 @@
         ]);
         return template_Stringify(arg0);
       })(),
-      "\n\
-  ",
+      "\n",
     ])).join("");
   }
   

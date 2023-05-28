@@ -10,3 +10,4 @@
 {%  with {@tag: true, looong_field, another_loooong_field, yet_another_field} %}
   {{ looong_field }} {{ another_loooong_field }} {{ yet_another_field }}
 {% /match %}
+{% map list with {a} %} {{ a }} {% /map %}

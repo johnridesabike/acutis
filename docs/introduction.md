@@ -98,6 +98,15 @@ Beware: loading Acutis in Node.js has the side-effect of modifying how all
 uncaught exceptions are handled. This should not affect well-behaved code, but
 may make debugging errors more complicated.
 
+## Running directly versus JavaScript compilation
+
+Acutis supports two main targets: running the compiled template directly with
+its built-in runtime, or emitting a JavaScript file that can be run on its own.
+
+Both are available either through the CLI or the JavaScript interface. Depending
+on what your needs are, one may be more useful than the other. JavaScript
+compilation is slightly more experimental.
+
 ## Editor plugins
 
 These offer basic syntax highlighting and indentation features.

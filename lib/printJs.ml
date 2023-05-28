@@ -213,11 +213,15 @@ let pp_trailing_comma =
 let pp_js_str ppf s =
   let open Format in
   let l = String.length s in
+  let newline =
+    if l < 60 then fun () -> pp_print_string ppf "\\n"
+    else fun () -> fprintf ppf "\\n\\\n"
+  in
   pp_print_char ppf '"';
   for i = 0 to l - 1 do
     let c = s.[i] in
     match c with
-    | '\n' -> fprintf ppf "\\n\\\n"
+    | '\n' -> newline ()
     | '\b' -> pp_print_string ppf "\\b"
     | '\t' -> pp_print_string ppf "\\t"
     | '\012' -> pp_print_string ppf "\\f"
@@ -432,7 +436,7 @@ let pp_runtime ppf =
              (meth_join
                 (Arr
                    (Seq.cons
-                      (String "Decode error.\nAn object is missing the field:\n")
+                      (String "Decode error.\nAn object is missing the field: ")
                    @@ Seq.cons (Var field_name)
                    @@ Seq.cons (String "\nIn field: ")
                    @@ Seq.return (meth_join (Var Id.debug_stack) " -> ")))
@@ -840,12 +844,12 @@ let rec decode_typescheme ~set input env ty =
   | Float -> [ decode_float ~set input ty ]
   | Nullable ty -> [ decode_nullable ~set input env ty ]
   | List ty -> [ decode_list ~set input env ty ]
-  | Tuple tys -> [ decode_tuple ~set input env tys ty ]
+  | Tuple tys -> [ decode_tuple ~set input env tys ]
   | Record tys -> decode_record ~set input env !tys
   | Dict (ty, _) -> decode_dict ~set input env ty
   | Union (key, variant) -> decode_union ~set input env key variant ty
 
-and decode_tuple ~set input env tys ty =
+and decode_tuple ~set input env tys =
   let tuple = Id.Safe.tuple env in
   let length = List.length tys in
   If_else
@@ -870,7 +874,7 @@ and decode_tuple ~set input env tys ty =
                     [ Expr (meth_pop Id.debug_stack) ];
                   ])
               tys),
-      [ error ty input ] )
+      [ error (Ty.tuple tys) input ] )
 
 and decode_dict ~set input env ty =
   let key = Id.Safe.key env in
@@ -929,7 +933,7 @@ and decode_list ~set input env ty =
         Set (list_tl (Var dst), Prim Null);
         set (list_tl (Var dst_base));
       ],
-      [ error ty input ] )
+      [ error (Ty.list ty) input ] )
 
 and decode_nullable ~set input env ty =
   let nullable = Id.Safe.nullable env in
@@ -1223,6 +1227,7 @@ let pp pp_import pp_export ppf compiled =
              [
                Let (Id.Data.(to_id initial), New (Map, []));
                Let (Id.debug_stack, New (Array, []));
+               Expr (meth_push Id.debug_stack [ String "<input>" ]);
              ];
              decode_record_aux
                ~data:(Var Id.Data.(to_id initial))

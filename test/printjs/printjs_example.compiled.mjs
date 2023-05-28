@@ -9,25 +9,18 @@ function decode_error(expected, recieved, debug_stack) {
   throw new Error([
     "Decode error in field: ",
     debug_stack.join(" -> "),
-    "\n\
-Expected type:\n\
-",
+    "\nExpected type:\n",
     expected,
-    "\n\
-Recieved value:\n\
-",
+    "\nRecieved value:\n",
     recieved,
   ].join(""));
 }
 
 function decode_error_field(field, debug_stack) {
   throw new Error([
-    "Decode error.\n\
-An object is missing the field:\n\
-",
+    "Decode error.\nAn object is missing the field: ",
     field,
-    "\n\
-In field: ",
+    "\nIn field: ",
     debug_stack.join(" -> "),
   ].join(""));
 }
@@ -54,6 +47,7 @@ function acutis_escape(str) {
 export default async function main(input1) {
   let data = new Map();
   let debug_stack = new Array();
+  debug_stack.push("<input>");
   if ("blogPosts" in input1) {
     debug_stack.push("blogPosts");
     let input2 = input1.blogPosts;
@@ -176,13 +170,15 @@ export default async function main(input1) {
       data.set("blogPosts", dst_base1[1]);
     } else {
       return decode_error(
-        "{\n\
-   author: {name: ?string},\n\
-   content: string,\n\
-   date: string,\n\
-   image: ?{alt: string, src: string},\n\
-   title: string\n\
-}",
+        "[\n\
+   {\n\
+      author: {name: ?string},\n\
+      content: string,\n\
+      date: string,\n\
+      image: ?{alt: string, src: string},\n\
+      title: string\n\
+   }\n\
+]",
         input2,
         debug_stack
       );
@@ -223,10 +219,7 @@ export default async function main(input1) {
         switch (exit) {
           case 0:
             result.push(
-              "\n\
-  <article class=\"h-entry\">\n\
-    <header>\n\
-      ",
+              "\n  <article class=\"h-entry\">\n    <header>\n      ",
               (async function () {
                 let data2 = new Map(data1);
                 let exit = null;
@@ -246,31 +239,24 @@ export default async function main(input1) {
                       acutis_escape(data2.get("src")),
                       "\" alt=\"",
                       acutis_escape(data2.get("alt")),
-                      "\">\n\
-      ",
+                      "\">\n      ",
                     ])).join("");
                   default: return pattern_failure_error();
                 }
               })(),
               "<h2 class=\"p-name\"> ",
               acutis_escape(data1.get("title")),
-              " </h2>\n\
-      <span class=\"p-author\"> By ",
+              " </h2>\n      <span class=\"p-author\"> By ",
               acutis_escape(
                 data1.get("name") !== null
                   ? data1.get("name")[0]
                   : "Anonymous"
               ),
-              " </span>\n\
-      <span class=\"dt-published\"> Posted on ",
+              " </span>\n      <span class=\"dt-published\"> Posted on ",
               acutis_escape(data1.get("date")),
-              " </span>\n\
-    </header>\n\
-    <div class=\"e-content\"> ",
+              " </span>\n    </header>\n    <div class=\"e-content\"> ",
               data1.get("content"),
-              " </div>\n\
-  </article>\n\
-"
+              " </div>\n  </article>\n"
             );
             break;
           default: return pattern_failure_error();
@@ -280,8 +266,7 @@ export default async function main(input1) {
       }
       return (await Promise.all(result)).join("");
     })(),
-    "\n\
-",
+    "\n",
   ])).join("");
 }
 

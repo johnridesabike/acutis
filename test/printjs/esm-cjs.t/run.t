@@ -15,25 +15,18 @@
     throw new Error([
       "Decode error in field: ",
       debug_stack.join(" -> "),
-      "\n\
-  Expected type:\n\
-  ",
+      "\nExpected type:\n",
       expected,
-      "\n\
-  Recieved value:\n\
-  ",
+      "\nRecieved value:\n",
       recieved,
     ].join(""));
   }
   
   function decode_error_field(field, debug_stack) {
     throw new Error([
-      "Decode error.\n\
-  An object is missing the field:\n\
-  ",
+      "Decode error.\nAn object is missing the field: ",
       field,
-      "\n\
-  In field: ",
+      "\nIn field: ",
       debug_stack.join(" -> "),
     ].join(""));
   }
@@ -67,14 +60,14 @@
   export default async function main(input1) {
     let data = new Map();
     let debug_stack = new Array();
+    debug_stack.push("<input>");
     return (await Promise.all([
       (async function () {
         let resolved0 = (await Promise.all([" text "])).join("");
         let arg0 = new Map([["children", resolved0]]);
         return template_ExternalFunction(arg0);
       })(),
-      "\n\
-  ",
+      "\n",
     ])).join("");
   }
   
@@ -96,25 +89,18 @@
     throw new Error([
       "Decode error in field: ",
       debug_stack.join(" -> "),
-      "\n\
-  Expected type:\n\
-  ",
+      "\nExpected type:\n",
       expected,
-      "\n\
-  Recieved value:\n\
-  ",
+      "\nRecieved value:\n",
       recieved,
     ].join(""));
   }
   
   function decode_error_field(field, debug_stack) {
     throw new Error([
-      "Decode error.\n\
-  An object is missing the field:\n\
-  ",
+      "Decode error.\nAn object is missing the field: ",
       field,
-      "\n\
-  In field: ",
+      "\nIn field: ",
       debug_stack.join(" -> "),
     ].join(""));
   }
@@ -148,14 +134,14 @@
   module.exports = async function main(input1) {
     let data = new Map();
     let debug_stack = new Array();
+    debug_stack.push("<input>");
     return (await Promise.all([
       (async function () {
         let resolved0 = (await Promise.all([" text "])).join("");
         let arg0 = new Map([["children", resolved0]]);
         return template_ExternalFunction(arg0);
       })(),
-      "\n\
-  ",
+      "\n",
     ])).join("");
   }
   
