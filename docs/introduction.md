@@ -131,15 +131,18 @@ acutis index.acutis src/**/*.acutis < data.json > dist/index.html
 Full options:
 
 ```txt
-Parse and execute Acutis language templates.
-
 Usage:
-  acutis [options] [template] [...templates]
+  acutis [OPTION]... [TEMPLATE] [TEMPLATES]...
+
+Compile and render Acutis language templates.
 
 Options:
-  --data        The path to a JSON data file. Default: stdin.
+  --mode {render|js|cjs}
+                Either render the template, compile it to a JavaScript module, or compile it to a CommonJS module. Default: render.
   --output      The path to write the output. Default: stdout.
-  --version     Show the version number and exit.
+  --data        The path to a JSON file to be used with --mode=render. Default: stdin.
+  --fun         Add an external JavaScript function as a template. This takes three arguments: file path, function name, and type interface.
+  --version     Print the version number and exit.
   --printast    Print the template's untyped AST form and exit.
   --printtypes  Print the template's type interface and exit.
   --printopt    Print the template's optimized form and exit.

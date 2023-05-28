@@ -57,10 +57,12 @@ window.onload = function playground(_event) {
 `;
 
   var resultText = document.getElementById("result");
+  var jsresultText = document.getElementById("jsresult");
   var components = globalThis.Compile.components([]);
 
   function render(_event) {
-    let result;
+    var result;
+    var jsresult;
     try {
       var props = JSON.parse(propsText.value);
       var template = globalThis.Compile.string(
@@ -68,14 +70,17 @@ window.onload = function playground(_event) {
         components,
         sourceText.value
       );
+      jsresult = globalThis.Compile.toJSString(template);
       result = globalThis.Render.sync(template, props);
     } catch (e) {
+      jsresult = "";
       if (globalThis.Utils.isError(e)) {
         result = globalThis.Utils.getError(e);
       } else {
         result = e.message;
       }
     }
+    jsresultText.value = jsresult;
     resultText.value = result;
     setClean(propsIsDirty);
     setClean(sourceIsDirty);

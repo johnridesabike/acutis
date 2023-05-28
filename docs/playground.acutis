@@ -37,7 +37,16 @@
     wrap="off"
   ></textarea>
   <button id="render" class="playground__button">Render</button>
-  <label for="result" class="playground__header">Output</label>
+  <label for="jsresult" class="playground__header">Compiled JavaScript</label>
+  <textarea
+    id="jsresult"
+    cols="80"
+    rows="16"
+    readonly
+    class="playground__textarea"
+    wrap="off"
+  ></textarea>
+  <label for="result" class="playground__header">Rendered output</label>
   <textarea
     id="result"
     cols="80"

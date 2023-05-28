@@ -13,7 +13,7 @@ module Render = Render.Make (Sync) (DataJson)
 
 let usage_msg =
   {|Usage:
-  acutis [options] [template] [...templates]
+  acutis [OPTION]... [TEMPLATE] [TEMPLATES]...
 
 Compile and render Acutis language templates.
 

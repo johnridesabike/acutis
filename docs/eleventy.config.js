@@ -77,6 +77,9 @@ module.exports = (eleventyConfig) => {
     components: require("./_includes/eleventyComponents"),
     componentsPath: "./_includes/eleventyComponents",
   });
+  // We gitignore generated files, but we don't want 11ty to ignore them.
+  eleventyConfig.setUseGitIgnore(false);
+  eleventyConfig.ignores.add("node_modules");
   eleventyConfig.addPassthroughCopy("playground.js");
   eleventyConfig.addPassthroughCopy({
     [path.join(acutisDirPath, "_doc", "_html")]: "api",
