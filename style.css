@@ -743,10 +743,12 @@ li::marker {
   max-width: 100%;
 }
 
+.playground__buttons {
+  text-align: center;
+}
+
 .playground__button {
   font-size: 1.2em;
-  display: block;
-  margin: auto;
 }
 
 .playground__is-dirty {

@@ -11,6 +11,7 @@ window.onload = function playground(_event) {
   var sourceText = document.getElementById("source");
   var sourceIsDirty = document.getElementById("source-is-dirty");
   var propsIsDirty = document.getElementById("props-is-dirty");
+  var urlParams = new URLSearchParams(window.location.search);
 
   function setDirty(el) {
     el.textContent = "*";
@@ -28,39 +29,83 @@ window.onload = function playground(_event) {
     setDirty(sourceIsDirty);
   };
 
-  propsText.value = JSON.stringify(
-    {
-      name: null,
-      objects: [
-        { name: "sky", color: "blue" },
-        { name: "grass", color: "purple" },
-        { name: "air" },
-      ],
-    },
-    null,
-    2
-  );
-  sourceText.value = `Hello {{ name ? "dear user" }},
+  var urlPropsParam = urlParams.get("props");
+  var urlPropsParamDecoded = null;
+  if (urlPropsParam) {
+    try {
+      urlPropsParamDecoded = atob(urlPropsParam);
+    } catch (e) {
+      console.error(e);
+    }
+  }
+  propsText.value = urlPropsParamDecoded
+    ? urlPropsParamDecoded
+    : JSON.stringify(
+        {
+          name: null,
+          objects: [
+            { name: "sky", color: "blue" },
+            { name: "grass", color: "purple" },
+            { name: "air" },
+          ],
+        },
+        null,
+        2
+      );
 
-{% map objects with {name, color: !color} ~%}
-  Have you noticed the {{ name }} is {{ color }} today?
-{% match name, color
-   with "sky", "blue"
-   with "grass", "green" ~%}
-  That's an ordinary color for it.
-{% with _, _ ~%}
-  That seems odd.
-{% /match %}
-{% with {name} ~%}
-  The {{ name }}, I suppose, has no color.
-{%~ /map %}
-`;
+  var urlSourceParam = urlParams.get("source");
+  var urlSourceParamDecoded = null;
+  if (urlSourceParam) {
+    try {
+      urlSourceParamDecoded = atob(urlSourceParam);
+    } catch (e) {
+      console.error(e);
+    }
+  }
+  sourceText.value = urlSourceParamDecoded
+    ? urlSourceParamDecoded
+    : 'Hello {{ name ? "dear user" }},\n\
+\n\
+{% map objects with {name, color: !color} ~%}\n\
+  Have you noticed the {{ name }} is {{ color }} today?\n\
+{% match name, color\n\
+   with "sky", "blue"\n\
+   with "grass", "green" ~%}\n\
+  That\'s an ordinary color for it.\n\
+{% with _, _ ~%}\n\
+  That seems odd.\n\
+{% /match %}\n\
+{% with {name} ~%}\n\
+  The {{ name }}, I suppose, has no color.\n\
+{%~ /map %}\n\
+';
+
+  var getLinkElt = document.getElementById("getlink");
+  getLinkElt.onclick = function getLink(_event) {
+    var url = new URL(window.location);
+    url.searchParams.set("props", btoa(propsText.value));
+    url.searchParams.set("source", btoa(sourceText.value));
+    if ("clipboard" in navigator) {
+      navigator.clipboard.writeText(url.toString()).then(function () {
+        var original = getLinkElt.textContent;
+        getLinkElt.textContent = "Copied!";
+        setTimeout(function () {
+          getLinkElt.textContent = original;
+        }, 2000);
+      });
+    }
+    history
+      ? history.pushState({}, "", url)
+      : (window.location.search = url.searchParams.toString());
+  };
 
   var resultText = document.getElementById("result");
+  var jsresultText = document.getElementById("jsresult");
   var components = globalThis.Compile.components([]);
 
   function render(_event) {
-    let result;
+    var result;
+    var jsresult;
     try {
       var props = JSON.parse(propsText.value);
       var template = globalThis.Compile.string(
@@ -68,14 +113,17 @@ window.onload = function playground(_event) {
         components,
         sourceText.value
       );
+      jsresult = globalThis.Compile.toJSString(template);
       result = globalThis.Render.sync(template, props);
     } catch (e) {
+      jsresult = "";
       if (globalThis.Utils.isError(e)) {
         result = globalThis.Utils.getError(e);
       } else {
         result = e.message;
       }
     }
+    jsresultText.value = jsresult;
     resultText.value = result;
     setClean(propsIsDirty);
     setClean(sourceIsDirty);
