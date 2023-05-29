@@ -3,3 +3,6 @@ node_modules
 
 # Eleventy output
 _site
+
+# Acutis output
+*.acutis.js

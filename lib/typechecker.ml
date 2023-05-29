@@ -402,7 +402,7 @@ module Interface = struct
     | None -> Some v
     | Some _ -> Error.interface_duplicate loc k
 
-  let update loc k v { Context.interface; _ } =
+  let update loc k v interface =
     match !interface with
     | None -> interface := Some (ref (Map.String.singleton k (loc, v)))
     | Some interface ->
@@ -487,9 +487,20 @@ module Interface = struct
   let make loc ctx l =
     ctx.Context.interface_loc := loc;
     List.iter
-      (fun { Ast.Interface.loc; name; ty } -> update loc name (make_ty ty) ctx)
+      (fun { Ast.Interface.loc; name; ty } ->
+        update loc name (make_ty ty) ctx.interface)
       l
 end
+
+let make_interface_standalone l =
+  let interface = ref None in
+  List.iter
+    (fun { Ast.Interface.loc; name; ty } ->
+      Interface.update loc name (Interface.make_ty ty) interface)
+    l;
+  match !interface with
+  | None -> Map.String.empty
+  | Some interface -> Map.String.map snd !interface
 
 let make_echo_type = function
   | Ast.Fmt_string -> Ty.string ()

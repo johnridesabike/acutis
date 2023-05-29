@@ -63,6 +63,7 @@ open Ast
 %token CHAR_B                 (* b *)
 
 %start <Ast.t> acutis
+%start <Ast.Interface.t> interface_standalone
 
 %%
 
@@ -275,3 +276,5 @@ nodes_rev:
   | l = nodes_rev; n = node;  { n :: l }
 
 acutis: n = nodes; EOF; { n }
+
+interface_standalone: l = interface; EOF; { l }

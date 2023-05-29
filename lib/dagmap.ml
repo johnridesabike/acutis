@@ -66,3 +66,5 @@ let link_all = function
               linked := M.add k x !linked)
         !not_linked;
       !linked
+
+let linked = function Linked (_, m) -> m | Not_linked { linked; _ } -> !linked

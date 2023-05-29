@@ -16,6 +16,14 @@ let parse ~fname lexbuf =
   | Lexer.Error -> Error.lex_error lexbuf
   | Parser.Error i -> Error.parse_error i lexbuf
 
+let parse_interface ~fname lexbuf =
+  let state = Lexer.make_state_interface () in
+  lexbuf.Lexing.lex_curr_p <-
+    { lexbuf.Lexing.lex_curr_p with pos_fname = fname };
+  try Parser.interface_standalone (Lexer.acutis state) lexbuf with
+  | Lexer.Error -> Error.lex_error lexbuf
+  | Parser.Error i -> Error.parse_error i lexbuf
+
 module StringExtra = struct
   (* The [ltrim] and [rtrim] functions are vendored from the Containers library.
      https://github.com/c-cube/ocaml-containers/blob/70703b351235b563f060ef494461e678e896da49/src/core/CCString.ml
@@ -122,16 +130,6 @@ and make_match loc tys cases =
 
 let make_nodes Typechecker.{ nodes; _ } = make_nodes nodes
 
-type 'a template =
-  | Src of 'a template nodes
-  | Fun of Typescheme.t Map.String.t * 'a
-
-type 'a t = {
-  types : Typescheme.t Map.String.t;
-  nodes : 'a template nodes;
-  name : string;
-}
-
 module Components = struct
   module T = Typechecker
 
@@ -175,6 +173,17 @@ module Components = struct
     { typed; optimized }
 end
 
+type 'a template =
+  | Src of 'a template nodes
+  | Fun of Typescheme.t Map.String.t * 'a
+
+type 'a t = {
+  name : string;
+  types : Typescheme.t Map.String.t;
+  nodes : 'a template nodes;
+  components : 'a template Map.String.t;
+}
+
 let rec link_nodes graph nodes =
   List.map
     (function
@@ -208,16 +217,24 @@ let link_src graph = function
 
 let make ~fname components src =
   let nodes = parse ~fname src in
-  let ast = Typechecker.make ~root:fname components.Components.typed nodes in
+  let typed = Typechecker.make ~root:fname components.Components.typed nodes in
   let g = Dagmap.make ~f:link_src ~root:fname components.optimized in
-  let nodes = make_nodes ast |> link_nodes g in
-  { types = ast.types; nodes; name = fname }
+  let nodes = make_nodes typed |> link_nodes g in
+  { name = fname; types = typed.types; nodes; components = Dagmap.linked g }
 
 let from_string ~fname components src =
   make ~fname components (Lexing.from_string src)
 
 let from_channel ~fname components src =
   make ~fname components (Lexing.from_channel src)
+
+let interface_from_string ~fname src =
+  parse_interface ~fname (Lexing.from_string src)
+  |> Typechecker.make_interface_standalone
+
+let interface_from_channel ~fname src =
+  parse_interface ~fname (Lexing.from_channel src)
+  |> Typechecker.make_interface_standalone
 
 let rec echo_to_sexp = function
   | Echo_var s -> Sexp.make "var" [ Sexp.string s ]

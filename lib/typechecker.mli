@@ -53,3 +53,4 @@ val make_components :
 
 val make : root:string -> (t, 'a) source Map.String.t -> Ast.t -> t
 val pp_pat : Format.formatter -> pat -> unit
+val make_interface_standalone : Ast.Interface.t -> Typescheme.t Map.String.t

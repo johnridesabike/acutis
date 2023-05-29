@@ -4,6 +4,11 @@ Most changes are breaking changes.
 
 ## Latest
 
+- Add JavaScript compilation. Templates can now compile to self-contained
+  JavaScript files. This feature is supported in both the CLI and the Eleventy
+  plugin.
+- Change how the Eleventy plugin loads template functions so it's consistent
+  between the different modes.
 - Add debug commands to the CLI: `--printast`, `--printtypes`, and `--printopt`.
 
 ## 0.22.0

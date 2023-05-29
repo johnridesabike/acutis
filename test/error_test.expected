@@ -70,7 +70,8 @@ Syntax error.
 Unterminated expressions
 ---
 File "<test>", 1:9-1:9
-Syntax error.
+Parse error.
+This is not a valid pattern.
 
 
 Illegal escape sequence

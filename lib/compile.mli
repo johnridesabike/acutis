@@ -43,16 +43,6 @@ and 'a eval =
 
 and 'a nodes = 'a node list
 
-type 'a template =
-  | Src of 'a template nodes
-  | Fun of Typescheme.t Map.String.t * 'a
-
-type 'a t = {
-  types : Typescheme.t Map.String.t;
-  nodes : 'a template nodes;
-  name : string;
-}
-
 module Components : sig
   type 'a source
 
@@ -79,7 +69,23 @@ module Components : sig
       @raise Error.Acutis_error *)
 end
 
+type 'a template =
+  | Src of 'a template nodes
+  | Fun of Typescheme.t Map.String.t * 'a
+
+type 'a t = {
+  name : string;
+  types : Typescheme.t Map.String.t;
+  nodes : 'a template nodes;
+  components : 'a template Map.String.t;
+}
+
 val make : fname:string -> 'a Components.t -> Lexing.lexbuf -> 'a t
 val from_string : fname:string -> 'a Components.t -> string -> 'a t
 val from_channel : fname:string -> 'a Components.t -> in_channel -> 'a t
+val interface_from_string : fname:string -> string -> Typescheme.t Map.String.t
+
+val interface_from_channel :
+  fname:string -> in_channel -> Typescheme.t Map.String.t
+
 val to_sexp : _ nodes -> Sexp.t
