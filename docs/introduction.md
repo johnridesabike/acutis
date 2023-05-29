@@ -39,20 +39,6 @@ The OCaml package manager, OPAM, can install Acutis through the git repository.
 opam pin https://github.com/johnridesabike/acutis.git
 ```
 
-This command will install two packages:
-
-<dl>
-<dt class="font-monospace">
-  acutis
-<dd>
-  The core Acutis library and CLI.
-
-<dt class="font-monospace">
-  acutis_js
-<dd>
-  A virtual package containing the dependencies for compiling with js_of_ocaml.
-</dl>
-
 ## Installation: JavaScript
 
 The Acutis JavaScript package is available through npm.
@@ -61,7 +47,8 @@ The Acutis JavaScript package is available through npm.
 npm install acutis-lang
 ```
 
-[You can view the JavaScript API here][3]. (It's in OCaml syntax. I'm sorry.)
+[You can view the JavaScript API here][3]. (It's in OCaml syntax, sorry. I'll
+document it if it ever becomes stable.)
 
 ### Using with Eleventy
 

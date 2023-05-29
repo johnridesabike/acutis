@@ -8,11 +8,17 @@
 (*                                                                        *)
 (**************************************************************************)
 
+(** Format compiled templates as self-contained JavaScript modules. *)
+
 type jsfun
+(** Information about how to import an external function. *)
 
 val jsfun : module_path:string -> function_path:string -> jsfun
 
 type t = jsfun Compile.t
 
 val cjs : Format.formatter -> t -> unit
+(** Produce a CommonJS module. *)
+
 val esm : Format.formatter -> t -> unit
+(** Produce an ECMAScript module. *)
