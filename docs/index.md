@@ -9,9 +9,8 @@ next:
 ---
 
 Acutis is a template language that features static typing, pattern matching, and
-asynchronous template components. You can render the templates like a script or
-compile them to JavaScript files. It's a simple alternative to engines like
-Mustache, Handlebars, Liquid, and Nunjucks.
+asynchronous template components. You can execute your templates like scripts or
+compile them to self-contained JavaScript files.
 
 [Source code] | [Changelog]
 

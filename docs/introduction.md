@@ -8,7 +8,7 @@ next:
   url: /manual/
 ---
 
-Acutis is written in [OCaml], and familiarity with the OCaml toolchain is a
+Acutis is written in [OCaml], so familiarity with the OCaml toolchain is a
 prerequisite for using it. It also comes with a JavaScript API to use in web or
 Node.js projects.
 
@@ -30,12 +30,6 @@ I created Acutis because there were specific language features I wanted in my
 templates that I couldn't find in existing projects. I was inspired by the
 declarative, component-based design in React as well as the pattern-matching
 abilities in OCaml.
-
-## What state is it in?
-
-Acutis is young software. I'm currently the only person who uses it. Also, I
-haven't developed much editor tooling for it yet. Use it if you don't mind
-getting your hands dirty.
 
 ## Installation: OCaml
 
