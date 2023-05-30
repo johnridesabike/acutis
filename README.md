@@ -9,7 +9,7 @@ compile them to self-contained JavaScript files.
 Acutis is an experimental, personal project and is not stable.
 
 ```acutis
-{% interface
+{%~ interface
   siteTitle = string
   blogPosts =
     [
@@ -26,9 +26,9 @@ Acutis is an experimental, personal project and is not stable.
 {%~ map blogPosts with {image, title, content, date, author: {name}} %}
   <article class="h-entry">
     <header>
-      {%~ match image with null ~%}
+      {% match image with null ~%}
         {* no image *}
-      {%~ with !{src, alt} %}
+      {%~ with !{src, alt} ~%}
         <img src="{{ src }}" alt="{{ alt }}">
       {% /match ~%}
       <h2 class="p-name"> {{ title }} </h2>
@@ -37,7 +37,7 @@ Acutis is an experimental, personal project and is not stable.
     </header>
     <div class="e-content"> {{{ content }}} </div>
   </article>
-{% /map %}
+{%~ /map %}
 ```
 
 [See how this example compiles in the playground][example].
