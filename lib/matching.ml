@@ -196,27 +196,25 @@ and merge_testcases :
 (** When we merge a list of values with a wildcard, some of them may not merge
     successfully. We filter out any unsuccessful mergers, since their paths are
     covered by the wildcard case. *)
-and merge_testcases_into_wildcard :
+and[@tail_mod_cons] merge_testcases_into_wildcard :
     type a k.
     (a, leaf) depth ->
     (a, k) tree ->
     (a, k) switchcase ->
     (a, k) switchcase option =
  fun n wildcard t ->
-  let equal = equal_tree_nested n in
-  let[@tail_mod_cons] rec aux wildcard t =
-    let if_match =
-      let x = merge n wildcard t.if_match in
-      if equal wildcard x then None else Some x
-    in
-    match (if_match, t.next) with
-    | None, None -> None
-    | Some if_match, None -> Some { t with if_match }
-    | None, Some next -> aux wildcard next
-    | Some if_match, Some next ->
-        Some { t with if_match; next = aux wildcard next }
-  in
-  aux wildcard t
+  let if_match = merge n wildcard t.if_match in
+  match (equal_tree_nested n wildcard if_match, t.next) with
+  | true, None -> None
+  | true, Some next -> merge_testcases_into_wildcard n wildcard next
+  | false, None -> Some { t with if_match }
+  | false, Some next ->
+      Some
+        {
+          t with
+          if_match;
+          next = merge_testcases_into_wildcard n wildcard next;
+        }
 
 (** When we expand a wildcard into a list of test values, we merge it with each
     child. *)
