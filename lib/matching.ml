@@ -20,7 +20,7 @@ type ('leaf, 'key) tree =
       ids : Set.Int.t;
       cases : ('leaf, 'key) switchcase;
       wildcard : ('leaf, 'key) tree option;
-      debug_row : Ty.Variant.row;
+      debug_row : Ty.row;
     }
   | Nest of {
       key : 'key;
@@ -82,7 +82,7 @@ let rec equal_tree :
       equal_key a.key key && Set.Int.equal a.ids ids
       && equal_switchcase equal_leaf equal_key a.cases cases
       && Option.equal (equal_tree equal_leaf equal_key) a.wildcard wildcard
-      && Ty.Variant.equal_row a.debug_row debug_row
+      && Ty.equal_row a.debug_row debug_row
   | Nest a, Nest { key; ids; child; wildcard; debug } ->
       equal_key a.key key && Set.Int.equal a.ids ids
       && equal_nest equal_leaf equal_key a.child child
@@ -563,8 +563,7 @@ let of_const key data if_match enum =
       key;
       ids = Set.Int.empty;
       cases = { data; if_match; next = None };
-      debug_row =
-        (match enum with Some { Ty.Variant.row; _ } -> row | None -> `Open);
+      debug_row = (match enum with Some { Ty.row; _ } -> row | None -> `Open);
       wildcard = None;
     }
 
@@ -714,11 +713,11 @@ module ParMatch = struct
     | Union (key, ({ cases; _ } as ty)), Nest (Const c :: path) -> (
         let key = Some (key, c, ty) in
         match (cases, c) with
-        | VInt m, Int i ->
+        | Ty.Union.Int m, Int i ->
             let tys = Map.Int.find i m in
             let s = Map.String.to_seq !tys in
             TRecord (key, to_map Map.String.empty s path, tys)
-        | VString m, String s ->
+        | Ty.Union.String m, String s ->
             let tys = Map.String.find s m in
             let s = Map.String.to_seq !tys in
             TRecord (key, to_map Map.String.empty s path, tys)
@@ -876,7 +875,7 @@ let rec tree_to_sexp :
               | None -> Sexp.empty
               | Some wildcard -> tree_to_sexp leaf_f key_f wildcard);
             ];
-          Sexp.make "debug_row" [ Ty.Variant.row_to_sexp debug_row ];
+          Sexp.make "debug_row" [ Ty.row_to_sexp debug_row ];
         ]
   | Nest { key; ids; child; wildcard; debug } ->
       Sexp.make "nest"

@@ -100,22 +100,22 @@ and record path tys = function
   | `Assoc l -> Data.dict (record_aux path !tys l)
   | j -> decode_error (Ty.internal_record tys) path j
 
-and union path ty key Ty.Variant.{ cases; extra; row } = function
+and union path ty key Ty.{ cases; extra; row } = function
   | `Assoc l as j -> (
       let tag =
         try List.assoc key l with Not_found -> decode_error ty path j
       in
       let tag, tys =
         match (tag, cases, extra) with
-        | `Bool false, VInt map, Bool ->
+        | `Bool false, Ty.Union.Int map, Bool ->
             let tag = 0 in
             (Data.bool tag, Map.Int.find_opt tag map)
-        | `Bool true, VInt map, Bool ->
+        | `Bool true, Ty.Union.Int map, Bool ->
             let tag = 1 in
             (Data.bool tag, Map.Int.find_opt tag map)
-        | `Int tag, VInt map, Not_bool ->
+        | `Int tag, Ty.Union.Int map, Not_bool ->
             (Data.int tag, Map.Int.find_opt tag map)
-        | `String tag, VString map, _ ->
+        | `String tag, Ty.Union.String map, _ ->
             (Data.string tag, Map.String.find_opt tag map)
         | _ -> decode_error ty path j
       in
@@ -130,12 +130,12 @@ and make path ty j =
   match !ty with
   | Ty.Unknown _ -> Data.other j
   | Nullable ty -> nullable path ty j
-  | Enum { extra = Bool; cases = VInt cases; _ } -> boolean ty path cases j
-  | String | Enum { row = `Open; cases = VString _; _ } -> string ty path None j
-  | Enum { row = `Closed; cases = VString cases; _ } ->
+  | Enum { extra = Bool; cases = Int cases; _ } -> boolean ty path cases j
+  | String | Enum { row = `Open; cases = String _; _ } -> string ty path None j
+  | Enum { row = `Closed; cases = String cases; _ } ->
       string ty path (Some cases) j
-  | Int | Enum { row = `Open; cases = VInt _; _ } -> int ty path None j
-  | Enum { row = `Closed; cases = VInt cases; _ } -> int ty path (Some cases) j
+  | Int | Enum { row = `Open; cases = Int _; _ } -> int ty path None j
+  | Enum { row = `Closed; cases = Int cases; _ } -> int ty path (Some cases) j
   | Float -> float path j
   | List ty -> list path ty j
   | Dict (ty, _) -> dict path ty j
@@ -182,8 +182,8 @@ and to_json ty t =
       let tag = Map.String.find k m in
       let record_tys =
         match (cases, tag) with
-        | VInt m, Const (Int i) -> Map.Int.find i m
-        | VString m, Const (String s) -> Map.String.find s m
+        | Ty.Union.Int m, Const (Int i) -> Map.Int.find i m
+        | Ty.Union.String m, Const (String s) -> Map.String.find s m
         | _ -> Error.internal __POS__ "Type mismatch while encoding a union."
       in
       let tag =

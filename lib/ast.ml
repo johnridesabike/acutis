@@ -8,8 +8,6 @@
 (*                                                                        *)
 (**************************************************************************)
 
-module F = Format
-
 module Dict = struct
   type 'a t = 'a Map.String.t
 
@@ -75,10 +73,10 @@ module Interface = struct
     | Nullable of ty
     | List of ty
     | Dict of ty
-    | Enum_int of int Nonempty.t * Typescheme.Variant.row
+    | Enum_int of int Nonempty.t * Typescheme.row
     | Enum_bool of int Nonempty.t
-    | Enum_string of string Nonempty.t * Typescheme.Variant.row
-    | Record of (Loc.t * ty Record.t) Nonempty.t * Typescheme.Variant.row
+    | Enum_string of string Nonempty.t * Typescheme.row
+    | Record of (Loc.t * ty Record.t) Nonempty.t * Typescheme.row
     | Tuple of ty list
 
   type prop = { loc : Loc.t; name : string; ty : ty }
@@ -91,15 +89,15 @@ module Interface = struct
     | Dict t -> Sexp.make "dict" [ ty_to_sexp t ]
     | Enum_int (l, row) ->
         Sexp.make "enum_int"
-          [ Typescheme.Variant.row_to_sexp row; Nonempty.to_sexp Sexp.int l ]
+          [ Typescheme.row_to_sexp row; Nonempty.to_sexp Sexp.int l ]
     | Enum_bool l -> Sexp.make "enum_bool" [ Nonempty.to_sexp Sexp.bool l ]
     | Enum_string (l, row) ->
         Sexp.make "enum_string"
-          [ Typescheme.Variant.row_to_sexp row; Nonempty.to_sexp Sexp.string l ]
+          [ Typescheme.row_to_sexp row; Nonempty.to_sexp Sexp.string l ]
     | Record (l, row) ->
         Sexp.make "record"
           [
-            Typescheme.Variant.row_to_sexp row;
+            Typescheme.row_to_sexp row;
             Nonempty.to_sexp
               (Sexp.pair Loc.to_sexp (Record.to_sexp ty_to_sexp))
               l;

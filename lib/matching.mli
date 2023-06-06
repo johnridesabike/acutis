@@ -189,7 +189,7 @@ type ('leaf, 'key) tree =
       ids : Set.Int.t;
       cases : ('leaf, 'key) switchcase;
       wildcard : ('leaf, 'key) tree option;
-      debug_row : Typescheme.Variant.row;
+      debug_row : Typescheme.row;
     }
       (** A Switch represents a list of discreet values to test (i.e., [1],
           ["a"], etc.). If none of the values match the input, then the wildcard

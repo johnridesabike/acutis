@@ -45,10 +45,10 @@ module Interface : sig
     | Nullable of ty
     | List of ty
     | Dict of ty
-    | Enum_int of int Nonempty.t * Typescheme.Variant.row
+    | Enum_int of int Nonempty.t * Typescheme.row
     | Enum_bool of int Nonempty.t
-    | Enum_string of string Nonempty.t * Typescheme.Variant.row
-    | Record of (Loc.t * ty Record.t) Nonempty.t * Typescheme.Variant.row
+    | Enum_string of string Nonempty.t * Typescheme.row
+    | Record of (Loc.t * ty Record.t) Nonempty.t * Typescheme.row
     | Tuple of ty list
 
   type prop = { loc : Loc.t; name : string; ty : ty }

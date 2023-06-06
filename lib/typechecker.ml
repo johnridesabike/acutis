@@ -8,9 +8,9 @@
 (*                                                                        *)
 (**************************************************************************)
 
+module C = Data.Const
 module F = Format
 module Ty = Typescheme
-module V = Ty.Variant
 
 exception Clash
 
@@ -38,17 +38,17 @@ and open_rows ty =
       | Bool -> ty.cases <- Ty.Enum.false_and_true_cases)
   | Union (_, ty) -> (
       match ty with
-      | { cases = VInt cases; extra = Bool; _ } ->
+      | { cases = Ty.Union.Int cases; extra = Bool; _ } ->
           ty.cases <-
-            VInt
+            Ty.Union.Int
               (Map.Int.update 0 open_rows_bool_union_aux cases
               |> Map.Int.update 1 open_rows_bool_union_aux)
-      | { cases = VInt cases; _ } ->
+      | { cases = Ty.Union.Int cases; _ } ->
           Map.Int.iter
             (fun _ v -> Map.String.iter (fun _ v -> open_rows v) !v)
             cases;
           ty.row <- `Open
-      | { cases = VString cases; _ } ->
+      | { cases = Ty.Union.String cases; _ } ->
           Map.String.iter
             (fun _ v -> Map.String.iter (fun _ v -> open_rows v) !v)
             cases;
@@ -66,15 +66,15 @@ type mode =
 
 let unify_enum_cases _ a b =
   match (a, b) with
-  | V.VString a, V.VString b -> V.VString (Set.String.union a b)
-  | VInt a, VInt b -> VInt (Set.Int.union a b)
+  | Ty.Enum.String a, Ty.Enum.String b -> Ty.Enum.String (Set.String.union a b)
+  | Ty.Enum.Int a, Ty.Enum.Int b -> Ty.Enum.Int (Set.Int.union a b)
   | _ -> raise_notrace Clash
 
 let subset_enum_cases _ a b =
   let success =
     match (a, b) with
-    | V.VString a, V.VString b -> Set.String.subset b a
-    | VInt a, VInt b -> Set.Int.subset b a
+    | Ty.Enum.String a, Ty.Enum.String b -> Set.String.subset b a
+    | Ty.Enum.Int a, Ty.Enum.Int b -> Set.Int.subset b a
     | _ -> false
   in
   if not success then raise_notrace Clash
@@ -82,7 +82,7 @@ let subset_enum_cases _ a b =
 let unify_variant ~unify_cases ~subset_cases mode a b =
   match mode with
   | Destructure_expand ->
-      (match (a.V.row, b.V.row) with
+      (match (a.Ty.row, b.Ty.row) with
       | `Open, _ | _, `Open -> a.row <- `Open
       | _ -> ());
       a.cases <- unify_cases mode a.cases b.cases
@@ -167,8 +167,9 @@ and unify_union_cases mode a b =
     Some a
   in
   match (a, b) with
-  | V.VString a, V.VString b -> V.VString (Map.String.union f a b)
-  | VInt a, VInt b -> VInt (Map.Int.union f a b)
+  | Ty.Union.String a, Ty.Union.String b ->
+      Ty.Union.String (Map.String.union f a b)
+  | Ty.Union.Int a, Ty.Union.Int b -> Ty.Union.Int (Map.Int.union f a b)
   | _ -> raise_notrace Clash
 
 and subset_union_cases mode a b =
@@ -182,8 +183,8 @@ and subset_union_cases mode a b =
     | None, None -> None
   in
   match (a, b) with
-  | V.VString a, V.VString b -> Map.String.merge f a b |> ignore
-  | VInt a, VInt b -> Map.Int.merge f a b |> ignore
+  | Ty.Union.String a, Ty.Union.String b -> Map.String.merge f a b |> ignore
+  | Ty.Union.Int a, Ty.Union.Int b -> Map.Int.merge f a b |> ignore
   | _ -> raise_notrace Clash
 
 let unify loc mode a b =
@@ -213,38 +214,40 @@ let rec check_interface ~interface ~impl =
   | Tuple a, Tuple b ->
       List.equal (fun a b -> check_interface ~interface:a ~impl:b) a b
   | Record a, Record b -> check_interface_record ~interface:a ~impl:b
-  | Enum a, Enum b when Ty.Variant.equal_extra a.extra b.extra -> (
+  | Enum a, Enum b when Ty.equal_sum_extra a.extra b.extra -> (
       match (a.row, b.row) with
       | `Closed, `Closed -> (
           match (a.cases, b.cases) with
-          | VInt a, VInt b -> Set.Int.equal a b
-          | VString a, VString b -> Set.String.equal a b
+          | Ty.Enum.Int a, Ty.Enum.Int b -> Set.Int.equal a b
+          | Ty.Enum.String a, Ty.Enum.String b -> Set.String.equal a b
           | _ -> false)
       | `Open, `Open -> (
           match (a.cases, b.cases) with
-          | VInt interface, VInt impl -> Set.Int.subset impl interface
-          | VString interface, VString impl -> Set.String.subset impl interface
+          | Ty.Enum.Int interface, Ty.Enum.Int impl ->
+              Set.Int.subset impl interface
+          | Ty.Enum.String interface, Ty.Enum.String impl ->
+              Set.String.subset impl interface
           | _ -> false)
       | _ -> false)
   | Union (ka, a), Union (kb, b)
-    when String.equal ka kb && Ty.Variant.equal_extra a.extra b.extra -> (
+    when String.equal ka kb && Ty.equal_sum_extra a.extra b.extra -> (
       match (a.row, b.row) with
       | `Closed, `Closed -> (
           match (a.cases, b.cases) with
-          | VInt a, VInt b ->
+          | Ty.Union.Int a, Ty.Union.Int b ->
               Map.Int.equal
                 (fun a b -> check_interface_record ~interface:a ~impl:b)
                 a b
-          | VString a, VString b ->
+          | Ty.Union.String a, Ty.Union.String b ->
               Map.String.equal
                 (fun a b -> check_interface_record ~interface:a ~impl:b)
                 a b
           | _ -> false)
       | `Open, `Open -> (
           match (a.cases, b.cases) with
-          | VInt interface, VInt impl ->
+          | Ty.Union.Int interface, Ty.Union.Int impl ->
               map_int_subset check_interface_record ~interface ~impl
-          | VString interface, VString impl ->
+          | Ty.Union.String interface, Ty.Union.String impl ->
               map_string_subset check_interface_record ~interface ~impl
           | _ -> false)
       | _ -> false)
@@ -273,11 +276,11 @@ type echo =
 type construct = TList | TNullable
 
 type pat =
-  | TConst of Data.Const.t * Ty.Enum.t option
+  | TConst of C.t * Ty.Enum.t option
   | TConstruct of construct * pat option
   | TTuple of pat list
   | TRecord of
-      (string * Data.Const.t * Ty.t Ty.Union.t) option
+      (string * C.t * Ty.t Ty.Union.t) option
       * pat Map.String.t
       * Ty.t Map.String.t ref
   | TDict of pat Map.String.t * Set.String.t ref
@@ -476,13 +479,13 @@ module Interface = struct
         match tagv with
         | Tag_int (_, i) ->
             let m = Map.Int.(singleton i (ref m) |> aux update tag_int) in
-            ref (Ty.Union (tagk, { cases = VInt m; row; extra = Not_bool }))
+            ref (Ty.Union (tagk, { cases = Int m; row; extra = Not_bool }))
         | Tag_bool (_, i) ->
             let m = Map.Int.(singleton i (ref m) |> aux update tag_bool) in
-            ref (Ty.Union (tagk, { cases = VInt m; row; extra = Bool }))
+            ref (Ty.Union (tagk, { cases = Int m; row; extra = Bool }))
         | Tag_string (_, s) ->
             let m = Map.String.(singleton s (ref m) |> aux update tag_string) in
-            ref (Ty.Union (tagk, { cases = VString m; row; extra = Not_bool })))
+            ref (Ty.Union (tagk, { cases = String m; row; extra = Not_bool })))
 
   let make loc ctx l =
     ctx.Context.interface_loc := loc;
@@ -642,36 +645,29 @@ let rec make_pat var_action mode ty = function
         | Destructure_expand -> `Closed
         | Construct_literal | Construct_var -> `Open
       in
-      (* Use a polyvar instead of Data.Const.t to disallow Float values. *)
-      let tag, tag_extra =
-        match v with
-        | Tag_int (_, i) -> (`Int i, Ty.Variant.Not_bool)
-        | Tag_bool (_, i) -> (`Int i, Bool)
-        | Tag_string (_, s) -> (`String s, Not_bool)
-      in
       let tyvars =
         match !ty with
         | Union (_, enum) -> (
             let tyvars =
-              match (tag, enum) with
-              | `Int i, { cases = VInt cases; _ } -> Map.Int.find_opt i cases
-              | `String s, { cases = VString cases; _ } ->
+              match (v, enum) with
+              | (Tag_int (_, i) | Tag_bool (_, i)), { cases = Int cases; _ } ->
+                  Map.Int.find_opt i cases
+              | Tag_string (_, s), { cases = String cases; _ } ->
                   Map.String.find_opt s cases
               | _ -> None
             in
             match tyvars with Some tv -> tv | None -> new_tyvars)
         | _ -> new_tyvars
       in
-      let new_enum =
-        match tag with
-        | `Int i -> Ty.Union.int_singleton i tyvars row tag_extra
-        | `String s -> Ty.Union.string_singleton s tyvars row
+      let tag, new_enum =
+        match v with
+        | Tag_int (_, i) -> (C.Int i, Ty.Union.int_singleton i tyvars row)
+        | Tag_bool (_, i) -> (C.Int i, Ty.Union.bool_singleton i tyvars row)
+        | Tag_string (_, s) ->
+            (C.String s, Ty.Union.string_singleton s tyvars row)
       in
       unify loc mode ty (ref (Ty.Union (k, new_enum)));
       let r = make_record var_action loc mode !tyvars m in
-      let tag =
-        match tag with `Int i -> Data.Const.Int i | `String s -> String s
-      in
       TRecord (Some (k, tag, new_enum), r, tyvars)
   | Dict (loc, m) ->
       let new_kys = ref Set.String.empty in
@@ -870,22 +866,22 @@ let pp_pat =
 
   let pp_constant ppf c =
     match c with
-    | Data.Const.Int i -> F.pp_print_int ppf i
-    | String s -> F.fprintf ppf "%S" s
-    | Float f -> F.pp_print_float ppf f
+    | C.Int i -> F.pp_print_int ppf i
+    | C.String s -> F.fprintf ppf "%S" s
+    | C.Float f -> F.pp_print_float ppf f
   in
 
   let pp_constant_enum ppf x c =
     match (x, c) with
-    | { V.extra = Bool; _ }, Data.Const.Int 0 -> F.pp_print_string ppf "false"
-    | { V.extra = Bool; _ }, Int _ -> F.pp_print_string ppf "true"
+    | { Ty.extra = Bool; _ }, C.Int 0 -> F.pp_print_string ppf "false"
+    | { Ty.extra = Bool; _ }, C.Int _ -> F.pp_print_string ppf "true"
     | _, c -> F.fprintf ppf "%@%a" pp_constant c
   in
 
   let pp_constant_union ppf x c =
     match (x, c) with
-    | { V.extra = Bool; _ }, Data.Const.Int 0 -> F.pp_print_string ppf "false"
-    | { V.extra = Bool; _ }, Int _ -> F.pp_print_string ppf "true"
+    | { Ty.extra = Bool; _ }, C.Int 0 -> F.pp_print_string ppf "false"
+    | { Ty.extra = Bool; _ }, C.Int _ -> F.pp_print_string ppf "true"
     | _, c -> pp_constant ppf c
   in
 

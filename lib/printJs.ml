@@ -831,15 +831,14 @@ let decode_float ~set input ty =
 let rec decode_typescheme ~set input env ty =
   match !ty with
   | Ty.Unknown _ -> [ set input ]
-  | Enum { extra = Bool; cases = VInt cases; _ } ->
+  | Enum { extra = Bool; cases = Int cases; _ } ->
       [ decode_boolean ~set input cases ty ]
-  | String | Enum { row = `Open; cases = VString _; _ } ->
+  | String | Enum { row = `Open; cases = String _; _ } ->
       [ decode_string ~set input ty ]
-  | Enum { row = `Closed; cases = VString cases; _ } ->
+  | Enum { row = `Closed; cases = String cases; _ } ->
       [ decode_string_enum ~set input cases ty ]
-  | Int | Enum { row = `Open; cases = VInt _; _ } ->
-      [ decode_int ~set input ty ]
-  | Enum { row = `Closed; cases = VInt cases; _ } ->
+  | Int | Enum { row = `Open; cases = Int _; _ } -> [ decode_int ~set input ty ]
+  | Enum { row = `Closed; cases = Int cases; _ } ->
       [ decode_int_enum ~set input cases ty ]
   | Float -> [ decode_float ~set input ty ]
   | Nullable ty -> [ decode_nullable ~set input env ty ]
@@ -984,7 +983,7 @@ and decode_union ~set input env key variant ty =
     Switch
       ( Var input_key,
         (match variant with
-        | { cases = VInt map; extra = Bool; _ } ->
+        | { cases = Int map; extra = Bool; _ } ->
             Map.Int.to_seq map
             |> Seq.map (fun (k, v) ->
                    match k with
@@ -996,24 +995,24 @@ and decode_union ~set input env key variant ty =
                        ( Prim True,
                          set_data_key (Int k)
                          :: decode_record_aux ~data:(Var union) input env !v ))
-        | { cases = VInt map; _ } ->
+        | { cases = Int map; _ } ->
             Map.Int.to_seq map
             |> Seq.map (fun (k, v) ->
                    ( Int k,
                      set_data_key (Int k)
                      :: decode_record_aux ~data:(Var union) input env !v ))
-        | { cases = VString map; _ } ->
+        | { cases = String map; _ } ->
             Map.String.to_seq map
             |> Seq.map (fun (k, v) ->
                    ( String k,
                      set_data_key (String k)
                      :: decode_record_aux ~data:(Var union) input env !v ))),
         match variant with
-        | { cases = VInt _; row = `Open; _ } ->
+        | { cases = Int _; row = `Open; _ } ->
             decode_typescheme
               ~set:(fun id -> Expr (meth_set (Var union) (String key) id))
               (Var input_key) env (Ty.int ())
-        | { cases = VString _; row = `Open; _ } ->
+        | { cases = String _; row = `Open; _ } ->
             decode_typescheme
               ~set:(fun id -> Expr (meth_set (Var union) (String key) id))
               (Var input_key) env (Ty.string ())
@@ -1112,7 +1111,7 @@ and encode_union ~set input env key variant =
     Switch
       ( Var input_key,
         (match variant with
-        | { cases = VInt map; extra = Bool; _ } ->
+        | { cases = Int map; extra = Bool; _ } ->
             Map.Int.to_seq map
             |> Seq.map (fun (k, v) ->
                    match k with
@@ -1124,13 +1123,13 @@ and encode_union ~set input env key variant =
                        ( Int k,
                          set_data_key (Prim True)
                          :: encode_record_aux ~data:(Var union) input env !v ))
-        | { cases = VInt map; _ } ->
+        | { cases = Int map; _ } ->
             Map.Int.to_seq map
             |> Seq.map (fun (k, v) ->
                    ( Int k,
                      set_data_key (Int k)
                      :: encode_record_aux ~data:(Var union) input env !v ))
-        | { cases = VString map; _ } ->
+        | { cases = String map; _ } ->
             Map.String.to_seq map
             |> Seq.map (fun (k, v) ->
                    ( String k,

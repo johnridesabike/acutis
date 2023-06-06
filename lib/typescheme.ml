@@ -16,60 +16,51 @@ let map_of_list l =
 let int_map_of_list l =
   List.fold_left (fun map (k, v) -> Map.Int.add k v map) Map.Int.empty l
 
-module Variant = struct
-  type row = [ `Closed | `Open ]
-  type extra = Not_bool | Bool
-  type ('a, 'b) ty = VInt of 'a | VString of 'b
+type row = [ `Closed | `Open ]
+type sum_extra = Not_bool | Bool
+type 'a sum = { mutable cases : 'a; mutable row : row; extra : sum_extra }
 
-  type ('a, 'b) t = {
-    mutable cases : ('a, 'b) ty;
-    mutable row : row;
-    extra : extra;
-  }
+let equal_row (a : row) (b : row) =
+  match (a, b) with `Closed, `Closed | `Open, `Open -> true | _ -> false
 
-  let equal_row (a : row) (b : row) =
-    match (a, b) with `Closed, `Closed | `Open, `Open -> true | _ -> false
+let row_to_sexp = function
+  | `Closed -> Sexp.symbol "closed"
+  | `Open -> Sexp.symbol "open"
 
-  let equal_extra a b =
-    match (a, b) with Not_bool, Not_bool | Bool, Bool -> true | _ -> false
+let equal_sum_extra a b =
+  match (a, b) with Not_bool, Not_bool | Bool, Bool -> true | _ -> false
 
-  let pp_sep ppf () = F.fprintf ppf " |@ "
-  let pp_row ppf = function `Closed -> () | `Open -> F.fprintf ppf " |@ ..."
+let pp_sum_sep ppf () = F.fprintf ppf " |@ "
+let pp_row ppf = function `Closed -> () | `Open -> F.fprintf ppf " |@ ..."
 
-  let pp_bool ppf = function
-    | 0 -> F.pp_print_string ppf "false"
-    | _ -> F.pp_print_string ppf "true"
+let pp_sum_bool ppf = function
+  | 0 -> F.pp_print_string ppf "false"
+  | _ -> F.pp_print_string ppf "true"
 
-  let pp ppf pp_case cases row =
-    F.fprintf ppf "@[<hv 0>";
-    F.pp_print_seq ~pp_sep pp_case ppf cases;
-    pp_row ppf row;
-    F.fprintf ppf "@]"
-
-  let row_to_sexp = function
-    | `Closed -> Sexp.symbol "closed"
-    | `Open -> Sexp.symbol "open"
-end
+let pp_sum ppf pp_case cases row =
+  F.fprintf ppf "@[<hv 0>";
+  F.pp_print_seq ~pp_sep:pp_sum_sep pp_case ppf cases;
+  pp_row ppf row;
+  F.fprintf ppf "@]"
 
 module Enum = struct
-  open Variant
-
-  type t = (Set.Int.t, Set.String.t) Variant.t
+  type cases = Int of Set.Int.t | String of Set.String.t
+  type t = cases sum
 
   let string l row =
-    { cases = VString (Set.String.of_list l); row; extra = Not_bool }
+    { cases = String (Set.String.of_list l); row; extra = Not_bool }
 
   let string_singleton s row =
-    { cases = VString (Set.String.singleton s); row; extra = Not_bool }
+    { cases = String (Set.String.singleton s); row; extra = Not_bool }
 
-  let int l row = { cases = VInt (Set.Int.of_list l); row; extra = Not_bool }
+  let int l row = { cases = Int (Set.Int.of_list l); row; extra = Not_bool }
 
   let int_singleton i row =
-    { cases = VInt (Set.Int.singleton i); row; extra = Not_bool }
+    { cases = Int (Set.Int.singleton i); row; extra = Not_bool }
 
-  let false_and_true_cases = VInt (Set.Int.of_list [ 0; 1 ])
-  let false_only = VInt (Set.Int.singleton 0)
-  let true_only = VInt (Set.Int.singleton 1)
+  let false_and_true_cases = Int (Set.Int.of_list [ 0; 1 ])
+  let false_only = Int (Set.Int.singleton 0)
+  let true_only = Int (Set.Int.singleton 1)
 
   let false_and_true () =
     { cases = false_and_true_cases; row = `Closed; extra = Bool }
@@ -78,45 +69,49 @@ module Enum = struct
   let false_only () = { cases = false_only; row = `Closed; extra = Bool }
 
   let bool_of_list l =
-    { cases = VInt (Set.Int.of_list l); row = `Closed; extra = Bool }
+    { cases = Int (Set.Int.of_list l); row = `Closed; extra = Bool }
 
   let pp_string ppf s = F.fprintf ppf "%@%S" s
   let pp_int ppf i = F.fprintf ppf "%@%i" i
 end
 
 module Union = struct
-  open Variant
+  type 'a cases =
+    | Int of 'a Map.String.t ref Map.Int.t
+    | String of 'a Map.String.t ref Map.String.t
 
-  type 'a t =
-    ('a Map.String.t ref Map.Int.t, 'a Map.String.t ref Map.String.t) Variant.t
+  type 'a t = 'a cases sum
 
-  let int_singleton i x row extra =
-    { cases = VInt (Map.Int.singleton i x); row; extra }
+  let int_singleton i x row =
+    { cases = Int (Map.Int.singleton i x); row; extra = Not_bool }
+
+  let bool_singleton i x row =
+    { cases = Int (Map.Int.singleton i x); row; extra = Bool }
 
   let string_singleton s x row =
-    { cases = VString (Map.String.singleton s x); row; extra = Not_bool }
+    { cases = String (Map.String.singleton s x); row; extra = Not_bool }
 
-  let string l row = { cases = VString (map_of_list l); row; extra = Not_bool }
-  let int l row = { cases = VInt (int_map_of_list l); row; extra = Not_bool }
+  let string l row = { cases = String (map_of_list l); row; extra = Not_bool }
+  let int l row = { cases = Int (int_map_of_list l); row; extra = Not_bool }
 
   let boolean ~f ~t =
     {
-      cases = VInt (Map.Int.singleton 0 f |> Map.Int.add 1 t);
+      cases = Int (Map.Int.singleton 0 f |> Map.Int.add 1 t);
       row = `Closed;
       extra = Bool;
     }
 
   let false_only l =
-    { cases = VInt (Map.Int.singleton 0 l); row = `Closed; extra = Bool }
+    { cases = Int (Map.Int.singleton 0 l); row = `Closed; extra = Bool }
 
   let true_only l =
-    { cases = VInt (Map.Int.singleton 1 l); row = `Closed; extra = Bool }
+    { cases = Int (Map.Int.singleton 1 l); row = `Closed; extra = Bool }
 
   let pp_tag_field ppf s = F.fprintf ppf "%@%a" Pp.field s
 end
 
 type ty =
-  | Unknown of Variant.row ref
+  | Unknown of row ref
   | Int
   | Float
   | String
@@ -176,11 +171,10 @@ let rec copy = function
   | Union (tag, { cases; row; extra }) ->
       let cases =
         match cases with
-        | VString m ->
-            Variant.VString
+        | String m ->
+            Union.String
               (Map.String.map (fun r -> ref (internal_copy_record !r)) m)
-        | VInt m ->
-            VInt (Map.Int.map (fun r -> ref (internal_copy_record !r)) m)
+        | Int m -> Int (Map.Int.map (fun r -> ref (internal_copy_record !r)) m)
       in
       Union (tag, { cases; row; extra })
 
@@ -219,23 +213,23 @@ let rec pp ppf t =
       surround ~left:'(' ~right:')' ppf
         (F.pp_print_list ~pp_sep:Pp.sep_comma pp)
         l
-  | Enum { cases = VString cases; row; _ } ->
-      Variant.pp ppf Enum.pp_string (Set.String.to_seq cases) row
-  | Enum { cases = VInt cases; extra = Not_bool; row } ->
-      Variant.pp ppf Enum.pp_int (Set.Int.to_seq cases) row
-  | Enum { cases = VInt cases; extra = Bool; row } ->
-      Variant.pp ppf Variant.pp_bool (Set.Int.to_seq cases) row
+  | Enum { cases = String cases; row; _ } ->
+      pp_sum ppf Enum.pp_string (Set.String.to_seq cases) row
+  | Enum { cases = Int cases; extra = Not_bool; row } ->
+      pp_sum ppf Enum.pp_int (Set.Int.to_seq cases) row
+  | Enum { cases = Int cases; extra = Bool; row } ->
+      pp_sum ppf pp_sum_bool (Set.Int.to_seq cases) row
   | Union (key, union) -> (
       let aux pp_tag ppf (tag, fields) =
         pp_record ~tag:(pp_tag, (key, tag)) pp ppf fields
       in
       match union with
-      | { cases = VString cases; row; _ } ->
-          Variant.pp ppf (aux Pp.syntax_string) (Map.String.to_seq cases) row
-      | { cases = VInt cases; extra = Not_bool; row } ->
-          Variant.pp ppf (aux F.pp_print_int) (Map.Int.to_seq cases) row
-      | { cases = VInt cases; extra = Bool; row } ->
-          Variant.pp ppf (aux Variant.pp_bool) (Map.Int.to_seq cases) row)
+      | { cases = String cases; row; _ } ->
+          pp_sum ppf (aux Pp.syntax_string) (Map.String.to_seq cases) row
+      | { cases = Int cases; extra = Not_bool; row } ->
+          pp_sum ppf (aux F.pp_print_int) (Map.Int.to_seq cases) row
+      | { cases = Int cases; extra = Bool; row } ->
+          pp_sum ppf (aux pp_sum_bool) (Map.Int.to_seq cases) row)
 
 let pp_interface =
   let equals ppf (k, v) = F.fprintf ppf "@[<hv 2>%a =@ %a@]" Pp.field k pp v in
