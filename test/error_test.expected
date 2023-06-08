@@ -1272,6 +1272,13 @@ Parse error.
 Expected a ',' or '}'.
 
 
+Unclosed interface
+---
+File "<test>", 1:21-1:21
+Parse error.
+Expected a '%}'.
+
+
 Bad prop name (1).
 ---
 File "<test>", 1:14-1:18
@@ -1555,7 +1562,7 @@ Implementation:
 
 Interface is missing props.
 ---
-File "<test>", 1:4-1:23
+File "<test>", 1:4-1:21
 Type error.
 This interface does not match the implementation.
 Missing prop name:

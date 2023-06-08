@@ -6,4 +6,4 @@
   e = {@tag: 0, a: _} | {@tag: 1, b: @"a" | @"b" | ...} | ...
   children = string
   optionalChildren = ?string
-/ %}
+%}

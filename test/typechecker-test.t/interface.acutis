@@ -2,26 +2,26 @@ Basic interface
 {% interface
   a = ?int
   b = @"a" | @"b"
-/ %}
+%}
 {% match a with !1 %} {% with _ %} {% /match %}
 {% match b with @"a" %} {% with @"b" %} {% /match %}
 
 Any type can interface with unknown.
-{% interface unknown_int = int / %}
+{% interface unknown_int = int %}
 {% match a with _ %} {% /match %}
 
 Interfaces may add record fields.
-{% interface record = {a: int, b: string} / %}
+{% interface record = {a: int, b: string} %}
 {% match record with {a} %} {{ %i a }} {% /match %}
 
 Interfaces may add cases to open enums.
 {% interface
     open_enum = {@tag: 0} | {@tag: 1, a: int} | {@tag: 2} | ...
-  / %}
+%}
 {% match open_enum with {@tag: 0} with {@tag: 1} %} {% with _ %} {% /match %}
 
 Interfaces may add cases to open unions.
 {% interface
     open_union = {@tag: 0} | {@tag: 1, a: int} | {@tag: 2} | ...
-/ %}
+%}
 {% match open_union with {@tag: 0} with {@tag: 1} %} {% with _ %} {% /match %}

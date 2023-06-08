@@ -10,7 +10,7 @@
           content: string
        }
     ]
-/ ~%}
+~%}
 <h1> Blog posts for {{ siteTitle }} </h1>
 {%~ map blogPosts with {image, title, content, date, author: {name}} %}
   <article class="h-entry">

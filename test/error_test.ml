@@ -445,93 +445,93 @@ let () =
 
   (* Interface parse *)
   print_error "Invalid field names."
-    (render "{% interface a = {a: int, with: string } / %}");
+    (render "{% interface a = {a: int, with: string } %}");
   print_error "Missing , or }."
-    (render "{% interface a = {a: int b: string } / %}");
+    (render "{% interface a = {a: int b: string } %}");
 
-  print_error "Bad prop name (1)." (render "{% interface with = int / %}");
-  print_error "Bad prop name (2)."
-    (render "{% interface x = int with = int / %}");
+  print_error "Unclosed interface" (render "{% interface a = int");
+
+  print_error "Bad prop name (1)." (render "{% interface with = int %}");
+  print_error "Bad prop name (2)." (render "{% interface x = int with = int %}");
 
   print_error "Bad token after a variant (1)."
-    (render "{% interface x={@a: 1} with / %}");
+    (render "{% interface x={@a: 1} with %}");
   print_error "Bad token after a variant (2)."
-    (render "{% interface x=@\"a\" with / %}");
+    (render "{% interface x=@\"a\" with %}");
   print_error "Bad token after a variant (3)."
-    (render "{% interface x=@0 with / %}");
+    (render "{% interface x=@0 with %}");
   print_error "Bad token after a variant (4)."
-    (render "{% interface x=false with / %}");
+    (render "{% interface x=false with %}");
 
-  print_error "Missing equals." (render "{% interface x int / %}");
+  print_error "Missing equals." (render "{% interface x int %}");
 
-  print_error "Invalid type (1)." (render "{% interface x=with / %}");
-  print_error "Invalid type (2)." (render "{% interface x=?with / %}");
-  print_error "Invalid type (3)." (render "{% interface x=[with] / %}");
-  print_error "Invalid type (4)." (render "{% interface x={with: int} / %}");
-  print_error "Invalid type (5)." (render "{% interface x={@with: 1} / %}");
-  print_error "Invalid type (6)." (render "{% interface x={a: with} / %}");
-  print_error "Invalid type (7)." (render "{% interface x=<with> / %}");
-  print_error "Invalid type (8)." (render "{% interface x=(with) / %}");
-  print_error "Invalid type (9)." (render "{% interface x=(int, with) / %}");
+  print_error "Invalid type (1)." (render "{% interface x=with %}");
+  print_error "Invalid type (2)." (render "{% interface x=?with %}");
+  print_error "Invalid type (3)." (render "{% interface x=[with] %}");
+  print_error "Invalid type (4)." (render "{% interface x={with: int} %}");
+  print_error "Invalid type (5)." (render "{% interface x={@with: 1} %}");
+  print_error "Invalid type (6)." (render "{% interface x={a: with} %}");
+  print_error "Invalid type (7)." (render "{% interface x=<with> %}");
+  print_error "Invalid type (8)." (render "{% interface x=(with) %}");
+  print_error "Invalid type (9)." (render "{% interface x=(int, with) %}");
 
-  print_error "Missing colon (1)." (render "{% interface x={a b} / %}");
-  print_error "Missing colon (2)." (render "{% interface x={@a b} / %}");
+  print_error "Missing colon (1)." (render "{% interface x={a b} %}");
+  print_error "Missing colon (2)." (render "{% interface x={@a b} %}");
 
-  print_error "Bad enum" (render "{% interface x=@a / %}");
+  print_error "Bad enum" (render "{% interface x=@a %}");
 
   print_error "Bad token after record pipe."
-    (render "{% interface x={@a: 1} | y / %}");
+    (render "{% interface x={@a: 1} | y %}");
   print_error "Bad token after string enum pipe."
-    (render "{% interface x=@\"a\" | y / %}");
+    (render "{% interface x=@\"a\" | y %}");
   print_error "Bad token after int enum pipe."
-    (render "{% interface x=@0 | y / %}");
+    (render "{% interface x=@0 | y %}");
 
-  print_error "Missing >" (render "{% interface x=<int} / %}");
-  print_error "Missing ]" (render "{% interface x=[int} / %}");
-  print_error "Missing )" (render "{% interface x=(int} / %}");
+  print_error "Missing >" (render "{% interface x=<int} %}");
+  print_error "Missing ]" (render "{% interface x=[int} %}");
+  print_error "Missing )" (render "{% interface x=(int} %}");
 
-  print_error "Bad string enum" (render "{% interface x=@\"a\" | @0 / %}");
-  print_error "Bad int enum" (render "{% interface x=@0 | @\"a\" / %}");
-  print_error "Bad boolean" (render "{% interface x=false | @0 / %}");
+  print_error "Bad string enum" (render "{% interface x=@\"a\" | @0 %}");
+  print_error "Bad int enum" (render "{% interface x=@0 | @\"a\" %}");
+  print_error "Bad boolean" (render "{% interface x=false | @0 %}");
 
-  print_error "Bad union tag type" (render "{% interface x={@x: [int]} / %}");
+  print_error "Bad union tag type" (render "{% interface x={@x: [int]} %}");
 
   (* Interface type parse *)
-  print_error "Duplicate declarations"
-    (render "{% interface x=int x=string / %}");
-  print_error "Non-existent type names." (render "{% interface x=lmao / %}");
+  print_error "Duplicate declarations" (render "{% interface x=int x=string %}");
+  print_error "Non-existent type names." (render "{% interface x=lmao %}");
   print_error "Untagged unions (1)"
-    (render "{% interface x = {a: int} | {b: string} / %}");
+    (render "{% interface x = {a: int} | {b: string} %}");
   print_error "Untagged unions (2)"
-    (render "{% interface x = {@tag: 1, a: int} | {b: string} / %}");
+    (render "{% interface x = {@tag: 1, a: int} | {b: string} %}");
   print_error "Tagged unions with mismatched tag names"
-    (render "{% interface x = {@tag: 1} | {@badtag: 2} / %}");
+    (render "{% interface x = {@tag: 1} | {@badtag: 2} %}");
   print_error "Duplicate tags."
-    (render "{% interface x = {@tag: 1} | {@tag: 1} / %}");
+    (render "{% interface x = {@tag: 1} | {@tag: 1} %}");
   print_error "Tag type error: int <> string."
-    (render "{% interface x = {@tag: 1} | {@tag: \"a\"} / %}");
+    (render "{% interface x = {@tag: 1} | {@tag: \"a\"} %}");
   print_error "Tag type error: string <> bool."
-    (render "{% interface x = {@tag: \"a\"} | {@tag: true} / %}");
+    (render "{% interface x = {@tag: \"a\"} | {@tag: true} %}");
   print_error "Tag type error: bool <> int."
-    (render "{% interface x = {@tag: false} | {@tag: 100} / %}");
+    (render "{% interface x = {@tag: false} | {@tag: 100} %}");
 
   (* Interface type check *)
   print_error "Interface type error: bool <> int."
-    (render "{% interface x = int / %}{% match x with true %}{% /match %}");
+    (render "{% interface x = int %}{% match x with true %}{% /match %}");
   print_error "Interface is missing props."
-    (render "{% interface x = int / %} {{ y }}");
+    (render "{% interface x = int %} {{ y }}");
   print_error "Interface is missing record fields."
     (render
-       "{% interface x = {a: int} / %} \n\
+       "{% interface x = {a: int} %} \n\
         {% match x with {a, b} %} {{ a }} {{ b }} {% /match %}");
   print_error "Interface is missing enum cases."
     (render
-       "{% interface x = @0 | @1 | ... / %} \n\
+       "{% interface x = @0 | @1 | ... %} \n\
         {% match x with @0 %} {% with @1 %} {% with @2 %} {% with _ %}\n\
         {% /match %}");
   print_error "Interface is missing union cases."
     (render
-       "{% interface x = {@tag: 0} | {@tag: 1, a: int} | ... / %} \n\
+       "{% interface x = {@tag: 0} | {@tag: 1, a: int} | ... %} \n\
         {% match x\n\
        \  with {@tag: 0} %}\n\
         {% with {@tag: 1, a} %} {{ a }}\n\
@@ -539,6 +539,6 @@ let () =
         {% with _ %}\n\
         {% /match %}");
   print_error "Unknown is not equal to any other type."
-    (render "{% interface x = _ / %} {{ x }}");
+    (render "{% interface x = _ %} {{ x }}");
 
   ()

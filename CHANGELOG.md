@@ -7,6 +7,7 @@ Most changes are breaking changes.
 - Add JavaScript compilation. Templates can now compile to self-contained
   JavaScript files. This feature is supported in both the CLI and the Eleventy
   plugin.
+- Change interface syntax to `{% interface a=int %}`. No closing `/` is needed.
 - Change how the Eleventy plugin loads template functions so it's consistent
   between the different modes.
 - Add debug commands to the CLI: `--printast`, `--printtypes`, and `--printopt`.

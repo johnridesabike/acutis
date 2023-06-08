@@ -208,7 +208,7 @@ node:
     { Component ($loc, x, x, p) }
   | x1 = COMPONENT; p = props; n = nodes; BACKSLASH; x2 = COMPONENT;
     { Component ($loc, x1, x2, Dict.add $loc "children" (Block ($loc, n)) p) }
-  | INTERFACE; i = interface; BACKSLASH;
+  | INTERFACE; i = interface;
     { Interface ($loc, i) }
 
 (** Interface rules *)

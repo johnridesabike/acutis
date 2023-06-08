@@ -159,7 +159,7 @@ explicitly declares its types.
 
 An interface contains a sequence of prop names and their respective types,
 following the format `prop = type`. Each interface begins with `{% interface`
-and ends with `/ %}`.
+and ends with `%}`.
 
 Examples:
 
@@ -167,7 +167,7 @@ Examples:
 {% interface
   page = {title: string, url: string}
   visible = false | true
-/ %}
+%}
 ```
 
 Interfaces are optional, and they exist mainly for the benefit of us humans who
@@ -180,7 +180,7 @@ template that is not listed in the interface, then it will raise an error.
 
 Interfaces may exist anywhere inside a template. Their location does not affect
 how the compiler parses them. You may even divide an interface across multiple
-`{% interface / %}` blocks.
+`{% interface %}` blocks.
 
 ### Primitives: int, float, and string
 
@@ -191,7 +191,7 @@ Examples:
   a = int
   b = float
   c = string
-/ %}
+%}
 ```
 
 ```txt
@@ -210,7 +210,7 @@ Examples:
 ```acutis
 {% interface
   a = ?string
-/ %}
+%}
 ```
 
 ```txt
@@ -232,7 +232,7 @@ Examples:
 ```acutis
 {% interface
   a = [string]
-/ %}
+%}
 ```
 
 ```txt
@@ -254,7 +254,7 @@ Examples:
 ```acutis
 {% interface
   a = (int, string, ?float)
-/ %}
+%}
 ```
 
 ```txt
@@ -275,7 +275,7 @@ Examples:
 ```acutis
 {% interface
   a = {a: int, b: string}
-/ %}
+%}
 ```
 
 ```txt
@@ -302,7 +302,7 @@ Examples:
 ```acutis
 {% interface
   a = <int>
-/ %}
+%}
 ```
 
 ```txt
@@ -324,7 +324,7 @@ Examples:
 {% interface
   a = @"abc" | @"def"
   b = @12 | @34 | ...
-/ %}
+%}
 ```
 
 ```txt
@@ -346,7 +346,7 @@ Examples:
 ```acutis
 {% interface
   a = false | true
-/ %}
+%}
 ```
 
 ```txt
@@ -367,9 +367,9 @@ Examples:
 ```acutis
 {% interface
   a =
-      {@shape: "circle", radius: int}
-    | {@shape: "rectagle", height: int, width: int}
-/ %}
+    {@shape: "circle", radius: int} |
+    {@shape: "rectagle", height: int, width: int}
+%}
 ```
 
 ```txt
@@ -390,7 +390,7 @@ Tag fields may only contain literal integer, string, or boolean values.
 ```acutis
 {% interface
   a = _
-/ %}
+%}
 ```
 
 Finally, if Acutis can't determine anything at all about a value's type, then it

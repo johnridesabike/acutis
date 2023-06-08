@@ -29,7 +29,7 @@ null_float = ?float
 null_bool = ?false | true
 null_string = ?string
 unicode_string = string
-/ ~%}
+~%}
 
 Formatters
 ----------
