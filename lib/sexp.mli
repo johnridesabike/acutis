@@ -33,4 +33,5 @@ val pp : Format.formatter -> t -> unit
 (** Convenience functions *)
 
 val pair : ('a -> t) -> ('b -> t) -> 'a * 'b -> t
+val triple : ('a -> t) -> ('b -> t) -> ('c -> t) -> 'a * 'b * 'c -> t
 val map_string : ('a -> t) -> 'a Map.String.t -> t

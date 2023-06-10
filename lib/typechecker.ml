@@ -400,6 +400,43 @@ module Context = struct
         { ctx with scope }
 end
 
+let map_add_unique loc k v m =
+  Map.String.update k
+    (function None -> Some v | Some _ -> Error.dup_record_key loc k)
+    m
+
+let assoc_to_map =
+  let rec aux m = function
+    | [] -> m
+    | (loc, k, v) :: tl -> aux (map_add_unique loc k v m) tl
+  in
+  fun l -> aux Map.String.empty l
+
+type 'a record =
+  | Untagged of 'a Map.String.t
+  | Tagged of string * Ast.tag * 'a Map.String.t
+
+let assoc_to_record =
+  let rec aux m l =
+    match (m, l) with
+    | m, [] -> m
+    | Tagged _, (loc, _, Ast.Tag _) :: _ -> Error.extra_record_tag loc
+    | Tagged (tagk, tagv, m), (loc, k, Value v) :: tl ->
+        if tagk = k then Error.dup_record_key loc k
+        else aux (Tagged (tagk, tagv, map_add_unique loc k v m)) tl
+    | Untagged m, (loc, k, Ast.Value v) :: tl ->
+        aux (Untagged (map_add_unique loc k v m)) tl
+    | Untagged m, (loc, k, Ast.Tag v) :: tl ->
+        if Map.String.mem k m then Error.dup_record_key loc k
+        else aux (Tagged (k, v, m)) tl
+  in
+  fun Nonempty.((_, k, v) :: tl) ->
+    aux
+      (match v with
+      | Ast.Tag v -> Tagged (k, v, Map.String.empty)
+      | Ast.Value v -> Untagged (Map.String.singleton k v))
+      tl
+
 module Interface = struct
   let there_can_be_only_one loc k v = function
     | None -> Some v
@@ -420,85 +457,87 @@ module Interface = struct
     | s -> Error.interface_bad_name loc s
 
   let error_tag expected = function
-    | Ast.Record.Tag_int (loc, _) ->
-        Error.type_mismatch loc expected (Typescheme.int ())
-    | Tag_bool (loc, 0) ->
-        Error.type_mismatch loc expected (Typescheme.false_only ())
-    | Tag_bool (loc, _) ->
-        Error.type_mismatch loc expected (Typescheme.true_only ())
-    | Tag_string (loc, _) ->
-        Error.type_mismatch loc expected (Typescheme.string ())
+    | Ast.Tag_int (loc, _) -> Error.type_mismatch loc expected (Ty.int ())
+    | Ast.Tag_bool (loc, 0) ->
+        Error.type_mismatch loc expected (Ty.false_only ())
+    | Ast.Tag_bool (loc, _) ->
+        Error.type_mismatch loc expected (Ty.true_only ())
+    | Ast.Tag_string (loc, _) -> Error.type_mismatch loc expected (Ty.string ())
 
   let tag_int = function
-    | Ast.Record.Tag_int (_, i) -> i
+    | Ast.Tag_int (_, i) -> i
     | t -> error_tag (Ty.int ()) t
 
   let tag_string = function
-    | Ast.Record.Tag_string (_, s) -> s
+    | Ast.Tag_string (_, s) -> s
     | t -> error_tag (Ty.string ()) t
 
   let tag_bool = function
-    | Ast.Record.Tag_bool (_, i) -> i
+    | Ast.Tag_bool (_, i) -> i
     | t -> error_tag (Ty.boolean ()) t
 
   let rec make_ty = function
-    | Ast.Interface.Named (loc, s) -> named loc s
-    | Nullable t -> Ty.nullable (make_ty t)
-    | List t -> Ty.list (make_ty t)
-    | Dict t -> Ty.dict (make_ty t)
-    | Tuple l -> Ty.tuple (List.map make_ty l)
-    | Enum_int (l, r) -> Ty.enum_int r (Nonempty.to_list l)
-    | Enum_bool l -> Ty.internal_bool (Nonempty.to_list l)
-    | Enum_string (l, r) -> Ty.enum_string r (Nonempty.to_list l)
-    | Record ([ (_, Untagged r) ], `Closed) ->
-        Ast.Dict.to_map r |> Map.String.map make_ty |> ref |> Ty.internal_record
-    | Record ((loc, Untagged _) :: _ :: _, _)
-    | Record ((loc, Untagged _) :: _, `Open) ->
-        Error.interface_untagged_union loc
-    | Record ((_, Tagged (tagk, tagv, m)) :: tl, row) -> (
-        let aux update parse_tag m =
-          List.fold_left
-            (fun acc -> function
-              | loc, Ast.Record.Tagged (tagk', tagv, m) ->
-                  if tagk <> tagk' then
-                    Error.interface_unmatched_tags loc tagk tagk';
-                  let k = parse_tag tagv in
-                  update k
-                    (function
-                      | None ->
-                          Some
-                            (Ast.Dict.to_map m |> Map.String.map make_ty |> ref)
-                      | Some _ ->
-                          Error.interface_duplicate_tag loc Ast.Record.pp_tag
-                            tagv)
-                    acc
-              | loc, Untagged _ -> Error.interface_untagged_union loc)
-            m tl
-        in
-        let m = Ast.Dict.to_map m |> Map.String.map make_ty in
-        match tagv with
-        | Tag_int (_, i) ->
-            let m = Map.Int.(singleton i (ref m) |> aux update tag_int) in
-            ref (Ty.Union (tagk, { cases = Int m; row; extra = Not_bool }))
-        | Tag_bool (_, i) ->
-            let m = Map.Int.(singleton i (ref m) |> aux update tag_bool) in
-            ref (Ty.Union (tagk, { cases = Int m; row; extra = Bool }))
-        | Tag_string (_, s) ->
-            let m = Map.String.(singleton s (ref m) |> aux update tag_string) in
-            ref (Ty.Union (tagk, { cases = String m; row; extra = Not_bool })))
+    | Ast.Ty_named (loc, s) -> named loc s
+    | Ast.Ty_nullable t -> Ty.nullable (make_ty t)
+    | Ast.Ty_list t -> Ty.list (make_ty t)
+    | Ast.Ty_dict t -> Ty.dict (make_ty t)
+    | Ast.Ty_tuple l -> Ty.tuple (List.map make_ty l)
+    | Ast.Ty_enum_int (l, r) -> Ty.enum_int r (Nonempty.to_list l)
+    | Ast.Ty_enum_bool l -> Ty.internal_bool (Nonempty.to_list l)
+    | Ast.Ty_enum_string (l, r) -> Ty.enum_string r (Nonempty.to_list l)
+    | Ast.Ty_record ((loc, hd) :: tl, row) -> (
+        match assoc_to_record hd with
+        | Untagged m -> (
+            match (tl, row) with
+            | [], `Closed ->
+                Map.String.map make_ty m |> ref |> Ty.internal_record
+            | _ :: _, _ | _, `Open -> Error.interface_untagged_union loc)
+        | Tagged (tagk, tagv, m) -> (
+            let aux update parse_tag m =
+              List.fold_left
+                (fun acc (loc, l) ->
+                  match assoc_to_record l with
+                  | Tagged (tagk', tagv, m) ->
+                      if tagk <> tagk' then
+                        Error.interface_unmatched_tags loc tagk tagk'
+                      else
+                        update (parse_tag tagv)
+                          (function
+                            | None -> Some (Map.String.map make_ty m |> ref)
+                            | Some _ ->
+                                Error.interface_duplicate_tag loc Ast.pp_tag
+                                  tagv)
+                          acc
+                  | Untagged _ -> Error.interface_untagged_union loc)
+                m tl
+            in
+            let m = Map.String.map make_ty m in
+            match tagv with
+            | Tag_int (_, i) ->
+                let m = Map.Int.(singleton i (ref m) |> aux update tag_int) in
+                ref (Ty.Union (tagk, { cases = Int m; row; extra = Not_bool }))
+            | Tag_bool (_, i) ->
+                let m = Map.Int.(singleton i (ref m) |> aux update tag_bool) in
+                ref (Ty.Union (tagk, { cases = Int m; row; extra = Bool }))
+            | Tag_string (_, s) ->
+                let m =
+                  Map.String.(singleton s (ref m) |> aux update tag_string)
+                in
+                ref
+                  (Ty.Union (tagk, { cases = String m; row; extra = Not_bool }))
+            ))
 
   let make loc ctx l =
     ctx.Context.interface_loc := loc;
     List.iter
-      (fun { Ast.Interface.loc; name; ty } ->
-        update loc name (make_ty ty) ctx.interface)
+      (fun { Ast.loc; name; ty } -> update loc name (make_ty ty) ctx.interface)
       l
 end
 
 let make_interface_standalone l =
   let interface = ref None in
   List.iter
-    (fun { Ast.Interface.loc; name; ty } ->
+    (fun { Ast.loc; name; ty } ->
       Interface.update loc name (Interface.make_ty ty) interface)
     l;
   match !interface with
@@ -630,45 +669,46 @@ let rec make_pat var_action mode ty = function
       let tyvars = match !ty with Tuple tys -> tys | _ -> new_tyvars in
       unify loc mode ty (Ty.tuple tyvars);
       TTuple (List.map2 (make_pat var_action mode) tyvars l)
-  | Record (loc, Untagged m) ->
-      let m = Ast.Dict.to_map m in
-      let new_tyvars = Map.String.map unknown m |> ref in
-      let tyvars = match !ty with Record tys -> tys | _ -> new_tyvars in
-      unify loc mode ty (Ty.internal_record new_tyvars);
-      let r = make_record var_action loc mode !tyvars m in
-      TRecord (None, r, tyvars)
-  | Record (loc, Tagged (k, v, m)) ->
-      let m = Ast.Dict.to_map m in
-      let new_tyvars = Map.String.map unknown m |> ref in
-      let row =
-        match mode with
-        | Destructure_expand -> `Closed
-        | Construct_literal | Construct_var -> `Open
-      in
-      let tyvars =
-        match !ty with
-        | Union (_, enum) -> (
-            let tyvars =
-              match (v, enum) with
-              | (Tag_int (_, i) | Tag_bool (_, i)), { cases = Int cases; _ } ->
-                  Map.Int.find_opt i cases
-              | Tag_string (_, s), { cases = String cases; _ } ->
-                  Map.String.find_opt s cases
-              | _ -> None
-            in
-            match tyvars with Some tv -> tv | None -> new_tyvars)
-        | _ -> new_tyvars
-      in
-      let tag, new_enum =
-        match v with
-        | Tag_int (_, i) -> (C.Int i, Ty.Union.int_singleton i tyvars row)
-        | Tag_bool (_, i) -> (C.Int i, Ty.Union.bool_singleton i tyvars row)
-        | Tag_string (_, s) ->
-            (C.String s, Ty.Union.string_singleton s tyvars row)
-      in
-      unify loc mode ty (ref (Ty.Union (k, new_enum)));
-      let r = make_record var_action loc mode !tyvars m in
-      TRecord (Some (k, tag, new_enum), r, tyvars)
+  | Record (loc, r) -> (
+      match assoc_to_record r with
+      | Untagged m ->
+          let new_tyvars = Map.String.map unknown m |> ref in
+          let tyvars = match !ty with Record tys -> tys | _ -> new_tyvars in
+          unify loc mode ty (Ty.internal_record new_tyvars);
+          let r = make_record var_action loc mode !tyvars m in
+          TRecord (None, r, tyvars)
+      | Tagged (k, v, m) ->
+          let new_tyvars = Map.String.map unknown m |> ref in
+          let row =
+            match mode with
+            | Destructure_expand -> `Closed
+            | Construct_literal | Construct_var -> `Open
+          in
+          let tyvars =
+            match !ty with
+            | Union (_, enum) -> (
+                let tyvars =
+                  match (v, enum) with
+                  | (Tag_int (_, i) | Tag_bool (_, i)), { cases = Int cases; _ }
+                    ->
+                      Map.Int.find_opt i cases
+                  | Tag_string (_, s), { cases = String cases; _ } ->
+                      Map.String.find_opt s cases
+                  | _ -> None
+                in
+                match tyvars with Some tv -> tv | None -> new_tyvars)
+            | _ -> new_tyvars
+          in
+          let tag, new_enum =
+            match v with
+            | Tag_int (_, i) -> (C.Int i, Ty.Union.int_singleton i tyvars row)
+            | Tag_bool (_, i) -> (C.Int i, Ty.Union.bool_singleton i tyvars row)
+            | Tag_string (_, s) ->
+                (C.String s, Ty.Union.string_singleton s tyvars row)
+          in
+          unify loc mode ty (ref (Ty.Union (k, new_enum)));
+          let r = make_record var_action loc mode !tyvars m in
+          TRecord (Some (k, tag, new_enum), r, tyvars))
   | Dict (loc, m) ->
       let new_kys = ref Set.String.empty in
       let tyvar, kys =
@@ -678,7 +718,7 @@ let rec make_pat var_action mode ty = function
       in
       unify loc mode ty (Ty.internal_dict_keys tyvar new_kys);
       let d =
-        Ast.Dict.to_map m |> Map.String.map (make_pat var_action mode tyvar)
+        assoc_to_map m |> Map.String.map (make_pat var_action mode tyvar)
       in
       TDict (d, kys)
   | Var (loc, "_") ->
@@ -801,7 +841,7 @@ and make_nodes ctx nodes =
             | prop, _ -> prop
           in
           let props =
-            Ast.Dict.to_map props
+            assoc_to_map props
             |> Map.String.merge missing_to_nullable types
             |> make_component_props loc comp ctx types
           in

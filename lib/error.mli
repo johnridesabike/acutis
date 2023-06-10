@@ -17,11 +17,11 @@ exception Acutis_error of string
 
 val lex_error : Lexing.lexbuf -> _
 val parse_error : int -> Lexing.lexbuf -> _
-val dup_record_key : Loc.t -> string -> _
-val extra_record_tag : Loc.t -> _
 
 (** {1 Type errors.} *)
 
+val dup_record_key : Loc.t -> string -> _
+val extra_record_tag : Loc.t -> _
 val bad_block : Loc.t -> _
 val bad_field : Loc.t -> _
 val type_mismatch : Loc.t -> Typescheme.t -> Typescheme.t -> _

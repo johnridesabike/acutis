@@ -571,26 +571,26 @@ This is not a valid field name.
 
 Duplicate field
 ---
-File "<test>", 1:18-1:30
-Parse error.
+File "<test>", 1:24-1:30
+Type error.
 Duplicate field 'a'.
 
 Duplicate tag field
 ---
-File "<test>", 1:18-1:31
-Parse error.
+File "<test>", 1:25-1:31
+Type error.
 Duplicate field 'a'.
 
 Duplicate dict field
 ---
-File "<test>", 1:18-1:30
-Parse error.
+File "<test>", 1:24-1:30
+Type error.
 Duplicate field 'a'.
 
 Multiple record tags
 ---
-File "<test>", 1:18-1:32
-Parse error.
+File "<test>", 1:25-1:32
+Type error.
 This tagged record has multiple tags.
 
 Pattern count mismatch 1
@@ -602,6 +602,12 @@ Pattern count mismatch.
 Pattern count mismatch 2
 ---
 File "<test>", 1:30-1:42
+Type error.
+Pattern count mismatch.
+
+Pattern count mismatch 3 (error location is correct)
+---
+File "<test>", 1:22-1:31
 Type error.
 Pattern count mismatch.
 
@@ -914,6 +920,16 @@ File "<test>", 1:4-1:16
 Type error.
 Component 'Comp' does not accept this prop:
   c.
+
+Implict children is typed and reported correctly
+---
+File "<test>", 1:8-1:14
+Type error.
+Type mismatch.
+Expected:
+  int
+Received:
+  string
 
 Basic unused bindings are reported.
 ---

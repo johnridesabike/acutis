@@ -12,12 +12,9 @@ module F = Format
 
 exception Acutis_error of string
 
-let column pos = pos.Lexing.pos_cnum - pos.pos_bol + 1
-let print_pos ppf pos = F.fprintf ppf "%d:%d" pos.Lexing.pos_lnum (column pos)
-
-let pp ~kind (start, pos) mess =
-  F.asprintf "@[<v>File \"%s\", %a-%a@;%s.@;%t@]" pos.Lexing.pos_fname print_pos
-    start print_pos pos kind mess
+let pp ~kind loc mess =
+  F.asprintf "@[<v>File \"%s\", %a@;%s.@;%t@]" (Loc.fname loc) Loc.pp loc kind
+    mess
 
 let pp_lexbuf ~kind mess lexbuf =
   let start = lexbuf.Lexing.lex_start_p in
@@ -37,15 +34,15 @@ let parse_error i lexbuf =
   in
   raise @@ Acutis_error (pp_lexbuf ~kind:"Parse error" f lexbuf)
 
+let pp_ty = pp ~kind:"Type error"
+
 let dup_record_key loc key =
   let f = F.dprintf "Duplicate field '%a'." Pp.field key in
-  raise @@ Acutis_error (pp ~kind:"Parse error" loc f)
+  raise @@ Acutis_error (pp_ty loc f)
 
 let extra_record_tag =
   let f = F.dprintf "This tagged record has multiple tags." in
-  fun loc -> raise @@ Acutis_error (pp ~kind:"Parse error" loc f)
-
-let pp_ty = pp ~kind:"Type error"
+  fun loc -> raise @@ Acutis_error (pp_ty loc f)
 
 let mismatch a b t =
   F.dprintf "Type mismatch.@;Expected:@;<1 2>%a@;Received:@;<1 2>%a"

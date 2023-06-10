@@ -13,5 +13,7 @@
 type t = Lexing.position * Lexing.position
 (** This type is equivalent to Menhir's [$loc] keyword. *)
 
+val fname : t -> string
+val pp : Format.formatter -> t -> unit
 val dummy : t
 val to_sexp : t -> Sexp.t

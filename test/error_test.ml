@@ -151,7 +151,8 @@ let () =
   print_error "Bad record field access (2)" (render "{{ a.% }}");
 
   print_error "Duplicate field"
-    (render {|{% match a with {a: 0, a: "a"} %} {% with _ %} {% /match %}|});
+    (render
+       {|{% match a with {a: 0, a: "a", a: false} %} {% with _ %} {% /match %}|});
   print_error "Duplicate tag field"
     (render {|{% match a with {@a: 0, a: "a"} %} {% with _ %} {% /match %}|});
   print_error "Duplicate dict field"
@@ -163,6 +164,8 @@ let () =
     (render "{% match a, b, c with 1, 2 %} d {% /match %}");
   print_error "Pattern count mismatch 2"
     (render "{% match a with 1, 2 %} d {% with 1, 2, 3 %} z {% /match %}");
+  print_error "Pattern count mismatch 3 (error location is correct)"
+    (render "{% match a, b with 1 with 2, 3 with 4 with 5, 6 %} d {% /match %}");
   print_error "Pattern count mismatch (map)"
     (render "{% map a with 1, 2, 3 %} d {% with 4, 5, 6 %} z {% /map %}");
 
@@ -282,6 +285,14 @@ let () =
     (render
        ~components:(Compile.Components.of_seq @@ Seq.return comp)
        "{% Comp a b c / %}");
+  let comp =
+    Compile.Components.parse_string ~fname:"comp" ~name:"Comp"
+      "{{ %i children }}"
+  in
+  print_error "Implict children is typed and reported correctly"
+    (render
+       ~components:(Compile.Components.of_seq @@ Seq.return comp)
+       "{% Comp %} {% /Comp %}");
 
   print_error "Basic unused bindings are reported."
     (render "{% match a with {x} %} {% /match %}");

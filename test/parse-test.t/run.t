@@ -22,14 +22,13 @@ Print the untyped AST to make sure parsing works
     ((case
       (pats
        ((((record
-           (untagged
-            (("exp1" (float 150.))
-             ("exp2" (float -1000.))
-             ("exp3" (float 0.2))
-             ("frac" (float 10.55))
-             ("int" (int 1000))
-             ("negfrac" (float -12.34))
-             ("negint" (int -999)))))))))
+           (("int" (int 1000))
+            ("frac" (float 10.55))
+            ("negint" (int -999))
+            ("negfrac" (float -12.34))
+            ("exp1" (float 150.))
+            ("exp2" (float -1000.))
+            ("exp3" (float 0.2))))))))
       (nodes ((text no_trim "" no_trim))))
      (case (pats ((((var "_"))))) (nodes ((text no_trim "" no_trim))))))
    (text no_trim "\n\nTrim\n" trim)
@@ -151,7 +150,7 @@ Print the untyped AST to make sure parsing works
    (match
     ((var "record"))
     ((case
-      (pats ((((record (untagged (("!#%@" (var "b")) ("a" (var "a")))))))))
+      (pats ((((record (("a" (var "a")) ("!#%@" (var "b"))))))))
       (nodes
        ((text no_trim " " no_trim)
         (echo () fmt_string (echo_var "a") escape)
@@ -171,13 +170,13 @@ Print the untyped AST to make sure parsing works
    (match
     ((var "tagged"))
     ((case
-      (pats ((((record (tagged "tag" (tag_bool true) (("a" (var "a")))))))))
+      (pats ((((record (("tag" (tag true)) ("a" (var "a"))))))))
       (nodes
        ((text no_trim " " no_trim)
         (echo () fmt_string (echo_var "a") escape)
         (text no_trim " " no_trim))))
      (case
-      (pats ((((record (tagged "tag" (tag_bool false) ()))))))
+      (pats ((((record (("tag" (tag false))))))))
       (nodes ((text no_trim "\n" no_trim))))))
    (text no_trim "\n\nDictionary:\n" no_trim)
    (match
@@ -200,8 +199,7 @@ Print the untyped AST to make sure parsing works
    (match
     ((var "a"))
     ((case
-      (pats
-       ((((record (untagged (("a" (record (untagged (("b" (var "b")))))))))))))
+      (pats ((((record (("a" (record (("b" (var "b")))))))))))
       (nodes
        ((text no_trim " " no_trim)
         (echo () fmt_string (echo_var "b") escape)
@@ -216,38 +214,32 @@ Interfaces parse correctly. Use a separate file to minimize type conficts.
       "a"
       (record
        closed
-       (((untagged
-          (("a" (enum_int closed (0 1))) ("b" (enum_string closed ("a" "b")))))))))
+       (((("a" (enum_int closed (0 1))) ("b" (enum_string closed ("a" "b"))))))))
      (prop
       "b"
       (record
        closed
-       (((tagged "tag" (tag_bool true) (("a" (list (named "int"))))))
-        ((tagged
-          "tag"
-          (tag_bool false)
-          (("a" (dict (nullable (named "string"))))))))))
+       (((("tag" (tag true)) ("a" (list (named "int")))))
+        ((("tag" (tag false)) ("a" (dict (nullable (named "string")))))))))
      (prop
       "c"
       (record
        closed
-       (((tagged "tag" (tag_int 0) ()))
-        ((tagged
-          "tag"
-          (tag_int 1)
-          (("a" (tuple ((named "float") (enum_bool (true false)))))))))))
+       (((("tag" (tag 0))))
+        ((("tag" (tag 1))
+          ("a" (tuple ((named "float") (enum_bool (true false))))))))))
      (prop
       "d"
       (record
        closed
-       (((tagged "tag" (tag_string "a") (("a" (named "float")))))
-        ((tagged "tag" (tag_string "b") (("a" (enum_int open (0 1)))))))))
+       (((("tag" (tag "a")) ("a" (named "float"))))
+        ((("tag" (tag "b")) ("a" (enum_int open (0 1))))))))
      (prop
       "e"
       (record
        open
-       (((tagged "tag" (tag_int 0) (("a" (named "_")))))
-        ((tagged "tag" (tag_int 1) (("b" (enum_string open ("a" "b")))))))))
+       (((("tag" (tag 0)) ("a" (named "_"))))
+        ((("tag" (tag 1)) ("b" (enum_string open ("a" "b"))))))))
      (prop "children" (named "string"))
      (prop "optionalChildren" (nullable (named "string")))))
    (text no_trim "\n" no_trim))

@@ -31,6 +31,11 @@ let noop = Noop
 let pair f g (a, b) =
   List (fun () -> Cons (f a, fun () -> Cons (g b, fun () -> Nil)))
 
+let triple f g h (a, b, c) =
+  List
+    (fun () ->
+      Cons (f a, fun () -> Cons (g b, fun () -> Cons (h c, fun () -> Nil))))
+
 let map_string f m = of_seq (pair string f) (Map.String.to_seq m)
 
 let rec pp ppf = function

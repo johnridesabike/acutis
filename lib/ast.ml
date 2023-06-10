@@ -8,107 +8,74 @@
 (*                                                                        *)
 (**************************************************************************)
 
-module Dict = struct
-  type 'a t = 'a Map.String.t
+type 'a assoc = (Loc.t * string * 'a) list
+type 'a assoc_nonempty = (Loc.t * string * 'a) Nonempty.t
 
-  let fail_if_dup_key loc k m =
-    if Map.String.mem k m then Error.dup_record_key loc k
+let assoc_to_sexp f l =
+  Sexp.of_seq (Sexp.triple Loc.to_sexp Sexp.string f) (List.to_seq l)
 
-  let add loc k v m =
-    Map.String.update k
-      (function None -> Some v | Some _ -> Error.dup_record_key loc k)
-      m
+type tag =
+  | Tag_int of Loc.t * int
+  | Tag_bool of Loc.t * int
+  | Tag_string of Loc.t * string
 
-  let empty = Map.String.empty
-  let singleton = Map.String.singleton
-  let to_map m = m
-  let to_sexp = Sexp.map_string
-end
+let pp_tag ppf = function
+  | Tag_int (_, i) -> Format.pp_print_int ppf i
+  | Tag_bool (_, 0) -> Format.pp_print_string ppf "false"
+  | Tag_bool _ -> Format.pp_print_string ppf "true"
+  | Tag_string (_, s) -> Format.fprintf ppf "%S" s
 
-module Record = struct
-  type tag =
-    | Tag_int of Loc.t * int
-    | Tag_bool of Loc.t * int
-    | Tag_string of Loc.t * string
+type 'a value = Tag of tag | Value of 'a
+type 'a record = 'a value assoc_nonempty
 
-  let pp_tag ppf = function
-    | Tag_int (_, i) -> Format.pp_print_int ppf i
-    | Tag_bool (_, 0) -> Format.pp_print_string ppf "false"
-    | Tag_bool _ -> Format.pp_print_string ppf "true"
-    | Tag_string (_, s) -> Format.fprintf ppf "%S" s
+let value_to_sexp f = function
+  | Tag (Tag_int (loc, i)) -> Sexp.make "tag" [ Loc.to_sexp loc; Sexp.int i ]
+  | Tag (Tag_bool (loc, i)) -> Sexp.make "tag" [ Loc.to_sexp loc; Sexp.bool i ]
+  | Tag (Tag_string (loc, s)) ->
+      Sexp.make "tag" [ Loc.to_sexp loc; Sexp.string s ]
+  | Value v -> f v
 
-  type 'a t = Untagged of 'a Dict.t | Tagged of string * tag * 'a Dict.t
+let record_to_sexp f l =
+  Nonempty.to_sexp (Sexp.triple Loc.to_sexp Sexp.string (value_to_sexp f)) l
 
-  let add loc tag m =
-    match (tag, m) with
-    | `Tag _, Tagged _ -> Error.extra_record_tag loc
-    | `Notag (k, v), Tagged (k', v', m) ->
-        if k = k' then Error.dup_record_key loc k;
-        Tagged (k', v', Dict.add loc k v m)
-    | `Tag (k, v), Untagged m ->
-        Dict.fail_if_dup_key loc k m;
-        Tagged (k, v, m)
-    | `Notag (k, v), Untagged m -> Untagged (Dict.add loc k v m)
+type ty =
+  | Ty_named of Loc.t * string
+  | Ty_nullable of ty
+  | Ty_list of ty
+  | Ty_dict of ty
+  | Ty_enum_int of int Nonempty.t * Typescheme.row
+  | Ty_enum_bool of int Nonempty.t
+  | Ty_enum_string of string Nonempty.t * Typescheme.row
+  | Ty_record of (Loc.t * ty record) Nonempty.t * Typescheme.row
+  | Ty_tuple of ty list
 
-  let singleton tag =
-    match tag with
-    | `Tag (k, v) -> Tagged (k, v, Dict.empty)
-    | `Notag (k, v) -> Untagged (Dict.singleton k v)
+type prop = { loc : Loc.t; name : string; ty : ty }
+type interface = prop list
 
-  let tag_to_sexp = function
-    | Tag_int (loc, i) -> Sexp.make "tag_int" [ Loc.to_sexp loc; Sexp.int i ]
-    | Tag_bool (loc, i) -> Sexp.make "tag_bool" [ Loc.to_sexp loc; Sexp.bool i ]
-    | Tag_string (loc, s) ->
-        Sexp.make "tag_string" [ Loc.to_sexp loc; Sexp.string s ]
+let rec ty_to_sexp = function
+  | Ty_named (loc, s) -> Sexp.make "named" [ Loc.to_sexp loc; Sexp.string s ]
+  | Ty_nullable t -> Sexp.make "nullable" [ ty_to_sexp t ]
+  | Ty_list t -> Sexp.make "list" [ ty_to_sexp t ]
+  | Ty_dict t -> Sexp.make "dict" [ ty_to_sexp t ]
+  | Ty_enum_int (l, row) ->
+      Sexp.make "enum_int"
+        [ Typescheme.row_to_sexp row; Nonempty.to_sexp Sexp.int l ]
+  | Ty_enum_bool l -> Sexp.make "enum_bool" [ Nonempty.to_sexp Sexp.bool l ]
+  | Ty_enum_string (l, row) ->
+      Sexp.make "enum_string"
+        [ Typescheme.row_to_sexp row; Nonempty.to_sexp Sexp.string l ]
+  | Ty_record (l, row) ->
+      Sexp.make "record"
+        [
+          Typescheme.row_to_sexp row;
+          Nonempty.to_sexp (Sexp.pair Loc.to_sexp (record_to_sexp ty_to_sexp)) l;
+        ]
+  | Ty_tuple l -> Sexp.make "tuple" [ Sexp.of_seq ty_to_sexp (List.to_seq l) ]
 
-  let to_sexp f = function
-    | Untagged m -> Sexp.make "untagged" [ Dict.to_sexp f m ]
-    | Tagged (s, tag, m) ->
-        Sexp.make "tagged" [ Sexp.string s; tag_to_sexp tag; Dict.to_sexp f m ]
-end
+let prop_to_sexp { loc; name; ty } =
+  Sexp.make "prop" [ Loc.to_sexp loc; Sexp.string name; ty_to_sexp ty ]
 
-module Interface = struct
-  type ty =
-    | Named of Loc.t * string
-    | Nullable of ty
-    | List of ty
-    | Dict of ty
-    | Enum_int of int Nonempty.t * Typescheme.row
-    | Enum_bool of int Nonempty.t
-    | Enum_string of string Nonempty.t * Typescheme.row
-    | Record of (Loc.t * ty Record.t) Nonempty.t * Typescheme.row
-    | Tuple of ty list
-
-  type prop = { loc : Loc.t; name : string; ty : ty }
-  type t = prop list
-
-  let rec ty_to_sexp = function
-    | Named (loc, s) -> Sexp.make "named" [ Loc.to_sexp loc; Sexp.string s ]
-    | Nullable t -> Sexp.make "nullable" [ ty_to_sexp t ]
-    | List t -> Sexp.make "list" [ ty_to_sexp t ]
-    | Dict t -> Sexp.make "dict" [ ty_to_sexp t ]
-    | Enum_int (l, row) ->
-        Sexp.make "enum_int"
-          [ Typescheme.row_to_sexp row; Nonempty.to_sexp Sexp.int l ]
-    | Enum_bool l -> Sexp.make "enum_bool" [ Nonempty.to_sexp Sexp.bool l ]
-    | Enum_string (l, row) ->
-        Sexp.make "enum_string"
-          [ Typescheme.row_to_sexp row; Nonempty.to_sexp Sexp.string l ]
-    | Record (l, row) ->
-        Sexp.make "record"
-          [
-            Typescheme.row_to_sexp row;
-            Nonempty.to_sexp
-              (Sexp.pair Loc.to_sexp (Record.to_sexp ty_to_sexp))
-              l;
-          ]
-    | Tuple l -> Sexp.make "tuple" [ Sexp.of_seq ty_to_sexp (List.to_seq l) ]
-
-  let prop_to_sexp { loc; name; ty } =
-    Sexp.make "prop" [ Loc.to_sexp loc; Sexp.string name; ty_to_sexp ty ]
-
-  let to_sexp l = Sexp.of_seq prop_to_sexp (List.to_seq l)
-end
+let interface_to_sexp l = Sexp.of_seq prop_to_sexp (List.to_seq l)
 
 type trim = No_trim | Trim
 type escape = No_escape | Escape
@@ -130,8 +97,8 @@ type pat =
   | Enum_int of Loc.t * int
   | List of Loc.t * pat list * pat option
   | Tuple of Loc.t * pat list
-  | Record of Loc.t * pat Record.t
-  | Dict of Loc.t * pat Dict.t
+  | Record of Loc.t * pat record
+  | Dict of Loc.t * pat assoc
   | Block of Loc.t * t
   | Field of Loc.t * pat * string
 
@@ -141,8 +108,8 @@ and node =
   | Match of Loc.t * pat Nonempty.t * case Nonempty.t
   | Map_list of Loc.t * pat * case Nonempty.t
   | Map_dict of Loc.t * pat * case Nonempty.t
-  | Component of Loc.t * string * string * pat Dict.t
-  | Interface of Loc.t * Interface.t
+  | Component of Loc.t * string * string * pat assoc
+  | Interface of Loc.t * interface
 
 and case = { pats : (Loc.t * pat Nonempty.t) Nonempty.t; nodes : t }
 and t = node list
@@ -197,9 +164,9 @@ let rec pat_to_sexp = function
       Sexp.make "tuple"
         [ Loc.to_sexp loc; Sexp.of_seq pat_to_sexp (List.to_seq l) ]
   | Record (loc, m) ->
-      Sexp.make "record" [ Loc.to_sexp loc; Record.to_sexp pat_to_sexp m ]
+      Sexp.make "record" [ Loc.to_sexp loc; record_to_sexp pat_to_sexp m ]
   | Dict (loc, m) ->
-      Sexp.make "dict" [ Loc.to_sexp loc; Dict.to_sexp pat_to_sexp m ]
+      Sexp.make "dict" [ Loc.to_sexp loc; assoc_to_sexp pat_to_sexp m ]
   | Block (loc, x) -> Sexp.make "block" [ Loc.to_sexp loc; to_sexp x ]
   | Field (loc, x, s) ->
       Sexp.make "field" [ Loc.to_sexp loc; pat_to_sexp x; Sexp.string s ]
@@ -239,11 +206,11 @@ and node_to_sexp = function
         [
           Loc.to_sexp loc;
           Sexp.string s1;
-          Dict.to_sexp pat_to_sexp pats;
+          assoc_to_sexp pat_to_sexp pats;
           Sexp.string s2;
         ]
   | Interface (loc, i) ->
-      Sexp.make "interface" [ Loc.to_sexp loc; Interface.to_sexp i ]
+      Sexp.make "interface" [ Loc.to_sexp loc; interface_to_sexp i ]
 
 and case_to_sexp { pats; nodes } =
   Sexp.make "case"
