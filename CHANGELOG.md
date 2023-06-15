@@ -11,6 +11,8 @@ Most changes are breaking changes.
 - Change how the Eleventy plugin loads template functions so it's consistent
   between the different modes.
 - Add debug commands to the CLI: `--printast`, `--printtypes`, and `--printopt`.
+- Change the functor interface for the render module. Data modules only need to
+  provide a few basic functions now.
 
 ## 0.22.0
 

@@ -9,6 +9,31 @@
 (**************************************************************************)
 
 open Acutis
+
+module DataJson = struct
+  module Linear = List
+
+  module Assoc = struct
+    type 'a t = (string * 'a) list
+
+    let fold f l init = List.fold_left (fun acc (k, v) -> f k v acc) init l
+    let find_opt = List.assoc_opt
+  end
+
+  type t = Yojson.Basic.t
+
+  let pp = Yojson.Basic.pretty_print ~std:false
+  let classify = Fun.id
+  let null = `Null
+  let some = Fun.id
+  let of_float x = `Float x
+  let of_string x = `String x
+  let of_bool x = `Bool x
+  let of_int x = `Int x
+  let of_seq x = `List (List.of_seq x)
+  let of_map x = `Assoc (Map.String.bindings x)
+end
+
 module Render = Render.Make (Sync) (DataJson)
 
 let usage_msg =

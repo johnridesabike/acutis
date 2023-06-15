@@ -11,6 +11,65 @@
 open Js_of_ocaml
 open Acutis
 
+module DataJs = struct
+  module Linear = Array
+
+  module Assoc = struct
+    (** When we convert JavaScript objects into Acutis records, we cannot
+        convert every value at once, e.g. by mapping the result of
+        [Js.object_keys].
+
+        JavaScript objects can cause side-effects when you access values. By
+        only accessing the precise values that we need, we avoid triggering
+        unexpected behavior. *)
+
+    type 'a t = Js.Unsafe.any
+
+    let find_opt : string -> 'a t -> 'a option =
+     fun k m -> Js.Unsafe.get m (Js.string k) |> Js.Optdef.to_option
+
+    let fold : (string -> 'a -> 'acc -> 'acc) -> 'a t -> 'acc -> 'acc =
+     fun f m init ->
+      Js.object_keys m |> Js.to_array
+      |> Array.fold_left
+           (fun init k -> f (Js.to_string k) (Js.Unsafe.get m k) init)
+           init
+  end
+
+  type t = Js.Unsafe.any
+
+  let coerce = Js.Unsafe.coerce
+
+  let classify j =
+    match Js.to_string (Js.typeof j) with
+    | "string" -> `String (coerce j |> Js.to_string)
+    | "number" ->
+        let n = coerce j |> Js.float_of_number in
+        if Float.is_integer n then `Int (Float.to_int n) else `Float n
+    | "boolean" -> `Bool (coerce j |> Js.to_bool)
+    | "undefined" -> `Null
+    | _ -> (
+        match Js.Opt.to_option (Js.some j) with
+        | None -> `Null
+        | Some j ->
+            if Js.instanceof j Js.array_empty then
+              `List (coerce j |> Js.to_array)
+            else `Assoc j)
+
+  let null = Js.Unsafe.inject Js.null
+  let some = Fun.id
+  let of_float x = Js.number_of_float x |> coerce
+  let of_string x = Js.string x |> coerce
+  let of_bool x = if x then coerce Js._false else coerce Js._true
+  let of_int x = Float.of_int x |> Js.number_of_float |> coerce
+  let of_seq x = Array.of_seq x |> Js.array |> coerce
+  let of_map x = Map.String.bindings x |> Array.of_list |> Js.Unsafe.obj
+
+  let pp ppf j =
+    Js.Unsafe.fun_call Js.string_constr [| j |]
+    |> Js.to_string |> Format.pp_print_string ppf
+end
+
 module Promise_with_fixed_bind = struct
   type 'a t = 'a Promise.t
 
