@@ -23,7 +23,6 @@ module Id : sig
   type id = t
 
   val component : string -> t
-  val error_pattern_failure : t
   val error_decode : t
   val error_decode_missing_field : t
   val arg : int -> t
@@ -83,7 +82,6 @@ end = struct
   type id = t
 
   let component name = Printf.sprintf "template_%s" name
-  let error_pattern_failure = "pattern_failure_error"
   let error_decode = "decode_error"
   let error_decode_missing_field = "decode_error_field"
   let arg i = Printf.sprintf "arg%i" i
@@ -395,17 +393,6 @@ let null_value = list_hd
 let list_tl e = Field (e, Int 1)
 
 let pp_runtime ppf =
-  pp_statement ppf
-  @@ Fun
-       ( `Sync,
-         Id.error_pattern_failure,
-         [],
-         [
-           Error
-             (String
-                "This pattern-matching failed to find a path.\n\
-                 This probably means there's a problem with the compiler.");
-         ] );
   let expected = Id.unsafe "expected" in
   let recieved = Id.unsafe "recieved" in
   pp_statement ppf
@@ -609,6 +596,22 @@ let match_leaf data_id ~vars M.{ names; exit } =
             :: acc)
           names [])
 
+let make_exits f exits =
+  let s = M.Exit.to_seqi exits |> Seq.map f in
+  (* Specialize cases when there's only one exit. *)
+  match s () with
+  | Seq.Nil -> Error.internal __POS__ "No exits."
+  | Seq.Cons (hd, tl) -> (
+      match tl () with
+      | Seq.Nil -> snd hd
+      | Seq.Cons (hd', tl) ->
+          [
+            Switch
+              ( Var Id.exit,
+                (fun () -> Seq.Cons (hd, fun () -> Seq.Cons (hd', tl))),
+                [] );
+          ])
+
 let rec nodes_array data_id l = Arr (List.to_seq l |> Seq.map (node data_id))
 and nodes_string data_id l = meth_join (promise_all (nodes_array data_id l)) ""
 
@@ -641,15 +644,10 @@ and match_ data_id args M.{ tree; exits } =
       construct_data data_id args;
       match_tree ~leafstmt:(match_leaf data_id') ~arg:arg_match
         ~vars:Map.Int.empty tree;
-      [
-        Switch
-          ( Var Id.exit,
-            M.Exit.to_seqi exits
-            |> Seq.map (fun (i, l) ->
-                   ( Int (M.Exit.key_to_int i),
-                     [ Return (nodes_string data_id' l) ] )),
-            [ Return (App (Var Id.error_pattern_failure, [])) ] );
-      ];
+      make_exits
+        (fun (i, l) ->
+          (Int (M.Exit.key_to_int i), [ Return (nodes_string data_id' l) ]))
+        exits;
     ]
 
 and map_list data_id arg M.{ tree; exits } =
@@ -671,18 +669,14 @@ and map_list data_id arg M.{ tree; exits } =
                 ];
                 match_tree ~leafstmt:(match_leaf data_id') ~arg:arg_map
                   ~vars:Map.Int.empty tree;
+                make_exits
+                  (fun (i, l) ->
+                    ( Int (M.Exit.key_to_int i),
+                      [
+                        Expr (meth_push Id.result (List.map (node data_id') l));
+                      ] ))
+                  exits;
                 [
-                  Switch
-                    ( Var Id.exit,
-                      M.Exit.to_seqi exits
-                      |> Seq.map (fun (i, l) ->
-                             ( Int (M.Exit.key_to_int i),
-                               [
-                                 Expr
-                                   (meth_push Id.result
-                                      (List.map (node data_id') l));
-                               ] )),
-                      [ Return (App (Var Id.error_pattern_failure, [])) ] );
                   Incr (Var Id.index);
                   Set (Var (Id.arg 0), list_tl (Var (Id.arg 0)));
                 ];
@@ -711,19 +705,13 @@ and map_dict data_id arg M.{ tree; exits } =
                 ];
                 match_tree ~leafstmt:(match_leaf data_id') ~arg:arg_map_dict
                   ~vars:Map.Int.empty tree;
-                [
-                  Switch
-                    ( Var Id.exit,
-                      M.Exit.to_seqi exits
-                      |> Seq.map (fun (i, l) ->
-                             ( Int (M.Exit.key_to_int i),
-                               [
-                                 Expr
-                                   (meth_push Id.result
-                                      (List.map (node data_id') l));
-                               ] )),
-                      [ Return (App (Var Id.error_pattern_failure, [])) ] );
-                ];
+                make_exits
+                  (fun (i, l) ->
+                    ( Int (M.Exit.key_to_int i),
+                      [
+                        Expr (meth_push Id.result (List.map (node data_id') l));
+                      ] ))
+                  exits;
               ] );
       ];
       [ Return (meth_join (promise_all (Var Id.result)) "") ];
