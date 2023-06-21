@@ -1120,6 +1120,102 @@
         }
         return (await Promise.all(result)).join("");
       })(),
+      "\n\
+  \n\
+  Dictionaries match correctly\n\
+  ----------------------------\n\
+  \n\
+  ",
+      (async function () {
+        let data1 = new Map(data);
+        let exit = null;
+        let arg0 = data.get("null_string_dict");
+        if (arg0.has("a")) {
+          if (arg0.get("a") === null) {
+            if (exit === null) { exit = 1; }
+          } else {
+            switch (arg0.get("a")[0]) {
+              case "a":
+                if (arg0.has("does_not_exist")) {
+                  if (arg0.get("does_not_exist") !== null) {
+                    exit = 0;
+                    data1.set("a", arg0.get("a")[0]);
+                    data1.set("b", arg0.get("does_not_exist")[0]);
+                  }
+                }
+                if (exit === null) { exit = 2; }
+                break;
+              default:
+                if (arg0.has("does_not_exist")) {
+                  if (arg0.get("does_not_exist") !== null) {
+                    exit = 0;
+                    data1.set("a", arg0.get("a")[0]);
+                    data1.set("b", arg0.get("does_not_exist")[0]);
+                  }
+                }
+            }
+          }
+        }
+        if (exit === null) { exit = 3; }
+        switch (exit) {
+          case 0:
+            return (await Promise.all([
+              " ",
+              acutis_escape(data1.get("a")),
+              " ",
+              acutis_escape(data1.get("b")),
+              "\n",
+            ])).join("");
+          case 1: return (await Promise.all([" Fail.\n"])).join("");
+          case 2: return (await Promise.all([" Pass.\n"])).join("");
+          case 3: return (await Promise.all([" Fail.\n"])).join("");
+        }
+      })(),
+      (async function () {
+        let data1 = new Map(data);
+        let exit = null;
+        let arg0 = new Map([["a", "a"]]);
+        if (arg0.has("a")) {
+          switch (arg0.get("a")) {
+            case "":
+              if (arg0.has("does_not_exist")) {
+                exit = 0;
+                data1.set("a", arg0.get("a"));
+                data1.set("b", arg0.get("does_not_exist"));
+              }
+              if (exit === null) { exit = 1; }
+              break;
+            case "a":
+              if (arg0.has("does_not_exist")) {
+                exit = 0;
+                data1.set("a", arg0.get("a"));
+                data1.set("b", arg0.get("does_not_exist"));
+              }
+              if (exit === null) { exit = 2; }
+              break;
+            default:
+              if (arg0.has("does_not_exist")) {
+                exit = 0;
+                data1.set("a", arg0.get("a"));
+                data1.set("b", arg0.get("does_not_exist"));
+              }
+          }
+        }
+        if (exit === null) { exit = 3; }
+        switch (exit) {
+          case 0:
+            return (await Promise.all([
+              " Fail. ",
+              acutis_escape(data1.get("a")),
+              " ",
+              acutis_escape(data1.get("b")),
+              "\n",
+            ])).join("");
+          case 1: return (await Promise.all([" Fail.\n"])).join("");
+          case 2: return (await Promise.all([" Pass.\n"])).join("");
+          case 3: return (await Promise.all([" Fail.\n"])).join("");
+        }
+      })(),
       "\n\nConstructing async blocks\n-------------------------\n\n",
       (async function () {
         let data1 = new Map(data);
@@ -1444,6 +1540,13 @@
   Level 3 true
   Level 3 false
   Level 1 null
+  
+  
+  Dictionaries match correctly
+  ----------------------------
+  
+   Pass.
+   Pass.
   
   
   Constructing async blocks

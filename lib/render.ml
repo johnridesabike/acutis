@@ -18,73 +18,81 @@ let rec test_case ~wildcard arg Matching.{ data; if_match; next } =
 let bind_names data ids map =
   Set.Int.fold (fun id map -> Map.Int.add id data map) ids map
 
-(** Only dicts can return [None] during pattern matching. To simplify the
-    code, we also make tuples and records return [option] values. This could
-    probably be optimized to avoid unnecessary [option] allocations for those
-    types. *)
+(* Use the [Not_found] exception to indicate that a nested path failed or that
+   an optional field doesn't exist, and to seek an alternate path. *)
 
-let tuple_get i a = Some a.(i)
+let tuple_get i a = a.(i)
+let dict_get = Map.String.find
 
 let rec make_match :
           'a 'args 'key.
           'args ->
-          ('key -> 'args -> 'data Data.t option) ->
+          ('key -> 'args -> 'data Data.t) ->
           'data Data.t Map.Int.t ->
           ('a, 'key) Matching.tree ->
-          ('data Data.t Map.Int.t * 'a) option =
+          'data Data.t Map.Int.t * 'a =
  fun args get vars -> function
-  | End x -> Some (vars, x)
+  | End x -> (vars, x)
   | Switch { key; cases; wildcard; ids; _ } -> (
-      match get key args with
-      | Some data -> (
-          let vars = bind_names data ids vars in
-          let data = Data.get_const data in
-          match test_case ~wildcard data cases with
-          | Some tree -> make_match args get vars tree
-          | None -> None)
-      | None -> None)
-  | Wildcard { key; ids; child } -> (
-      match get key args with
-      | Some data ->
-          let vars = bind_names data ids vars in
-          make_match args get vars child
-      | None -> None)
-  | Construct { key; ids; nil; cons; _ } -> (
-      match get key args with
-      | Some data -> (
-          let vars = bind_names data ids vars in
-          let child = if Data.is_null data then nil else cons in
+      let data = get key args in
+      let vars = bind_names data ids vars in
+      let data = Data.get_const data in
+      match test_case ~wildcard data cases with
+      | Some tree -> make_match args get vars tree
+      | None -> raise_notrace Not_found)
+  | Wildcard { key; ids; child } ->
+      let data = get key args in
+      let vars = bind_names data ids vars in
+      make_match args get vars child
+  | Construct { key; ids; nil; cons } -> (
+      let data = get key args in
+      let vars = bind_names data ids vars in
+      let child = if Data.is_null data then nil else cons in
+      match child with
+      | Some tree -> make_match args get vars tree
+      | None -> raise_notrace Not_found)
+  | Nest { key; ids; child; wildcard } -> (
+      let data = get key args in
+      let vars = bind_names data ids vars in
+      let result =
+        try
           match child with
+          | Int_keys child ->
+              let tuple = Data.get_tuple data in
+              Some (make_match tuple tuple_get vars child)
+          | String_keys child ->
+              let dict = Data.get_dict data in
+              Some (make_match dict dict_get vars child)
+        with Not_found -> None
+      in
+      match result with
+      | Some (vars, tree) -> make_match args get vars tree
+      | None -> (
+          match wildcard with
           | Some tree -> make_match args get vars tree
-          | None -> None)
-      | None -> None)
-  | Nest { key; ids; child; wildcard; _ } -> (
-      match get key args with
-      | Some data -> (
-          let vars = bind_names data ids vars in
-          let result =
-            match child with
-            | Int_keys child ->
-                let tuple = Data.get_tuple data in
-                make_match tuple tuple_get vars child
-            | String_keys child ->
-                let dict = Data.get_dict data in
-                make_match dict Map.String.find_opt vars child
-          in
-          match result with
-          | Some (vars, tree) -> make_match args get vars tree
-          | None -> (
-              match wildcard with
-              | Some tree -> make_match args get vars tree
-              | None -> None))
-      | None -> None)
+          | None -> raise_notrace Not_found))
+  | Optional { child; next } -> (
+      let result =
+        match child with
+        | None -> None
+        | Some t -> (
+            try Some (make_match args get vars t) with Not_found -> None)
+      in
+      match result with
+      | None -> (
+          match next with
+          | Some t -> make_match args get vars t
+          | None -> raise_notrace Not_found)
+      | Some result -> result)
 
 let make_match args Matching.{ tree; exits } =
-  match make_match args tuple_get Map.Int.empty tree with
-  | Some (vars, { names; exit }) ->
-      let bindings = Map.String.map (fun id -> Map.Int.find id vars) names in
-      (bindings, Matching.Exit.get exits exit)
-  | None -> Error.internal __POS__ "Matching failed to find a match."
+  try
+    let vars, Matching.{ names; exit } =
+      make_match args tuple_get Map.Int.empty tree
+    in
+    let bindings = Map.String.map (fun id -> Map.Int.find id vars) names in
+    (bindings, Matching.Exit.get exits exit)
+  with Not_found -> Error.internal __POS__ "Matching failed to find a match."
 
 let add_escape b = function
   | '&' -> Buffer.add_string b "&amp;"

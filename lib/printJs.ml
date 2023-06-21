@@ -501,88 +501,129 @@ let add_vars ids arg vars =
 let entry_index = Field (Var Id.entry, Int 0)
 let entry_value = Field (Var Id.entry, Int 1)
 let list_index = Var Id.index
-let arg_map = function 0 -> list_hd (Var (Id.arg 0)) | _ -> list_index
-let arg_map_dict = function 0 -> entry_value | _ -> entry_index
-let arg_match key = Var (Id.arg key)
-let arg_str id key = meth_get id (String key)
-let arg_int id key = Field (id, Int key)
+
+(* Only dictionaries can have optional values, but we need to include an
+   [optional] argument for all of these accessor functions so they have
+   identical signatures. *)
+
+let arg_map ~optional:_ i f =
+  f @@ match i with 0 -> list_hd (Var (Id.arg 0)) | _ -> list_index
+
+let arg_map_dict ~optional:_ i f =
+  f @@ match i with 0 -> entry_value | _ -> entry_index
+
+let arg_match ~optional:_ key f = f @@ Var (Id.arg key)
+let arg_int id ~optional:_ key f = f @@ Field (id, Int key)
+
+let arg_str id ~optional key f =
+  if optional then
+    [
+      If_else
+        ( App (Field (id, String "has"), [ String key ]),
+          f @@ meth_get id (String key),
+          [] );
+    ]
+  else f @@ meth_get id (String key)
+
+let ( let@ ) = ( @@ )
 
 let rec match_tree :
           'leaf 'key.
           leafstmt:(vars:expr Map.Int.t -> 'leaf -> statement list) ->
-          arg:('key -> expr) ->
+          get_arg:
+            (optional:bool ->
+            'key ->
+            (expr -> statement list) ->
+            statement list) ->
           vars:expr Map.Int.t ->
+          ?optional:bool ->
           ('leaf, 'key) M.tree ->
           statement list =
- fun ~leafstmt ~arg ~vars -> function
-  | M.Switch { key; ids; cases; wildcard; _ } ->
-      let arg' = arg key in
-      let vars = add_vars ids arg' vars in
+ fun ~leafstmt ~get_arg ~vars ?(optional = false) -> function
+  | M.Switch { key; ids; cases; wildcard; debug_row = _ } ->
+      let@ arg = get_arg ~optional key in
+      let vars = add_vars ids arg vars in
       [
         Switch
-          ( arg',
-            switchcase ~leafstmt ~arg ~vars cases,
+          ( arg,
+            switchcase ~leafstmt ~get_arg ~vars cases,
             match wildcard with
             | None -> []
-            | Some l -> match_tree ~leafstmt ~arg ~vars l );
+            | Some l -> match_tree ~leafstmt ~get_arg ~vars l );
       ]
   | M.Wildcard { key; ids; child } ->
-      let arg' = arg key in
-      let vars = add_vars ids arg' vars in
-      match_tree ~leafstmt ~arg ~vars child
-  | M.Nest { key; ids; child; wildcard; _ } ->
-      let arg' = arg key in
-      let vars = add_vars ids arg' vars in
+      let@ arg = get_arg ~optional key in
+      let vars = add_vars ids arg vars in
+      match_tree ~leafstmt ~get_arg ~vars child
+  | M.Nest { key; ids; child; wildcard } ->
+      let@ arg = get_arg ~optional key in
+      let vars = add_vars ids arg vars in
       List.concat
         [
-          (match child with
-          | Int_keys tree ->
-              match_tree
-                ~leafstmt:(match_tree ~leafstmt ~arg)
-                ~arg:(arg_int arg') ~vars tree
-          | String_keys tree ->
-              match_tree
-                ~leafstmt:(match_tree ~leafstmt ~arg)
-                ~arg:(arg_str arg') ~vars tree);
+          (let leafstmt ~vars t = match_tree ~leafstmt ~get_arg ~vars t in
+           match child with
+           | Int_keys tree ->
+               match_tree ~leafstmt ~get_arg:(arg_int arg) ~vars tree
+           | String_keys tree ->
+               match_tree ~leafstmt ~get_arg:(arg_str arg) ~vars tree);
           (match wildcard with
           | None -> []
           | Some tree ->
               [
                 If_else
                   ( Eq (Var Id.exit, Prim Null),
-                    match_tree ~leafstmt ~arg ~vars tree,
+                    match_tree ~leafstmt ~get_arg ~vars tree,
                     [] );
               ]);
         ]
   | M.Construct { key; ids; nil; cons } -> (
-      let arg' = arg key in
-      let vars = add_vars ids arg' vars in
+      let@ arg = get_arg ~optional key in
+      let vars = add_vars ids arg vars in
       match (nil, cons) with
       | Some nil, Some cons ->
           [
             If_else
-              ( Eq (arg', Prim Null),
-                match_tree ~leafstmt ~arg ~vars nil,
-                match_tree ~leafstmt ~arg ~vars cons );
+              ( Eq (arg, Prim Null),
+                match_tree ~leafstmt ~get_arg ~vars nil,
+                match_tree ~leafstmt ~get_arg ~vars cons );
           ]
-      | Some nil, None -> match_tree ~leafstmt ~arg ~vars nil
-      | None, Some cons -> match_tree ~leafstmt ~arg ~vars cons
+      | Some nil, None ->
+          [
+            If_else
+              (Eq (arg, Prim Null), match_tree ~leafstmt ~get_arg ~vars nil, []);
+          ]
+      | None, Some cons ->
+          [
+            If_else
+              ( Not_eq (arg, Prim Null),
+                match_tree ~leafstmt ~get_arg ~vars cons,
+                [] );
+          ]
       | None, None -> [])
+  | M.Optional { child; next } ->
+      List.concat
+        [
+          (match child with
+          | None -> []
+          | Some t -> match_tree ~leafstmt ~get_arg ~optional:true ~vars t);
+          (match next with
+          | None -> []
+          | Some t ->
+              [
+                If_else
+                  ( Eq (Var Id.exit, Prim Null),
+                    match_tree ~leafstmt ~get_arg ~vars t,
+                    [] );
+              ]);
+        ]
   | M.End leaf -> leafstmt ~vars leaf
 
-and switchcase :
-      'leaf 'key.
-      leafstmt:(vars:expr Map.Int.t -> 'leaf -> statement list) ->
-      arg:('key -> expr) ->
-      vars:expr Map.Int.t ->
-      ('leaf, 'key) M.switchcase ->
-      (expr * statement list) Seq.t =
- fun ~leafstmt ~arg ~vars M.{ data; if_match; next } ->
-  Seq.cons
-    (of_const data, match_tree ~leafstmt ~arg ~vars if_match)
-    (match next with
-    | None -> Seq.empty
-    | Some l -> switchcase ~leafstmt ~arg ~vars l)
+and switchcase ~leafstmt ~get_arg ~vars M.{ data; if_match; next } () =
+  Seq.Cons
+    ( (of_const data, match_tree ~leafstmt ~get_arg ~vars if_match),
+      match next with
+      | None -> Seq.empty
+      | Some l -> switchcase ~leafstmt ~get_arg ~vars l )
 
 let match_leaf data_id ~vars M.{ names; exit } =
   Set (Var Id.exit, Int (M.Exit.key_to_int exit))
@@ -642,7 +683,7 @@ and match_ data_id args M.{ tree; exits } =
         Let (Id.exit, Prim Null);
       ];
       construct_data data_id args;
-      match_tree ~leafstmt:(match_leaf data_id') ~arg:arg_match
+      match_tree ~leafstmt:(match_leaf data_id') ~get_arg:arg_match
         ~vars:Map.Int.empty tree;
       make_exits
         (fun (i, l) ->
@@ -667,7 +708,7 @@ and map_list data_id arg M.{ tree; exits } =
                       New (Map, [ Var (Id.Data.to_id data_id) ]) );
                   Let (Id.exit, Prim Null);
                 ];
-                match_tree ~leafstmt:(match_leaf data_id') ~arg:arg_map
+                match_tree ~leafstmt:(match_leaf data_id') ~get_arg:arg_map
                   ~vars:Map.Int.empty tree;
                 make_exits
                   (fun (i, l) ->
@@ -703,7 +744,7 @@ and map_dict data_id arg M.{ tree; exits } =
                       New (Map, [ Var (Id.Data.to_id data_id) ]) );
                   Let (Id.exit, Prim Null);
                 ];
-                match_tree ~leafstmt:(match_leaf data_id') ~arg:arg_map_dict
+                match_tree ~leafstmt:(match_leaf data_id') ~get_arg:arg_map_dict
                   ~vars:Map.Int.empty tree;
                 make_exits
                   (fun (i, l) ->

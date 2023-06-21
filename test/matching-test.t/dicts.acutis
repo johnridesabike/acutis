@@ -1,0 +1,4 @@
+{% match a with <a: 1, b> %} {{ %i b }}
+{% with <b: 2, c: 3> %} bc
+{% with _ %} _
+{% /match %}

@@ -343,8 +343,7 @@ Print the optimized form
             (next ())))
           (wildcard ())
           (debug_row open))))
-       (wildcard (end (leaf (names ()) (exit 1))))
-       (debug not_dict)))
+       (wildcard (end (leaf (names ()) (exit 1))))))
      (exits ((0 ()) (1 ())))))
    (text "\n\nTrim")
    (echo () fmt_string (var "trim_a") escape)
@@ -552,8 +551,7 @@ Print the optimized form
             (next ())))
           (wildcard ())
           (debug_row open))))
-       (wildcard (end (leaf (names ()) (exit 1))))
-       (debug not_dict)))
+       (wildcard (end (leaf (names ()) (exit 1))))))
      (exits ((0 ((text " "))) (1 ((text " ")))))))
    (text "\n\nList:\n")
    (match
@@ -612,17 +610,14 @@ Print the optimized form
                            (cons ())))
                          (cons ()))))
                       (wildcard
-                       (end (end (leaf (names (("_tl" 2) ("_z" 1))) (exit 2)))))
-                      (debug not_dict)))))))))
+                       (end (end (leaf (names (("_tl" 2) ("_z" 1))) (exit 2)))))))))))))
               (wildcard
                (wildcard
                 (key 1)
                 (ids (2))
                 (child
-                 (end (end (leaf (names (("_tl" 2) ("_z" 1))) (exit 2)))))))
-              (debug not_dict))))))
-         (wildcard ())
-         (debug not_dict)))))
+                 (end (end (leaf (names (("_tl" 2) ("_z" 1))) (exit 2))))))))))))
+         (wildcard ())))))
      (exits
       ((0 ((text "\n")))
        (1 ((text " ") (echo () fmt_string (var "a") escape) (text "\n")))
@@ -645,8 +640,7 @@ Print the optimized form
             (key "a")
             (ids (1))
             (child (end (end (leaf (names (("a" 1) ("b" 0))) (exit 0))))))))))
-       (wildcard (end (leaf (names ()) (exit 1))))
-       (debug not_dict)))
+       (wildcard (end (leaf (names ()) (exit 1))))))
      (exits
       ((0
         ((text " ")
@@ -705,8 +699,7 @@ Print the optimized form
             (next ())))
           (wildcard ())
           (debug_row open))))
-       (wildcard (end (leaf (names ()) (exit 1))))
-       (debug not_dict)))
+       (wildcard (end (leaf (names ()) (exit 1))))))
      (exits ((0 ((text " "))) (1 ((text " ")))))))
    (text "\n\nTagged union:\n")
    (match
@@ -736,8 +729,7 @@ Print the optimized form
               (next ())))))
           (wildcard ())
           (debug_row closed))))
-       (wildcard ())
-       (debug not_dict)))
+       (wildcard ())))
      (exits
       ((0 ((text " ") (echo () fmt_string (var "a") escape) (text " ")))
        (1 ((text "\n")))))))
@@ -751,28 +743,33 @@ Print the optimized form
        (ids ())
        (child
         (string_keys
-         (switch
-          (key "a")
-          (ids ())
-          (cases
-           (case
-            (data 1)
-            (if_match
-             (switch
-              (key "b")
-              (ids ())
-              (cases
-               (case
-                (data 2)
-                (if_match (end (end (leaf (names ()) (exit 0)))))
+         (optional
+          (child
+           (switch
+            (key "a")
+            (ids ())
+            (cases
+             (case
+              (data 1)
+              (if_match
+               (optional
+                (child
+                 (switch
+                  (key "b")
+                  (ids ())
+                  (cases
+                   (case
+                    (data 2)
+                    (if_match (end (end (leaf (names ()) (exit 0)))))
+                    (next ())))
+                  (wildcard ())
+                  (debug_row open)))
                 (next ())))
-              (wildcard ())
-              (debug_row open)))
-            (next ())))
-          (wildcard ())
-          (debug_row open))))
-       (wildcard (end (leaf (names ()) (exit 1))))
-       (debug dict)))
+              (next ())))
+            (wildcard ())
+            (debug_row open)))
+          (next ()))))
+       (wildcard (end (leaf (names ()) (exit 1))))))
      (exits ((0 ((text " "))) (1 ((text " ")))))))
    (text "\n\n! and . precedence works correctly\n")
    (match
@@ -809,10 +806,8 @@ Print the optimized form
                    (next ())))
                  (wildcard ())
                  (debug_row closed))))
-              (wildcard ())
-              (debug not_dict))))))
-         (wildcard (end (leaf (names ()) (exit 1))))
-         (debug not_dict)))))
+              (wildcard ()))))))
+         (wildcard (end (leaf (names ()) (exit 1))))))))
      (exits ((0 ()) (1 ())))))
    (text "\n\nEdge cases\n\nPatterns with }} parse correctly\n")
    (match
@@ -833,10 +828,8 @@ Print the optimized form
              (key "b")
              (ids (0))
              (child (end (end (end (leaf (names (("b" 0))) (exit 0)))))))))
-          (wildcard ())
-          (debug not_dict))))
-       (wildcard ())
-       (debug not_dict)))
+          (wildcard ()))))
+       (wildcard ())))
      (exits
       ((0 ((text " ") (echo () fmt_string (var "b") escape) (text " ")))))))
    (text "\n"))

@@ -710,16 +710,18 @@ let rec make_pat var_action mode ty = function
           let r = make_record var_action loc mode !tyvars m in
           TRecord (Some (k, tag, new_enum), r, tyvars))
   | Dict (loc, m) ->
-      let new_kys = ref Set.String.empty in
+      let m = assoc_to_map m in
+      let new_kys =
+        ref
+          (Map.String.fold (fun k _ s -> Set.String.add k s) m Set.String.empty)
+      in
       let tyvar, kys =
         match !ty with
         | Dict (ty, ks) -> (ty, ks)
         | _ -> (Ty.unknown (), new_kys)
       in
       unify loc mode ty (Ty.internal_dict_keys tyvar new_kys);
-      let d =
-        assoc_to_map m |> Map.String.map (make_pat var_action mode tyvar)
-      in
+      let d = Map.String.map (make_pat var_action mode tyvar) m in
       TDict (d, kys)
   | Var (loc, "_") ->
       (match mode with

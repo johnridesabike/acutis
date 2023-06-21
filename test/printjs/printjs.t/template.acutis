@@ -105,6 +105,23 @@ Mapping
 {% with !!b ~%} Level 3 {{ %b b }}
 {% /map %}
 
+Dictionaries match correctly
+----------------------------
+
+{% match null_string_dict
+    with <a: !a, does_not_exist: !b> %} {{ a }} {{ b }}
+{%  with <a: null> %} Fail.
+{%  with <a: !"a"> %} Pass.
+{% with _ %} Fail.
+{% /match %}
+
+{%~ match <a: "a">
+    with <a: a, does_not_exist: b> %} Fail. {{ a }} {{ b }}
+{%  with <a: ""> %} Fail.
+{%  with <a: "a"> %} Pass.
+{% with _ %} Fail.
+{% /match %}
+
 Constructing async blocks
 -------------------------
 

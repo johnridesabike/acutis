@@ -12,8 +12,6 @@ module T = Typechecker
 module Ty = Typescheme
 module Const = Data.Const
 
-type debug_nest_info = Not_dict | Dict
-
 type ('leaf, 'key) tree =
   | Switch of {
       key : 'key;
@@ -27,7 +25,6 @@ type ('leaf, 'key) tree =
       ids : Set.Int.t;
       child : ('leaf, 'key) nest;
       wildcard : ('leaf, 'key) tree option;
-      debug : debug_nest_info;
     }
   | Construct of {
       key : 'key;
@@ -36,6 +33,10 @@ type ('leaf, 'key) tree =
       cons : ('leaf, 'key) tree option;
     }
   | Wildcard of { key : 'key; ids : Set.Int.t; child : ('leaf, 'key) tree }
+  | Optional of {
+      child : ('leaf, 'key) tree option;
+      next : ('leaf, 'key) tree option;
+    }
   | End of 'leaf
 
 and ('leaf, 'key) nest =
@@ -66,9 +67,6 @@ end
 type leaf = { names : int Map.String.t; exit : Exit.key }
 type 'a t = { tree : (leaf, int) tree; exits : 'a Exit.t }
 
-let equal_debug_nest_info a b =
-  match (a, b) with Not_dict, Not_dict | Dict, Dict -> true | _ -> false
-
 let rec equal_tree :
           'leaf 'key.
           ('leaf -> 'leaf -> bool) ->
@@ -83,11 +81,10 @@ let rec equal_tree :
       && equal_switchcase equal_leaf equal_key a.cases cases
       && Option.equal (equal_tree equal_leaf equal_key) a.wildcard wildcard
       && Ty.equal_row a.debug_row debug_row
-  | Nest a, Nest { key; ids; child; wildcard; debug } ->
+  | Nest a, Nest { key; ids; child; wildcard } ->
       equal_key a.key key && Set.Int.equal a.ids ids
       && equal_nest equal_leaf equal_key a.child child
       && Option.equal (equal_tree equal_leaf equal_key) a.wildcard wildcard
-      && equal_debug_nest_info a.debug debug
   | Construct a, Construct { key; ids; nil; cons } ->
       equal_key a.key key && Set.Int.equal a.ids ids
       && Option.equal (equal_tree equal_leaf equal_key) a.nil nil
@@ -300,6 +297,18 @@ and expand_wildcard_after_nest :
             | None -> None
             | Some a -> Some (expand_wildcard_after_nest na nb a ~wildcard));
         }
+  | Optional a ->
+      Optional
+        {
+          child =
+            (match a.child with
+            | None -> None
+            | Some a -> Some (expand_wildcard_after_nest na nb a ~wildcard));
+          next =
+            (match a.next with
+            | None -> None
+            | Some a -> Some (expand_wildcard_after_nest na nb a ~wildcard));
+        }
 
 (** When we merge the contents after a nest into a wildcard, we can only keep
     successful mergers. For constructs and switch nodes, then at least one path
@@ -378,6 +387,20 @@ and merge_wildcard_after_nest :
       match aux b.cases with
       | None -> None
       | Some cases -> Some (Switch { b with cases; wildcard = w }))
+  | Optional b -> (
+      let child =
+        match b.child with
+        | None -> None
+        | Some b -> merge_wildcard_after_nest ~equal na nb ~wildcard b
+      in
+      let next =
+        match b.next with
+        | None -> None
+        | Some b -> merge_wildcard_after_nest ~equal na nb ~wildcard b
+      in
+      match (child, next) with
+      | None, None -> None
+      | child, next -> Some (Optional { child; next }))
 
 (** Merge two trees. If the merge is unsuccessful, then the result will be
     structurally equal to the first tree. *)
@@ -540,11 +563,27 @@ and merge :
       in
       let ids = Set.Int.union a.ids b.ids in
       Switch { a with ids; cases; wildcard }
-  | Switch _, (Nest _ | Construct _)
-  | Construct _, (Switch _ | Nest _)
-  | Nest _, (Switch _ | Construct _)
-  | (Switch _ | Nest _ | Construct _ | Wildcard _), End _
-  | End _, (Switch _ | Nest _ | Construct _ | Wildcard _) ->
+  | Optional { child; next }, Optional b ->
+      let child =
+        match (child, b.child) with
+        | None, None -> None
+        | Some a, None | None, Some a -> Some a
+        | Some a, Some b -> Some (merge n a b)
+      in
+      let next =
+        match (next, b.next) with
+        | None, None -> None
+        | Some a, None | None, Some a -> Some a
+        | Some a, Some b -> Some (merge n a b)
+      in
+      Optional { child; next }
+  | Wildcard _, Optional _
+  | Optional _, (Switch _ | Nest _ | Construct _ | Wildcard _)
+  | Switch _, (Nest _ | Construct _ | Optional _)
+  | Construct _, (Switch _ | Nest _ | Optional _)
+  | Nest _, (Switch _ | Construct _ | Optional _)
+  | (Switch _ | Nest _ | Construct _ | Wildcard _ | Optional _), End _
+  | End _, (Switch _ | Nest _ | Construct _ | Wildcard _ | Optional _) ->
       Error.internal __POS__
         "Tried to merge incompatible trees. Either the typechecker failed or \
          the function that constructs trees failed."
@@ -583,8 +622,7 @@ let rec of_tpat :
   | TConst (data, enum) -> of_const key data (k b) enum
   | TTuple l ->
       let child = Int_keys (of_list ~key:0 b (fun b -> End (k b)) l) in
-      Nest
-        { key; ids = Set.Int.empty; child; wildcard = None; debug = Not_dict }
+      Nest { key; ids = Set.Int.empty; child; wildcard = None }
   | TRecord (tag, m, tys) ->
       (* We need to expand the map to include all of its type's keys. *)
       let child =
@@ -601,32 +639,25 @@ let rec of_tpat :
         | None -> child
       in
       Nest
-        {
-          key;
-          ids = Set.Int.empty;
-          child = String_keys child;
-          wildcard = None;
-          debug = Not_dict;
-        }
+        { key; ids = Set.Int.empty; child = String_keys child; wildcard = None }
   | TDict (m, kys) ->
       (* We need to expand the map to include all of its type's keys. *)
-      let child =
-        Set.String.fold
-          (fun key map ->
-            Map.String.update key
-              (function None -> Some T.TAny | Some _ as p -> p)
-              map)
-          !kys m
+      let s =
+        Map.String.map Option.some m
+        |> Set.String.fold
+             (fun key map ->
+               Map.String.update key
+                 (function None -> Some None | Some p -> Some p)
+                 map)
+             !kys
         |> Map.String.to_seq
-        |> of_keyvalues b (fun b -> End (k b))
       in
       Nest
         {
           key;
           ids = Set.Int.empty;
-          child = String_keys child;
+          child = String_keys (of_keyvalues_dict b (fun b -> End (k b)) s);
           wildcard = None;
-          debug = Dict;
         }
   | TBlock _ | TField _ ->
       Error.internal __POS__
@@ -640,13 +671,22 @@ and of_list :
   | [] -> k b
   | p :: l -> of_tpat ~key b (fun b -> of_list ~key:(succ key) b k l) p
 
-and of_keyvalues :
-    bindings -> ('a, string) cont -> (string * T.pat) Seq.t -> ('a, string) tree
-    =
- fun b k s ->
+and of_keyvalues b k s =
   match s () with
   | Nil -> k b
   | Cons ((key, v), l) -> of_tpat ~key b (fun b -> of_keyvalues b k l) v
+
+and of_keyvalues_dict b k s =
+  match s () with
+  | Nil -> k b
+  | Cons ((_, None), s) ->
+      Optional { child = None; next = Some (of_keyvalues_dict b k s) }
+  | Cons ((key, Some v), s) ->
+      Optional
+        {
+          child = Some (of_tpat ~key b (fun b -> of_keyvalues_dict b k s) v);
+          next = None;
+        }
 
 let of_nonempty ~exit next_id Nonempty.(hd :: tl) =
   let k { names; _ } = End { names; exit } in
@@ -778,7 +818,7 @@ module ParMatch = struct
             let r = check n x in
             { r with pats = []; after_nest = r.pats :: r.after_nest })
     | Wildcard { child; _ } -> exhaustive (check n child)
-    | Nest { child; wildcard; debug; _ } -> (
+    | Nest { child; wildcard; _ } -> (
         (* Either the child OR the wildcard can be exhaustive.
            A nest filled with exhaustive patterns, e.g. tuple (_, _, _), can
            lead to an exhaustive path even if it's paired with a wildcard _ that
@@ -791,15 +831,14 @@ module ParMatch = struct
         in
         match r with
         | { flag = Exhaustive; pats; after_nest = hd :: tl } -> (
-            match debug with
-            | Not_dict ->
-                { flag = Exhaustive; pats = Nest pats :: hd; after_nest = tl }
-            | Dict -> (
+            match child with
+            | String_keys (Optional _) -> (
                 (* Dicts always require a wildcard. *)
                 match wildcard with
                 | Some wildcard -> exhaustive (check n wildcard)
                 | None -> { flag = Partial; pats = Any :: hd; after_nest = tl })
-            )
+            | _ ->
+                { flag = Exhaustive; pats = Nest pats :: hd; after_nest = tl })
         | { flag = Partial; pats; after_nest = hd :: tl } -> (
             match wildcard with
             | Some wildcard -> exhaustive (check n wildcard)
@@ -843,6 +882,11 @@ module ParMatch = struct
               | Some case -> aux case)
         in
         aux cases
+    | Optional { child = Some x; _ }
+    | Optional { child = None; next = Some x; _ } ->
+        check n x
+    | Optional { child = None; next = None; _ } ->
+        Error.internal __POS__ "Tried to analyze an empty optional."
 
   let check = check Z
 end
@@ -851,10 +895,6 @@ let partial_match_check loc tys tree =
   match ParMatch.check tree with
   | { flag = Exhaustive; _ } -> ()
   | { flag = Partial; pats; _ } -> Error.parmatch loc (ParMatch.pp tys) pats
-
-let debug_nest_info_to_sexp = function
-  | Not_dict -> Sexp.symbol "not_dict"
-  | Dict -> Sexp.symbol "dict"
 
 let set_to_sexp s = Sexp.of_seq Sexp.int (Set.Int.to_seq s)
 
@@ -877,7 +917,7 @@ let rec tree_to_sexp :
             ];
           Sexp.make "debug_row" [ Ty.row_to_sexp debug_row ];
         ]
-  | Nest { key; ids; child; wildcard; debug } ->
+  | Nest { key; ids; child; wildcard } ->
       Sexp.make "nest"
         [
           Sexp.make "key" [ key_f key ];
@@ -889,7 +929,6 @@ let rec tree_to_sexp :
               | None -> Sexp.empty
               | Some t -> tree_to_sexp leaf_f key_f t);
             ];
-          Sexp.make "debug" [ debug_nest_info_to_sexp debug ];
         ]
   | Construct { key; ids; nil; cons } ->
       Sexp.make "construct"
@@ -915,6 +954,22 @@ let rec tree_to_sexp :
           Sexp.make "key" [ key_f key ];
           Sexp.make "ids" [ set_to_sexp ids ];
           Sexp.make "child" [ tree_to_sexp leaf_f key_f child ];
+        ]
+  | Optional { child; next } ->
+      Sexp.make "optional"
+        [
+          Sexp.make "child"
+            [
+              (match child with
+              | None -> Sexp.empty
+              | Some t -> tree_to_sexp leaf_f key_f t);
+            ];
+          Sexp.make "next"
+            [
+              (match next with
+              | None -> Sexp.empty
+              | Some t -> tree_to_sexp leaf_f key_f t);
+            ];
         ]
   | End leaf -> Sexp.make "end" [ leaf_f leaf ]
 

@@ -18,8 +18,7 @@ Basic tree
             (key 0)
             (ids (0))
             (child (end (end (leaf (names (("_a" 0))) (exit 0))))))))
-         (wildcard ())
-         (debug not_dict)))))
+         (wildcard ())))))
      (exits ((0 ((text " "))) (1 ((text " ")))))))
    (text "\n"))
 
@@ -296,8 +295,7 @@ Nests merge correctly
              (if_match (end (leaf (names ()) (exit 0))))
              (next ())))
            (wildcard ())
-           (debug_row open)))
-         (debug not_dict)))))
+           (debug_row open)))))))
      (exits
       ((0 ((text "\n"))) (1 ((text "\n"))) (2 ((text "\n"))) (3 ((text "\n")))))))
    (text "\n"))
@@ -366,8 +364,7 @@ Wildcards merge after nests correctly
                (next ())))
              (wildcard ())
              (debug_row open))))
-          (wildcard ())
-          (debug not_dict))))
+          (wildcard ()))))
        (wildcard
         (switch
          (key 1)
@@ -378,8 +375,7 @@ Wildcards merge after nests correctly
            (if_match (end (leaf (names (("_x" 0))) (exit 0))))
            (next ())))
          (wildcard (end (leaf (names (("_y" 1) ("_z" 2))) (exit 2))))
-         (debug_row open)))
-       (debug not_dict)))
+         (debug_row open)))))
      (exits ((0 ((text "\n"))) (1 ((text "\n"))) (2 ((text "\n")))))))
    (text "\n"))
 
@@ -412,8 +408,7 @@ Different-sized lists merge correctly
                 (key 1)
                 (ids (2))
                 (child (end (end (leaf (names (("_x" 1) ("_y" 2))) (exit 2))))))))))))
-         (wildcard ())
-         (debug not_dict)))))
+         (wildcard ())))))
      (exits ((0 ((text "\n"))) (1 ((text "\n"))) (2 ((text "\n")))))))
    (text "\n"))
 
@@ -519,8 +514,7 @@ A big list pattern works
                        (next ())))
                      (wildcard ())
                      (debug_row open))))
-                  (wildcard ())
-                  (debug not_dict)))))
+                  (wildcard ())))))
               (next
                (case
                 (data 30)
@@ -558,8 +552,7 @@ A big list pattern works
              (if_match (end (leaf (names (("_y" 1))) (exit 3))))
              (next ())))
            (wildcard (end (leaf (names ()) (exit 4))))
-           (debug_row open)))
-         (debug not_dict)))))
+           (debug_row open)))))))
      (exits
       ((0 ((text "\n")))
        (1 ((text "\n")))
@@ -636,8 +629,7 @@ Record fields sort correctly
           (wildcard ())
           (debug_row open))))
        (wildcard
-        (wildcard (key 1) (ids ()) (child (end (leaf (names ()) (exit 2))))))
-       (debug not_dict)))
+        (wildcard (key 1) (ids ()) (child (end (leaf (names ()) (exit 2))))))))
      (exits ((0 ((text "\n"))) (1 ((text "\n"))) (2 ((text "\n")))))))
    (text "\n"))
 
@@ -704,8 +696,74 @@ New fields expand existing rows
               (debug_row open)))
             (debug_row open)))
           (debug_row open))))
-       (wildcard (end (leaf (names (("_x" 0))) (exit 3))))
-       (debug not_dict)))
+       (wildcard (end (leaf (names (("_x" 0))) (exit 3))))))
      (exits
       ((0 ((text "\n"))) (1 ((text "\n"))) (2 ((text "\n"))) (3 ((text "\n")))))))
+   (text "\n"))
+
+Dictionaries merge correctly
+  $ acutis dicts.acutis --printopt
+  ((match
+    ((var "a"))
+    (matching
+     (tree
+      (nest
+       (key 0)
+       (ids ())
+       (child
+        (string_keys
+         (optional
+          (child
+           (switch
+            (key "a")
+            (ids ())
+            (cases
+             (case
+              (data 1)
+              (if_match
+               (optional
+                (child
+                 (wildcard
+                  (key "b")
+                  (ids (0))
+                  (child
+                   (optional
+                    (child ())
+                    (next (end (end (leaf (names (("b" 0))) (exit 0)))))))))
+                (next ())))
+              (next ())))
+            (wildcard ())
+            (debug_row open)))
+          (next
+           (optional
+            (child
+             (switch
+              (key "b")
+              (ids ())
+              (cases
+               (case
+                (data 2)
+                (if_match
+                 (optional
+                  (child
+                   (switch
+                    (key "c")
+                    (ids ())
+                    (cases
+                     (case
+                      (data 3)
+                      (if_match (end (end (leaf (names ()) (exit 1)))))
+                      (next ())))
+                    (wildcard ())
+                    (debug_row open)))
+                  (next ())))
+                (next ())))
+              (wildcard ())
+              (debug_row open)))
+            (next ()))))))
+       (wildcard (end (leaf (names ()) (exit 2))))))
+     (exits
+      ((0 ((text " ") (echo () fmt_int (var "b") escape) (text "\n")))
+       (1 ((text " bc\n")))
+       (2 ((text " _\n")))))))
    (text "\n"))

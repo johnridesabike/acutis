@@ -167,8 +167,6 @@ v}
 
 (** {1 Type definitions.} *)
 
-type debug_nest_info = Not_dict | Dict
-
 (** This is a polymorphic "nested data type." Each tree can use itself as its
     own type variable, i.e. [(('a, 'key) tree, 'key) tree]. This allows the
     [End] nodes to be fully polymorphic. They can either lead to a {!leaf} or
@@ -199,7 +197,6 @@ type ('leaf, 'key) tree =
       ids : Set.Int.t;
       child : ('leaf, 'key) nest;
       wildcard : ('leaf, 'key) tree option;
-      debug : debug_nest_info;
     }  (** A Nest represents a structure such as tuple or a record. *)
   | Construct of {
       key : 'key;
@@ -213,6 +210,22 @@ type ('leaf, 'key) tree =
           always points to a {!Wildcard} or {!Nest} node.*)
   | Wildcard of { key : 'key; ids : Set.Int.t; child : ('leaf, 'key) tree }
       (** Wildcards simply point to the next node in the tree.*)
+  | Optional of {
+      child : ('leaf, 'key) tree option;
+      next : ('leaf, 'key) tree option;
+    }
+      (** Optionals are only used, and always used, inside of dictionary nests.
+          They denote that the item in [child] does not need to be present
+          during runtime. If following a [child] path fails, then follow the
+          [next] path instead. [next] is analogous to a wildcard except that it
+          cannot bind a value to an ID.
+
+          Optionals are currently not expanded in the way that other paths are,
+          so a failure at any point in a [child] path always causes
+          backtracking. This is partially because such expansion is not needed
+          to prove exhaustive patterns; optionals can only appear inside a
+          dictionary which can never be exhaustive without a wildcard. Also,
+          optionals are just not a priority for special treatment. *)
   | End of 'leaf
 
 and ('leaf, 'key) nest =
