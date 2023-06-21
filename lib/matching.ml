@@ -910,11 +910,7 @@ let rec tree_to_sexp :
           Sexp.make "ids" [ set_to_sexp ids ];
           Sexp.make "cases" [ switchcase_to_sexp leaf_f key_f cases ];
           Sexp.make "wildcard"
-            [
-              (match wildcard with
-              | None -> Sexp.empty
-              | Some wildcard -> tree_to_sexp leaf_f key_f wildcard);
-            ];
+            [ Sexp.option (tree_to_sexp leaf_f key_f) wildcard ];
           Sexp.make "debug_row" [ Ty.row_to_sexp debug_row ];
         ]
   | Nest { key; ids; child; wildcard } ->
@@ -924,29 +920,15 @@ let rec tree_to_sexp :
           Sexp.make "ids" [ set_to_sexp ids ];
           Sexp.make "child" [ nest_to_sexp leaf_f key_f child ];
           Sexp.make "wildcard"
-            [
-              (match wildcard with
-              | None -> Sexp.empty
-              | Some t -> tree_to_sexp leaf_f key_f t);
-            ];
+            [ Sexp.option (tree_to_sexp leaf_f key_f) wildcard ];
         ]
   | Construct { key; ids; nil; cons } ->
       Sexp.make "construct"
         [
           Sexp.make "key" [ key_f key ];
           Sexp.make "ids" [ set_to_sexp ids ];
-          Sexp.make "nil"
-            [
-              (match nil with
-              | None -> Sexp.empty
-              | Some t -> tree_to_sexp leaf_f key_f t);
-            ];
-          Sexp.make "cons"
-            [
-              (match cons with
-              | None -> Sexp.empty
-              | Some t -> tree_to_sexp leaf_f key_f t);
-            ];
+          Sexp.make "nil" [ Sexp.option (tree_to_sexp leaf_f key_f) nil ];
+          Sexp.make "cons" [ Sexp.option (tree_to_sexp leaf_f key_f) cons ];
         ]
   | Wildcard { key; ids; child } ->
       Sexp.make "wildcard"
@@ -958,18 +940,8 @@ let rec tree_to_sexp :
   | Optional { child; next } ->
       Sexp.make "optional"
         [
-          Sexp.make "child"
-            [
-              (match child with
-              | None -> Sexp.empty
-              | Some t -> tree_to_sexp leaf_f key_f t);
-            ];
-          Sexp.make "next"
-            [
-              (match next with
-              | None -> Sexp.empty
-              | Some t -> tree_to_sexp leaf_f key_f t);
-            ];
+          Sexp.make "child" [ Sexp.option (tree_to_sexp leaf_f key_f) child ];
+          Sexp.make "next" [ Sexp.option (tree_to_sexp leaf_f key_f) next ];
         ]
   | End leaf -> Sexp.make "end" [ leaf_f leaf ]
 
@@ -995,12 +967,7 @@ and switchcase_to_sexp :
     [
       Sexp.make "data" [ Data.Const.to_sexp data ];
       Sexp.make "if_match" [ tree_to_sexp leaf_f key_f if_match ];
-      Sexp.make "next"
-        [
-          (match next with
-          | None -> Sexp.empty
-          | Some next -> switchcase_to_sexp leaf_f key_f next);
-        ];
+      Sexp.make "next" [ Sexp.option (switchcase_to_sexp leaf_f key_f) next ];
     ]
 
 let leaf_to_sexp { names; exit } =
