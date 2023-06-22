@@ -540,7 +540,7 @@ let rec match_tree :
           ('leaf, 'key) M.tree ->
           statement list =
  fun ~leafstmt ~get_arg ~vars ?(optional = false) -> function
-  | M.Switch { key; ids; cases; wildcard; debug_row = _ } ->
+  | M.Switch { key; ids; cases; wildcard; _ } ->
       let@ arg = get_arg ~optional key in
       let vars = add_vars ids arg vars in
       [

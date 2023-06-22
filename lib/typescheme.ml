@@ -20,9 +20,6 @@ type row = [ `Closed | `Open ]
 type sum_extra = Not_bool | Bool
 type 'a sum = { mutable cases : 'a; mutable row : row; extra : sum_extra }
 
-let equal_row (a : row) (b : row) =
-  match (a, b) with `Closed, `Closed | `Open, `Open -> true | _ -> false
-
 let row_to_sexp = function
   | `Closed -> Sexp.symbol "closed"
   | `Open -> Sexp.symbol "open"

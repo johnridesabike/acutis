@@ -167,6 +167,8 @@ v}
 
 (** {1 Type definitions.} *)
 
+type internal_check_cases
+
 (** This is a polymorphic "nested data type." Each tree can use itself as its
     own type variable, i.e. [(('a, 'key) tree, 'key) tree]. This allows the
     [End] nodes to be fully polymorphic. They can either lead to a {!leaf} or
@@ -187,7 +189,7 @@ type ('leaf, 'key) tree =
       ids : Set.Int.t;
       cases : ('leaf, 'key) switchcase;
       wildcard : ('leaf, 'key) tree option;
-      debug_row : Typescheme.row;
+      check_cases : internal_check_cases;
     }
       (** A Switch represents a list of discreet values to test (i.e., [1],
           ["a"], etc.). If none of the values match the input, then the wildcard

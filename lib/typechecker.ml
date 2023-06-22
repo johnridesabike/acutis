@@ -592,6 +592,12 @@ type 'a var_action =
       (** When we construct a pattern, we update the context for each new
           variable. *)
 
+(** When we type-check a pattern, we create a temporary type and unify it
+    with the input type. Information retained in the resulting typed-pattern
+    structure, for example dictionary keys or sum-type data, must come from the
+    input type if possible, not the newly created one. The input type is the
+    master copy which gets reused, and the temporary copy will become stale. *)
+
 let rec make_pat var_action mode ty = function
   | Ast.Int (loc, i) ->
       unify loc mode ty (Ty.int ());
@@ -614,7 +620,7 @@ let rec make_pat var_action mode ty = function
       unify loc mode ty (Ty.float ());
       TConst (Float f, None)
   | Bool (loc, b) ->
-      let new_enum =
+      let temp_enum =
         match mode with
         | Destructure_expand -> (
             match b with
@@ -622,29 +628,29 @@ let rec make_pat var_action mode ty = function
             | _ -> Ty.Enum.true_only ())
         | Construct_var | Construct_literal -> Ty.Enum.false_and_true ()
       in
-      let new_ty = ref (Ty.Enum new_enum) in
-      let enum = match !ty with Enum e -> e | _ -> new_enum in
-      unify loc mode ty new_ty;
+      let temp_ty = ref (Ty.Enum temp_enum) in
+      let enum = match !ty with Enum e -> e | _ -> temp_enum in
+      unify loc mode ty temp_ty;
       TConst (Int b, Some enum)
   | Enum_string (loc, s) ->
-      let new_enum =
+      let temp_enum =
         match mode with
         | Destructure_expand -> Ty.Enum.string_singleton s `Closed
         | Construct_var | Construct_literal -> Ty.Enum.string_singleton s `Open
       in
-      let new_ty = ref (Ty.Enum new_enum) in
-      let enum = match !ty with Enum e -> e | _ -> new_enum in
-      unify loc mode ty new_ty;
+      let temp_ty = ref (Ty.Enum temp_enum) in
+      let enum = match !ty with Enum e -> e | _ -> temp_enum in
+      unify loc mode ty temp_ty;
       TConst (String s, Some enum)
   | Enum_int (loc, i) ->
-      let new_enum =
+      let temp_enum =
         match mode with
         | Destructure_expand -> Ty.Enum.int_singleton i `Closed
         | Construct_var | Construct_literal -> Ty.Enum.int_singleton i `Open
       in
-      let new_ty = ref (Ty.Enum new_enum) in
-      let enum = match !ty with Enum e -> e | _ -> new_enum in
-      unify loc mode ty new_ty;
+      let temp_ty = ref (Ty.Enum temp_enum) in
+      let enum = match !ty with Enum e -> e | _ -> temp_enum in
+      unify loc mode ty temp_ty;
       TConst (Int i, Some enum)
   | Nullable (loc, pat) ->
       let tyvar = match !ty with Nullable ty -> ty | _ -> Ty.unknown () in
@@ -665,62 +671,57 @@ let rec make_pat var_action mode ty = function
       in
       make_list ~tl var_action mode tyvar l
   | Tuple (loc, l) ->
-      let new_tyvars = List.map unknown l in
-      let tyvars = match !ty with Tuple tys -> tys | _ -> new_tyvars in
+      let temp_tyvars = List.map unknown l in
+      let tyvars = match !ty with Tuple tys -> tys | _ -> temp_tyvars in
       unify loc mode ty (Ty.tuple tyvars);
       TTuple (List.map2 (make_pat var_action mode) tyvars l)
   | Record (loc, r) -> (
       match assoc_to_record r with
       | Untagged m ->
-          let new_tyvars = Map.String.map unknown m |> ref in
-          let tyvars = match !ty with Record tys -> tys | _ -> new_tyvars in
-          unify loc mode ty (Ty.internal_record new_tyvars);
+          let temp_tyvars = Map.String.map unknown m |> ref in
+          let tyvars = match !ty with Record tys -> tys | _ -> temp_tyvars in
+          unify loc mode ty (Ty.internal_record temp_tyvars);
           let r = make_record var_action loc mode !tyvars m in
           TRecord (None, r, tyvars)
       | Tagged (k, v, m) ->
-          let new_tyvars = Map.String.map unknown m |> ref in
           let row =
             match mode with
             | Destructure_expand -> `Closed
             | Construct_literal | Construct_var -> `Open
           in
           let tyvars =
-            match !ty with
-            | Union (_, enum) -> (
-                let tyvars =
-                  match (v, enum) with
-                  | (Tag_int (_, i) | Tag_bool (_, i)), { cases = Int cases; _ }
-                    ->
-                      Map.Int.find_opt i cases
-                  | Tag_string (_, s), { cases = String cases; _ } ->
-                      Map.String.find_opt s cases
-                  | _ -> None
-                in
-                match tyvars with Some tv -> tv | None -> new_tyvars)
-            | _ -> new_tyvars
+            try
+              match (v, !ty) with
+              | ( (Tag_int (_, i) | Tag_bool (_, i)),
+                  Union (_, { cases = Int cases; _ }) ) ->
+                  Map.Int.find i cases
+              | Tag_string (_, s), Union (_, { cases = String cases; _ }) ->
+                  Map.String.find s cases
+              | _ -> raise_notrace Not_found
+            with Not_found -> Map.String.map unknown m |> ref
           in
-          let tag, new_enum =
+          let tag, temp_enum =
             match v with
             | Tag_int (_, i) -> (C.Int i, Ty.Union.int_singleton i tyvars row)
             | Tag_bool (_, i) -> (C.Int i, Ty.Union.bool_singleton i tyvars row)
             | Tag_string (_, s) ->
                 (C.String s, Ty.Union.string_singleton s tyvars row)
           in
-          unify loc mode ty (ref (Ty.Union (k, new_enum)));
+          let enum = match !ty with Union (_, e) -> e | _ -> temp_enum in
+          unify loc mode ty (ref (Ty.Union (k, temp_enum)));
           let r = make_record var_action loc mode !tyvars m in
-          TRecord (Some (k, tag, new_enum), r, tyvars))
+          TRecord (Some (k, tag, enum), r, tyvars))
   | Dict (loc, m) ->
       let m = assoc_to_map m in
-      let new_kys =
-        ref
-          (Map.String.fold (fun k _ s -> Set.String.add k s) m Set.String.empty)
+      let temp_kys =
+        Map.String.to_seq m |> Seq.map fst |> Set.String.of_seq |> ref
       in
       let tyvar, kys =
         match !ty with
         | Dict (ty, ks) -> (ty, ks)
-        | _ -> (Ty.unknown (), new_kys)
+        | _ -> (Ty.unknown (), temp_kys)
       in
-      unify loc mode ty (Ty.internal_dict_keys tyvar new_kys);
+      unify loc mode ty (Ty.internal_dict_keys tyvar temp_kys);
       let d = Map.String.map (make_pat var_action mode tyvar) m in
       TDict (d, kys)
   | Var (loc, "_") ->

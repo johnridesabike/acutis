@@ -1088,6 +1088,38 @@ This pattern-matching is not exhaustive.
 Here's an example of a pattern which is not matched:
   {@kind: "anonymous", books: _}
 
+Parital matching with enums, closed
+---
+File "<test>", 1:4-4:10
+Matching error.
+This pattern-matching is not exhaustive.
+Here's an example of a pattern which is not matched:
+  _, @1
+
+Parital matching with unions, closed
+---
+File "<test>", 1:4-4:10
+Matching error.
+This pattern-matching is not exhaustive.
+Here's an example of a pattern which is not matched:
+  _, {@tag: 1, a: _}
+
+Parital matching with enums, open
+---
+File "<test>", 1:4-5:10
+Matching error.
+This pattern-matching is not exhaustive.
+Here's an example of a pattern which is not matched:
+  _, _
+
+Parital matching with unions, open
+---
+File "<test>", 1:4-5:10
+Matching error.
+This pattern-matching is not exhaustive.
+Here's an example of a pattern which is not matched:
+  _, _
+
 Both nil and cons paths fail to merge into a wildcard.
 ---
 File "<test>", 6:9-6:19

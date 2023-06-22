@@ -53,7 +53,7 @@ Cases are sorted correctly
                  (if_match (end (leaf (names ()) (exit 0))))
                  (next ())))))))))))
        (wildcard (end (leaf (names ()) (exit 2))))
-       (debug_row open)))
+       (check_cases ())))
      (exits ((0 ((text " "))) (1 ((text " "))) (2 ((text "\n")))))))
    (text "\n"))
 
@@ -87,7 +87,7 @@ A basic decision tree works
                  (next ())))
                (wildcard
                 (end (leaf (names (("_a" 2) ("_b" 3) ("_c" 4))) (exit 4))))
-               (debug_row open)))
+               (check_cases ())))
              (next
               (case
                (data 21)
@@ -102,14 +102,14 @@ A basic decision tree works
                    (next ())))
                  (wildcard
                   (end (leaf (names (("_a" 2) ("_b" 3) ("_c" 4))) (exit 4))))
-                 (debug_row open)))
+                 (check_cases ())))
                (next ())))))
            (wildcard
             (wildcard
              (key 2)
              (ids (4))
              (child (end (leaf (names (("_a" 2) ("_b" 3) ("_c" 4))) (exit 4))))))
-           (debug_row open)))
+           (check_cases ())))
          (next
           (case
            (data 30)
@@ -135,7 +135,7 @@ A basic decision tree works
                      (next ())))))
                  (wildcard
                   (end (leaf (names (("_a" 2) ("_b" 3) ("_c" 4))) (exit 4))))
-                 (debug_row open)))
+                 (check_cases ())))
                (next
                 (case
                  (data 31)
@@ -154,7 +154,7 @@ A basic decision tree works
                        (next ())))))
                    (wildcard
                     (end (leaf (names (("_a" 2) ("_b" 3) ("_c" 4))) (exit 4))))
-                   (debug_row open)))
+                   (check_cases ())))
                  (next ())))))
              (wildcard
               (switch
@@ -167,8 +167,8 @@ A basic decision tree works
                  (next ())))
                (wildcard
                 (end (leaf (names (("_a" 2) ("_b" 3) ("_c" 4))) (exit 4))))
-               (debug_row open)))
-             (debug_row open)))
+               (check_cases ())))
+             (check_cases ())))
            (next ())))))
        (wildcard
         (switch
@@ -188,15 +188,15 @@ A basic decision tree works
                (next ())))
              (wildcard
               (end (leaf (names (("_a" 2) ("_b" 3) ("_c" 4))) (exit 4))))
-             (debug_row open)))
+             (check_cases ())))
            (next ())))
          (wildcard
           (wildcard
            (key 2)
            (ids (4))
            (child (end (leaf (names (("_a" 2) ("_b" 3) ("_c" 4))) (exit 4))))))
-         (debug_row open)))
-       (debug_row open)))
+         (check_cases ())))
+       (check_cases ())))
      (exits
       ((0 ((text "\n")))
        (1 ((text "\n")))
@@ -252,7 +252,7 @@ Nests merge correctly
                            (if_match (end (leaf (names ()) (exit 2))))
                            (next ())))))))
                      (wildcard (end (leaf (names ()) (exit 3))))
-                     (debug_row open))))
+                     (check_cases ()))))
                   (next ())))
                 (wildcard
                  (end
@@ -265,8 +265,8 @@ Nests merge correctly
                      (if_match (end (leaf (names ()) (exit 0))))
                      (next ())))
                    (wildcard (end (leaf (names ()) (exit 3))))
-                   (debug_row open))))
-                (debug_row open)))
+                   (check_cases ()))))
+                (check_cases ())))
               (next ())))
             (wildcard
              (wildcard
@@ -283,8 +283,8 @@ Nests merge correctly
                    (if_match (end (leaf (names ()) (exit 0))))
                    (next ())))
                  (wildcard (end (leaf (names ()) (exit 3))))
-                 (debug_row open))))))
-            (debug_row open))))
+                 (check_cases ()))))))
+            (check_cases ()))))
          (wildcard
           (switch
            (key 2)
@@ -295,7 +295,7 @@ Nests merge correctly
              (if_match (end (leaf (names ()) (exit 0))))
              (next ())))
            (wildcard ())
-           (debug_row open)))))))
+           (check_cases ())))))))
      (exits
       ((0 ((text "\n"))) (1 ((text "\n"))) (2 ((text "\n"))) (3 ((text "\n")))))))
    (text "\n"))
@@ -354,16 +354,16 @@ Wildcards merge after nests correctly
                                (next ())))))
                            (wildcard
                             (end (leaf (names (("_y" 1) ("_z" 2))) (exit 2))))
-                           (debug_row open))))
+                           (check_cases ()))))
                         (next ())))
                       (wildcard ())
-                      (debug_row open))))
+                      (check_cases ()))))
                    (next ())))
                  (wildcard ())
-                 (debug_row open)))
+                 (check_cases ())))
                (next ())))
              (wildcard ())
-             (debug_row open))))
+             (check_cases ()))))
           (wildcard ()))))
        (wildcard
         (switch
@@ -375,7 +375,7 @@ Wildcards merge after nests correctly
            (if_match (end (leaf (names (("_x" 0))) (exit 0))))
            (next ())))
          (wildcard (end (leaf (names (("_y" 1) ("_z" 2))) (exit 2))))
-         (debug_row open)))))
+         (check_cases ())))))
      (exits ((0 ((text "\n"))) (1 ((text "\n"))) (2 ((text "\n")))))))
    (text "\n"))
 
@@ -431,7 +431,7 @@ A big list pattern works
            (if_match (end (leaf (names (("_y" 1))) (exit 3))))
            (next ())))
          (wildcard (end (leaf (names ()) (exit 4))))
-         (debug_row open)))
+         (check_cases ())))
        (cons
         (nest
          (key 0)
@@ -487,7 +487,7 @@ A big list pattern works
                                     (end (leaf (names (("_y" 1))) (exit 3))))
                                    (next ())))))))
                              (wildcard (end (leaf (names ()) (exit 4))))
-                             (debug_row open)))))
+                             (check_cases ())))))
                          (cons
                           (wildcard
                            (key 1)
@@ -510,10 +510,10 @@ A big list pattern works
                                     (end (leaf (names (("_y" 1))) (exit 3))))
                                    (next ())))))
                                (wildcard (end (leaf (names ()) (exit 4))))
-                               (debug_row open)))))))))
+                               (check_cases ())))))))))
                        (next ())))
                      (wildcard ())
-                     (debug_row open))))
+                     (check_cases ()))))
                   (wildcard ())))))
               (next
                (case
@@ -537,11 +537,11 @@ A big list pattern works
                          (if_match (end (leaf (names (("_y" 1))) (exit 3))))
                          (next ())))))
                      (wildcard (end (leaf (names ()) (exit 4))))
-                     (debug_row open))))
+                     (check_cases ()))))
                   (cons ())))
                 (next ())))))
             (wildcard ())
-            (debug_row open))))
+            (check_cases ()))))
          (wildcard
           (switch
            (key 1)
@@ -552,7 +552,7 @@ A big list pattern works
              (if_match (end (leaf (names (("_y" 1))) (exit 3))))
              (next ())))
            (wildcard (end (leaf (names ()) (exit 4))))
-           (debug_row open)))))))
+           (check_cases ())))))))
      (exits
       ((0 ((text "\n")))
        (1 ((text "\n")))
@@ -596,10 +596,10 @@ Record fields sort correctly
                      (if_match (end (leaf (names ()) (exit 0))))
                      (next ())))
                    (wildcard (end (leaf (names ()) (exit 2))))
-                   (debug_row open))))
+                   (check_cases ()))))
                 (next ())))
               (wildcard ())
-              (debug_row open)))
+              (check_cases ())))
             (next
              (case
               (data 20)
@@ -621,13 +621,13 @@ Record fields sort correctly
                        (if_match (end (leaf (names ()) (exit 1))))
                        (next ())))
                      (wildcard (end (leaf (names ()) (exit 2))))
-                     (debug_row open))))
+                     (check_cases ()))))
                   (next ())))
                 (wildcard ())
-                (debug_row open)))
+                (check_cases ())))
               (next ())))))
           (wildcard ())
-          (debug_row open))))
+          (check_cases ()))))
        (wildcard
         (wildcard (key 1) (ids ()) (child (end (leaf (names ()) (exit 2))))))))
      (exits ((0 ((text "\n"))) (1 ((text "\n"))) (2 ((text "\n")))))))
@@ -668,7 +668,7 @@ New fields expand existing rows
                 (key "c")
                 (ids ())
                 (child (end (end (leaf (names ()) (exit 1)))))))
-              (debug_row open)))
+              (check_cases ())))
             (next ())))
           (wildcard
            (switch
@@ -693,9 +693,9 @@ New fields expand existing rows
                 (if_match (end (end (leaf (names ()) (exit 2)))))
                 (next ())))
               (wildcard ())
-              (debug_row open)))
-            (debug_row open)))
-          (debug_row open))))
+              (check_cases ())))
+            (check_cases ())))
+          (check_cases ()))))
        (wildcard (end (leaf (names (("_x" 0))) (exit 3))))))
      (exits
       ((0 ((text "\n"))) (1 ((text "\n"))) (2 ((text "\n"))) (3 ((text "\n")))))))
@@ -733,7 +733,7 @@ Dictionaries merge correctly
                 (next ())))
               (next ())))
             (wildcard ())
-            (debug_row open)))
+            (check_cases ())))
           (next
            (optional
             (child
@@ -755,11 +755,11 @@ Dictionaries merge correctly
                       (if_match (end (end (leaf (names ()) (exit 1)))))
                       (next ())))
                     (wildcard ())
-                    (debug_row open)))
+                    (check_cases ())))
                   (next ())))
                 (next ())))
               (wildcard ())
-              (debug_row open)))
+              (check_cases ())))
             (next ()))))))
        (wildcard (end (leaf (names ()) (exit 2))))))
      (exits

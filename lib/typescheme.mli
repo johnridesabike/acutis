@@ -12,7 +12,6 @@
 
 type row = [ `Closed | `Open ]
 
-val equal_row : row -> row -> bool
 val row_to_sexp : row -> Sexp.t
 
 type sum_extra = Not_bool | Bool

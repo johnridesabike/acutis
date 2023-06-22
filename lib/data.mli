@@ -13,6 +13,8 @@
 module Const : sig
   type t = Int of int | String of string | Float of float
 
+  val of_int : int -> t
+  val of_string : string -> t
   val equal : t -> t -> bool
   val compare : t -> t -> int
   val to_sexp : t -> Sexp.t

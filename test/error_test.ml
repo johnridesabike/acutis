@@ -399,6 +399,32 @@ let () =
         {%~  with {@kind: \"anonymous\", books: []} %}\n\
        \  This author hasn't published any books.\n\
         {% /match %}");
+  print_error "Parital matching with enums, closed"
+    (render
+       "{% match a, b with 1, @1 %}\n\
+        {% with 2, @2 %}\n\
+        {% with _, @3 %}\n\
+        {% /match %}");
+  print_error "Parital matching with unions, closed"
+    (render
+       "{% match a, b with 1, {@tag: 1, a} %} {{ a }}\n\
+        {% with 2, {@tag: 2, b} %} {{ b }}\n\
+        {% with _, {@tag: 3, c} %} {{ c }}\n\
+        {% /match %}");
+  print_error "Parital matching with enums, open"
+    (render
+       "{% match a, b with 1, @1 %}\n\
+        {% with 2, _ %}\n\
+        {% with _, @1 %}\n\
+        {% with _, @2 %}\n\
+        {% /match %}");
+  print_error "Parital matching with unions, open"
+    (render
+       "{% match a, b with 1, {@tag: 1, a} %} {{ a }}\n\
+        {% with 2, _ %} \n\
+        {% with _, {@tag: 2, b} %} {{ b }}\n\
+        {% with _, {@tag: 3, c} %} {{ c }}\n\
+        {% /match %}");
 
   print_error "Both nil and cons paths fail to merge into a wildcard."
     (render

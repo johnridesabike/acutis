@@ -11,6 +11,9 @@
 module T = Typechecker
 module Ty = Typescheme
 module Const = Data.Const
+module ConstSet = Set.Make (Const)
+
+type internal_check_cases = ConstSet.t option
 
 type ('leaf, 'key) tree =
   | Switch of {
@@ -18,7 +21,7 @@ type ('leaf, 'key) tree =
       ids : Set.Int.t;
       cases : ('leaf, 'key) switchcase;
       wildcard : ('leaf, 'key) tree option;
-      debug_row : Ty.row;
+      check_cases : internal_check_cases;
     }
   | Nest of {
       key : 'key;
@@ -76,11 +79,11 @@ let rec equal_tree :
           bool =
  fun equal_leaf equal_key a b ->
   match (a, b) with
-  | Switch a, Switch { key; ids; cases; wildcard; debug_row } ->
+  | Switch a, Switch { key; ids; cases; wildcard; check_cases } ->
       equal_key a.key key && Set.Int.equal a.ids ids
       && equal_switchcase equal_leaf equal_key a.cases cases
       && Option.equal (equal_tree equal_leaf equal_key) a.wildcard wildcard
-      && Ty.equal_row a.debug_row debug_row
+      && Option.equal ConstSet.equal a.check_cases check_cases
   | Nest a, Nest { key; ids; child; wildcard } ->
       equal_key a.key key && Set.Int.equal a.ids ids
       && equal_nest equal_leaf equal_key a.child child
@@ -95,14 +98,7 @@ let rec equal_tree :
   | End a, End b -> equal_leaf a b
   | _ -> false
 
-and equal_nest :
-      'leaf 'key.
-      ('leaf -> 'leaf -> bool) ->
-      ('key -> 'key -> bool) ->
-      ('leaf, 'key) nest ->
-      ('leaf, 'key) nest ->
-      bool =
- fun equal_leaf equal_key a b ->
+and equal_nest equal_leaf equal_key a b =
   match (a, b) with
   | Int_keys a, Int_keys b ->
       equal_tree (equal_tree equal_leaf equal_key) Int.equal a b
@@ -110,14 +106,7 @@ and equal_nest :
       equal_tree (equal_tree equal_leaf equal_key) String.equal a b
   | _ -> false
 
-and equal_switchcase :
-      'leaf 'key.
-      ('leaf -> 'leaf -> bool) ->
-      ('key -> 'key -> bool) ->
-      ('leaf, 'key) switchcase ->
-      ('leaf, 'key) switchcase ->
-      bool =
- fun equal_leaf equal_key a { data; if_match; next } ->
+and equal_switchcase equal_leaf equal_key a { data; if_match; next } =
   Const.equal a.data data
   && equal_tree equal_leaf equal_key a.if_match if_match
   && Option.equal (equal_switchcase equal_leaf equal_key) a.next next
@@ -596,14 +585,32 @@ let merge = merge Z
 type bindings = { next_id : unit -> int; names : int Map.String.t }
 type ('a, 'k) cont = bindings -> ('a, 'k) tree
 
-let of_const key data if_match enum =
+let constset_of_enum = function
+  | None | Some Ty.{ row = `Open; _ } -> None
+  | Some Ty.{ row = `Closed; cases = Enum.Int s; _ } ->
+      Some (Set.Int.to_seq s |> Seq.map Const.of_int |> ConstSet.of_seq)
+  | Some Ty.{ row = `Closed; cases = Enum.String s; _ } ->
+      Some (Set.String.to_seq s |> Seq.map Const.of_string |> ConstSet.of_seq)
+
+let constset_of_union = function
+  | Ty.{ row = `Open; _ } -> None
+  | Ty.{ row = `Closed; cases = Union.Int s; _ } ->
+      Some
+        (Map.Int.to_seq s |> Seq.map fst |> Seq.map Const.of_int
+       |> ConstSet.of_seq)
+  | Ty.{ row = `Closed; cases = Union.String s; _ } ->
+      Some
+        (Map.String.to_seq s |> Seq.map fst |> Seq.map Const.of_string
+       |> ConstSet.of_seq)
+
+let of_const key data if_match check_cases =
   Switch
     {
       key;
       ids = Set.Int.empty;
       cases = { data; if_match; next = None };
-      debug_row = (match enum with Some { Ty.row; _ } -> row | None -> `Open);
       wildcard = None;
+      check_cases;
     }
 
 let rec of_tpat :
@@ -619,7 +626,7 @@ let rec of_tpat :
       Construct { key; ids = Set.Int.empty; nil = None; cons = Some child }
   | TConstruct (_, None) ->
       Construct { key; ids = Set.Int.empty; nil = Some (k b); cons = None }
-  | TConst (data, enum) -> of_const key data (k b) enum
+  | TConst (data, enum) -> of_const key data (k b) (constset_of_enum enum)
   | TTuple l ->
       let child = Int_keys (of_list ~key:0 b (fun b -> End (k b)) l) in
       Nest { key; ids = Set.Int.empty; child; wildcard = None }
@@ -635,7 +642,8 @@ let rec of_tpat :
       in
       let child =
         match tag with
-        | Some (key, data, union) -> of_const key data child (Some union)
+        | Some (key, data, union) ->
+            of_const key data child (constset_of_union union)
         | None -> child
       in
       Nest
@@ -867,21 +875,30 @@ module ParMatch = struct
         Error.internal __POS__
           "Tried to analyze a construct with neither nil nor cons."
     | Switch { wildcard = Some wildcard; _ } -> exhaustive (check n wildcard)
-    | Switch { cases; wildcard = None; debug_row = `Open; _ } ->
+    | Switch { cases; wildcard = None; check_cases = None; _ } ->
         let r = check n cases.if_match in
         { r with flag = Partial; pats = Any :: r.pats }
-    | Switch { cases; wildcard = None; debug_row = `Closed; _ } ->
-        let rec aux { data; if_match; next } =
+    | Switch { cases; wildcard = None; check_cases = Some s; _ } ->
+        let rec aux s { data; if_match; next } =
           match check n if_match with
           | { flag = Partial; pats; after_nest } ->
               { flag = Partial; pats = Const data :: pats; after_nest }
           | { flag = Exhaustive; pats; after_nest } -> (
+              let s = ConstSet.remove data s in
               match next with
-              | None ->
-                  { flag = Exhaustive; pats = Const data :: pats; after_nest }
-              | Some case -> aux case)
+              | None -> (
+                  match ConstSet.choose_opt s with
+                  | None ->
+                      {
+                        flag = Exhaustive;
+                        pats = Const data :: pats;
+                        after_nest;
+                      }
+                  | Some data ->
+                      { flag = Partial; pats = Const data :: pats; after_nest })
+              | Some case -> aux s case)
         in
-        aux cases
+        aux s cases
     | Optional { child = Some x; _ }
     | Optional { child = None; next = Some x; _ } ->
         check n x
@@ -903,7 +920,7 @@ let rec tree_to_sexp :
           ('leaf -> Sexp.t) -> ('key -> Sexp.t) -> ('leaf, 'key) tree -> Sexp.t
     =
  fun leaf_f key_f -> function
-  | Switch { key; ids; cases; wildcard; debug_row } ->
+  | Switch { key; ids; cases; wildcard; check_cases } ->
       Sexp.make "switch"
         [
           Sexp.make "key" [ key_f key ];
@@ -911,7 +928,12 @@ let rec tree_to_sexp :
           Sexp.make "cases" [ switchcase_to_sexp leaf_f key_f cases ];
           Sexp.make "wildcard"
             [ Sexp.option (tree_to_sexp leaf_f key_f) wildcard ];
-          Sexp.make "debug_row" [ Ty.row_to_sexp debug_row ];
+          Sexp.make "check_cases"
+            [
+              Sexp.option
+                (fun s -> ConstSet.to_seq s |> Sexp.of_seq Const.to_sexp)
+                check_cases;
+            ];
         ]
   | Nest { key; ids; child; wildcard } ->
       Sexp.make "nest"
@@ -945,10 +967,7 @@ let rec tree_to_sexp :
         ]
   | End leaf -> Sexp.make "end" [ leaf_f leaf ]
 
-and nest_to_sexp :
-      'leaf 'key.
-      ('leaf -> Sexp.t) -> ('key -> Sexp.t) -> ('leaf, 'key) nest -> Sexp.t =
- fun leaf_f key_f -> function
+and nest_to_sexp leaf_f key_f = function
   | Int_keys tree ->
       Sexp.make "int_keys"
         [ tree_to_sexp (tree_to_sexp leaf_f key_f) Sexp.int tree ]
@@ -956,13 +975,7 @@ and nest_to_sexp :
       Sexp.make "string_keys"
         [ tree_to_sexp (tree_to_sexp leaf_f key_f) Sexp.string tree ]
 
-and switchcase_to_sexp :
-      'leaf 'key.
-      ('leaf -> Sexp.t) ->
-      ('key -> Sexp.t) ->
-      ('leaf, 'key) switchcase ->
-      Sexp.t =
- fun leaf_f key_f { data; if_match; next } ->
+and switchcase_to_sexp leaf_f key_f { data; if_match; next } =
   Sexp.make "case"
     [
       Sexp.make "data" [ Data.Const.to_sexp data ];
