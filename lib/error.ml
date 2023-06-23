@@ -181,7 +181,7 @@ let duplicate_name s =
   in
   raise @@ Acutis_error s
 
-let pp_sep ppf () = F.fprintf ppf " ->@ "
+let pp_sep ppf () = F.fprintf ppf "@ -> "
 
 let cycle stack =
   let s =
@@ -207,7 +207,6 @@ module DecodePath = struct
   let nullable { name; path } = { name; path = Nullable :: path }
   let index i { name; path } = { name; path = Index i :: path }
   let key k { name; path } = { name; path = Key k :: path }
-  let pp_sep ppf () = F.fprintf ppf "@ -> "
 
   let pp_path ppf = function
     | Nullable -> F.pp_print_string ppf "nullable"

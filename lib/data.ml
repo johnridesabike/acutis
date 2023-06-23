@@ -13,14 +13,15 @@ module Ty = Typescheme
 module Const = struct
   type t = Int of int | String of string | Float of float
 
-  let of_int i = Int i
-  let of_string i = String i
+  let int i = Int i
+  let string s = String s
+  let float f = Float f
 
   let compare a b =
     match (a, b) with
-    | Int a, Int b -> compare a b
-    | String a, String b -> compare a b
-    | Float a, Float b -> compare a b
+    | Int a, Int b -> Int.compare a b
+    | String a, String b -> String.compare a b
+    | Float a, Float b -> Float.compare a b
     | Int _, (String _ | Float _) | String _, Float _ -> -1
     | String _, Int _ | Float _, (Int _ | String _) -> 1
 
@@ -48,17 +49,16 @@ let string s = Const (String s)
 let float f = Const (Float f)
 let some x = Array [| x |]
 let dict m = Dict m
-let tuple a = Array a
+let array a = Array a
 let list_cons hd tl = Array [| hd; tl |]
+let list_empty = null
 
 let list_rev =
   let rec aux acc = function
     | Array [| hd; tl |] -> aux (Array [| hd; acc |]) tl
     | _ -> acc
   in
-  fun l -> aux Nil l
-
-let list_empty = Nil
+  fun l -> aux list_empty l
 
 let rec map f = function
   | Other x -> Other (f x)

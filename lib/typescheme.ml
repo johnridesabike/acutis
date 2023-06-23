@@ -29,10 +29,7 @@ let equal_sum_extra a b =
 
 let pp_sum_sep ppf () = F.fprintf ppf " |@ "
 let pp_row ppf = function `Closed -> () | `Open -> F.fprintf ppf " |@ ..."
-
-let pp_sum_bool ppf = function
-  | 0 -> F.pp_print_string ppf "false"
-  | _ -> F.pp_print_string ppf "true"
+let pp_sum_bool ppf = function 0 -> Pp.false_ ppf | _ -> Pp.true_ ppf
 
 let pp_sum ppf pp_case cases row =
   F.fprintf ppf "@[<hv 0>";

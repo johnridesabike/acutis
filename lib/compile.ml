@@ -9,49 +9,34 @@
 (**************************************************************************)
 
 let parse ~fname lexbuf =
+  Lexing.set_filename lexbuf fname;
   let state = Lexer.make_state () in
-  lexbuf.Lexing.lex_curr_p <-
-    { lexbuf.Lexing.lex_curr_p with pos_fname = fname };
   try Parser.acutis (Lexer.acutis state) lexbuf with
   | Lexer.Error -> Error.lex_error lexbuf
   | Parser.Error i -> Error.parse_error i lexbuf
 
 let parse_interface ~fname lexbuf =
+  Lexing.set_filename lexbuf fname;
   let state = Lexer.make_state_interface () in
-  lexbuf.Lexing.lex_curr_p <-
-    { lexbuf.Lexing.lex_curr_p with pos_fname = fname };
   try Parser.interface_standalone (Lexer.acutis state) lexbuf with
   | Lexer.Error -> Error.lex_error lexbuf
   | Parser.Error i -> Error.parse_error i lexbuf
 
-module StringExtra = struct
-  (* The [ltrim] and [rtrim] functions are vendored from the Containers library.
-     https://github.com/c-cube/ocaml-containers/blob/70703b351235b563f060ef494461e678e896da49/src/core/CCString.ml
-  *)
-  module S = String
+let is_space = function ' ' | '\012' | '\n' | '\r' | '\t' -> true | _ -> false
 
-  let drop_while f s =
-    let i = ref 0 in
-    while !i < S.length s && f (S.unsafe_get s !i) do
-      incr i
-    done;
-    if !i > 0 then S.sub s !i (S.length s - !i) else s
+let ltrim s =
+  let i = ref 0 in
+  while !i < String.length s && is_space (String.unsafe_get s !i) do
+    incr i
+  done;
+  if !i > 0 then String.sub s !i (String.length s - !i) else s
 
-  let rdrop_while f s =
-    let i = ref (S.length s - 1) in
-    while !i >= 0 && f (S.unsafe_get s !i) do
-      decr i
-    done;
-    if !i < S.length s - 1 then S.sub s 0 (!i + 1) else s
-
-  (* notion of whitespace for trim *)
-  let is_space = function
-    | ' ' | '\012' | '\n' | '\r' | '\t' -> true
-    | _ -> false
-
-  let ltrim s = drop_while is_space s
-  let rtrim s = rdrop_while is_space s
-end
+let rtrim s =
+  let i = ref (String.length s - 1) in
+  while !i >= 0 && is_space (String.unsafe_get s !i) do
+    decr i
+  done;
+  if !i < String.length s - 1 then String.sub s 0 (!i + 1) else s
 
 type escape = Ast.escape = No_escape | Escape
 
@@ -91,7 +76,7 @@ let rec make_data = function
   | TConstruct (_, None) -> Data.null
   | TTuple l ->
       let a = Array.of_list l |> Array.map make_data in
-      Data.tuple a
+      Data.array a
   | TRecord (Some (k, v, _), x, _) ->
       Map.String.map make_data x |> Map.String.add k (Data.const v) |> Data.dict
   | TRecord (None, x, _) | TDict (x, _) ->
@@ -106,8 +91,8 @@ and make_nodes l =
   List.filter_map
     (function
       | Typechecker.TText (s, No_trim, No_trim) -> text s
-      | TText (s, Trim, No_trim) -> text (StringExtra.ltrim s)
-      | TText (s, No_trim, Trim) -> text (StringExtra.rtrim s)
+      | TText (s, Trim, No_trim) -> text (ltrim s)
+      | TText (s, No_trim, Trim) -> text (rtrim s)
       | TText (s, Trim, Trim) -> text (String.trim s)
       | TEcho (nullables, fmt, default, esc) ->
           Some (Echo (nullables, fmt, default, esc))

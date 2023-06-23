@@ -10,5 +10,5 @@
 
 type 'a t = 'a
 
-let return a = a
+let return = Fun.id
 let bind a f = f a

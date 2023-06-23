@@ -18,7 +18,7 @@ Basic tree
             (key 0)
             (ids (0))
             (child (end (end (leaf (names (("_a" 0))) (exit 0))))))))
-         (wildcard ())))))
+         (wildcard none)))))
      (exits ((0 ((text " "))) (1 ((text " ")))))))
    (text "\n"))
 
@@ -51,9 +51,9 @@ Cases are sorted correctly
                 (case
                  (data 30)
                  (if_match (end (leaf (names ()) (exit 0))))
-                 (next ())))))))))))
+                 (next none)))))))))))
        (wildcard (end (leaf (names ()) (exit 2))))
-       (check_cases ())))
+       (check_cases none)))
      (exits ((0 ((text " "))) (1 ((text " "))) (2 ((text "\n")))))))
    (text "\n"))
 
@@ -84,10 +84,10 @@ A basic decision tree works
                 (case
                  (data 12)
                  (if_match (end (leaf (names ()) (exit 0))))
-                 (next ())))
+                 (next none)))
                (wildcard
                 (end (leaf (names (("_a" 2) ("_b" 3) ("_c" 4))) (exit 4))))
-               (check_cases ())))
+               (check_cases none)))
              (next
               (case
                (data 21)
@@ -99,17 +99,17 @@ A basic decision tree works
                   (case
                    (data 22)
                    (if_match (end (leaf (names (("_x" 0))) (exit 1))))
-                   (next ())))
+                   (next none)))
                  (wildcard
                   (end (leaf (names (("_a" 2) ("_b" 3) ("_c" 4))) (exit 4))))
-                 (check_cases ())))
-               (next ())))))
+                 (check_cases none)))
+               (next none)))))
            (wildcard
             (wildcard
              (key 2)
              (ids (4))
              (child (end (leaf (names (("_a" 2) ("_b" 3) ("_c" 4))) (exit 4))))))
-           (check_cases ())))
+           (check_cases none)))
          (next
           (case
            (data 30)
@@ -132,10 +132,10 @@ A basic decision tree works
                     (case
                      (data 42)
                      (if_match (end (leaf (names (("_y" 1))) (exit 3))))
-                     (next ())))))
+                     (next none)))))
                  (wildcard
                   (end (leaf (names (("_a" 2) ("_b" 3) ("_c" 4))) (exit 4))))
-                 (check_cases ())))
+                 (check_cases none)))
                (next
                 (case
                  (data 31)
@@ -151,11 +151,11 @@ A basic decision tree works
                       (case
                        (data 42)
                        (if_match (end (leaf (names (("_y" 1))) (exit 3))))
-                       (next ())))))
+                       (next none)))))
                    (wildcard
                     (end (leaf (names (("_a" 2) ("_b" 3) ("_c" 4))) (exit 4))))
-                   (check_cases ())))
-                 (next ())))))
+                   (check_cases none)))
+                 (next none)))))
              (wildcard
               (switch
                (key 2)
@@ -164,12 +164,12 @@ A basic decision tree works
                 (case
                  (data 42)
                  (if_match (end (leaf (names (("_y" 1))) (exit 3))))
-                 (next ())))
+                 (next none)))
                (wildcard
                 (end (leaf (names (("_a" 2) ("_b" 3) ("_c" 4))) (exit 4))))
-               (check_cases ())))
-             (check_cases ())))
-           (next ())))))
+               (check_cases none)))
+             (check_cases none)))
+           (next none)))))
        (wildcard
         (switch
          (key 1)
@@ -185,18 +185,18 @@ A basic decision tree works
               (case
                (data 22)
                (if_match (end (leaf (names (("_x" 0))) (exit 1))))
-               (next ())))
+               (next none)))
              (wildcard
               (end (leaf (names (("_a" 2) ("_b" 3) ("_c" 4))) (exit 4))))
-             (check_cases ())))
-           (next ())))
+             (check_cases none)))
+           (next none)))
          (wildcard
           (wildcard
            (key 2)
            (ids (4))
            (child (end (leaf (names (("_a" 2) ("_b" 3) ("_c" 4))) (exit 4))))))
-         (check_cases ())))
-       (check_cases ())))
+         (check_cases none)))
+       (check_cases none)))
      (exits
       ((0 ((text "\n")))
        (1 ((text "\n")))
@@ -250,10 +250,10 @@ Nests merge correctly
                           (case
                            (data 32)
                            (if_match (end (leaf (names ()) (exit 2))))
-                           (next ())))))))
+                           (next none)))))))
                      (wildcard (end (leaf (names ()) (exit 3))))
-                     (check_cases ()))))
-                  (next ())))
+                     (check_cases none))))
+                  (next none)))
                 (wildcard
                  (end
                   (switch
@@ -263,11 +263,11 @@ Nests merge correctly
                     (case
                      (data 12)
                      (if_match (end (leaf (names ()) (exit 0))))
-                     (next ())))
+                     (next none)))
                    (wildcard (end (leaf (names ()) (exit 3))))
-                   (check_cases ()))))
-                (check_cases ())))
-              (next ())))
+                   (check_cases none))))
+                (check_cases none)))
+              (next none)))
             (wildcard
              (wildcard
               (key 1)
@@ -281,10 +281,10 @@ Nests merge correctly
                   (case
                    (data 12)
                    (if_match (end (leaf (names ()) (exit 0))))
-                   (next ())))
+                   (next none)))
                  (wildcard (end (leaf (names ()) (exit 3))))
-                 (check_cases ()))))))
-            (check_cases ()))))
+                 (check_cases none))))))
+            (check_cases none))))
          (wildcard
           (switch
            (key 2)
@@ -293,9 +293,9 @@ Nests merge correctly
             (case
              (data 12)
              (if_match (end (leaf (names ()) (exit 0))))
-             (next ())))
-           (wildcard ())
-           (check_cases ())))))))
+             (next none)))
+           (wildcard none)
+           (check_cases none)))))))
      (exits
       ((0 ((text "\n"))) (1 ((text "\n"))) (2 ((text "\n"))) (3 ((text "\n")))))))
    (text "\n"))
@@ -351,20 +351,20 @@ Wildcards merge after nests correctly
                                (data 41)
                                (if_match
                                 (end (leaf (names (("_x" 0))) (exit 0))))
-                               (next ())))))
+                               (next none)))))
                            (wildcard
                             (end (leaf (names (("_y" 1) ("_z" 2))) (exit 2))))
-                           (check_cases ()))))
-                        (next ())))
-                      (wildcard ())
-                      (check_cases ()))))
-                   (next ())))
-                 (wildcard ())
-                 (check_cases ())))
-               (next ())))
-             (wildcard ())
-             (check_cases ()))))
-          (wildcard ()))))
+                           (check_cases none))))
+                        (next none)))
+                      (wildcard none)
+                      (check_cases none))))
+                   (next none)))
+                 (wildcard none)
+                 (check_cases none)))
+               (next none)))
+             (wildcard none)
+             (check_cases none))))
+          (wildcard none))))
        (wildcard
         (switch
          (key 1)
@@ -373,9 +373,9 @@ Wildcards merge after nests correctly
           (case
            (data 41)
            (if_match (end (leaf (names (("_x" 0))) (exit 0))))
-           (next ())))
+           (next none)))
          (wildcard (end (leaf (names (("_y" 1) ("_z" 2))) (exit 2))))
-         (check_cases ())))))
+         (check_cases none)))))
      (exits ((0 ((text "\n"))) (1 ((text "\n"))) (2 ((text "\n")))))))
    (text "\n"))
 
@@ -408,7 +408,7 @@ Different-sized lists merge correctly
                 (key 1)
                 (ids (2))
                 (child (end (end (leaf (names (("_x" 1) ("_y" 2))) (exit 2))))))))))))
-         (wildcard ())))))
+         (wildcard none)))))
      (exits ((0 ((text "\n"))) (1 ((text "\n"))) (2 ((text "\n")))))))
    (text "\n"))
 
@@ -429,9 +429,9 @@ A big list pattern works
           (case
            (data 42)
            (if_match (end (leaf (names (("_y" 1))) (exit 3))))
-           (next ())))
+           (next none)))
          (wildcard (end (leaf (names ()) (exit 4))))
-         (check_cases ())))
+         (check_cases none)))
        (cons
         (nest
          (key 0)
@@ -448,7 +448,7 @@ A big list pattern works
                (construct
                 (key 1)
                 (ids ())
-                (nil ())
+                (nil none)
                 (cons
                  (nest
                   (key 1)
@@ -485,9 +485,9 @@ A big list pattern works
                                    (data 42)
                                    (if_match
                                     (end (leaf (names (("_y" 1))) (exit 3))))
-                                   (next ())))))))
+                                   (next none)))))))
                              (wildcard (end (leaf (names ()) (exit 4))))
-                             (check_cases ())))))
+                             (check_cases none)))))
                          (cons
                           (wildcard
                            (key 1)
@@ -508,13 +508,13 @@ A big list pattern works
                                    (data 42)
                                    (if_match
                                     (end (leaf (names (("_y" 1))) (exit 3))))
-                                   (next ())))))
+                                   (next none)))))
                                (wildcard (end (leaf (names ()) (exit 4))))
-                               (check_cases ())))))))))
-                       (next ())))
-                     (wildcard ())
-                     (check_cases ()))))
-                  (wildcard ())))))
+                               (check_cases none)))))))))
+                       (next none)))
+                     (wildcard none)
+                     (check_cases none))))
+                  (wildcard none)))))
               (next
                (case
                 (data 30)
@@ -535,13 +535,13 @@ A big list pattern works
                         (case
                          (data 42)
                          (if_match (end (leaf (names (("_y" 1))) (exit 3))))
-                         (next ())))))
+                         (next none)))))
                      (wildcard (end (leaf (names ()) (exit 4))))
-                     (check_cases ()))))
-                  (cons ())))
-                (next ())))))
-            (wildcard ())
-            (check_cases ()))))
+                     (check_cases none))))
+                  (cons none)))
+                (next none)))))
+            (wildcard none)
+            (check_cases none))))
          (wildcard
           (switch
            (key 1)
@@ -550,9 +550,9 @@ A big list pattern works
             (case
              (data 42)
              (if_match (end (leaf (names (("_y" 1))) (exit 3))))
-             (next ())))
+             (next none)))
            (wildcard (end (leaf (names ()) (exit 4))))
-           (check_cases ())))))))
+           (check_cases none)))))))
      (exits
       ((0 ((text "\n")))
        (1 ((text "\n")))
@@ -594,12 +594,12 @@ Record fields sort correctly
                     (case
                      (data 12)
                      (if_match (end (leaf (names ()) (exit 0))))
-                     (next ())))
+                     (next none)))
                    (wildcard (end (leaf (names ()) (exit 2))))
-                   (check_cases ()))))
-                (next ())))
-              (wildcard ())
-              (check_cases ())))
+                   (check_cases none))))
+                (next none)))
+              (wildcard none)
+              (check_cases none)))
             (next
              (case
               (data 20)
@@ -619,15 +619,15 @@ Record fields sort correctly
                       (case
                        (data 22)
                        (if_match (end (leaf (names ()) (exit 1))))
-                       (next ())))
+                       (next none)))
                      (wildcard (end (leaf (names ()) (exit 2))))
-                     (check_cases ()))))
-                  (next ())))
-                (wildcard ())
-                (check_cases ())))
-              (next ())))))
-          (wildcard ())
-          (check_cases ()))))
+                     (check_cases none))))
+                  (next none)))
+                (wildcard none)
+                (check_cases none)))
+              (next none)))))
+          (wildcard none)
+          (check_cases none))))
        (wildcard
         (wildcard (key 1) (ids ()) (child (end (leaf (names ()) (exit 2))))))))
      (exits ((0 ((text "\n"))) (1 ((text "\n"))) (2 ((text "\n")))))))
@@ -662,14 +662,14 @@ New fields expand existing rows
                   (key "c")
                   (ids ())
                   (child (end (end (leaf (names ()) (exit 0)))))))
-                (next ())))
+                (next none)))
               (wildcard
                (wildcard
                 (key "c")
                 (ids ())
                 (child (end (end (leaf (names ()) (exit 1)))))))
-              (check_cases ())))
-            (next ())))
+              (check_cases none)))
+            (next none)))
           (wildcard
            (switch
             (key "b")
@@ -682,7 +682,7 @@ New fields expand existing rows
                 (key "c")
                 (ids ())
                 (child (end (end (leaf (names ()) (exit 0)))))))
-              (next ())))
+              (next none)))
             (wildcard
              (switch
               (key "c")
@@ -691,11 +691,11 @@ New fields expand existing rows
                (case
                 (data 30)
                 (if_match (end (end (leaf (names ()) (exit 2)))))
-                (next ())))
-              (wildcard ())
-              (check_cases ())))
-            (check_cases ())))
-          (check_cases ()))))
+                (next none)))
+              (wildcard none)
+              (check_cases none)))
+            (check_cases none)))
+          (check_cases none))))
        (wildcard (end (leaf (names (("_x" 0))) (exit 3))))))
      (exits
       ((0 ((text "\n"))) (1 ((text "\n"))) (2 ((text "\n"))) (3 ((text "\n")))))))
@@ -728,12 +728,12 @@ Dictionaries merge correctly
                   (ids (0))
                   (child
                    (optional
-                    (child ())
+                    (child none)
                     (next (end (end (leaf (names (("b" 0))) (exit 0)))))))))
-                (next ())))
-              (next ())))
-            (wildcard ())
-            (check_cases ())))
+                (next none)))
+              (next none)))
+            (wildcard none)
+            (check_cases none)))
           (next
            (optional
             (child
@@ -753,14 +753,14 @@ Dictionaries merge correctly
                      (case
                       (data 3)
                       (if_match (end (end (leaf (names ()) (exit 1)))))
-                      (next ())))
-                    (wildcard ())
-                    (check_cases ())))
-                  (next ())))
-                (next ())))
-              (wildcard ())
-              (check_cases ())))
-            (next ()))))))
+                      (next none)))
+                    (wildcard none)
+                    (check_cases none)))
+                  (next none)))
+                (next none)))
+              (wildcard none)
+              (check_cases none)))
+            (next none))))))
        (wildcard (end (leaf (names ()) (exit 2))))))
      (exits
       ((0 ((text " ") (echo () fmt_int (var "b") escape) (text "\n")))

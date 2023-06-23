@@ -13,11 +13,17 @@
 open Format
 
 val sep_comma : formatter -> unit -> unit
-(** Outputs [,@ ]. *)
+(** Prints [,@ ]. *)
 
 val syntax_string : formatter -> string -> unit
 (** Equivalent to the format string ["%S"]. *)
 
 val field : formatter -> string -> unit
-(** Outputs either [field] or ["string field"] depending on whether the input is
+(** Prints either [field] or ["string field"] depending on whether the input is
     a valid identifier. *)
+
+val true_ : formatter -> unit
+(** Prints [true]. *)
+
+val false_ : formatter -> unit
+(** Prints [false]. *)

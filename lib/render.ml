@@ -47,43 +47,36 @@ let rec make_match :
   | Construct { key; ids; nil; cons } -> (
       let data = get key args in
       let vars = bind_names data ids vars in
-      let child = if Data.is_null data then nil else cons in
-      match child with
+      match if Data.is_null data then nil else cons with
       | Some tree -> make_match args get vars tree
       | None -> raise_notrace Not_found)
-  | Nest { key; ids; child; wildcard } -> (
+  | Nest { key; ids; child; wildcard } ->
       let data = get key args in
       let vars = bind_names data ids vars in
-      let result =
+      let vars, tree =
         try
           match child with
           | Int_keys child ->
               let tuple = Data.get_tuple data in
-              Some (make_match tuple tuple_get vars child)
+              make_match tuple tuple_get vars child
           | String_keys child ->
               let dict = Data.get_dict data in
-              Some (make_match dict dict_get vars child)
-        with Not_found -> None
-      in
-      match result with
-      | Some (vars, tree) -> make_match args get vars tree
-      | None -> (
+              make_match dict dict_get vars child
+        with Not_found -> (
           match wildcard with
-          | Some tree -> make_match args get vars tree
-          | None -> raise_notrace Not_found))
-  | Optional { child; next } -> (
-      let result =
-        match child with
-        | None -> None
-        | Some t -> (
-            try Some (make_match args get vars t) with Not_found -> None)
-      in
-      match result with
-      | None -> (
-          match next with
-          | Some t -> make_match args get vars t
+          | Some tree -> (vars, tree)
           | None -> raise_notrace Not_found)
-      | Some result -> result)
+      in
+      make_match args get vars tree
+  | Optional { child; next } -> (
+      try
+        match child with
+        | Some t -> make_match args get vars t
+        | None -> raise_notrace Not_found
+      with Not_found -> (
+        match next with
+        | Some t -> make_match args get vars t
+        | None -> raise_notrace Not_found))
 
 let make_match args Matching.{ tree; exits } =
   try
@@ -265,7 +258,7 @@ module Make (M : MONAD) (D : DATA) = struct
             (0, tys) l
         in
         match extra_tys with
-        | [] -> Data.tuple result
+        | [] -> Data.array result
         | _ :: _ -> decode_error ty path j)
     | _ -> decode_error ty path j
 
@@ -396,7 +389,7 @@ module Make (M : MONAD) (D : DATA) = struct
   let ( let* ) = M.bind
 
   let all_array a =
-    let result = Array.make (Array.length a) Data.Nil in
+    let result = Array.make (Array.length a) Data.null in
     let* _idx =
       Array.fold_left
         (fun idx data ->
@@ -426,14 +419,14 @@ module Make (M : MONAD) (D : DATA) = struct
     | Other (Field (data, field)) ->
         let* data = eval_data vars data in
         Data.get_dict data |> Map.String.find field |> M.return
-    | Nil -> M.return Data.Nil
+    | Nil -> M.return Data.null
     | Array a ->
         let* result = all_array (Array.map (eval_data vars) a) in
-        M.return @@ Data.Array result
+        M.return @@ Data.array result
     | Dict d ->
         let* result = all_map (Map.String.map (eval_data vars) d) in
-        M.return @@ Data.Dict result
-    | Const a -> M.return @@ Data.Const a
+        M.return @@ Data.dict result
+    | Const a -> M.return @@ Data.const a
 
   and make b nodes vars =
     List.fold_left

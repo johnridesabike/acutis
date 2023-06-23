@@ -13,8 +13,9 @@
 module Const : sig
   type t = Int of int | String of string | Float of float
 
-  val of_int : int -> t
-  val of_string : string -> t
+  val int : int -> t
+  val string : string -> t
+  val float : float -> t
   val equal : t -> t -> bool
   val compare : t -> t -> int
   val to_sexp : t -> Sexp.t
@@ -43,7 +44,7 @@ val string : string -> _ t
 val float : float -> _ t
 val some : 'a t -> 'a t
 val dict : 'a t Map.String.t -> 'a t
-val tuple : 'a t array -> 'a t
+val array : 'a t array -> 'a t
 val list_cons : 'a t -> 'a t -> 'a t
 val list_rev : 'a t -> 'a t
 val list_empty : _ t

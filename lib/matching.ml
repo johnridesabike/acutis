@@ -61,8 +61,7 @@ module Exit = struct
 
   let get = Array.get
   let map = Array.map
-  let unsafe_key i = i
-  let key_to_int i = i
+  let key_to_int = Fun.id
   let pp_key = Format.pp_print_int
   let to_seqi = Array.to_seqi
 end
@@ -588,19 +587,18 @@ type ('a, 'k) cont = bindings -> ('a, 'k) tree
 let constset_of_enum = function
   | None | Some Ty.{ row = `Open; _ } -> None
   | Some Ty.{ row = `Closed; cases = Enum.Int s; _ } ->
-      Some (Set.Int.to_seq s |> Seq.map Const.of_int |> ConstSet.of_seq)
+      Some (Set.Int.to_seq s |> Seq.map Const.int |> ConstSet.of_seq)
   | Some Ty.{ row = `Closed; cases = Enum.String s; _ } ->
-      Some (Set.String.to_seq s |> Seq.map Const.of_string |> ConstSet.of_seq)
+      Some (Set.String.to_seq s |> Seq.map Const.string |> ConstSet.of_seq)
 
 let constset_of_union = function
   | Ty.{ row = `Open; _ } -> None
   | Ty.{ row = `Closed; cases = Union.Int s; _ } ->
       Some
-        (Map.Int.to_seq s |> Seq.map fst |> Seq.map Const.of_int
-       |> ConstSet.of_seq)
+        (Map.Int.to_seq s |> Seq.map fst |> Seq.map Const.int |> ConstSet.of_seq)
   | Ty.{ row = `Closed; cases = Union.String s; _ } ->
       Some
-        (Map.String.to_seq s |> Seq.map fst |> Seq.map Const.of_string
+        (Map.String.to_seq s |> Seq.map fst |> Seq.map Const.string
        |> ConstSet.of_seq)
 
 let of_const key data if_match check_cases =
@@ -650,7 +648,7 @@ let rec of_tpat :
         { key; ids = Set.Int.empty; child = String_keys child; wildcard = None }
   | TDict (m, kys) ->
       (* We need to expand the map to include all of its type's keys. *)
-      let s =
+      let child =
         Map.String.map Option.some m
         |> Set.String.fold
              (fun key map ->
@@ -659,14 +657,10 @@ let rec of_tpat :
                  map)
              !kys
         |> Map.String.to_seq
+        |> of_keyvalues_dict b (fun b -> End (k b))
       in
       Nest
-        {
-          key;
-          ids = Set.Int.empty;
-          child = String_keys (of_keyvalues_dict b (fun b -> End (k b)) s);
-          wildcard = None;
-        }
+        { key; ids = Set.Int.empty; child = String_keys child; wildcard = None }
   | TBlock _ | TField _ ->
       Error.internal __POS__
         "This is not allowed in a destructure pattern. The type checker failed \
@@ -690,11 +684,8 @@ and of_keyvalues_dict b k s =
   | Cons ((_, None), s) ->
       Optional { child = None; next = Some (of_keyvalues_dict b k s) }
   | Cons ((key, Some v), s) ->
-      Optional
-        {
-          child = Some (of_tpat ~key b (fun b -> of_keyvalues_dict b k s) v);
-          next = None;
-        }
+      let child = of_tpat ~key b (fun b -> of_keyvalues_dict b k s) v in
+      Optional { child = Some child; next = None }
 
 let of_nonempty ~exit next_id Nonempty.(hd :: tl) =
   let k { names; _ } = End { names; exit } in
@@ -797,7 +788,7 @@ module ParMatch = struct
       (Format.pp_print_list ~pp_sep:Pp.sep_comma T.pp_pat)
       (to_list tys l)
 
-  module List = struct
+  module L = struct
     (** A list indexed by its length. We describe length in terms of
         nested trees. This is useful to eliminate one case where we parse a nest
         and want to guarantee that the list returned will not be empty. *)
@@ -807,12 +798,7 @@ module ParMatch = struct
   end
 
   type flag = Partial | Exhaustive
-
-  type 'a check = {
-    flag : flag;
-    pats : t list;
-    after_nest : (t list, 'a) List.t;
-  }
+  type 'a check = { flag : flag; pats : t list; after_nest : (t list, 'a) L.t }
 
   let exhaustive c = { c with pats = Any :: c.pats }
 

@@ -306,9 +306,7 @@ type ('a, 'b) source =
   | Src of string * 'a
   | Fun of string * Ty.t Map.String.t * 'b
 
-let get_types = function
-  | Src (_, { types; _ }) -> types
-  | Fun (_, props, _) -> props
+let get_types = function Src (_, { types; _ }) | Fun (_, types, _) -> types
 
 module Context = struct
   type typed_tree = t
@@ -601,10 +599,10 @@ type 'a var_action =
 let rec make_pat var_action mode ty = function
   | Ast.Int (loc, i) ->
       unify loc mode ty (Ty.int ());
-      TConst (Int i, None)
+      TConst (C.int i, None)
   | String (loc, s) ->
       unify loc mode ty (Ty.string ());
-      TConst (String s, None)
+      TConst (C.string s, None)
   | Block (loc, nodes) -> (
       unify loc mode ty (Ty.string ());
       match var_action with
@@ -618,7 +616,7 @@ let rec make_pat var_action mode ty = function
       | Update_vars _ -> TField (rec_pat, field))
   | Float (loc, f) ->
       unify loc mode ty (Ty.float ());
-      TConst (Float f, None)
+      TConst (C.float f, None)
   | Bool (loc, b) ->
       let temp_enum =
         match mode with
@@ -631,7 +629,7 @@ let rec make_pat var_action mode ty = function
       let temp_ty = ref (Ty.Enum temp_enum) in
       let enum = match !ty with Enum e -> e | _ -> temp_enum in
       unify loc mode ty temp_ty;
-      TConst (Int b, Some enum)
+      TConst (C.int b, Some enum)
   | Enum_string (loc, s) ->
       let temp_enum =
         match mode with
@@ -641,7 +639,7 @@ let rec make_pat var_action mode ty = function
       let temp_ty = ref (Ty.Enum temp_enum) in
       let enum = match !ty with Enum e -> e | _ -> temp_enum in
       unify loc mode ty temp_ty;
-      TConst (String s, Some enum)
+      TConst (C.string s, Some enum)
   | Enum_int (loc, i) ->
       let temp_enum =
         match mode with
@@ -651,7 +649,7 @@ let rec make_pat var_action mode ty = function
       let temp_ty = ref (Ty.Enum temp_enum) in
       let enum = match !ty with Enum e -> e | _ -> temp_enum in
       unify loc mode ty temp_ty;
-      TConst (Int i, Some enum)
+      TConst (C.int i, Some enum)
   | Nullable (loc, pat) ->
       let tyvar = match !ty with Nullable ty -> ty | _ -> Ty.unknown () in
       let pat =
@@ -702,10 +700,10 @@ let rec make_pat var_action mode ty = function
           in
           let tag, temp_enum =
             match v with
-            | Tag_int (_, i) -> (C.Int i, Ty.Union.int_singleton i tyvars row)
-            | Tag_bool (_, i) -> (C.Int i, Ty.Union.bool_singleton i tyvars row)
+            | Tag_int (_, i) -> (C.int i, Ty.Union.int_singleton i tyvars row)
+            | Tag_bool (_, i) -> (C.int i, Ty.Union.bool_singleton i tyvars row)
             | Tag_string (_, s) ->
-                (C.String s, Ty.Union.string_singleton s tyvars row)
+                (C.string s, Ty.Union.string_singleton s tyvars row)
           in
           let enum = match !ty with Union (_, e) -> e | _ -> temp_enum in
           unify loc mode ty (ref (Ty.Union (k, temp_enum)));
@@ -916,15 +914,15 @@ let pp_pat =
 
   let pp_constant_enum ppf x c =
     match (x, c) with
-    | { Ty.extra = Bool; _ }, C.Int 0 -> F.pp_print_string ppf "false"
-    | { Ty.extra = Bool; _ }, C.Int _ -> F.pp_print_string ppf "true"
+    | { Ty.extra = Bool; _ }, C.Int 0 -> Pp.false_ ppf
+    | { Ty.extra = Bool; _ }, C.Int _ -> Pp.true_ ppf
     | _, c -> F.fprintf ppf "%@%a" pp_constant c
   in
 
   let pp_constant_union ppf x c =
     match (x, c) with
-    | { Ty.extra = Bool; _ }, C.Int 0 -> F.pp_print_string ppf "false"
-    | { Ty.extra = Bool; _ }, C.Int _ -> F.pp_print_string ppf "true"
+    | { Ty.extra = Bool; _ }, C.Int 0 -> Pp.false_ ppf
+    | { Ty.extra = Bool; _ }, C.Int _ -> Pp.true_ ppf
     | _, c -> pp_constant ppf c
   in
 

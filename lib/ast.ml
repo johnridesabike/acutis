@@ -21,8 +21,8 @@ type tag =
 
 let pp_tag ppf = function
   | Tag_int (_, i) -> Format.pp_print_int ppf i
-  | Tag_bool (_, 0) -> Format.pp_print_string ppf "false"
-  | Tag_bool _ -> Format.pp_print_string ppf "true"
+  | Tag_bool (_, 0) -> Pp.false_ ppf
+  | Tag_bool _ -> Pp.true_ ppf
   | Tag_string (_, s) -> Format.fprintf ppf "%S" s
 
 type 'a value = Tag of tag | Value of 'a

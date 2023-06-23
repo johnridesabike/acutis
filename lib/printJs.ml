@@ -202,8 +202,6 @@ and statement =
   | Return of expr
   | Fun of [ `Sync | `Async ] * Id.t * Id.t list * statement list
 
-let pp_comma ppf () = Format.fprintf ppf ",@ "
-
 let pp_trailing_comma =
   Format.pp_print_custom_break ~fits:("", 0, "") ~breaks:(",", -2, "")
 
@@ -276,28 +274,28 @@ let pp_statement =
           pp_expr e
     | Fun_expr (args, statements) ->
         fprintf ppf "(async function (%a) {@ @[<v 0>%a@]@;<1 -2>})"
-          (pp_print_list ~pp_sep:pp_comma Id.pp)
+          (pp_print_list ~pp_sep:Pp.sep_comma Id.pp)
           args pp_statements statements
     | App (name, []) -> fprintf ppf "%a()" pp_expr name
     | App (name, [ ((Arr _ | String _) as arg) ]) ->
         fprintf ppf "%a(%a)" pp_expr name pp_expr arg
     | App (name, args) ->
         fprintf ppf "%a(@,%a@;<0 -2>)" pp_expr name
-          (pp_print_list ~pp_sep:pp_comma (pp_wrap_box pp_expr))
+          (pp_print_list ~pp_sep:Pp.sep_comma (pp_wrap_box pp_expr))
           args
     | New (name, [ arg ]) -> fprintf ppf "new %a(%a)" pp_obj name pp_expr arg
     | New (name, args) ->
         fprintf ppf "@[<hv 2>new %a(@,%a@;<0 -2>)@]" pp_obj name
-          (pp_print_list ~pp_sep:pp_comma (pp_wrap_box pp_expr))
+          (pp_print_list ~pp_sep:Pp.sep_comma (pp_wrap_box pp_expr))
           args
     | App_expr (expr, args) ->
         fprintf ppf "%a(%a)" pp_expr expr
-          (pp_print_list ~pp_sep:pp_comma pp_expr)
+          (pp_print_list ~pp_sep:Pp.sep_comma pp_expr)
           args
     | Await expr -> fprintf ppf "(await %a)" pp_expr expr
     | Arr a ->
         fprintf ppf "[@,%a%t]"
-          (pp_print_seq ~pp_sep:pp_comma (pp_wrap_box pp_expr))
+          (pp_print_seq ~pp_sep:Pp.sep_comma (pp_wrap_box pp_expr))
           a pp_trailing_comma
     | Typeof expr -> fprintf ppf "typeof %a" pp_expr expr
     | Instanceof (a, b) -> fprintf ppf "%a instanceof %a" pp_expr a pp_obj b
@@ -356,7 +354,7 @@ let pp_statement =
             | `Async -> pp_print_string ppf "async "
             | `Sync -> ())
           kind Id.pp name
-          (pp_print_list ~pp_sep:pp_comma Id.pp)
+          (pp_print_list ~pp_sep:Pp.sep_comma Id.pp)
           args pp_statements statements
   and pp_statements ppf l =
     pp_print_list ~pp_sep:pp_print_space pp_statement ppf l
@@ -468,9 +466,9 @@ let pp_runtime ppf =
          ] )
 
 let of_const = function
-  | Data.Const.String s -> String s
-  | Data.Const.Int i -> Int i
-  | Data.Const.Float f -> Float f
+  | D.Const.String s -> String s
+  | D.Const.Int i -> Int i
+  | D.Const.Float f -> Float f
 
 let fmt x = function
   | C.Fmt_string -> x
@@ -800,7 +798,7 @@ and construct_datum data_id arg =
 and construct_data_dict data_id dict =
   let async_queue = Queue.create () in
   let arg =
-    Let (Id.arg 0, construct_data_aux data_id async_queue (D.Dict dict))
+    Let (Id.arg 0, construct_data_aux data_id async_queue (D.dict dict))
   in
   Queue.to_seq async_queue
   |> Seq.fold_lefti (fun l i nodes -> Let (Id.resolved i, nodes) :: l) [ arg ]
@@ -1171,7 +1169,7 @@ type jsfun = { module_path : string; function_path : string }
 
 let jsfun ~module_path ~function_path = { module_path; function_path }
 
-type t = jsfun Compile.t
+type t = jsfun C.t
 
 type namespaced_jsfun = {
   name : string;
