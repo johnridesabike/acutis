@@ -42,7 +42,7 @@ module Union : sig
   type 'a t = 'a cases sum
 
   val int_singleton : int -> 'a Map.String.t ref -> row -> 'a t
-  val bool_singleton : int -> 'a Map.String.t ref -> row -> 'a t
+  val bool_singleton : int -> 'a Map.String.t ref -> 'a t
   val string_singleton : string -> 'a Map.String.t ref -> row -> 'a t
 end
 

@@ -79,8 +79,8 @@ module Union = struct
   let int_singleton i x row =
     { cases = Int (Map.Int.singleton i x); row; extra = Not_bool }
 
-  let bool_singleton i x row =
-    { cases = Int (Map.Int.singleton i x); row; extra = Bool }
+  let bool_singleton i x =
+    { cases = Int (Map.Int.singleton i x); row = `Closed; extra = Bool }
 
   let string_singleton s x row =
     { cases = String (Map.String.singleton s x); row; extra = Not_bool }

@@ -387,6 +387,11 @@ let () =
     (render
        "{% match a with {@tag: true, a: 10} %} {% with {@tag: false, b: _} %}\n\
         {% /match %}");
+  print_error "Partial matching with unions (4)."
+    (render
+       "{% match a with {@tag: true} with {@tag: false} %}{% /match %}\n\
+        {% match b, a with 1, {@tag: true} with _, {@tag: false } %}\n\
+        {% /match %}");
   print_error "Partial matching with records."
     (render
        "{% match a with {firstName: name, favoriteColor: \"green\"} %}\n\

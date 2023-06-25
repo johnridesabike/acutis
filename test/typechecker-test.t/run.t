@@ -83,6 +83,7 @@ Closed unions are inferred correctly
     {@tag: 2, b: float} |
     {@tag: 3, b: [int]} |
     ...
+  g = {@tag: 0, w: int, y: string} | {@tag: 1, x: int, z: string}
 
 Boolean unions work
   $ acutis union_boolean.acutis --printtypes

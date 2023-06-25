@@ -8,8 +8,6 @@
 (*                                                                        *)
 (**************************************************************************)
 
-module Ty = Typescheme
-
 module Const = struct
   type t = Int of int | String of string | Float of float
 

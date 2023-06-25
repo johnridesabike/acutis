@@ -1072,6 +1072,14 @@ This pattern-matching is not exhaustive.
 Here's an example of a pattern which is not matched:
   {@tag: true, a: _}
 
+Partial matching with unions (4).
+---
+File "<test>", 2:4-3:10
+Matching error.
+This pattern-matching is not exhaustive.
+Here's an example of a pattern which is not matched:
+  _, {@tag: true}
+
 Partial matching with records.
 ---
 File "<test>", 1:4-3:10

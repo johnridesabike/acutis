@@ -9,7 +9,6 @@
 (**************************************************************************)
 
 module C = Data.Const
-module F = Format
 module Ty = Typescheme
 
 exception Clash
@@ -134,12 +133,12 @@ and unify_record mode a b =
         Map.String.merge
           (fun _ a b ->
             match (a, b) with
-            | (Some a as a'), Some b ->
+            | (Some a as x), Some b ->
                 unify mode a b;
-                a'
-            | None, Some b ->
+                x
+            | None, (Some b as x) ->
                 open_rows b;
-                Some b
+                x
             | x, None -> x)
           !a !b
   | Construct_var ->
@@ -687,25 +686,24 @@ let rec make_pat var_action mode ty = function
             | Destructure_expand -> `Closed
             | Construct_literal | Construct_var -> `Open
           in
-          let tyvars =
-            try
-              match (v, !ty) with
-              | ( (Tag_int (_, i) | Tag_bool (_, i)),
-                  Union (_, { cases = Int cases; _ }) ) ->
-                  Map.Int.find i cases
-              | Tag_string (_, s), Union (_, { cases = String cases; _ }) ->
-                  Map.String.find s cases
-              | _ -> raise_notrace Not_found
-            with Not_found -> Map.String.map unknown m |> ref
-          in
+          let temp_tyvars = Map.String.map unknown m |> ref in
           let tag, temp_enum =
             match v with
-            | Tag_int (_, i) -> (C.int i, Ty.Union.int_singleton i tyvars row)
-            | Tag_bool (_, i) -> (C.int i, Ty.Union.bool_singleton i tyvars row)
+            | Tag_int (_, i) ->
+                (C.int i, Ty.Union.int_singleton i temp_tyvars row)
+            | Tag_bool (_, i) -> (C.int i, Ty.Union.bool_singleton i temp_tyvars)
             | Tag_string (_, s) ->
-                (C.string s, Ty.Union.string_singleton s tyvars row)
+                (C.string s, Ty.Union.string_singleton s temp_tyvars row)
           in
           let enum = match !ty with Union (_, e) -> e | _ -> temp_enum in
+          let tyvars =
+            try
+              match (tag, enum.cases) with
+              | Int i, Int m -> Map.Int.find i m
+              | String s, String m -> Map.String.find s m
+              | _ -> raise_notrace Not_found
+            with Not_found -> temp_tyvars
+          in
           unify loc mode ty (ref (Ty.Union (k, temp_enum)));
           let r = make_record var_action loc mode !tyvars m in
           TRecord (Some (k, tag, enum), r, tyvars))
@@ -895,6 +893,7 @@ let make_components m = Dagmap.make ~f:make_src m |> Dagmap.link_all
 let make ~root components ast = make (Dagmap.prelinked root components) ast
 
 let pp_pat =
+  let module F = Format in
   let to_list l =
     let rec aux acc = function
       | TTuple [ hd; TConstruct (_, Some tl) ] -> aux (hd :: acc) tl
@@ -919,7 +918,7 @@ let pp_pat =
     | _, c -> F.fprintf ppf "%@%a" pp_constant c
   in
 
-  let pp_constant_union ppf x c =
+  let pp_constant_union x ppf c =
     match (x, c) with
     | { Ty.extra = Bool; _ }, C.Int 0 -> Pp.false_ ppf
     | { Ty.extra = Bool; _ }, C.Int _ -> Pp.true_ ppf
@@ -932,9 +931,13 @@ let pp_pat =
     | TTuple t ->
         F.fprintf ppf "(@[%a@])" (F.pp_print_list ~pp_sep:Pp.sep_comma pp_pat) t
     | TRecord (Some (k, tag, var), r, _) ->
-        F.fprintf ppf "{@[%@%a: %t, %a@]}" Pp.field k
-          (fun ppf -> pp_constant_union ppf var tag)
-          pp_bindings r
+        F.fprintf ppf "{@[%@%a: %a%a@]}" Pp.field k (pp_constant_union var) tag
+          (fun ppf r ->
+            if Map.String.is_empty r then ()
+            else (
+              Pp.sep_comma ppf ();
+              pp_bindings ppf r))
+          r
     | TRecord (None, r, _) -> F.fprintf ppf "{@[%a@]}" pp_bindings r
     | TDict (m, _) -> F.fprintf ppf "<%a>" pp_bindings m
     | TVar v -> F.pp_print_string ppf v
