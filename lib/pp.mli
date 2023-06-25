@@ -27,3 +27,13 @@ val true_ : formatter -> unit
 
 val false_ : formatter -> unit
 (** Prints [false]. *)
+
+val surround :
+  left:char ->
+  right:char ->
+  (Format.formatter -> 'a -> unit) ->
+  Format.formatter ->
+  'a ->
+  unit
+(** [surround ~left ~right f x] prints the result of [f x] with [left] and
+    [right] printed before and after it. *)

@@ -736,56 +736,56 @@ module ParMatch = struct
       we later convert into a proper pattern.*)
   type t = Any | Const of Const.t | Nil | Cons of t | Nest of t list
 
+  let l = Loc.dummy
+  let any = Ast.Var (l, "_")
+
   let rec to_pat ty path =
     match (!ty, path) with
-    | Ty.Enum ty, Const c -> T.TConst (c, Some ty)
-    | _, Const c -> TConst (c, None)
-    | Tuple tys, Nest path -> TTuple (to_list tys path)
-    | List ty, path -> to_list_pat ty path
-    | Nullable ty, Cons (Nest [ path ]) ->
-        TConstruct (TNullable, Some (to_pat ty path))
-    | Nullable _, Cons Any -> TConstruct (TNullable, Some TAny)
-    | Nullable _, Nil -> TConstruct (TNullable, None)
+    | Ty.Enum { extra = Bool; _ }, Const (Int i) -> Ast.Bool (l, i)
+    | Enum _, Const (Int i) -> Enum_int (l, i)
+    | Enum _, Const (String s) -> Enum_string (l, s)
+    | _, Const (Int i) -> Int (l, i)
+    | _, Const (String s) -> String (l, s)
+    | _, Const (Float f) -> Float (l, f)
+    | Tuple tys, Nest path -> Tuple (l, to_list tys path)
+    | List ty, path -> to_list_pat [] ty path
+    | Nullable ty, Cons (Nest [ path ]) -> Nullable (l, Some (to_pat ty path))
+    | Nullable _, Cons Any -> Nullable (l, Some any)
+    | Nullable _, Nil -> Nullable (l, None)
     | Record tys, Nest path ->
         let s = Map.String.to_seq !tys in
-        TRecord (None, to_map Map.String.empty s path, tys)
-    | Union (key, ({ cases; _ } as ty)), Nest (Const c :: path) -> (
-        let key = Some (key, c, ty) in
-        match (cases, c) with
-        | Ty.Union.Int m, Int i ->
-            let tys = Map.Int.find i m in
-            let s = Map.String.to_seq !tys in
-            TRecord (key, to_map Map.String.empty s path, tys)
-        | Ty.Union.String m, String s ->
-            let tys = Map.String.find s m in
-            let s = Map.String.to_seq !tys in
-            TRecord (key, to_map Map.String.empty s path, tys)
-        | _ ->
-            Error.internal __POS__
-              "Type mismatch while parsing a union. This means the typechecker \
-               failed.")
-    | _ -> TAny
+        Record (l, to_assoc s path |> Nonempty.of_list)
+    | Union (key, { cases = Int m; extra; _ }), Nest (Const (Int i) :: path) ->
+        let tag =
+          match extra with
+          | Bool -> Ast.Tag_bool (l, i)
+          | Not_bool -> Ast.Tag_int (l, i)
+        in
+        let tys = Map.Int.find i m in
+        let assoc = to_assoc (Map.String.to_seq !tys) path in
+        Record (l, (l, key, Tag tag) :: assoc)
+    | Union (key, { cases = String m; _ }), Nest (Const (String s) :: path) ->
+        let tys = Map.String.find s m in
+        let assoc = to_assoc (Map.String.to_seq !tys) path in
+        Record (l, (l, key, Tag (Tag_string (l, s))) :: assoc)
+    | _ -> any
 
-  and[@tail_mod_cons] to_list_pat ty = function
-    | Cons (Nest [ hd; tl ]) ->
-        TConstruct (TList, Some (TTuple [ to_pat ty hd; to_list_pat ty tl ]))
-    | Cons Any -> TAny
-    | Nil -> TConstruct (TList, None)
-    | _ -> TAny
+  and to_list_pat acc ty = function
+    | Cons (Nest [ hd; tl ]) -> to_list_pat (to_pat ty hd :: acc) ty tl
+    | Nil -> List (l, List.rev acc, None)
+    | Cons Any | _ -> List (l, List.rev acc, Some any)
 
   and to_list tys path = List.map2 to_pat tys path
 
-  and to_map acc tys path =
+  and[@tail_mod_cons] to_assoc tys path =
     match (tys (), path) with
     | Seq.Cons ((key, ty), tys), hd :: path ->
-        let pat = to_pat ty hd in
-        let acc = Map.String.add key pat acc in
-        to_map acc tys path
-    | _ -> acc
+        (l, key, Value (to_pat ty hd)) :: to_assoc tys path
+    | _ -> []
 
   let pp tys ppf l =
     Format.fprintf ppf "@[%a@]"
-      (Format.pp_print_list ~pp_sep:Pp.sep_comma T.pp_pat)
+      (Format.pp_print_list ~pp_sep:Pp.sep_comma Ast.pp_pat)
       (to_list tys l)
 
   module L = struct

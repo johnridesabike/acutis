@@ -19,12 +19,6 @@ type tag =
   | Tag_bool of Loc.t * int
   | Tag_string of Loc.t * string
 
-let pp_tag ppf = function
-  | Tag_int (_, i) -> Format.pp_print_int ppf i
-  | Tag_bool (_, 0) -> Pp.false_ ppf
-  | Tag_bool _ -> Pp.true_ ppf
-  | Tag_string (_, s) -> Format.fprintf ppf "%S" s
-
 type 'a value = Tag of tag | Value of 'a
 type 'a record = 'a value assoc_nonempty
 
@@ -225,3 +219,54 @@ and case_to_sexp { pats; nodes } =
     ]
 
 and to_sexp l = Sexp.of_seq node_to_sexp (List.to_seq l)
+
+module F = Format
+
+let pp_sep = Pp.sep_comma
+
+let pp_tag ppf = function
+  | Tag_bool (_, 0) -> Pp.false_ ppf
+  | Tag_bool _ -> Pp.true_ ppf
+  | Tag_int (_, i) -> F.pp_print_int ppf i
+  | Tag_string (_, s) -> Pp.syntax_string ppf s
+
+let rec pp_pat ppf = function
+  | Var (_, s) -> F.pp_print_string ppf s
+  | Bool (_, 0) -> Pp.false_ ppf
+  | Bool (_, _) -> Pp.true_ ppf
+  | Int (_, i) -> F.pp_print_int ppf i
+  | Float (_, f) -> F.pp_print_float ppf f
+  | String (_, s) -> Pp.syntax_string ppf s
+  | Nullable (_, None) -> F.pp_print_string ppf "null"
+  | Nullable (_, Some pat) -> F.fprintf ppf "!@[<hv 1>@,%a@]" pp_pat pat
+  | Enum_string (_, s) -> F.fprintf ppf "%@%a" Pp.syntax_string s
+  | Enum_int (_, i) -> F.fprintf ppf "%@%i" i
+  | List (_, [], Some tl) -> pp_pat ppf tl
+  | List (_, l, tl) ->
+      Pp.surround ~left:'[' ~right:']'
+        (fun ppf () ->
+          (F.pp_print_list ~pp_sep pp_pat) ppf l;
+          (F.pp_print_option (fun ppf pat ->
+               F.fprintf ppf "%a...%a" pp_sep () pp_pat pat))
+            ppf tl)
+        ppf ()
+  | Tuple (_, l) ->
+      Pp.surround ~left:'(' ~right:')' (F.pp_print_list ~pp_sep pp_pat) ppf l
+  | Record (_, l) ->
+      Pp.surround ~left:'{' ~right:'}'
+        (F.pp_print_list ~pp_sep pp_record_keyvalue)
+        ppf (Nonempty.to_list l)
+  | Dict (_, l) ->
+      Pp.surround ~left:'<' ~right:'>'
+        (F.pp_print_list ~pp_sep pp_keyvalue)
+        ppf l
+  | Block _ -> F.pp_print_string ppf "#%}...{%#"
+  | Field (_, pat, field) -> F.fprintf ppf "%a.%s" pp_pat pat field
+
+and pp_keyvalue ppf (_, k, v) =
+  F.fprintf ppf "@[<hv 2>%a:@ %a@]" Pp.field k pp_pat v
+
+and pp_record_keyvalue ppf (l, k, v) =
+  match v with
+  | Tag t -> F.fprintf ppf "@[<hv 2>%@%a:@ %a@]" Pp.field k pp_tag t
+  | Value v -> pp_keyvalue ppf (l, k, v)

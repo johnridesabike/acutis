@@ -166,13 +166,13 @@ export default async function main(input1) {
     } else {
       return decode_error(
         "[\n\
-   {\n\
-      author: {name: ?string},\n\
-      content: string,\n\
-      date: string,\n\
-      image: ?{alt: string, src: string},\n\
-      title: string\n\
-   }\n\
+  {\n\
+    author: {name: ?string},\n\
+    content: string,\n\
+    date: string,\n\
+    image: ?{alt: string, src: string},\n\
+    title: string\n\
+  }\n\
 ]",
         input2,
         debug_stack

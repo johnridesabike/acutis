@@ -144,10 +144,10 @@
   Expected type:
   {@tag: false} |
   {
-     @tag: true,
-     another_loooong_field: string,
-     looong_field: string,
-     yet_another_field: string
+    @tag: true,
+    another_loooong_field: string,
+    looong_field: string,
+    yet_another_field: string
   }
   Recieved value:
   fail

@@ -14,6 +14,10 @@
 type 'a t = ( :: ) of 'a * 'a list
 
 val to_list : 'a t -> 'a list
+
+val of_list : 'a list -> 'a t
+(** @raise Invalid_argument *)
+
 val cons : 'a -> 'a t -> 'a t
 
 val hd : 'a t -> 'a

@@ -18,8 +18,6 @@ type tag =
   | Tag_bool of Loc.t * int
   | Tag_string of Loc.t * string
 
-val pp_tag : Format.formatter -> tag -> unit
-
 type 'a value = Tag of tag | Value of 'a
 type 'a record = 'a value assoc_nonempty
 
@@ -79,3 +77,5 @@ and t = node list
 val echo_format_to_sexp : echo_format -> Sexp.t
 val escape_to_sexp : escape -> Sexp.t
 val to_sexp : t -> Sexp.t
+val pp_tag : Format.formatter -> tag -> unit
+val pp_pat : Format.formatter -> pat -> unit

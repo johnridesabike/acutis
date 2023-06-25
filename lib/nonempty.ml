@@ -11,6 +11,11 @@
 type 'a t = ( :: ) of 'a * 'a list
 
 let to_list (hd :: tl) = List.( :: ) (hd, tl)
+
+let of_list = function
+  | List.[] -> raise (Invalid_argument "Nonempty.of_list")
+  | List.(hd :: tl) -> hd :: tl
+
 let cons a (hd :: tl) = a :: hd :: tl
 let hd (hd :: _) = hd
 

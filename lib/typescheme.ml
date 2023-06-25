@@ -175,9 +175,6 @@ let rec copy = function
 and copy_ref r = ref (copy !r)
 and internal_copy_record m = Map.String.map copy_ref m
 
-let surround ~left ~right ppf f x =
-  F.fprintf ppf "@[<hv>%c@[<hv 2>@,%a@]@,%c@]" left f x right
-
 let pp_record =
   let field pp_k pp_v ppf (k, v) =
     F.fprintf ppf "@[<hv 2>%a:@ %a@]" pp_k k pp_v v
@@ -191,7 +188,7 @@ let pp_record =
     F.pp_print_seq ~pp_sep:Pp.sep_comma (field Pp.field pp) ppf
       (Map.String.to_seq !m)
   in
-  fun ?tag pp ppf m -> surround ~left:'{' ~right:'}' ppf (record ?tag pp) m
+  fun ?tag pp ppf m -> Pp.surround ~left:'{' ~right:'}' (record ?tag pp) ppf m
 
 let rec pp ppf t =
   match !t with
@@ -200,13 +197,13 @@ let rec pp ppf t =
   | Float -> F.pp_print_string ppf "float"
   | String -> F.pp_print_string ppf "string"
   | Nullable x -> F.fprintf ppf "?@[<hv 1>@,%a@]" pp x
-  | List t -> surround ~left:'[' ~right:']' ppf pp t
-  | Dict (t, _) -> surround ~left:'<' ~right:'>' ppf pp t
+  | List t -> Pp.surround ~left:'[' ~right:']' pp ppf t
+  | Dict (t, _) -> Pp.surround ~left:'<' ~right:'>' pp ppf t
   | Record r -> pp_record pp ppf r
   | Tuple l ->
-      surround ~left:'(' ~right:')' ppf
+      Pp.surround ~left:'(' ~right:')'
         (F.pp_print_list ~pp_sep:Pp.sep_comma pp)
-        l
+        ppf l
   | Enum { cases = String cases; row; _ } ->
       pp_sum ppf Enum.pp_string (Set.String.to_seq cases) row
   | Enum { cases = Int cases; extra = Not_bool; row } ->
