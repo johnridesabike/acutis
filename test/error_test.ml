@@ -575,6 +575,8 @@ let () =
     (render "{% interface x = {@tag: 1} | {@badtag: 2} %}");
   print_error "Duplicate tags."
     (render "{% interface x = {@tag: 1} | {@tag: 1} %}");
+  print_error "Open boolean unions."
+    (render "{% interface x = {@tag: false} | ... %}");
   print_error "Tag type error: int <> string."
     (render "{% interface x = {@tag: 1} | {@tag: \"a\"} %}");
   print_error "Tag type error: string <> bool."

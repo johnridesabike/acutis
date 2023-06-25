@@ -134,6 +134,10 @@ let interface_duplicate_tag loc pp tag =
   let f = F.dprintf "Tag value '%a' is already used in this union." pp tag in
   raise @@ Acutis_error (pp_ty loc f)
 
+let interface_open_bool_union loc =
+  let f = F.dprintf "Unions with boolean tags cannot be opened with '...'." in
+  raise @@ Acutis_error (pp_ty loc f)
+
 let interface_type_mismatch loc k a b =
   let f =
     F.dprintf

@@ -255,8 +255,8 @@ bool:
   | TRUE;   { 1 }
 
 row:
-  | (* empty *)     { `Closed }
-  | PIPE; ELLIPSIS; { `Open }
+  | (* empty *)     { ($loc, `Closed) }
+  | PIPE; ELLIPSIS; { ($loc, `Open) }
 
 %inline variant(X): l = variant_rev(X); { Nonempty.rev l }
 variant_rev(X):

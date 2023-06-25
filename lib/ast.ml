@@ -32,15 +32,17 @@ let value_to_sexp f = function
 let record_to_sexp f l =
   Nonempty.to_sexp (Sexp.triple Loc.to_sexp Sexp.string (value_to_sexp f)) l
 
+type row = Loc.t * Typescheme.row
+
 type ty =
   | Ty_named of Loc.t * string
   | Ty_nullable of ty
   | Ty_list of ty
   | Ty_dict of ty
-  | Ty_enum_int of int Nonempty.t * Typescheme.row
+  | Ty_enum_int of int Nonempty.t * row
   | Ty_enum_bool of int Nonempty.t
-  | Ty_enum_string of string Nonempty.t * Typescheme.row
-  | Ty_record of (Loc.t * ty record) Nonempty.t * Typescheme.row
+  | Ty_enum_string of string Nonempty.t * row
+  | Ty_record of (Loc.t * ty record) Nonempty.t * row
   | Ty_tuple of ty list
 
 type prop = { loc : Loc.t; name : string; ty : ty }
@@ -53,15 +55,21 @@ let rec ty_to_sexp = function
   | Ty_dict t -> Sexp.make "dict" [ ty_to_sexp t ]
   | Ty_enum_int (l, row) ->
       Sexp.make "enum_int"
-        [ Typescheme.row_to_sexp row; Nonempty.to_sexp Sexp.int l ]
+        [
+          Sexp.pair Loc.to_sexp Typescheme.row_to_sexp row;
+          Nonempty.to_sexp Sexp.int l;
+        ]
   | Ty_enum_bool l -> Sexp.make "enum_bool" [ Nonempty.to_sexp Sexp.bool l ]
   | Ty_enum_string (l, row) ->
       Sexp.make "enum_string"
-        [ Typescheme.row_to_sexp row; Nonempty.to_sexp Sexp.string l ]
+        [
+          Sexp.pair Loc.to_sexp Typescheme.row_to_sexp row;
+          Nonempty.to_sexp Sexp.string l;
+        ]
   | Ty_record (l, row) ->
       Sexp.make "record"
         [
-          Typescheme.row_to_sexp row;
+          Sexp.pair Loc.to_sexp Typescheme.row_to_sexp row;
           Nonempty.to_sexp (Sexp.pair Loc.to_sexp (record_to_sexp ty_to_sexp)) l;
         ]
   | Ty_tuple l -> Sexp.make "tuple" [ Sexp.of_seq ty_to_sexp (List.to_seq l) ]

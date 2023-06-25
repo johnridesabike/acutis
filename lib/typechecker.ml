@@ -479,10 +479,10 @@ module Interface = struct
     | Ast.Ty_list t -> Ty.list (make_ty t)
     | Ast.Ty_dict t -> Ty.dict (make_ty t)
     | Ast.Ty_tuple l -> Ty.tuple (List.map make_ty l)
-    | Ast.Ty_enum_int (l, r) -> Ty.enum_int r (Nonempty.to_list l)
+    | Ast.Ty_enum_int (l, (_, r)) -> Ty.enum_int r (Nonempty.to_list l)
     | Ast.Ty_enum_bool l -> Ty.internal_bool (Nonempty.to_list l)
-    | Ast.Ty_enum_string (l, r) -> Ty.enum_string r (Nonempty.to_list l)
-    | Ast.Ty_record ((loc, hd) :: tl, row) -> (
+    | Ast.Ty_enum_string (l, (_, r)) -> Ty.enum_string r (Nonempty.to_list l)
+    | Ast.Ty_record ((loc, hd) :: tl, (row_l, row)) -> (
         match assoc_to_record hd with
         | Untagged m -> (
             match (tl, row) with
@@ -513,9 +513,16 @@ module Interface = struct
             | Tag_int (_, i) ->
                 let m = Map.Int.(singleton i (ref m) |> aux update tag_int) in
                 ref (Ty.Union (tagk, { cases = Int m; row; extra = Not_bool }))
-            | Tag_bool (_, i) ->
-                let m = Map.Int.(singleton i (ref m) |> aux update tag_bool) in
-                ref (Ty.Union (tagk, { cases = Int m; row; extra = Bool }))
+            | Tag_bool (_, i) -> (
+                match row with
+                | `Closed ->
+                    let m =
+                      Map.Int.(singleton i (ref m) |> aux update tag_bool)
+                    in
+                    ref
+                      (Ty.Union
+                         (tagk, { cases = Int m; row = `Closed; extra = Bool }))
+                | `Open -> Error.interface_open_bool_union row_l)
             | Tag_string (_, s) ->
                 let m =
                   Map.String.(singleton s (ref m) |> aux update tag_string)

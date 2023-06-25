@@ -213,33 +213,34 @@ Interfaces parse correctly. Use a separate file to minimize type conficts.
     ((prop
       "a"
       (record
-       closed
-       (((("a" (enum_int closed (0 1))) ("b" (enum_string closed ("a" "b"))))))))
+       (closed)
+       (((("a" (enum_int (closed) (0 1)))
+          ("b" (enum_string (closed) ("a" "b"))))))))
      (prop
       "b"
       (record
-       closed
+       (closed)
        (((("tag" (tag true)) ("a" (list (named "int")))))
         ((("tag" (tag false)) ("a" (dict (nullable (named "string")))))))))
      (prop
       "c"
       (record
-       closed
+       (closed)
        (((("tag" (tag 0))))
         ((("tag" (tag 1))
           ("a" (tuple ((named "float") (enum_bool (true false))))))))))
      (prop
       "d"
       (record
-       closed
+       (closed)
        (((("tag" (tag "a")) ("a" (named "float"))))
-        ((("tag" (tag "b")) ("a" (enum_int open (0 1))))))))
+        ((("tag" (tag "b")) ("a" (enum_int (open) (0 1))))))))
      (prop
       "e"
       (record
-       open
+       (open)
        (((("tag" (tag 0)) ("a" (named "_"))))
-        ((("tag" (tag 1)) ("b" (enum_string open ("a" "b"))))))))
+        ((("tag" (tag 1)) ("b" (enum_string (open) ("a" "b"))))))))
      (prop "children" (named "string"))
      (prop "optionalChildren" (nullable (named "string")))))
    (text no_trim "\n" no_trim))

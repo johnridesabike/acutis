@@ -20,16 +20,17 @@ type tag =
 
 type 'a value = Tag of tag | Value of 'a
 type 'a record = 'a value assoc_nonempty
+type row = Loc.t * Typescheme.row
 
 type ty =
   | Ty_named of Loc.t * string
   | Ty_nullable of ty
   | Ty_list of ty
   | Ty_dict of ty
-  | Ty_enum_int of int Nonempty.t * Typescheme.row
+  | Ty_enum_int of int Nonempty.t * row
   | Ty_enum_bool of int Nonempty.t
-  | Ty_enum_string of string Nonempty.t * Typescheme.row
-  | Ty_record of (Loc.t * ty record) Nonempty.t * Typescheme.row
+  | Ty_enum_string of string Nonempty.t * row
+  | Ty_record of (Loc.t * ty record) Nonempty.t * row
   | Ty_tuple of ty list
 
 type prop = { loc : Loc.t; name : string; ty : ty }
