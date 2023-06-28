@@ -9,7 +9,6 @@
 (**************************************************************************)
 
 module C = Compile
-module D = Data
 module M = Matching
 module Ty = Typescheme
 
@@ -166,9 +165,9 @@ type expr =
   | Prim of keyword
   | Var of Id.t
   | Obj of obj
-  | Not_eq of expr * expr
   | Eq of expr * expr
   | Or of expr * expr
+  | Not of expr
   | And of expr * expr
   | String of string
   | Int of int
@@ -258,8 +257,8 @@ let pp_statement =
   let pp_wrap_box f ppf a = fprintf ppf "@[<hv 2>%a@]" f a in
   let rec pp_expr ppf = function
     | Eq (a, b) -> fprintf ppf "%a ===@ %a" pp_expr a pp_expr b
-    | Not_eq (a, b) -> fprintf ppf "%a !== %a" pp_expr a pp_expr b
     | Or (a, b) -> fprintf ppf "@[<hv>%a ||@]@ @[<hv>%a@]" pp_expr a pp_expr b
+    | Not x -> fprintf ppf "!%a" pp_expr x
     | And (a, b) -> fprintf ppf "@[<hv>%a &&@]@ @[<hv>%a@]" pp_expr a pp_expr b
     | Var x -> Id.pp ppf x
     | Prim x -> pp_print_string ppf (keyword_to_string x)
@@ -389,6 +388,8 @@ let promise_all x = Await (App (Field (Obj Promise, String "all"), [ x ]))
 let list_hd e = Field (e, Int 0)
 let null_value = list_hd
 let list_tl e = Field (e, Int 1)
+let internal_nil = Int 0
+let internal_unset_exit = Int (-1)
 
 let pp_runtime ppf =
   let expected = Id.unsafe "expected" in
@@ -466,9 +467,9 @@ let pp_runtime ppf =
          ] )
 
 let of_const = function
-  | D.Const.String s -> String s
-  | D.Const.Int i -> Int i
-  | D.Const.Float f -> Float f
+  | `String s -> String s
+  | `Int i -> Int i
+  | `Float f -> Float f
 
 let fmt x = function
   | C.Fmt_string -> x
@@ -480,18 +481,15 @@ let escape x = function
   | C.Escape -> App (Var Id.runtime_escape, [ x ])
 
 let rec echo data_id = function
-  | C.Echo_var s -> meth_get (Var (Id.Data.to_id data_id)) (String s)
-  | C.Echo_string s -> String s
-  | C.Echo_field (e, s) -> meth_get (echo data_id e) (String s)
+  | `Var s -> meth_get (Var (Id.Data.to_id data_id)) (String s)
+  | `String s -> String s
+  | `Field (e, s) -> meth_get (echo data_id e) (String s)
 
 let rec echoes data_id default default_fmt = function
   | [] -> fmt (echo data_id default) default_fmt
   | (f, e) :: tl ->
       let e = echo data_id e in
-      Tern
-        ( Not_eq (e, Prim Null),
-          fmt (null_value e) f,
-          echoes data_id default default_fmt tl )
+      Tern (e, fmt (null_value e) f, echoes data_id default default_fmt tl)
 
 let add_vars ids arg vars =
   Set.Int.fold (fun id vars -> Map.Int.add id arg vars) ids vars
@@ -569,7 +567,7 @@ let rec match_tree :
           | Some tree ->
               [
                 If_else
-                  ( Eq (Var Id.exit, Prim Null),
+                  ( Eq (Var Id.exit, internal_unset_exit),
                     match_tree ~leafstmt ~get_arg ~vars tree,
                     [] );
               ]);
@@ -581,22 +579,14 @@ let rec match_tree :
       | Some nil, Some cons ->
           [
             If_else
-              ( Eq (arg, Prim Null),
-                match_tree ~leafstmt ~get_arg ~vars nil,
-                match_tree ~leafstmt ~get_arg ~vars cons );
+              ( arg,
+                match_tree ~leafstmt ~get_arg ~vars cons,
+                match_tree ~leafstmt ~get_arg ~vars nil );
           ]
       | Some nil, None ->
-          [
-            If_else
-              (Eq (arg, Prim Null), match_tree ~leafstmt ~get_arg ~vars nil, []);
-          ]
+          [ If_else (Not arg, match_tree ~leafstmt ~get_arg ~vars nil, []) ]
       | None, Some cons ->
-          [
-            If_else
-              ( Not_eq (arg, Prim Null),
-                match_tree ~leafstmt ~get_arg ~vars cons,
-                [] );
-          ]
+          [ If_else (arg, match_tree ~leafstmt ~get_arg ~vars cons, []) ]
       | None, None -> [])
   | M.Optional { child; next } ->
       List.concat
@@ -609,7 +599,7 @@ let rec match_tree :
           | Some t ->
               [
                 If_else
-                  ( Eq (Var Id.exit, Prim Null),
+                  ( Eq (Var Id.exit, internal_unset_exit),
                     match_tree ~leafstmt ~get_arg ~vars t,
                     [] );
               ]);
@@ -678,7 +668,7 @@ and match_ data_id args M.{ tree; exits } =
     [
       [
         Let (Id.Data.to_id data_id', New (Map, [ Var (Id.Data.to_id data_id) ]));
-        Let (Id.exit, Prim Null);
+        Let (Id.exit, internal_unset_exit);
       ];
       construct_data data_id args;
       match_tree ~leafstmt:(match_leaf data_id') ~get_arg:arg_match
@@ -697,14 +687,14 @@ and map_list data_id arg M.{ tree; exits } =
       construct_datum data_id arg;
       [
         While
-          ( Not_eq (Var (Id.arg 0), Prim Null),
+          ( Var (Id.arg 0),
             List.concat
               [
                 [
                   Let
                     ( Id.Data.to_id data_id',
                       New (Map, [ Var (Id.Data.to_id data_id) ]) );
-                  Let (Id.exit, Prim Null);
+                  Let (Id.exit, internal_unset_exit);
                 ];
                 match_tree ~leafstmt:(match_leaf data_id') ~get_arg:arg_map
                   ~vars:Map.Int.empty tree;
@@ -740,7 +730,7 @@ and map_dict data_id arg M.{ tree; exits } =
                   Let
                     ( Id.Data.to_id data_id',
                       New (Map, [ Var (Id.Data.to_id data_id) ]) );
-                  Let (Id.exit, Prim Null);
+                  Let (Id.exit, internal_unset_exit);
                 ];
                 match_tree ~leafstmt:(match_leaf data_id') ~get_arg:arg_map_dict
                   ~vars:Map.Int.empty tree;
@@ -757,26 +747,29 @@ and map_dict data_id arg M.{ tree; exits } =
     ]
 
 and construct_data_aux data_id async_queue = function
-  | D.Nil -> Prim Null
-  | D.Array a ->
+  | `Null -> internal_nil
+  | `Int i -> Int i
+  | `String s -> String s
+  | `Float f -> Float f
+  | `Var s -> meth_get (Var (Id.Data.to_id data_id)) (String s)
+  | `Array a ->
       Arr (Array.map (construct_data_aux data_id async_queue) a |> Array.to_seq)
-  | D.Dict d ->
-      New
-        ( Map,
-          [
-            Arr
-              (Map.String.map (construct_data_aux data_id async_queue) d
-              |> Map.String.to_seq
-              |> Seq.map (fun (k, v) ->
-                     Arr (Seq.cons (String k) @@ Seq.return v)));
-          ] )
-  | D.Const c -> of_const c
-  | D.Other (C.Var s) -> meth_get (Var (Id.Data.to_id data_id)) (String s)
-  | D.Other (C.Block l) ->
+  | `Assoc d -> construct_data_aux_dict data_id async_queue d
+  | `Block l ->
       Queue.add (nodes_string data_id l) async_queue;
       Var (Id.resolved (pred (Queue.length async_queue)))
-  | D.Other (C.Field (d, s)) ->
+  | `Field (d, s) ->
       meth_get (construct_data_aux data_id async_queue d) (String s)
+
+and construct_data_aux_dict data_id async_queue d =
+  New
+    ( Map,
+      [
+        Arr
+          (Map.String.map (construct_data_aux data_id async_queue) d
+          |> Map.String.to_seq
+          |> Seq.map (fun (k, v) -> Arr (Seq.cons (String k) @@ Seq.return v)));
+      ] )
 
 and construct_data data_id args =
   let async_queue = Queue.create () in
@@ -797,9 +790,7 @@ and construct_datum data_id arg =
 
 and construct_data_dict data_id dict =
   let async_queue = Queue.create () in
-  let arg =
-    Let (Id.arg 0, construct_data_aux data_id async_queue (D.dict dict))
-  in
+  let arg = Let (Id.arg 0, construct_data_aux_dict data_id async_queue dict) in
   Queue.to_seq async_queue
   |> Seq.fold_lefti (fun l i nodes -> Let (Id.resolved i, nodes) :: l) [ arg ]
 
@@ -956,7 +947,7 @@ and decode_list ~set input env ty =
                   Expr (meth_pop Id.debug_stack);
                 ];
               ] );
-        Set (list_tl (Var dst), Prim Null);
+        Set (list_tl (Var dst), internal_nil);
         set (list_tl (Var dst_base));
       ],
       [ error (Ty.list ty) input ] )
@@ -966,7 +957,7 @@ and decode_nullable ~set input env ty =
   let nullable_value = null_value (Var nullable) in
   If_else
     ( Or (Eq (input, Prim Null), Eq (input, Prim Undefined)),
-      [ set (Prim Null) ],
+      [ set internal_nil ],
       Let (nullable, New (Array, [ Int 1 ]))
       :: set (Var nullable)
       :: decode_typescheme
@@ -990,7 +981,7 @@ and decode_record_aux ~data input env tys =
                  [ Expr (meth_pop Id.debug_stack) ];
                ],
              match !ty with
-             | Nullable _ | Unknown _ -> [ set (Prim Null) ]
+             | Nullable _ | Unknown _ -> [ set internal_nil ]
              | _ -> [ error_field k ] ))
 
 and decode_record ~set input env tys =
@@ -1062,10 +1053,10 @@ let rec encode_typescheme ~set input env ty =
 and encode_nullable ~set input env ty =
   let input' = Id.Safe.input env in
   If_else
-    ( Eq (input, Prim Null),
-      [ set (Prim Null) ],
+    ( input,
       Let (input', null_value input)
-      :: encode_typescheme ~set (Var input') env ty )
+      :: encode_typescheme ~set (Var input') env ty,
+      [ set (Prim Null) ] )
 
 and encode_list ~set input env ty =
   let array = Id.Safe.array env in
@@ -1074,7 +1065,7 @@ and encode_list ~set input env ty =
     Let (array, New (Array, []));
     set (Var array);
     While
-      ( Not_eq (input, Prim Null),
+      ( input,
         List.concat
           [
             [ Let (input', list_hd input) ];

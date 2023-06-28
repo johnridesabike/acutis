@@ -8,7 +8,6 @@
 (*                                                                        *)
 (**************************************************************************)
 
-module C = Data.Const
 module Ty = Typescheme
 
 exception Clash
@@ -273,13 +272,15 @@ type echo =
   | Echo_field of echo * string
 
 type construct = TList | TNullable
+type const = [ `Int of int | `Float of float | `String of string ]
+type tag = [ `Int of int | `String of string ]
 
 type pat =
-  | TConst of C.t * Ty.Enum.t option
+  | TConst of const * Ty.Enum.t option
   | TConstruct of construct * pat option
   | TTuple of pat list
   | TRecord of
-      (string * C.t * Ty.t Ty.Union.t) option
+      (string * tag * Ty.t Ty.Union.t) option
       * pat Map.String.t
       * Ty.t Map.String.t ref
   | TDict of pat Map.String.t * Set.String.t ref
@@ -605,10 +606,10 @@ type 'a var_action =
 let rec make_pat var_action mode ty = function
   | Ast.Int (loc, i) ->
       unify loc mode ty (Ty.int ());
-      TConst (C.int i, None)
+      TConst (`Int i, None)
   | String (loc, s) ->
       unify loc mode ty (Ty.string ());
-      TConst (C.string s, None)
+      TConst (`String s, None)
   | Block (loc, nodes) -> (
       unify loc mode ty (Ty.string ());
       match var_action with
@@ -622,7 +623,7 @@ let rec make_pat var_action mode ty = function
       | Update_vars _ -> TField (rec_pat, field))
   | Float (loc, f) ->
       unify loc mode ty (Ty.float ());
-      TConst (C.float f, None)
+      TConst (`Float f, None)
   | Bool (loc, b) ->
       let temp_enum =
         match mode with
@@ -635,7 +636,7 @@ let rec make_pat var_action mode ty = function
       let temp_ty = ref (Ty.Enum temp_enum) in
       let enum = match !ty with Enum e -> e | _ -> temp_enum in
       unify loc mode ty temp_ty;
-      TConst (C.int b, Some enum)
+      TConst (`Int b, Some enum)
   | Enum_string (loc, s) ->
       let temp_enum =
         match mode with
@@ -645,7 +646,7 @@ let rec make_pat var_action mode ty = function
       let temp_ty = ref (Ty.Enum temp_enum) in
       let enum = match !ty with Enum e -> e | _ -> temp_enum in
       unify loc mode ty temp_ty;
-      TConst (C.string s, Some enum)
+      TConst (`String s, Some enum)
   | Enum_int (loc, i) ->
       let temp_enum =
         match mode with
@@ -655,7 +656,7 @@ let rec make_pat var_action mode ty = function
       let temp_ty = ref (Ty.Enum temp_enum) in
       let enum = match !ty with Enum e -> e | _ -> temp_enum in
       unify loc mode ty temp_ty;
-      TConst (C.int i, Some enum)
+      TConst (`Int i, Some enum)
   | Nullable (loc, pat) ->
       let tyvar = match !ty with Nullable ty -> ty | _ -> Ty.unknown () in
       let pat =
@@ -697,17 +698,17 @@ let rec make_pat var_action mode ty = function
           let tag, temp_enum =
             match v with
             | Tag_int (_, i) ->
-                (C.int i, Ty.Union.int_singleton i temp_tyvars row)
-            | Tag_bool (_, i) -> (C.int i, Ty.Union.bool_singleton i temp_tyvars)
+                (`Int i, Ty.Union.int_singleton i temp_tyvars row)
+            | Tag_bool (_, i) -> (`Int i, Ty.Union.bool_singleton i temp_tyvars)
             | Tag_string (_, s) ->
-                (C.string s, Ty.Union.string_singleton s temp_tyvars row)
+                (`String s, Ty.Union.string_singleton s temp_tyvars row)
           in
           let enum = match !ty with Union (_, e) -> e | _ -> temp_enum in
           let tyvars =
             try
               match (tag, enum.cases) with
-              | Int i, Int m -> Map.Int.find i m
-              | String s, String m -> Map.String.find s m
+              | `Int i, Int m -> Map.Int.find i m
+              | `String s, String m -> Map.String.find s m
               | _ -> raise_notrace Not_found
             with Not_found -> temp_tyvars
           in

@@ -22,24 +22,27 @@ type echo_format = Ast.echo_format =
   | Fmt_float
   | Fmt_bool
 
-type echo = Typechecker.echo =
-  | Echo_var of string
-  | Echo_string of string
-  | Echo_field of echo * string
+type echo = [ `Var of string | `String of string | `Field of echo * string ]
+
+type 'a data =
+  [ `Null
+  | `Int of int
+  | `Float of float
+  | `String of string
+  | `Array of 'a data array
+  | `Assoc of 'a data Map.String.t
+  | `Var of string
+  | `Field of 'a data * string
+  | `Block of 'a nodes ]
 
 (** The names of variables are preserved as strings in the [Data.t] values. *)
-type 'a node =
+and 'a node =
   | Text of string
   | Echo of (echo_format * echo) list * echo_format * echo * escape
-  | Match of 'a eval Data.t array * 'a nodes Matching.t
-  | Map_list of 'a eval Data.t * 'a nodes Matching.t
-  | Map_dict of 'a eval Data.t * 'a nodes Matching.t
-  | Component of string * 'a * 'a eval Data.t Map.String.t
-
-and 'a eval =
-  | Var of string
-  | Block of 'a nodes
-  | Field of 'a eval Data.t * string
+  | Match of 'a data array * 'a nodes Matching.t
+  | Map_list of 'a data * 'a nodes Matching.t
+  | Map_dict of 'a data * 'a nodes Matching.t
+  | Component of string * 'a * 'a data Map.String.t
 
 and 'a nodes = 'a node list
 

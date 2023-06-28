@@ -64,7 +64,7 @@ export default async function main(input1) {
             debug_stack.push("name");
             let input4 = input3.name;
             if (input4 === null || input4 === undefined) {
-              record2.set("name", null);
+              record2.set("name", 0);
             } else {
               let nullable1 = new Array(1);
               record2.set("name", nullable1);
@@ -76,7 +76,7 @@ export default async function main(input1) {
             }
             debug_stack.pop();
           } else {
-            record2.set("name", null);
+            record2.set("name", 0);
           }
           debug_stack.pop();
         } else {
@@ -110,7 +110,7 @@ export default async function main(input1) {
           debug_stack.push("image");
           let input7 = input_hd1.image;
           if (input7 === null || input7 === undefined) {
-            record1.set("image", null);
+            record1.set("image", 0);
           } else {
             let nullable2 = new Array(1);
             record1.set("image", nullable2);
@@ -143,7 +143,7 @@ export default async function main(input1) {
           }
           debug_stack.pop();
         } else {
-          record1.set("image", null);
+          record1.set("image", 0);
         }
         if ("title" in input_hd1) {
           debug_stack.push("title");
@@ -161,7 +161,7 @@ export default async function main(input1) {
         dst1 = dst_new1;
         debug_stack.pop();
       }
-      dst1[1] = null;
+      dst1[1] = 0;
       data.set("blogPosts", dst_base1[1]);
     } else {
       return decode_error(
@@ -202,9 +202,9 @@ export default async function main(input1) {
       let result = new Array();
       let index = 0;
       let arg0 = data.get("blogPosts");
-      while (arg0 !== null) {
+      while (arg0) {
         let data1 = new Map(data);
-        let exit = null;
+        let exit = -1;
         exit = 0;
         data1.set("content", arg0[0].get("content"));
         data1.set("date", arg0[0].get("date"));
@@ -215,14 +215,14 @@ export default async function main(input1) {
           "\n  <article class=\"h-entry\">\n    <header>\n      ",
           (async function () {
             let data2 = new Map(data1);
-            let exit = null;
+            let exit = -1;
             let arg0 = data1.get("image");
-            if (arg0 === null) {
-              exit = 0;
-            } else {
+            if (arg0) {
               exit = 1;
               data2.set("alt", arg0[0].get("alt"));
               data2.set("src", arg0[0].get("src"));
+            } else {
+              exit = 0;
             }
             switch (exit) {
               case 0: return (await Promise.all([])).join("");
@@ -240,7 +240,7 @@ export default async function main(input1) {
           acutis_escape(data1.get("title")),
           " </h2>\n      <span class=\"p-author\"> By ",
           acutis_escape(
-            data1.get("name") !== null ? data1.get("name")[0] : "Anonymous"
+            data1.get("name") ? data1.get("name")[0] : "Anonymous"
           ),
           " </span>\n      <span class=\"dt-published\"> Posted on ",
           acutis_escape(data1.get("date")),

@@ -57,7 +57,7 @@
     let input2 = input1.get("int_list");
     let array1 = new Array();
     data.int_list = array1;
-    while (input2 !== null) {
+    while (input2) {
       let input3 = input2[0];
       array1.push(input3);
       input2 = input2[1];
@@ -65,15 +65,15 @@
     let input4 = input1.get("nested_list");
     let array2 = new Array();
     data.nested_list = array2;
-    while (input4 !== null) {
+    while (input4) {
       let input5 = input4[0];
       let array3 = new Array();
       array2.push(array3);
-      while (input5 !== null) {
+      while (input5) {
         let input6 = input5[0];
         let array4 = new Array();
         array3.push(array4);
-        while (input6 !== null) {
+        while (input6) {
           let input7 = input6[0];
           array4.push(input7);
           input6 = input6[1];
@@ -85,18 +85,18 @@
     let input8 = input1.get("nested_nullable_list");
     let array5 = new Array();
     data.nested_nullable_list = array5;
-    while (input8 !== null) {
+    while (input8) {
       let input9 = input8[0];
-      if (input9 === null) {
-        array5.push(null);
-      } else {
+      if (input9) {
         let input10 = input9[0];
-        if (input10 === null) {
-          array5.push(null);
-        } else {
+        if (input10) {
           let input11 = input10[0];
           if (input11) { array5.push(true); } else { array5.push(false); }
+        } else {
+          array5.push(null);
         }
+      } else {
+        array5.push(null);
       }
       input8 = input8[1];
     }
@@ -104,11 +104,11 @@
     let dict1 = new Object();
     data.null_string_dict = dict1;
     for (let entry of input12) {
-      if (entry[1] === null) {
-        dict1[entry[0]] = null;
-      } else {
+      if (entry[1]) {
         let input13 = entry[1][0];
         dict1[entry[0]] = input13;
+      } else {
+        dict1[entry[0]] = null;
       }
     }
     let input14 = input1.get("record");
@@ -187,7 +187,7 @@
         let input35 = input23.get("record_list");
         let array7 = new Array();
         union4.record_list = array7;
-        while (input35 !== null) {
+        while (input35) {
           let input36 = input35[0];
           let record2 = new Object();
           array7.push(record2);
@@ -218,7 +218,7 @@
   async function template_Component(data) {
     return (await Promise.all([
       acutis_escape(
-        data.get("optional") !== null
+        data.get("optional")
           ? data.get("optional")[0].toString()
           : data.get("children")
       ),
@@ -227,9 +227,9 @@
         let result = new Array();
         let index = 0;
         let arg0 = data.get("list");
-        while (arg0 !== null) {
+        while (arg0) {
           let data1 = new Map(data);
-          let exit = null;
+          let exit = -1;
           exit = 0;
           data1.set("i", arg0[0]);
           result.push(acutis_escape(data1.get("i").toString()));
@@ -324,7 +324,7 @@
           dst1 = dst_new1;
           debug_stack.pop();
         }
-        dst1[1] = null;
+        dst1[1] = 0;
         data.set("int_list", dst_base1[1]);
       } else {
         return decode_error("[int]", input7, debug_stack);
@@ -366,7 +366,7 @@
                   dst4 = dst_new4;
                   debug_stack.pop();
                 }
-                dst4[1] = null;
+                dst4[1] = 0;
                 dst_new3[0] = dst_base4[1];
               } else {
                 return decode_error("[int]", input_hd3, debug_stack);
@@ -375,7 +375,7 @@
               dst3 = dst_new3;
               debug_stack.pop();
             }
-            dst3[1] = null;
+            dst3[1] = 0;
             dst_new2[0] = dst_base3[1];
           } else {
             return decode_error("[[int]]", input_hd2, debug_stack);
@@ -384,7 +384,7 @@
           dst2 = dst_new2;
           debug_stack.pop();
         }
-        dst2[1] = null;
+        dst2[1] = 0;
         data.set("nested_list", dst_base2[1]);
       } else {
         return decode_error("[[[int]]]", input8, debug_stack);
@@ -404,12 +404,12 @@
           debug_stack.push(index);
           let dst_new5 = new Array(2);
           if (input_hd5 === null || input_hd5 === undefined) {
-            dst_new5[0] = null;
+            dst_new5[0] = 0;
           } else {
             let nullable1 = new Array(1);
             dst_new5[0] = nullable1;
             if (input_hd5 === null || input_hd5 === undefined) {
-              nullable1[0] = null;
+              nullable1[0] = 0;
             } else {
               let nullable2 = new Array(1);
               nullable1[0] = nullable2;
@@ -425,7 +425,7 @@
           dst5 = dst_new5;
           debug_stack.pop();
         }
-        dst5[1] = null;
+        dst5[1] = 0;
         data.set("nested_nullable_list", dst_base5[1]);
       } else {
         return decode_error("[??false | true]", input9, debug_stack);
@@ -438,7 +438,7 @@
       debug_stack.push("null_bool");
       let input10 = input1.null_bool;
       if (input10 === null || input10 === undefined) {
-        data.set("null_bool", null);
+        data.set("null_bool", 0);
       } else {
         let nullable3 = new Array(1);
         data.set("null_bool", nullable3);
@@ -450,13 +450,13 @@
       }
       debug_stack.pop();
     } else {
-      data.set("null_bool", null);
+      data.set("null_bool", 0);
     }
     if ("null_float" in input1) {
       debug_stack.push("null_float");
       let input11 = input1.null_float;
       if (input11 === null || input11 === undefined) {
-        data.set("null_float", null);
+        data.set("null_float", 0);
       } else {
         let nullable4 = new Array(1);
         data.set("null_float", nullable4);
@@ -468,13 +468,13 @@
       }
       debug_stack.pop();
     } else {
-      data.set("null_float", null);
+      data.set("null_float", 0);
     }
     if ("null_int" in input1) {
       debug_stack.push("null_int");
       let input12 = input1.null_int;
       if (input12 === null || input12 === undefined) {
-        data.set("null_int", null);
+        data.set("null_int", 0);
       } else {
         let nullable5 = new Array(1);
         data.set("null_int", nullable5);
@@ -486,13 +486,13 @@
       }
       debug_stack.pop();
     } else {
-      data.set("null_int", null);
+      data.set("null_int", 0);
     }
     if ("null_string" in input1) {
       debug_stack.push("null_string");
       let input13 = input1.null_string;
       if (input13 === null || input13 === undefined) {
-        data.set("null_string", null);
+        data.set("null_string", 0);
       } else {
         let nullable6 = new Array(1);
         data.set("null_string", nullable6);
@@ -504,7 +504,7 @@
       }
       debug_stack.pop();
     } else {
-      data.set("null_string", null);
+      data.set("null_string", 0);
     }
     if ("null_string_dict" in input1) {
       debug_stack.push("null_string_dict");
@@ -515,7 +515,7 @@
         debug_stack.push(key1);
         let input15 = input14[key1];
         if (input15 === null || input15 === undefined) {
-          dict1.set(key1, null);
+          dict1.set(key1, 0);
         } else {
           let nullable7 = new Array(1);
           dict1.set(key1, nullable7);
@@ -789,7 +789,7 @@
                 dst6 = dst_new6;
                 debug_stack.pop();
               }
-              dst6[1] = null;
+              dst6[1] = 0;
               union4.set("record_list", dst_base6[1]);
             } else {
               return decode_error(
@@ -848,7 +848,7 @@
       data.set("unknown", input28);
       debug_stack.pop();
     } else {
-      data.set("unknown", null);
+      data.set("unknown", 0);
     }
     return (await Promise.all([
       "Formatters\n----------\n\n%i    ",
@@ -865,20 +865,20 @@
       data.get("dangerous"),
       "\n\nNullable echo chaining\n----------------------\n\n",
       acutis_escape(
-        data.get("null_int") !== null
+        data.get("null_int")
           ? data.get("null_int")[0].toString()
-          : data.get("null_float") !== null
+          : data.get("null_float")
               ? data.get("null_float")[0].toString()
-              : data.get("null_bool") !== null
+              : data.get("null_bool")
                   ? data.get("null_bool")[0] ? "true" : "false"
-                  : data.get("null_string") !== null
+                  : data.get("null_string")
                       ? data.get("null_string")[0]
                       : "pass"
       ),
       "\n\nMatching\n--------\n\n",
       (async function () {
         let data1 = new Map(data);
-        let exit = null;
+        let exit = -1;
         let arg0 = data.get("record").get("int_enum");
         switch (arg0) {
           case 8: exit = 0; break;
@@ -891,7 +891,7 @@
       })(),
       (async function () {
         let data1 = new Map(data);
-        let exit = null;
+        let exit = -1;
         let arg0 = data.get("record");
         switch (arg0.get("string_enum")) {
           case "no": exit = 1; break;
@@ -904,7 +904,7 @@
       })(),
       (async function () {
         let data1 = new Map(data);
-        let exit = null;
+        let exit = -1;
         let arg0 = data.get("tagged_record_bool");
         switch (arg0.get("tag")) {
           case 0: exit = 0; data1.set("a", arg0.get("a")); break;
@@ -925,7 +925,7 @@
       })(),
       (async function () {
         let data1 = new Map(data);
-        let exit = null;
+        let exit = -1;
         let arg0 = data.get("tagged_record_int");
         switch (arg0.get("tag")) {
           case 0: exit = 0; break;
@@ -951,12 +951,12 @@
       })(),
       (async function () {
         let data1 = new Map(data);
-        let exit = null;
+        let exit = -1;
         let arg0 = data.get("tagged_record_open");
         switch (arg0.get("tag")) {
           case 200: exit = 0; data1.set("b", arg0.get("b")); break;
         }
-        if (exit === null) { exit = 1; }
+        if (exit === -1) { exit = 1; }
         switch (exit) {
           case 0:
             return (await Promise.all([
@@ -973,14 +973,14 @@
         let arg0 = data.get("null_string_dict");
         for (let entry of arg0) {
           let data1 = new Map(data);
-          let exit = null;
-          if (entry[1] === null) {
-            exit = 0;
-            data1.set("key", entry[0]);
-          } else {
+          let exit = -1;
+          if (entry[1]) {
             exit = 1;
             data1.set("key", entry[0]);
             data1.set("str", entry[1][0]);
+          } else {
+            exit = 0;
+            data1.set("key", entry[0]);
           }
           switch (exit) {
             case 0:
@@ -1002,9 +1002,9 @@
         let result = new Array();
         let index = 0;
         let arg0 = data.get("int_list");
-        while (arg0 !== null) {
+        while (arg0) {
           let data1 = new Map(data);
-          let exit = null;
+          let exit = -1;
           exit = 0;
           data1.set("i", arg0[0]);
           result.push(acutis_escape(data1.get("i").toString()), "\n");
@@ -1017,9 +1017,9 @@
         let result = new Array();
         let index = 0;
         let arg0 = data.get("int_list");
-        while (arg0 !== null) {
+        while (arg0) {
           let data1 = new Map(data);
-          let exit = null;
+          let exit = -1;
           exit = 0;
           data1.set("i", arg0[0]);
           data1.set("key", index);
@@ -1038,9 +1038,9 @@
         let result = new Array();
         let index = 0;
         let arg0 = data.get("nested_list");
-        while (arg0 !== null) {
+        while (arg0) {
           let data1 = new Map(data);
-          let exit = null;
+          let exit = -1;
           exit = 0;
           data1.set("l", arg0[0]);
           result.push(
@@ -1048,9 +1048,9 @@
               let result = new Array();
               let index = 0;
               let arg0 = data1.get("l");
-              while (arg0 !== null) {
+              while (arg0) {
                 let data2 = new Map(data1);
-                let exit = null;
+                let exit = -1;
                 exit = 0;
                 data2.set("l2", arg0[0]);
                 result.push(
@@ -1058,9 +1058,9 @@
                     let result = new Array();
                     let index = 0;
                     let arg0 = data2.get("l2");
-                    while (arg0 !== null) {
+                    while (arg0) {
                       let data3 = new Map(data2);
-                      let exit = null;
+                      let exit = -1;
                       exit = 0;
                       data3.set("i", arg0[0]);
                       result.push(
@@ -1089,18 +1089,18 @@
         let result = new Array();
         let index = 0;
         let arg0 = data.get("nested_nullable_list");
-        while (arg0 !== null) {
+        while (arg0) {
           let data1 = new Map(data);
-          let exit = null;
-          if (arg0[0] === null) {
-            exit = 0;
-          } else {
-            if (arg0[0][0] === null) {
-              exit = 1;
-            } else {
+          let exit = -1;
+          if (arg0[0]) {
+            if (arg0[0][0]) {
               exit = 2;
               data1.set("b", arg0[0][0][0]);
+            } else {
+              exit = 1;
             }
+          } else {
+            exit = 0;
           }
           switch (exit) {
             case 0: result.push("Level 1 null\n"); break;
@@ -1128,35 +1128,35 @@
   ",
       (async function () {
         let data1 = new Map(data);
-        let exit = null;
+        let exit = -1;
         let arg0 = data.get("null_string_dict");
         if (arg0.has("a")) {
-          if (arg0.get("a") === null) {
-            if (exit === null) { exit = 1; }
-          } else {
+          if (arg0.get("a")) {
             switch (arg0.get("a")[0]) {
               case "a":
                 if (arg0.has("does_not_exist")) {
-                  if (arg0.get("does_not_exist") !== null) {
+                  if (arg0.get("does_not_exist")) {
                     exit = 0;
                     data1.set("a", arg0.get("a")[0]);
                     data1.set("b", arg0.get("does_not_exist")[0]);
                   }
                 }
-                if (exit === null) { exit = 2; }
+                if (exit === -1) { exit = 2; }
                 break;
               default:
                 if (arg0.has("does_not_exist")) {
-                  if (arg0.get("does_not_exist") !== null) {
+                  if (arg0.get("does_not_exist")) {
                     exit = 0;
                     data1.set("a", arg0.get("a")[0]);
                     data1.set("b", arg0.get("does_not_exist")[0]);
                   }
                 }
             }
+          } else {
+            if (exit === -1) { exit = 1; }
           }
         }
-        if (exit === null) { exit = 3; }
+        if (exit === -1) { exit = 3; }
         switch (exit) {
           case 0:
             return (await Promise.all([
@@ -1173,7 +1173,7 @@
       })(),
       (async function () {
         let data1 = new Map(data);
-        let exit = null;
+        let exit = -1;
         let arg0 = new Map([["a", "a"]]);
         if (arg0.has("a")) {
           switch (arg0.get("a")) {
@@ -1183,7 +1183,7 @@
                 data1.set("a", arg0.get("a"));
                 data1.set("b", arg0.get("does_not_exist"));
               }
-              if (exit === null) { exit = 1; }
+              if (exit === -1) { exit = 1; }
               break;
             case "a":
               if (arg0.has("does_not_exist")) {
@@ -1191,7 +1191,7 @@
                 data1.set("a", arg0.get("a"));
                 data1.set("b", arg0.get("does_not_exist"));
               }
-              if (exit === null) { exit = 2; }
+              if (exit === -1) { exit = 2; }
               break;
             default:
               if (arg0.has("does_not_exist")) {
@@ -1201,7 +1201,7 @@
               }
           }
         }
-        if (exit === null) { exit = 3; }
+        if (exit === -1) { exit = 3; }
         switch (exit) {
           case 0:
             return (await Promise.all([
@@ -1219,7 +1219,7 @@
       "\n\nConstructing async blocks\n-------------------------\n\n",
       (async function () {
         let data1 = new Map(data);
-        let exit = null;
+        let exit = -1;
         let resolved1 = (await Promise.all([
           " Another nested block",
         ])).join("");
@@ -1240,8 +1240,8 @@
         let resolved0 = (await Promise.all(["Children prop"])).join("");
         let arg0 = new Map([
           ["children", resolved0],
-          ["list", [1, [2, [3, null]]]],
-          ["optional", null],
+          ["list", [1, [2, [3, 0]]]],
+          ["optional", 0],
         ]);
         return template_Component(arg0);
       })(),
@@ -1258,18 +1258,13 @@
   ",
       (async function () {
         let data1 = new Map(data);
-        let exit = null;
+        let exit = -1;
         let arg0 = 1;
-        let arg1 = null;
+        let arg1 = 0;
         let arg2 = 3;
         switch (arg0) {
           case 1:
-            if (arg1 === null) {
-              switch (arg2) {
-                case 0: exit = 0; break;
-                default: exit = 2; data1.set("y", arg2);
-              }
-            } else {
+            if (arg1) {
               switch (arg1[0]) {
                 case 1:
                   switch (arg2) {
@@ -1279,19 +1274,21 @@
                   }
                   break;
               }
-              if (exit === null) {
+              if (exit === -1) {
                 switch (arg2) {
                   case 0: exit = 0; break;
                   default: exit = 4;
                 }
               }
+            } else {
+              switch (arg2) {
+                case 0: exit = 0; break;
+                default: exit = 2; data1.set("y", arg2);
+              }
             }
             break;
           default:
-            if (arg1 === null) {
-              exit = 2;
-              data1.set("y", arg2);
-            } else {
+            if (arg1) {
               switch (arg1[0]) {
                 case 1:
                   switch (arg2) {
@@ -1300,7 +1297,10 @@
                   }
                   break;
               }
-              if (exit === null) { exit = 4; }
+              if (exit === -1) { exit = 4; }
+            } else {
+              exit = 2;
+              data1.set("y", arg2);
             }
         }
         switch (exit) {
@@ -1323,7 +1323,7 @@
       })(),
       (async function () {
         let data1 = new Map(data);
-        let exit = null;
+        let exit = -1;
         let arg0 = [[10, 20], 30];
         let arg1 = 40;
         switch (arg0[0][0]) {
@@ -1346,7 +1346,7 @@
             }
             break;
         }
-        if (exit === null) {
+        if (exit === -1) {
           switch (arg1) {
             case 41: exit = 0; data1.set("_x", arg0); break;
             default: exit = 2; data1.set("_y", arg0); data1.set("z", arg1);
@@ -1365,7 +1365,7 @@
       })(),
       (async function () {
         let data1 = new Map(data);
-        let exit = null;
+        let exit = -1;
         let arg0 = [[10, 20], 99];
         let arg1 = 40;
         switch (arg0[0][0]) {
@@ -1388,7 +1388,7 @@
             }
             break;
         }
-        if (exit === null) {
+        if (exit === -1) {
           switch (arg1) {
             case 41: exit = 0; data1.set("_x", arg0); break;
             default: exit = 2; data1.set("_y", arg0); data1.set("z", arg1);

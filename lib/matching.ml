@@ -10,10 +10,23 @@
 
 module T = Typechecker
 module Ty = Typescheme
-module Const = Data.Const
-module ConstSet = Set.Make (Const)
 
-type internal_check_cases = ConstSet.t option
+type const = [ `Int of int | `Float of float | `String of string ]
+
+let int i = `Int i
+let string s = `String s
+
+let const_compare a b =
+  match (a, b) with
+  | `Int a, `Int b -> Int.compare a b
+  | `String a, `String b -> String.compare a b
+  | `Float a, `Float b -> Float.compare a b
+  | `Int _, (`String _ | `Float _) | `String _, `Float _ -> -1
+  | `String _, `Int _ | `Float _, (`Int _ | `String _) -> 1
+
+let const_equal a b = const_compare a b = 0
+
+type internal_check_cases = const Seq.t option
 
 type ('leaf, 'key) tree =
   | Switch of {
@@ -47,7 +60,7 @@ and ('leaf, 'key) nest =
   | String_keys of (('leaf, 'key) tree, string) tree
 
 and ('leaf, 'key) switchcase = {
-  data : Const.t;
+  data : const;
   if_match : ('leaf, 'key) tree;
   next : ('leaf, 'key) switchcase option;
 }
@@ -78,11 +91,11 @@ let rec equal_tree :
           bool =
  fun equal_leaf equal_key a b ->
   match (a, b) with
-  | Switch a, Switch { key; ids; cases; wildcard; check_cases } ->
+  | Switch a, Switch { key; ids; cases; wildcard; check_cases = _ } ->
+      (* Don't bother test equality for [check_cases]. *)
       equal_key a.key key && Set.Int.equal a.ids ids
       && equal_switchcase equal_leaf equal_key a.cases cases
       && Option.equal (equal_tree equal_leaf equal_key) a.wildcard wildcard
-      && Option.equal ConstSet.equal a.check_cases check_cases
   | Nest a, Nest { key; ids; child; wildcard } ->
       equal_key a.key key && Set.Int.equal a.ids ids
       && equal_nest equal_leaf equal_key a.child child
@@ -106,7 +119,7 @@ and equal_nest equal_leaf equal_key a b =
   | _ -> false
 
 and equal_switchcase equal_leaf equal_key a { data; if_match; next } =
-  Const.equal a.data data
+  const_equal a.data data
   && equal_tree equal_leaf equal_key a.if_match if_match
   && Option.equal (equal_switchcase equal_leaf equal_key) a.next next
 
@@ -149,11 +162,11 @@ let[@tail_mod_cons] rec merge_testcases_aux :
     type a k.
     (a, leaf) depth ->
     (a, k) switchcase ->
-    Const.t ->
+    const ->
     (a, k) tree ->
     (a, k) switchcase =
  fun n original data if_match ->
-  let cmp = Const.compare data original.data in
+  let cmp = const_compare data original.data in
   if cmp < 0 then { data; if_match; next = Some original }
   else if cmp = 0 then
     { original with if_match = merge n original.if_match if_match }
@@ -584,22 +597,19 @@ let merge = merge Z
 type bindings = { next_id : unit -> int; names : int Map.String.t }
 type ('a, 'k) cont = bindings -> ('a, 'k) tree
 
-let constset_of_enum = function
+let check_cases_of_enum = function
   | None | Some Ty.{ row = `Open; _ } -> None
   | Some Ty.{ row = `Closed; cases = Enum.Int s; _ } ->
-      Some (Set.Int.to_seq s |> Seq.map Const.int |> ConstSet.of_seq)
+      Some (Set.Int.to_seq s |> Seq.map int)
   | Some Ty.{ row = `Closed; cases = Enum.String s; _ } ->
-      Some (Set.String.to_seq s |> Seq.map Const.string |> ConstSet.of_seq)
+      Some (Set.String.to_seq s |> Seq.map string)
 
-let constset_of_union = function
+let check_cases_of_union = function
   | Ty.{ row = `Open; _ } -> None
   | Ty.{ row = `Closed; cases = Union.Int s; _ } ->
-      Some
-        (Map.Int.to_seq s |> Seq.map fst |> Seq.map Const.int |> ConstSet.of_seq)
+      Some (Map.Int.to_seq s |> Seq.map fst |> Seq.map int)
   | Ty.{ row = `Closed; cases = Union.String s; _ } ->
-      Some
-        (Map.String.to_seq s |> Seq.map fst |> Seq.map Const.string
-       |> ConstSet.of_seq)
+      Some (Map.String.to_seq s |> Seq.map fst |> Seq.map string)
 
 let of_const key data if_match check_cases =
   Switch
@@ -624,7 +634,7 @@ let rec of_tpat :
       Construct { key; ids = Set.Int.empty; nil = None; cons = Some child }
   | TConstruct (_, None) ->
       Construct { key; ids = Set.Int.empty; nil = Some (k b); cons = None }
-  | TConst (data, enum) -> of_const key data (k b) (constset_of_enum enum)
+  | TConst (data, enum) -> of_const key data (k b) (check_cases_of_enum enum)
   | TTuple l ->
       let child = Int_keys (of_list ~key:0 b (fun b -> End (k b)) l) in
       Nest { key; ids = Set.Int.empty; child; wildcard = None }
@@ -641,7 +651,7 @@ let rec of_tpat :
       let child =
         match tag with
         | Some (key, data, union) ->
-            of_const key data child (constset_of_union union)
+            of_const key (data :> const) child (check_cases_of_union union)
         | None -> child
       in
       Nest
@@ -734,19 +744,19 @@ module ParMatch = struct
 
   (** Represents a path through a tree. This is an intermediary structure which
       we later convert into a proper pattern.*)
-  type t = Any | Const of Const.t | Nil | Cons of t | Nest of t list
+  type t = Any | Const of const | Nil | Cons of t | Nest of t list
 
   let l = Loc.dummy
   let any = Ast.Var (l, "_")
 
   let rec to_pat ty path =
     match (!ty, path) with
-    | Ty.Enum { extra = Bool; _ }, Const (Int i) -> Ast.Bool (l, i)
-    | Enum _, Const (Int i) -> Enum_int (l, i)
-    | Enum _, Const (String s) -> Enum_string (l, s)
-    | _, Const (Int i) -> Int (l, i)
-    | _, Const (String s) -> String (l, s)
-    | _, Const (Float f) -> Float (l, f)
+    | Ty.Enum { extra = Bool; _ }, Const (`Int i) -> Ast.Bool (l, i)
+    | Enum _, Const (`Int i) -> Enum_int (l, i)
+    | Enum _, Const (`String s) -> Enum_string (l, s)
+    | _, Const (`Int i) -> Int (l, i)
+    | _, Const (`String s) -> String (l, s)
+    | _, Const (`Float f) -> Float (l, f)
     | Tuple tys, Nest path -> Tuple (l, to_list tys path)
     | List ty, path -> to_list_pat [] ty path
     | Nullable ty, Cons (Nest [ path ]) -> Nullable (l, Some (to_pat ty path))
@@ -755,7 +765,7 @@ module ParMatch = struct
     | Record tys, Nest path ->
         let s = Map.String.to_seq !tys in
         Record (l, to_assoc s path |> Nonempty.of_list)
-    | Union (key, { cases = Int m; extra; _ }), Nest (Const (Int i) :: path) ->
+    | Union (key, { cases = Int m; extra; _ }), Nest (Const (`Int i) :: path) ->
         let tag =
           match extra with
           | Bool -> Ast.Tag_bool (l, i)
@@ -764,7 +774,7 @@ module ParMatch = struct
         let tys = Map.Int.find i m in
         let assoc = to_assoc (Map.String.to_seq !tys) path in
         Record (l, (l, key, Tag tag) :: assoc)
-    | Union (key, { cases = String m; _ }), Nest (Const (String s) :: path) ->
+    | Union (key, { cases = String m; _ }), Nest (Const (`String s) :: path) ->
         let tys = Map.String.find s m in
         let assoc = to_assoc (Map.String.to_seq !tys) path in
         Record (l, (l, key, Tag (Tag_string (l, s))) :: assoc)
@@ -870,17 +880,17 @@ module ParMatch = struct
           | { flag = Partial; pats; after_nest } ->
               { flag = Partial; pats = Const data :: pats; after_nest }
           | { flag = Exhaustive; pats; after_nest } -> (
-              let s = ConstSet.remove data s in
+              let s = Seq.filter (Fun.negate (const_equal data)) s in
               match next with
               | None -> (
-                  match ConstSet.choose_opt s with
-                  | None ->
+                  match s () with
+                  | Seq.Nil ->
                       {
                         flag = Exhaustive;
                         pats = Const data :: pats;
                         after_nest;
                       }
-                  | Some data ->
+                  | Seq.Cons (data, _) ->
                       { flag = Partial; pats = Const data :: pats; after_nest })
               | Some case -> aux s case)
         in
@@ -901,6 +911,11 @@ let partial_match_check loc tys tree =
 
 let set_to_sexp s = Sexp.of_seq Sexp.int (Set.Int.to_seq s)
 
+let const_to_sexp = function
+  | `Int i -> Sexp.int i
+  | `String s -> Sexp.string s
+  | `Float f -> Sexp.float f
+
 let rec tree_to_sexp :
           'leaf 'key.
           ('leaf -> Sexp.t) -> ('key -> Sexp.t) -> ('leaf, 'key) tree -> Sexp.t
@@ -915,11 +930,7 @@ let rec tree_to_sexp :
           Sexp.make "wildcard"
             [ Sexp.option (tree_to_sexp leaf_f key_f) wildcard ];
           Sexp.make "check_cases"
-            [
-              Sexp.option
-                (fun s -> ConstSet.to_seq s |> Sexp.of_seq Const.to_sexp)
-                check_cases;
-            ];
+            [ Sexp.option (Sexp.of_seq const_to_sexp) check_cases ];
         ]
   | Nest { key; ids; child; wildcard } ->
       Sexp.make "nest"
@@ -964,7 +975,7 @@ and nest_to_sexp leaf_f key_f = function
 and switchcase_to_sexp leaf_f key_f { data; if_match; next } =
   Sexp.make "case"
     [
-      Sexp.make "data" [ Data.Const.to_sexp data ];
+      Sexp.make "data" [ const_to_sexp data ];
       Sexp.make "if_match" [ tree_to_sexp leaf_f key_f if_match ];
       Sexp.make "next" [ Sexp.option (switchcase_to_sexp leaf_f key_f) next ];
     ]

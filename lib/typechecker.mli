@@ -18,11 +18,16 @@ type echo =
 type construct = TList | TNullable
 
 type pat =
-  | TConst of Data.Const.t * Typescheme.Enum.t option
+  | TConst of
+      [ `Int of int | `Float of float | `String of string ]
+      * Typescheme.Enum.t option
   | TConstruct of construct * pat option
   | TTuple of pat list
   | TRecord of
-      (string * Data.Const.t * Typescheme.t Typescheme.Union.t) option
+      (string
+      * [ `Int of int | `String of string ]
+      * Typescheme.t Typescheme.Union.t)
+      option
       * pat Map.String.t
       * Typescheme.t Map.String.t ref
   | TDict of pat Map.String.t * Set.String.t ref

@@ -7,7 +7,7 @@
   "binaryt": true,
   "binaryf": false,
   "union": { "tag": 0, "a": "pass" },
-  "unknowns": {
+  "encode": {
     "dict": { "a": 0, "b": "b" },
     "arr": ["x", "y"],
     "arrEmpty": [],

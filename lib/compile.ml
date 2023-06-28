@@ -46,42 +46,47 @@ type echo_format = Ast.echo_format =
   | Fmt_float
   | Fmt_bool
 
-type echo = Typechecker.echo =
-  | Echo_var of string
-  | Echo_string of string
-  | Echo_field of echo * string
+type echo = [ `Var of string | `String of string | `Field of echo * string ]
 
-type 'a node =
+type 'a data =
+  [ `Null
+  | `Int of int
+  | `Float of float
+  | `String of string
+  | `Array of 'a data array
+  | `Assoc of 'a data Map.String.t
+  | `Var of string
+  | `Field of 'a data * string
+  | `Block of 'a nodes ]
+
+and 'a node =
   | Text of string
   | Echo of (echo_format * echo) list * echo_format * echo * escape
-  | Match of 'a eval Data.t array * 'a nodes Matching.t
-  | Map_list of 'a eval Data.t * 'a nodes Matching.t
-  | Map_dict of 'a eval Data.t * 'a nodes Matching.t
-  | Component of string * 'a * 'a eval Data.t Map.String.t
-
-and 'a eval =
-  | Var of string
-  | Block of 'a nodes
-  | Field of 'a eval Data.t * string
+  | Match of 'a data array * 'a nodes Matching.t
+  | Map_list of 'a data * 'a nodes Matching.t
+  | Map_dict of 'a data * 'a nodes Matching.t
+  | Component of string * 'a * 'a data Map.String.t
 
 and 'a nodes = 'a node list
 
 let text = function "" -> None | s -> Some (Text s)
 
+let rec make_echo = function
+  | Typechecker.Echo_var x -> `Var x
+  | Echo_string s -> `String s
+  | Echo_field (e, s) -> `Field (make_echo e, s)
+
 let rec make_data = function
-  | Typechecker.TConst (x, _) -> Data.const x
-  | TVar x -> Data.other (Var x)
-  | TBlock x -> Data.other (Block (make_nodes x))
+  | Typechecker.TConst (x, _) -> (x :> 'a data)
+  | TVar x -> `Var x
+  | TBlock x -> `Block (make_nodes x)
   | TConstruct (_, Some x) -> make_data x
-  | TConstruct (_, None) -> Data.null
-  | TTuple l ->
-      let a = Array.of_list l |> Array.map make_data in
-      Data.array a
+  | TConstruct (_, None) -> `Null
+  | TTuple l -> `Array (Array.of_list l |> Array.map make_data)
   | TRecord (Some (k, v, _), x, _) ->
-      Map.String.map make_data x |> Map.String.add k (Data.const v) |> Data.dict
-  | TRecord (None, x, _) | TDict (x, _) ->
-      Data.dict (Map.String.map make_data x)
-  | TField (node, field) -> Data.other (Field (make_data node, field))
+      `Assoc (Map.String.map make_data x |> Map.String.add k (v :> 'a data))
+  | TRecord (None, x, _) | TDict (x, _) -> `Assoc (Map.String.map make_data x)
+  | TField (node, field) -> `Field (make_data node, field)
   | TAny ->
       Error.internal __POS__
         "TAny should not appear in data constructs. This means the typechecker \
@@ -94,7 +99,9 @@ and make_nodes l =
       | TText (s, Trim, No_trim) -> text (ltrim s)
       | TText (s, No_trim, Trim) -> text (rtrim s)
       | TText (s, Trim, Trim) -> text (String.trim s)
-      | TEcho (nullables, fmt, default, esc) ->
+      | TEcho (l, fmt, default, esc) ->
+          let nullables = List.map (fun (fmt, ech) -> (fmt, make_echo ech)) l in
+          let default = make_echo default in
           Some (Echo (nullables, fmt, default, esc))
       | TMatch (loc, hd :: tl, tys, cases) ->
           let pats = Array.of_list (hd :: tl) |> Array.map make_data in
@@ -169,32 +176,34 @@ type 'a t = {
   components : 'a template Map.String.t;
 }
 
-let rec link_nodes graph nodes =
+let rec link_data graph = function
+  | (`Null | `Int _ | `String _ | `Float _ | `Var _) as x -> x
+  | `Array a -> `Array (Array.map (link_data graph) a)
+  | `Assoc d -> `Assoc (Map.String.map (link_data graph) d)
+  | `Block nodes -> `Block (link_nodes graph nodes)
+  | `Field (data, field) -> `Field (link_data graph data, field)
+
+and link_nodes graph nodes =
   List.map
     (function
       | (Text _ | Echo _) as x -> x
       | Match (pats, t) ->
-          let pats = Array.map (Data.map (link_data graph)) pats in
+          let pats = Array.map (link_data graph) pats in
           let exits = Matching.Exit.map (link_nodes graph) t.exits in
           Match (pats, { t with exits })
       | Map_list (pats, t) ->
-          let pats = Data.map (link_data graph) pats in
+          let pats = link_data graph pats in
           let exits = Matching.Exit.map (link_nodes graph) t.exits in
           Map_list (pats, { t with exits })
       | Map_dict (pats, t) ->
-          let pats = Data.map (link_data graph) pats in
+          let pats = link_data graph pats in
           let exits = Matching.Exit.map (link_nodes graph) t.exits in
           Map_dict (pats, { t with exits })
       | Component (name, (), pats) ->
-          let pats = Map.String.map (Data.map (link_data graph)) pats in
+          let pats = Map.String.map (link_data graph) pats in
           let data = Dagmap.get name graph in
           Component (name, data, pats))
     nodes
-
-and link_data graph = function
-  | Var _ as x -> x
-  | Block nodes -> Block (link_nodes graph nodes)
-  | Field (data, field) -> Field (Data.map (link_data graph) data, field)
 
 let link_src graph = function
   | Typechecker.Src (_, nodes) -> Src (link_nodes graph nodes)
@@ -221,11 +230,6 @@ let interface_from_channel ~fname src =
   parse_interface ~fname (Lexing.from_channel src)
   |> Typechecker.make_interface_standalone
 
-let rec echo_to_sexp = function
-  | Echo_var s -> Sexp.make "var" [ Sexp.string s ]
-  | Echo_string s -> Sexp.string s
-  | Echo_field (e, s) -> Sexp.make "field" [ echo_to_sexp e; Sexp.string s ]
-
 let rec node_to_sexp = function
   | Text s -> Sexp.make "text" [ Sexp.string s ]
   | Echo (l, fmt, ech, esc) ->
@@ -241,23 +245,30 @@ let rec node_to_sexp = function
   | Match (a, matching) ->
       Sexp.make "match"
         [
-          Sexp.of_seq (Data.to_sexp eval_to_sexp) (Array.to_seq a);
+          Sexp.of_seq data_to_sexp (Array.to_seq a);
           Matching.to_sexp to_sexp matching;
         ]
   | Map_list (d, matching) ->
-      Sexp.make "map_list"
-        [ Data.to_sexp eval_to_sexp d; Matching.to_sexp to_sexp matching ]
+      Sexp.make "map_list" [ data_to_sexp d; Matching.to_sexp to_sexp matching ]
   | Map_dict (d, matching) ->
-      Sexp.make "map_dict"
-        [ Data.to_sexp eval_to_sexp d; Matching.to_sexp to_sexp matching ]
+      Sexp.make "map_dict" [ data_to_sexp d; Matching.to_sexp to_sexp matching ]
   | Component (name, _function, props) ->
-      Sexp.make "component"
-        [ Sexp.string name; Data.dict_to_sexp eval_to_sexp props ]
+      Sexp.make "component" [ Sexp.string name; assoc_to_sexp props ]
 
-and eval_to_sexp = function
-  | Var s -> Sexp.make "var" [ Sexp.string s ]
-  | Block n -> Sexp.make "block" [ to_sexp n ]
-  | Field (d, f) ->
-      Sexp.make "field" [ Data.to_sexp eval_to_sexp d; Sexp.string f ]
+and echo_to_sexp = function
+  | `Field (e, s) -> Sexp.make "field" [ echo_to_sexp e; Sexp.string s ]
+  | (`Var _ | `String _) as x -> data_to_sexp x
 
+and data_to_sexp = function
+  | `Null -> Sexp.symbol "null"
+  | `Int i -> Sexp.int i
+  | `String s -> Sexp.string s
+  | `Float f -> Sexp.float f
+  | `Array a -> Sexp.make "array" [ Sexp.of_seq data_to_sexp (Array.to_seq a) ]
+  | `Assoc d -> Sexp.make "assoc" [ assoc_to_sexp d ]
+  | `Var s -> Sexp.make "var" [ Sexp.string s ]
+  | `Block n -> Sexp.make "block" [ to_sexp n ]
+  | `Field (d, f) -> Sexp.make "field" [ data_to_sexp d; Sexp.string f ]
+
+and assoc_to_sexp d = Sexp.map_string data_to_sexp d
 and to_sexp l = Sexp.of_seq node_to_sexp (List.to_seq l)

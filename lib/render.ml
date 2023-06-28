@@ -8,8 +8,59 @@
 (*                                                                        *)
 (**************************************************************************)
 
+module Data = struct
+  type 'a t =
+    [ `Int of int
+    | `Float of float
+    | `String of string
+    | `Array of 'a t array
+    | `Assoc of 'a t Map.String.t
+    | `Unknown of 'a ]
+
+  let null = `Int 0
+  let some x = `Array [| x |]
+  let list_empty = null
+  let list_cons hd tl = `Array [| hd; tl |]
+
+  let list_rev =
+    let rec aux acc = function
+      | `Array [| hd; tl |] -> aux (`Array [| hd; acc |]) tl
+      | _ -> acc
+    in
+    fun l -> aux list_empty l
+
+  let get_tuple = function
+    | `Array t -> t
+    | _ -> Error.internal __POS__ "Expected Array."
+
+  let get_assoc = function
+    | `Assoc t -> t
+    | _ -> Error.internal __POS__ "Expected Assoc."
+
+  let fold_list f acc l =
+    let rec aux i acc = function
+      | `Array [| hd; tl |] ->
+          let acc = f ~index:(`Int i) acc hd in
+          aux (succ i) acc tl
+      | _ -> acc
+    in
+    aux 0 acc l
+
+  let fold_assoc f m acc =
+    Map.String.fold
+      (fun k v acc -> f ~index:(`String k) acc v)
+      (get_assoc m) acc
+end
+
 let rec test_case ~wildcard arg Matching.{ data; if_match; next } =
-  if Data.Const.equal arg data then Some if_match
+  let is_equal =
+    match (arg, data) with
+    | `String a, `String b -> String.equal a b
+    | `Int a, `Int b -> Int.equal a b
+    | `Float a, `Float b -> Float.equal a b
+    | _ -> false
+  in
+  if is_equal then Some if_match
   else
     match next with
     | Some case -> test_case ~wildcard arg case
@@ -22,21 +73,20 @@ let bind_names data ids map =
    an optional field doesn't exist, and to seek an alternate path. *)
 
 let tuple_get i a = a.(i)
-let dict_get = Map.String.find
+let assoc_get = Map.String.find
 
 let rec make_match :
-          'a 'args 'key.
+          'leaf 'args 'key.
           'args ->
           ('key -> 'args -> 'data Data.t) ->
           'data Data.t Map.Int.t ->
-          ('a, 'key) Matching.tree ->
-          'data Data.t Map.Int.t * 'a =
+          ('leaf, 'key) Matching.tree ->
+          'data Data.t Map.Int.t * 'leaf =
  fun args get vars -> function
   | End x -> (vars, x)
   | Switch { key; cases; wildcard; ids; _ } -> (
       let data = get key args in
       let vars = bind_names data ids vars in
-      let data = Data.get_const data in
       match test_case ~wildcard data cases with
       | Some tree -> make_match args get vars tree
       | None -> raise_notrace Not_found)
@@ -47,9 +97,10 @@ let rec make_match :
   | Construct { key; ids; nil; cons } -> (
       let data = get key args in
       let vars = bind_names data ids vars in
-      match if Data.is_null data then nil else cons with
-      | Some tree -> make_match args get vars tree
-      | None -> raise_notrace Not_found)
+      match (data, cons, nil) with
+      | `Array _, Some tree, _ | _, _, Some tree ->
+          make_match args get vars tree
+      | _ -> raise_notrace Not_found)
   | Nest { key; ids; child; wildcard } ->
       let data = get key args in
       let vars = bind_names data ids vars in
@@ -60,8 +111,8 @@ let rec make_match :
               let tuple = Data.get_tuple data in
               make_match tuple tuple_get vars child
           | String_keys child ->
-              let dict = Data.get_dict data in
-              make_match dict dict_get vars child
+              let assoc = Data.get_assoc data in
+              make_match assoc assoc_get vars child
         with Not_found -> (
           match wildcard with
           | Some tree -> (vars, tree)
@@ -100,26 +151,26 @@ let add_escape b = function
 
 let echo_format fmt data =
   match (fmt, data) with
-  | Compile.Fmt_int, Data.Const (Int i) -> Int.to_string i
-  | Fmt_float, Const (Float f) -> Float.to_string f
-  | Fmt_bool, Const (Int 0) -> "false"
+  | Compile.Fmt_int, `Int i -> Int.to_string i
+  | Fmt_float, `Float f -> Float.to_string f
+  | Fmt_bool, `Int 0 -> "false"
   | Fmt_bool, _ -> "true"
-  | Fmt_string, Const (String s) -> s
+  | Fmt_string, `String s -> s
   | _ ->
       Error.internal __POS__ "Type mismatch while formatting an echo statement."
 
 let rec get_echo props = function
-  | Compile.Echo_var var -> Map.String.find var props
-  | Echo_field (var, field) ->
-      get_echo props var |> Data.get_dict |> Map.String.find field
-  | Echo_string s -> Data.string s
+  | `Var var -> Map.String.find var props
+  | `Field (var, field) ->
+      get_echo props var |> Data.get_assoc |> Map.String.find field
+  | `String _ as x -> x
 
 let rec get_echo_list props fmt default = function
   | [] -> get_echo props default |> echo_format fmt
   | (fmt, var) :: tl -> (
-      match Data.get_nullable (get_echo props var) with
-      | Some data -> echo_format fmt data
-      | None -> get_echo_list props fmt default tl)
+      match get_echo props var with
+      | `Array [| data |] -> echo_format fmt data
+      | _ -> get_echo_list props fmt default tl)
 
 let map_merge a b = Map.String.union (fun _ _ b -> Some b) a b
 
@@ -180,6 +231,7 @@ module Make (M : MONAD) (D : DATA) = struct
   module EPath = Error.DecodePath
 
   type data = D.t
+  type internal_data = D.t Data.t
 
   let decode_error = Error.decode D.pp
   let enum_error = Error.bad_enum D.pp
@@ -191,31 +243,29 @@ module Make (M : MONAD) (D : DATA) = struct
       | `Bool true -> 1
       | _ -> decode_error ty path j
     in
-    if Set.Int.mem i cases then Data.bool i else enum_error ty path j
+    if Set.Int.mem i cases then `Int i else enum_error ty path j
 
   let decode_string ty path cases j =
     match D.classify j with
-    | `String s -> (
+    | `String s as x -> (
         match cases with
-        | None -> Data.string s
+        | None -> x
         | Some cases ->
-            if Set.String.mem s cases then Data.string s
-            else enum_error ty path j)
+            if Set.String.mem s cases then x else enum_error ty path j)
     | _ -> decode_error ty path j
 
   let decode_int ty path cases j =
     match D.classify j with
-    | `Int i -> (
+    | `Int i as x -> (
         match cases with
-        | None -> Data.int i
-        | Some cases ->
-            if Set.Int.mem i cases then Data.int i else enum_error ty path j)
+        | None -> x
+        | Some cases -> if Set.Int.mem i cases then x else enum_error ty path j)
     | _ -> decode_error ty path j
 
   let decode_float path j =
     match D.classify j with
-    | `Float f -> Data.float f
-    | `Int i -> Data.float (float_of_int i)
+    | `Float _ as x -> x
+    | `Int i -> `Float (float_of_int i)
     | _ -> decode_error (Ty.float ()) path j
 
   let rec decode_nullable path ty j =
@@ -233,13 +283,14 @@ module Make (M : MONAD) (D : DATA) = struct
         |> snd |> Data.list_rev
     | _ -> decode_error (Ty.list ty) path j
 
-  and decode_dict path ty j =
+  and decode_assoc path ty j =
     match D.classify j with
     | `Assoc l ->
-        D.Assoc.fold
-          (fun k v map -> Map.String.add k (decode (EPath.key k path) ty v) map)
-          l Map.String.empty
-        |> Data.dict
+        `Assoc
+          (D.Assoc.fold
+             (fun k v map ->
+               Map.String.add k (decode (EPath.key k path) ty v) map)
+             l Map.String.empty)
     | _ -> decode_error (Ty.dict ty) path j
 
   and decode_tuple ty path tys j =
@@ -258,7 +309,7 @@ module Make (M : MONAD) (D : DATA) = struct
             (0, tys) l
         in
         match extra_tys with
-        | [] -> Data.array result
+        | [] -> `Array result
         | _ :: _ -> decode_error ty path j)
     | _ -> decode_error ty path j
 
@@ -273,7 +324,7 @@ module Make (M : MONAD) (D : DATA) = struct
 
   and decode_record path tys j =
     match D.classify j with
-    | `Assoc m -> decode_record_aux path !tys m |> Data.dict
+    | `Assoc m -> `Assoc (decode_record_aux path !tys m)
     | _ -> decode_error (Ty.internal_record tys) path j
 
   and decode_union path ty key Ty.{ cases; extra; row } j =
@@ -288,26 +339,27 @@ module Make (M : MONAD) (D : DATA) = struct
           match (D.classify tag, cases, extra) with
           | `Bool false, Ty.Union.Int map, Bool ->
               let tag = 0 in
-              (Data.bool tag, Map.Int.find_opt tag map)
+              (`Int tag, Map.Int.find_opt tag map)
           | `Bool true, Ty.Union.Int map, Bool ->
               let tag = 1 in
-              (Data.bool tag, Map.Int.find_opt tag map)
-          | `Int tag, Ty.Union.Int map, Not_bool ->
-              (Data.int tag, Map.Int.find_opt tag map)
-          | `String tag, Ty.Union.String map, _ ->
-              (Data.string tag, Map.String.find_opt tag map)
+              (`Int tag, Map.Int.find_opt tag map)
+          | (`Int i as tag), Ty.Union.Int map, Not_bool ->
+              (tag, Map.Int.find_opt i map)
+          | (`String s as tag), Ty.Union.String map, _ ->
+              (tag, Map.String.find_opt s map)
           | _ -> decode_error ty path j
         in
         match (tys, row) with
         | Some tys, (`Open | `Closed) ->
-            decode_record_aux path !tys m |> Map.String.add key tag |> Data.dict
-        | None, `Open -> Map.String.singleton key tag |> Data.dict
+            `Assoc (decode_record_aux path !tys m |> Map.String.add key tag)
+        | None, `Open -> `Assoc (Map.String.singleton key tag)
         | None, `Closed -> decode_error ty path j)
     | _ -> decode_error ty path j
 
-  and decode path ty j =
+  and decode : EPath.t -> Ty.t -> data -> internal_data =
+   fun path ty j ->
     match !ty with
-    | Ty.Unknown _ -> Data.other j
+    | Ty.Unknown _ -> `Unknown j
     | Nullable ty -> decode_nullable path ty j
     | Enum { extra = Bool; cases = Int cases; _ } ->
         decode_boolean ty path cases j
@@ -320,7 +372,7 @@ module Make (M : MONAD) (D : DATA) = struct
         decode_int ty path (Some cases) j
     | Float -> decode_float path j
     | List ty -> decode_list path ty j
-    | Dict (ty, _) -> decode_dict path ty j
+    | Dict (ty, _) -> decode_assoc path ty j
     | Tuple tys -> decode_tuple ty path tys j
     | Record tys -> decode_record path tys j
     | Union (key, variant) -> decode_union path ty key variant j
@@ -338,49 +390,46 @@ module Make (M : MONAD) (D : DATA) = struct
 
   and encode_list ty l () =
     match l with
-    | Data.Nil -> Seq.Nil
-    | Data.Array [| hd; tl |] -> Seq.Cons (encode ty hd, encode_list ty tl)
-    | _ -> Error.internal __POS__ "Lists may only contain Array or Nil."
+    | `Array [| hd; tl |] -> Seq.Cons (encode ty hd, encode_list ty tl)
+    | _ -> Seq.Nil
 
-  and encode ty t =
+  and encode : Ty.t -> internal_data -> data =
+   fun ty t ->
     match (!ty, t) with
-    | _, Other j -> j
-    | _, Const (Float f) -> D.of_float f
-    | _, Const (String s) -> D.of_string s
-    | Ty.Enum { extra = Bool; _ }, Const (Int 0) -> D.of_bool false
-    | Enum { extra = Bool; _ }, Const (Int _) -> D.of_bool true
-    | (Enum _ | Int | Unknown _), Const (Int i) -> D.of_int i
-    | (Nullable _ | Unknown _), Nil -> D.null
-    | Nullable ty, Array [| t |] -> D.some @@ encode ty t
+    | _, `Unknown j -> j
+    | _, `Float f -> D.of_float f
+    | _, `String s -> D.of_string s
+    | Ty.Enum { extra = Bool; _ }, `Int 0 -> D.of_bool false
+    | Enum { extra = Bool; _ }, `Int _ -> D.of_bool true
+    | (Enum _ | Int | Unknown _), `Int i -> D.of_int i
+    | Nullable ty, `Array [| t |] -> D.some @@ encode ty t
+    | Nullable _, _ -> D.null
     | List ty, t -> D.of_seq @@ encode_list ty t
-    | Tuple tys, Array a ->
+    | Tuple tys, `Array a ->
         D.of_seq @@ Seq.map2 encode (List.to_seq tys) (Array.to_seq a)
-    | Unknown _, Array a -> D.of_seq @@ Seq.map (encode ty) (Array.to_seq a)
-    | Dict (ty, _), Dict m -> D.of_map @@ Map.String.map (encode ty) m
-    | Unknown _, Dict m -> D.of_map @@ Map.String.map (encode ty) m
-    | Record tys, Dict m -> D.of_map @@ encode_record !tys m
-    | Union (k, { cases; extra; _ }), Dict m ->
+    | Unknown _, `Array a -> D.of_seq @@ Seq.map (encode ty) (Array.to_seq a)
+    | Dict (ty, _), `Assoc m -> D.of_map @@ Map.String.map (encode ty) m
+    | Unknown _, `Assoc m -> D.of_map @@ Map.String.map (encode ty) m
+    | Record tys, `Assoc m -> D.of_map @@ encode_record !tys m
+    | Union (k, { cases; extra; _ }), `Assoc m ->
         let tag = Map.String.find k m in
         let tys =
           match (cases, tag) with
-          | Ty.Union.Int m, Const (Int i) -> Map.Int.find i m
-          | Ty.Union.String m, Const (String s) -> Map.String.find s m
+          | Ty.Union.Int m, `Int i -> Map.Int.find i m
+          | Ty.Union.String m, `String s -> Map.String.find s m
           | _ -> Error.internal __POS__ "Type mismatch while encoding a union."
         in
         let tag =
           match (extra, tag) with
-          | Bool, Const (Int 0) -> D.of_bool false
-          | Bool, Const (Int _) -> D.of_bool true
-          | Not_bool, Const (Int i) -> D.of_int i
-          | _, Const (String s) -> D.of_string s
+          | Bool, `Int 0 -> D.of_bool false
+          | Bool, `Int _ -> D.of_bool true
+          | Not_bool, `Int i -> D.of_int i
+          | _, `String s -> D.of_string s
           | _ ->
               Error.internal __POS__ "Union tags may only be ints or strings."
         in
         encode_record !tys m |> Map.String.add k tag |> D.of_map
-    | ( ( String | Int | Float | Enum _ | Nullable _ | Tuple _ | Dict _
-        | Record _ | Union _ ),
-        _ ) ->
-        Error.internal __POS__ "Type mismatch while encoding data."
+    | _ -> Error.internal __POS__ "Type mismatch while encoding data."
 
   let encode tys j = D.of_map @@ encode_record tys j
 
@@ -411,22 +460,22 @@ module Make (M : MONAD) (D : DATA) = struct
       (M.return Map.String.empty)
 
   let rec eval_data vars = function
-    | Data.Other (Compile.Var x) -> M.return @@ Map.String.find x vars
-    | Other (Block nodes) ->
+    | `Null -> M.return Data.null
+    | (`Int _ | `String _ | `Float _) as x -> M.return x
+    | `Array a ->
+        let* result = all_array (Array.map (eval_data vars) a) in
+        M.return @@ `Array result
+    | `Assoc d ->
+        let* result = all_map (Map.String.map (eval_data vars) d) in
+        M.return @@ `Assoc result
+    | `Var x -> M.return @@ Map.String.find x vars
+    | `Block nodes ->
         let b = M.return @@ Buffer.create 1024 in
         let* result = make b nodes vars in
-        M.return @@ Data.string (Buffer.contents result)
-    | Other (Field (data, field)) ->
+        M.return @@ `String (Buffer.contents result)
+    | `Field (data, field) ->
         let* data = eval_data vars data in
-        Data.get_dict data |> Map.String.find field |> M.return
-    | Nil -> M.return Data.null
-    | Array a ->
-        let* result = all_array (Array.map (eval_data vars) a) in
-        M.return @@ Data.array result
-    | Dict d ->
-        let* result = all_map (Map.String.map (eval_data vars) d) in
-        M.return @@ Data.dict result
-    | Const a -> M.return @@ Data.const a
+        Data.get_assoc data |> Map.String.find field |> M.return
 
   and make b nodes vars =
     List.fold_left
@@ -457,12 +506,12 @@ module Make (M : MONAD) (D : DATA) = struct
               b l
         | Map_dict (arg, tree) ->
             let* d = eval_data vars arg in
-            Data.fold_dict
+            Data.fold_assoc
               (fun ~index b arg ->
                 let vars', nodes = make_match [| arg; index |] tree in
                 let vars = map_merge vars vars' in
                 make b nodes vars)
-              b d
+              d b
         | Component (_, comp, args) -> (
             let* vars = all_map (Map.String.map (eval_data vars) args) in
             match comp with

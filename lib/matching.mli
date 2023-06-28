@@ -235,7 +235,7 @@ and ('leaf, 'key) nest =
   | String_keys of (('leaf, 'key) tree, string) tree
 
 and ('leaf, 'key) switchcase = {
-  data : Data.Const.t;
+  data : [ `Int of int | `Float of float | `String of string ];
   if_match : ('leaf, 'key) tree;
   next : ('leaf, 'key) switchcase option;
 }
