@@ -54,7 +54,7 @@ export default function main(input1) {
   if ("blogPosts" in input1) {
     debug_stack.push("blogPosts");
     let input2 = input1.blogPosts;
-    if (input2 instanceof Array) {
+    if (Array.isArray(input2)) {
       let dst_base1 = new Array(2);
       let dst1 = dst_base1;
       for (let index = 0; index < input2.length; index++) {

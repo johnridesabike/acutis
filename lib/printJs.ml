@@ -185,7 +185,6 @@ type expr =
   | New of obj * expr list
   | App_expr of expr
   | Typeof of expr
-  | Instanceof of expr * obj
   | To_int of expr
   | In of string * expr
 
@@ -301,7 +300,6 @@ let pp_statement =
           (pp_print_seq ~pp_sep:Pp.sep_comma (pp_wrap_box pp_expr))
           a pp_trailing_comma
     | Typeof expr -> fprintf ppf "typeof %a" pp_expr expr
-    | Instanceof (a, b) -> fprintf ppf "%a instanceof %a" pp_expr a pp_obj b
     | To_int expr -> fprintf ppf "%a | 0" pp_expr expr
     | In (key, expr) -> fprintf ppf "%a in %a" pp_js_str key pp_expr expr
   and pp_statement ppf = function
@@ -388,6 +386,8 @@ let promise_all l f = meth (meth (Obj Promise) "all" [ l ]) "then" f
 let meth_set x k v = Expr (meth x "set" [ k; v ])
 let meth_push x args = Expr (meth (Var x) "push" args)
 let meth_pop x = Expr (meth (Var x) "pop" [])
+let is_array a = meth (Obj Array) "isArray" [ a ]
+let array_length a = Field (a, String "length")
 let list_hd e = Field (e, Int 0)
 let get_nullable = list_hd
 let list_tl e = Field (e, Int 1)
@@ -454,7 +454,7 @@ let pp_runtime ppf =
            Let (result, String "");
            For
              ( Id.index,
-               Field (Var str, String "length"),
+               array_length (Var str),
                [
                  Let (c, Field (Var str, Var Id.index));
                  Switch
@@ -860,9 +860,7 @@ and decode_tuple ~set input env tys =
   let tuple = Id.Safe.tuple env in
   let length = List.length tys in
   If_else
-    ( And
-        ( Instanceof (input, Array),
-          Eq (Field (input, String "length"), Int length) ),
+    ( And (is_array input, Eq (array_length input, Int length)),
       Let (tuple, New (Array, [ Int length ]))
       :: set (Var tuple)
       :: List.concat
@@ -914,13 +912,13 @@ and decode_list ~set input env ty =
   let new_cell = New (Array, [ Int 2 ]) in
   let hd = list_hd (Var dst_new) in
   If_else
-    ( Instanceof (input, Array),
+    ( is_array input,
       [
         Let (dst_base, new_cell);
         Let (dst, Var dst_base);
         For
           ( Id.index,
-            Field (input, String "length"),
+            array_length input,
             List.concat
               [
                 [

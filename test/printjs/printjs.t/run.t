@@ -316,7 +316,7 @@
     if ("int_list" in input1) {
       debug_stack.push("int_list");
       let input7 = input1.int_list;
-      if (input7 instanceof Array) {
+      if (Array.isArray(input7)) {
         let dst_base1 = new Array(2);
         let dst1 = dst_base1;
         for (let index = 0; index < input7.length; index++) {
@@ -344,21 +344,21 @@
     if ("nested_list" in input1) {
       debug_stack.push("nested_list");
       let input8 = input1.nested_list;
-      if (input8 instanceof Array) {
+      if (Array.isArray(input8)) {
         let dst_base2 = new Array(2);
         let dst2 = dst_base2;
         for (let index = 0; index < input8.length; index++) {
           let input_hd2 = input8[index];
           debug_stack.push(index);
           let dst_new2 = new Array(2);
-          if (input_hd2 instanceof Array) {
+          if (Array.isArray(input_hd2)) {
             let dst_base3 = new Array(2);
             let dst3 = dst_base3;
             for (let index = 0; index < input_hd2.length; index++) {
               let input_hd3 = input_hd2[index];
               debug_stack.push(index);
               let dst_new3 = new Array(2);
-              if (input_hd3 instanceof Array) {
+              if (Array.isArray(input_hd3)) {
                 let dst_base4 = new Array(2);
                 let dst4 = dst_base4;
                 for (let index = 0; index < input_hd3.length; index++) {
@@ -404,7 +404,7 @@
     if ("nested_nullable_list" in input1) {
       debug_stack.push("nested_nullable_list");
       let input9 = input1.nested_nullable_list;
-      if (input9 instanceof Array) {
+      if (Array.isArray(input9)) {
         let dst_base5 = new Array(2);
         let dst5 = dst_base5;
         for (let index = 0; index < input9.length; index++) {
@@ -634,7 +634,7 @@
           if ("tuple" in input21) {
             debug_stack.push("tuple");
             let input31 = input21.tuple;
-            if (input31 instanceof Array && input31.length === 3) {
+            if (Array.isArray(input31) && input31.length === 3) {
               let tuple1 = new Array(3);
               union2.set("tuple", tuple1);
               debug_stack.push(0);
@@ -760,7 +760,7 @@
           if ("record_list" in input25) {
             debug_stack.push("record_list");
             let input38 = input25.record_list;
-            if (input38 instanceof Array) {
+            if (Array.isArray(input38)) {
               let dst_base6 = new Array(2);
               let dst6 = dst_base6;
               for (let index = 0; index < input38.length; index++) {

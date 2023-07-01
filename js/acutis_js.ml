@@ -52,7 +52,7 @@ module DataJs = struct
         match Js.Opt.to_option (Js.some j) with
         | None -> `Null
         | Some j ->
-            if Js.instanceof j Js.array_empty then
+            if Js.Unsafe.meth_call Js.array_empty "isArray" [| j |] then
               `List (coerce j |> Js.to_array)
             else `Assoc j)
 
