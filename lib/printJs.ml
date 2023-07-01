@@ -364,7 +364,7 @@ let pp_statement =
 let pp_comment ppf str = Format.fprintf ppf "/* %s */@,@," str
 
 let pp_cjs_require ppf namespace (Filepath filepath) =
-  Format.fprintf ppf "const %a = require(%a);@,@," Id.pp namespace pp_js_str
+  Format.fprintf ppf "let %a = require(%a);@,@," Id.pp namespace pp_js_str
     filepath
 
 let pp_esm_import ppf namespace (Filepath filepath) =
@@ -479,7 +479,7 @@ let pp_runtime ppf =
 
 let promise_all_join arr = App (Var Id.runtime_join, [ arr ])
 
-let of_const = function
+let of_scalar = function
   | `String s -> String s
   | `Int i -> Int i
   | `Float f -> Float f
@@ -616,7 +616,7 @@ let rec match_tree :
 
 and switchcase ~leafstmt ~get_arg ~vars M.{ data; if_match; next } () =
   Seq.Cons
-    ( (of_const data, match_tree ~leafstmt ~get_arg ~vars if_match),
+    ( (of_scalar data, match_tree ~leafstmt ~get_arg ~vars if_match),
       match next with
       | None -> Seq.empty
       | Some l -> switchcase ~leafstmt ~get_arg ~vars l )

@@ -272,11 +272,11 @@ type echo =
   | Echo_field of echo * string
 
 type construct = TList | TNullable
-type const = [ `Int of int | `Float of float | `String of string ]
+type scalar = [ `Int of int | `Float of float | `String of string ]
 type tag = [ `Int of int | `String of string ]
 
 type pat =
-  | TConst of const * Ty.Enum.t option
+  | TScalar of scalar * Ty.Enum.t option
   | TConstruct of construct * pat option
   | TTuple of pat list
   | TRecord of
@@ -606,10 +606,10 @@ type 'a var_action =
 let rec make_pat var_action mode ty = function
   | Ast.Int (loc, i) ->
       unify loc mode ty (Ty.int ());
-      TConst (`Int i, None)
+      TScalar (`Int i, None)
   | String (loc, s) ->
       unify loc mode ty (Ty.string ());
-      TConst (`String s, None)
+      TScalar (`String s, None)
   | Block (loc, nodes) -> (
       unify loc mode ty (Ty.string ());
       match var_action with
@@ -623,7 +623,7 @@ let rec make_pat var_action mode ty = function
       | Update_vars _ -> TField (rec_pat, field))
   | Float (loc, f) ->
       unify loc mode ty (Ty.float ());
-      TConst (`Float f, None)
+      TScalar (`Float f, None)
   | Bool (loc, b) ->
       let temp_enum =
         match mode with
@@ -636,7 +636,7 @@ let rec make_pat var_action mode ty = function
       let temp_ty = ref (Ty.Enum temp_enum) in
       let enum = match !ty with Enum e -> e | _ -> temp_enum in
       unify loc mode ty temp_ty;
-      TConst (`Int b, Some enum)
+      TScalar (`Int b, Some enum)
   | Enum_string (loc, s) ->
       let temp_enum =
         match mode with
@@ -646,7 +646,7 @@ let rec make_pat var_action mode ty = function
       let temp_ty = ref (Ty.Enum temp_enum) in
       let enum = match !ty with Enum e -> e | _ -> temp_enum in
       unify loc mode ty temp_ty;
-      TConst (`String s, Some enum)
+      TScalar (`String s, Some enum)
   | Enum_int (loc, i) ->
       let temp_enum =
         match mode with
@@ -656,7 +656,7 @@ let rec make_pat var_action mode ty = function
       let temp_ty = ref (Ty.Enum temp_enum) in
       let enum = match !ty with Enum e -> e | _ -> temp_enum in
       unify loc mode ty temp_ty;
-      TConst (`Int i, Some enum)
+      TScalar (`Int i, Some enum)
   | Nullable (loc, pat) ->
       let tyvar = match !ty with Nullable ty -> ty | _ -> Ty.unknown () in
       let pat =

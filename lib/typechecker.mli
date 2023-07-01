@@ -18,7 +18,7 @@ type echo =
 type construct = TList | TNullable
 
 type pat =
-  | TConst of
+  | TScalar of
       [ `Int of int | `Float of float | `String of string ]
       * Typescheme.Enum.t option
   | TConstruct of construct * pat option

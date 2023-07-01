@@ -78,7 +78,7 @@ let rec make_echo = function
   | Echo_field (e, s) -> `Field (make_echo e, s)
 
 let rec make_data block_queue = function
-  | Typechecker.TConst (x, _) -> (x :> data)
+  | Typechecker.TScalar (x, _) -> (x :> data)
   | TVar x -> `Var x
   | TBlock x ->
       let i = Queue.length block_queue in
