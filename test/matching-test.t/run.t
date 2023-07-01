@@ -1,6 +1,7 @@
 Basic tree
   $ acutis basic.acutis --printopt
   ((match
+    ()
     ((var "a"))
     (matching
      (tree
@@ -25,6 +26,7 @@ Basic tree
 Cases are sorted correctly
   $ acutis sorting.acutis --printopt
   ((match
+    ()
     ((var "a"))
     (matching
      (tree
@@ -60,6 +62,7 @@ Cases are sorted correctly
 A basic decision tree works
   $ acutis basic_decision_tree.acutis --printopt
   ((match
+    ()
     ((var "a") (var "b") (var "c"))
     (matching
      (tree
@@ -208,6 +211,7 @@ A basic decision tree works
 Nests merge correctly
   $ acutis merge_nests.acutis --printopt
   ((match
+    ()
     ((var "a") (var "b") (var "c"))
     (matching
      (tree
@@ -303,6 +307,7 @@ Nests merge correctly
 Wildcards merge after nests correctly
   $ acutis wildcard_merge_after_nest.acutis --printopt
   ((match
+    ()
     ((var "a") (var "b"))
     (matching
      (tree
@@ -382,6 +387,7 @@ Wildcards merge after nests correctly
 Different-sized lists merge correctly
   $ acutis diff_size_lists.acutis --printopt
   ((match
+    ()
     ((var "a"))
     (matching
      (tree
@@ -415,6 +421,7 @@ Different-sized lists merge correctly
 A big list pattern works
   $ acutis big_list.acutis --printopt
   ((match
+    ()
     ((var "a") (var "b"))
     (matching
      (tree
@@ -564,6 +571,7 @@ A big list pattern works
 Record fields sort correctly
   $ acutis record_field_sort.acutis --printopt
   ((match
+    ()
     ((var "a") (var "b"))
     (matching
      (tree
@@ -636,6 +644,7 @@ Record fields sort correctly
 New fields expand existing rows
   $ acutis record_fields_expand.acutis --printopt
   ((match
+    ()
     ((var "a"))
     (matching
      (tree
@@ -704,6 +713,7 @@ New fields expand existing rows
 Dictionaries merge correctly
   $ acutis dicts.acutis --printopt
   ((match
+    ()
     ((var "a"))
     (matching
      (tree

@@ -24,26 +24,30 @@ type echo_format = Ast.echo_format =
 
 type echo = [ `Var of string | `String of string | `Field of echo * string ]
 
-type 'a data =
+type data =
   [ `Null
   | `Int of int
   | `Float of float
   | `String of string
-  | `Array of 'a data array
-  | `Assoc of 'a data Map.String.t
+  | `Array of data array
+  | `Assoc of data Map.String.t
   | `Var of string
-  | `Field of 'a data * string
-  | `Block of 'a nodes ]
+  | `Field of data * string
+  | `Block of int
+    (** To separate the data from the rest of the tree, we take any template
+        blocks and place them into an array. At runtime, the [`Block]
+        constructors will get their rendered content by their indices. *)
+  ]
 
-(** The names of variables are preserved as strings in the [Data.t] values. *)
-and 'a node =
+type 'a node =
   | Text of string
   | Echo of (echo_format * echo) list * echo_format * echo * escape
-  | Match of 'a data array * 'a nodes Matching.t
-  | Map_list of 'a data * 'a nodes Matching.t
-  | Map_dict of 'a data * 'a nodes Matching.t
-  | Component of string * 'a * 'a data Map.String.t
+  | Match of 'a blocks * data array * 'a nodes Matching.t
+  | Map_list of 'a blocks * data * 'a nodes Matching.t
+  | Map_dict of 'a blocks * data * 'a nodes Matching.t
+  | Component of string * 'a * 'a nodes array * data Map.String.t
 
+and 'a blocks = 'a nodes array
 and 'a nodes = 'a node list
 
 module Components : sig

@@ -265,6 +265,7 @@ Print the optimized form
    (echo () fmt_bool (var "ech_b") escape)
    (text "\n\nNumbers\n")
    (match
+    ()
     ((var "numbers"))
     (matching
      (tree
@@ -358,6 +359,7 @@ Print the optimized form
    (echo () fmt_string (var "trim_g") no_escape)
    (text "Comments\na b c\n\nFlat match\n")
    (match
+    ()
     ((var "match_a"))
     (matching
      (tree
@@ -382,6 +384,7 @@ Print the optimized form
      (exits ((0 ()) (1 ((text " "))) (2 ((text " ")))))))
    (text "\n\nNested match\n")
    (match
+    ()
     ((var "match_b"))
     (matching
      (tree
@@ -393,6 +396,7 @@ Print the optimized form
       ((0
         ((text "\n  ")
          (match
+          ()
           ((var "d") (var "e"))
           (matching
            (tree
@@ -416,6 +420,7 @@ Print the optimized form
          (text "\n")))))))
    (text "\n\nMap list\n")
    (map_list
+    ()
     (var "map_l")
     (matching
      (tree
@@ -453,6 +458,7 @@ Print the optimized form
        (2 ((text " ")))))))
    (text "\n\nMap dict\n")
    (map_dict
+    ()
     (var "map_d")
     (matching
      (tree
@@ -490,30 +496,34 @@ Print the optimized form
        (2 ((text "\n")))))))
    (text "\n\nComponent with props\n")
    (component
+    ((0 ((text " ")))
+     (1
+      ((match
+        ()
+        ((var "a_prop"))
+        (matching
+         (tree
+          (wildcard
+           (key 0)
+           (ids (0))
+           (child (end (leaf (names (("b_prop" 0))) (exit 0))))))
+         (exits
+          ((0
+            ((text " ") (echo () fmt_string (var "b_prop") escape) (text " ")))))))))
+     (2 ()))
     "Component"
     (("a_prop" (var "b_prop"))
      ("c_prop" (var "c_prop"))
      ("d_prop" (var "e_prop"))
      ("f_prop" (var "f_prop"))
-     ("g_prop" (block ((text " "))))
-     ("h_prop"
-      (block
-       ((match
-         ((var "a_prop"))
-         (matching
-          (tree
-           (wildcard
-            (key 0)
-            (ids (0))
-            (child (end (leaf (names (("b_prop" 0))) (exit 0))))))
-          (exits
-           ((0
-             ((text " ") (echo () fmt_string (var "b_prop") escape) (text " "))))))))))
-     ("i_prop" (block ()))))
+     ("g_prop" (block 0))
+     ("h_prop" (block 1))
+     ("i_prop" (block 2))))
    (text "\n\nComponent with implicit children\n")
-   (component "Component2" (("children" (block ((text " "))))))
+   (component ((0 ((text " ")))) "Component2" (("children" (block 0))))
    (text "\n\nPatterns\n\nTuple:\n")
    (match
+    ()
     ((var "tuple"))
     (matching
      (tree
@@ -556,6 +566,7 @@ Print the optimized form
      (exits ((0 ((text " "))) (1 ((text " ")))))))
    (text "\n\nList:\n")
    (match
+    ()
     ((var "list"))
     (matching
      (tree
@@ -625,6 +636,7 @@ Print the optimized form
        (2 ((text "\n")))))))
    (text "\n\nRecord:\n")
    (match
+    ()
     ((var "record"))
     (matching
      (tree
@@ -652,6 +664,7 @@ Print the optimized form
        (1 ((text " ")))))))
    (text "\n\nEnum:\n")
    (match
+    ()
     ((var "enums"))
     (matching
      (tree
@@ -704,6 +717,7 @@ Print the optimized form
      (exits ((0 ((text " "))) (1 ((text " ")))))))
    (text "\n\nTagged union:\n")
    (match
+    ()
     ((var "tagged"))
     (matching
      (tree
@@ -736,6 +750,7 @@ Print the optimized form
        (1 ((text "\n")))))))
    (text "\n\nDictionary:\n")
    (match
+    ()
     ((var "dict"))
     (matching
      (tree
@@ -774,6 +789,7 @@ Print the optimized form
      (exits ((0 ((text " "))) (1 ((text " ")))))))
    (text "\n\n! and . precedence works correctly\n")
    (match
+    ()
     ((array ((array ((field (field (var "a") "b") "c"))))))
     (matching
      (tree
@@ -812,6 +828,7 @@ Print the optimized form
      (exits ((0 ()) (1 ())))))
    (text "\n\nEdge cases\n\nPatterns with }} parse correctly\n")
    (match
+    ()
     ((var "a"))
     (matching
      (tree

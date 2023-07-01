@@ -437,47 +437,22 @@ module Make (M : MONAD) (D : DATA) = struct
 
   let ( let* ) = M.bind
 
-  let all_array a =
-    let result = Array.make (Array.length a) Data.null in
-    let* _idx =
-      Array.fold_left
-        (fun idx data ->
-          let* idx = idx in
-          let* data = data in
-          result.(idx) <- data;
-          M.return @@ succ idx)
-        (M.return 0) a
-    in
-    M.return result
-
-  let all_map m =
-    Map.String.fold
-      (fun key data result ->
-        let* result = result in
-        let* data = data in
-        M.return @@ Map.String.add key data result)
-      m
-      (M.return Map.String.empty)
-
-  let rec eval_data vars = function
-    | `Null -> M.return Data.null
-    | (`Int _ | `String _ | `Float _) as x -> M.return x
-    | `Array a ->
-        let* result = all_array (Array.map (eval_data vars) a) in
-        M.return @@ `Array result
-    | `Assoc d ->
-        let* result = all_map (Map.String.map (eval_data vars) d) in
-        M.return @@ `Assoc result
-    | `Var x -> M.return @@ Map.String.find x vars
-    | `Block nodes ->
-        let b = M.return @@ Buffer.create 1024 in
-        let* result = make b nodes vars in
-        M.return @@ `String (Buffer.contents result)
+  let rec eval_data :
+      blocks:string array ->
+      vars:internal_data Map.String.t ->
+      Compile.data ->
+      internal_data =
+   fun ~blocks ~vars -> function
+    | `Null -> Data.null
+    | (`Int _ | `String _ | `Float _) as x -> x
+    | `Array a -> `Array (Array.map (eval_data ~blocks ~vars) a)
+    | `Assoc d -> `Assoc (Map.String.map (eval_data ~blocks ~vars) d)
+    | `Var x -> Map.String.find x vars
+    | `Block i -> `String blocks.(i)
     | `Field (data, field) ->
-        let* data = eval_data vars data in
-        Data.get_assoc data |> Map.String.find field |> M.return
+        eval_data ~blocks ~vars data |> Data.get_assoc |> Map.String.find field
 
-  and make b nodes vars =
+  let rec make b vars nodes =
     List.fold_left
       (fun b -> function
         | Compile.Echo (nullables, fmt, default, esc) ->
@@ -491,31 +466,35 @@ module Make (M : MONAD) (D : DATA) = struct
             let* b = b in
             Buffer.add_string b s;
             M.return b
-        | Match (args, tree) ->
-            let* args = all_array (Array.map (eval_data vars) args) in
+        | Match (blocks, args, tree) ->
+            let* blocks = make_array vars blocks in
+            let args = Array.map (eval_data ~blocks ~vars) args in
             let vars', nodes = make_match args tree in
             let vars = map_merge vars vars' in
-            make b nodes vars
-        | Map_list (arg, tree) ->
-            let* l = eval_data vars arg in
+            make b vars nodes
+        | Map_list (blocks, arg, tree) ->
+            let* blocks = make_array vars blocks in
+            let l = eval_data ~blocks ~vars arg in
             Data.fold_list
               (fun ~index b arg ->
                 let vars', nodes = make_match [| arg; index |] tree in
                 let vars = map_merge vars vars' in
-                make b nodes vars)
+                make b vars nodes)
               b l
-        | Map_dict (arg, tree) ->
-            let* d = eval_data vars arg in
+        | Map_dict (blocks, arg, tree) ->
+            let* blocks = make_array vars blocks in
+            let d = eval_data ~blocks ~vars arg in
             Data.fold_assoc
               (fun ~index b arg ->
                 let vars', nodes = make_match [| arg; index |] tree in
                 let vars = map_merge vars vars' in
-                make b nodes vars)
+                make b vars nodes)
               d b
-        | Component (_, comp, args) -> (
-            let* vars = all_map (Map.String.map (eval_data vars) args) in
+        | Component (_, comp, blocks, args) -> (
+            let* blocks = make_array vars blocks in
+            let vars = Map.String.map (eval_data ~blocks ~vars) args in
             match comp with
-            | Compile.Src nodes -> make b nodes vars
+            | Compile.Src nodes -> make b vars nodes
             | Fun (types, f) ->
                 let* result = f (encode types vars) in
                 let* b = b in
@@ -523,11 +502,25 @@ module Make (M : MONAD) (D : DATA) = struct
                 M.return b))
       b nodes
 
+  and make_array vars a =
+    let result = Array.make (Array.length a) String.empty in
+    let* _idx =
+      Array.fold_left
+        (fun idx nodes ->
+          let b = M.return @@ Buffer.create 1024 in
+          let* idx = idx in
+          let* b = make b vars nodes in
+          result.(idx) <- Buffer.contents b;
+          M.return @@ succ idx)
+        (M.return 0) a
+    in
+    M.return result
+
   let make { Compile.nodes; types; name; _ } props =
     (* Wrap the props in a monad so it can catch decode exceptions. *)
     let* props = M.return props in
     let vars = decode ~name types props in
-    let b = M.return @@ Buffer.create 1024 in
-    let* result = make b nodes vars in
+    let b = M.return @@ Buffer.create 2048 in
+    let* result = make b vars nodes in
     M.return @@ Buffer.contents result
 end

@@ -7,23 +7,27 @@
   import * as External_jsfile from "./jsfile.cjs";
   
   function decode_error(expected, recieved, debug_stack) {
-    throw new Error([
-      "Decode error in field: ",
-      debug_stack.join(" -> "),
-      "\nExpected type:\n",
-      expected,
-      "\nRecieved value:\n",
-      recieved,
-    ].join(""));
+    return Promise.reject(
+      new Error([
+        "Decode error in field: ",
+        debug_stack.join(" -> "),
+        "\nExpected type:\n",
+        expected,
+        "\nRecieved value:\n",
+        recieved,
+      ].join(""))
+    );
   }
   
   function decode_error_field(field, debug_stack) {
-    throw new Error([
-      "Decode error.\nAn object is missing the field: ",
-      field,
-      "\nIn field: ",
-      debug_stack.join(" -> "),
-    ].join(""));
+    return Promise.reject(
+      new Error([
+        "Decode error.\nAn object is missing the field: ",
+        field,
+        "\nIn field: ",
+        debug_stack.join(" -> "),
+      ].join(""))
+    );
   }
   
   function acutis_escape(str) {
@@ -45,25 +49,31 @@
     return result;
   }
   
-  async function template_ExternalFunction(input1) {
+  function promise_join(arr) {
+    return Promise.all(arr).then((arr) => arr.join(""));
+  }
+  
+  function template_ExternalFunction(input1) {
     let data = new Object();
     let input2 = input1.get("children");
     data.children = input2;
     return External_jsfile.externalFunction(data);
   }
   
-  export default async function main(input1) {
+  export default function main(input1) {
     let data = new Map();
     let debug_stack = new Array();
     debug_stack.push("<input>");
-    return (await Promise.all([
-      (async function () {
-        let resolved0 = (await Promise.all([" text "])).join("");
-        let arg0 = new Map([["children", resolved0]]);
-        return template_ExternalFunction(arg0);
-      })(),
+    return promise_join([
+      Promise.all([
+        promise_join([" text "]),
+      ]).then(
+        function (blocks) {
+          return template_ExternalFunction(new Map([["children", blocks[0]]]));
+        }
+      ),
       "\n",
-    ])).join("");
+    ]);
   }
   
 
@@ -76,23 +86,27 @@
   const External_jsfile = require("./jsfile.cjs");
   
   function decode_error(expected, recieved, debug_stack) {
-    throw new Error([
-      "Decode error in field: ",
-      debug_stack.join(" -> "),
-      "\nExpected type:\n",
-      expected,
-      "\nRecieved value:\n",
-      recieved,
-    ].join(""));
+    return Promise.reject(
+      new Error([
+        "Decode error in field: ",
+        debug_stack.join(" -> "),
+        "\nExpected type:\n",
+        expected,
+        "\nRecieved value:\n",
+        recieved,
+      ].join(""))
+    );
   }
   
   function decode_error_field(field, debug_stack) {
-    throw new Error([
-      "Decode error.\nAn object is missing the field: ",
-      field,
-      "\nIn field: ",
-      debug_stack.join(" -> "),
-    ].join(""));
+    return Promise.reject(
+      new Error([
+        "Decode error.\nAn object is missing the field: ",
+        field,
+        "\nIn field: ",
+        debug_stack.join(" -> "),
+      ].join(""))
+    );
   }
   
   function acutis_escape(str) {
@@ -114,24 +128,30 @@
     return result;
   }
   
-  async function template_ExternalFunction(input1) {
+  function promise_join(arr) {
+    return Promise.all(arr).then((arr) => arr.join(""));
+  }
+  
+  function template_ExternalFunction(input1) {
     let data = new Object();
     let input2 = input1.get("children");
     data.children = input2;
     return External_jsfile.externalFunction(data);
   }
   
-  module.exports = async function main(input1) {
+  module.exports = function main(input1) {
     let data = new Map();
     let debug_stack = new Array();
     debug_stack.push("<input>");
-    return (await Promise.all([
-      (async function () {
-        let resolved0 = (await Promise.all([" text "])).join("");
-        let arg0 = new Map([["children", resolved0]]);
-        return template_ExternalFunction(arg0);
-      })(),
+    return promise_join([
+      Promise.all([
+        promise_join([" text "]),
+      ]).then(
+        function (blocks) {
+          return template_ExternalFunction(new Map([["children", blocks[0]]]));
+        }
+      ),
       "\n",
-    ])).join("");
+    ]);
   }
   

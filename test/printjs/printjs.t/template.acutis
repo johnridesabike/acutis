@@ -125,7 +125,10 @@ Dictionaries match correctly
 Constructing async blocks
 -------------------------
 
-{% match {a: #%} Nested block {%~#, b: #%} Another nested block {%~#}
+{% match
+  {
+    a: #%} Nested block {{ null_string ? "pass" }} {%~#,
+    b: #%} Another nested block {%~#}
   with {a, b} ~%} {{ a }} {{ b }}
 {% /match ~%}
 

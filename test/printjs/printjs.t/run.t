@@ -14,23 +14,27 @@
   import * as External_jscomponents from "./jscomponents.mjs";
   
   function decode_error(expected, recieved, debug_stack) {
-    throw new Error([
-      "Decode error in field: ",
-      debug_stack.join(" -> "),
-      "\nExpected type:\n",
-      expected,
-      "\nRecieved value:\n",
-      recieved,
-    ].join(""));
+    return Promise.reject(
+      new Error([
+        "Decode error in field: ",
+        debug_stack.join(" -> "),
+        "\nExpected type:\n",
+        expected,
+        "\nRecieved value:\n",
+        recieved,
+      ].join(""))
+    );
   }
   
   function decode_error_field(field, debug_stack) {
-    throw new Error([
-      "Decode error.\nAn object is missing the field: ",
-      field,
-      "\nIn field: ",
-      debug_stack.join(" -> "),
-    ].join(""));
+    return Promise.reject(
+      new Error([
+        "Decode error.\nAn object is missing the field: ",
+        field,
+        "\nIn field: ",
+        debug_stack.join(" -> "),
+      ].join(""))
+    );
   }
   
   function acutis_escape(str) {
@@ -52,7 +56,11 @@
     return result;
   }
   
-  async function template_Stringify(input1) {
+  function promise_join(arr) {
+    return Promise.all(arr).then((arr) => arr.join(""));
+  }
+  
+  function template_Stringify(input1) {
     let data = new Object();
     let input2 = input1.get("int_list");
     let array1 = new Array();
@@ -210,23 +218,23 @@
     return External_jscomponents.stringify(data);
   }
   
-  async function template_Another_function(input1) {
+  function template_Another_function(input1) {
     let data = new Object();
     return External_jscomponents.another_function(data);
   }
   
-  async function template_Component(data) {
-    return (await Promise.all([
+  function template_Component(data) {
+    return promise_join([
       acutis_escape(
         data.get("optional")
           ? data.get("optional")[0].toString()
           : data.get("children")
       ),
       "\n",
-      (async function () {
+      (function () {
+        let arg0 = data.get("list");
         let result = new Array();
         let index = 0;
-        let arg0 = data.get("list");
         while (arg0) {
           let data1 = new Map(data);
           let exit = -1;
@@ -236,12 +244,12 @@
           index++;
           arg0 = arg0[1];
         }
-        return (await Promise.all(result)).join("");
+        return promise_join(result);
       })(),
-    ])).join("");
+    ]);
   }
   
-  export default async function main(input1) {
+  export default function main(input1) {
     let data = new Map();
     let debug_stack = new Array();
     debug_stack.push("<input>");
@@ -850,7 +858,7 @@
     } else {
       data.set("unknown", 0);
     }
-    return (await Promise.all([
+    return promise_join([
       "Formatters\n----------\n\n%i    ",
       acutis_escape(data.get("big_int").toString()),
       "\n%f    ",
@@ -876,57 +884,53 @@
                       : "pass"
       ),
       "\n\nMatching\n--------\n\n",
-      (async function () {
+      (function () {
+        let arg0 = data.get("record").get("int_enum");
         let data1 = new Map(data);
         let exit = -1;
-        let arg0 = data.get("record").get("int_enum");
         switch (arg0) {
           case 8: exit = 0; break;
           case 40: exit = 1; break;
         }
         switch (exit) {
-          case 0: return (await Promise.all(["8\n"])).join("");
-          case 1: return (await Promise.all(["40\n"])).join("");
+          case 0: return promise_join(["8\n"]);
+          case 1: return promise_join(["40\n"]);
         }
       })(),
-      (async function () {
+      (function () {
+        let arg0 = data.get("record");
         let data1 = new Map(data);
         let exit = -1;
-        let arg0 = data.get("record");
         switch (arg0.get("string_enum")) {
           case "no": exit = 1; break;
           case "yes": exit = 0; break;
         }
         switch (exit) {
-          case 0: return (await Promise.all(["yes\n"])).join("");
-          case 1: return (await Promise.all(["no\n"])).join("");
+          case 0: return promise_join(["yes\n"]);
+          case 1: return promise_join(["no\n"]);
         }
       })(),
-      (async function () {
+      (function () {
+        let arg0 = data.get("tagged_record_bool");
         let data1 = new Map(data);
         let exit = -1;
-        let arg0 = data.get("tagged_record_bool");
         switch (arg0.get("tag")) {
           case 0: exit = 0; data1.set("a", arg0.get("a")); break;
           case 1: exit = 1; data1.set("b", arg0.get("b")); break;
         }
         switch (exit) {
-          case 0:
-            return (await Promise.all([
-              acutis_escape(data1.get("a")),
-              "\n",
-            ])).join("");
+          case 0: return promise_join([acutis_escape(data1.get("a")), "\n"]);
           case 1:
-            return (await Promise.all([
+            return promise_join([
               acutis_escape(data1.get("b").toString()),
               "\n",
-            ])).join("");
+            ]);
         }
       })(),
-      (async function () {
+      (function () {
+        let arg0 = data.get("tagged_record_int");
         let data1 = new Map(data);
         let exit = -1;
-        let arg0 = data.get("tagged_record_int");
         switch (arg0.get("tag")) {
           case 0: exit = 0; break;
           case 1:
@@ -937,40 +941,36 @@
             break;
         }
         switch (exit) {
-          case 0: return (await Promise.all(["Fail\n"])).join("");
+          case 0: return promise_join(["Fail\n"]);
           case 1:
-            return (await Promise.all([
+            return promise_join([
               acutis_escape(data1.get("a").toString()),
               " ",
               acutis_escape(data1.get("b")),
               " ",
               acutis_escape(data1.get("c") ? "true" : "false"),
               "\n",
-            ])).join("");
+            ]);
         }
       })(),
-      (async function () {
+      (function () {
+        let arg0 = data.get("tagged_record_open");
         let data1 = new Map(data);
         let exit = -1;
-        let arg0 = data.get("tagged_record_open");
         switch (arg0.get("tag")) {
           case 200: exit = 0; data1.set("b", arg0.get("b")); break;
         }
         if (exit === -1) { exit = 1; }
         switch (exit) {
           case 0:
-            return (await Promise.all([
-              " ",
-              acutis_escape(data1.get("b")),
-              "\n",
-            ])).join("");
-          case 1: return (await Promise.all(["Another tag!\n"])).join("");
+            return promise_join([" ", acutis_escape(data1.get("b")), "\n"]);
+          case 1: return promise_join(["Another tag!\n"]);
         }
       })(),
       "\n\nMapping\n-------\n\n",
-      (async function () {
-        let result = new Array();
+      (function () {
         let arg0 = data.get("null_string_dict");
+        let result = new Array();
         for (let entry of arg0) {
           let data1 = new Map(data);
           let exit = -1;
@@ -996,12 +996,12 @@
               break;
           }
         }
-        return (await Promise.all(result)).join("");
+        return promise_join(result);
       })(),
-      (async function () {
+      (function () {
+        let arg0 = data.get("int_list");
         let result = new Array();
         let index = 0;
-        let arg0 = data.get("int_list");
         while (arg0) {
           let data1 = new Map(data);
           let exit = -1;
@@ -1011,12 +1011,12 @@
           index++;
           arg0 = arg0[1];
         }
-        return (await Promise.all(result)).join("");
+        return promise_join(result);
       })(),
-      (async function () {
+      (function () {
+        let arg0 = data.get("int_list");
         let result = new Array();
         let index = 0;
-        let arg0 = data.get("int_list");
         while (arg0) {
           let data1 = new Map(data);
           let exit = -1;
@@ -1032,32 +1032,32 @@
           index++;
           arg0 = arg0[1];
         }
-        return (await Promise.all(result)).join("");
+        return promise_join(result);
       })(),
-      (async function () {
+      (function () {
+        let arg0 = data.get("nested_list");
         let result = new Array();
         let index = 0;
-        let arg0 = data.get("nested_list");
         while (arg0) {
           let data1 = new Map(data);
           let exit = -1;
           exit = 0;
           data1.set("l", arg0[0]);
           result.push(
-            (async function () {
+            (function () {
+              let arg0 = data1.get("l");
               let result = new Array();
               let index = 0;
-              let arg0 = data1.get("l");
               while (arg0) {
                 let data2 = new Map(data1);
                 let exit = -1;
                 exit = 0;
                 data2.set("l2", arg0[0]);
                 result.push(
-                  (async function () {
+                  (function () {
+                    let arg0 = data2.get("l2");
                     let result = new Array();
                     let index = 0;
-                    let arg0 = data2.get("l2");
                     while (arg0) {
                       let data3 = new Map(data2);
                       let exit = -1;
@@ -1070,25 +1070,25 @@
                       index++;
                       arg0 = arg0[1];
                     }
-                    return (await Promise.all(result)).join("");
+                    return promise_join(result);
                   })()
                 );
                 index++;
                 arg0 = arg0[1];
               }
-              return (await Promise.all(result)).join("");
+              return promise_join(result);
             })()
           );
           index++;
           arg0 = arg0[1];
         }
-        return (await Promise.all(result)).join("");
+        return promise_join(result);
       })(),
       "\n\n",
-      (async function () {
+      (function () {
+        let arg0 = data.get("nested_nullable_list");
         let result = new Array();
         let index = 0;
-        let arg0 = data.get("nested_nullable_list");
         while (arg0) {
           let data1 = new Map(data);
           let exit = -1;
@@ -1118,7 +1118,7 @@
           index++;
           arg0 = arg0[1];
         }
-        return (await Promise.all(result)).join("");
+        return promise_join(result);
       })(),
       "\n\
   \n\
@@ -1126,10 +1126,10 @@
   ----------------------------\n\
   \n\
   ",
-      (async function () {
+      (function () {
+        let arg0 = data.get("null_string_dict");
         let data1 = new Map(data);
         let exit = -1;
-        let arg0 = data.get("null_string_dict");
         if (arg0.has("a")) {
           if (arg0.get("a")) {
             switch (arg0.get("a")[0]) {
@@ -1159,22 +1159,22 @@
         if (exit === -1) { exit = 3; }
         switch (exit) {
           case 0:
-            return (await Promise.all([
+            return promise_join([
               " ",
               acutis_escape(data1.get("a")),
               " ",
               acutis_escape(data1.get("b")),
               "\n",
-            ])).join("");
-          case 1: return (await Promise.all([" Fail.\n"])).join("");
-          case 2: return (await Promise.all([" Pass.\n"])).join("");
-          case 3: return (await Promise.all([" Fail.\n"])).join("");
+            ]);
+          case 1: return promise_join([" Fail.\n"]);
+          case 2: return promise_join([" Pass.\n"]);
+          case 3: return promise_join([" Fail.\n"]);
         }
       })(),
-      (async function () {
+      (function () {
+        let arg0 = new Map([["a", "a"]]);
         let data1 = new Map(data);
         let exit = -1;
-        let arg0 = new Map([["a", "a"]]);
         if (arg0.has("a")) {
           switch (arg0.get("a")) {
             case "":
@@ -1204,64 +1204,71 @@
         if (exit === -1) { exit = 3; }
         switch (exit) {
           case 0:
-            return (await Promise.all([
+            return promise_join([
               " Fail. ",
               acutis_escape(data1.get("a")),
               " ",
               acutis_escape(data1.get("b")),
               "\n",
-            ])).join("");
-          case 1: return (await Promise.all([" Fail.\n"])).join("");
-          case 2: return (await Promise.all([" Pass.\n"])).join("");
-          case 3: return (await Promise.all([" Fail.\n"])).join("");
+            ]);
+          case 1: return promise_join([" Fail.\n"]);
+          case 2: return promise_join([" Pass.\n"]);
+          case 3: return promise_join([" Fail.\n"]);
         }
       })(),
       "\n\nConstructing async blocks\n-------------------------\n\n",
-      (async function () {
-        let data1 = new Map(data);
-        let exit = -1;
-        let resolved1 = (await Promise.all([
-          " Another nested block",
-        ])).join("");
-        let resolved0 = (await Promise.all([" Nested block"])).join("");
-        let arg0 = new Map([["a", resolved0], ["b", resolved1]]);
-        exit = 0;
-        data1.set("a", arg0.get("a"));
-        data1.set("b", arg0.get("b"));
-        return (await Promise.all([
-          acutis_escape(data1.get("a")),
-          " ",
-          acutis_escape(data1.get("b")),
-          "\n",
-        ])).join("");
-      })(),
+      Promise.all([
+        promise_join([
+          " Nested block ",
+          acutis_escape(
+            data.get("null_string") ? data.get("null_string")[0] : "pass"
+          ),
+        ]),
+        promise_join([" Another nested block"]),
+      ]).then(
+        function (blocks) {
+          let arg0 = new Map([["a", blocks[0]], ["b", blocks[1]]]);
+          let data1 = new Map(data);
+          let exit = -1;
+          exit = 0;
+          data1.set("a", arg0.get("a"));
+          data1.set("b", arg0.get("b"));
+          return promise_join([
+            acutis_escape(data1.get("a")),
+            " ",
+            acutis_escape(data1.get("b")),
+            "\n",
+          ]);
+        }
+      ),
       "Component\n---------\n\n",
-      (async function () {
-        let resolved0 = (await Promise.all(["Children prop"])).join("");
-        let arg0 = new Map([
-          ["children", resolved0],
-          ["list", [1, [2, [3, 0]]]],
-          ["optional", 0],
-        ]);
-        return template_Component(arg0);
-      })(),
+      Promise.all([
+        promise_join(["Children prop"]),
+      ]).then(
+        function (blocks) {
+          return template_Component(
+            new Map([
+              ["children", blocks[0]],
+              ["list", [1, [2, [3, 0]]]],
+              ["optional", 0],
+            ])
+          );
+        }
+      ),
       "\n\n",
-      (async function () {
-        let arg0 = new Map([]);
-        return template_Another_function(arg0);
-      })(),
+      template_Another_function(new Map([])),
       "\n\
   \n\
   Complicated pattern matching\n\
   ----------------------------\n\
   \n\
   ",
-      (async function () {
-        let data1 = new Map(data);
-        let exit = -1;
+      (function () {
         let arg0 = 1;
         let arg1 = 0;
         let arg2 = 3;
+        let data1 = new Map(data);
+        let exit = -1;
         switch (arg0) {
           case 1:
             if (arg1) {
@@ -1304,70 +1311,28 @@
             }
         }
         switch (exit) {
-          case 0: return (await Promise.all([" 0\n"])).join("");
+          case 0: return promise_join([" 0\n"]);
           case 1:
-            return (await Promise.all([
+            return promise_join([
               " 1 ",
               acutis_escape(data1.get("x").toString()),
               "\n",
-            ])).join("");
+            ]);
           case 2:
-            return (await Promise.all([
+            return promise_join([
               " 2 ",
               acutis_escape(data1.get("y").toString()),
               "\n",
-            ])).join("");
-          case 3: return (await Promise.all([" 3\n"])).join("");
-          case 4: return (await Promise.all([" 4\n"])).join("");
+            ]);
+          case 3: return promise_join([" 3\n"]);
+          case 4: return promise_join([" 4\n"]);
         }
       })(),
-      (async function () {
-        let data1 = new Map(data);
-        let exit = -1;
+      (function () {
         let arg0 = [[10, 20], 30];
         let arg1 = 40;
-        switch (arg0[0][0]) {
-          case 10:
-            switch (arg0[0][1]) {
-              case 20:
-                switch (arg0[1]) {
-                  case 30:
-                    switch (arg1) {
-                      case 40: exit = 1; break;
-                      case 41: exit = 0; data1.set("_x", arg0); break;
-                      default:
-                        exit = 2;
-                        data1.set("_y", arg0);
-                        data1.set("z", arg1);
-                    }
-                    break;
-                }
-                break;
-            }
-            break;
-        }
-        if (exit === -1) {
-          switch (arg1) {
-            case 41: exit = 0; data1.set("_x", arg0); break;
-            default: exit = 2; data1.set("_y", arg0); data1.set("z", arg1);
-          }
-        }
-        switch (exit) {
-          case 0: return (await Promise.all(["\n"])).join("");
-          case 1: return (await Promise.all([" Pass\n"])).join("");
-          case 2:
-            return (await Promise.all([
-              " ",
-              acutis_escape(data1.get("z").toString()),
-              "\n",
-            ])).join("");
-        }
-      })(),
-      (async function () {
         let data1 = new Map(data);
         let exit = -1;
-        let arg0 = [[10, 20], 99];
-        let arg1 = 40;
         switch (arg0[0][0]) {
           case 10:
             switch (arg0[0][1]) {
@@ -1395,14 +1360,56 @@
           }
         }
         switch (exit) {
-          case 0: return (await Promise.all(["\n"])).join("");
-          case 1: return (await Promise.all([" Fail\n"])).join("");
+          case 0: return promise_join(["\n"]);
+          case 1: return promise_join([" Pass\n"]);
           case 2:
-            return (await Promise.all([
+            return promise_join([
               " ",
               acutis_escape(data1.get("z").toString()),
               "\n",
-            ])).join("");
+            ]);
+        }
+      })(),
+      (function () {
+        let arg0 = [[10, 20], 99];
+        let arg1 = 40;
+        let data1 = new Map(data);
+        let exit = -1;
+        switch (arg0[0][0]) {
+          case 10:
+            switch (arg0[0][1]) {
+              case 20:
+                switch (arg0[1]) {
+                  case 30:
+                    switch (arg1) {
+                      case 40: exit = 1; break;
+                      case 41: exit = 0; data1.set("_x", arg0); break;
+                      default:
+                        exit = 2;
+                        data1.set("_y", arg0);
+                        data1.set("z", arg1);
+                    }
+                    break;
+                }
+                break;
+            }
+            break;
+        }
+        if (exit === -1) {
+          switch (arg1) {
+            case 41: exit = 0; data1.set("_x", arg0); break;
+            default: exit = 2; data1.set("_y", arg0); data1.set("z", arg1);
+          }
+        }
+        switch (exit) {
+          case 0: return promise_join(["\n"]);
+          case 1: return promise_join([" Fail\n"]);
+          case 2:
+            return promise_join([
+              " ",
+              acutis_escape(data1.get("z").toString()),
+              "\n",
+            ]);
         }
       })(),
       "String encoding\n\
@@ -1418,8 +1425,8 @@
   External JavaScript template component: stringify arbitrary data\n\
   \n\
   ",
-      (async function () {
-        let arg0 = new Map([
+      template_Stringify(
+        new Map([
           ["int_list", data.get("int_list")],
           ["nested_list", data.get("nested_list")],
           ["nested_nullable_list", data.get("nested_nullable_list")],
@@ -1430,11 +1437,10 @@
           ["tagged_record_open", data.get("tagged_record_open")],
           ["tagged_record_string", data.get("tagged_record_string")],
           ["unknown", data.get("unknown")],
-        ]);
-        return template_Stringify(arg0);
-      })(),
+        ])
+      ),
       "\n",
-    ])).join("");
+    ]);
   }
   
 
@@ -1552,7 +1558,7 @@
   Constructing async blocks
   -------------------------
   
-   Nested block  Another nested block
+   Nested block pass  Another nested block
   Component
   ---------
   
