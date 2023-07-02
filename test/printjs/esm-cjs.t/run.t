@@ -67,11 +67,9 @@
     return promise_join([
       Promise.all([
         promise_join([" text "]),
-      ]).then(
-        function (blocks) {
-          return template_ExternalFunction(new Map([["children", blocks[0]]]));
-        }
-      ),
+      ]).then(function (blocks) {
+        return template_ExternalFunction(new Map([["children", blocks[0]]]));
+      }),
       "\n",
     ]);
   }
@@ -146,11 +144,9 @@
     return promise_join([
       Promise.all([
         promise_join([" text "]),
-      ]).then(
-        function (blocks) {
-          return template_ExternalFunction(new Map([["children", blocks[0]]]));
-        }
-      ),
+      ]).then(function (blocks) {
+        return template_ExternalFunction(new Map([["children", blocks[0]]]));
+      }),
       "\n",
     ]);
   }

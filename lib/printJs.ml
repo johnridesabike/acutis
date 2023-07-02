@@ -283,7 +283,7 @@ let pp_statement =
           (pp_print_list ~pp_sep:Pp.sep_comma Id.pp)
           args pp_expr expr
     | App (name, []) -> fprintf ppf "%a()" pp_expr name
-    | App (name, [ ((Arr _ | String _) as arg) ]) ->
+    | App (name, [ ((Arr _ | String _ | Fun_expr _) as arg) ]) ->
         fprintf ppf "%a(%a)" pp_expr name pp_expr arg
     | App (name, args) ->
         fprintf ppf "%a(@,%a@;<0 -2>)" pp_expr name

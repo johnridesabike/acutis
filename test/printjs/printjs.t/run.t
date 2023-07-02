@@ -1225,36 +1225,32 @@
           ),
         ]),
         promise_join([" Another nested block"]),
-      ]).then(
-        function (blocks) {
-          let arg0 = new Map([["a", blocks[0]], ["b", blocks[1]]]);
-          let data1 = new Map(data);
-          let exit = -1;
-          exit = 0;
-          data1.set("a", arg0.get("a"));
-          data1.set("b", arg0.get("b"));
-          return promise_join([
-            acutis_escape(data1.get("a")),
-            " ",
-            acutis_escape(data1.get("b")),
-            "\n",
-          ]);
-        }
-      ),
+      ]).then(function (blocks) {
+        let arg0 = new Map([["a", blocks[0]], ["b", blocks[1]]]);
+        let data1 = new Map(data);
+        let exit = -1;
+        exit = 0;
+        data1.set("a", arg0.get("a"));
+        data1.set("b", arg0.get("b"));
+        return promise_join([
+          acutis_escape(data1.get("a")),
+          " ",
+          acutis_escape(data1.get("b")),
+          "\n",
+        ]);
+      }),
       "Component\n---------\n\n",
       Promise.all([
         promise_join(["Children prop"]),
-      ]).then(
-        function (blocks) {
-          return template_Component(
-            new Map([
-              ["children", blocks[0]],
-              ["list", [1, [2, [3, 0]]]],
-              ["optional", 0],
-            ])
-          );
-        }
-      ),
+      ]).then(function (blocks) {
+        return template_Component(
+          new Map([
+            ["children", blocks[0]],
+            ["list", [1, [2, [3, 0]]]],
+            ["optional", 0],
+          ])
+        );
+      }),
       "\n\n",
       template_Another_function(new Map([])),
       "\n\
