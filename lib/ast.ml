@@ -116,6 +116,8 @@ and node =
 and case = { pats : (Loc.t * pat Nonempty.t) Nonempty.t; nodes : t }
 and t = node list
 
+let dummy_var = Var (Loc.dummy, "_")
+
 let trim_to_sexp = function
   | No_trim -> Sexp.symbol "no_trim"
   | Trim -> Sexp.symbol "trim"

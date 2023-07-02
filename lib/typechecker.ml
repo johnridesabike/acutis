@@ -581,8 +581,7 @@ let add_default_wildcard cases =
         Ast.pats =
           Nonempty.map
             (function
-              | loc, Nonempty.[ h ] ->
-                  (loc, Nonempty.[ h; Ast.Var (Loc.dummy, "_") ])
+              | loc, Nonempty.[ h ] -> (loc, Nonempty.[ h; Ast.dummy_var ])
               | pat -> pat)
             case.Ast.pats;
       })

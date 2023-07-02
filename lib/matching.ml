@@ -747,7 +747,6 @@ module ParMatch = struct
   type t = Any | Scalar of scalar | Nil | Cons of t | Nest of t list
 
   let l = Loc.dummy
-  let any = Ast.Var (l, "_")
 
   let rec to_pat ty path =
     match (!ty, path) with
@@ -760,7 +759,7 @@ module ParMatch = struct
     | Tuple tys, Nest path -> Tuple (l, to_list tys path)
     | List ty, path -> to_list_pat [] ty path
     | Nullable ty, Cons (Nest [ path ]) -> Nullable (l, Some (to_pat ty path))
-    | Nullable _, Cons Any -> Nullable (l, Some any)
+    | Nullable _, Cons Any -> Nullable (l, Some Ast.dummy_var)
     | Nullable _, Nil -> Nullable (l, None)
     | Record tys, Nest path ->
         let s = Map.String.to_seq !tys in
@@ -779,12 +778,12 @@ module ParMatch = struct
         let tys = Map.String.find s m in
         let assoc = to_assoc (Map.String.to_seq !tys) path in
         Record (l, (l, key, Tag (Tag_string (l, s))) :: assoc)
-    | _ -> any
+    | _ -> Ast.dummy_var
 
   and to_list_pat acc ty = function
     | Cons (Nest [ hd; tl ]) -> to_list_pat (to_pat ty hd :: acc) ty tl
     | Nil -> List (l, List.rev acc, None)
-    | Cons Any | _ -> List (l, List.rev acc, Some any)
+    | Cons Any | _ -> List (l, List.rev acc, Some Ast.dummy_var)
 
   and to_list tys path = List.map2 to_pat tys path
 

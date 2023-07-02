@@ -75,6 +75,9 @@ and node =
 and case = { pats : (Loc.t * pat Nonempty.t) Nonempty.t; nodes : t }
 and t = node list
 
+val dummy_var : pat
+(** A variable that is always ignored. *)
+
 val echo_format_to_sexp : echo_format -> Sexp.t
 val escape_to_sexp : escape -> Sexp.t
 val to_sexp : t -> Sexp.t
