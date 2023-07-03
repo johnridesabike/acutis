@@ -40,7 +40,7 @@ let print_error title f =
     try
       f ();
       "no error"
-    with Error.Acutis_error s -> s
+    with Error.Acutis_error s -> String.trim s
   in
   print_endline title;
   print_endline "---";

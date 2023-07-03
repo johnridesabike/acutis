@@ -3,30 +3,25 @@ Illegal character 1
 File "<test>", 1:9-1:10
 Syntax error.
 
-
 Illegal character 2
 ---
 File "<test>", 1:4-1:5
 Syntax error.
-
 
 Illegal character 3
 ---
 File "<test>", 1:12-1:13
 Syntax error.
 
-
 Illegal character 4
 ---
 File "<test>", 1:6-1:7
 Syntax error.
 
-
 A number greater than the maximum integer is a syntax error.
 ---
 File "<test>", 1:10-1:29
 Syntax error.
-
 
 Illegal name: echo null
 ---
@@ -34,20 +29,17 @@ File "<test>", 1:4-1:8
 Parse error.
 This is not a valid echo.
 
-
 Illegal name: echo false
 ---
 File "<test>", 1:4-1:9
 Parse error.
 This is not a valid echo.
 
-
 Illegal name: echo true
 ---
 File "<test>", 1:4-1:8
 Parse error.
 This is not a valid echo.
-
 
 Illegal name: _
 ---
@@ -60,12 +52,10 @@ Unterminated strings
 File "<test>", 1:6-1:6
 Syntax error.
 
-
 Unterminated comments
 ---
 File "<test>", 1:11-1:11
 Syntax error.
-
 
 Unterminated expressions
 ---
@@ -73,12 +63,10 @@ File "<test>", 1:9-1:9
 Parse error.
 This is not a valid pattern.
 
-
 Illegal escape sequence
 ---
 File "<test>", 1:5-1:6
 Syntax error.
-
 
 Missing a closing component name
 ---
@@ -86,13 +74,11 @@ File "<test>", 1:19-1:20
 Parse error.
 Expected a component name.
 
-
 Unclosed components (this one is confusing.)
 ---
 File "<test>", 1:16-1:16
 Parse error.
 Unclosed component.
-
 
 Unexpected tokens (1)
 ---
@@ -100,13 +86,11 @@ File "<test>", 1:4-1:5
 Parse error.
 Expected a '%}', 'match', 'map', 'map_dict', or a component name.
 
-
 Unexpected tokens (2)
 ---
 File "<test>", 1:5-1:6
 Parse error.
 Expected a '%}', 'match', 'map', 'map_dict', or a component name.
-
 
 Unexpected tokens (3)
 ---
@@ -114,13 +98,11 @@ File "<test>", 1:5-1:9
 Parse error.
 Expected a '%}', 'match', 'map', 'map_dict', or a component name.
 
-
 Unexpected tokens (4)
 ---
 File "<test>", 1:10-1:11
 Parse error.
 Expected a '%}', 'match', 'map', 'map_dict', or a component name.
-
 
 Unexpected tokens (5)
 ---
@@ -128,13 +110,11 @@ File "<test>", 1:40-1:41
 Parse error.
 Expected a '%}'.
 
-
 Unexpected tokens (inside # blocks)
 ---
 File "<test>", 1:20-1:24
 Parse error.
 Expected a '%}', '#', 'match', 'map', 'map_dict', or a component name.
-
 
 Bad pattern (1)
 ---
@@ -142,13 +122,11 @@ File "<test>", 1:10-1:13
 Parse error.
 This is not a valid pattern.
 
-
 Bad pattern (2)
 ---
 File "<test>", 1:11-1:14
 Parse error.
 This is not a valid pattern.
-
 
 Bad pattern (3)
 ---
@@ -156,13 +134,11 @@ File "<test>", 1:11-1:14
 Parse error.
 This is not a valid pattern.
 
-
 Bad pattern (4)
 ---
 File "<test>", 1:11-1:14
 Parse error.
 This is not a valid pattern.
-
 
 Bad pattern (5)
 ---
@@ -170,13 +146,11 @@ File "<test>", 1:13-1:16
 Parse error.
 This is not a valid pattern.
 
-
 Bad pattern (6)
 ---
 File "<test>", 1:13-1:16
 Parse error.
 This is not a valid pattern.
-
 
 Bad pattern (7)
 ---
@@ -184,13 +158,11 @@ File "<test>", 1:8-1:11
 Parse error.
 This is not a valid pattern.
 
-
 Bad pattern (8)
 ---
 File "<test>", 1:14-1:18
 Parse error.
 This is not a valid pattern.
-
 
 Bad pattern (9)
 ---
@@ -198,13 +170,11 @@ File "<test>", 1:12-1:16
 Parse error.
 This is not a valid pattern.
 
-
 Bad pattern (10)
 ---
 File "<test>", 1:14-1:18
 Parse error.
 This is not a valid pattern.
-
 
 Bad pattern (11)
 ---
@@ -212,13 +182,11 @@ File "<test>", 1:12-1:16
 Parse error.
 This is not a valid pattern.
 
-
 Bad pattern (12)
 ---
 File "<test>", 1:15-1:19
 Parse error.
 This is not a valid pattern.
-
 
 Bad pattern (13)
 ---
@@ -226,13 +194,11 @@ File "<test>", 1:14-1:18
 Parse error.
 This is not a valid pattern.
 
-
 Unclosed < (4)
 ---
 File "<test>", 1:14-1:18
 Parse error.
 This is not a valid pattern.
-
 
 Illegal pattern after with
 ---
@@ -240,13 +206,11 @@ File "<test>", 1:17-1:20
 Parse error.
 This is not a valid pattern.
 
-
 Bad pattern (14)
 ---
 File "<test>", 1:8-1:11
 Parse error.
 This is not a valid pattern.
-
 
 Bad pattern (15)
 ---
@@ -254,13 +218,11 @@ File "<test>", 1:15-1:18
 Parse error.
 This is not a valid pattern.
 
-
 Bad echo (1)
 ---
 File "<test>", 1:4-1:8
 Parse error.
 This is not a valid echo.
-
 
 Bad echo (2)
 ---
@@ -268,13 +230,11 @@ File "<test>", 1:5-1:9
 Parse error.
 This is not a valid echo.
 
-
 Bad echo (3)
 ---
 File "<test>", 1:8-1:12
 Parse error.
 This is not a valid echo.
-
 
 Bad echo (4)
 ---
@@ -282,13 +242,11 @@ File "<test>", 1:7-1:11
 Parse error.
 This is not a valid echo.
 
-
 Bad echo (5)
 ---
 File "<test>", 1:7-1:9
 Parse error.
 Expected a '}}}'.
-
 
 Bad echo (6)
 ---
@@ -296,19 +254,16 @@ File "<test>", 1:6-1:9
 Parse error.
 Expected a '}}'.
 
-
 Bad echo format (1)
 ---
 File "<test>", 1:6-1:7
 Parse error.
 This is missing a format specification.
 
-
 Bad echo format (2)
 ---
 File "<test>", 1:5-1:6
 Syntax error.
-
 
 Bad prop (1)
 ---
@@ -316,13 +271,11 @@ File "<test>", 1:6-1:10
 Parse error.
 This is not a valid component prop.
 
-
 Bad prop (2)
 ---
 File "<test>", 1:8-1:9
 Parse error.
 This is not a valid component prop.
-
 
 Bad prop (3)
 ---
@@ -330,13 +283,11 @@ File "<test>", 1:8-1:9
 Parse error.
 This is not a valid component prop.
 
-
 Bad prop (4)
 ---
 File "<test>", 1:12-1:16
 Parse error.
 This is not a valid component prop.
-
 
 Illegal field name (1)
 ---
@@ -344,13 +295,11 @@ File "<test>", 1:12-1:16
 Parse error.
 This is not a valid field name.
 
-
 Illegal field name (2)
 ---
 File "<test>", 1:13-1:17
 Parse error.
 This is not a valid field name.
-
 
 Illegal field name (3)
 ---
@@ -358,13 +307,11 @@ File "<test>", 1:14-1:18
 Parse error.
 This is not a valid field name.
 
-
 Illegal field name (4)
 ---
 File "<test>", 1:12-1:16
 Parse error.
 This is not a valid field name.
-
 
 Illegal field name (5)
 ---
@@ -372,13 +319,11 @@ File "<test>", 1:14-1:18
 Parse error.
 This is not a valid field name.
 
-
 Unclosed { (1)
 ---
 File "<test>", 1:13-1:17
 Parse error.
 Expected a ',', ':', or '}'.
-
 
 Unclosed { (2)
 ---
@@ -386,13 +331,11 @@ File "<test>", 1:23-1:27
 Parse error.
 Expected a ',', ':', or '}'.
 
-
 Unclosed { (3)
 ---
 File "<test>", 1:15-1:19
 Parse error.
 Expected a ':'.
-
 
 Unclosed { (4)
 ---
@@ -400,13 +343,11 @@ File "<test>", 1:15-1:19
 Parse error.
 Expected a ',' or '}'.
 
-
 Unclosed { (5)
 ---
 File "<test>", 1:16-1:20
 Parse error.
 Expected a ',' or '}'.
-
 
 Unclosed (
 ---
@@ -414,13 +355,11 @@ File "<test>", 1:13-1:17
 Parse error.
 Expected a ',' or ')'.
 
-
 Unclosed [ (1)
 ---
 File "<test>", 1:13-1:17
 Parse error.
 Expected a ',', '...', or ']'.
-
 
 Unclosed [ (2)
 ---
@@ -428,13 +367,11 @@ File "<test>", 1:16-1:20
 Parse error.
 Expected a ']'.
 
-
 Unclosed < (1)
 ---
 File "<test>", 1:13-1:17
 Parse error.
 Expected a ',', ':', or '>'.
-
 
 Unclosed < (2)
 ---
@@ -442,13 +379,11 @@ File "<test>", 1:15-1:19
 Parse error.
 Expected a ':'.
 
-
 Unclosed < (3)
 ---
 File "<test>", 1:15-1:19
 Parse error.
 Expected a ',' or '>'.
-
 
 Missing commas in match/map patterns (1)
 ---
@@ -456,13 +391,11 @@ File "<test>", 1:12-1:13
 Parse error.
 Sequential patterns must be separated by a ','.
 
-
 Missing commas in match/map patterns (2)
 ---
 File "<test>", 1:15-1:16
 Parse error.
 Sequential patterns must be separated by a ','.
-
 
 Missing commas in match/map patterns (3)
 ---
@@ -470,13 +403,11 @@ File "<test>", 1:10-1:11
 Parse error.
 Sequential patterns must be separated by a ','.
 
-
 Missing commas in match/map patterns (4)
 ---
 File "<test>", 1:16-1:20
 Parse error.
 Sequential patterns must be separated by a ','.
-
 
 Missing commas in match/map patterns (5)
 ---
@@ -484,13 +415,11 @@ File "<test>", 1:25-1:26
 Parse error.
 Sequential patterns must be separated by a ','.
 
-
 Missing commas in match/map patterns (5)
 ---
 File "<test>", 1:21-1:22
 Parse error.
 Sequential patterns must be separated by a ','.
-
 
 Unmatched match
 ---
@@ -498,13 +427,11 @@ File "<test>", 1:26-1:26
 Parse error.
 Unclosed block. Expected a '{% /' somewhere.
 
-
 Missing /match
 ---
 File "<test>", 1:26-1:29
 Parse error.
 Expected a '/match'.
-
 
 Missing /map
 ---
@@ -512,13 +439,11 @@ File "<test>", 1:24-1:29
 Parse error.
 Expected a '/map'.
 
-
 Missing /map_dict
 ---
 File "<test>", 1:29-1:32
 Parse error.
 Expected a '/map_dict'.
-
 
 Unseparated echoes
 ---
@@ -526,13 +451,11 @@ File "<test>", 1:6-1:7
 Parse error.
 Sequential echoes must be separated by a '?'.
 
-
 # Blocks must contain text
 ---
 File "<test>", 1:10-1:13
 Parse error.
 Expected a '%}'.
-
 
 Bad record field access (1)
 ---
@@ -540,13 +463,11 @@ File "<test>", 1:12-1:13
 Parse error.
 This is not a valid field name.
 
-
 Bad record field access (2)
 ---
 File "<test>", 1:6-1:7
 Parse error.
 This is not a valid field name.
-
 
 Duplicate field
 ---
@@ -855,7 +776,6 @@ Random other tags don't compile.
 File "<test>", 1:24-1:25
 Parse error.
 Only literal integer, string, and boolean values may be union tags.
-
 
 Tag names must be coherent.
 ---
@@ -1319,13 +1239,11 @@ File "<test>", 1:27-1:31
 Parse error.
 This is not a valid field name.
 
-
 Missing , or }.
 ---
 File "<test>", 1:26-1:27
 Parse error.
 Expected a ',' or '}'.
-
 
 Unclosed interface
 ---
@@ -1333,13 +1251,11 @@ File "<test>", 1:21-1:21
 Parse error.
 Expected a '%}'.
 
-
 Bad prop name (1).
 ---
 File "<test>", 1:14-1:18
 Parse error.
 This is not a valid prop name.
-
 
 Bad prop name (2).
 ---
@@ -1347,13 +1263,11 @@ File "<test>", 1:22-1:26
 Parse error.
 This is not a valid prop name.
 
-
 Bad token after a variant (1).
 ---
 File "<test>", 1:24-1:28
 Parse error.
 This is not a valid prop name. You possibly forgot a '|'.
-
 
 Bad token after a variant (2).
 ---
@@ -1361,13 +1275,11 @@ File "<test>", 1:21-1:25
 Parse error.
 This is not a valid prop name. You possibly forgot a '|'.
 
-
 Bad token after a variant (3).
 ---
 File "<test>", 1:19-1:23
 Parse error.
 This is not a valid prop name. You possibly forgot a '|'.
-
 
 Bad token after a variant (4).
 ---
@@ -1375,13 +1287,11 @@ File "<test>", 1:22-1:26
 Parse error.
 This is not a valid prop name. You possibly forgot a '|'.
 
-
 Missing equals.
 ---
 File "<test>", 1:16-1:19
 Parse error.
 Expected an '='.
-
 
 Invalid type (1).
 ---
@@ -1389,13 +1299,11 @@ File "<test>", 1:16-1:20
 Parse error.
 This is not a valid type.
 
-
 Invalid type (2).
 ---
 File "<test>", 1:17-1:21
 Parse error.
 This is not a valid type.
-
 
 Invalid type (3).
 ---
@@ -1403,13 +1311,11 @@ File "<test>", 1:17-1:21
 Parse error.
 This is not a valid type.
 
-
 Invalid type (4).
 ---
 File "<test>", 1:17-1:21
 Parse error.
 This is not a valid type.
-
 
 Invalid type (5).
 ---
@@ -1417,13 +1323,11 @@ File "<test>", 1:18-1:22
 Parse error.
 This is not a valid type.
 
-
 Invalid type (6).
 ---
 File "<test>", 1:20-1:24
 Parse error.
 This is not a valid type.
-
 
 Invalid type (7).
 ---
@@ -1431,13 +1335,11 @@ File "<test>", 1:17-1:21
 Parse error.
 This is not a valid type.
 
-
 Invalid type (8).
 ---
 File "<test>", 1:17-1:21
 Parse error.
 This is not a valid type.
-
 
 Invalid type (9).
 ---
@@ -1445,13 +1347,11 @@ File "<test>", 1:22-1:26
 Parse error.
 This is not a valid type.
 
-
 Missing colon (1).
 ---
 File "<test>", 1:19-1:20
 Parse error.
 Expected a ':'.
-
 
 Missing colon (2).
 ---
@@ -1459,13 +1359,11 @@ File "<test>", 1:20-1:21
 Parse error.
 Expected a ':'.
 
-
 Bad enum
 ---
 File "<test>", 1:17-1:18
 Parse error.
 Expected a string or an integer.
-
 
 Bad token after record pipe.
 ---
@@ -1473,13 +1371,11 @@ File "<test>", 1:26-1:27
 Parse error.
 Expected a record type or an '...'.
 
-
 Bad token after string enum pipe.
 ---
 File "<test>", 1:23-1:24
 Parse error.
 Expected an enum value or an '...'.
-
 
 Bad token after int enum pipe.
 ---
@@ -1487,13 +1383,11 @@ File "<test>", 1:21-1:22
 Parse error.
 Expected an enum value or an '...'.
 
-
 Missing >
 ---
 File "<test>", 1:20-1:21
 Parse error.
 Expected a '>'.
-
 
 Missing ]
 ---
@@ -1501,13 +1395,11 @@ File "<test>", 1:20-1:21
 Parse error.
 Expected a ']'.
 
-
 Missing )
 ---
 File "<test>", 1:20-1:21
 Parse error.
 Expected a ',' or ')'.
-
 
 Bad string enum
 ---
@@ -1515,13 +1407,11 @@ File "<test>", 1:24-1:25
 Parse error.
 Expected a string.
 
-
 Bad int enum
 ---
 File "<test>", 1:22-1:25
 Parse error.
 Expected an integer.
-
 
 Bad boolean
 ---
@@ -1529,13 +1419,11 @@ File "<test>", 1:24-1:25
 Parse error.
 Expected a boolean.
 
-
 Bad union tag type
 ---
 File "<test>", 1:21-1:22
 Parse error.
 Only literal integer, string, and boolean values may be union tags.
-
 
 Duplicate declarations
 ---
