@@ -120,10 +120,7 @@ let rec make_match :
       in
       make_match args get vars tree
   | Optional { child; next } -> (
-      try
-        match child with
-        | Some t -> make_match args get vars t
-        | None -> raise_notrace Not_found
+      try make_match args get vars child
       with Not_found -> (
         match next with
         | Some t -> make_match args get vars t

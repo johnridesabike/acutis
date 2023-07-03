@@ -93,24 +93,22 @@ let () =
   print_error "Bad pattern (7)" (render "{% map ABC with a %} {% /map %}");
   print_error "Bad pattern (8)" (render "{% match {a: with %} {% /match %}");
   print_error "Bad pattern (9)" (render "{% match ( with %} {% /match %}");
-  print_error "Bad pattern (10)" (render "{% match [ with %} {% /match %}");
-  print_error "Bad pattern (11)" (render "{% match [... with %} {% /match %}");
-  print_error "Bad pattern (12)" (render "{% match [a, with %} {% /match %}");
-  print_error "Bad pattern (13)"
-    (render "{% match [a, ... with %} {% /match %}");
+  print_error "Bad pattern (10)" (render "{% match (a, with %} {% /match %}");
+  print_error "Bad pattern (11)" (render "{% match [ with %} {% /match %}");
+  print_error "Bad pattern (12)" (render "{% match [... with %} {% /match %}");
+  print_error "Bad pattern (13)" (render "{% match [a, with %} {% /match %}");
   print_error "Unclosed < (4)" (render "{% match <a: with %} {% /match %}");
   print_error "Illegal pattern after with"
     (render "{% match a with Abc %} {% /match %}");
   print_error "Bad pattern (14)" (render "{% Z a=ABC / %}");
   print_error "Bad pattern (15)" (render "{% match null ~%}");
 
-  print_error "Bad echo (1)" (render "{{ ? }}");
-  print_error "Bad echo (2)" (render "{{{ A }}}");
-  print_error "Bad echo (3)" (render "{{ a ? ? }}");
-  print_error "Bad echo (4)" (render "{{ %i ? }}");
+  print_error "Bad echo (1)" (render "{{ with }}");
+  print_error "Bad echo (2)" (render "{{{ with }}}");
+  print_error "Bad echo (3)" (render "{{ a ? with }}");
+  print_error "Bad echo (4)" (render "{{ %i with }}");
   print_error "Bad echo (5)" (render "{{{ a }}");
   print_error "Bad echo (6)" (render "{{ a }}}");
-  print_error "Bad echo (7)" (render "{{ x ? %i ? }}");
 
   print_error "Bad echo format (1)" (render "{{ % a }}");
   print_error "Bad echo format (2)" (render "{{ %z a }}");
@@ -141,8 +139,7 @@ let () =
   print_error "Unclosed (" (render "{% match (a with %} {% /match %}");
 
   print_error "Unclosed [ (1)" (render "{% match [a with %} {% /match %}");
-  print_error "Unclosed [ (2)" (render "{% match [a, ...b with %} {% /match %}");
-  print_error "Unclosed [ (3)" (render "{% match [...b with %} {% /match %}");
+  print_error "Unclosed [ (2)" (render "{% match [...b with %} {% /match %}");
 
   print_error "Unclosed < (1)" (render "{% match <a with %} {% /match %}");
   print_error "Unclosed < (2)" (render "{% match <\"a\" with %} {% /match %}");
@@ -167,8 +164,7 @@ let () =
   print_error "Missing /map" (render "{% map x with x %} {% /match %}");
   print_error "Missing /map_dict" (render "{% map_dict x with x %} {% /map %}");
 
-  print_error "Unseparated echoes (1)" (render "{{ a b }}");
-  print_error "Unseparated echoes (2)" (render "{{ a ? b c }}");
+  print_error "Unseparated echoes" (render "{{ a b }}");
 
   print_error "# Blocks must contain text" (render "{% A a=# abc # / %}");
 
@@ -373,8 +369,10 @@ let () =
     (render "{% match a, b with !@1, 2 %} {% with null, _ %} {% /match %}");
   print_error "Partial matching with records."
     (render "{% match a with {b: 10} %} {% with {a: 20} %} {% /match %}");
-  print_error "Partial matching with dictionaries."
+  print_error "Partial matching with dictionaries (1)."
     (render "{% match a with <a: true> %} {% with <a: false> %} {% /match %}");
+  print_error "Partial matching with dictionaries (2)."
+    (render "{% match a with <a> %} {{ a }} {% with <b> %} {{ b }} {% /match %}");
   print_error "Partial matching with unions (1)."
     (render
        "{% match a with {@tag: 0, a: 10} %} {% with {@tag: 1, b: 20} %}\n\
@@ -441,6 +439,13 @@ let () =
     {%  with 1, !2 %}
     {%  with _, _ %}
     {% /match %}|});
+
+  print_error "Dict patterns match a subset of the input."
+    (render
+       "{% match a with <a: 1> %} {% with <a: 1, b: 2> %} {% with _ %}\n\
+        {% /match %}");
+  print_error "Empty dicts (<>) match all inputs (like _)."
+    (render "{% match a with <> %} {% with <a> %} {{ a }} {% /match %}");
 
   print_error "Template blocks are not allowed in destructure patterns."
     (render "{% match a with {b: #%} {%#} %} {% /match %}");

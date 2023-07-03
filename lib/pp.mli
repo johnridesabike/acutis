@@ -31,8 +31,8 @@ val false_ : formatter -> unit
 val surround :
   left:char ->
   right:char ->
-  (Format.formatter -> 'a -> unit) ->
-  Format.formatter ->
+  (formatter -> 'a -> unit) ->
+  formatter ->
   'a ->
   unit
 (** [surround ~left ~right f x] prints the result of [f x] with [left] and

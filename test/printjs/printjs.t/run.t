@@ -1139,6 +1139,9 @@
                     exit = 0;
                     data1.set("a", arg0.get("a")[0]);
                     data1.set("b", arg0.get("does_not_exist")[0]);
+                    if (exit === -1) { exit = 2; }
+                  } else {
+                    exit = 2;
                   }
                 }
                 if (exit === -1) { exit = 2; }
@@ -1153,6 +1156,7 @@
                 }
             }
           } else {
+            if (arg0.has("does_not_exist")) { exit = 1; }
             if (exit === -1) { exit = 1; }
           }
         }

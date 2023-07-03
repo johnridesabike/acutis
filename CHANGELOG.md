@@ -13,6 +13,9 @@ Most changes are breaking changes.
 - Add debug commands to the CLI: `--printast`, `--printtypes`, and `--printopt`.
 - Change the functor interface for the render module. Data modules only need to
   provide a few basic functions now.
+- Support trailing commas in patterns.
+- Improve dictionary pattern-matching. Dict patterns should match a subset of
+  their input, with an empty dict always matching any input.
 
 ## 0.22.0
 

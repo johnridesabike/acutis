@@ -599,9 +599,7 @@ let rec match_tree :
   | M.Optional { child; next } ->
       List.concat
         [
-          (match child with
-          | None -> []
-          | Some t -> match_tree ~leafstmt ~get_arg ~optional:true ~vars t);
+          match_tree ~leafstmt ~get_arg ~optional:true ~vars child;
           (match next with
           | None -> []
           | Some t ->

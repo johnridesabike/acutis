@@ -49,10 +49,7 @@ type ('leaf, 'key) tree =
       cons : ('leaf, 'key) tree option;
     }
   | Wildcard of { key : 'key; ids : Set.Int.t; child : ('leaf, 'key) tree }
-  | Optional of {
-      child : ('leaf, 'key) tree option;
-      next : ('leaf, 'key) tree option;
-    }
+  | Optional of { child : ('leaf, 'key) tree; next : ('leaf, 'key) tree option }
   | End of 'leaf
 
 and ('leaf, 'key) nest =
@@ -82,46 +79,47 @@ end
 type leaf = { names : int Map.String.t; exit : Exit.key }
 type 'a t = { tree : (leaf, int) tree; exits : 'a Exit.t }
 
+(* Don't check equality for IDs. A merge failure may still modify IDs, creating
+   a false-negative equality.
+   Don't check equality for keys or check_cases, because they should never
+   change anyway. *)
+
 let rec equal_tree :
           'leaf 'key.
           ('leaf -> 'leaf -> bool) ->
-          ('key -> 'key -> bool) ->
           ('leaf, 'key) tree ->
           ('leaf, 'key) tree ->
           bool =
- fun equal_leaf equal_key a b ->
+ fun equal_leaf a b ->
   match (a, b) with
-  | Switch a, Switch { key; ids; cases; wildcard; check_cases = _ } ->
-      (* Don't bother test equality for [check_cases]. *)
-      equal_key a.key key && Set.Int.equal a.ids ids
-      && equal_switchcase equal_leaf equal_key a.cases cases
-      && Option.equal (equal_tree equal_leaf equal_key) a.wildcard wildcard
-  | Nest a, Nest { key; ids; child; wildcard } ->
-      equal_key a.key key && Set.Int.equal a.ids ids
-      && equal_nest equal_leaf equal_key a.child child
-      && Option.equal (equal_tree equal_leaf equal_key) a.wildcard wildcard
-  | Construct a, Construct { key; ids; nil; cons } ->
-      equal_key a.key key && Set.Int.equal a.ids ids
-      && Option.equal (equal_tree equal_leaf equal_key) a.nil nil
-      && Option.equal (equal_tree equal_leaf equal_key) a.cons cons
-  | Wildcard a, Wildcard { key; ids; child } ->
-      equal_key a.key key && Set.Int.equal a.ids ids
-      && equal_tree equal_leaf equal_key a.child child
+  | Switch a, Switch { cases; wildcard; ids = _; key = _; check_cases = _ } ->
+      equal_switchcase equal_leaf a.cases cases
+      && Option.equal (equal_tree equal_leaf) a.wildcard wildcard
+  | Nest a, Nest { child; wildcard; key = _; ids = _ } ->
+      equal_nest equal_leaf a.child child
+      && Option.equal (equal_tree equal_leaf) a.wildcard wildcard
+  | Construct a, Construct { nil; cons; key = _; ids = _ } ->
+      Option.equal (equal_tree equal_leaf) a.nil nil
+      && Option.equal (equal_tree equal_leaf) a.cons cons
+  | Wildcard a, Wildcard { child; key = _; ids = _ } ->
+      equal_tree equal_leaf a.child child
   | End a, End b -> equal_leaf a b
-  | _ -> false
+  | Optional a, Optional { child; next } ->
+      equal_tree equal_leaf a.child child
+      && Option.equal (equal_tree equal_leaf) a.next next
+  | (Switch _ | Nest _ | Construct _ | Wildcard _ | Optional _ | End _), _ ->
+      false
 
-and equal_nest equal_leaf equal_key a b =
+and equal_nest equal_leaf a b =
   match (a, b) with
-  | Int_keys a, Int_keys b ->
-      equal_tree (equal_tree equal_leaf equal_key) Int.equal a b
-  | String_keys a, String_keys b ->
-      equal_tree (equal_tree equal_leaf equal_key) String.equal a b
+  | Int_keys a, Int_keys b -> equal_tree (equal_tree equal_leaf) a b
+  | String_keys a, String_keys b -> equal_tree (equal_tree equal_leaf) a b
   | _ -> false
 
-and equal_switchcase equal_leaf equal_key a { data; if_match; next } =
+and equal_switchcase equal_leaf a { data; if_match; next } =
   scalar_equal a.data data
-  && equal_tree equal_leaf equal_key a.if_match if_match
-  && Option.equal (equal_switchcase equal_leaf equal_key) a.next next
+  && equal_tree equal_leaf a.if_match if_match
+  && Option.equal (equal_switchcase equal_leaf) a.next next
 
 let equal_leaf a { names; exit } =
   Map.String.equal Int.equal a.names names && Exit.equal_key a.exit exit
@@ -135,12 +133,11 @@ type (_, _) depth =
 
 (** Equality for n-depth nested trees. Keys are ignored. *)
 let equal_tree_nested =
-  let equal_noop _ _ = true in
   let rec aux : type a. (a, leaf) depth -> a -> a -> bool = function
     | Z -> equal_leaf
-    | S n -> equal_tree (aux n) equal_noop
+    | S n -> equal_tree (aux n)
   in
-  fun n -> equal_tree (aux n) equal_noop
+  fun n -> equal_tree (aux n)
 
 (** The merge algorithm must do some extra work to detect when merges fail.
     A failure is defined by when a merger returns a tree that is identical to
@@ -301,10 +298,7 @@ and expand_wildcard_after_nest :
   | Optional a ->
       Optional
         {
-          child =
-            (match a.child with
-            | None -> None
-            | Some a -> Some (expand_wildcard_after_nest na nb a ~wildcard));
+          child = expand_wildcard_after_nest na nb a.child ~wildcard;
           next =
             (match a.next with
             | None -> None
@@ -317,36 +311,35 @@ and expand_wildcard_after_nest :
     paths are covered by the wildcard case. *)
 and merge_wildcard_after_nest :
     type a b ka kb.
-    equal:((a, ka) tree -> (a, ka) tree -> bool) ->
     (b, (a, ka) tree) depth ->
     (b, leaf) depth ->
     wildcard:(a, ka) tree ->
     (b, kb) tree ->
     (b, kb) tree option =
- fun ~equal na nb ~wildcard b ->
+ fun na nb ~wildcard b ->
   match b with
   | End b -> (
       match (na, nb) with
       | Z, S n ->
-          let x = merge n wildcard b in
-          if equal x wildcard then None else Some (End x)
+          let a = merge n wildcard b in
+          if equal_tree_nested n a wildcard then None else Some (End a)
       | S na, S nb -> (
-          match merge_wildcard_after_nest ~equal na nb ~wildcard b with
+          match merge_wildcard_after_nest na nb ~wildcard b with
           | None -> None
           | Some x -> Some (End x)))
   | Nest b -> (
       let w =
         match b.wildcard with
         | None -> None
-        | Some b -> merge_wildcard_after_nest ~equal na nb ~wildcard b
+        | Some b -> merge_wildcard_after_nest na nb ~wildcard b
       in
       match b.child with
       | Int_keys c -> (
-          match merge_wildcard_after_nest ~equal (S na) (S nb) ~wildcard c with
+          match merge_wildcard_after_nest (S na) (S nb) ~wildcard c with
           | None -> None
           | Some c -> Some (Nest { b with child = Int_keys c; wildcard = w }))
       | String_keys c -> (
-          match merge_wildcard_after_nest ~equal (S na) (S nb) ~wildcard c with
+          match merge_wildcard_after_nest (S na) (S nb) ~wildcard c with
           | None -> None
           | Some c -> Some (Nest { b with child = String_keys c; wildcard = w })
           ))
@@ -354,29 +347,29 @@ and merge_wildcard_after_nest :
       let nil =
         match b.nil with
         | None -> None
-        | Some c -> merge_wildcard_after_nest ~equal na nb ~wildcard c
+        | Some c -> merge_wildcard_after_nest na nb ~wildcard c
       in
       let cons =
         match b.cons with
         | None -> None
-        | Some c -> merge_wildcard_after_nest ~equal na nb ~wildcard c
+        | Some c -> merge_wildcard_after_nest na nb ~wildcard c
       in
       match (nil, cons) with
       | None, None -> None
       | nil, cons -> Some (Construct { b with nil; cons }))
   | Wildcard b -> (
-      match merge_wildcard_after_nest ~equal na nb ~wildcard b.child with
+      match merge_wildcard_after_nest na nb ~wildcard b.child with
       | None -> None
       | Some child -> Some (Wildcard { b with child }))
   | Switch b -> (
       let w =
         match b.wildcard with
         | None -> None
-        | Some b -> merge_wildcard_after_nest ~equal na nb ~wildcard b
+        | Some b -> merge_wildcard_after_nest na nb ~wildcard b
       in
       let[@tail_mod_cons] rec aux case =
         let if_match =
-          merge_wildcard_after_nest ~equal na nb ~wildcard case.if_match
+          merge_wildcard_after_nest na nb ~wildcard case.if_match
         in
         match (if_match, case.next) with
         | None, None -> None
@@ -389,19 +382,15 @@ and merge_wildcard_after_nest :
       | None -> None
       | Some cases -> Some (Switch { b with cases; wildcard = w }))
   | Optional b -> (
-      let child =
-        match b.child with
-        | None -> None
-        | Some b -> merge_wildcard_after_nest ~equal na nb ~wildcard b
-      in
-      let next =
-        match b.next with
-        | None -> None
-        | Some b -> merge_wildcard_after_nest ~equal na nb ~wildcard b
-      in
-      match (child, next) with
-      | None, None -> None
-      | child, next -> Some (Optional { child; next }))
+      match merge_wildcard_after_nest na nb ~wildcard b.child with
+      | None -> None
+      | Some child ->
+          let next =
+            match b.next with
+            | None -> None
+            | Some b -> merge_wildcard_after_nest na nb ~wildcard b
+          in
+          Some (Optional { child; next }))
 
 (** Merge two trees. If the merge is unsuccessful, then the result will be
     structurally equal to the first tree. *)
@@ -418,7 +407,6 @@ and merge :
           child = merge n a.child b.child;
         }
   | Wildcard a, Nest b -> (
-      let equal = equal_tree_nested n in
       let ids = Set.Int.union a.ids b.ids in
       let wildcard =
         match b.wildcard with
@@ -427,15 +415,11 @@ and merge :
       in
       match b.child with
       | Int_keys c -> (
-          match
-            merge_wildcard_after_nest ~equal Z (S n) ~wildcard:a.child c
-          with
+          match merge_wildcard_after_nest Z (S n) ~wildcard:a.child c with
           | None -> Wildcard a
           | Some c -> Nest { b with ids; child = Int_keys c; wildcard })
       | String_keys c -> (
-          match
-            merge_wildcard_after_nest ~equal Z (S n) ~wildcard:a.child c
-          with
+          match merge_wildcard_after_nest Z (S n) ~wildcard:a.child c with
           | None -> Wildcard a
           | Some c -> Nest { b with ids; child = String_keys c; wildcard }))
   | (Wildcard { ids; child; _ } as a), Construct b ->
@@ -460,7 +444,6 @@ and merge :
           let ids = Set.Int.union a.ids b.ids in
           Switch { b with ids; cases; wildcard = Some wildcard })
   | Nest a, Nest b ->
-      let equal = equal_tree_nested n in
       let ids = Set.Int.union a.ids b.ids in
       let wildcard =
         match (a.wildcard, b.wildcard) with
@@ -473,7 +456,7 @@ and merge :
         match wildcard with
         | None -> child
         | Some wildcard -> (
-            match merge_wildcard_after_nest ~equal Z (S n) ~wildcard child with
+            match merge_wildcard_after_nest Z (S n) ~wildcard child with
             | None -> child
             | Some child -> child)
       in
@@ -565,19 +548,15 @@ and merge :
       let ids = Set.Int.union a.ids b.ids in
       Switch { a with ids; cases; wildcard }
   | Optional { child; next }, Optional b ->
-      let child =
-        match (child, b.child) with
-        | None, None -> None
-        | Some a, None | None, Some a -> Some a
-        | Some a, Some b -> Some (merge n a b)
-      in
-      let next =
-        match (next, b.next) with
-        | None, None -> None
-        | Some a, None | None, Some a -> Some a
-        | Some a, Some b -> Some (merge n a b)
-      in
-      Optional { child; next }
+      Optional
+        {
+          child = merge n child b.child;
+          next =
+            (match (next, b.next) with
+            | None, None -> None
+            | Some a, None | None, Some a -> Some a
+            | Some a, Some b -> Some (merge n a b));
+        }
   | Wildcard _, Optional _
   | Optional _, (Switch _ | Nest _ | Construct _ | Wildcard _)
   | Switch _, (Nest _ | Construct _ | Optional _)
@@ -611,33 +590,28 @@ let check_cases_of_union = function
   | Ty.{ row = `Closed; cases = Union.String s; _ } ->
       Some (Map.String.to_seq s |> Seq.map fst |> Seq.map string)
 
+let ids = Set.Int.empty
+
 let of_scalar key data if_match check_cases =
-  Switch
-    {
-      key;
-      ids = Set.Int.empty;
-      cases = { data; if_match; next = None };
-      wildcard = None;
-      check_cases;
-    }
+  let cases = { data; if_match; next = None } in
+  Switch { key; ids; cases; wildcard = None; check_cases }
 
 let rec of_tpat :
           'a 'k. key:'k -> bindings -> ('a, 'k) cont -> T.pat -> ('a, 'k) tree =
  fun ~key b k -> function
-  | TAny -> Wildcard { ids = Set.Int.empty; key; child = k b }
+  | TAny -> Wildcard { ids; key; child = k b }
   | TVar x ->
       let id = b.next_id () in
       let b = { b with names = Map.String.add x id b.names } in
       Wildcard { ids = Set.Int.singleton id; key; child = k b }
   | TConstruct (_, Some cons) ->
-      let child = of_tpat ~key b k cons in
-      Construct { key; ids = Set.Int.empty; nil = None; cons = Some child }
+      Construct { key; ids; nil = None; cons = Some (of_tpat ~key b k cons) }
   | TConstruct (_, None) ->
-      Construct { key; ids = Set.Int.empty; nil = Some (k b); cons = None }
+      Construct { key; ids; nil = Some (k b); cons = None }
   | TScalar (data, enum) -> of_scalar key data (k b) (check_cases_of_enum enum)
   | TTuple l ->
       let child = Int_keys (of_list ~key:0 b (fun b -> End (k b)) l) in
-      Nest { key; ids = Set.Int.empty; child; wildcard = None }
+      Nest { key; ids; child; wildcard = None }
   | TRecord (tag, m, tys) ->
       (* We need to expand the map to include all of its type's keys. *)
       let child =
@@ -654,8 +628,7 @@ let rec of_tpat :
             of_scalar key (data :> scalar) child (check_cases_of_union union)
         | None -> child
       in
-      Nest
-        { key; ids = Set.Int.empty; child = String_keys child; wildcard = None }
+      Nest { key; ids; child = String_keys child; wildcard = None }
   | TDict (m, kys) ->
       (* We need to expand the map to include all of its type's keys. *)
       let child =
@@ -669,8 +642,7 @@ let rec of_tpat :
         |> Map.String.to_seq
         |> of_keyvalues_dict b (fun b -> End (k b))
       in
-      Nest
-        { key; ids = Set.Int.empty; child = String_keys child; wildcard = None }
+      Nest { key; ids; child = String_keys child; wildcard = None }
   | TBlock _ | TField _ ->
       Error.internal __POS__
         "This is not allowed in a destructure pattern. The type checker failed \
@@ -691,11 +663,12 @@ and of_keyvalues b k s =
 and of_keyvalues_dict b k s =
   match s () with
   | Nil -> k b
-  | Cons ((_, None), s) ->
-      Optional { child = None; next = Some (of_keyvalues_dict b k s) }
+  | Cons ((key, None), s) ->
+      let next = of_keyvalues_dict b k s in
+      Optional { child = Wildcard { ids; key; child = next }; next = Some next }
   | Cons ((key, Some v), s) ->
       let child = of_tpat ~key b (fun b -> of_keyvalues_dict b k s) v in
-      Optional { child = Some child; next = None }
+      Optional { child; next = None }
 
 let of_nonempty ~exit next_id Nonempty.(hd :: tl) =
   let k { names; _ } = End { names; exit } in
@@ -707,7 +680,7 @@ let rec make_case ~exit next_id tree = function
   | (loc, ps) :: l ->
       let b = of_nonempty ~exit next_id ps in
       let tree' = merge tree b in
-      if equal_tree equal_leaf Int.equal tree tree' then Error.unused_case loc
+      if equal_tree equal_leaf tree tree' then Error.unused_case loc
       else make_case ~exit next_id tree' l
 
 let make Nonempty.(Typechecker.{ pats; nodes } :: tl_cases) =
@@ -731,7 +704,7 @@ let make Nonempty.(Typechecker.{ pats; nodes } :: tl_cases) =
         exits.(exit) <- nodes;
         let hd_tree = of_nonempty ~exit next_id hd_pats in
         let tree' = merge tree hd_tree in
-        if equal_tree equal_leaf Int.equal tree tree' then Error.unused_case loc
+        if equal_tree equal_leaf tree tree' then Error.unused_case loc
         else
           let tree = make_case ~exit next_id tree' tl_pats in
           aux tree (succ exit) l
@@ -835,12 +808,12 @@ module ParMatch = struct
         in
         match r with
         | { flag = Exhaustive; pats; after_nest = hd :: tl } -> (
-            match child with
-            | String_keys (Optional _) -> (
-                (* Dicts always require a wildcard. *)
-                match wildcard with
-                | Some wildcard -> exhaustive (check n wildcard)
-                | None -> { flag = Partial; pats = Any :: hd; after_nest = tl })
+            (* Dicts always require a wildcard if they're not empty. *)
+            match (child, wildcard, pats) with
+            | String_keys (Optional _), None, _ :: _ ->
+                { flag = Partial; pats = Any :: hd; after_nest = tl }
+            | String_keys (Optional _), Some wildcard, _ ->
+                exhaustive (check n wildcard)
             | _ ->
                 { flag = Exhaustive; pats = Nest pats :: hd; after_nest = tl })
         | { flag = Partial; pats; after_nest = hd :: tl } -> (
@@ -896,11 +869,9 @@ module ParMatch = struct
               | Some case -> aux s case)
         in
         aux s cases
-    | Optional { child = Some x; _ }
-    | Optional { child = None; next = Some x; _ } ->
+    | Optional { next = Some x; _ } | Optional { child = x; _ } ->
+        (* Try to follow the [next] path first to identify empty dicts. *)
         check n x
-    | Optional { child = None; next = None; _ } ->
-        Error.internal __POS__ "Tried to analyze an empty optional."
 
   let check = check Z
 end
@@ -960,7 +931,7 @@ let rec tree_to_sexp :
   | Optional { child; next } ->
       Sexp.make "optional"
         [
-          Sexp.make "child" [ Sexp.option (tree_to_sexp leaf_f key_f) child ];
+          Sexp.make "child" [ tree_to_sexp leaf_f key_f child ];
           Sexp.make "next" [ Sexp.option (tree_to_sexp leaf_f key_f) next ];
         ]
   | End leaf -> Sexp.make "end" [ leaf_f leaf ]

@@ -82,7 +82,11 @@ Dictionary:
 ! and . precedence works correctly
 {% match !!a.b.c with !!false %}{% with _ %}{% /match %}
 
-Edge cases
+Other syntax features
 
-Patterns with }} parse correctly
+Patterns with }} parse correctly:
 {% match a with {a: {b}} %} {{ b }} {% /match %}
+
+Trailing commas parse correctly:
+{% match {a: [1, 2,], b: (3, 4,), c: <k: 5,>,} with _ %} {% /match %}
+

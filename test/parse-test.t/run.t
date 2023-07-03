@@ -194,7 +194,7 @@ Print the untyped AST to make sure parsing works
      (case (pats ((((var "_"))))) (nodes ((text no_trim "" no_trim))))))
    (text
     no_trim
-    "\n\nEdge cases\n\nPatterns with }} parse correctly\n"
+    "\n\nOther syntax features\n\nPatterns with }} parse correctly:\n"
     no_trim)
    (match
     ((var "a"))
@@ -204,7 +204,14 @@ Print the untyped AST to make sure parsing works
        ((text no_trim " " no_trim)
         (echo () fmt_string (echo_var "b") escape)
         (text no_trim " " no_trim))))))
-   (text no_trim "\n" no_trim))
+   (text no_trim "\n\nTrailing commas parse correctly:\n" no_trim)
+   (match
+    ((record
+      (("a" (list ((int 1) (int 2))))
+       ("b" (tuple ((int 3) (int 4))))
+       ("c" (dict (("k" (int 5))))))))
+    ((case (pats ((((var "_"))))) (nodes ((text no_trim " " no_trim))))))
+   (text no_trim "\n\n" no_trim))
 
 Interfaces parse correctly. Use a separate file to minimize type conficts.
   $ acutis interface.acutis --printast
@@ -241,6 +248,9 @@ Interfaces parse correctly. Use a separate file to minimize type conficts.
        (open)
        (((("tag" (tag 0)) ("a" (named "_"))))
         ((("tag" (tag 1)) ("b" (enum_string (open) ("a" "b"))))))))
+     (prop
+      "trailing_commas"
+      (record (closed) (((("a" (tuple ((named "int") (named "string")))))))))
      (prop "children" (named "string"))
      (prop "optionalChildren" (nullable (named "string")))))
    (text no_trim "\n" no_trim))
@@ -826,7 +836,7 @@ Print the optimized form
               (wildcard none))))))
          (wildcard (end (leaf (names ()) (exit 1))))))))
      (exits ((0 ()) (1 ())))))
-   (text "\n\nEdge cases\n\nPatterns with }} parse correctly\n")
+   (text "\n\nOther syntax features\n\nPatterns with }} parse correctly:\n")
    (match
     ()
     ((var "a"))
@@ -850,4 +860,15 @@ Print the optimized form
        (wildcard none)))
      (exits
       ((0 ((text " ") (echo () fmt_string (var "b") escape) (text " ")))))))
-   (text "\n"))
+   (text "\n\nTrailing commas parse correctly:\n")
+   (match
+    ()
+    ((assoc
+      (("a" (array (1 (array (2 null)))))
+       ("b" (array (3 4)))
+       ("c" (assoc (("k" 5)))))))
+    (matching
+     (tree
+      (wildcard (key 0) (ids ()) (child (end (leaf (names ()) (exit 0))))))
+     (exits ((0 ((text " ")))))))
+   (text "\n\n"))

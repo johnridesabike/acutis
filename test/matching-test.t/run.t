@@ -738,11 +738,41 @@ Dictionaries merge correctly
                   (ids (0))
                   (child
                    (optional
-                    (child none)
+                    (child
+                     (wildcard
+                      (key "c")
+                      (ids ())
+                      (child (end (end (leaf (names (("b" 0))) (exit 0)))))))
                     (next (end (end (leaf (names (("b" 0))) (exit 0)))))))))
                 (next none)))
               (next none)))
-            (wildcard none)
+            (wildcard
+             (optional
+              (child
+               (switch
+                (key "b")
+                (ids ())
+                (cases
+                 (case
+                  (data 2)
+                  (if_match
+                   (optional
+                    (child
+                     (switch
+                      (key "c")
+                      (ids ())
+                      (cases
+                       (case
+                        (data 3)
+                        (if_match (end (end (leaf (names ()) (exit 1)))))
+                        (next none)))
+                      (wildcard none)
+                      (check_cases none)))
+                    (next none)))
+                  (next none)))
+                (wildcard none)
+                (check_cases none)))
+              (next none)))
             (check_cases none)))
           (next
            (optional
@@ -776,4 +806,39 @@ Dictionaries merge correctly
       ((0 ((text " ") (echo () fmt_int (var "b") escape) (text "\n")))
        (1 ((text " bc\n")))
        (2 ((text " _\n")))))))
+   (match
+    ()
+    ((assoc (("a" "empty dicts always match"))))
+    (matching
+     (tree
+      (nest
+       (key 0)
+       (ids ())
+       (child
+        (string_keys
+         (optional
+          (child
+           (wildcard
+            (key "a")
+            (ids ())
+            (child
+             (optional
+              (child
+               (wildcard
+                (key "b")
+                (ids (0))
+                (child (end (end (leaf (names (("b" 0))) (exit 0)))))))
+              (next (end (end (leaf (names ()) (exit 1)))))))))
+          (next
+           (optional
+            (child
+             (wildcard
+              (key "b")
+              (ids (0))
+              (child (end (end (leaf (names (("b" 0))) (exit 0)))))))
+            (next (end (end (leaf (names ()) (exit 1))))))))))
+       (wildcard none)))
+     (exits
+      ((0 ((text " ") (echo () fmt_string (var "b") escape) (text "\n")))
+       (1 ((text "empty\n")))))))
    (text "\n"))

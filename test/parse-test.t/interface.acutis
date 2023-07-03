@@ -4,6 +4,7 @@
   c = {@tag: 0} | {@tag: 1, a: (float, true | false)}
   d = {@tag: "a", a: float} | {@tag: "b", a: @0 | @1 | ...}
   e = {@tag: 0, a: _} | {@tag: 1, b: @"a" | @"b" | ...} | ...
+  trailing_commas = {a: (int, string,),}
   children = string
   optionalChildren = ?string
 %}
