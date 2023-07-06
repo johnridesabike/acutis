@@ -63,7 +63,8 @@ let () =
     (render "{% map [_] with x %} {{ x }} {% /map %}");
 
   print_error "Unterminated strings" (render {|{{ "a|});
-  print_error "Unterminated comments" (render "{* {* a *}");
+  print_error "Unterminated comment" (render "{* {* a *}");
+  print_error "Unterminated comment (nested)" (render "{* {* a");
   print_error "Unterminated expressions" (render "{% match");
   print_error "Illegal escape sequence" (render {|{{ "\a" }}|});
 

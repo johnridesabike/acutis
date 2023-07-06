@@ -16,14 +16,26 @@ let pp ~kind loc mess =
   F.asprintf "@[<v>File \"%s\", %a@;%s.@;%t@]" (Loc.fname loc) Loc.pp loc kind
     mess
 
-let pp_lexbuf ~kind mess lexbuf =
-  let start = lexbuf.Lexing.lex_start_p in
-  let pos = lexbuf.lex_curr_p in
-  pp ~kind (start, pos) mess
+let loc_of_lexbuf Lexing.{ lex_start_p; lex_curr_p; _ } =
+  (lex_start_p, lex_curr_p)
 
-let lex_error =
-  let f = F.dprintf "%," in
-  fun lexbuf -> raise @@ Acutis_error (pp_lexbuf ~kind:"Syntax error" f lexbuf)
+let pp_syntax = pp ~kind:"Syntax error"
+
+let lex_unexpected lexbuf c =
+  let f = F.dprintf "Unexpected character: %C" c in
+  raise @@ Acutis_error (pp_syntax (loc_of_lexbuf lexbuf) f)
+
+let lex_bad_int lexbuf s =
+  let f = F.dprintf "Invalid integer: %s" s in
+  raise @@ Acutis_error (pp_syntax (loc_of_lexbuf lexbuf) f)
+
+let lex_unterminated_comment lexbuf =
+  let f = F.dprintf "@[%a@]" F.pp_print_text "Unterminated comment." in
+  raise @@ Acutis_error (pp_syntax (loc_of_lexbuf lexbuf) f)
+
+let lex_unterminated_string lexbuf =
+  let f = F.dprintf "@[%a@]" F.pp_print_text "Unterminated string." in
+  raise @@ Acutis_error (pp_syntax (loc_of_lexbuf lexbuf) f)
 
 let parse_error i lexbuf =
   let f =
@@ -32,7 +44,7 @@ let parse_error i lexbuf =
       F.dprintf "@[%a@]" F.pp_print_text mess
     with Not_found -> F.dprintf "Unexpected token."
   in
-  raise @@ Acutis_error (pp_lexbuf ~kind:"Parse error" f lexbuf)
+  raise @@ Acutis_error (pp ~kind:"Parse error" (loc_of_lexbuf lexbuf) f)
 
 let pp_ty = pp ~kind:"Type error"
 

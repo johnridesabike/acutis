@@ -15,7 +15,10 @@ exception Acutis_error of string
 
 (** {1 Lexing and Parsing errors.} *)
 
-val lex_error : Lexing.lexbuf -> _
+val lex_unexpected : Lexing.lexbuf -> char -> _
+val lex_bad_int : Lexing.lexbuf -> string -> _
+val lex_unterminated_comment : Lexing.lexbuf -> _
+val lex_unterminated_string : Lexing.lexbuf -> _
 val parse_error : int -> Lexing.lexbuf -> _
 
 (** {1 Type errors.} *)

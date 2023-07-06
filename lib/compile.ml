@@ -11,16 +11,14 @@
 let parse ~fname lexbuf =
   Lexing.set_filename lexbuf fname;
   let state = Lexer.make_state () in
-  try Parser.acutis (Lexer.acutis state) lexbuf with
-  | Lexer.Error -> Error.lex_error lexbuf
-  | Parser.Error i -> Error.parse_error i lexbuf
+  try Parser.acutis (Lexer.acutis state) lexbuf
+  with Parser.Error i -> Error.parse_error i lexbuf
 
 let parse_interface ~fname lexbuf =
   Lexing.set_filename lexbuf fname;
   let state = Lexer.make_state_interface () in
-  try Parser.interface_standalone (Lexer.acutis state) lexbuf with
-  | Lexer.Error -> Error.lex_error lexbuf
-  | Parser.Error i -> Error.parse_error i lexbuf
+  try Parser.interface_standalone (Lexer.acutis state) lexbuf
+  with Parser.Error i -> Error.parse_error i lexbuf
 
 let is_space = function ' ' | '\012' | '\n' | '\r' | '\t' -> true | _ -> false
 

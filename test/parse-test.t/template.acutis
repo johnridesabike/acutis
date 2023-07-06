@@ -90,3 +90,6 @@ Patterns with }} parse correctly:
 Trailing commas parse correctly:
 {% match {a: [1, 2,], b: (3, 4,), c: <k: 5,>,} with _ %} {% /match %}
 
+Strings may contain line breaks:
+{{ "a
+b" }}

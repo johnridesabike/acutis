@@ -2,26 +2,31 @@ Illegal character 1
 ---
 File "<test>", 1:9-1:10
 Syntax error.
+Unexpected character: '*'
 
 Illegal character 2
 ---
 File "<test>", 1:4-1:5
 Syntax error.
+Unexpected character: '+'
 
 Illegal character 3
 ---
 File "<test>", 1:12-1:13
 Syntax error.
+Unexpected character: '&'
 
 Illegal character 4
 ---
 File "<test>", 1:6-1:7
 Syntax error.
+Unexpected character: '&'
 
 A number greater than the maximum integer is a syntax error.
 ---
 File "<test>", 1:10-1:29
 Syntax error.
+Invalid integer: 9999999999999999999
 
 Illegal name: echo null
 ---
@@ -49,13 +54,21 @@ Underscore ('_') is not a valid name.
 
 Unterminated strings
 ---
-File "<test>", 1:6-1:6
+File "<test>", 1:4-1:6
 Syntax error.
+Unterminated string.
 
-Unterminated comments
+Unterminated comment
 ---
-File "<test>", 1:11-1:11
+File "<test>", 1:1-1:11
 Syntax error.
+Unterminated comment.
+
+Unterminated comment (nested)
+---
+File "<test>", 1:4-1:8
+Syntax error.
+Unterminated comment.
 
 Unterminated expressions
 ---
@@ -67,6 +80,7 @@ Illegal escape sequence
 ---
 File "<test>", 1:5-1:7
 Syntax error.
+Unexpected character: 'a'
 
 Missing a closing component name
 ---
@@ -264,6 +278,7 @@ Bad echo format (2)
 ---
 File "<test>", 1:5-1:6
 Syntax error.
+Unexpected character: 'z'
 
 Bad prop (1)
 ---

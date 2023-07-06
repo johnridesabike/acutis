@@ -209,7 +209,9 @@ Print the untyped AST to make sure parsing works
        ("b" (tuple ((int 3) (int 4))))
        ("c" (dict (("k" (int 5))))))))
     ((case (pats (((var "_")))) (nodes ((text no_trim " " no_trim))))))
-   (text no_trim "\n\n" no_trim))
+   (text no_trim "\n\nStrings may contain line breaks:\n" no_trim)
+   (echo () fmt_string (echo_string "a\nb") escape)
+   (text no_trim "\n" no_trim))
 
 Interfaces parse correctly. Use a separate file to minimize type conficts.
   $ acutis interface.acutis --printast
@@ -870,4 +872,6 @@ Print the optimized form
      (tree
       (wildcard (key 0) (ids ()) (child (end (leaf (names ()) (exit 0))))))
      (exits ((0 ((text " ")))))))
-   (text "\n\n"))
+   (text "\n\nStrings may contain line breaks:\n")
+   (echo () fmt_string "a\nb" escape)
+   (text "\n"))
