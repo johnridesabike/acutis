@@ -45,7 +45,11 @@ Print the untyped AST to make sure parsing works
    (echo () fmt_string (echo_var "trim_f") no_escape)
    (text trim " " trim)
    (echo () fmt_string (echo_var "trim_g") no_escape)
-   (text trim "\n\nComments\na b c\n\nFlat match\n" no_trim)
+   (text trim "\n\nComments\na " no_trim)
+   (comment "{* {* *} *}")
+   (text no_trim "b" no_trim)
+   (comment "{*\n *}")
+   (text no_trim " c\n\nFlat match\n" no_trim)
    (match
     ((var "match_a"))
     ((case (pats (((int 1)) ((int 2)))) (nodes ((text no_trim "" no_trim))))
@@ -360,7 +364,9 @@ Print the optimized form
    (text "\n")
    (echo () fmt_string (var "trim_f") no_escape)
    (echo () fmt_string (var "trim_g") no_escape)
-   (text "Comments\na b c\n\nFlat match\n")
+   (text "Comments\na ")
+   (text "b")
+   (text " c\n\nFlat match\n")
    (match
     ()
     ((var "match_a"))

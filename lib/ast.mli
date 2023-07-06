@@ -71,6 +71,7 @@ and node =
   | Map_dict of Loc.t * pat * case Nonempty.t
   | Component of Loc.t * string * string * pat assoc
   | Interface of Loc.t * interface
+  | Comment of string
 
 and case = { pats : (Loc.t * pat Nonempty.t) Nonempty.t; nodes : t }
 and t = node list

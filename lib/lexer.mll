@@ -55,23 +55,27 @@ rule text state buf = parse
     { state := Queue ([], Expr); TEXT (B.contents buf) }
   | "{%~"
     { state := Queue ([TILDE_RIGHT], Expr); TEXT (B.contents buf) }
-  | "{*"
-    { comment 0 lexbuf; text state buf lexbuf; }
-  | [^ '{' '}' '\r' '\n']* as s
-    { B.add_string buf s; text state buf lexbuf }
-  | ['{' '}'] as c
-    { B.add_char buf c; text state buf lexbuf }
+  | "{*" as s
+    {
+      let cbuf = B.create 256 in
+      B.add_string cbuf s;
+      comment cbuf lexbuf;
+      state := Queue ([COMMENT (B.contents cbuf)], Text);
+      TEXT (B.contents buf)
+    }
   | newline as s
     { L.new_line lexbuf; B.add_string buf s; text state buf lexbuf }
   | eof
     { state := Queue ([EOF], Text); TEXT (B.contents buf) }
+  | _ as c
+    { B.add_char buf c; text state buf lexbuf }
 
-and comment depth = parse
-  | "{*"          { comment (succ depth) lexbuf }
-  | "*}"          { if depth = 0 then () else comment (pred depth) lexbuf }
-  | newline       { L.new_line lexbuf; comment depth lexbuf }
+and comment buf = parse
+  | "{*" as s     { B.add_string buf s; comment buf lexbuf; comment buf lexbuf }
+  | "*}" as s     { B.add_string buf s }
+  | newline as s  { L.new_line lexbuf; B.add_string buf s; comment buf lexbuf }
   | eof           { raise Error }
-  | _             { comment depth lexbuf }
+  | _ as c        { B.add_char buf c; comment buf lexbuf }
 
 (** The strings %} ~%} }} }}} ~}} and ~}}} need special treatment. They can
     either mark the end of an expression or they can be part of a pattern, such
@@ -144,26 +148,26 @@ and expr state = parse
   | _               { raise Error }
 
 and echo_format prev_state state = parse
-  | 'i'         { CHAR_I }
-  | 'f'         { CHAR_F }
-  | 'b'         { CHAR_B }
-  | newline     { L.new_line lexbuf; state := prev_state; expr state lexbuf }
-  | white       { state := prev_state; expr state lexbuf }
-  | _           { raise Error }
+  | 'i'       { CHAR_I }
+  | 'f'       { CHAR_F }
+  | 'b'       { CHAR_B }
+  | newline   { L.new_line lexbuf; state := prev_state; expr state lexbuf }
+  | white     { state := prev_state; expr state lexbuf }
+  | _         { raise Error }
 
 and string pos buf = parse
-  | '"'                 { lexbuf.lex_start_p <- pos; STRING (B.contents buf) }
-  | '\\' '"'            { B.add_char buf '"'; string pos buf lexbuf }
-  | '\\' '/'            { B.add_char buf '/'; string pos buf lexbuf }
-  | '\\' '\\'           { B.add_char buf '\\'; string pos buf lexbuf }
-  | '\\' 'b'            { B.add_char buf '\b'; string pos buf lexbuf }
-  | '\\' 'f'            { B.add_char buf '\012'; string pos buf lexbuf }
-  | '\\' 'n'            { B.add_char buf '\n'; string pos buf lexbuf }
-  | '\\' 'r'            { B.add_char buf '\r'; string pos buf lexbuf }
-  | '\\' 't'            { B.add_char buf '\t'; string pos buf lexbuf }
-  | [^ '"' '\\']+ as s  { B.add_string buf s; string pos buf lexbuf }
-  | eof                 { raise Error }
-  | _                   { raise Error }
+  | '"'       { lexbuf.lex_start_p <- pos; STRING (B.contents buf) }
+  | '\\' '"'  { B.add_char buf '"'; string pos buf lexbuf }
+  | '\\' '/'  { B.add_char buf '/'; string pos buf lexbuf }
+  | '\\' '\\' { B.add_char buf '\\'; string pos buf lexbuf }
+  | '\\' 'b'  { B.add_char buf '\b'; string pos buf lexbuf }
+  | '\\' 'f'  { B.add_char buf '\012'; string pos buf lexbuf }
+  | '\\' 'n'  { B.add_char buf '\n'; string pos buf lexbuf }
+  | '\\' 'r'  { B.add_char buf '\r'; string pos buf lexbuf }
+  | '\\' 't'  { B.add_char buf '\t'; string pos buf lexbuf }
+  | '\\' _    { raise Error }
+  | eof       { raise Error }
+  | _ as c    { B.add_char buf c; string pos buf lexbuf }
 
 {
 let rec acutis state lexbuf =

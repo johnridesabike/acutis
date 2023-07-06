@@ -13,6 +13,7 @@ open Ast
 %}
 
 %token <string> TEXT
+%token <string> COMMENT       (* {* *} *)
 
 (* Expression syntax *)
 %token ECHO_BEGIN             (* {{ *)
@@ -201,6 +202,8 @@ text: l = trim_left; txt = TEXT; r = trim_right;  { Text (txt, l, r) }
 node:
   | txt = text;
     { txt }
+  | txt = COMMENT;
+    { Comment txt }
   | ECHO_BEGIN; e = echoes_rev; ECHO_END;
     {
       let Nonempty.((fmt, default) :: l) = e in

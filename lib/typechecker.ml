@@ -873,7 +873,8 @@ and make_nodes ctx nodes =
           Some (TMap_dict (loc, pattern, ty, cases))
       | Interface (loc, i) ->
           Interface.make loc ctx i;
-          None)
+          None
+      | Comment _ -> None)
     nodes
 
 let make g ast =

@@ -112,6 +112,7 @@ and node =
   | Map_dict of Loc.t * pat * case Nonempty.t
   | Component of Loc.t * string * string * pat assoc
   | Interface of Loc.t * interface
+  | Comment of string
 
 and case = { pats : (Loc.t * pat Nonempty.t) Nonempty.t; nodes : t }
 and t = node list
@@ -215,6 +216,7 @@ and node_to_sexp = function
         ]
   | Interface (loc, i) ->
       Sexp.make "interface" [ Loc.to_sexp loc; interface_to_sexp i ]
+  | Comment s -> Sexp.make "comment" [ Sexp.string s ]
 
 and case_to_sexp { pats; nodes } =
   Sexp.make "case"

@@ -65,7 +65,7 @@ This is not a valid pattern.
 
 Illegal escape sequence
 ---
-File "<test>", 1:5-1:6
+File "<test>", 1:5-1:7
 Syntax error.
 
 Missing a closing component name
