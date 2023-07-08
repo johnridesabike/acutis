@@ -28,14 +28,15 @@ let equal_sum_extra a b =
   match (a, b) with Not_bool, Not_bool | Bool, Bool -> true | _ -> false
 
 let pp_sum_sep ppf () = F.fprintf ppf " |@ "
-let pp_row ppf = function `Closed -> () | `Open -> F.fprintf ppf " |@ ..."
-let pp_sum_bool ppf = function 0 -> Pp.false_ ppf | _ -> Pp.true_ ppf
+
+let pp_row ppf = function
+  | `Closed -> ()
+  | `Open -> F.fprintf ppf "%a..." pp_sum_sep ()
 
 let pp_sum ppf pp_case cases row =
-  F.fprintf ppf "@[<hv 0>";
-  F.pp_print_seq ~pp_sep:pp_sum_sep pp_case ppf cases;
-  pp_row ppf row;
-  F.fprintf ppf "@]"
+  F.fprintf ppf "@[<hv 0>%a%a@]"
+    (F.pp_print_seq ~pp_sep:pp_sum_sep pp_case)
+    cases pp_row row
 
 module Enum = struct
   type cases = Int of Set.Int.t | String of Set.String.t
@@ -209,7 +210,7 @@ let rec pp ppf t =
   | Enum { cases = Int cases; extra = Not_bool; row } ->
       pp_sum ppf Enum.pp_int (Set.Int.to_seq cases) row
   | Enum { cases = Int cases; extra = Bool; row } ->
-      pp_sum ppf pp_sum_bool (Set.Int.to_seq cases) row
+      pp_sum ppf Pp.bool (Set.Int.to_seq cases) row
   | Union (key, union) -> (
       let aux pp_tag ppf (tag, fields) =
         pp_record ~tag:(pp_tag, (key, tag)) pp ppf fields
@@ -220,7 +221,7 @@ let rec pp ppf t =
       | { cases = Int cases; extra = Not_bool; row } ->
           pp_sum ppf (aux F.pp_print_int) (Map.Int.to_seq cases) row
       | { cases = Int cases; extra = Bool; row } ->
-          pp_sum ppf (aux pp_sum_bool) (Map.Int.to_seq cases) row)
+          pp_sum ppf (aux Pp.bool) (Map.Int.to_seq cases) row)
 
 let pp_interface =
   let equals ppf (k, v) = F.fprintf ppf "@[<hv 2>%a =@ %a@]" Pp.field k pp v in

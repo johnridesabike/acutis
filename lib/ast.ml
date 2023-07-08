@@ -237,15 +237,13 @@ module F = Format
 let pp_sep = Pp.sep_comma
 
 let pp_tag ppf = function
-  | Tag_bool (_, 0) -> Pp.false_ ppf
-  | Tag_bool _ -> Pp.true_ ppf
+  | Tag_bool (_, i) -> Pp.bool ppf i
   | Tag_int (_, i) -> F.pp_print_int ppf i
   | Tag_string (_, s) -> Pp.syntax_string ppf s
 
 let rec pp_pat ppf = function
   | Var (_, s) -> F.pp_print_string ppf s
-  | Bool (_, 0) -> Pp.false_ ppf
-  | Bool (_, _) -> Pp.true_ ppf
+  | Bool (_, i) -> Pp.bool ppf i
   | Int (_, i) -> F.pp_print_int ppf i
   | Float (_, f) -> F.pp_print_float ppf f
   | String (_, s) -> Pp.syntax_string ppf s

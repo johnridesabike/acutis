@@ -22,11 +22,8 @@ val field : formatter -> string -> unit
 (** Prints either [field] or ["string field"] depending on whether the input is
     a valid identifier. *)
 
-val true_ : formatter -> unit
-(** Prints [true]. *)
-
-val false_ : formatter -> unit
-(** Prints [false]. *)
+val bool : formatter -> int -> unit
+(** Prints [false] if the input is 0, or prints [true] otherwise. *)
 
 val surround :
   left:char ->

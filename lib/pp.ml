@@ -22,8 +22,10 @@ let id_char = function
 
 let is_id s = id_start_char s.[0] && String.for_all id_char s
 let field ppf k = if is_id k then fprintf ppf "%s" k else fprintf ppf "%S" k
-let true_ ppf = pp_print_string ppf "true"
-let false_ ppf = pp_print_string ppf "false"
+
+let bool ppf = function
+  | 0 -> pp_print_string ppf "false"
+  | _ -> pp_print_string ppf "true"
 
 let surround ~left ~right f ppf x =
   fprintf ppf "@[<hv 2>%c@;<0 0>%a@;<0 -2>%c@]" left f x right
