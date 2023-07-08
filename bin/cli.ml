@@ -176,7 +176,7 @@ let () =
               In_channel.with_open_text fname
               @@ Compile.from_channel ~fname components
             in
-            let result = Render.make template data in
+            let result = Render.eval template data in
             match !arg_output with
             | "-" -> Out_channel.output_string stdout result
             | fname ->

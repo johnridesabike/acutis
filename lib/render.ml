@@ -75,7 +75,7 @@ let bind_names data ids map =
 let tuple_get i a = a.(i)
 let assoc_get = Map.String.find
 
-let rec make_match :
+let rec eval_match :
           'leaf 'args 'key.
           'args ->
           ('key -> 'args -> 'data Data.t) ->
@@ -88,18 +88,18 @@ let rec make_match :
       let data = get key args in
       let vars = bind_names data ids vars in
       match test_case ~wildcard data cases with
-      | Some tree -> make_match args get vars tree
+      | Some tree -> eval_match args get vars tree
       | None -> raise_notrace Not_found)
   | Wildcard { key; ids; child } ->
       let data = get key args in
       let vars = bind_names data ids vars in
-      make_match args get vars child
+      eval_match args get vars child
   | Construct { key; ids; nil; cons } -> (
       let data = get key args in
       let vars = bind_names data ids vars in
       match (data, cons, nil) with
       | `Array _, Some tree, _ | _, _, Some tree ->
-          make_match args get vars tree
+          eval_match args get vars tree
       | _ -> raise_notrace Not_found)
   | Nest { key; ids; child; wildcard } ->
       let data = get key args in
@@ -109,27 +109,27 @@ let rec make_match :
           match child with
           | Int_keys child ->
               let tuple = Data.get_tuple data in
-              make_match tuple tuple_get vars child
+              eval_match tuple tuple_get vars child
           | String_keys child ->
               let assoc = Data.get_assoc data in
-              make_match assoc assoc_get vars child
+              eval_match assoc assoc_get vars child
         with Not_found -> (
           match wildcard with
           | Some tree -> (vars, tree)
           | None -> raise_notrace Not_found)
       in
-      make_match args get vars tree
+      eval_match args get vars tree
   | Optional { child; next } -> (
-      try make_match args get vars child
+      try eval_match args get vars child
       with Not_found -> (
         match next with
-        | Some t -> make_match args get vars t
+        | Some t -> eval_match args get vars t
         | None -> raise_notrace Not_found))
 
-let make_match args Matching.{ tree; exits } =
+let eval_match args Matching.{ tree; exits } =
   try
     let vars, Matching.{ names; exit } =
-      make_match args tuple_get Map.Int.empty tree
+      eval_match args tuple_get Map.Int.empty tree
     in
     let bindings = Map.String.map (fun id -> Map.Int.find id vars) names in
     (bindings, Matching.Exit.get exits exit)
@@ -220,7 +220,7 @@ module type S = sig
   type t
   type data
 
-  val make : (data -> t) Compile.t -> data -> t
+  val eval : (data -> t) Compile.t -> data -> t
 end
 
 module Make (M : MONAD) (D : DATA) = struct
@@ -449,7 +449,7 @@ module Make (M : MONAD) (D : DATA) = struct
     | `Field (data, field) ->
         eval_data ~blocks ~vars data |> Data.get_assoc |> Map.String.find field
 
-  let rec make b vars nodes =
+  let rec eval b vars nodes =
     List.fold_left
       (fun b -> function
         | Compile.Echo (nullables, fmt, default, esc) ->
@@ -464,34 +464,34 @@ module Make (M : MONAD) (D : DATA) = struct
             Buffer.add_string b s;
             M.return b
         | Match (blocks, args, tree) ->
-            let* blocks = make_array vars blocks in
+            let* blocks = eval_array vars blocks in
             let args = Array.map (eval_data ~blocks ~vars) args in
-            let vars', nodes = make_match args tree in
+            let vars', nodes = eval_match args tree in
             let vars = map_merge vars vars' in
-            make b vars nodes
+            eval b vars nodes
         | Map_list (blocks, arg, tree) ->
-            let* blocks = make_array vars blocks in
+            let* blocks = eval_array vars blocks in
             let l = eval_data ~blocks ~vars arg in
             Data.fold_list
               (fun ~index b arg ->
-                let vars', nodes = make_match [| arg; index |] tree in
+                let vars', nodes = eval_match [| arg; index |] tree in
                 let vars = map_merge vars vars' in
-                make b vars nodes)
+                eval b vars nodes)
               b l
         | Map_dict (blocks, arg, tree) ->
-            let* blocks = make_array vars blocks in
+            let* blocks = eval_array vars blocks in
             let d = eval_data ~blocks ~vars arg in
             Data.fold_assoc
               (fun ~index b arg ->
-                let vars', nodes = make_match [| arg; index |] tree in
+                let vars', nodes = eval_match [| arg; index |] tree in
                 let vars = map_merge vars vars' in
-                make b vars nodes)
+                eval b vars nodes)
               d b
         | Component (_, comp, blocks, args) -> (
-            let* blocks = make_array vars blocks in
+            let* blocks = eval_array vars blocks in
             let vars = Map.String.map (eval_data ~blocks ~vars) args in
             match comp with
-            | Compile.Src nodes -> make b vars nodes
+            | Compile.Src nodes -> eval b vars nodes
             | Fun (types, f) ->
                 let* result = f (encode types vars) in
                 let* b = b in
@@ -499,25 +499,25 @@ module Make (M : MONAD) (D : DATA) = struct
                 M.return b))
       b nodes
 
-  and make_array vars a =
+  and eval_array vars a =
     let result = Array.make (Array.length a) String.empty in
     let* _idx =
       Array.fold_left
         (fun idx nodes ->
           let b = M.return @@ Buffer.create 1024 in
           let* idx = idx in
-          let* b = make b vars nodes in
+          let* b = eval b vars nodes in
           result.(idx) <- Buffer.contents b;
           M.return @@ succ idx)
         (M.return 0) a
     in
     M.return result
 
-  let make { Compile.nodes; types; name; _ } props =
+  let eval { Compile.nodes; types; name; _ } props =
     (* Wrap the props in a monad so it can catch decode exceptions. *)
     let* props = M.return props in
     let vars = decode ~name types props in
     let b = M.return @@ Buffer.create 2048 in
-    let* result = make b vars nodes in
+    let* result = eval b vars nodes in
     M.return @@ Buffer.contents result
 end

@@ -33,7 +33,7 @@ module RenderSync = Render.Make (Sync) (DataJson)
 let render ?(json = "{}") ?(components = Compile.Components.empty) src () =
   let temp = Compile.(from_string ~fname:"<test>" components src) in
   let json = Yojson.Basic.from_string json in
-  ignore @@ RenderSync.make temp json
+  ignore @@ RenderSync.eval temp json
 
 let print_error title f =
   let s =

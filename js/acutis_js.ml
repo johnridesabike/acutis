@@ -143,9 +143,9 @@ let () =
   Js.export "Render"
     (object%js
        method async template js =
-         RenderAsync.make template js |> Promise.map Js.string
+         RenderAsync.eval template js |> Promise.map Js.string
 
-       method sync template js = RenderSync.make template js |> Js.string
+       method sync template js = RenderSync.eval template js |> Js.string
     end)
 
 let () =

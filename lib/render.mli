@@ -76,7 +76,7 @@ module type S = sig
   type t
   type data
 
-  val make : (data -> t) Compile.t -> data -> t
+  val eval : (data -> t) Compile.t -> data -> t
   (** Apply data to a template and return the rendered output. *)
 end
 
