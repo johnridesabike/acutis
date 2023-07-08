@@ -223,7 +223,8 @@ module type S = sig
   val eval : (data -> t) Compile.t -> data -> t
 end
 
-module Make (M : MONAD) (D : DATA) = struct
+module Make (M : MONAD) (D : DATA) :
+  S with type t = string M.t and type data = D.t = struct
   module Ty = Typescheme
   module EPath = Error.DecodePath
 
@@ -521,3 +522,10 @@ module Make (M : MONAD) (D : DATA) = struct
     let* result = eval b vars nodes in
     M.return @@ Buffer.contents result
 end
+
+module MakeString = Make (struct
+  type 'a t = 'a
+
+  let return = Fun.id
+  let bind = ( |> )
+end)

@@ -34,7 +34,7 @@ module DataJson = struct
   let of_map x = `Assoc (Map.String.bindings x)
 end
 
-module Render = Render.Make (Sync) (DataJson)
+module Render = Render.MakeString (DataJson)
 
 let usage_msg =
   {|Usage:

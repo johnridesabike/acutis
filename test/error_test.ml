@@ -28,7 +28,7 @@ module DataJson = struct
   let of_map x = `Assoc (Map.String.bindings x)
 end
 
-module RenderSync = Render.Make (Sync) (DataJson)
+module RenderSync = Render.MakeString (DataJson)
 
 let render ?(json = "{}") ?(components = Compile.Components.empty) src () =
   let temp = Compile.(from_string ~fname:"<test>" components src) in

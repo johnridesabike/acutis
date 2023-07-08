@@ -77,7 +77,7 @@ module Promise_with_fixed_bind = struct
   let bind = Promise.Syntax.( let* )
 end
 
-module RenderSync = Render.Make (Sync) (DataJs)
+module RenderSync = Render.MakeString (DataJs)
 module RenderAsync = Render.Make (Promise_with_fixed_bind) (DataJs)
 
 let fname_to_compname s =

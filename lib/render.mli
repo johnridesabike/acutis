@@ -84,3 +84,7 @@ end
     a given data input type. *)
 module Make (M : MONAD) (D : DATA) :
   S with type t = string M.t and type data = D.t
+
+(** A simpler version of {!Make} that only requires a data module and outputs
+    a string. *)
+module MakeString (D : DATA) : S with type t = string and type data = D.t
