@@ -597,18 +597,22 @@ let of_scalar key data if_match check_cases =
   Switch { key; ids; cases; wildcard = None; check_cases }
 
 let rec of_tpat :
-          'a 'k. key:'k -> bindings -> ('a, 'k) cont -> T.pat -> ('a, 'k) tree =
+          'a 'k.
+          key:'k ->
+          bindings ->
+          ('a, 'k) cont ->
+          T.destruct T.pat ->
+          ('a, 'k) tree =
  fun ~key b k -> function
   | TAny -> Wildcard { ids; key; child = k b }
   | TVar x ->
       let id = b.next_id () in
       let b = { b with names = Map.String.add x id b.names } in
       Wildcard { ids = Set.Int.singleton id; key; child = k b }
-  | TConstruct (_, Some cons) ->
-      Construct { key; ids; nil = None; cons = Some (of_tpat ~key b k cons) }
-  | TConstruct (_, None) ->
-      Construct { key; ids; nil = Some (k b); cons = None }
   | TScalar (data, enum) -> of_scalar key data (k b) (check_cases_of_enum enum)
+  | TNil -> Construct { key; ids; nil = Some (k b); cons = None }
+  | TCons cons ->
+      Construct { key; ids; nil = None; cons = Some (of_tpat ~key b k cons) }
   | TTuple l ->
       let child = Int_keys (of_list ~key:0 b (fun b -> End (k b)) l) in
       Nest { key; ids; child; wildcard = None }
@@ -643,14 +647,14 @@ let rec of_tpat :
         |> of_keyvalues_dict b (fun b -> End (k b))
       in
       Nest { key; ids; child = String_keys child; wildcard = None }
-  | TBlock _ | TField _ ->
-      Error.internal __POS__
-        "This is not allowed in a destructure pattern. The type checker failed \
-         to catch this error."
 
 and of_list :
-      'a. key:int -> bindings -> ('a, int) cont -> T.pat list -> ('a, int) tree
-    =
+      'a.
+      key:int ->
+      bindings ->
+      ('a, int) cont ->
+      T.destruct T.pat list ->
+      ('a, int) tree =
  fun ~key b k -> function
   | [] -> k b
   | p :: l -> of_tpat ~key b (fun b -> of_list ~key:(succ key) b k l) p

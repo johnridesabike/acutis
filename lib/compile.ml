@@ -70,11 +70,6 @@ and 'a nodes = 'a node list
 
 let text = function "" -> None | s -> Some (Text s)
 
-let rec make_echo = function
-  | Typechecker.Echo_var x -> `Var x
-  | Echo_string s -> `String s
-  | Echo_field (e, s) -> `Field (make_echo e, s)
-
 let rec make_data block_queue = function
   | Typechecker.TScalar (x, _) -> (x :> data)
   | TVar x -> `Var x
@@ -82,8 +77,8 @@ let rec make_data block_queue = function
       let i = Queue.length block_queue in
       Queue.push (make_nodes x) block_queue;
       `Block i
-  | TConstruct (_, Some x) -> make_data block_queue x
-  | TConstruct (_, None) -> `Null
+  | TNil -> `Null
+  | TCons x -> make_data block_queue x
   | TTuple l -> `Array (Array.of_list l |> Array.map (make_data block_queue))
   | TRecord (Some (k, v, _), x, _) ->
       `Assoc
@@ -92,10 +87,6 @@ let rec make_data block_queue = function
   | TRecord (None, x, _) | TDict (x, _) ->
       `Assoc (Map.String.map (make_data block_queue) x)
   | TField (node, field) -> `Field (make_data block_queue node, field)
-  | TAny ->
-      Error.internal __POS__
-        "TAny should not appear in data constructs. This means the typechecker \
-         failed."
 
 and make_nodes l =
   List.filter_map
@@ -104,9 +95,7 @@ and make_nodes l =
       | TText (s, Trim, No_trim) -> text (ltrim s)
       | TText (s, No_trim, Trim) -> text (rtrim s)
       | TText (s, Trim, Trim) -> text (String.trim s)
-      | TEcho (l, fmt, default, esc) ->
-          let nullables = List.map (fun (fmt, ech) -> (fmt, make_echo ech)) l in
-          let default = make_echo default in
+      | TEcho (nullables, fmt, default, esc) ->
           Some (Echo (nullables, fmt, default, esc))
       | TMatch (loc, hd :: tl, tys, cases) ->
           let q = Queue.create () in
@@ -239,16 +228,29 @@ let interface_from_channel ~fname src =
   parse_interface ~fname (Lexing.from_channel src)
   |> Typechecker.make_interface_standalone
 
+let rec data_to_sexp = function
+  | `Null -> Sexp.symbol "null"
+  | `Int i -> Sexp.int i
+  | `String s -> Sexp.string s
+  | `Float f -> Sexp.float f
+  | `Array a -> Sexp.make "array" [ Sexp.of_seq data_to_sexp (Array.to_seq a) ]
+  | `Assoc d -> Sexp.make "assoc" [ assoc_to_sexp d ]
+  | `Var s -> Sexp.make "var" [ Sexp.string s ]
+  | `Block n -> Sexp.make "block" [ Sexp.int n ]
+  | `Field (d, f) -> Sexp.make "field" [ data_to_sexp d; Sexp.string f ]
+
+and assoc_to_sexp d = Sexp.map_string data_to_sexp d
+
 let rec node_to_sexp = function
   | Text s -> Sexp.make "text" [ Sexp.string s ]
   | Echo (l, fmt, ech, esc) ->
       Sexp.make "echo"
         [
           Sexp.of_seq
-            (Sexp.pair Ast.echo_format_to_sexp echo_to_sexp)
+            (Sexp.pair Ast.echo_format_to_sexp data_to_sexp)
             (List.to_seq l);
           Ast.echo_format_to_sexp fmt;
-          echo_to_sexp ech;
+          data_to_sexp ech;
           Ast.escape_to_sexp esc;
         ]
   | Match (blocks, data, matching) ->
@@ -280,20 +282,4 @@ let rec node_to_sexp = function
           assoc_to_sexp props;
         ]
 
-and echo_to_sexp = function
-  | `Field (e, s) -> Sexp.make "field" [ echo_to_sexp e; Sexp.string s ]
-  | (`Var _ | `String _) as x -> data_to_sexp x
-
-and data_to_sexp = function
-  | `Null -> Sexp.symbol "null"
-  | `Int i -> Sexp.int i
-  | `String s -> Sexp.string s
-  | `Float f -> Sexp.float f
-  | `Array a -> Sexp.make "array" [ Sexp.of_seq data_to_sexp (Array.to_seq a) ]
-  | `Assoc d -> Sexp.make "assoc" [ assoc_to_sexp d ]
-  | `Var s -> Sexp.make "var" [ Sexp.string s ]
-  | `Block n -> Sexp.make "block" [ Sexp.int n ]
-  | `Field (d, f) -> Sexp.make "field" [ data_to_sexp d; Sexp.string f ]
-
-and assoc_to_sexp d = Sexp.map_string data_to_sexp d
 and to_sexp l = Sexp.of_seq node_to_sexp (List.to_seq l)

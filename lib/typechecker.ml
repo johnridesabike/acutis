@@ -58,9 +58,9 @@ and open_rows ty =
   | Int | Float | String -> ()
 
 type mode =
-  | Destructure_expand (* Record a and b both take on each other's fields. *)
-  | Construct_literal (* Record a is narrowed to a subset of a and b. *)
-  | Construct_var (* Record a expands into b only. *)
+  | Destruct_expand  (** Record a and b both take on each other's fields. *)
+  | Construct_literal  (** Record a is narrowed to a subset of a and b. *)
+  | Construct_var  (** Record a expands into b only. *)
 
 let unify_enum_cases _ a b =
   match (a, b) with
@@ -79,7 +79,7 @@ let subset_enum_cases _ a b =
 
 let unify_variant ~unify_cases ~subset_cases mode a b =
   match mode with
-  | Destructure_expand ->
+  | Destruct_expand ->
       (match (a.Ty.row, b.Ty.row) with
       | `Open, _ | _, `Open -> a.row <- `Open
       | _ -> ());
@@ -119,7 +119,7 @@ let rec unify mode aty bty =
       unify_variant ~unify_cases:unify_union_cases
         ~subset_cases:subset_union_cases mode a b
   | Unknown { contents = `Open }, t ->
-      (match mode with Destructure_expand -> open_rows bty | _ -> ());
+      (match mode with Destruct_expand -> open_rows bty | _ -> ());
       aty := t
   | Unknown _, t -> aty := t
   | t, Unknown _ -> bty := t
@@ -127,7 +127,7 @@ let rec unify mode aty bty =
 
 and unify_record mode a b =
   match mode with
-  | Destructure_expand ->
+  | Destruct_expand ->
       a :=
         Map.String.merge
           (fun _ a b ->
@@ -266,38 +266,38 @@ let check_interface loc ~interface ~impl =
       | None -> Error.interface_missing_prop loc k impl)
     impl
 
-type echo =
-  | Echo_var of string
-  | Echo_string of string
-  | Echo_field of echo * string
-
-type construct = TList | TNullable
+type echo = [ `Var of string | `String of string | `Field of echo * string ]
 type scalar = [ `Int of int | `Float of float | `String of string ]
-type tag = [ `Int of int | `String of string ]
+type tag = string * [ `Int of int | `String of string ] * Ty.t Ty.Union.t
+type construct = private Construct_tag
+type destruct = private Destruct_tag
 
-type pat =
-  | TScalar of scalar * Ty.Enum.t option
-  | TConstruct of construct * pat option
-  | TTuple of pat list
-  | TRecord of
-      (string * tag * Ty.t Ty.Union.t) option
-      * pat Map.String.t
-      * Ty.t Map.String.t ref
-  | TDict of pat Map.String.t * Set.String.t ref
-  | TVar of string
-  | TBlock of nodes
-  | TField of pat * string
-  | TAny
+type _ pat =
+  | TScalar : scalar * Ty.Enum.t option -> 'a pat
+  | TNil : 'a pat
+  | TCons : 'a pat -> 'a pat
+  | TTuple : 'a pat list -> 'a pat
+  | TRecord : tag option * 'a pat Map.String.t * Ty.t Map.String.t ref -> 'a pat
+  | TDict : 'a pat Map.String.t * Set.String.t ref -> 'a pat
+  | TVar : string -> 'a pat
+  | TBlock : nodes -> construct pat
+  | TField : construct pat * string -> construct pat
+  | TAny : destruct pat
 
 and node =
   | TText of string * Ast.trim * Ast.trim
   | TEcho of (Ast.echo_format * echo) list * Ast.echo_format * echo * Ast.escape
-  | TMatch of Loc.t * pat Nonempty.t * Ty.t Nonempty.t * case Nonempty.t
-  | TMap_list of Loc.t * pat * Ty.t Nonempty.t * case Nonempty.t
-  | TMap_dict of Loc.t * pat * Ty.t Nonempty.t * case Nonempty.t
-  | TComponent of string * pat Map.String.t
+  | TMatch of
+      Loc.t * construct pat Nonempty.t * Ty.t Nonempty.t * case Nonempty.t
+  | TMap_list of Loc.t * construct pat * Ty.t Nonempty.t * case Nonempty.t
+  | TMap_dict of Loc.t * construct pat * Ty.t Nonempty.t * case Nonempty.t
+  | TComponent of string * construct pat Map.String.t
 
-and case = { pats : (Loc.t * pat Nonempty.t) Nonempty.t; nodes : nodes }
+and case = {
+  pats : (Loc.t * destruct pat Nonempty.t) Nonempty.t;
+  nodes : nodes;
+}
+
 and nodes = node list
 
 type t = { nodes : nodes; types : Ty.t Map.String.t }
@@ -558,13 +558,13 @@ let make_echo_type = function
 let[@tail_mod_cons] rec make_echo ctx ty = function
   | Ast.Echo_var (loc, var) ->
       Context.update ctx loc var ty;
-      Echo_var var
+      `Var var
   | Echo_field (var, field) ->
       let ty = Map.String.singleton field ty |> ref |> Ty.internal_record in
-      Echo_field (make_echo ctx ty var, field)
+      `Field (make_echo ctx ty var, field)
   | Echo_string (loc, s) ->
       unify loc Construct_literal ty (Ty.string ());
-      Echo_string s
+      `String s
 
 let[@tail_mod_cons] rec make_nullable_echoes ctx = function
   | [] -> []
@@ -589,10 +589,17 @@ let add_default_wildcard cases =
 
 let unknown _ = Ty.unknown ()
 
-type 'a var_action =
-  | Add_vars of (Loc.t * string * Ty.t) Queue.t
+let make_row = function
+  | Destruct_expand -> `Closed
+  | Construct_literal | Construct_var -> `Open
+
+(** This compliments the [mode] type with more information for [make_pat]. *)
+type (_, _) var_action =
+  | Destruct_add_vars :
+      (Loc.t * string * Ty.t) Queue.t
+      -> (destruct, 'b) var_action
       (** When we destructure a pattern, we add all new variables to a queue. *)
-  | Update_vars of 'a Context.t
+  | Construct_update_vars : 'b Context.t -> (construct, 'b) var_action
       (** When we construct a pattern, we update the context for each new
           variable. *)
 
@@ -602,8 +609,10 @@ type 'a var_action =
     input type if possible, not the newly created one. The input type is the
     master copy which gets reused, and the temporary copy will become stale. *)
 
-let rec make_pat var_action mode ty = function
-  | Ast.Int (loc, i) ->
+let rec make_pat :
+    type a. (a, 'b) var_action -> mode -> Ty.t -> Ast.pat -> a pat =
+ fun var_action mode ty -> function
+  | Int (loc, i) ->
       unify loc mode ty (Ty.int ());
       TScalar (`Int i, None)
   | String (loc, s) ->
@@ -612,46 +621,38 @@ let rec make_pat var_action mode ty = function
   | Block (loc, nodes) -> (
       unify loc mode ty (Ty.string ());
       match var_action with
-      | Add_vars _ -> Error.bad_block loc
-      | Update_vars ctx -> TBlock (make_nodes ctx nodes))
+      | Destruct_add_vars _ -> Error.bad_block loc
+      | Construct_update_vars ctx -> TBlock (make_nodes ctx nodes))
   | Field (loc, rec_pat, field) -> (
       let rec_ty = Map.String.singleton field ty |> ref |> Ty.internal_record in
       let rec_pat = make_pat var_action mode rec_ty rec_pat in
       match var_action with
-      | Add_vars _ -> Error.bad_field loc
-      | Update_vars _ -> TField (rec_pat, field))
+      | Destruct_add_vars _ -> Error.bad_field loc
+      | Construct_update_vars _ -> TField (rec_pat, field))
   | Float (loc, f) ->
       unify loc mode ty (Ty.float ());
       TScalar (`Float f, None)
   | Bool (loc, b) ->
       let temp_enum =
-        match mode with
-        | Destructure_expand -> (
+        match var_action with
+        | Destruct_add_vars _ -> (
             match b with
             | 0 -> Ty.Enum.false_only ()
             | _ -> Ty.Enum.true_only ())
-        | Construct_var | Construct_literal -> Ty.Enum.false_and_true ()
+        | Construct_update_vars _ -> Ty.Enum.false_and_true ()
       in
       let temp_ty = ref (Ty.Enum temp_enum) in
       let enum = match !ty with Enum e -> e | _ -> temp_enum in
       unify loc mode ty temp_ty;
       TScalar (`Int b, Some enum)
   | Enum_string (loc, s) ->
-      let temp_enum =
-        match mode with
-        | Destructure_expand -> Ty.Enum.string_singleton s `Closed
-        | Construct_var | Construct_literal -> Ty.Enum.string_singleton s `Open
-      in
+      let temp_enum = Ty.Enum.string_singleton s (make_row mode) in
       let temp_ty = ref (Ty.Enum temp_enum) in
       let enum = match !ty with Enum e -> e | _ -> temp_enum in
       unify loc mode ty temp_ty;
       TScalar (`String s, Some enum)
   | Enum_int (loc, i) ->
-      let temp_enum =
-        match mode with
-        | Destructure_expand -> Ty.Enum.int_singleton i `Closed
-        | Construct_var | Construct_literal -> Ty.Enum.int_singleton i `Open
-      in
+      let temp_enum = Ty.Enum.int_singleton i (make_row mode) in
       let temp_ty = ref (Ty.Enum temp_enum) in
       let enum = match !ty with Enum e -> e | _ -> temp_enum in
       unify loc mode ty temp_ty;
@@ -660,18 +661,16 @@ let rec make_pat var_action mode ty = function
       let tyvar = match !ty with Nullable ty -> ty | _ -> Ty.unknown () in
       let pat =
         match pat with
-        | None -> None
-        | Some pat -> Some (TTuple [ make_pat var_action mode tyvar pat ])
+        | None -> TNil
+        | Some pat -> TCons (TTuple [ make_pat var_action mode tyvar pat ])
       in
       unify loc mode ty (Ty.nullable tyvar);
-      TConstruct (TNullable, pat)
+      pat
   | List (loc, l, tl) ->
       let tyvar = match !ty with List ty -> ty | _ -> Ty.unknown () in
       unify loc mode ty (Ty.list tyvar);
       let tl =
-        match tl with
-        | None -> TConstruct (TList, None)
-        | Some tl -> make_pat var_action mode ty tl
+        match tl with None -> TNil | Some tl -> make_pat var_action mode ty tl
       in
       make_list ~tl var_action mode tyvar l
   | Tuple (loc, l) ->
@@ -688,11 +687,7 @@ let rec make_pat var_action mode ty = function
           let r = make_record var_action loc mode !tyvars m in
           TRecord (None, r, tyvars)
       | Tagged (k, v, m) ->
-          let row =
-            match mode with
-            | Destructure_expand -> `Closed
-            | Construct_literal | Construct_var -> `Open
-          in
+          let row = make_row mode in
           let temp_tyvars = Map.String.map unknown m |> ref in
           let tag, temp_enum =
             match v with
@@ -727,30 +722,40 @@ let rec make_pat var_action mode ty = function
       unify loc mode ty (Ty.internal_dict_keys tyvar temp_kys);
       let d = Map.String.map (make_pat var_action mode tyvar) m in
       TDict (d, kys)
-  | Var (loc, "_") ->
-      (match mode with
-      | Destructure_expand -> open_rows ty
-      | Construct_literal | Construct_var -> Error.underscore_in_construct loc);
-      TAny
+  | Var (loc, "_") -> (
+      match var_action with
+      | Destruct_add_vars _ ->
+          open_rows ty;
+          TAny
+      | Construct_update_vars _ -> Error.underscore_in_construct loc)
   | Var (loc, b) ->
-      (match mode with
-      | Destructure_expand -> open_rows ty
-      | Construct_literal | Construct_var -> ());
       (match var_action with
-      | Add_vars queue -> Queue.add (loc, b, ty) queue
-      | Update_vars ctx -> Context.update ctx loc b ty);
+      | Destruct_add_vars queue ->
+          open_rows ty;
+          Queue.add (loc, b, ty) queue
+      | Construct_update_vars ctx -> Context.update ctx loc b ty);
       TVar b
 
-and[@tail_mod_cons] make_list ~tl var_action mode ty = function
+and[@tail_mod_cons] make_list :
+    type a.
+    tl:a pat -> (a, 'b) var_action -> mode -> Ty.t -> Ast.pat list -> a pat =
+ fun ~tl var_action mode ty -> function
   | [] -> tl
   | p :: l ->
       let hd = make_pat var_action mode ty p in
-      TConstruct
-        (TList, Some (TTuple [ hd; make_list ~tl var_action mode ty l ]))
+      TCons (TTuple [ hd; make_list ~tl var_action mode ty l ])
 
-and make_record var_action loc mode tyvars m =
-  match mode with
-  | Destructure_expand ->
+and make_record :
+    type a.
+    (a, 'b) var_action ->
+    Loc.t ->
+    mode ->
+    Ty.t Map.String.t ->
+    Ast.pat Map.String.t ->
+    a pat Map.String.t =
+ fun var_action loc mode tyvars m ->
+  match var_action with
+  | Destruct_add_vars _ ->
       Map.String.merge
         (fun _ pat ty ->
           match (pat, ty) with
@@ -760,7 +765,7 @@ and make_record var_action loc mode tyvars m =
           | None, Some _ -> Some TAny
           | None, None -> None)
         m tyvars
-  | Construct_var | Construct_literal ->
+  | Construct_update_vars _ ->
       Map.String.merge
         (fun k pat ty ->
           match (pat, ty) with
@@ -774,7 +779,7 @@ and make_component_props loc name ctx tyvars m =
     (fun k pat ty ->
       match (pat, ty) with
       | Some pat, Some ty ->
-          Some (make_pat (Update_vars ctx) Construct_literal ty pat)
+          Some (make_pat (Construct_update_vars ctx) Construct_literal ty pat)
       | None, Some ty -> Error.missing_field loc k ty
       | Some _, None -> Error.component_extra_prop loc name k
       | None, None -> None)
@@ -782,7 +787,9 @@ and make_component_props loc name ctx tyvars m =
 
 (** @raises [Invalid_argument] if the list sizes are mismatched. *)
 and unify_match_cases pats tys ctx =
-  Nonempty.map2 (make_pat (Update_vars ctx) Construct_literal) tys pats
+  Nonempty.map2
+    (make_pat (Construct_update_vars ctx) Construct_literal)
+    tys pats
 
 and unify_map ~ty ~key loc (tys, cases) pat ctx =
   let hd_ty =
@@ -792,7 +799,7 @@ and unify_map ~ty ~key loc (tys, cases) pat ctx =
         ty hd
     | _ -> Error.map_pat_num_mismatch loc
   in
-  let p = make_pat (Update_vars ctx) Construct_literal hd_ty pat in
+  let p = make_pat (Construct_update_vars ctx) Construct_literal hd_ty pat in
   (p, tys, cases)
 
 and make_cases ctx cases =
@@ -813,7 +820,7 @@ and make_cases ctx cases =
               try
                 ( loc,
                   Nonempty.map2
-                    (make_pat (Add_vars new_vars) Destructure_expand)
+                    (make_pat (Destruct_add_vars new_vars) Destruct_expand)
                     tys pats )
               with Invalid_argument _ -> Error.pat_num_mismatch loc)
             pats
