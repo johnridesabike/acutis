@@ -72,7 +72,6 @@ module Exit = struct
   let get = Array.get
   let map = Array.map
   let key_to_int = Fun.id
-  let pp_key = Format.pp_print_int
   let to_seqi = Array.to_seqi
 end
 
@@ -738,9 +737,11 @@ module ParMatch = struct
     | Nullable ty, Cons (Nest [ path ]) -> Nullable (l, Some (to_pat ty path))
     | Nullable _, Cons Any -> Nullable (l, Some Ast.dummy_var)
     | Nullable _, Nil -> Nullable (l, None)
-    | Record tys, Nest path ->
+    | Record tys, Nest path -> (
         let s = Map.String.to_seq !tys in
-        Record (l, to_assoc s path |> Nonempty.of_list)
+        match to_assoc s path with
+        | [] -> Ast.dummy_var
+        | hd :: tl -> Record (l, hd :: tl))
     | Union (key, { cases = Int m; extra; _ }), Nest (Scalar (`Int i) :: path)
       ->
         let tag =

@@ -245,7 +245,6 @@ module Exit : sig
 
   val get : 'a t -> key -> 'a
   val map : ('a -> 'b) -> 'a t -> 'b t
-  val pp_key : Format.formatter -> key -> unit
   val key_to_int : key -> int
   val to_seqi : 'a t -> (key * 'a) Seq.t
 end

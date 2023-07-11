@@ -11,17 +11,12 @@
 type 'a t = ( :: ) of 'a * 'a list
 
 let to_list (hd :: tl) = List.( :: ) (hd, tl)
-
-let of_list = function
-  | List.[] -> raise (Invalid_argument "Nonempty.of_list")
-  | List.(hd :: tl) -> hd :: tl
-
 let cons a (hd :: tl) = a :: hd :: tl
 let hd (hd :: _) = hd
 
-let rev (hd :: tl) =
+let rev =
   let rec aux l1 l2 = match l1 with [] -> l2 | a :: l -> aux l (cons a l2) in
-  aux tl [ hd ]
+  fun (hd :: tl) -> aux tl [ hd ]
 
 let map f (hd :: tl) =
   (* Preserve evaluation order. *)
@@ -33,4 +28,4 @@ let map2 f (hd1 :: tl1) (hd2 :: tl2) =
   let hd = f hd1 hd2 in
   hd :: List.map2 f tl1 tl2
 
-let to_sexp f (hd :: tl) = Sexp.of_seq f (Seq.cons hd @@ List.to_seq tl)
+let to_sexp f (hd :: tl) = Sexp.of_seq f (fun () -> Cons (hd, List.to_seq tl))
