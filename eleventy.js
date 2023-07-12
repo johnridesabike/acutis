@@ -53,35 +53,6 @@ FileWalker.prototype.walk = function (f) {
   return this._walk(this.root, f);
 };
 
-let defaultIgnores = new Set([".git"]);
-let globalIgnores = new Set(["node_modules"]);
-
-function forEachFiles(ignores, filePath, f) {
-  if (ignores.has(filePath)) {
-    return Promise.resolve();
-  } else {
-    return fs.stat(filePath).then((stats) => {
-      if (stats.isDirectory()) {
-        return fs
-          .readdir(filePath)
-          .then((files) =>
-            Promise.all(
-              files.map((file) =>
-                globalIgnores.has(file)
-                  ? Promise.resolve()
-                  : forEachFiles(ignores, path.join(filePath, file), f)
-              )
-            )
-          );
-      } else if (filePath.toLowerCase().endsWith(".acutis")) {
-        return fs.readFile(filePath).then((src) => f(stats, filePath, src));
-      } else {
-        return Promise.resolve();
-      }
-    });
-  }
-}
-
 function acutisErrorToJsError(e) {
   if (Utils.isError(e)) {
     console.error(Utils.getError(e) + "\n");
