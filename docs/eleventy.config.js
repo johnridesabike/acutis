@@ -19,11 +19,6 @@ function acutisSyntax(Prism) {
 
   Prism.languages.acutis = {
     comment: /^{\*[\s\S]*?\*}$/,
-    tag: {
-      pattern: /(^{%\s*)([a-z_])([a-zA-Z0-9_]+)/,
-      lookbehind: true,
-      alias: "keyword",
-    },
     delimiter: {
       pattern: /^{[{%]|[}%]}$/,
       alias: "punctuation",
@@ -49,7 +44,7 @@ function acutisSyntax(Prism) {
     number: /(-|\+)?\s*[0-9]+(\.[0-9]+)?(e|E)?/,
     boolean: /\b(false|true|null)\b/,
     variable: /([a-z_])([a-zA-Z0-9_]+)?/,
-    punctuation: /[{}[\],.:/=(\)<>\|]/,
+    punctuation: /[{}[\],.:/=()<>|]/,
   };
 
   var pattern = /{{({?)[\s\S]*?(}?)}}|{%[\s\S]*?%}|{\*[\s\S]*?\*}/g;
