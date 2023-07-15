@@ -5,7 +5,7 @@ Basic tree
     ((var "a"))
     (matching
      (tree
-      (construct
+      (nil_or_cons
        (key 0)
        (ids ())
        (nil (end (leaf (names ()) (exit 1))))
@@ -391,7 +391,7 @@ Different-sized lists merge correctly
     ((var "a"))
     (matching
      (tree
-      (construct
+      (nil_or_cons
        (key 0)
        (ids ())
        (nil (end (leaf (names ()) (exit 0))))
@@ -405,7 +405,7 @@ Different-sized lists merge correctly
             (key 0)
             (ids (0 1))
             (child
-             (construct
+             (nil_or_cons
               (key 1)
               (ids (2))
               (nil (end (end (leaf (names (("_x" 0))) (exit 1)))))
@@ -425,7 +425,7 @@ A big list pattern works
     ((var "a") (var "b"))
     (matching
      (tree
-      (construct
+      (nil_or_cons
        (key 0)
        (ids (1))
        (nil
@@ -452,11 +452,10 @@ A big list pattern works
              (case
               (data 10)
               (if_match
-               (construct
+               (cons
                 (key 1)
                 (ids ())
-                (nil none)
-                (cons
+                (child
                  (nest
                   (key 1)
                   (ids ())
@@ -469,7 +468,7 @@ A big list pattern works
                       (case
                        (data 11)
                        (if_match
-                        (construct
+                        (nil_or_cons
                          (key 1)
                          (ids (0))
                          (nil
@@ -526,10 +525,10 @@ A big list pattern works
                (case
                 (data 30)
                 (if_match
-                 (construct
+                 (nil
                   (key 1)
                   (ids ())
-                  (nil
+                  (child
                    (end
                     (switch
                      (key 1)
@@ -544,8 +543,7 @@ A big list pattern works
                          (if_match (end (leaf (names (("_y" 1))) (exit 3))))
                          (next none)))))
                      (wildcard (end (leaf (names ()) (exit 4))))
-                     (check_cases none))))
-                  (cons none)))
+                     (check_cases none))))))
                 (next none)))))
             (wildcard none)
             (check_cases none))))

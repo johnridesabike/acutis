@@ -580,22 +580,23 @@ let rec match_tree :
                     [] );
               ]);
         ]
-  | M.Construct { key; ids; nil; cons } -> (
+  | M.Nil { key; ids; child } ->
       let@ arg = get_arg ~optional key in
       let vars = add_vars ids arg vars in
-      match (nil, cons) with
-      | Some nil, Some cons ->
-          [
-            If_else
-              ( arg,
-                match_tree ~leafstmt ~get_arg ~vars cons,
-                match_tree ~leafstmt ~get_arg ~vars nil );
-          ]
-      | Some nil, None ->
-          [ If_else (Not arg, match_tree ~leafstmt ~get_arg ~vars nil, []) ]
-      | None, Some cons ->
-          [ If_else (arg, match_tree ~leafstmt ~get_arg ~vars cons, []) ]
-      | None, None -> [])
+      [ If_else (Not arg, match_tree ~leafstmt ~get_arg ~vars child, []) ]
+  | M.Cons { key; ids; child } ->
+      let@ arg = get_arg ~optional key in
+      let vars = add_vars ids arg vars in
+      [ If_else (arg, match_tree ~leafstmt ~get_arg ~vars child, []) ]
+  | M.Nil_or_cons { key; ids; nil; cons } ->
+      let@ arg = get_arg ~optional key in
+      let vars = add_vars ids arg vars in
+      [
+        If_else
+          ( arg,
+            match_tree ~leafstmt ~get_arg ~vars cons,
+            match_tree ~leafstmt ~get_arg ~vars nil );
+      ]
   | M.Optional { child; next } ->
       List.concat
         [

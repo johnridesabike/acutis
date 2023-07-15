@@ -200,16 +200,17 @@ type ('leaf, 'key) tree =
       child : ('leaf, 'key) nest;
       wildcard : ('leaf, 'key) tree option;
     }  (** A Nest represents a structure such as tuple or a record. *)
-  | Construct of {
+  | Nil of { key : 'key; ids : Set.Int.t; child : ('leaf, 'key) tree }
+      (** A [null] or [[]]. The [child] points to the next node in the tree. *)
+  | Cons of { key : 'key; ids : Set.Int.t; child : ('leaf, 'key) tree }
+      (** A not-null value or a non-empty list. The [child] points to a node
+          representing the "current" data, either a {!Wildcard} or a {!Nest}. *)
+  | Nil_or_cons of {
       key : 'key;
       ids : Set.Int.t;
-      nil : ('leaf, 'key) tree option;
-      cons : ('leaf, 'key) tree option;
-    }
-      (** A Construct represents one of the built-in variant types: lists and 
-          nullables. [nil] represents an empty list or a null value. It is like
-          a wildcard in that it always points to the {b next} node. [cons]
-          always points to a {!Wildcard} or {!Nest} node.*)
+      nil : ('leaf, 'key) tree;
+      cons : ('leaf, 'key) tree;
+    }  (** An exhaustive combination of {!Nil} and {!Cons}. *)
   | Wildcard of { key : 'key; ids : Set.Int.t; child : ('leaf, 'key) tree }
       (** Wildcards simply point to the next node in the tree.*)
   | Optional of { child : ('leaf, 'key) tree; next : ('leaf, 'key) tree option }

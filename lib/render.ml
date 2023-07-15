@@ -94,13 +94,24 @@ let rec eval_match :
       let data = get key args in
       let vars = bind_names data ids vars in
       eval_match args get vars child
-  | Construct { key; ids; nil; cons } -> (
+  | Nil { key; ids; child } -> (
       let data = get key args in
       let vars = bind_names data ids vars in
-      match (data, cons, nil) with
-      | `Array _, Some tree, _ | _, _, Some tree ->
-          eval_match args get vars tree
+      match data with
+      | `Int _ -> eval_match args get vars child
       | _ -> raise_notrace Not_found)
+  | Cons { key; ids; child } -> (
+      let data = get key args in
+      let vars = bind_names data ids vars in
+      match data with
+      | `Array _ -> eval_match args get vars child
+      | _ -> raise_notrace Not_found)
+  | Nil_or_cons { key; ids; nil; cons } -> (
+      let data = get key args in
+      let vars = bind_names data ids vars in
+      match data with
+      | `Array _ -> eval_match args get vars cons
+      | _ -> eval_match args get vars nil)
   | Nest { key; ids; child; wildcard } ->
       let data = get key args in
       let vars = bind_names data ids vars in

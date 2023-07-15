@@ -581,7 +581,7 @@ Print the optimized form
     ((var "list"))
     (matching
      (tree
-      (construct
+      (nil_or_cons
        (key 0)
        (ids ())
        (nil (end (leaf (names ()) (exit 0))))
@@ -591,7 +591,7 @@ Print the optimized form
          (ids ())
          (child
           (int_keys
-           (construct
+           (nil_or_cons
             (key 0)
             (ids (1))
             (nil
@@ -610,7 +610,7 @@ Print the optimized form
                  (ids (0))
                  (child
                   (end
-                   (construct
+                   (nil_or_cons
                     (key 1)
                     (ids (2))
                     (nil
@@ -621,17 +621,15 @@ Print the optimized form
                       (ids (2))
                       (child
                        (int_keys
-                        (construct
+                        (nil
                          (key 0)
                          (ids ())
-                         (nil
-                          (construct
+                         (child
+                          (nil
                            (key 1)
                            (ids ())
-                           (nil
-                            (end (end (end (leaf (names (("a" 0))) (exit 1))))))
-                           (cons none)))
-                         (cons none))))
+                           (child
+                            (end (end (end (leaf (names (("a" 0))) (exit 1)))))))))))
                       (wildcard
                        (end (end (leaf (names (("_tl" 2) ("_z" 1))) (exit 2)))))))))))))
               (wildcard
@@ -804,7 +802,7 @@ Print the optimized form
     ((array ((array ((field (field (var "a") "b") "c"))))))
     (matching
      (tree
-      (construct
+      (nil_or_cons
        (key 0)
        (ids ())
        (nil (end (leaf (names ()) (exit 1))))
@@ -814,11 +812,10 @@ Print the optimized form
          (ids ())
          (child
           (int_keys
-           (construct
+           (cons
             (key 0)
             (ids ())
-            (nil none)
-            (cons
+            (child
              (nest
               (key 0)
               (ids ())
