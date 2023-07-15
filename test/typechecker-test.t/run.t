@@ -83,6 +83,7 @@ Closed unions are inferred correctly
     {@tag: 2, b: float} |
     {@tag: 3, b: [int]} |
     ...
+  g = {@tag: 0, w: int, y: string} | {@tag: 1, x: int, z: string}
 
 Boolean unions work
   $ acutis union_boolean.acutis --printtypes
@@ -95,19 +96,19 @@ The typechecker update context works
   $ acutis context.acutis --printtypes
   collections =
     {
-       frontPage:
-         [
-            {
-               data:
-                 {
-                    isoDate: string,
-                    page: {excerpt: string},
-                    pub: {@pub: false} | {@pub: true, absoluteUrl: string},
-                    title: string
-                 },
-               templateContent: string
-            }
-         ]
+      frontPage:
+        [
+          {
+            data:
+              {
+                isoDate: string,
+                page: {excerpt: string},
+                pub: {@pub: false} | {@pub: true, absoluteUrl: string},
+                title: string
+              },
+            templateContent: string
+          }
+        ]
     }
 
 Other cases
@@ -145,13 +146,13 @@ The typescheme pretty-printer prints valid (and pretty) syntax
     ...
   g =
     {
-       a:
-         [
-            @"another loooong enum type!" |
-            @"it is so very loooooong! It just keeps going!" |
-            @"this time it is inside a record!" |
-            ...
-         ]
+      a:
+        [
+          @"another loooong enum type!" |
+          @"it is so very loooooong! It just keeps going!" |
+          @"this time it is inside a record!" |
+          ...
+        ]
     }
 
 Pathologic cases

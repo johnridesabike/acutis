@@ -2,11 +2,11 @@
 title: Acutis language manual
 description: The manual for how to use the Acutis template language.
 showTitle: true
-layout: main.acutis
+layout: main.acutis.js
 next: null
 ---
 
-An Acutis template is parsed as three basic building blocks:
+An Acutis template is made of three basic building blocks:
 
 - **Text**, which is rendered as-is.
 - **Echoes**, which are values wrapped in `{{` "mustaches" `}}`.
@@ -20,16 +20,14 @@ Most of the language features occur within `{%` expressions `%}`.
 
 Every template accepts a map of properties (props) that binds values to names.
 
-In this document, we will use JSON data to represent our input type, but the
-Acutis rendering engine is flexible enough to allow other types of input.
+In this document, we will use JSON to represent our input data, although Acutis
+is flexible enough to allow other types of input too.
 
 As an example, the JSON object `{"color": "blue"}` binds the string `"blue"` to
 the name `color`.
 
-Bindings in Acutis are what some languages call "variables." The term _variable_
-is not completely accurate in Acutis because bindings are immutable and
-therefore cannot _vary_. Nonetheless, you may still see the two terms used
-interchangeably.
+Bindings in Acutis are what some languages call "variables." You may see the two
+terms used interchangeably.
 
 ## Echoing values
 
@@ -74,29 +72,21 @@ My favorite color is {{{ color }}}.
 
 ### Format specifiers
 
-Printing the contents of a string is simple, but other data types are less
-straightforward. To echo numbers or boolean values, then you must prefix them
-with a format specification. If you've ever used "printf" style tools, then this
-will look similar.
+To echo numbers or boolean values, then you must prefix them with a format
+specification. If you've ever used "printf" style tools, then this will look
+similar.
 
-A format specifier begins with a `%` (percent) followed a character code for its
-type.
+A format specifier begins with a `%` (percent) followed a character code. These
+are the specifiers and their types:
 
-These are the character codes and their types:
-
-- `i`: integer. This only prints digits without any additional formatting.
-- `f`: floating point number. The exact format that this uses is unspecified.
-- `b`: boolean. This prints either `false` or `true`.
+- `%i`: integer. This only prints digits without any additional formatting.
+- `%f`: floating point number. The exact format that this uses is unspecified.
+- `%b`: boolean. This prints either `false` or `true`.
 
 Example data:
 
 ```json
-{
-  "num": 123456,
-  "frac": 1234.56789,
-  "binaryf": false,
-  "binaryt": true
-}
+{ "num": 123456, "frac": 1234.56789, "binaryf": false, "binaryt": true }
 ```
 
 Example template usage:
@@ -112,7 +102,7 @@ Format specification  Output
 
 These format specifications are designed to cover only basic use cases. If you
 require more advanced format rules, then you will need to preprocess your data
-or use component functions.
+or use [component functions][components].
 
 ## Comments
 
@@ -125,7 +115,7 @@ to nest comments, similar to ML-style languages.
 
 ## Whitespace control
 
-The `~` (tilde) symbol trims whitespace before or after an expression.
+The `~` (tilde) symbol trims whitespace before or after an echo or expression.
 
 ```acutis
 <p>
@@ -159,7 +149,7 @@ explicitly declares its types.
 
 An interface contains a sequence of prop names and their respective types,
 following the format `prop = type`. Each interface begins with `{% interface`
-and ends with `/ %}`.
+and ends with `%}`.
 
 Examples:
 
@@ -167,12 +157,12 @@ Examples:
 {% interface
   page = {title: string, url: string}
   visible = false | true
-/ %}
+%}
 ```
 
 Interfaces are optional, and they exist mainly for the benefit of us humans who
-may have difficulty inferring types as well as our computers do. They can make
-large templates easier to read and understand.
+may have difficulty inferring types as well as our computers do. They can act as
+documentation to make large templates easier to understand.
 
 Once you add an interface to a template, then that interface must include _all_
 of the template's props and their types. If the compiler finds a prop in your
@@ -180,7 +170,7 @@ template that is not listed in the interface, then it will raise an error.
 
 Interfaces may exist anywhere inside a template. Their location does not affect
 how the compiler parses them. You may even divide an interface across multiple
-`{% interface / %}` blocks.
+`{% interface %}` expressions.
 
 ### Primitives: int, float, and string
 
@@ -191,7 +181,7 @@ Examples:
   a = int
   b = float
   c = string
-/ %}
+%}
 ```
 
 ```txt
@@ -210,7 +200,7 @@ Examples:
 ```acutis
 {% interface
   a = ?string
-/ %}
+%}
 ```
 
 ```txt
@@ -219,8 +209,8 @@ null
 ```
 
 Any type may be "wrapped" in a nullable. Nullable types are indicated by a `?`
-preceding the wrapped type, e.g. `?int`. They can either be `null` or not-null,
-which is written in patterns with a `!`.
+preceding the wrapped type, e.g. `?int`. They can either be `null` or not-null.
+The latter is written with a `!` (exclamation point).
 
 Because of the way Acutis "wraps" nullable values, they're closer to what other
 languages call "option" types.
@@ -232,7 +222,7 @@ Examples:
 ```acutis
 {% interface
   a = [string]
-/ %}
+%}
 ```
 
 ```txt
@@ -244,8 +234,8 @@ Examples:
 A list is an ordered sequence of values. Lists are homogeneous, so each item
 must be of the same type. They are indicated with brackets, e.g. `[int]`.
 
-You can append or destructure items from the "head," or the front, of a list
-with the `...` syntax: `[head, ...tail]`.
+You can append or destructure items from the beginning of a list with the `...`
+syntax: `[head, ...tail]`.
 
 ### Tuple
 
@@ -254,7 +244,7 @@ Examples:
 ```acutis
 {% interface
   a = (int, string, ?float)
-/ %}
+%}
 ```
 
 ```txt
@@ -275,7 +265,7 @@ Examples:
 ```acutis
 {% interface
   a = {a: int, b: string}
-/ %}
+%}
 ```
 
 ```txt
@@ -284,6 +274,10 @@ Examples:
 
 A record is a series of key-value pairs. Records are indicated by braces, e.g.
 `{a: int, b: string}`.
+
+A record field may be quoted, and quotes are always necessary if the field name
+would not be a valid binding name. These are equivalent: `{a: 12}` and
+`{"a": 12}`.
 
 Records are extensible. The compiler assumes that every record may contain
 additional fields which have not been specified yet.
@@ -302,7 +296,7 @@ Examples:
 ```acutis
 {% interface
   a = <int>
-/ %}
+%}
 ```
 
 ```txt
@@ -313,8 +307,10 @@ Dictionaries, or "dicts," are to records what lists are to tuples. They
 represent key-value pairs like records, but they are dynamically sized and
 homogeneously typed. They are specified with angled brackets, e.g. `<int>`.
 
-The order of keys in a dict is not specified. The compiler currently sorts them
-alphabetically.
+Like record fields, key names may be quoted.
+
+The order of keys in a dict is not specified. If you require a specific order,
+then you should use a list.
 
 ### Enumeration
 
@@ -324,7 +320,7 @@ Examples:
 {% interface
   a = @"abc" | @"def"
   b = @12 | @34 | ...
-/ %}
+%}
 ```
 
 ```txt
@@ -346,7 +342,7 @@ Examples:
 ```acutis
 {% interface
   a = false | true
-/ %}
+%}
 ```
 
 ```txt
@@ -354,8 +350,8 @@ false
 true
 ```
 
-Boolean values are really just a special kind of enum. The `false | true` type
-works exactly like any closed binary enum would, such as `@0 | @1`.
+A boolean is really just a special kind of enum. The `false | true` type works
+exactly like any closed binary enum would, such as `@0 | @1`.
 
 It is possible to declare a type which is _only_ `false` or _only_ `true`, but
 this is not usually useful.
@@ -367,9 +363,9 @@ Examples:
 ```acutis
 {% interface
   a =
-      {@shape: "circle", radius: int}
-    | {@shape: "rectagle", height: int, width: int}
-/ %}
+    {@shape: "circle", radius: int} |
+    {@shape: "rectagle", height: int, width: int}
+%}
 ```
 
 ```txt
@@ -390,13 +386,13 @@ Tag fields may only contain literal integer, string, or boolean values.
 ```acutis
 {% interface
   a = _
-/ %}
+%}
 ```
 
 Finally, if Acutis can't determine anything at all about a value's type, then it
 uses "unknown," which is indicated by an underscore: `_`.
 
-## Typing philosophy
+## Type design and philosophy
 
 Acutis is _strongly_ and _statically_ typed. The compiler guarantees that values
 are coherent. For example, a `string` will never appear where an `int` is
@@ -406,24 +402,20 @@ Acutis is also _structurally_ typed. This allows the compiler to do more than
 just check type equality. It can check for subtypes, which sees if a particular
 structure is compatible as a subset of another structure.
 
-The goal is to enable real-world data to easily fit into a system that's 100%
+The goal is to help real-world data easily fit into a system that's 100%
 type-safe. This means you must sometimes make decisions about which types best
 fit your data. For example, records and tuples are heterogeneous and
 fixed-sized, while dicts and lists are homogeneous and dynamically-sized. This
 trade-off is necessary because a structure that is heterogeneous and dynamic
 would be unsafe.
 
-## Types and JSON
+### Types and JSON
 
-The Acutis rendering engine is generic enough to allow different input types.
-However, it currently only includes decoders for JSON and JavaScript. Both are
-very similar, so we'll use JSON as our primary example.
+The Acutis rendering engine is generic enough to allow different input types,
+but we'll use JSON as our primary example. Here are examples of how Acutis types
+correspond to JSON types and values:
 
-Acutis accepts incoming data and decodes it according to the template's type
-scheme. Here are examples of how Acutis types correspond to JSON types and
-values:
-
-<!-- Adding bars inside inside tables messes with markdown tooling. -->
+<!-- Adding bars inside tables breaks markdown tooling. -->
 
 | Acutis type                                         | JSON type or value                               |
 | --------------------------------------------------- | ------------------------------------------------ |
@@ -442,10 +434,10 @@ values:
 | `_` (unknown)                                       | Any                                              |
 
 You may need to preprocess your input data to fit Acutis' type constraints. For
-example, if you have a value can be one of several incompatible types, then you
-will have to transform it into a legal type such as a tagged union.
+example, if you have a value that can be one of several incompatible types, then
+you will have to transform it into a legal type such as a tagged union.
 
-## Introduction to pattern matching
+## Pattern matching
 
 The `match` and `map` expressions are the core of Acutis' powers. They use
 pattern matching to conditionally output sections of a template.
@@ -456,16 +448,17 @@ JavaScript, then this may seem like a natural progression from that.
 
 Consider this pattern:
 
-```js
+```txt
 {published: true, title, dates: {posted, updated}}
 ```
 
-This matches any object where `published` equals `true`, which contains a
-`title` field, and which contains a `dates` object with `posted` and `updated`
-fields. Additionally, it _binds_ the values of `title`, `posted`, and `updated`
-to those names.
+This matches a record where `published` equals `true`, which contains `title`
+and `dates` fields, and where the `dates` field contains a record with `posted`
+and `updated` fields. Additionally, it _binds_ the values of `title`, `posted`,
+and `updated` to those names. (This is called "punning," where the field name is
+automatically used for a binding with the same name.)
 
-Therefore, we can use these with the `match` expression and the `with` clause:
+We can use this with the `match` expression and the `with` clause:
 
 ```acutis
 {% match article
@@ -481,7 +474,7 @@ languages. Here, the structure and values of the `article` binding is checked
 against the patterns after each `with` clause. If one of the patterns _matches_
 the contents of `article`, then the following template section is rendered.
 
-## Multiple patterns for a block
+### Multiple patterns for a block
 
 Acutis allows multiple `with` patterns to render single block expression.
 
@@ -496,10 +489,10 @@ Acutis allows multiple `with` patterns to render single block expression.
 {% /match %}
 ```
 
-## Shadowing bindings
+### Shadowing bindings
 
 Bindings are immutable. Binding a value to an existing name does not override
-the original, but _shadows_ it. Bindings are also scoped to their blocks.
+the original, but _shadows_ it. Bindings are scoped to their blocks.
 
 Consider this JSON object:
 
@@ -531,7 +524,7 @@ But my favorite is still blue.
 
 The top-level `color` is not affected by the nested `color` binding.
 
-## Exhaustive and partial patterns
+### Exhaustive and partial patterns
 
 The Acutis compiler analyzes patterns to determine whether they are exhaustive
 or partial. An exhaustive set of patterns covers every possible shape of input
@@ -553,21 +546,67 @@ This fails with the error message:
 
 ```txt
 Matching error.
-This pattern-matching is not exhaustive. Here's an example of a pattern which
-is not matched:
-{books: [{title: _}, ..._], name: _}
+This pattern-matching is not exhaustive.
+Here's an example of a pattern which is not matched:
+  {books: [{title: _}, ..._], name: _}
 ```
 
 The example pattern it generated should tell you what you missed. In this case,
 the original set of patterns only matched a `books` list with one or zero items,
 but not more than one (thus the `..._]` in the error's example).
 
+## Constructing patterns
+
+Acutis is mainly designed for destructuring data that you already have from an
+external source. But sometimes it's useful to construct new data during
+rendering, especially once you start using template components and need to pass
+data between different templates. Patterns in Acutis are mostly symmetrical in
+the sense that any pattern you would use to destructure data can be also used to
+construct data.
+
+```acutis
+{% match {name: "John", symbol: !"Eagle"}
+   with {name, symbol: !symbol} ~%} {{ name }}'s symbol is the {{ symbol }}.
+{% with {name, symbol: null} ~%} {{ name }} has no symbol.
+{% /match %}
+```
+
+The above example isn't very practical, but it illustrates how the syntax works.
+
+### Template blocks
+
+You can construct template "block" sections. These are denoted with hashes,
+beginning with `#%}` and ending with `{%#`.
+
+Here's an example using a [template component][components]:
+
+```acutis
+{% Layout
+  sections={
+    header: #%} <h1> {{ title }} </h1> {%#,
+    sidebar: #%}
+      <h2> Menu </h2>
+      {% map menu with {title, slug} %}
+        <a href="{{ slug }}">{{ title }}</a>
+      {% /map %}
+   {%#
+  }
+/ %}
+```
+
+These blocks evaluate to regular strings. You can combine them with other
+patterns too. For example, prefixing a block with a `!` will wrap it as a
+nullable, e.g. `{optional: !#%}...{%#}`.
+
+Since blocks are rendered as regular strings, echoing will still escape them
+unless you explicitly don't, e.g. `{{{ header }}}`.
+
 ## Mapping
 
-The `map` expression is similar to `match` except that it is used on lists to
-render each value of the list.
+The `map` expression is similar to `match` except that it renders each value of
+a list.
 
-These props:
+This data:
 
 ```json
 {
@@ -600,34 +639,15 @@ different template sections based on an value's content.
 {% map articles
    with {title, author: null} %}
   The article "{{ title }}" was written anonymously.
-{% with {title, author} %}
+{% with {title, author: !author} %}
   The article "{{ title }}" was written by {{ author }}.
-{% /map %}
-```
-
-### Mapping static patterns
-
-You can map static list patterns.
-
-```acutis
-{% map ["Carlo", "John"] with name ~%}
-  Hello, {{ name }}.
-{% /map %}
-```
-
-You can also concatenate a static list pattern with an list binding by using the
-`...` (spread) syntax.
-
-```acutis
-{% map ["Carlo", "John", ...others] with name ~%}
-  Hello, {{ name }}.
 {% /map %}
 ```
 
 ### Matching the item index
 
-You can optionally include an item's index in the pattern. _For lists, indices
-always begin at zero._
+You can optionally include an item's index in the pattern. Indices always begin
+at zero.
 
 ```acutis
 {% map articles with {title, author}, index %}
@@ -635,7 +655,7 @@ always begin at zero._
 {% /map %}
 ```
 
-Because the `index` binding is just another pattern, you can also use it to
+Because the `index` binding is just another pattern, you can use it to
 conditionally render sections by matching the index with specific numbers.
 
 ```acutis
@@ -649,15 +669,13 @@ conditionally render sections by matching the index with specific numbers.
 
 ### Mapping dictionaries
 
-You can map dictionaries by using `map_dict`.
-
-Each of the dictionary's values will be matched with the pattern after the
-`with` clause. The index will be the string key associated with the value.
+You can map dictionaries by using `map_dict`. The index will be the key that's
+associated with each value.
 
 ```acutis
 {% map_dict
-    < author: {name: "John"},
-      editor: {name: "Carlo"} >
+    <author: {name: "John"},
+     editor: {name: "Carlo"}>
     with {name}, role ~%}
   {{ name }} is the {{ role }}.
 {% /map_dict %}
@@ -711,10 +729,11 @@ However, Acutis will not let you reuse a binding in a pattern, so a pattern like
 `{a: x, b: x}` is illegal.
 
 Acutis treats the `_` (underscore) name specially. Values bound to it are
-immediately discarded. Therefore `{a: _, b: _}` will always match any object
+immediately discarded. Therefore `{a: _, b: _}` will always match any record
 with fields `a` and `b`, but it will ignore their contents.
 
-Because bindings match _anything_, you can use `_` as a "default" case:
+Because bindings match _anything_, you can use `_` as a catch-all "default"
+case:
 
 ```acutis
 {% match greeting
@@ -763,19 +782,31 @@ can be useful for reasoning about two-dimensional matrices of data.
 {% /match %}
 ```
 
+### Matching dictionaries
+
+Matching dictionaries works a little differently than the other types. Because a
+dictionary is never guaranteed to contain any specific key, dictionary patterns
+always need a catch-all case.
+
+Additionally, dictionary pattern-matching essentially works by testing for a
+subset of its input dictionary. This is different than lists, which test for an
+exact structure. For example, a pattern like `<john: "eagle">` matches any
+dictionary that contains that key and value, like `<john: "eagle", luke: "ox">`.
+As a consequence, an empty dictionary, `<>`, will match _any_ input.
+
 ## Template components
 
 Template components in Acutis are analogous to "partials" or "includes" in other
 template languages. They are how we reuse common pieces of templates.
 
-We can also use external functions as templates to add custom runtime logic,
-which makes them analogous to "filters" or "shortcodes" in other languages.
-Functional template components can be written the language you use to run Acutis
-(i.e. OCaml or JavaScript) using the Acutis API.
+We can also call external functions as templates, which makes them analogous to
+"filters" or "shortcodes" in other languages. Functional template components can
+be written the language you use to run Acutis (i.e. OCaml or JavaScript) using
+the Acutis API.
 
 Components always begin with a capital letter. They accept XML-style props which
-are turned into bindings within the component. They also end with an XML-style
-`/` (backslash).
+are turned into bindings within the component. They end with an XML-style `/`
+(backslash).
 
 A couple of basic components:
 
@@ -793,23 +824,10 @@ File: `Articles.acutis`
 {% /map %}
 ```
 
-### Patterns in props
-
-Patterns can be used in props. They compile into the values they would match in
-pattern matching.
-
-```acutis
-{% Article
-   published=true
-   class="news"
-   authors=[author, editor]
-   / %}
-```
-
 ### Prop punning
 
-Props can be "punned." You can take code such as `{% DateTime date=date / %}`
-and abbreviate it to `{% DateTime date / %}`.
+Like record fields, props can be "punned." You can take code such as
+`{% DateTime date=date / %}` and abbreviate it to `{% DateTime date / %}`.
 
 ### Optional props
 
@@ -836,30 +854,6 @@ An explicit not-null prop:
 
 Notice how an explicitly not-null prop still requires the `!` before its value.
 
-### Template block props
-
-Props can be template "block" sections. These are denoted with hashes, beginning
-with `#%}` and ending with `{%#`.
-
-```acutis
-{% Layout
-   header=#%} <h1> {{ title }} </h1> {%#
-   sidebar=#%}
-    <h2> Menu </h2>
-    {% map menu with {title, slug} %}
-      <a href="{{ slug }}">{{ title }}</a>
-    {% /map %}
-   {%#
-   / %}
-```
-
-Inside the template, these blocks are just strings. In fact, you can combine
-them with other patterns too. For example, prefixing a block with a `!` will
-wrap it as a nullable, `optional=!#%}...{%#`.
-
-Since blocks are rendered as regular strings, echoing will still escape them
-unless you explicitly don't, e.g. `{{{ header }}}`.
-
 ### Default children prop
 
 A template section inside a component is automatically bound to a prop named
@@ -878,3 +872,5 @@ An explicit children prop:
 ```
 
 Both of those examples will render identically.
+
+[components]: #template-components

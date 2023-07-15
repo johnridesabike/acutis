@@ -91,4 +91,7 @@
   
   Appending to a list literal works:pass pass pass pass 
 
-
+  $ acutis dicts.acutis --data empty.json
+  success
+  success
+  

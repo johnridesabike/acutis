@@ -9,41 +9,32 @@
 (**************************************************************************)
 
 let parse ~fname lexbuf =
+  Lexing.set_filename lexbuf fname;
   let state = Lexer.make_state () in
-  lexbuf.Lexing.lex_curr_p <-
-    { lexbuf.Lexing.lex_curr_p with pos_fname = fname };
-  try Parser.acutis (Lexer.acutis state) lexbuf with
-  | Lexer.Error -> Error.lex_error lexbuf
-  | Parser.Error i -> Error.parse_error i lexbuf
+  try Parser.acutis (Lexer.acutis state) lexbuf
+  with Parser.Error i -> Error.parse_error i lexbuf
 
-module StringExtra = struct
-  (* The [ltrim] and [rtrim] functions are vendored from the Containers library.
-     https://github.com/c-cube/ocaml-containers/blob/70703b351235b563f060ef494461e678e896da49/src/core/CCString.ml
-  *)
-  module S = String
+let parse_interface ~fname lexbuf =
+  Lexing.set_filename lexbuf fname;
+  let state = Lexer.make_state_interface () in
+  try Parser.interface_standalone (Lexer.acutis state) lexbuf
+  with Parser.Error i -> Error.parse_error i lexbuf
 
-  let drop_while f s =
-    let i = ref 0 in
-    while !i < S.length s && f (S.unsafe_get s !i) do
-      incr i
-    done;
-    if !i > 0 then S.sub s !i (S.length s - !i) else s
+let is_space = function ' ' | '\012' | '\n' | '\r' | '\t' -> true | _ -> false
 
-  let rdrop_while f s =
-    let i = ref (S.length s - 1) in
-    while !i >= 0 && f (S.unsafe_get s !i) do
-      decr i
-    done;
-    if !i < S.length s - 1 then S.sub s 0 (!i + 1) else s
+let ltrim s =
+  let i = ref 0 in
+  while !i < String.length s && is_space (String.unsafe_get s !i) do
+    incr i
+  done;
+  if !i > 0 then String.sub s !i (String.length s - !i) else s
 
-  (* notion of whitespace for trim *)
-  let is_space = function
-    | ' ' | '\012' | '\n' | '\r' | '\t' -> true
-    | _ -> false
-
-  let ltrim s = drop_while is_space s
-  let rtrim s = rdrop_while is_space s
-end
+let rtrim s =
+  let i = ref (String.length s - 1) in
+  while !i >= 0 && is_space (String.unsafe_get s !i) do
+    decr i
+  done;
+  if !i < String.length s - 1 then String.sub s 0 (!i + 1) else s
 
 type escape = Ast.escape = No_escape | Escape
 
@@ -53,65 +44,79 @@ type echo_format = Ast.echo_format =
   | Fmt_float
   | Fmt_bool
 
-type echo = Typechecker.echo =
-  | Echo_var of string
-  | Echo_string of string
-  | Echo_field of echo * string
+type echo = [ `Var of string | `String of string | `Field of echo * string ]
+
+type data =
+  [ `Null
+  | `Int of int
+  | `Float of float
+  | `String of string
+  | `Array of data array
+  | `Assoc of data Map.String.t
+  | `Var of string
+  | `Field of data * string
+  | `Block of int ]
 
 type 'a node =
   | Text of string
   | Echo of (echo_format * echo) list * echo_format * echo * escape
-  | Match of 'a eval Data.t array * 'a nodes Matching.t
-  | Map_list of 'a eval Data.t * 'a nodes Matching.t
-  | Map_dict of 'a eval Data.t * 'a nodes Matching.t
-  | Component of string * 'a * 'a eval Data.t Map.String.t
+  | Match of 'a blocks * data array * 'a nodes Matching.t
+  | Map_list of 'a blocks * data * 'a nodes Matching.t
+  | Map_dict of 'a blocks * data * 'a nodes Matching.t
+  | Component of string * 'a * 'a nodes array * data Map.String.t
 
-and 'a eval =
-  | Var of string
-  | Block of 'a nodes
-  | Field of 'a eval Data.t * string
-
+and 'a blocks = 'a nodes array
 and 'a nodes = 'a node list
 
 let text = function "" -> None | s -> Some (Text s)
 
-let rec make_data = function
-  | Typechecker.TConst (x, _) -> Data.const x
-  | TVar x -> Data.other (Var x)
-  | TBlock x -> Data.other (Block (make_nodes x))
-  | TConstruct (_, Some x) -> make_data x
-  | TConstruct (_, None) -> Data.null
-  | TTuple l ->
-      let a = Array.of_list l |> Array.map make_data in
-      Data.tuple a
+let rec make_data block_queue = function
+  | Typechecker.TScalar (x, _) -> (x :> data)
+  | TVar x -> `Var x
+  | TBlock x ->
+      let i = Queue.length block_queue in
+      Queue.push (make_nodes x) block_queue;
+      `Block i
+  | TNil -> `Null
+  | TCons x -> make_data block_queue x
+  | TTuple l -> `Array (Array.of_list l |> Array.map (make_data block_queue))
   | TRecord (Some (k, v, _), x, _) ->
-      Map.String.map make_data x |> Map.String.add k (Data.const v) |> Data.dict
+      `Assoc
+        (Map.String.map (make_data block_queue) x
+        |> Map.String.add k (v :> data))
   | TRecord (None, x, _) | TDict (x, _) ->
-      Data.dict (Map.String.map make_data x)
-  | TField (node, field) -> Data.other (Field (make_data node, field))
-  | TAny ->
-      Error.internal __POS__
-        "TAny should not appear in data constructs. This means the typechecker \
-         failed."
+      `Assoc (Map.String.map (make_data block_queue) x)
+  | TField (node, field) -> `Field (make_data block_queue node, field)
 
 and make_nodes l =
   List.filter_map
     (function
       | Typechecker.TText (s, No_trim, No_trim) -> text s
-      | TText (s, Trim, No_trim) -> text (StringExtra.ltrim s)
-      | TText (s, No_trim, Trim) -> text (StringExtra.rtrim s)
+      | TText (s, Trim, No_trim) -> text (ltrim s)
+      | TText (s, No_trim, Trim) -> text (rtrim s)
       | TText (s, Trim, Trim) -> text (String.trim s)
       | TEcho (nullables, fmt, default, esc) ->
           Some (Echo (nullables, fmt, default, esc))
       | TMatch (loc, hd :: tl, tys, cases) ->
-          let pats = Array.of_list (hd :: tl) |> Array.map make_data in
-          Some (Match (pats, make_match loc tys cases))
+          let q = Queue.create () in
+          let pats = Array.of_list (hd :: tl) |> Array.map (make_data q) in
+          let blocks = Queue.to_seq q |> Array.of_seq in
+          Some (Match (blocks, pats, make_match loc tys cases))
       | TMap_list (loc, pat, tys, cases) ->
-          Some (Map_list (make_data pat, make_match loc tys cases))
+          let q = Queue.create () in
+          let pat = make_data q pat in
+          let blocks = Queue.to_seq q |> Array.of_seq in
+          Some (Map_list (blocks, pat, make_match loc tys cases))
       | TMap_dict (loc, pat, tys, cases) ->
-          Some (Map_dict (make_data pat, make_match loc tys cases))
+          let q = Queue.create () in
+          let pat = make_data q pat in
+          let blocks = Queue.to_seq q |> Array.of_seq in
+          Some (Map_dict (blocks, pat, make_match loc tys cases))
       | TComponent (name, props) ->
-          Some (Component (name, (), Map.String.map make_data props)))
+          let q = Queue.create () in
+          let props = Map.String.map (make_data q) props in
+          let blocks = Queue.to_seq q |> Array.of_seq in
+          Some (Component (name, (), blocks, props)))
     l
 
 and make_match loc tys cases =
@@ -121,16 +126,6 @@ and make_match loc tys cases =
   { tree; exits }
 
 let make_nodes Typechecker.{ nodes; _ } = make_nodes nodes
-
-type 'a template =
-  | Src of 'a template nodes
-  | Fun of Typescheme.t Map.String.t * 'a
-
-type 'a t = {
-  types : Typescheme.t Map.String.t;
-  nodes : 'a template nodes;
-  name : string;
-}
 
 module Components = struct
   module T = Typechecker
@@ -175,32 +170,38 @@ module Components = struct
     { typed; optimized }
 end
 
+type 'a template =
+  | Src of 'a template nodes
+  | Fun of Typescheme.t Map.String.t * 'a
+
+type 'a t = {
+  name : string;
+  types : Typescheme.t Map.String.t;
+  nodes : 'a template nodes;
+  components : 'a template Map.String.t;
+}
+
 let rec link_nodes graph nodes =
   List.map
     (function
       | (Text _ | Echo _) as x -> x
-      | Match (pats, t) ->
-          let pats = Array.map (Data.map (link_data graph)) pats in
+      | Match (blocks, pats, t) ->
+          let blocks = Array.map (link_nodes graph) blocks in
           let exits = Matching.Exit.map (link_nodes graph) t.exits in
-          Match (pats, { t with exits })
-      | Map_list (pats, t) ->
-          let pats = Data.map (link_data graph) pats in
+          Match (blocks, pats, { t with exits })
+      | Map_list (blocks, pats, t) ->
+          let blocks = Array.map (link_nodes graph) blocks in
           let exits = Matching.Exit.map (link_nodes graph) t.exits in
-          Map_list (pats, { t with exits })
-      | Map_dict (pats, t) ->
-          let pats = Data.map (link_data graph) pats in
+          Map_list (blocks, pats, { t with exits })
+      | Map_dict (blocks, pats, t) ->
+          let blocks = Array.map (link_nodes graph) blocks in
           let exits = Matching.Exit.map (link_nodes graph) t.exits in
-          Map_dict (pats, { t with exits })
-      | Component (name, (), pats) ->
-          let pats = Map.String.map (Data.map (link_data graph)) pats in
+          Map_dict (blocks, pats, { t with exits })
+      | Component (name, (), blocks, pats) ->
+          let blocks = Array.map (link_nodes graph) blocks in
           let data = Dagmap.get name graph in
-          Component (name, data, pats))
+          Component (name, data, blocks, pats))
     nodes
-
-and link_data graph = function
-  | Var _ as x -> x
-  | Block nodes -> Block (link_nodes graph nodes)
-  | Field (data, field) -> Field (Data.map (link_data graph) data, field)
 
 let link_src graph = function
   | Typechecker.Src (_, nodes) -> Src (link_nodes graph nodes)
@@ -208,10 +209,10 @@ let link_src graph = function
 
 let make ~fname components src =
   let nodes = parse ~fname src in
-  let ast = Typechecker.make ~root:fname components.Components.typed nodes in
+  let typed = Typechecker.make ~root:fname components.Components.typed nodes in
   let g = Dagmap.make ~f:link_src ~root:fname components.optimized in
-  let nodes = make_nodes ast |> link_nodes g in
-  { types = ast.types; nodes; name = fname }
+  let nodes = make_nodes typed |> link_nodes g in
+  { name = fname; types = typed.types; nodes; components = Dagmap.linked g }
 
 let from_string ~fname components src =
   make ~fname components (Lexing.from_string src)
@@ -219,10 +220,26 @@ let from_string ~fname components src =
 let from_channel ~fname components src =
   make ~fname components (Lexing.from_channel src)
 
-let rec echo_to_sexp = function
-  | Echo_var s -> Sexp.make "var" [ Sexp.string s ]
-  | Echo_string s -> Sexp.string s
-  | Echo_field (e, s) -> Sexp.make "field" [ echo_to_sexp e; Sexp.string s ]
+let interface_from_string ~fname src =
+  parse_interface ~fname (Lexing.from_string src)
+  |> Typechecker.make_interface_standalone
+
+let interface_from_channel ~fname src =
+  parse_interface ~fname (Lexing.from_channel src)
+  |> Typechecker.make_interface_standalone
+
+let rec data_to_sexp = function
+  | `Null -> Sexp.symbol "null"
+  | `Int i -> Sexp.int i
+  | `String s -> Sexp.string s
+  | `Float f -> Sexp.float f
+  | `Array a -> Sexp.make "array" [ Sexp.of_seq data_to_sexp (Array.to_seq a) ]
+  | `Assoc d -> Sexp.make "assoc" [ assoc_to_sexp d ]
+  | `Var s -> Sexp.make "var" [ Sexp.string s ]
+  | `Block n -> Sexp.make "block" [ Sexp.int n ]
+  | `Field (d, f) -> Sexp.make "field" [ data_to_sexp d; Sexp.string f ]
+
+and assoc_to_sexp d = Sexp.map_string data_to_sexp d
 
 let rec node_to_sexp = function
   | Text s -> Sexp.make "text" [ Sexp.string s ]
@@ -230,32 +247,39 @@ let rec node_to_sexp = function
       Sexp.make "echo"
         [
           Sexp.of_seq
-            (Sexp.pair Ast.echo_format_to_sexp echo_to_sexp)
+            (Sexp.pair Ast.echo_format_to_sexp data_to_sexp)
             (List.to_seq l);
           Ast.echo_format_to_sexp fmt;
-          echo_to_sexp ech;
+          data_to_sexp ech;
           Ast.escape_to_sexp esc;
         ]
-  | Match (a, matching) ->
+  | Match (blocks, data, matching) ->
       Sexp.make "match"
         [
-          Sexp.of_seq (Data.to_sexp eval_to_sexp) (Array.to_seq a);
+          Sexp.of_seq (Sexp.pair Sexp.int to_sexp) (Array.to_seqi blocks);
+          Sexp.of_seq data_to_sexp (Array.to_seq data);
           Matching.to_sexp to_sexp matching;
         ]
-  | Map_list (d, matching) ->
+  | Map_list (blocks, data, matching) ->
       Sexp.make "map_list"
-        [ Data.to_sexp eval_to_sexp d; Matching.to_sexp to_sexp matching ]
-  | Map_dict (d, matching) ->
+        [
+          Sexp.of_seq (Sexp.pair Sexp.int to_sexp) (Array.to_seqi blocks);
+          data_to_sexp data;
+          Matching.to_sexp to_sexp matching;
+        ]
+  | Map_dict (blocks, data, matching) ->
       Sexp.make "map_dict"
-        [ Data.to_sexp eval_to_sexp d; Matching.to_sexp to_sexp matching ]
-  | Component (name, _function, props) ->
+        [
+          Sexp.of_seq (Sexp.pair Sexp.int to_sexp) (Array.to_seqi blocks);
+          data_to_sexp data;
+          Matching.to_sexp to_sexp matching;
+        ]
+  | Component (name, _function, blocks, props) ->
       Sexp.make "component"
-        [ Sexp.string name; Data.dict_to_sexp eval_to_sexp props ]
-
-and eval_to_sexp = function
-  | Var s -> Sexp.make "var" [ Sexp.string s ]
-  | Block n -> Sexp.make "block" [ to_sexp n ]
-  | Field (d, f) ->
-      Sexp.make "field" [ Data.to_sexp eval_to_sexp d; Sexp.string f ]
+        [
+          Sexp.of_seq (Sexp.pair Sexp.int to_sexp) (Array.to_seqi blocks);
+          Sexp.string name;
+          assoc_to_sexp props;
+        ]
 
 and to_sexp l = Sexp.of_seq node_to_sexp (List.to_seq l)

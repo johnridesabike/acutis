@@ -20,14 +20,54 @@ module type MONAD = sig
 end
 
 module type DATA = sig
-  (** A module type that can decode and encode data with {!Data.t}. *)
+  (** Decode and encode input data. *)
+
+  module Linear : sig
+    (** A linear container such as a list or array. *)
+
+    type 'a t
+
+    val length : 'a t -> int
+    val fold_left : ('acc -> 'a -> 'acc) -> 'acc -> 'a t -> 'acc
+  end
+
+  module Assoc : sig
+    (** A key-value container such as an association list, a string map, etc. *)
+
+    type 'a t
+
+    val find_opt : string -> 'a t -> 'a option
+    val fold : (string -> 'a -> 'acc -> 'acc) -> 'a t -> 'acc -> 'acc
+  end
 
   type t
 
-  val decode :
-    name:string -> Typescheme.t Map.String.t -> t -> t Data.t Map.String.t
+  (** Decoding *)
 
-  val encode : Typescheme.t Map.String.t -> t Data.t Map.String.t -> t
+  val classify :
+    t ->
+    [ `Null
+    | `Bool of bool
+    | `Int of int
+    | `Float of float
+    | `String of string
+    | `Assoc of t Assoc.t
+    | `List of t Linear.t ]
+
+  (** Encoding *)
+
+  val null : t
+  val some : t -> t
+  val of_float : float -> t
+  val of_string : string -> t
+  val of_bool : bool -> t
+  val of_int : int -> t
+  val of_seq : t Seq.t -> t
+  val of_map : t Map.String.t -> t
+
+  (** Debugging *)
+
+  val pp : Format.formatter -> t -> unit
 end
 
 module type S = sig
@@ -36,7 +76,7 @@ module type S = sig
   type t
   type data
 
-  val make : (data -> t) Compile.t -> data -> t
+  val eval : (data -> t) Compile.t -> data -> t
   (** Apply data to a template and return the rendered output. *)
 end
 
@@ -44,3 +84,7 @@ end
     a given data input type. *)
 module Make (M : MONAD) (D : DATA) :
   S with type t = string M.t and type data = D.t
+
+(** A simpler version of {!Make} that only requires a data module and outputs
+    a string. *)
+module MakeString (D : DATA) : S with type t = string and type data = D.t

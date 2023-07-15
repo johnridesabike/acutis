@@ -11,7 +11,6 @@ const syntaxHighlight = require("@11ty/eleventy-plugin-syntaxhighlight");
 const markdownItAnchor = require("markdown-it-anchor");
 const markdownItToc = require("markdown-it-table-of-contents");
 const acutisEleventy = require("acutis-lang/eleventy");
-const acutisComponents = require("./_includes/eleventyComponents");
 const { pathPrefix } = require("./_data/site");
 
 function acutisSyntax(Prism) {
@@ -20,11 +19,6 @@ function acutisSyntax(Prism) {
 
   Prism.languages.acutis = {
     comment: /^{\*[\s\S]*?\*}$/,
-    tag: {
-      pattern: /(^{%\s*)([a-z_])([a-zA-Z0-9_]+)/,
-      lookbehind: true,
-      alias: "keyword",
-    },
     delimiter: {
       pattern: /^{[{%]|[}%]}$/,
       alias: "punctuation",
@@ -50,7 +44,7 @@ function acutisSyntax(Prism) {
     number: /(-|\+)?\s*[0-9]+(\.[0-9]+)?(e|E)?/,
     boolean: /\b(false|true|null)\b/,
     variable: /([a-z_])([a-zA-Z0-9_]+)?/,
-    punctuation: /[{}[\],.:/=(\)<>\|]/,
+    punctuation: /[{}[\],.:/=()<>|]/,
   };
 
   var pattern = /{{({?)[\s\S]*?(}?)}}|{%[\s\S]*?%}|{\*[\s\S]*?\*}/g;
@@ -71,7 +65,16 @@ module.exports = (eleventyConfig) => {
   eleventyConfig.addPlugin(syntaxHighlight, {
     init: ({ Prism }) => acutisSyntax(Prism),
   });
-  eleventyConfig.addPlugin(acutisEleventy, { components: acutisComponents });
+  // eleventyConfig.addPlugin(acutisEleventy, {
+  //   components: require("./_includes/eleventyComponents"),
+  // });
+  eleventyConfig.addPlugin(acutisEleventy.printJs, {
+    components: require("./_includes/eleventyComponents"),
+    componentsPath: "./_includes/eleventyComponents",
+  });
+  // We gitignore generated files, but we don't want 11ty to ignore them.
+  eleventyConfig.setUseGitIgnore(false);
+  eleventyConfig.ignores.add("node_modules");
   eleventyConfig.addPassthroughCopy("playground.js");
   eleventyConfig.addPassthroughCopy({
     [path.join(acutisDirPath, "_doc", "_html")]: "api",
@@ -97,5 +100,8 @@ module.exports = (eleventyConfig) => {
   return {
     markdownTemplateEngine: false,
     pathPrefix,
+    dir: {
+      layouts: "_layouts",
+    },
   };
 };

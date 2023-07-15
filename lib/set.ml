@@ -10,5 +10,6 @@
 
 (** Predefined set modules. *)
 
-module Int = Stdlib.Set.Make (Int)
-module String = Stdlib.Set.Make (String)
+module Make = Stdlib.Set.Make
+module Int = Make (Int)
+module String = Make (String)

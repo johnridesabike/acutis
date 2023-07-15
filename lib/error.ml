@@ -12,21 +12,30 @@ module F = Format
 
 exception Acutis_error of string
 
-let column pos = pos.Lexing.pos_cnum - pos.pos_bol + 1
-let print_pos ppf pos = F.fprintf ppf "%d:%d" pos.Lexing.pos_lnum (column pos)
+let pp ~kind loc mess =
+  F.asprintf "@[<v>File \"%s\", %a@;%s.@;%t@]" (Loc.fname loc) Loc.pp loc kind
+    mess
 
-let pp ~kind (start, pos) mess =
-  F.asprintf "@[<v>File \"%s\", %a-%a@;%s.@;%t@]" pos.Lexing.pos_fname print_pos
-    start print_pos pos kind mess
+let loc_of_lexbuf Lexing.{ lex_start_p; lex_curr_p; _ } =
+  (lex_start_p, lex_curr_p)
 
-let pp_lexbuf ~kind mess lexbuf =
-  let start = lexbuf.Lexing.lex_start_p in
-  let pos = lexbuf.lex_curr_p in
-  pp ~kind (start, pos) mess
+let pp_syntax = pp ~kind:"Syntax error"
 
-let lex_error =
-  let f = F.dprintf "%," in
-  fun lexbuf -> raise @@ Acutis_error (pp_lexbuf ~kind:"Syntax error" f lexbuf)
+let lex_unexpected lexbuf c =
+  let f = F.dprintf "Unexpected character: %C" c in
+  raise @@ Acutis_error (pp_syntax (loc_of_lexbuf lexbuf) f)
+
+let lex_bad_int lexbuf s =
+  let f = F.dprintf "Invalid integer: %s" s in
+  raise @@ Acutis_error (pp_syntax (loc_of_lexbuf lexbuf) f)
+
+let lex_unterminated_comment lexbuf =
+  let f = F.dprintf "@[%a@]" F.pp_print_text "Unterminated comment." in
+  raise @@ Acutis_error (pp_syntax (loc_of_lexbuf lexbuf) f)
+
+let lex_unterminated_string lexbuf =
+  let f = F.dprintf "@[%a@]" F.pp_print_text "Unterminated string." in
+  raise @@ Acutis_error (pp_syntax (loc_of_lexbuf lexbuf) f)
 
 let parse_error i lexbuf =
   let f =
@@ -35,17 +44,17 @@ let parse_error i lexbuf =
       F.dprintf "@[%a@]" F.pp_print_text mess
     with Not_found -> F.dprintf "Unexpected token."
   in
-  raise @@ Acutis_error (pp_lexbuf ~kind:"Parse error" f lexbuf)
+  raise @@ Acutis_error (pp ~kind:"Parse error" (loc_of_lexbuf lexbuf) f)
+
+let pp_ty = pp ~kind:"Type error"
 
 let dup_record_key loc key =
   let f = F.dprintf "Duplicate field '%a'." Pp.field key in
-  raise @@ Acutis_error (pp ~kind:"Parse error" loc f)
+  raise @@ Acutis_error (pp_ty loc f)
 
 let extra_record_tag =
   let f = F.dprintf "This tagged record has multiple tags." in
-  fun loc -> raise @@ Acutis_error (pp ~kind:"Parse error" loc f)
-
-let pp_ty = pp ~kind:"Type error"
+  fun loc -> raise @@ Acutis_error (pp_ty loc f)
 
 let mismatch a b t =
   F.dprintf "Type mismatch.@;Expected:@;<1 2>%a@;Received:@;<1 2>%a"
@@ -137,6 +146,10 @@ let interface_duplicate_tag loc pp tag =
   let f = F.dprintf "Tag value '%a' is already used in this union." pp tag in
   raise @@ Acutis_error (pp_ty loc f)
 
+let interface_open_bool_union loc =
+  let f = F.dprintf "Unions with boolean tags cannot be opened with '...'." in
+  raise @@ Acutis_error (pp_ty loc f)
+
 let interface_type_mismatch loc k a b =
   let f =
     F.dprintf
@@ -184,7 +197,7 @@ let duplicate_name s =
   in
   raise @@ Acutis_error s
 
-let pp_sep ppf () = F.fprintf ppf " ->@ "
+let pp_sep ppf () = F.fprintf ppf "@ -> "
 
 let cycle stack =
   let s =
@@ -210,7 +223,6 @@ module DecodePath = struct
   let nullable { name; path } = { name; path = Nullable :: path }
   let index i { name; path } = { name; path = Index i :: path }
   let key k { name; path } = { name; path = Key k :: path }
-  let pp_sep ppf () = F.fprintf ppf "@ -> "
 
   let pp_path ppf = function
     | Nullable -> F.pp_print_string ppf "nullable"

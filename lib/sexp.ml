@@ -25,11 +25,18 @@ let int i = Int i
 let bool = function 0 -> Symbol "false" | _ -> Symbol "true"
 let float f = Float f
 let of_seq f l = List (Seq.map f l)
-let empty = List Seq.empty
 let noop = Noop
+let option f = function None -> Symbol "none" | Some x -> f x
 
 let pair f g (a, b) =
-  List (fun () -> Cons (f a, fun () -> Cons (g b, fun () -> Nil)))
+  match (f a, g b) with
+  | Noop, x | x, Noop -> x
+  | a, b -> List (fun () -> Cons (a, fun () -> Cons (b, Seq.empty)))
+
+let triple f g h (a, b, c) =
+  List
+    (fun () ->
+      Cons (f a, fun () -> Cons (g b, fun () -> Cons (h c, Seq.empty))))
 
 let map_string f m = of_seq (pair string f) (Map.String.to_seq m)
 

@@ -19,7 +19,7 @@
     }
   title = string
   children = string
-/ ~%}
+~%}
 <!DOCTYPE html>
 <html lang="en-US">
   <head>

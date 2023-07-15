@@ -43,24 +43,41 @@ Both the JavaScript and native runtimes should decode data identically.
   Union:
   pass
 
-If a function component takes an 'unknown' prop, then the value given keeps its
-internal representation intact.
-  $ node run.js unknowns.acutis
+Encoding data should work. If a function component takes an 'unknown' prop, then
+the value given keeps its internal representation intact.
+  $ node run.js encode.acutis
+  Encoding:
+  {
+    "arr": [
+      "x",
+      "y"
+    ],
+    "arrEmpty": [],
+    "dict": {
+      "a": 0,
+      "b": "b"
+    },
+    "f": false,
+    "none": null,
+    "some": "some",
+    "t": true
+  }
+  Encoding unknowns:
   {
     "arr": [
       "x",
       [
         "y",
-        null
+        0
       ]
     ],
-    "arrEmpty": null,
+    "arrEmpty": 0,
     "dict": {
       "a": 0,
       "b": "b"
     },
     "f": 0,
-    "none": null,
+    "none": 0,
     "some": [
       "some"
     ],

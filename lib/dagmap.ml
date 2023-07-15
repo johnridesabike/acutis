@@ -17,7 +17,7 @@ type ('a, 'b) t =
       stack : string list;
       f : ('a, 'b) t -> 'a -> 'b;
     }
-  | Linked of string * 'b Map.String.t
+  | Linked of string * 'b M.t
 
 let make ~f ?root not_linked =
   Not_linked
@@ -66,3 +66,5 @@ let link_all = function
               linked := M.add k x !linked)
         !not_linked;
       !linked
+
+let linked = function Linked (_, m) -> m | Not_linked { linked; _ } -> !linked

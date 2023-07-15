@@ -1,5 +1,5 @@
 {% interface
-  unknowns =
+  encode =
     {
       dict: {a: int, b: string},
       arr: [string],
@@ -9,7 +9,10 @@
       t: false | true,
       f: false | true
     }
-/ ~%}
-{% match unknowns with {dict, arr, arrEmpty, some, none, t, f} ~%}
-  {% UnknownComp dict arr arrEmpty some none t f / %}
+~%}
+{% match encode with {dict, arr, arrEmpty, some, none, t, f} ~%}
+Encoding:
+{% Comp dict arr arrEmpty some none t f / %}
+Encoding unknowns:
+{% UnknownComp dict arr arrEmpty some none t f / %}
 {%~ /match ~%}

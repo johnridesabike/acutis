@@ -15,13 +15,16 @@ exception Acutis_error of string
 
 (** {1 Lexing and Parsing errors.} *)
 
-val lex_error : Lexing.lexbuf -> _
+val lex_unexpected : Lexing.lexbuf -> char -> _
+val lex_bad_int : Lexing.lexbuf -> string -> _
+val lex_unterminated_comment : Lexing.lexbuf -> _
+val lex_unterminated_string : Lexing.lexbuf -> _
 val parse_error : int -> Lexing.lexbuf -> _
-val dup_record_key : Loc.t -> string -> _
-val extra_record_tag : Loc.t -> _
 
 (** {1 Type errors.} *)
 
+val dup_record_key : Loc.t -> string -> _
+val extra_record_tag : Loc.t -> _
 val bad_block : Loc.t -> _
 val bad_field : Loc.t -> _
 val type_mismatch : Loc.t -> Typescheme.t -> Typescheme.t -> _
@@ -44,6 +47,8 @@ val interface_unmatched_tags : Loc.t -> string -> string -> _
 
 val interface_duplicate_tag :
   Loc.t -> (Format.formatter -> 'a -> unit) -> 'a -> _
+
+val interface_open_bool_union : Loc.t -> _
 
 val interface_type_mismatch :
   Loc.t -> string -> Typescheme.t -> Typescheme.t -> _

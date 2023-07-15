@@ -7,6 +7,25 @@ const Ty = Typescheme;
 
 const components = Compile.components([
   Component.funSync(
+    "Comp",
+    Ty.make([
+      [
+        "dict",
+        Ty.record([
+          ["a", Ty.int()],
+          ["b", Ty.string()],
+        ]),
+      ],
+      ["arr", Ty.list(Ty.string())],
+      ["arrEmpty", Ty.list(Ty.string())],
+      ["some", Ty.nullable(Ty.string())],
+      ["none", Ty.nullable(Ty.string())],
+      ["t", Ty.boolean()],
+      ["f", Ty.boolean()],
+    ]),
+    (props) => JSON.stringify(props, null, 2)
+  ),
+  Component.funSync(
     "UnknownComp",
     Ty.make([
       ["dict", Ty.unknown()],

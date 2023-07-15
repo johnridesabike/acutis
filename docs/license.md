@@ -3,7 +3,7 @@ title: Acutis licenses
 description: |
   The copyright licenses for using and distributing the Acutis software.
 showTitle: true
-layout: main.acutis
+layout: main.acutis.js
 next: null
 ---
 

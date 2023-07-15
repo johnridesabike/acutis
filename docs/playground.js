@@ -6,82 +6,141 @@
   file, You can obtain one at http://mozilla.org/MPL/2.0/.
 */
 
+var defaultSource =
+  'Hello {{ name ? "dear user" }},\n\
+\n\
+{% map objects with {name, color: !color} ~%}\n\
+  Have you noticed the {{ name }} is {{ color }} today?\n\
+{% match name, color\n\
+   with "sky", "blue"\n\
+   with "grass", "green" ~%}\n\
+  That\'s an ordinary color for it.\n\
+{% with _, _ ~%}\n\
+  That seems odd.\n\
+{% /match %}\n\
+{% with {name} ~%}\n\
+  The {{ name }}, I suppose, has no color.\n\
+{%~ /map %}\n\
+';
+
+var defaultProps = {
+  name: null,
+  objects: [
+    { name: "sky", color: "blue" },
+    { name: "grass", color: "purple" },
+    { name: "air" },
+  ],
+};
+
+function setDirty(elt) {
+  elt.textContent = "*";
+}
+
+function setClean(elt) {
+  elt.textContent = "";
+}
+
 window.onload = function playground(_event) {
-  var propsText = document.getElementById("props");
-  var sourceText = document.getElementById("source");
-  var sourceIsDirty = document.getElementById("source-is-dirty");
-  var propsIsDirty = document.getElementById("props-is-dirty");
+  var sourceTextElt = document.getElementById("source");
+  var sourceResultElt = document.getElementById("jsresult");
+  var sourceDirtyElt = document.getElementById("source-is-dirty");
+  var propsTextElt = document.getElementById("props");
+  var renderResultElt = document.getElementById("result");
+  var propsDirtyElt = document.getElementById("props-is-dirty");
+  var renderButtonElt = document.getElementById("render");
+  var urlParams = new URLSearchParams(window.location.search);
 
-  function setDirty(el) {
-    el.textContent = "*";
-  }
-
-  function setClean(el) {
-    el.textContent = "";
-  }
-
-  propsText.oninput = function (_event) {
-    setDirty(propsIsDirty);
+  propsTextElt.oninput = function (_event) {
+    setDirty(propsDirtyElt);
   };
 
-  sourceText.oninput = function (_event) {
-    setDirty(sourceIsDirty);
+  sourceTextElt.oninput = function (_event) {
+    setDirty(sourceDirtyElt);
   };
 
-  propsText.value = JSON.stringify(
-    {
-      name: null,
-      objects: [
-        { name: "sky", color: "blue" },
-        { name: "grass", color: "purple" },
-        { name: "air" },
-      ],
-    },
-    null,
-    2
-  );
-  sourceText.value = `Hello {{ name ? "dear user" }},
+  var urlSourceParam = urlParams.get("source");
+  var urlSourceParamDecoded = null;
+  if (urlSourceParam) {
+    try {
+      urlSourceParamDecoded = atob(urlSourceParam);
+    } catch (e) {
+      console.error(e);
+    }
+  }
+  sourceTextElt.value = urlSourceParamDecoded
+    ? urlSourceParamDecoded
+    : defaultSource;
 
-{% map objects with {name, color: !color} ~%}
-  Have you noticed the {{ name }} is {{ color }} today?
-{% match name, color
-   with "sky", "blue"
-   with "grass", "green" ~%}
-  That's an ordinary color for it.
-{% with _, _ ~%}
-  That seems odd.
-{% /match %}
-{% with {name} ~%}
-  The {{ name }}, I suppose, has no color.
-{%~ /map %}
-`;
+  var urlPropsParam = urlParams.get("props");
+  var urlPropsParamDecoded = null;
+  if (urlPropsParam) {
+    try {
+      urlPropsParamDecoded = atob(urlPropsParam);
+    } catch (e) {
+      console.error(e);
+    }
+  }
+  propsTextElt.value = urlPropsParamDecoded
+    ? urlPropsParamDecoded
+    : JSON.stringify(defaultProps, null, 2);
 
-  var resultText = document.getElementById("result");
-  var components = globalThis.Compile.components([]);
+  var getLinkElt = document.getElementById("getlink");
+  getLinkElt.onclick = function getLink(_event) {
+    var url = new URL(window.location);
+    url.searchParams.set("props", btoa(propsTextElt.value));
+    url.searchParams.set("source", btoa(sourceTextElt.value));
+    if ("clipboard" in navigator) {
+      navigator.clipboard.writeText(url.toString()).then(function () {
+        var original = getLinkElt.textContent;
+        getLinkElt.textContent = "Copied!";
+        setTimeout(function () {
+          getLinkElt.textContent = original;
+        }, 2000);
+      });
+    }
+    history
+      ? history.pushState({}, "", url)
+      : (window.location.search = url.searchParams.toString());
+  };
+
+  var componentsEmpty = Compile.components([]);
 
   function render(_event) {
-    let result;
+    var compiled = null;
+    var compileJSResult = "";
+    var renderResult = "";
     try {
-      var props = JSON.parse(propsText.value);
-      var template = globalThis.Compile.string(
+      compiled = Compile.string(
         "<playground>",
-        components,
-        sourceText.value
+        componentsEmpty,
+        sourceTextElt.value
       );
-      result = globalThis.Render.sync(template, props);
+      compileJSResult = Compile.toJSString(compiled);
     } catch (e) {
-      if (globalThis.Utils.isError(e)) {
-        result = globalThis.Utils.getError(e);
+      if (Utils.isError(e)) {
+        compileJSResult = Utils.getError(e);
       } else {
-        result = e.message;
+        compileJSResult = e.message;
       }
     }
-    resultText.value = result;
-    setClean(propsIsDirty);
-    setClean(sourceIsDirty);
+    if (compiled) {
+      try {
+        var json = JSON.parse(propsTextElt.value);
+        renderResult = Render.sync(compiled, json);
+      } catch (e) {
+        if (Utils.isError(e)) {
+          renderResult = Utils.getError(e);
+        } else {
+          renderResult = e.message;
+        }
+      }
+    }
+    sourceResultElt.value = compileJSResult;
+    renderResultElt.value = renderResult;
+    setClean(sourceDirtyElt);
+    setClean(propsDirtyElt);
   }
-
-  document.getElementById("render").onclick = render;
+  renderButtonElt.onclick = render;
 
   render();
 };

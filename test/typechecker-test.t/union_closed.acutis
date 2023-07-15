@@ -11,7 +11,6 @@
 /match %}
 {% match b with {@tag: "a", b: 2} %} {% with _ %} {% /match %}
 
-
 Mixing open and closed unions works correctly
 {% match c
   with {@tag: "a", b: 1} %} {%
@@ -27,3 +26,11 @@ Mixing open and closed unions works correctly
   with {@tag: 1} %} {%
 /match %}
 {% map [{@tag: 2, b: 1.5}, {@tag: 3, b: [1]}, e, f] with _ %} {% /map %}
+
+Destructuring the same union variant multiple times with different fields works
+{% match g
+  with {@tag: 0, w: 1} %} {%
+  with {@tag: 1, x: 1} %} {%
+  with {@tag: 0, y} %} {{ y }} {%
+  with {@tag: 1, z} %} {{ z }} {%
+/match %}

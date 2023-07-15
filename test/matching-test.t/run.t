@@ -1,10 +1,11 @@
 Basic tree
   $ acutis basic.acutis --printopt
   ((match
+    ()
     ((var "a"))
     (matching
      (tree
-      (construct
+      (nil_or_cons
        (key 0)
        (ids ())
        (nil (end (leaf (names ()) (exit 1))))
@@ -18,14 +19,14 @@ Basic tree
             (key 0)
             (ids (0))
             (child (end (end (leaf (names (("_a" 0))) (exit 0))))))))
-         (wildcard ())
-         (debug not_dict)))))
+         (wildcard none)))))
      (exits ((0 ((text " "))) (1 ((text " ")))))))
    (text "\n"))
 
 Cases are sorted correctly
   $ acutis sorting.acutis --printopt
   ((match
+    ()
     ((var "a"))
     (matching
      (tree
@@ -52,15 +53,16 @@ Cases are sorted correctly
                 (case
                  (data 30)
                  (if_match (end (leaf (names ()) (exit 0))))
-                 (next ())))))))))))
+                 (next none)))))))))))
        (wildcard (end (leaf (names ()) (exit 2))))
-       (debug_row open)))
+       (check_cases none)))
      (exits ((0 ((text " "))) (1 ((text " "))) (2 ((text "\n")))))))
    (text "\n"))
 
 A basic decision tree works
   $ acutis basic_decision_tree.acutis --printopt
   ((match
+    ()
     ((var "a") (var "b") (var "c"))
     (matching
      (tree
@@ -85,10 +87,10 @@ A basic decision tree works
                 (case
                  (data 12)
                  (if_match (end (leaf (names ()) (exit 0))))
-                 (next ())))
+                 (next none)))
                (wildcard
                 (end (leaf (names (("_a" 2) ("_b" 3) ("_c" 4))) (exit 4))))
-               (debug_row open)))
+               (check_cases none)))
              (next
               (case
                (data 21)
@@ -100,17 +102,17 @@ A basic decision tree works
                   (case
                    (data 22)
                    (if_match (end (leaf (names (("_x" 0))) (exit 1))))
-                   (next ())))
+                   (next none)))
                  (wildcard
                   (end (leaf (names (("_a" 2) ("_b" 3) ("_c" 4))) (exit 4))))
-                 (debug_row open)))
-               (next ())))))
+                 (check_cases none)))
+               (next none)))))
            (wildcard
             (wildcard
              (key 2)
              (ids (4))
              (child (end (leaf (names (("_a" 2) ("_b" 3) ("_c" 4))) (exit 4))))))
-           (debug_row open)))
+           (check_cases none)))
          (next
           (case
            (data 30)
@@ -133,10 +135,10 @@ A basic decision tree works
                     (case
                      (data 42)
                      (if_match (end (leaf (names (("_y" 1))) (exit 3))))
-                     (next ())))))
+                     (next none)))))
                  (wildcard
                   (end (leaf (names (("_a" 2) ("_b" 3) ("_c" 4))) (exit 4))))
-                 (debug_row open)))
+                 (check_cases none)))
                (next
                 (case
                  (data 31)
@@ -152,11 +154,11 @@ A basic decision tree works
                       (case
                        (data 42)
                        (if_match (end (leaf (names (("_y" 1))) (exit 3))))
-                       (next ())))))
+                       (next none)))))
                    (wildcard
                     (end (leaf (names (("_a" 2) ("_b" 3) ("_c" 4))) (exit 4))))
-                   (debug_row open)))
-                 (next ())))))
+                   (check_cases none)))
+                 (next none)))))
              (wildcard
               (switch
                (key 2)
@@ -165,12 +167,12 @@ A basic decision tree works
                 (case
                  (data 42)
                  (if_match (end (leaf (names (("_y" 1))) (exit 3))))
-                 (next ())))
+                 (next none)))
                (wildcard
                 (end (leaf (names (("_a" 2) ("_b" 3) ("_c" 4))) (exit 4))))
-               (debug_row open)))
-             (debug_row open)))
-           (next ())))))
+               (check_cases none)))
+             (check_cases none)))
+           (next none)))))
        (wildcard
         (switch
          (key 1)
@@ -186,18 +188,18 @@ A basic decision tree works
               (case
                (data 22)
                (if_match (end (leaf (names (("_x" 0))) (exit 1))))
-               (next ())))
+               (next none)))
              (wildcard
               (end (leaf (names (("_a" 2) ("_b" 3) ("_c" 4))) (exit 4))))
-             (debug_row open)))
-           (next ())))
+             (check_cases none)))
+           (next none)))
          (wildcard
           (wildcard
            (key 2)
            (ids (4))
            (child (end (leaf (names (("_a" 2) ("_b" 3) ("_c" 4))) (exit 4))))))
-         (debug_row open)))
-       (debug_row open)))
+         (check_cases none)))
+       (check_cases none)))
      (exits
       ((0 ((text "\n")))
        (1 ((text "\n")))
@@ -209,6 +211,7 @@ A basic decision tree works
 Nests merge correctly
   $ acutis merge_nests.acutis --printopt
   ((match
+    ()
     ((var "a") (var "b") (var "c"))
     (matching
      (tree
@@ -251,10 +254,10 @@ Nests merge correctly
                           (case
                            (data 32)
                            (if_match (end (leaf (names ()) (exit 2))))
-                           (next ())))))))
+                           (next none)))))))
                      (wildcard (end (leaf (names ()) (exit 3))))
-                     (debug_row open))))
-                  (next ())))
+                     (check_cases none))))
+                  (next none)))
                 (wildcard
                  (end
                   (switch
@@ -264,11 +267,11 @@ Nests merge correctly
                     (case
                      (data 12)
                      (if_match (end (leaf (names ()) (exit 0))))
-                     (next ())))
+                     (next none)))
                    (wildcard (end (leaf (names ()) (exit 3))))
-                   (debug_row open))))
-                (debug_row open)))
-              (next ())))
+                   (check_cases none))))
+                (check_cases none)))
+              (next none)))
             (wildcard
              (wildcard
               (key 1)
@@ -282,10 +285,10 @@ Nests merge correctly
                   (case
                    (data 12)
                    (if_match (end (leaf (names ()) (exit 0))))
-                   (next ())))
+                   (next none)))
                  (wildcard (end (leaf (names ()) (exit 3))))
-                 (debug_row open))))))
-            (debug_row open))))
+                 (check_cases none))))))
+            (check_cases none))))
          (wildcard
           (switch
            (key 2)
@@ -294,10 +297,9 @@ Nests merge correctly
             (case
              (data 12)
              (if_match (end (leaf (names ()) (exit 0))))
-             (next ())))
-           (wildcard ())
-           (debug_row open)))
-         (debug not_dict)))))
+             (next none)))
+           (wildcard none)
+           (check_cases none)))))))
      (exits
       ((0 ((text "\n"))) (1 ((text "\n"))) (2 ((text "\n"))) (3 ((text "\n")))))))
    (text "\n"))
@@ -305,6 +307,7 @@ Nests merge correctly
 Wildcards merge after nests correctly
   $ acutis wildcard_merge_after_nest.acutis --printopt
   ((match
+    ()
     ((var "a") (var "b"))
     (matching
      (tree
@@ -353,21 +356,20 @@ Wildcards merge after nests correctly
                                (data 41)
                                (if_match
                                 (end (leaf (names (("_x" 0))) (exit 0))))
-                               (next ())))))
+                               (next none)))))
                            (wildcard
                             (end (leaf (names (("_y" 1) ("_z" 2))) (exit 2))))
-                           (debug_row open))))
-                        (next ())))
-                      (wildcard ())
-                      (debug_row open))))
-                   (next ())))
-                 (wildcard ())
-                 (debug_row open)))
-               (next ())))
-             (wildcard ())
-             (debug_row open))))
-          (wildcard ())
-          (debug not_dict))))
+                           (check_cases none))))
+                        (next none)))
+                      (wildcard none)
+                      (check_cases none))))
+                   (next none)))
+                 (wildcard none)
+                 (check_cases none)))
+               (next none)))
+             (wildcard none)
+             (check_cases none))))
+          (wildcard none))))
        (wildcard
         (switch
          (key 1)
@@ -376,20 +378,20 @@ Wildcards merge after nests correctly
           (case
            (data 41)
            (if_match (end (leaf (names (("_x" 0))) (exit 0))))
-           (next ())))
+           (next none)))
          (wildcard (end (leaf (names (("_y" 1) ("_z" 2))) (exit 2))))
-         (debug_row open)))
-       (debug not_dict)))
+         (check_cases none)))))
      (exits ((0 ((text "\n"))) (1 ((text "\n"))) (2 ((text "\n")))))))
    (text "\n"))
 
 Different-sized lists merge correctly
   $ acutis diff_size_lists.acutis --printopt
   ((match
+    ()
     ((var "a"))
     (matching
      (tree
-      (construct
+      (nil_or_cons
        (key 0)
        (ids ())
        (nil (end (leaf (names ()) (exit 0))))
@@ -403,7 +405,7 @@ Different-sized lists merge correctly
             (key 0)
             (ids (0 1))
             (child
-             (construct
+             (nil_or_cons
               (key 1)
               (ids (2))
               (nil (end (end (leaf (names (("_x" 0))) (exit 1)))))
@@ -412,18 +414,18 @@ Different-sized lists merge correctly
                 (key 1)
                 (ids (2))
                 (child (end (end (leaf (names (("_x" 1) ("_y" 2))) (exit 2))))))))))))
-         (wildcard ())
-         (debug not_dict)))))
+         (wildcard none)))))
      (exits ((0 ((text "\n"))) (1 ((text "\n"))) (2 ((text "\n")))))))
    (text "\n"))
 
 A big list pattern works
   $ acutis big_list.acutis --printopt
   ((match
+    ()
     ((var "a") (var "b"))
     (matching
      (tree
-      (construct
+      (nil_or_cons
        (key 0)
        (ids (1))
        (nil
@@ -434,9 +436,9 @@ A big list pattern works
           (case
            (data 42)
            (if_match (end (leaf (names (("_y" 1))) (exit 3))))
-           (next ())))
+           (next none)))
          (wildcard (end (leaf (names ()) (exit 4))))
-         (debug_row open)))
+         (check_cases none)))
        (cons
         (nest
          (key 0)
@@ -450,11 +452,10 @@ A big list pattern works
              (case
               (data 10)
               (if_match
-               (construct
+               (cons
                 (key 1)
                 (ids ())
-                (nil ())
-                (cons
+                (child
                  (nest
                   (key 1)
                   (ids ())
@@ -467,7 +468,7 @@ A big list pattern works
                       (case
                        (data 11)
                        (if_match
-                        (construct
+                        (nil_or_cons
                          (key 1)
                          (ids (0))
                          (nil
@@ -490,9 +491,9 @@ A big list pattern works
                                    (data 42)
                                    (if_match
                                     (end (leaf (names (("_y" 1))) (exit 3))))
-                                   (next ())))))))
+                                   (next none)))))))
                              (wildcard (end (leaf (names ()) (exit 4))))
-                             (debug_row open)))))
+                             (check_cases none)))))
                          (cons
                           (wildcard
                            (key 1)
@@ -513,22 +514,21 @@ A big list pattern works
                                    (data 42)
                                    (if_match
                                     (end (leaf (names (("_y" 1))) (exit 3))))
-                                   (next ())))))
+                                   (next none)))))
                                (wildcard (end (leaf (names ()) (exit 4))))
-                               (debug_row open)))))))))
-                       (next ())))
-                     (wildcard ())
-                     (debug_row open))))
-                  (wildcard ())
-                  (debug not_dict)))))
+                               (check_cases none)))))))))
+                       (next none)))
+                     (wildcard none)
+                     (check_cases none))))
+                  (wildcard none)))))
               (next
                (case
                 (data 30)
                 (if_match
-                 (construct
+                 (nil
                   (key 1)
                   (ids ())
-                  (nil
+                  (child
                    (end
                     (switch
                      (key 1)
@@ -541,13 +541,12 @@ A big list pattern works
                         (case
                          (data 42)
                          (if_match (end (leaf (names (("_y" 1))) (exit 3))))
-                         (next ())))))
+                         (next none)))))
                      (wildcard (end (leaf (names ()) (exit 4))))
-                     (debug_row open))))
-                  (cons ())))
-                (next ())))))
-            (wildcard ())
-            (debug_row open))))
+                     (check_cases none))))))
+                (next none)))))
+            (wildcard none)
+            (check_cases none))))
          (wildcard
           (switch
            (key 1)
@@ -556,10 +555,9 @@ A big list pattern works
             (case
              (data 42)
              (if_match (end (leaf (names (("_y" 1))) (exit 3))))
-             (next ())))
+             (next none)))
            (wildcard (end (leaf (names ()) (exit 4))))
-           (debug_row open)))
-         (debug not_dict)))))
+           (check_cases none)))))))
      (exits
       ((0 ((text "\n")))
        (1 ((text "\n")))
@@ -571,6 +569,7 @@ A big list pattern works
 Record fields sort correctly
   $ acutis record_field_sort.acutis --printopt
   ((match
+    ()
     ((var "a") (var "b"))
     (matching
      (tree
@@ -601,12 +600,12 @@ Record fields sort correctly
                     (case
                      (data 12)
                      (if_match (end (leaf (names ()) (exit 0))))
-                     (next ())))
+                     (next none)))
                    (wildcard (end (leaf (names ()) (exit 2))))
-                   (debug_row open))))
-                (next ())))
-              (wildcard ())
-              (debug_row open)))
+                   (check_cases none))))
+                (next none)))
+              (wildcard none)
+              (check_cases none)))
             (next
              (case
               (data 20)
@@ -626,24 +625,24 @@ Record fields sort correctly
                       (case
                        (data 22)
                        (if_match (end (leaf (names ()) (exit 1))))
-                       (next ())))
+                       (next none)))
                      (wildcard (end (leaf (names ()) (exit 2))))
-                     (debug_row open))))
-                  (next ())))
-                (wildcard ())
-                (debug_row open)))
-              (next ())))))
-          (wildcard ())
-          (debug_row open))))
+                     (check_cases none))))
+                  (next none)))
+                (wildcard none)
+                (check_cases none)))
+              (next none)))))
+          (wildcard none)
+          (check_cases none))))
        (wildcard
-        (wildcard (key 1) (ids ()) (child (end (leaf (names ()) (exit 2))))))
-       (debug not_dict)))
+        (wildcard (key 1) (ids ()) (child (end (leaf (names ()) (exit 2))))))))
      (exits ((0 ((text "\n"))) (1 ((text "\n"))) (2 ((text "\n")))))))
    (text "\n"))
 
 New fields expand existing rows
   $ acutis record_fields_expand.acutis --printopt
   ((match
+    ()
     ((var "a"))
     (matching
      (tree
@@ -670,14 +669,14 @@ New fields expand existing rows
                   (key "c")
                   (ids ())
                   (child (end (end (leaf (names ()) (exit 0)))))))
-                (next ())))
+                (next none)))
               (wildcard
                (wildcard
                 (key "c")
                 (ids ())
                 (child (end (end (leaf (names ()) (exit 1)))))))
-              (debug_row open)))
-            (next ())))
+              (check_cases none)))
+            (next none)))
           (wildcard
            (switch
             (key "b")
@@ -690,7 +689,7 @@ New fields expand existing rows
                 (key "c")
                 (ids ())
                 (child (end (end (leaf (names ()) (exit 0)))))))
-              (next ())))
+              (next none)))
             (wildcard
              (switch
               (key "c")
@@ -699,13 +698,145 @@ New fields expand existing rows
                (case
                 (data 30)
                 (if_match (end (end (leaf (names ()) (exit 2)))))
-                (next ())))
-              (wildcard ())
-              (debug_row open)))
-            (debug_row open)))
-          (debug_row open))))
-       (wildcard (end (leaf (names (("_x" 0))) (exit 3))))
-       (debug not_dict)))
+                (next none)))
+              (wildcard none)
+              (check_cases none)))
+            (check_cases none)))
+          (check_cases none))))
+       (wildcard (end (leaf (names (("_x" 0))) (exit 3))))))
      (exits
       ((0 ((text "\n"))) (1 ((text "\n"))) (2 ((text "\n"))) (3 ((text "\n")))))))
+   (text "\n"))
+
+Dictionaries merge correctly
+  $ acutis dicts.acutis --printopt
+  ((match
+    ()
+    ((var "a"))
+    (matching
+     (tree
+      (nest
+       (key 0)
+       (ids ())
+       (child
+        (string_keys
+         (optional
+          (child
+           (switch
+            (key "a")
+            (ids ())
+            (cases
+             (case
+              (data 1)
+              (if_match
+               (optional
+                (child
+                 (wildcard
+                  (key "b")
+                  (ids (0))
+                  (child
+                   (optional
+                    (child
+                     (wildcard
+                      (key "c")
+                      (ids ())
+                      (child (end (end (leaf (names (("b" 0))) (exit 0)))))))
+                    (next (end (end (leaf (names (("b" 0))) (exit 0)))))))))
+                (next none)))
+              (next none)))
+            (wildcard
+             (optional
+              (child
+               (switch
+                (key "b")
+                (ids ())
+                (cases
+                 (case
+                  (data 2)
+                  (if_match
+                   (optional
+                    (child
+                     (switch
+                      (key "c")
+                      (ids ())
+                      (cases
+                       (case
+                        (data 3)
+                        (if_match (end (end (leaf (names ()) (exit 1)))))
+                        (next none)))
+                      (wildcard none)
+                      (check_cases none)))
+                    (next none)))
+                  (next none)))
+                (wildcard none)
+                (check_cases none)))
+              (next none)))
+            (check_cases none)))
+          (next
+           (optional
+            (child
+             (switch
+              (key "b")
+              (ids ())
+              (cases
+               (case
+                (data 2)
+                (if_match
+                 (optional
+                  (child
+                   (switch
+                    (key "c")
+                    (ids ())
+                    (cases
+                     (case
+                      (data 3)
+                      (if_match (end (end (leaf (names ()) (exit 1)))))
+                      (next none)))
+                    (wildcard none)
+                    (check_cases none)))
+                  (next none)))
+                (next none)))
+              (wildcard none)
+              (check_cases none)))
+            (next none))))))
+       (wildcard (end (leaf (names ()) (exit 2))))))
+     (exits
+      ((0 ((text " ") (echo () fmt_int (var "b") escape) (text "\n")))
+       (1 ((text " bc\n")))
+       (2 ((text " _\n")))))))
+   (match
+    ()
+    ((assoc (("a" "empty dicts always match"))))
+    (matching
+     (tree
+      (nest
+       (key 0)
+       (ids ())
+       (child
+        (string_keys
+         (optional
+          (child
+           (wildcard
+            (key "a")
+            (ids ())
+            (child
+             (optional
+              (child
+               (wildcard
+                (key "b")
+                (ids (0))
+                (child (end (end (leaf (names (("b" 0))) (exit 0)))))))
+              (next (end (end (leaf (names ()) (exit 1)))))))))
+          (next
+           (optional
+            (child
+             (wildcard
+              (key "b")
+              (ids (0))
+              (child (end (end (leaf (names (("b" 0))) (exit 0)))))))
+            (next (end (end (leaf (names ()) (exit 1))))))))))
+       (wildcard none)))
+     (exits
+      ((0 ((text " ") (echo () fmt_string (var "b") escape) (text "\n")))
+       (1 ((text "empty\n")))))))
    (text "\n"))

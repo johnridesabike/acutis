@@ -30,3 +30,7 @@ val get : string -> ('a, 'b) t -> 'b
 
 val prelinked : string -> 'a Map.String.t -> ('b, 'a) t
 val link_all : ('a, 'b) t -> 'b Map.String.t
+
+val linked : ('a, 'b) t -> 'b Map.String.t
+(** Return the map of the items which had previously been linked. We use this
+    to filter out unused items in {!Compile}. *)

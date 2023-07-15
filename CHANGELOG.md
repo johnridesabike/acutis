@@ -4,7 +4,18 @@ Most changes are breaking changes.
 
 ## Latest
 
+- Add JavaScript compilation. Templates can now compile to self-contained
+  JavaScript files. This feature is supported in both the CLI and the Eleventy
+  plugin.
+- Change interface syntax to `{% interface a=int %}`. No closing `/` is needed.
+- Change how the Eleventy plugin loads template functions so it's consistent
+  between the different modes.
 - Add debug commands to the CLI: `--printast`, `--printtypes`, and `--printopt`.
+- Change the functor interface for the render module. Data modules only need to
+  provide a few basic functions now.
+- Support trailing commas in patterns.
+- Improve dictionary pattern-matching. Dict patterns should match a subset of
+  their input, with an empty dict always matching any input.
 
 ## 0.22.0
 

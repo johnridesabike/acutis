@@ -22,36 +22,33 @@ type echo_format = Ast.echo_format =
   | Fmt_float
   | Fmt_bool
 
-type echo = Typechecker.echo =
-  | Echo_var of string
-  | Echo_string of string
-  | Echo_field of echo * string
+type echo = [ `Var of string | `String of string | `Field of echo * string ]
 
-(** The names of variables are preserved as strings in the [Data.t] values. *)
+type data =
+  [ `Null
+  | `Int of int
+  | `Float of float
+  | `String of string
+  | `Array of data array
+  | `Assoc of data Map.String.t
+  | `Var of string
+  | `Field of data * string
+  | `Block of int
+    (** To separate the data from the rest of the tree, we take any template
+        blocks and place them into an array. At runtime, the [`Block]
+        constructors will get their rendered content by their indices. *)
+  ]
+
 type 'a node =
   | Text of string
   | Echo of (echo_format * echo) list * echo_format * echo * escape
-  | Match of 'a eval Data.t array * 'a nodes Matching.t
-  | Map_list of 'a eval Data.t * 'a nodes Matching.t
-  | Map_dict of 'a eval Data.t * 'a nodes Matching.t
-  | Component of string * 'a * 'a eval Data.t Map.String.t
+  | Match of 'a blocks * data array * 'a nodes Matching.t
+  | Map_list of 'a blocks * data * 'a nodes Matching.t
+  | Map_dict of 'a blocks * data * 'a nodes Matching.t
+  | Component of string * 'a * 'a nodes array * data Map.String.t
 
-and 'a eval =
-  | Var of string
-  | Block of 'a nodes
-  | Field of 'a eval Data.t * string
-
+and 'a blocks = 'a nodes array
 and 'a nodes = 'a node list
-
-type 'a template =
-  | Src of 'a template nodes
-  | Fun of Typescheme.t Map.String.t * 'a
-
-type 'a t = {
-  types : Typescheme.t Map.String.t;
-  nodes : 'a template nodes;
-  name : string;
-}
 
 module Components : sig
   type 'a source
@@ -79,7 +76,23 @@ module Components : sig
       @raise Error.Acutis_error *)
 end
 
+type 'a template =
+  | Src of 'a template nodes
+  | Fun of Typescheme.t Map.String.t * 'a
+
+type 'a t = {
+  name : string;
+  types : Typescheme.t Map.String.t;
+  nodes : 'a template nodes;
+  components : 'a template Map.String.t;
+}
+
 val make : fname:string -> 'a Components.t -> Lexing.lexbuf -> 'a t
 val from_string : fname:string -> 'a Components.t -> string -> 'a t
 val from_channel : fname:string -> 'a Components.t -> in_channel -> 'a t
+val interface_from_string : fname:string -> string -> Typescheme.t Map.String.t
+
+val interface_from_channel :
+  fname:string -> in_channel -> Typescheme.t Map.String.t
+
 val to_sexp : _ nodes -> Sexp.t

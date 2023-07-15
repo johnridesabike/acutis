@@ -3,19 +3,44 @@
     test is easier to maintain and faster to execute. *)
 
 open Acutis
-module RenderSync = Render.Make (Sync) (DataJson)
+
+module DataJson = struct
+  module Linear = List
+
+  module Assoc = struct
+    type 'a t = (string * 'a) list
+
+    let fold f l init = List.fold_left (fun acc (k, v) -> f k v acc) init l
+    let find_opt = List.assoc_opt
+  end
+
+  type t = Yojson.Basic.t
+
+  let pp = Yojson.Basic.pretty_print ~std:false
+  let classify = Fun.id
+  let null = `Null
+  let some = Fun.id
+  let of_float x = `Float x
+  let of_string x = `String x
+  let of_bool x = `Bool x
+  let of_int x = `Int x
+  let of_seq x = `List (List.of_seq x)
+  let of_map x = `Assoc (Map.String.bindings x)
+end
+
+module RenderSync = Render.MakeString (DataJson)
 
 let render ?(json = "{}") ?(components = Compile.Components.empty) src () =
   let temp = Compile.(from_string ~fname:"<test>" components src) in
   let json = Yojson.Basic.from_string json in
-  ignore @@ RenderSync.make temp json
+  ignore @@ RenderSync.eval temp json
 
 let print_error title f =
   let s =
     try
       f ();
       "no error"
-    with Error.Acutis_error s -> s
+    with Error.Acutis_error s -> String.trim s
   in
   print_endline title;
   print_endline "---";
@@ -38,7 +63,8 @@ let () =
     (render "{% map [_] with x %} {{ x }} {% /map %}");
 
   print_error "Unterminated strings" (render {|{{ "a|});
-  print_error "Unterminated comments" (render "{* {* a *}");
+  print_error "Unterminated comment" (render "{* {* a *}");
+  print_error "Unterminated comment (nested)" (render "{* {* a");
   print_error "Unterminated expressions" (render "{% match");
   print_error "Illegal escape sequence" (render {|{{ "\a" }}|});
 
@@ -68,24 +94,22 @@ let () =
   print_error "Bad pattern (7)" (render "{% map ABC with a %} {% /map %}");
   print_error "Bad pattern (8)" (render "{% match {a: with %} {% /match %}");
   print_error "Bad pattern (9)" (render "{% match ( with %} {% /match %}");
-  print_error "Bad pattern (10)" (render "{% match [ with %} {% /match %}");
-  print_error "Bad pattern (11)" (render "{% match [... with %} {% /match %}");
-  print_error "Bad pattern (12)" (render "{% match [a, with %} {% /match %}");
-  print_error "Bad pattern (13)"
-    (render "{% match [a, ... with %} {% /match %}");
+  print_error "Bad pattern (10)" (render "{% match (a, with %} {% /match %}");
+  print_error "Bad pattern (11)" (render "{% match [ with %} {% /match %}");
+  print_error "Bad pattern (12)" (render "{% match [... with %} {% /match %}");
+  print_error "Bad pattern (13)" (render "{% match [a, with %} {% /match %}");
   print_error "Unclosed < (4)" (render "{% match <a: with %} {% /match %}");
   print_error "Illegal pattern after with"
     (render "{% match a with Abc %} {% /match %}");
   print_error "Bad pattern (14)" (render "{% Z a=ABC / %}");
   print_error "Bad pattern (15)" (render "{% match null ~%}");
 
-  print_error "Bad echo (1)" (render "{{ ? }}");
-  print_error "Bad echo (2)" (render "{{{ A }}}");
-  print_error "Bad echo (3)" (render "{{ a ? ? }}");
-  print_error "Bad echo (4)" (render "{{ %i ? }}");
+  print_error "Bad echo (1)" (render "{{ with }}");
+  print_error "Bad echo (2)" (render "{{{ with }}}");
+  print_error "Bad echo (3)" (render "{{ a ? with }}");
+  print_error "Bad echo (4)" (render "{{ %i with }}");
   print_error "Bad echo (5)" (render "{{{ a }}");
   print_error "Bad echo (6)" (render "{{ a }}}");
-  print_error "Bad echo (7)" (render "{{ x ? %i ? }}");
 
   print_error "Bad echo format (1)" (render "{{ % a }}");
   print_error "Bad echo format (2)" (render "{{ %z a }}");
@@ -116,8 +140,7 @@ let () =
   print_error "Unclosed (" (render "{% match (a with %} {% /match %}");
 
   print_error "Unclosed [ (1)" (render "{% match [a with %} {% /match %}");
-  print_error "Unclosed [ (2)" (render "{% match [a, ...b with %} {% /match %}");
-  print_error "Unclosed [ (3)" (render "{% match [...b with %} {% /match %}");
+  print_error "Unclosed [ (2)" (render "{% match [...b with %} {% /match %}");
 
   print_error "Unclosed < (1)" (render "{% match <a with %} {% /match %}");
   print_error "Unclosed < (2)" (render "{% match <\"a\" with %} {% /match %}");
@@ -142,8 +165,7 @@ let () =
   print_error "Missing /map" (render "{% map x with x %} {% /match %}");
   print_error "Missing /map_dict" (render "{% map_dict x with x %} {% /map %}");
 
-  print_error "Unseparated echoes (1)" (render "{{ a b }}");
-  print_error "Unseparated echoes (2)" (render "{{ a ? b c }}");
+  print_error "Unseparated echoes" (render "{{ a b }}");
 
   print_error "# Blocks must contain text" (render "{% A a=# abc # / %}");
 
@@ -151,7 +173,8 @@ let () =
   print_error "Bad record field access (2)" (render "{{ a.% }}");
 
   print_error "Duplicate field"
-    (render {|{% match a with {a: 0, a: "a"} %} {% with _ %} {% /match %}|});
+    (render
+       {|{% match a with {a: 0, a: "a", a: false} %} {% with _ %} {% /match %}|});
   print_error "Duplicate tag field"
     (render {|{% match a with {@a: 0, a: "a"} %} {% with _ %} {% /match %}|});
   print_error "Duplicate dict field"
@@ -163,6 +186,8 @@ let () =
     (render "{% match a, b, c with 1, 2 %} d {% /match %}");
   print_error "Pattern count mismatch 2"
     (render "{% match a with 1, 2 %} d {% with 1, 2, 3 %} z {% /match %}");
+  print_error "Pattern count mismatch 3 (error location is correct)"
+    (render "{% match a, b with 1 with 2, 3 with 4 with 5, 6 %} d {% /match %}");
   print_error "Pattern count mismatch (map)"
     (render "{% map a with 1, 2, 3 %} d {% with 4, 5, 6 %} z {% /map %}");
 
@@ -282,6 +307,14 @@ let () =
     (render
        ~components:(Compile.Components.of_seq @@ Seq.return comp)
        "{% Comp a b c / %}");
+  let comp =
+    Compile.Components.parse_string ~fname:"comp" ~name:"Comp"
+      "{{ %i children }}"
+  in
+  print_error "Implict children is typed and reported correctly"
+    (render
+       ~components:(Compile.Components.of_seq @@ Seq.return comp)
+       "{% Comp %} {% /Comp %}");
 
   print_error "Basic unused bindings are reported."
     (render "{% match a with {x} %} {% /match %}");
@@ -337,8 +370,10 @@ let () =
     (render "{% match a, b with !@1, 2 %} {% with null, _ %} {% /match %}");
   print_error "Partial matching with records."
     (render "{% match a with {b: 10} %} {% with {a: 20} %} {% /match %}");
-  print_error "Partial matching with dictionaries."
+  print_error "Partial matching with dictionaries (1)."
     (render "{% match a with <a: true> %} {% with <a: false> %} {% /match %}");
+  print_error "Partial matching with dictionaries (2)."
+    (render "{% match a with <a> %} {{ a }} {% with <b> %} {{ b }} {% /match %}");
   print_error "Partial matching with unions (1)."
     (render
        "{% match a with {@tag: 0, a: 10} %} {% with {@tag: 1, b: 20} %}\n\
@@ -350,6 +385,11 @@ let () =
   print_error "Partial matching with unions (3)."
     (render
        "{% match a with {@tag: true, a: 10} %} {% with {@tag: false, b: _} %}\n\
+        {% /match %}");
+  print_error "Partial matching with unions (4)."
+    (render
+       "{% match a with {@tag: true} with {@tag: false} %}{% /match %}\n\
+        {% match b, a with 1, {@tag: true} with _, {@tag: false } %}\n\
         {% /match %}");
   print_error "Partial matching with records."
     (render
@@ -363,6 +403,32 @@ let () =
         {%~  with {@kind: \"anonymous\", books: []} %}\n\
        \  This author hasn't published any books.\n\
         {% /match %}");
+  print_error "Parital matching with enums, closed"
+    (render
+       "{% match a, b with 1, @1 %}\n\
+        {% with 2, @2 %}\n\
+        {% with _, @3 %}\n\
+        {% /match %}");
+  print_error "Parital matching with unions, closed"
+    (render
+       "{% match a, b with 1, {@tag: 1, a} %} {{ a }}\n\
+        {% with 2, {@tag: 2, b} %} {{ b }}\n\
+        {% with _, {@tag: 3, c} %} {{ c }}\n\
+        {% /match %}");
+  print_error "Parital matching with enums, open"
+    (render
+       "{% match a, b with 1, @1 %}\n\
+        {% with 2, _ %}\n\
+        {% with _, @1 %}\n\
+        {% with _, @2 %}\n\
+        {% /match %}");
+  print_error "Parital matching with unions, open"
+    (render
+       "{% match a, b with 1, {@tag: 1, a} %} {{ a }}\n\
+        {% with 2, _ %} \n\
+        {% with _, {@tag: 2, b} %} {{ b }}\n\
+        {% with _, {@tag: 3, c} %} {{ c }}\n\
+        {% /match %}");
 
   print_error "Both nil and cons paths fail to merge into a wildcard."
     (render
@@ -374,6 +440,13 @@ let () =
     {%  with 1, !2 %}
     {%  with _, _ %}
     {% /match %}|});
+
+  print_error "Dict patterns match a subset of the input."
+    (render
+       "{% match a with <a: 1> %} {% with <a: 1, b: 2> %} {% with _ %}\n\
+        {% /match %}");
+  print_error "Empty dicts (<>) match all inputs (like _)."
+    (render "{% match a with <> %} {% with <a> %} {{ a }} {% /match %}");
 
   print_error "Template blocks are not allowed in destructure patterns."
     (render "{% match a with {b: #%} {%#} %} {% /match %}");
@@ -445,93 +518,95 @@ let () =
 
   (* Interface parse *)
   print_error "Invalid field names."
-    (render "{% interface a = {a: int, with: string } / %}");
+    (render "{% interface a = {a: int, with: string } %}");
   print_error "Missing , or }."
-    (render "{% interface a = {a: int b: string } / %}");
+    (render "{% interface a = {a: int b: string } %}");
 
-  print_error "Bad prop name (1)." (render "{% interface with = int / %}");
-  print_error "Bad prop name (2)."
-    (render "{% interface x = int with = int / %}");
+  print_error "Unclosed interface" (render "{% interface a = int");
+
+  print_error "Bad prop name (1)." (render "{% interface with = int %}");
+  print_error "Bad prop name (2)." (render "{% interface x = int with = int %}");
 
   print_error "Bad token after a variant (1)."
-    (render "{% interface x={@a: 1} with / %}");
+    (render "{% interface x={@a: 1} with %}");
   print_error "Bad token after a variant (2)."
-    (render "{% interface x=@\"a\" with / %}");
+    (render "{% interface x=@\"a\" with %}");
   print_error "Bad token after a variant (3)."
-    (render "{% interface x=@0 with / %}");
+    (render "{% interface x=@0 with %}");
   print_error "Bad token after a variant (4)."
-    (render "{% interface x=false with / %}");
+    (render "{% interface x=false with %}");
 
-  print_error "Missing equals." (render "{% interface x int / %}");
+  print_error "Missing equals." (render "{% interface x int %}");
 
-  print_error "Invalid type (1)." (render "{% interface x=with / %}");
-  print_error "Invalid type (2)." (render "{% interface x=?with / %}");
-  print_error "Invalid type (3)." (render "{% interface x=[with] / %}");
-  print_error "Invalid type (4)." (render "{% interface x={with: int} / %}");
-  print_error "Invalid type (5)." (render "{% interface x={@with: 1} / %}");
-  print_error "Invalid type (6)." (render "{% interface x={a: with} / %}");
-  print_error "Invalid type (7)." (render "{% interface x=<with> / %}");
-  print_error "Invalid type (8)." (render "{% interface x=(with) / %}");
-  print_error "Invalid type (9)." (render "{% interface x=(int, with) / %}");
+  print_error "Invalid type (1)." (render "{% interface x=with %}");
+  print_error "Invalid type (2)." (render "{% interface x=?with %}");
+  print_error "Invalid type (3)." (render "{% interface x=[with] %}");
+  print_error "Invalid type (4)." (render "{% interface x={with: int} %}");
+  print_error "Invalid type (5)." (render "{% interface x={@with: 1} %}");
+  print_error "Invalid type (6)." (render "{% interface x={a: with} %}");
+  print_error "Invalid type (7)." (render "{% interface x=<with> %}");
+  print_error "Invalid type (8)." (render "{% interface x=(with) %}");
+  print_error "Invalid type (9)." (render "{% interface x=(int, with) %}");
 
-  print_error "Missing colon (1)." (render "{% interface x={a b} / %}");
-  print_error "Missing colon (2)." (render "{% interface x={@a b} / %}");
+  print_error "Missing colon (1)." (render "{% interface x={a b} %}");
+  print_error "Missing colon (2)." (render "{% interface x={@a b} %}");
 
-  print_error "Bad enum" (render "{% interface x=@a / %}");
+  print_error "Bad enum" (render "{% interface x=@a %}");
 
   print_error "Bad token after record pipe."
-    (render "{% interface x={@a: 1} | y / %}");
+    (render "{% interface x={@a: 1} | y %}");
   print_error "Bad token after string enum pipe."
-    (render "{% interface x=@\"a\" | y / %}");
+    (render "{% interface x=@\"a\" | y %}");
   print_error "Bad token after int enum pipe."
-    (render "{% interface x=@0 | y / %}");
+    (render "{% interface x=@0 | y %}");
 
-  print_error "Missing >" (render "{% interface x=<int} / %}");
-  print_error "Missing ]" (render "{% interface x=[int} / %}");
-  print_error "Missing )" (render "{% interface x=(int} / %}");
+  print_error "Missing >" (render "{% interface x=<int} %}");
+  print_error "Missing ]" (render "{% interface x=[int} %}");
+  print_error "Missing )" (render "{% interface x=(int} %}");
 
-  print_error "Bad string enum" (render "{% interface x=@\"a\" | @0 / %}");
-  print_error "Bad int enum" (render "{% interface x=@0 | @\"a\" / %}");
-  print_error "Bad boolean" (render "{% interface x=false | @0 / %}");
+  print_error "Bad string enum" (render "{% interface x=@\"a\" | @0 %}");
+  print_error "Bad int enum" (render "{% interface x=@0 | @\"a\" %}");
+  print_error "Bad boolean" (render "{% interface x=false | @0 %}");
 
-  print_error "Bad union tag type" (render "{% interface x={@x: [int]} / %}");
+  print_error "Bad union tag type" (render "{% interface x={@x: [int]} %}");
 
   (* Interface type parse *)
-  print_error "Duplicate declarations"
-    (render "{% interface x=int x=string / %}");
-  print_error "Non-existent type names." (render "{% interface x=lmao / %}");
+  print_error "Duplicate declarations" (render "{% interface x=int x=string %}");
+  print_error "Non-existent type names." (render "{% interface x=lmao %}");
   print_error "Untagged unions (1)"
-    (render "{% interface x = {a: int} | {b: string} / %}");
+    (render "{% interface x = {a: int} | {b: string} %}");
   print_error "Untagged unions (2)"
-    (render "{% interface x = {@tag: 1, a: int} | {b: string} / %}");
+    (render "{% interface x = {@tag: 1, a: int} | {b: string} %}");
   print_error "Tagged unions with mismatched tag names"
-    (render "{% interface x = {@tag: 1} | {@badtag: 2} / %}");
+    (render "{% interface x = {@tag: 1} | {@badtag: 2} %}");
   print_error "Duplicate tags."
-    (render "{% interface x = {@tag: 1} | {@tag: 1} / %}");
+    (render "{% interface x = {@tag: 1} | {@tag: 1} %}");
+  print_error "Open boolean unions."
+    (render "{% interface x = {@tag: false} | ... %}");
   print_error "Tag type error: int <> string."
-    (render "{% interface x = {@tag: 1} | {@tag: \"a\"} / %}");
+    (render "{% interface x = {@tag: 1} | {@tag: \"a\"} %}");
   print_error "Tag type error: string <> bool."
-    (render "{% interface x = {@tag: \"a\"} | {@tag: true} / %}");
+    (render "{% interface x = {@tag: \"a\"} | {@tag: true} %}");
   print_error "Tag type error: bool <> int."
-    (render "{% interface x = {@tag: false} | {@tag: 100} / %}");
+    (render "{% interface x = {@tag: false} | {@tag: 100} %}");
 
   (* Interface type check *)
   print_error "Interface type error: bool <> int."
-    (render "{% interface x = int / %}{% match x with true %}{% /match %}");
+    (render "{% interface x = int %}{% match x with true %}{% /match %}");
   print_error "Interface is missing props."
-    (render "{% interface x = int / %} {{ y }}");
+    (render "{% interface x = int %} {{ y }}");
   print_error "Interface is missing record fields."
     (render
-       "{% interface x = {a: int} / %} \n\
+       "{% interface x = {a: int} %} \n\
         {% match x with {a, b} %} {{ a }} {{ b }} {% /match %}");
   print_error "Interface is missing enum cases."
     (render
-       "{% interface x = @0 | @1 | ... / %} \n\
+       "{% interface x = @0 | @1 | ... %} \n\
         {% match x with @0 %} {% with @1 %} {% with @2 %} {% with _ %}\n\
         {% /match %}");
   print_error "Interface is missing union cases."
     (render
-       "{% interface x = {@tag: 0} | {@tag: 1, a: int} | ... / %} \n\
+       "{% interface x = {@tag: 0} | {@tag: 1, a: int} | ... %} \n\
         {% match x\n\
        \  with {@tag: 0} %}\n\
         {% with {@tag: 1, a} %} {{ a }}\n\
@@ -539,6 +614,6 @@ let () =
         {% with _ %}\n\
         {% /match %}");
   print_error "Unknown is not equal to any other type."
-    (render "{% interface x = _ / %} {{ x }}");
+    (render "{% interface x = _ %} {{ x }}");
 
   ()

@@ -13,6 +13,7 @@ open Ast
 %}
 
 %token <string> TEXT
+%token <string> COMMENT       (* {* *} *)
 
 (* Expression syntax *)
 %token ECHO_BEGIN             (* {{ *)
@@ -63,8 +64,27 @@ open Ast
 %token CHAR_B                 (* b *)
 
 %start <Ast.t> acutis
+%start <Ast.interface> interface_standalone
 
 %%
+
+(** Helper rules *)
+
+(* We must reverse and inline this to avoid shift/reduce conflicts. *)
+%inline nonempty_sep(SEP, X): l = nonempty_sep_rev(SEP, X); { Nonempty.rev l }
+nonempty_sep_rev(SEP, X):
+  | p = X;                                    { [ p ] }
+  | l = nonempty_sep_rev(SEP, X); SEP; p = X; { Nonempty.cons p l }
+
+nonempty_trailing(SEP, X): l = nonempty_sep(SEP, X); SEP?;  { l }
+
+list_sep_trailing(SEP, X):
+  | (* empty *)                     { [] }
+  | l = nonempty_trailing(SEP, X);  { Nonempty.to_list l }
+
+nonempty(X):
+  | p = X;                  { [ p ] }
+  | p = X; l = nonempty(X); { Nonempty.cons p l }
 
 (** Pattern rules *)
 
@@ -91,67 +111,63 @@ record_tag:
   | i = INT;    { Tag_int ($loc, i) }
   | FALSE;      { Tag_bool ($loc, 0) }
   | TRUE;       { Tag_bool ($loc, 1) }
-  | s = STRING; { Record.Tag_string ($loc, s) }
+  | s = STRING; { Tag_string ($loc, s) }
 
 record_key: k = ID; | k = STRING; { k }
 
 record_field:
-  | AT; k = record_key; COLON; v = record_tag;  { `Tag (k, v) }
-  | k = record_key; COLON; v = pattern;         { `Notag (k, v) }
-  | k = ID;                                     { `Notag (k, Var ($loc, k) ) }
+  | AT; k = record_key; COLON; v = record_tag;
+    { ($loc, k, Tag v) }
+  | k = record_key; COLON; v = pattern;
+    { ($loc, k, Value v) }
+  | k = ID;
+    { ($loc, k, Value (Var ($loc, k) )) }
 
-record:
-  | x = record_field;                     { Record.singleton x }
-  | m = record; COMMA; x = record_field;  { Record.add $loc x m }
+record: l = nonempty_trailing(COMMA, record_field); { l }
 
 dict_field:
-  | k = record_key; COLON; v = pattern; { (k, v) }
-  | k = ID;                             { (k, Var ($loc, k) ) }
+  | k = record_key; COLON; v = pattern; { ($loc, k, v) }
+  | k = ID;                             { ($loc, k, Var ($loc, k) ) }
 
-dict:
-  | x = dict_field;
-    { let (k, v) = x in Dict.singleton k v }
-  | m = dict; COMMA; x = dict_field;
-    { let (k, v) = x in Dict.add $loc k v m }
+dict: l = list_sep_trailing(COMMA, dict_field); { l }
+
+list_tail:
+  | (* empty *)             { None }
+  | ELLIPSIS; p = pattern;  { Some p }
+
+list_comma_tail:
+  | (* empty *)             { None }
+  | COMMA; tl = list_tail;  { tl }
 
 pattern_list:
-  | tl = option(ELLIPSIS; p = pattern { p });
+  | tl = list_tail;
     { List ($loc, [], tl) }
-  | l = pattern_list_nonempty; tl = option(COMMA; ELLIPSIS; p = pattern; { p });
+  | l = nonempty_sep(COMMA, pattern); tl = list_comma_tail;
     { List ($loc, Nonempty.to_list l, tl) }
 
-tuple:
-  | (* empty *)                { [] }
-  | l = pattern_list_nonempty; { Nonempty.to_list l }
+tuple: l = list_sep_trailing(COMMA, pattern); { l }
 
 (** Match & map rules *)
 
-%inline pattern_list_nonempty: l = pattern_list_nonempty_rev; { Nonempty.rev l }
-pattern_list_nonempty_rev:
-  | p = pattern;                                       { [ p ] }
-  | l = pattern_list_nonempty_rev; COMMA; p = pattern; { Nonempty.cons p l }
+with_pats_nested: WITH; ps = nonempty_sep(COMMA, pattern);  { ($loc, ps) }
 
-with_pats:
-  | WITH; ps = pattern_list_nonempty;
-    { [ ($loc, ps) ] }
-  | WITH; ps = pattern_list_nonempty; l = with_pats;
-    { Nonempty.cons ($loc, ps) l }
+with_pats: l = nonempty(with_pats_nested);  { l }
 
-cases:
-  | pats = with_pats; child = nodes;
-    { [ {pats; nodes = child} ] }
-  | pats = with_pats; child = nodes; l = cases;
-    { Nonempty.cons {pats; nodes = child} l }
+case: pats = with_pats; child = nodes; { { pats; nodes = child } }
+
+cases: l = nonempty(case);  { l }
 
 (** Component rules *)
 
+prop:
+  | k = ID; EQUALS; v = pattern;  { ($loc, k, v) }
+  | k = ID;                       { ($loc, k, (Var ($loc, k))) }
+
 props:
-  | (* empty *)
-    { Dict.empty }
-  | p = props; k = ID; EQUALS; v = pattern;
-    { Dict.add $loc k v p }
-  | p = props; k = ID;
-    { Dict.add $loc k (Var ($loc, k)) p }
+  | (* empty *)           { [] }
+  | x = prop; p = props;  { x :: p }
+
+children: n = nodes;  { ($loc, "children", Block ($loc, n)) }
 
 (** Echo rules *)
 
@@ -161,16 +177,15 @@ echo_format:
   | PERCENT; CHAR_F;  { Fmt_float }
   | PERCENT; CHAR_B;  { Fmt_bool }
 
-echo:
-  | s = ID;                         { Echo_var ($loc, s) }
-  | s = STRING;                     { Echo_string ($loc, s) }
-  | e = echo; DOT; s = record_key;  { Echo_field (e, s) }
+echo_value:
+  | s = ID;                               { Echo_var ($loc, s) }
+  | s = STRING;                           { Echo_string ($loc, s) }
+  | e = echo_value; DOT; s = record_key;  { Echo_field (e, s) }
 
-echoes_rev:
-  | fmt = echo_format; e = echo;
-    { [ (fmt, e) ] }
-  | l = echoes_rev; QUESTION; fmt = echo_format; last = echo;
-    { Nonempty.cons (fmt, last) l }
+echo: fmt = echo_format; e = echo_value;  { (fmt, e) }
+
+(* Do this reversed to efficiently take the last item. *)
+echoes_rev: l = nonempty_sep_rev(QUESTION, echo); { l }
 
 trim_left:
   | (* empty *)  { No_trim }
@@ -180,13 +195,15 @@ trim_right:
   | (* empty *)  { No_trim }
   | TILDE_RIGHT  { Trim }
 
-text: l = trim_left; txt = TEXT; r = trim_right; { Text (txt, l, r) }
+text: l = trim_left; txt = TEXT; r = trim_right;  { Text (txt, l, r) }
 
 (** Putting it all together *)
 
 node:
   | txt = text;
     { txt }
+  | txt = COMMENT;
+    { Comment txt }
   | ECHO_BEGIN; e = echoes_rev; ECHO_END;
     {
       let Nonempty.((fmt, default) :: l) = e in
@@ -197,7 +214,7 @@ node:
       let Nonempty.((fmt, default) :: l) = e in
       Echo (List.rev l, fmt, default, No_escape)
     }
-  | MATCH; pats = pattern_list_nonempty; child = cases; BACKSLASH; MATCH;
+  | MATCH; pats = nonempty_sep(COMMA, pattern); child = cases; BACKSLASH; MATCH;
     { Match ($loc, pats, child) }
   | MAP; pat = pattern; child = cases; BACKSLASH; MAP;
     { Map_list ($loc, pat, child) }
@@ -205,65 +222,50 @@ node:
     { Map_dict ($loc, pat, child) }
   | x = COMPONENT; p = props; BACKSLASH;
     { Component ($loc, x, x, p) }
-  | x1 = COMPONENT; p = props; n = nodes; BACKSLASH; x2 = COMPONENT;
-    { Component ($loc, x1, x2, Dict.add $loc "children" (Block ($loc, n)) p) }
-  | INTERFACE; i = interface; BACKSLASH;
+  | x1 = COMPONENT; p = props; c = children; BACKSLASH; x2 = COMPONENT;
+    { Component ($loc, x1, x2, c :: p) }
+  | INTERFACE; i = interface;
     { Interface ($loc, i) }
 
 (** Interface rules *)
 
 ty:
-  | l = variant(enum_int); r = row;;
-    { Enum_int (l, r) }
-  | l = variant(bool);
-    { Enum_bool l }
-  | l = variant(enum_string); r = row;
-    { Enum_string (l, r) }
-  | l = variant(ty_record); r = row;
-    { Record (l, r) }
-  | x = ID;
-    { Named ($loc, x) }
-  | QUESTION; t = ty;
-    { Nullable t }
-  | LEFT_BRACK; t = ty; RIGHT_BRACK;
-    { List t }
-  | LEFT_ANGLE; t = ty; RIGHT_ANGLE;
-    { Dict t }
-  | LEFT_PAREN; l = separated_list(COMMA, ty); RIGHT_PAREN;
-    { Interface.Tuple l }
+  | l = nonempty_sep(PIPE, enum_int); r = row;    { Ty_enum_int (l, r) }
+  | l = nonempty_sep(PIPE, bool);                 { Ty_enum_bool l }
+  | l = nonempty_sep(PIPE, enum_string); r = row; { Ty_enum_string (l, r) }
+  | l = nonempty_sep(PIPE, ty_record); r = row;   { Ty_record (l, r) }
+  | x = ID;                                       { Ty_named ($loc, x) }
+  | QUESTION; t = ty;                             { Ty_nullable t }
+  | LEFT_BRACK; t = ty; RIGHT_BRACK;              { Ty_list t }
+  | LEFT_ANGLE; t = ty; RIGHT_ANGLE;              { Ty_dict t }
+  | LEFT_PAREN; l = ty_tuple; RIGHT_PAREN;        { Ty_tuple l }
 
 ty_record_field:
-  | AT; k = record_key; COLON; v = record_tag;  { `Tag (k, v) }
-  | k = record_key; COLON; v = ty;              { `Notag (k, v) }
+  | AT; k = record_key; COLON; v = record_tag;  { ($loc, k, Tag v) }
+  | k = record_key; COLON; v = ty;              { ($loc, k, Value v) }
 
-ty_record_fields:
-  | x = ty_record_field;                              { Record.singleton x }
-  | m = ty_record_fields; COMMA; x = ty_record_field; { Record.add $loc x m }
+ty_record:
+  | LEFT_BRACE; x = nonempty_trailing(COMMA, ty_record_field); RIGHT_BRACE;
+    { ($loc, x) }
 
-ty_record: LEFT_BRACE; x = ty_record_fields; RIGHT_BRACE; { ($loc, x) }
+ty_tuple: l = list_sep_trailing(COMMA, ty); { l }
 
-enum_int: AT; i = INT; { i }
+enum_int: AT; i = INT;  { i }
 
-enum_string: AT; s = STRING; { s }
+enum_string: AT; s = STRING;  { s }
 
 bool:
-  | FALSE; { 0 }
-  | TRUE;  { 1 }
+  | FALSE;  { 0 }
+  | TRUE;   { 1 }
 
 row:
-  | (* empty *)     { `Closed }
-  | PIPE; ELLIPSIS; { `Open }
+  | (* empty *)     { ($loc, `Closed) }
+  | PIPE; ELLIPSIS; { ($loc, `Open) }
 
-%inline variant(X): l = variant_rev(X); { Nonempty.rev l }
-variant_rev(X):
-  | x = X;                            { [ x ] }
-  | l = variant_rev(X); PIPE; x = X;  { Nonempty.cons x l }
-
+interface_prop: k = ID; EQUALS; v = ty; { { loc = $loc; name = k; ty = v } }
 interface:
-  | (* empty *)
-    { [] }
-  | k = ID; EQUALS; v = ty; l = interface;
-    { { loc = $loc; name = k; ty = v} :: l }
+  | (* empty *)                         { [] }
+  | x = interface_prop; l = interface;  { x :: l }
 
 (** Putting it all together *)
 
@@ -275,3 +277,5 @@ nodes_rev:
   | l = nodes_rev; n = node;  { n :: l }
 
 acutis: n = nodes; EOF; { n }
+
+interface_standalone: l = interface; EOF; { l }

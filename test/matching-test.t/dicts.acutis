@@ -1,0 +1,9 @@
+{% match a with <a: 1, b> %} {{ %i b }}
+{% with <b: 2, c: 3> %} bc
+{% with _ %} _
+{% /match %}
+
+{%~ match <a: "empty dicts always match">
+    with <b: b> %} {{ b }}
+{%  with <> ~%} empty
+{% /match %}
