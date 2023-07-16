@@ -32,7 +32,12 @@ let value_to_sexp f = function
 let record_to_sexp f l =
   Nonempty.to_sexp (Sexp.triple Loc.to_sexp Sexp.string (value_to_sexp f)) l
 
-type row = Loc.t * Typescheme.row
+type row = Loc.t * [ `Closed | `Open ]
+
+let row_to_sexp row =
+  Sexp.pair Loc.to_sexp
+    (function `Closed -> Sexp.symbol "closed" | `Open -> Sexp.symbol "open")
+    row
 
 type ty =
   | Ty_named of Loc.t * string
@@ -54,23 +59,16 @@ let rec ty_to_sexp = function
   | Ty_list t -> Sexp.make "list" [ ty_to_sexp t ]
   | Ty_dict t -> Sexp.make "dict" [ ty_to_sexp t ]
   | Ty_enum_int (l, row) ->
-      Sexp.make "enum_int"
-        [
-          Sexp.pair Loc.to_sexp Typescheme.row_to_sexp row;
-          Nonempty.to_sexp Sexp.int l;
-        ]
+      Sexp.make "enum_int" [ Nonempty.to_sexp Sexp.int l; row_to_sexp row ]
   | Ty_enum_bool l -> Sexp.make "enum_bool" [ Nonempty.to_sexp Sexp.bool l ]
   | Ty_enum_string (l, row) ->
       Sexp.make "enum_string"
-        [
-          Sexp.pair Loc.to_sexp Typescheme.row_to_sexp row;
-          Nonempty.to_sexp Sexp.string l;
-        ]
+        [ Nonempty.to_sexp Sexp.string l; row_to_sexp row ]
   | Ty_record (l, row) ->
       Sexp.make "record"
         [
-          Sexp.pair Loc.to_sexp Typescheme.row_to_sexp row;
           Nonempty.to_sexp (Sexp.pair Loc.to_sexp (record_to_sexp ty_to_sexp)) l;
+          row_to_sexp row;
         ]
   | Ty_tuple l -> Sexp.make "tuple" [ Sexp.of_seq ty_to_sexp (List.to_seq l) ]
 
@@ -264,8 +262,8 @@ let rec pp_pat ppf = function
       Pp.surround ~left:'(' ~right:')' (F.pp_print_list ~pp_sep pp_pat) ppf l
   | Record (_, l) ->
       Pp.surround ~left:'{' ~right:'}'
-        (F.pp_print_list ~pp_sep pp_record_keyvalue)
-        ppf (Nonempty.to_list l)
+        (F.pp_print_seq ~pp_sep pp_record_keyvalue)
+        ppf (Nonempty.to_seq l)
   | Dict (_, l) ->
       Pp.surround ~left:'<' ~right:'>'
         (F.pp_print_list ~pp_sep pp_keyvalue)

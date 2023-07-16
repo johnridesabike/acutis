@@ -220,36 +220,36 @@ Interfaces parse correctly. Use a separate file to minimize type conficts.
     ((prop
       "a"
       (record
-       closed
-       ((("a" (enum_int closed (0 1))) ("b" (enum_string closed ("a" "b")))))))
+       ((("a" (enum_int (0 1) closed)) ("b" (enum_string ("a" "b") closed))))
+       closed))
      (prop
       "b"
       (record
-       closed
        ((("tag" (tag true)) ("a" (list (named "int"))))
-        (("tag" (tag false)) ("a" (dict (nullable (named "string"))))))))
+        (("tag" (tag false)) ("a" (dict (nullable (named "string"))))))
+       closed))
      (prop
       "c"
       (record
-       closed
        ((("tag" (tag 0)))
         (("tag" (tag 1))
-         ("a" (tuple ((named "float") (enum_bool (true false)))))))))
+         ("a" (tuple ((named "float") (enum_bool (true false)))))))
+       closed))
      (prop
       "d"
       (record
-       closed
        ((("tag" (tag "a")) ("a" (named "float")))
-        (("tag" (tag "b")) ("a" (enum_int open (0 1)))))))
+        (("tag" (tag "b")) ("a" (enum_int (0 1) open))))
+       closed))
      (prop
       "e"
       (record
-       open
        ((("tag" (tag 0)) ("a" (named "_")))
-        (("tag" (tag 1)) ("b" (enum_string open ("a" "b")))))))
+        (("tag" (tag 1)) ("b" (enum_string ("a" "b") open))))
+       open))
      (prop
       "trailing_commas"
-      (record closed ((("a" (tuple ((named "int") (named "string"))))))))
+      (record ((("a" (tuple ((named "int") (named "string")))))) closed))
      (prop "children" (named "string"))
      (prop "optionalChildren" (nullable (named "string")))))
    (text no_trim "\n" no_trim))

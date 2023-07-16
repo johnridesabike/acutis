@@ -13,7 +13,6 @@
 (** We can use the standard list syntax: [[1; 2; 3]] and [1 :: 2 :: 3 :: []]. *)
 type 'a t = ( :: ) of 'a * 'a list
 
-val to_list : 'a t -> 'a list
 val cons : 'a -> 'a t -> 'a t
 
 val hd : 'a t -> 'a
@@ -27,4 +26,6 @@ val map : ('a -> 'b) -> 'a t -> 'b t
 val map2 : ('a -> 'b -> 'c) -> 'a t -> 'b t -> 'c t
 (** Calls [Stdlib.List.map2]. *)
 
+val to_list : 'a t -> 'a list
+val to_seq : 'a t -> 'a Seq.t
 val to_sexp : ('a -> Sexp.t) -> 'a t -> Sexp.t

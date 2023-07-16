@@ -170,13 +170,11 @@ module Components = struct
     { typed; optimized }
 end
 
-type 'a template =
-  | Src of 'a template nodes
-  | Fun of Typescheme.t Map.String.t * 'a
+type 'a template = Src of 'a template nodes | Fun of Typescheme.t * 'a
 
 type 'a t = {
   name : string;
-  types : Typescheme.t Map.String.t;
+  types : Typescheme.t;
   nodes : 'a template nodes;
   components : 'a template Map.String.t;
 }

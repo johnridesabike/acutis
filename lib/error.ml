@@ -56,11 +56,11 @@ let extra_record_tag =
   let f = F.dprintf "This tagged record has multiple tags." in
   fun loc -> raise @@ Acutis_error (pp_ty loc f)
 
-let mismatch a b t =
-  F.dprintf "Type mismatch.@;Expected:@;<1 2>%a@;Received:@;<1 2>%a"
-    Typescheme.pp a Typescheme.pp b t
+let mismatch pp a b t =
+  F.dprintf "Type mismatch.@;Expected:@;<1 2>%a@;Received:@;<1 2>%a" pp a pp b t
 
-let type_mismatch loc a b = raise @@ Acutis_error (pp_ty loc (mismatch a b))
+let type_mismatch loc pp a b =
+  raise @@ Acutis_error (pp_ty loc (mismatch pp a b))
 
 let bad_block loc =
   let f =
@@ -74,10 +74,9 @@ let bad_field loc =
   in
   raise @@ Acutis_error (pp_ty loc f)
 
-let missing_field loc key ty =
+let missing_field loc key pp ty =
   let f =
-    F.dprintf "This is missing key '%a' of type:@;<1 2>%a" Pp.field key
-      Typescheme.pp ty
+    F.dprintf "This is missing key '%a' of type:@;<1 2>%a" Pp.field key pp ty
   in
   raise @@ Acutis_error (pp_ty loc f)
 
@@ -150,7 +149,7 @@ let interface_open_bool_union loc =
   let f = F.dprintf "Unions with boolean tags cannot be opened with '...'." in
   raise @@ Acutis_error (pp_ty loc f)
 
-let interface_type_mismatch loc k a b =
+let interface_type_mismatch loc k pp a b =
   let f =
     F.dprintf
       "This interface does not match the implementation.@;\
@@ -159,18 +158,18 @@ let interface_type_mismatch loc k a b =
        Interface:@;\
        <1 2>%a@;\
        Implementation:@;\
-       <1 2>%a" k Typescheme.pp a Typescheme.pp b
+       <1 2>%a" k pp a pp b
   in
   raise @@ Acutis_error (pp_ty loc f)
 
-let interface_missing_prop loc k ty =
+let interface_missing_prop loc k pp ty =
   let f =
     F.dprintf
       "This interface does not match the implementation.@;\
        Missing prop name:@;\
        <1 2>%s@;\
        Of type:@;\
-       <1 2>%a" k Typescheme.pp ty
+       <1 2>%a" k pp ty
   in
   raise @@ Acutis_error (pp_ty loc f)
 
@@ -237,7 +236,7 @@ module DecodePath = struct
           (List.rev l)
 end
 
-let pp { DecodePath.name; path } ty mess =
+let pp pp_ty { DecodePath.name; path } ty mess =
   F.asprintf
     "@[<v>File \"%s\"@;\
      Render error.@;\
@@ -247,21 +246,21 @@ let pp { DecodePath.name; path } ty mess =
      Expected type:@;\
      <1 2>%a@;\
      %t@]"
-    name DecodePath.pp_path path Typescheme.pp ty mess
+    name DecodePath.pp_path path pp_ty ty mess
 
-let decode pp_data ty stack data =
+let decode pp_ty pp_data stack ty data =
   let f = F.dprintf "Received value:@;<1 2>%a" pp_data data in
-  raise @@ Acutis_error (pp stack ty f)
+  raise @@ Acutis_error (pp pp_ty stack ty f)
 
-let missing_key stack ty key =
+let missing_key stack pp_ty ty key =
   let f = F.dprintf "Input is missing key:@;<1 2>%a" Pp.field key in
-  raise @@ Acutis_error (pp stack ty f)
+  raise @@ Acutis_error (pp pp_ty stack ty f)
 
-let bad_enum pp_data ty stack data =
+let bad_enum pp_ty pp_data stack ty data =
   let f =
     F.dprintf "This type does not allow the given value:@;<1 2>%a" pp_data data
   in
-  raise @@ Acutis_error (pp stack ty f)
+  raise @@ Acutis_error (pp pp_ty stack ty f)
 
 let internal (file, lnum, cnum, enum) s =
   let s =

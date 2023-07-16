@@ -776,6 +776,16 @@ Expected:
 Received:
   false | true
 
+Bool <> int
+---
+File "<test>", 1:25-1:29
+Type error.
+Type mismatch.
+Expected:
+  @0
+Received:
+  true
+
 Int tag <> string tag
 ---
 File "<test>", 1:38-1:52
@@ -785,6 +795,16 @@ Expected:
   {@tag: 0}
 Received:
   {@tag: "a", b: _}
+
+Bool tag <> int tag
+---
+File "<test>", 1:32-1:44
+Type error.
+Type mismatch.
+Expected:
+  {@tag: 0}
+Received:
+  {@tag: true}
 
 Random other tags don't compile.
 ---

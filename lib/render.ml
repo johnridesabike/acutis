@@ -236,23 +236,23 @@ end
 
 module Make (M : MONAD) (D : DATA) :
   S with type t = string M.t and type data = D.t = struct
-  module Ty = Typescheme
+  module T = Typechecker
   module EPath = Error.DecodePath
 
   type data = D.t
   type internal_data = D.t Data.t
 
-  let decode_error = Error.decode D.pp
-  let enum_error = Error.bad_enum D.pp
+  let decode_error = Error.decode T.pp_ty D.pp
+  let enum_error = Error.bad_enum T.pp_ty D.pp
 
   let decode_boolean ty path cases j =
     let i =
       match D.classify j with
       | `Bool false -> 0
       | `Bool true -> 1
-      | _ -> decode_error ty path j
+      | _ -> decode_error path ty j
     in
-    if Set.Int.mem i cases then `Int i else enum_error ty path j
+    if Set.Int.mem i cases then `Int i else enum_error path ty j
 
   let decode_string ty path cases j =
     match D.classify j with
@@ -260,22 +260,22 @@ module Make (M : MONAD) (D : DATA) :
         match cases with
         | None -> x
         | Some cases ->
-            if Set.String.mem s cases then x else enum_error ty path j)
-    | _ -> decode_error ty path j
+            if Set.String.mem s cases then x else enum_error path ty j)
+    | _ -> decode_error path ty j
 
   let decode_int ty path cases j =
     match D.classify j with
     | `Int i as x -> (
         match cases with
         | None -> x
-        | Some cases -> if Set.Int.mem i cases then x else enum_error ty path j)
-    | _ -> decode_error ty path j
+        | Some cases -> if Set.Int.mem i cases then x else enum_error path ty j)
+    | _ -> decode_error path ty j
 
   let decode_float path j =
     match D.classify j with
     | `Float _ as x -> x
     | `Int i -> `Float (float_of_int i)
-    | _ -> decode_error (Ty.float ()) path j
+    | _ -> decode_error path (Typescheme.float ()) j
 
   let rec decode_nullable path ty j =
     match D.classify j with
@@ -290,7 +290,7 @@ module Make (M : MONAD) (D : DATA) :
             (succ i, Data.list_cons (decode (EPath.index i path) ty x) acc))
           (0, Data.list_empty) l
         |> snd |> Data.list_rev
-    | _ -> decode_error (Ty.list ty) path j
+    | _ -> decode_error path (Typescheme.list ty) j
 
   and decode_assoc path ty j =
     match D.classify j with
@@ -300,7 +300,7 @@ module Make (M : MONAD) (D : DATA) :
              (fun k v map ->
                Map.String.add k (decode (EPath.key k path) ty v) map)
              l Map.String.empty)
-    | _ -> decode_error (Ty.dict ty) path j
+    | _ -> decode_error path (Typescheme.dict ty) j
 
   and decode_tuple ty path tys j =
     match D.classify j with
@@ -311,7 +311,7 @@ module Make (M : MONAD) (D : DATA) :
           D.Linear.fold_left
             (fun (i, tys) j ->
               match tys with
-              | [] -> decode_error ty path j
+              | [] -> decode_error path ty j
               | ty :: tys ->
                   result.(i) <- decode (EPath.index i path) ty j;
                   (succ i, tys))
@@ -319,65 +319,66 @@ module Make (M : MONAD) (D : DATA) :
         in
         match extra_tys with
         | [] -> `Array result
-        | _ :: _ -> decode_error ty path j)
-    | _ -> decode_error ty path j
+        | _ :: _ -> decode_error path ty j)
+    | _ -> decode_error path ty j
 
   and decode_record_aux path tys j =
     Map.String.mapi
       (fun k ty ->
         match (ty, D.Assoc.find_opt k j) with
-        | { contents = Ty.Nullable _ | Unknown _ }, None -> Data.null
+        | { contents = T.Nullable _ | Unknown _ }, None -> Data.null
         | ty, Some j -> decode (EPath.key k path) ty j
-        | _ -> Error.missing_key path (Ty.internal_record (ref tys)) k)
+        | _ -> Error.missing_key path T.pp_ty (T.ty_record (ref tys)) k)
       tys
 
   and decode_record path tys j =
     match D.classify j with
     | `Assoc m -> `Assoc (decode_record_aux path !tys m)
-    | _ -> decode_error (Ty.internal_record tys) path j
+    | _ -> decode_error path (T.ty_record tys) j
 
-  and decode_union path ty key Ty.{ cases; extra; row } j =
+  and decode_union path ty key T.{ cases; extra; row } j =
     match D.classify j with
     | `Assoc m -> (
         let tag =
           match D.Assoc.find_opt key m with
           | Some tag -> tag
-          | None -> decode_error ty path j
+          | None -> decode_error path ty j
         in
         let tag, tys =
           match (D.classify tag, cases, extra) with
-          | `Bool false, Ty.Union.Int map, Bool ->
+          | `Bool false, T.Union_int map, Bool ->
               let tag = 0 in
               (`Int tag, Map.Int.find_opt tag map)
-          | `Bool true, Ty.Union.Int map, Bool ->
+          | `Bool true, T.Union_int map, Bool ->
               let tag = 1 in
               (`Int tag, Map.Int.find_opt tag map)
-          | (`Int i as tag), Ty.Union.Int map, Not_bool ->
+          | (`Int i as tag), T.Union_int map, Not_bool ->
               (tag, Map.Int.find_opt i map)
-          | (`String s as tag), Ty.Union.String map, _ ->
+          | (`String s as tag), T.Union_string map, _ ->
               (tag, Map.String.find_opt s map)
-          | _ -> decode_error ty path j
+          | _ -> decode_error path ty j
         in
         match (tys, row) with
         | Some tys, (`Open | `Closed) ->
             `Assoc (decode_record_aux path !tys m |> Map.String.add key tag)
         | None, `Open -> `Assoc (Map.String.singleton key tag)
-        | None, `Closed -> decode_error ty path j)
-    | _ -> decode_error ty path j
+        | None, `Closed -> decode_error path ty j)
+    | _ -> decode_error path ty j
 
-  and decode : EPath.t -> Ty.t -> data -> internal_data =
+  and decode : EPath.t -> T.ty -> data -> internal_data =
    fun path ty j ->
     match !ty with
-    | Ty.Unknown _ -> `Unknown j
+    | T.Unknown _ -> `Unknown j
     | Nullable ty -> decode_nullable path ty j
-    | Enum { extra = Bool; cases = Int cases; _ } ->
+    | Enum { extra = Bool; cases = Enum_int cases; _ } ->
         decode_boolean ty path cases j
-    | String | Enum { row = `Open; cases = String _; _ } ->
+    | String | Enum { row = `Open; cases = Enum_string _; _ } ->
         decode_string ty path None j
-    | Enum { row = `Closed; cases = String cases; _ } ->
+    | Enum { row = `Closed; cases = Enum_string cases; _ } ->
         decode_string ty path (Some cases) j
-    | Int | Enum { row = `Open; cases = Int _; _ } -> decode_int ty path None j
-    | Enum { row = `Closed; cases = Int cases; _ } ->
+    | Int | Enum { row = `Open; cases = Enum_int _; _ } ->
+        decode_int ty path None j
+    | Enum { row = `Closed; cases = Enum_int cases; _ } ->
         decode_int ty path (Some cases) j
     | Float -> decode_float path j
     | List ty -> decode_list path ty j
@@ -389,7 +390,7 @@ module Make (M : MONAD) (D : DATA) :
   let decode ~name tys j =
     match D.classify j with
     | `Assoc l -> decode_record_aux (EPath.make name) tys l
-    | _ -> decode_error (Ty.internal_record (ref tys)) (EPath.make name) j
+    | _ -> decode_error (EPath.make name) (T.ty_record (ref tys)) j
 
   let rec encode_record tys t =
     Map.String.merge
@@ -402,13 +403,13 @@ module Make (M : MONAD) (D : DATA) :
     | `Array [| hd; tl |] -> Seq.Cons (encode ty hd, encode_list ty tl)
     | _ -> Seq.Nil
 
-  and encode : Ty.t -> internal_data -> data =
+  and encode : T.ty -> internal_data -> data =
    fun ty t ->
     match (!ty, t) with
     | _, `Unknown j -> j
     | _, `Float f -> D.of_float f
     | _, `String s -> D.of_string s
-    | Ty.Enum { extra = Bool; _ }, `Int 0 -> D.of_bool false
+    | T.Enum { extra = Bool; _ }, `Int 0 -> D.of_bool false
     | Enum { extra = Bool; _ }, `Int _ -> D.of_bool true
     | (Enum _ | Int | Unknown _), `Int i -> D.of_int i
     | Nullable ty, `Array [| t |] -> D.some @@ encode ty t
@@ -424,8 +425,8 @@ module Make (M : MONAD) (D : DATA) :
         let tag = Map.String.find k m in
         let tys =
           match (cases, tag) with
-          | Ty.Union.Int m, `Int i -> Map.Int.find i m
-          | Ty.Union.String m, `String s -> Map.String.find s m
+          | T.Union_int m, `Int i -> Map.Int.find i m
+          | T.Union_string m, `String s -> Map.String.find s m
           | _ -> Error.internal __POS__ "Type mismatch while encoding a union."
         in
         let tag =

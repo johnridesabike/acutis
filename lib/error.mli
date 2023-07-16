@@ -27,8 +27,13 @@ val dup_record_key : Loc.t -> string -> _
 val extra_record_tag : Loc.t -> _
 val bad_block : Loc.t -> _
 val bad_field : Loc.t -> _
-val type_mismatch : Loc.t -> Typescheme.t -> Typescheme.t -> _
-val missing_field : Loc.t -> string -> Typescheme.t -> _
+
+val type_mismatch :
+  Loc.t -> (Format.formatter -> 'ty -> unit) -> 'ty -> 'ty -> _
+
+val missing_field :
+  Loc.t -> string -> (Format.formatter -> 'ty -> unit) -> 'ty -> _
+
 val underscore_in_construct : Loc.t -> _
 val name_bound_too_many : Loc.t -> string -> _
 val var_missing : Loc.t -> string -> _
@@ -51,9 +56,10 @@ val interface_duplicate_tag :
 val interface_open_bool_union : Loc.t -> _
 
 val interface_type_mismatch :
-  Loc.t -> string -> Typescheme.t -> Typescheme.t -> _
+  Loc.t -> string -> (Format.formatter -> 'ty -> unit) -> 'ty -> 'ty -> _
 
-val interface_missing_prop : Loc.t -> string -> Typescheme.t -> _
+val interface_missing_prop :
+  Loc.t -> string -> (Format.formatter -> 'ty -> unit) -> 'ty -> _
 
 (** {1 Matching errors.} *)
 
@@ -78,18 +84,21 @@ module DecodePath : sig
 end
 
 val decode :
+  (Format.formatter -> 'ty -> unit) ->
   (Format.formatter -> 'data -> unit) ->
-  Typescheme.t ->
   DecodePath.t ->
+  'ty ->
   'data ->
   _
 
-val missing_key : DecodePath.t -> Typescheme.t -> string -> _
+val missing_key :
+  DecodePath.t -> (Format.formatter -> 'ty -> unit) -> 'ty -> string -> _
 
 val bad_enum :
+  (Format.formatter -> 'ty -> unit) ->
   (Format.formatter -> 'data -> unit) ->
-  Typescheme.t ->
   DecodePath.t ->
+  'ty ->
   'data ->
   _
 

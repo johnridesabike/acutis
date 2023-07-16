@@ -9,7 +9,6 @@
 (**************************************************************************)
 
 module T = Typechecker
-module Ty = Typescheme
 
 type scalar = [ `Int of int | `Float of float | `String of string ]
 
@@ -578,17 +577,17 @@ type bindings = { next_id : unit -> int; names : int Map.String.t }
 type ('a, 'k) cont = bindings -> ('a, 'k) tree
 
 let check_cases_of_enum = function
-  | None | Some Ty.{ row = `Open; _ } -> None
-  | Some Ty.{ row = `Closed; cases = Enum.Int s; _ } ->
+  | None | Some T.{ row = `Open; _ } -> None
+  | Some T.{ row = `Closed; cases = Enum_int s; _ } ->
       Some (Set.Int.to_seq s |> Seq.map int)
-  | Some Ty.{ row = `Closed; cases = Enum.String s; _ } ->
+  | Some T.{ row = `Closed; cases = Enum_string s; _ } ->
       Some (Set.String.to_seq s |> Seq.map string)
 
 let check_cases_of_union = function
-  | Ty.{ row = `Open; _ } -> None
-  | Ty.{ row = `Closed; cases = Union.Int s; _ } ->
+  | T.{ row = `Open; _ } -> None
+  | T.{ row = `Closed; cases = Union_int s; _ } ->
       Some (Map.Int.to_seq s |> Seq.map fst |> Seq.map int)
-  | Ty.{ row = `Closed; cases = Union.String s; _ } ->
+  | T.{ row = `Closed; cases = Union_string s; _ } ->
       Some (Map.String.to_seq s |> Seq.map fst |> Seq.map string)
 
 let ids = Set.Int.empty
@@ -727,7 +726,7 @@ module ParMatch = struct
 
   let rec to_pat ty path =
     match (!ty, path) with
-    | Ty.Enum { extra = Bool; _ }, Scalar (`Int i) -> Ast.Bool (l, i)
+    | T.Enum { extra = Bool; _ }, Scalar (`Int i) -> Ast.Bool (l, i)
     | Enum _, Scalar (`Int i) -> Enum_int (l, i)
     | Enum _, Scalar (`String s) -> Enum_string (l, s)
     | _, Scalar (`Int i) -> Int (l, i)
@@ -743,8 +742,8 @@ module ParMatch = struct
         match to_assoc s path with
         | [] -> Ast.dummy_var
         | hd :: tl -> Record (l, hd :: tl))
-    | Union (key, { cases = Int m; extra; _ }), Nest (Scalar (`Int i) :: path)
-      ->
+    | ( Union (key, { cases = Union_int m; extra; _ }),
+        Nest (Scalar (`Int i) :: path) ) ->
         let tag =
           match extra with
           | Bool -> Ast.Tag_bool (l, i)
@@ -753,7 +752,8 @@ module ParMatch = struct
         let tys = Map.Int.find i m in
         let assoc = to_assoc (Map.String.to_seq !tys) path in
         Record (l, (l, key, Tag tag) :: assoc)
-    | Union (key, { cases = String m; _ }), Nest (Scalar (`String s) :: path) ->
+    | ( Union (key, { cases = Union_string m; _ }),
+        Nest (Scalar (`String s) :: path) ) ->
         let tys = Map.String.find s m in
         let assoc = to_assoc (Map.String.to_seq !tys) path in
         Record (l, (l, key, Tag (Tag_string (l, s))) :: assoc)

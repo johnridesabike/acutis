@@ -277,11 +277,15 @@ let () =
     (render "{% match @0 with @\"a\" %} {% /match %}");
   print_error "| false | true <> only false"
     (render "{% match true with false %} {% /match %}");
+  print_error "Bool <> int"
+    (render "{% match a with @0 with true %} {% /match %}");
 
   print_error "Int tag <> string tag"
     (render
        "{% match a with {@tag: 0} %} {% with {@tag: \"a\", b} %} {{ b }}\n\
         {% /match %}");
+  print_error "Bool tag <> int tag"
+    (render "{% match a with {@tag: 0} with {@tag: true} %} {% /match %}");
   print_error "Random other tags don't compile."
     (render "{% match a with {@tag: []} %} {% /match %}");
   print_error "Tag names must be coherent."

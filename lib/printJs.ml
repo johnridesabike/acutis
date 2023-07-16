@@ -10,7 +10,7 @@
 
 module C = Compile
 module M = Matching
-module Ty = Typescheme
+module T = Typechecker
 
 type filepath = Filepath of string [@@unboxed]
 
@@ -787,7 +787,7 @@ let error =
   let b = Buffer.create 64 in
   let ppf = Format.formatter_of_buffer b in
   fun ty input ->
-    Ty.pp ppf ty;
+    T.pp_ty ppf ty;
     Format.pp_print_flush ppf ();
     let ty = Buffer.contents b in
     Buffer.clear b;
@@ -837,15 +837,16 @@ let decode_float ~set input ty =
 
 let rec decode_typescheme ~set input env ty =
   match !ty with
-  | Ty.Unknown _ -> [ set input ]
-  | Enum { extra = Bool; cases = Int cases; _ } ->
+  | T.Unknown _ -> [ set input ]
+  | Enum { extra = Bool; cases = Enum_int cases; _ } ->
       [ decode_boolean ~set input cases ty ]
-  | String | Enum { row = `Open; cases = String _; _ } ->
+  | String | Enum { row = `Open; cases = Enum_string _; _ } ->
       [ decode_string ~set input ty ]
-  | Enum { row = `Closed; cases = String cases; _ } ->
+  | Enum { row = `Closed; cases = Enum_string cases; _ } ->
       [ decode_string_enum ~set input cases ty ]
-  | Int | Enum { row = `Open; cases = Int _; _ } -> [ decode_int ~set input ty ]
-  | Enum { row = `Closed; cases = Int cases; _ } ->
+  | Int | Enum { row = `Open; cases = Enum_int _; _ } ->
+      [ decode_int ~set input ty ]
+  | Enum { row = `Closed; cases = Enum_int cases; _ } ->
       [ decode_int_enum ~set input cases ty ]
   | Float -> [ decode_float ~set input ty ]
   | Nullable ty -> [ decode_nullable ~set input env ty ]
@@ -878,7 +879,7 @@ and decode_tuple ~set input env tys =
                     [ meth_pop Id.debug_stack ];
                   ])
               tys),
-      [ error (Ty.tuple tys) input ] )
+      [ error (Typescheme.tuple tys) input ] )
 
 and decode_dict ~set input env ty =
   let key = Id.Safe.key env in
@@ -937,7 +938,7 @@ and decode_list ~set input env ty =
         Set (list_tl (Var dst), internal_nil);
         set (list_tl (Var dst_base));
       ],
-      [ error (Ty.list ty) input ] )
+      [ error (Typescheme.list ty) input ] )
 
 and decode_nullable ~set input env ty =
   let nullable = Id.Safe.nullable env in
@@ -988,7 +989,7 @@ and decode_union ~set input env key variant ty =
     Switch
       ( Var input_key,
         (match variant with
-        | { cases = Int map; extra = Bool; _ } ->
+        | { cases = Union_int map; extra = Bool; _ } ->
             Map.Int.to_seq map
             |> Seq.map (fun (k, v) ->
                    match k with
@@ -1000,33 +1001,33 @@ and decode_union ~set input env key variant ty =
                        ( Prim True,
                          set_data_key (Int k)
                          :: decode_record_aux ~data:(Var union) input env !v ))
-        | { cases = Int map; _ } ->
+        | { cases = Union_int map; _ } ->
             Map.Int.to_seq map
             |> Seq.map (fun (k, v) ->
                    ( Int k,
                      set_data_key (Int k)
                      :: decode_record_aux ~data:(Var union) input env !v ))
-        | { cases = String map; _ } ->
+        | { cases = Union_string map; _ } ->
             Map.String.to_seq map
             |> Seq.map (fun (k, v) ->
                    ( String k,
                      set_data_key (String k)
                      :: decode_record_aux ~data:(Var union) input env !v ))),
         match variant with
-        | { cases = Int _; row = `Open; _ } ->
+        | { cases = Union_int _; row = `Open; _ } ->
             decode_typescheme
               ~set:(fun id -> meth_set (Var union) (String key) id)
-              (Var input_key) env (Ty.int ())
-        | { cases = String _; row = `Open; _ } ->
+              (Var input_key) env (Typescheme.int ())
+        | { cases = Union_string _; row = `Open; _ } ->
             decode_typescheme
               ~set:(fun id -> meth_set (Var union) (String key) id)
-              (Var input_key) env (Ty.string ())
+              (Var input_key) env (Typescheme.string ())
         | { row = `Closed; _ } -> [ error ty input ] );
   ]
 
 let rec encode_typescheme ~set input env ty =
   match !ty with
-  | Ty.Unknown _ -> [ set input ]
+  | T.Unknown _ -> [ set input ]
   | Enum { extra = Bool; _ } ->
       [ If_else (input, [ set (Prim True) ], [ set (Prim False) ]) ]
   | String | Int | Float | Enum _ -> [ set input ]
@@ -1116,7 +1117,7 @@ and encode_union ~set input env key variant =
     Switch
       ( Var input_key,
         (match variant with
-        | { cases = Int map; extra = Bool; _ } ->
+        | { cases = Union_int map; extra = Bool; _ } ->
             Map.Int.to_seq map
             |> Seq.map (fun (k, v) ->
                    match k with
@@ -1128,13 +1129,13 @@ and encode_union ~set input env key variant =
                        ( Int k,
                          set_data_key (Prim True)
                          :: encode_record_aux ~data:(Var union) input env !v ))
-        | { cases = Int map; _ } ->
+        | { cases = Union_int map; _ } ->
             Map.Int.to_seq map
             |> Seq.map (fun (k, v) ->
                    ( Int k,
                      set_data_key (Int k)
                      :: encode_record_aux ~data:(Var union) input env !v ))
-        | { cases = String map; _ } ->
+        | { cases = Union_string map; _ } ->
             Map.String.to_seq map
             |> Seq.map (fun (k, v) ->
                    ( String k,
@@ -1152,7 +1153,7 @@ type t = jsfun C.t
 type namespaced_jsfun = {
   name : string;
   namespace : Id.t;
-  typescheme : Ty.t Map.String.t;
+  typescheme : T.ty Map.String.t;
   function_path : string;
 }
 

@@ -257,7 +257,8 @@ type 'a t = { tree : (leaf, int) tree; exits : 'a Exit.t }
 
 val make : Typechecker.case Nonempty.t -> Typechecker.nodes t
 
-val partial_match_check : Loc.t -> Typescheme.t list -> (leaf, int) tree -> unit
+val partial_match_check :
+  Loc.t -> Typechecker.ty list -> (leaf, int) tree -> unit
 (** Searches the tree for a counterexample to prove it does not cover
     a case. Raises {!Error.Acutis_error} if it finds one. *)
 

@@ -150,7 +150,7 @@ let () =
           In_channel.with_open_text fname
           @@ Compile.from_channel ~fname components
         in
-        Typescheme.pp_interface Format.std_formatter template.types
+        Typescheme.pp Format.std_formatter template.types
       else if !arg_printopt then
         let components = make_components_js () in
         let template =
