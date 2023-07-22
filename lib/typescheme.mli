@@ -11,7 +11,7 @@
 (** The public API for declaring type schemes. *)
 
 type row = [ `Open | `Closed ]
-type ty = Typechecker.ty
+type ty = Typechecker.Type.t
 type t = ty Map.String.t
 
 val unknown : unit -> ty

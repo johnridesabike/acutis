@@ -10,6 +10,8 @@
 
 (** Predefined map modules. *)
 
+module type S = Stdlib.Map.S
+
 module Make = Stdlib.Map.Make
 module String = Make (String)
 module Int = Make (Int)

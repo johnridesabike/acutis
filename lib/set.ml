@@ -10,6 +10,8 @@
 
 (** Predefined set modules. *)
 
+module type S = Stdlib.Set.S
+
 module Make = Stdlib.Set.Make
 module Int = Make (Int)
 module String = Make (String)

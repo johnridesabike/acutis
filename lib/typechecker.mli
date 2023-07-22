@@ -10,51 +10,85 @@
 
 (** Type-checks the untyped {!Ast.t} and constructs a typed tree. *)
 
-type row = [ `Closed | `Open ]
-type sum_extra = Not_bool | Bool
+module Type : sig
+  type row = [ `Closed | `Open ]
+  type int_bool = Not_bool | Bool
 
-type 'a sum = { mutable cases : 'a; mutable row : row; extra : sum_extra }
-(** Common fields shared by the enum and union types. *)
+  type 'a sum = { mutable cases : 'a; mutable row : row }
+  (** Common fields shared by the enum and union types. *)
 
-type enum = Enum_int of Set.Int.t | Enum_string of Set.String.t
+  type ty =
+    | Unknown of row ref
+        (** The row is for unification with sum types during destructuring. *)
+    | Int
+    | Float
+    | String
+    | Nullable of t
+    | List of t
+    | Tuple of t list
+    | Record of record
+    | Dict of t * Set.String.t ref
+        (** The set tracks which keys have been used so they can build
+            pattern-matching decision trees. *)
+    | Enum_int of Set.Int.t sum * int_bool
+    | Enum_string of Set.String.t sum
+    | Union_int of string * sum_union_int * int_bool
+    | Union_string of string * sum_union_string
 
-type ty_ =
-  | Unknown of row ref
-      (** The row is for unification with sum types during destructuring. *)
-  | Int
-  | Float
-  | String
-  | Nullable of ty
-  | List of ty
-  | Tuple of ty list
-  | Record of ty Map.String.t ref
-  | Dict of ty * Set.String.t ref
-      (** The set tracks which keys have been used so they can build
-          pattern-matching decision trees. *)
-  | Enum of enum sum
-  | Union of string * union sum
+  and sum_union_int = record Map.Int.t sum
+  and sum_union_string = record Map.String.t sum
+  and record = t Map.String.t ref
+  and t = ty ref
 
-and union =
-  | Union_int of ty Map.String.t ref Map.Int.t
-  | Union_string of ty Map.String.t ref Map.String.t
-
-and ty = ty_ ref
+  val unknown : unit -> t
+  val int : unit -> t
+  val float : unit -> t
+  val string : unit -> t
+  val nullable : t -> t
+  val list : t -> t
+  val tuple : t list -> t
+  val record : record -> t
+  val dict : t -> t
+  val sum : 'a -> row -> 'a sum
+  val enum_int : Set.Int.t sum -> t
+  val enum_string : Set.String.t sum -> t
+  val enum_false_and_true : unit -> t
+  val enum_false_only : unit -> t
+  val enum_true_only : unit -> t
+  val union_int : string -> sum_union_int -> t
+  val union_string : string -> sum_union_string -> t
+  val union_false_and_true : string -> f:record -> t:record -> t
+  val union_false_only : string -> record -> t
+  val union_true_only : string -> record -> t
+  val pp : Format.formatter -> t -> unit
+end
 
 type echo = [ `Var of string | `String of string | `Field of echo * string ]
 type scalar = [ `Int of int | `Float of float | `String of string ]
-type tag = string * [ `Int of int | `String of string ] * union sum
+
+type scalar_sum =
+  | Scalar_sum_none
+  | Scalar_sum_int of Set.Int.t Type.sum
+  | Scalar_sum_string of Set.String.t Type.sum
+
+type union_tag =
+  | Union_tag_none
+  | Union_tag_int of string * int * Type.sum_union_int
+  | Union_tag_string of string * string * Type.sum_union_string
+
 type construct = private Construct_tag
 type destruct = private Destruct_tag
 
 (** We use a GADT to prove that certain patterns may only appear when
     constructing and certain patterns may only appear when destructuring. *)
 type _ pat =
-  | TScalar : scalar * enum sum option -> 'a pat
+  | TScalar : scalar * scalar_sum -> 'a pat
   | TNil : 'a pat
-  | TCons : 'a pat -> 'a pat  (** This always contains a [TTuple]. *)
+  | TCons : 'a pat -> 'a pat  (** This always contains a {!TTuple}. *)
   | TTuple : 'a pat list -> 'a pat
-  | TRecord : tag option * 'a pat Map.String.t * ty Map.String.t ref -> 'a pat
+  | TRecord : union_tag * 'a pat Map.String.t * Type.record -> 'a pat
   | TDict : 'a pat Map.String.t * Set.String.t ref -> 'a pat
+      (** The set is part of a {!Type.Dict}. *)
   | TVar : string -> 'a pat
   | TBlock : nodes -> construct pat
   | TField : construct pat * string -> construct pat
@@ -63,9 +97,10 @@ type _ pat =
 and node =
   | TText of string * Ast.trim * Ast.trim
   | TEcho of (Ast.echo_format * echo) list * Ast.echo_format * echo * Ast.escape
-  | TMatch of Loc.t * construct pat Nonempty.t * ty Nonempty.t * case Nonempty.t
-  | TMap_list of Loc.t * construct pat * ty Nonempty.t * case Nonempty.t
-  | TMap_dict of Loc.t * construct pat * ty Nonempty.t * case Nonempty.t
+  | TMatch of
+      Loc.t * construct pat Nonempty.t * Type.t Nonempty.t * case Nonempty.t
+  | TMap_list of Loc.t * construct pat * Type.t Nonempty.t * case Nonempty.t
+  | TMap_dict of Loc.t * construct pat * Type.t Nonempty.t * case Nonempty.t
   | TComponent of string * construct pat Map.String.t
 
 and case = {
@@ -75,42 +110,14 @@ and case = {
 
 and nodes = node list
 
-type t = { nodes : nodes; types : ty Map.String.t }
+type t = { nodes : nodes; types : Type.t Map.String.t }
 
 type ('a, 'b) source =
   | Src of string * 'a
-  | Fun of string * ty Map.String.t * 'b
+  | Fun of string * Type.t Map.String.t * 'b
 
 val make_components :
   (Ast.t, 'a) source Map.String.t -> (t, 'a) source Map.String.t
 
 val make : root:string -> (t, 'a) source Map.String.t -> Ast.t -> t
-val make_interface_standalone : Ast.interface -> ty Map.String.t
-
-(** Type functions. *)
-
-val ty_unknown : unit -> ty
-val ty_int : unit -> ty
-val ty_float : unit -> ty
-val ty_string : unit -> ty
-val ty_nullable : ty -> ty
-val ty_list : ty -> ty
-val ty_tuple : ty list -> ty
-val ty_record : ty Map.String.t ref -> ty
-val ty_dict : ty -> ty
-val ty_enum : enum sum -> ty
-val ty_union : string -> union sum -> ty
-val enum_string : Set.String.t -> row -> enum sum
-val enum_int : Set.Int.t -> row -> enum sum
-val enum_false_and_true : unit -> enum sum
-val enum_false_only : unit -> enum sum
-val enum_true_only : unit -> enum sum
-val union_int : ty Map.String.t ref Map.Int.t -> row -> union sum
-val union_string : ty Map.String.t ref Map.String.t -> row -> union sum
-
-val union_false_and_true :
-  f:ty Map.String.t ref -> t:ty Map.String.t ref -> union sum
-
-val union_false_only : ty Map.String.t ref -> union sum
-val union_true_only : ty Map.String.t ref -> union sum
-val pp_ty : Format.formatter -> ty -> unit
+val make_interface_standalone : Ast.interface -> Type.t Map.String.t

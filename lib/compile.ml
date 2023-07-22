@@ -80,11 +80,11 @@ let rec make_data block_queue = function
   | TNil -> `Null
   | TCons x -> make_data block_queue x
   | TTuple l -> `Array (Array.of_list l |> Array.map (make_data block_queue))
-  | TRecord (Some (k, v, _), x, _) ->
-      `Assoc
-        (Map.String.map (make_data block_queue) x
-        |> Map.String.add k (v :> data))
-  | TRecord (None, x, _) | TDict (x, _) ->
+  | TRecord (Union_tag_int (k, v, _), x, _) ->
+      `Assoc Map.String.(map (make_data block_queue) x |> add k (`Int v))
+  | TRecord (Union_tag_string (k, v, _), x, _) ->
+      `Assoc Map.String.(map (make_data block_queue) x |> add k (`String v))
+  | TRecord (Union_tag_none, x, _) | TDict (x, _) ->
       `Assoc (Map.String.map (make_data block_queue) x)
   | TField (node, field) -> `Field (make_data block_queue node, field)
 

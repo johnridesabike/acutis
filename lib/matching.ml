@@ -570,25 +570,10 @@ and merge :
 
 let merge = merge Z
 
-(** To turn a typed pattern into a tree (albeit a single-branch of tree), we use
+(** To turn a typed pattern into a tree (albeit a single-branched tree), we use
     CPS as an easy way deal with the nested tree type. *)
 
 type bindings = { next_id : unit -> int; names : int Map.String.t }
-type ('a, 'k) cont = bindings -> ('a, 'k) tree
-
-let check_cases_of_enum = function
-  | None | Some T.{ row = `Open; _ } -> None
-  | Some T.{ row = `Closed; cases = Enum_int s; _ } ->
-      Some (Set.Int.to_seq s |> Seq.map int)
-  | Some T.{ row = `Closed; cases = Enum_string s; _ } ->
-      Some (Set.String.to_seq s |> Seq.map string)
-
-let check_cases_of_union = function
-  | T.{ row = `Open; _ } -> None
-  | T.{ row = `Closed; cases = Union_int s; _ } ->
-      Some (Map.Int.to_seq s |> Seq.map fst |> Seq.map int)
-  | T.{ row = `Closed; cases = Union_string s; _ } ->
-      Some (Map.String.to_seq s |> Seq.map fst |> Seq.map string)
 
 let ids = Set.Int.empty
 
@@ -600,7 +585,7 @@ let rec of_tpat :
           'a 'k.
           key:'k ->
           bindings ->
-          ('a, 'k) cont ->
+          (bindings -> ('a, 'k) tree) ->
           T.destruct T.pat ->
           ('a, 'k) tree =
  fun ~key b k -> function
@@ -609,7 +594,15 @@ let rec of_tpat :
       let id = b.next_id () in
       let b = { b with names = Map.String.add x id b.names } in
       Wildcard { ids = Set.Int.singleton id; key; child = k b }
-  | TScalar (data, enum) -> of_scalar key data (k b) (check_cases_of_enum enum)
+  | TScalar (data, Scalar_sum_none)
+  | TScalar (data, Scalar_sum_int { row = `Open; _ })
+  | TScalar (data, Scalar_sum_string { row = `Open; _ }) ->
+      of_scalar key data (k b) None
+  | TScalar (data, Scalar_sum_int { row = `Closed; cases }) ->
+      of_scalar key data (k b) (Some (Set.Int.to_seq cases |> Seq.map int))
+  | TScalar (data, Scalar_sum_string { row = `Closed; cases }) ->
+      of_scalar key data (k b)
+        (Some (Set.String.to_seq cases |> Seq.map string))
   | TNil -> Nil { key; ids; child = k b }
   | TCons cons -> Cons { key; ids; child = of_tpat ~key b k cons }
   | TTuple l ->
@@ -627,9 +620,17 @@ let rec of_tpat :
       in
       let child =
         match tag with
-        | Some (key, data, union) ->
-            of_scalar key (data :> scalar) child (check_cases_of_union union)
-        | None -> child
+        | Union_tag_none -> child
+        | Union_tag_int (k, v, { row = `Open; _ }) ->
+            of_scalar k (`Int v) child None
+        | Union_tag_string (k, v, { row = `Open; _ }) ->
+            of_scalar k (`String v) child None
+        | Union_tag_int (k, v, { row = `Closed; cases }) ->
+            of_scalar k (`Int v) child
+              (Some (Map.Int.to_seq cases |> Seq.map fst |> Seq.map int))
+        | Union_tag_string (k, v, { row = `Closed; cases }) ->
+            of_scalar k (`String v) child
+              (Some (Map.String.to_seq cases |> Seq.map fst |> Seq.map string))
       in
       Nest { key; ids; child = String_keys child; wildcard = None }
   | TDict (m, kys) ->
@@ -651,7 +652,7 @@ and of_list :
       'a.
       key:int ->
       bindings ->
-      ('a, int) cont ->
+      (bindings -> ('a, int) tree) ->
       T.destruct T.pat list ->
       ('a, int) tree =
  fun ~key b k -> function
@@ -726,9 +727,9 @@ module ParMatch = struct
 
   let rec to_pat ty path =
     match (!ty, path) with
-    | T.Enum { extra = Bool; _ }, Scalar (`Int i) -> Ast.Bool (l, i)
-    | Enum _, Scalar (`Int i) -> Enum_int (l, i)
-    | Enum _, Scalar (`String s) -> Enum_string (l, s)
+    | T.Type.Enum_int (_, Bool), Scalar (`Int i) -> Ast.Bool (l, i)
+    | Enum_int _, Scalar (`Int i) -> Enum_int (l, i)
+    | Enum_string _, Scalar (`String s) -> Enum_string (l, s)
     | _, Scalar (`Int i) -> Int (l, i)
     | _, Scalar (`String s) -> String (l, s)
     | _, Scalar (`Float f) -> Float (l, f)
@@ -742,19 +743,17 @@ module ParMatch = struct
         match to_assoc s path with
         | [] -> Ast.dummy_var
         | hd :: tl -> Record (l, hd :: tl))
-    | ( Union (key, { cases = Union_int m; extra; _ }),
-        Nest (Scalar (`Int i) :: path) ) ->
+    | Union_int (key, { cases; _ }, b), Nest (Scalar (`Int i) :: path) ->
         let tag =
-          match extra with
+          match b with
           | Bool -> Ast.Tag_bool (l, i)
           | Not_bool -> Ast.Tag_int (l, i)
         in
-        let tys = Map.Int.find i m in
+        let tys = Map.Int.find i cases in
         let assoc = to_assoc (Map.String.to_seq !tys) path in
         Record (l, (l, key, Tag tag) :: assoc)
-    | ( Union (key, { cases = Union_string m; _ }),
-        Nest (Scalar (`String s) :: path) ) ->
-        let tys = Map.String.find s m in
+    | Union_string (key, { cases; _ }), Nest (Scalar (`String s) :: path) ->
+        let tys = Map.String.find s cases in
         let assoc = to_assoc (Map.String.to_seq !tys) path in
         Record (l, (l, key, Tag (Tag_string (l, s))) :: assoc)
     | _ -> Ast.dummy_var
@@ -774,7 +773,7 @@ module ParMatch = struct
 
   let pp tys ppf l =
     Format.fprintf ppf "@[%a@]"
-      (Format.pp_print_list ~pp_sep:Pp.sep_comma Ast.pp_pat)
+      (Format.pp_print_list ~pp_sep:Pp.comma Ast.pp_pat)
       (to_list tys l)
 
   module L = struct
