@@ -11,6 +11,8 @@
 (** Type-checks the untyped {!Ast.t} and constructs a typed tree. *)
 
 module Type : sig
+  (** Manages the type definitions. *)
+
   type row = [ `Closed | `Open ]
   type int_bool = Not_bool | Bool
 
@@ -82,26 +84,26 @@ type destruct = private Destruct_tag
 (** We use a GADT to prove that certain patterns may only appear when
     constructing and certain patterns may only appear when destructuring. *)
 type _ pat =
-  | TScalar : scalar * scalar_sum -> 'a pat
-  | TNil : 'a pat
-  | TCons : 'a pat -> 'a pat  (** This always contains a {!TTuple}. *)
-  | TTuple : 'a pat list -> 'a pat
-  | TRecord : union_tag * 'a pat Map.String.t * Type.record -> 'a pat
-  | TDict : 'a pat Map.String.t * Set.String.t ref -> 'a pat
+  | Scalar : scalar * scalar_sum -> 'a pat
+  | Nil : 'a pat
+  | Cons : 'a pat -> 'a pat  (** This always contains a {!Tuple}. *)
+  | Tuple : 'a pat list -> 'a pat
+  | Record : union_tag * 'a pat Map.String.t * Type.record -> 'a pat
+  | Dict : 'a pat Map.String.t * Set.String.t ref -> 'a pat
       (** The set is part of a {!Type.Dict}. *)
-  | TVar : string -> 'a pat
-  | TBlock : nodes -> construct pat
-  | TField : construct pat * string -> construct pat
-  | TAny : destruct pat
+  | Var : string -> 'a pat
+  | Block : nodes -> construct pat
+  | Field : construct pat * string -> construct pat
+  | Any : destruct pat
 
 and node =
-  | TText of string * Ast.trim * Ast.trim
-  | TEcho of (Ast.echo_format * echo) list * Ast.echo_format * echo * Ast.escape
-  | TMatch of
+  | Text of string * Ast.trim * Ast.trim
+  | Echo of (Ast.echo_format * echo) list * Ast.echo_format * echo * Ast.escape
+  | Match of
       Loc.t * construct pat Nonempty.t * Type.t Nonempty.t * case Nonempty.t
-  | TMap_list of Loc.t * construct pat * Type.t Nonempty.t * case Nonempty.t
-  | TMap_dict of Loc.t * construct pat * Type.t Nonempty.t * case Nonempty.t
-  | TComponent of string * construct pat Map.String.t
+  | Map_list of Loc.t * construct pat * Type.t Nonempty.t * case Nonempty.t
+  | Map_dict of Loc.t * construct pat * Type.t Nonempty.t * case Nonempty.t
+  | Component of string * construct pat Map.String.t
 
 and case = {
   pats : (Loc.t * destruct pat Nonempty.t) Nonempty.t;

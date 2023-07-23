@@ -276,20 +276,19 @@ module Type = struct
             b.cases <- cases
         | `Closed, `Open -> raise_notrace Clash)
 
-  let rec unify mode aty bty =
-    match (!aty, !bty) with
+  let rec unify mode a b =
+    match (!a, !b) with
     | Int, Int | Float, Float | String, String -> ()
-    | Nullable t1, Nullable t2 -> unify mode t1 t2
-    | List t1, List t2 -> unify mode t1 t2
-    | Dict (t1, ks1), Dict (t2, ks2) ->
-        let ks' = Set.String.union !ks1 !ks2 in
-        ks1 := ks';
-        ks2 := ks';
-        unify mode t1 t2
-    | Tuple t1, Tuple t2 -> (
-        try List.iter2 (unify mode) t1 t2
+    | Nullable a, Nullable b | List a, List b -> unify mode a b
+    | Tuple a, Tuple b -> (
+        try List.iter2 (unify mode) a b
         with Invalid_argument _ -> raise_notrace Clash)
     | Record a, Record b -> unify_record mode a b
+    | Dict (a, keys1), Dict (b, keys2) ->
+        let ks' = Set.String.union !keys1 !keys2 in
+        keys1 := ks';
+        keys2 := ks';
+        unify mode a b
     | Enum_int (a, Bool), Enum_int (b, Bool)
     | Enum_int (a, Not_bool), Enum_int (b, Not_bool) ->
         unify_sum
@@ -312,10 +311,10 @@ module Type = struct
           ~subset:(subset_union Polymap.String)
           mode a b
     | Unknown { contents = `Open }, t ->
-        (match mode with Destruct_expand -> open_rows bty | _ -> ());
-        aty := t
-    | Unknown _, t -> aty := t
-    | t, Unknown _ -> bty := t
+        (match mode with Destruct_expand -> open_rows b | _ -> ());
+        a := t
+    | Unknown _, t -> a := t
+    | t, Unknown _ -> b := t
     | _ -> raise_notrace Clash
 
   and unify_record mode a b =
@@ -461,25 +460,25 @@ type construct = private Construct_tag
 type destruct = private Destruct_tag
 
 type _ pat =
-  | TScalar : scalar * scalar_sum -> 'a pat
-  | TNil : 'a pat
-  | TCons : 'a pat -> 'a pat
-  | TTuple : 'a pat list -> 'a pat
-  | TRecord : union_tag * 'a pat Map.String.t * Type.record -> 'a pat
-  | TDict : 'a pat Map.String.t * Set.String.t ref -> 'a pat
-  | TVar : string -> 'a pat
-  | TBlock : nodes -> construct pat
-  | TField : construct pat * string -> construct pat
-  | TAny : destruct pat
+  | Scalar : scalar * scalar_sum -> 'a pat
+  | Nil : 'a pat
+  | Cons : 'a pat -> 'a pat
+  | Tuple : 'a pat list -> 'a pat
+  | Record : union_tag * 'a pat Map.String.t * Type.record -> 'a pat
+  | Dict : 'a pat Map.String.t * Set.String.t ref -> 'a pat
+  | Var : string -> 'a pat
+  | Block : nodes -> construct pat
+  | Field : construct pat * string -> construct pat
+  | Any : destruct pat
 
 and node =
-  | TText of string * Ast.trim * Ast.trim
-  | TEcho of (Ast.echo_format * echo) list * Ast.echo_format * echo * Ast.escape
-  | TMatch of
+  | Text of string * Ast.trim * Ast.trim
+  | Echo of (Ast.echo_format * echo) list * Ast.echo_format * echo * Ast.escape
+  | Match of
       Loc.t * construct pat Nonempty.t * Type.t Nonempty.t * case Nonempty.t
-  | TMap_list of Loc.t * construct pat * Type.t Nonempty.t * case Nonempty.t
-  | TMap_dict of Loc.t * construct pat * Type.t Nonempty.t * case Nonempty.t
-  | TComponent of string * construct pat Map.String.t
+  | Map_list of Loc.t * construct pat * Type.t Nonempty.t * case Nonempty.t
+  | Map_dict of Loc.t * construct pat * Type.t Nonempty.t * case Nonempty.t
+  | Component of string * construct pat Map.String.t
 
 and case = {
   pats : (Loc.t * destruct pat Nonempty.t) Nonempty.t;
@@ -806,24 +805,24 @@ let rec make_pat :
  fun var_action mode ty -> function
   | Int (loc, i) ->
       Type.unify loc mode ty (Type.int ());
-      TScalar (`Int i, Scalar_sum_none)
+      Scalar (`Int i, Scalar_sum_none)
   | String (loc, s) ->
       Type.unify loc mode ty (Type.string ());
-      TScalar (`String s, Scalar_sum_none)
+      Scalar (`String s, Scalar_sum_none)
   | Block (loc, nodes) -> (
       Type.unify loc mode ty (Type.string ());
       match var_action with
       | Destruct_add_vars _ -> Error.bad_block loc
-      | Construct_update_vars ctx -> TBlock (make_nodes ctx nodes))
+      | Construct_update_vars ctx -> Block (make_nodes ctx nodes))
   | Field (loc, rec_pat, field) -> (
       let rec_ty = Map.String.singleton field ty |> ref |> Type.record in
       let rec_pat = make_pat var_action mode rec_ty rec_pat in
       match var_action with
       | Destruct_add_vars _ -> Error.bad_field loc
-      | Construct_update_vars _ -> TField (rec_pat, field))
+      | Construct_update_vars _ -> Field (rec_pat, field))
   | Float (loc, f) ->
       Type.unify loc mode ty (Type.float ());
-      TScalar (`Float f, Scalar_sum_none)
+      Scalar (`Float f, Scalar_sum_none)
   | Bool (loc, b) ->
       let temp_sum =
         match var_action with
@@ -833,25 +832,25 @@ let rec make_pat :
       let temp_ty = Type.enum_bool temp_sum in
       let sum = match !ty with Enum_int (s, _) -> s | _ -> temp_sum in
       Type.unify loc mode ty temp_ty;
-      TScalar (`Int b, Scalar_sum_int sum)
+      Scalar (`Int b, Scalar_sum_int sum)
   | Enum_string (loc, s) ->
       let temp_sum = Type.sum_enum_string_singleton s (make_row mode) in
       let temp_ty = Type.enum_string temp_sum in
       let sum = match !ty with Enum_string s -> s | _ -> temp_sum in
       Type.unify loc mode ty temp_ty;
-      TScalar (`String s, Scalar_sum_string sum)
+      Scalar (`String s, Scalar_sum_string sum)
   | Enum_int (loc, i) ->
       let temp_sum = Type.sum_enum_int_singleton i (make_row mode) in
       let temp_ty = Type.enum_int temp_sum in
       let sum = match !ty with Enum_int (s, _) -> s | _ -> temp_sum in
       Type.unify loc mode ty temp_ty;
-      TScalar (`Int i, Scalar_sum_int sum)
+      Scalar (`Int i, Scalar_sum_int sum)
   | Nullable (loc, pat) ->
       let tyvar = match !ty with Nullable ty -> ty | _ -> Type.unknown () in
       let pat =
         match pat with
-        | None -> TNil
-        | Some pat -> TCons (TTuple [ make_pat var_action mode tyvar pat ])
+        | None -> Nil
+        | Some pat -> Cons (Tuple [ make_pat var_action mode tyvar pat ])
       in
       Type.unify loc mode ty (Type.nullable tyvar);
       pat
@@ -859,14 +858,14 @@ let rec make_pat :
       let tyvar = match !ty with List ty -> ty | _ -> Type.unknown () in
       Type.unify loc mode ty (Type.list tyvar);
       let tl =
-        match tl with None -> TNil | Some tl -> make_pat var_action mode ty tl
+        match tl with None -> Nil | Some tl -> make_pat var_action mode ty tl
       in
       make_list ~tl var_action mode tyvar l
   | Tuple (loc, l) ->
       let temp_tyvars = List.map Type.unknown l in
       let tyvars = match !ty with Tuple tys -> tys | _ -> temp_tyvars in
       Type.unify loc mode ty (Type.tuple tyvars);
-      TTuple (List.map2 (make_pat var_action mode) tyvars l)
+      Tuple (List.map2 (make_pat var_action mode) tyvars l)
   | Record (loc, r) -> (
       match assoc_to_record r with
       | Untagged m ->
@@ -874,7 +873,7 @@ let rec make_pat :
           let tyvars = match !ty with Record tys -> tys | _ -> temp_tyvars in
           Type.unify loc mode ty (Type.record temp_tyvars);
           let r = make_record var_action loc mode !tyvars m in
-          TRecord (Union_tag_none, r, tyvars)
+          Record (Union_tag_none, r, tyvars)
       | Tagged (k, v, m) -> (
           let row = make_row mode in
           let temp_tyvars = Map.String.map Type.unknown m |> ref in
@@ -889,7 +888,7 @@ let rec make_pat :
               in
               Type.unify loc mode ty (Type.union_int k temp_sum);
               let r = make_record var_action loc mode !tyvars m in
-              TRecord (Union_tag_int (k, i, sum), r, tyvars)
+              Record (Union_tag_int (k, i, sum), r, tyvars)
           | Tag_bool (_, i) ->
               let temp_sum = Type.sum_union_bool_singleton i temp_tyvars in
               let sum =
@@ -900,7 +899,7 @@ let rec make_pat :
               in
               Type.unify loc mode ty (Type.union_bool k temp_sum);
               let r = make_record var_action loc mode !tyvars m in
-              TRecord (Union_tag_int (k, i, sum), r, tyvars)
+              Record (Union_tag_int (k, i, sum), r, tyvars)
           | Tag_string (_, s) ->
               let temp_sum =
                 Type.sum_union_string_singleton s temp_tyvars row
@@ -913,7 +912,7 @@ let rec make_pat :
               in
               Type.unify loc mode ty (Type.union_string k temp_sum);
               let r = make_record var_action loc mode !tyvars m in
-              TRecord (Union_tag_string (k, s, sum), r, tyvars)))
+              Record (Union_tag_string (k, s, sum), r, tyvars)))
   | Dict (loc, m) ->
       let m = assoc_to_map m in
       let temp_kys =
@@ -926,12 +925,12 @@ let rec make_pat :
       in
       Type.unify loc mode ty (Type.dict_keys tyvar temp_kys);
       let d = Map.String.map (make_pat var_action mode tyvar) m in
-      TDict (d, kys)
+      Dict (d, kys)
   | Var (loc, "_") -> (
       match var_action with
       | Destruct_add_vars _ ->
           Type.open_rows ty;
-          TAny
+          Any
       | Construct_update_vars _ -> Error.underscore_in_construct loc)
   | Var (loc, b) ->
       (match var_action with
@@ -939,7 +938,7 @@ let rec make_pat :
           Type.open_rows ty;
           Queue.add (loc, b, ty) queue
       | Construct_update_vars ctx -> Context.update ctx loc b ty);
-      TVar b
+      Var b
 
 and[@tail_mod_cons] make_list :
     type a.
@@ -953,7 +952,7 @@ and[@tail_mod_cons] make_list :
   | [] -> tl
   | p :: l ->
       let hd = make_pat var_action mode ty p in
-      TCons (TTuple [ hd; make_list ~tl var_action mode ty l ])
+      Cons (Tuple [ hd; make_list ~tl var_action mode ty l ])
 
 and make_record :
     type a.
@@ -972,7 +971,7 @@ and make_record :
           | Some pat, None ->
               Some (make_pat var_action mode (Type.unknown ()) pat)
           | Some pat, Some ty -> Some (make_pat var_action mode ty pat)
-          | None, Some _ -> Some TAny
+          | None, Some _ -> Some Any
           | None, None -> None)
         m tyvars
   | Construct_update_vars _ ->
@@ -1046,13 +1045,13 @@ and make_cases ctx cases =
 and make_nodes ctx nodes =
   List.filter_map
     (function
-      | Ast.Text (s, l, r) -> Some (TText (s, l, r))
-      | Echo (nullables, fmt, default, esc) ->
+      | Ast.Text (s, l, r) -> Some (Text (s, l, r))
+      | Ast.Echo (nullables, fmt, default, esc) ->
           let nullables = make_nullable_echoes ctx nullables in
           let ty = make_echo_type fmt in
           let default = make_echo ctx ty default in
-          Some (TEcho (nullables, fmt, default, esc))
-      | Component (loc, comp, comp', props) ->
+          Some (Echo (nullables, fmt, default, esc))
+      | Ast.Component (loc, comp, comp', props) ->
           if comp <> comp' then Error.component_name_mismatch loc comp comp';
           let types = get_types (Dagmap.get comp ctx.graph) in
           (* The original should not mutate*)
@@ -1068,27 +1067,27 @@ and make_nodes ctx nodes =
             |> Map.String.merge missing_to_nullable types
             |> make_component_props loc comp ctx types
           in
-          Some (TComponent (comp, props))
-      | Match (loc, pats, cases) ->
+          Some (Component (comp, props))
+      | Ast.Match (loc, pats, cases) ->
           let tys, cases = make_cases ctx cases in
           let patterns =
             try unify_match_cases pats tys ctx
             with Invalid_argument _ -> Error.pat_num_mismatch loc
           in
-          Some (TMatch (loc, patterns, tys, cases))
-      | Map_list (loc, pattern, cases) ->
+          Some (Match (loc, patterns, tys, cases))
+      | Ast.Map_list (loc, pattern, cases) ->
           let cases = add_default_wildcard cases |> make_cases ctx in
           let pattern, ty, cases =
             unify_map ~ty:Type.list ~key:Type.int loc cases pattern ctx
           in
-          Some (TMap_list (loc, pattern, ty, cases))
-      | Map_dict (loc, pattern, cases) ->
+          Some (Map_list (loc, pattern, ty, cases))
+      | Ast.Map_dict (loc, pattern, cases) ->
           let cases = add_default_wildcard cases |> make_cases ctx in
           let pattern, ty, cases =
             unify_map ~ty:Type.dict ~key:Type.string loc cases pattern ctx
           in
-          Some (TMap_dict (loc, pattern, ty, cases))
-      | Interface (loc, i) ->
+          Some (Map_dict (loc, pattern, ty, cases))
+      | Ast.Interface (loc, i) ->
           Interface.make loc ctx i;
           None
       | Comment _ -> None)

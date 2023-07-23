@@ -589,31 +589,30 @@ let rec of_tpat :
           T.destruct T.pat ->
           ('a, 'k) tree =
  fun ~key b k -> function
-  | TAny -> Wildcard { ids; key; child = k b }
-  | TVar x ->
+  | Any -> Wildcard { ids; key; child = k b }
+  | Var x ->
       let id = b.next_id () in
       let b = { b with names = Map.String.add x id b.names } in
       Wildcard { ids = Set.Int.singleton id; key; child = k b }
-  | TScalar (data, Scalar_sum_none)
-  | TScalar (data, Scalar_sum_int { row = `Open; _ })
-  | TScalar (data, Scalar_sum_string { row = `Open; _ }) ->
+  | Scalar (data, Scalar_sum_none)
+  | Scalar (data, Scalar_sum_int { row = `Open; _ })
+  | Scalar (data, Scalar_sum_string { row = `Open; _ }) ->
       of_scalar key data (k b) None
-  | TScalar (data, Scalar_sum_int { row = `Closed; cases }) ->
+  | Scalar (data, Scalar_sum_int { row = `Closed; cases }) ->
       of_scalar key data (k b) (Some (Set.Int.to_seq cases |> Seq.map int))
-  | TScalar (data, Scalar_sum_string { row = `Closed; cases }) ->
+  | Scalar (data, Scalar_sum_string { row = `Closed; cases }) ->
       of_scalar key data (k b)
         (Some (Set.String.to_seq cases |> Seq.map string))
-  | TNil -> Nil { key; ids; child = k b }
-  | TCons cons -> Cons { key; ids; child = of_tpat ~key b k cons }
-  | TTuple l ->
+  | Nil -> Nil { key; ids; child = k b }
+  | Cons cons -> Cons { key; ids; child = of_tpat ~key b k cons }
+  | Tuple l ->
       let child = Int_keys (of_list ~key:0 b (fun b -> End (k b)) l) in
       Nest { key; ids; child; wildcard = None }
-  | TRecord (tag, m, tys) ->
+  | Record (tag, m, tys) ->
       (* We need to expand the map to include all of its type's keys. *)
       let child =
         Map.String.merge
-          (fun _k _ty p ->
-            match p with None -> Some T.TAny | Some _ as p -> p)
+          (fun _k _ty p -> match p with None -> Some T.Any | Some _ as p -> p)
           !tys m
         |> Map.String.to_seq
         |> of_keyvalues b (fun b -> End (k b))
@@ -633,7 +632,7 @@ let rec of_tpat :
               (Some (Map.String.to_seq cases |> Seq.map fst |> Seq.map string))
       in
       Nest { key; ids; child = String_keys child; wildcard = None }
-  | TDict (m, kys) ->
+  | Dict (m, kys) ->
       (* We need to expand the map to include all of its type's keys. *)
       let child =
         Map.String.map Option.some m

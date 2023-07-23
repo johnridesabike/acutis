@@ -159,13 +159,12 @@ let add_escape b = function
 
 let echo_format fmt data =
   match (fmt, data) with
-  | Compile.Fmt_int, `Int i -> Int.to_string i
-  | Fmt_float, `Float f -> Float.to_string f
-  | Fmt_bool, `Int 0 -> "false"
-  | Fmt_bool, _ -> "true"
-  | Fmt_string, `String s -> s
-  | _ ->
-      Error.internal __POS__ "Type mismatch while formatting an echo statement."
+  | Compile.Fmt_bool, `Int 0 -> "false"
+  | Compile.Fmt_bool, _ -> "true"
+  | _, `Int i -> Int.to_string i
+  | _, `Float f -> Float.to_string f
+  | _, `String s -> s
+  | _ -> Error.internal __POS__ "Type mismatch in echo statement."
 
 let rec get_echo props = function
   | `Var var -> Map.String.find var props
@@ -275,7 +274,7 @@ module Make (M : MONAD) (D : DATA) :
     match D.classify j with
     | `Float _ as x -> x
     | `Int i -> `Float (float_of_int i)
-    | _ -> decode_error path (Typescheme.float ()) j
+    | _ -> decode_error path (Ty.float ()) j
 
   let rec decode_nullable path ty j =
     match D.classify j with
@@ -290,7 +289,7 @@ module Make (M : MONAD) (D : DATA) :
             (succ i, Data.list_cons (decode (EPath.index i path) ty x) acc))
           (0, Data.list_empty) l
         |> snd |> Data.list_rev
-    | _ -> decode_error path (Typescheme.list ty) j
+    | _ -> decode_error path (Ty.list ty) j
 
   and decode_assoc path ty j =
     match D.classify j with
@@ -300,7 +299,7 @@ module Make (M : MONAD) (D : DATA) :
              (fun k v map ->
                Map.String.add k (decode (EPath.key k path) ty v) map)
              l Map.String.empty)
-    | _ -> decode_error path (Typescheme.dict ty) j
+    | _ -> decode_error path (Ty.dict ty) j
 
   and decode_tuple ty path tys j =
     match D.classify j with
@@ -385,6 +384,17 @@ module Make (M : MONAD) (D : DATA) :
     | `Assoc l -> decode_record_aux (EPath.make name) tys l
     | _ -> decode_error (EPath.make name) (Ty.record (ref tys)) j
 
+  (** This is for encoding primitives or for when a type is unknown. *)
+  let rec encode_untyped = function
+    | `Unknown j -> j
+    | `Int i -> D.of_int i
+    | `Float f -> D.of_float f
+    | `String s -> D.of_string s
+    | `Array a -> D.of_seq @@ Seq.map encode_untyped @@ Array.to_seq a
+    | `Assoc m -> D.of_map @@ Map.String.map encode_untyped m
+
+  let encode_bool = function 0 -> D.of_bool false | _ -> D.of_bool true
+
   let rec encode_record tys t =
     Map.String.merge
       (fun _ ty t ->
@@ -396,46 +406,36 @@ module Make (M : MONAD) (D : DATA) :
     | `Array [| hd; tl |] -> Seq.Cons (encode ty hd, encode_list ty tl)
     | _ -> Seq.Nil
 
+  and encode_union k m f =
+    match f (Map.String.find k m) with
+    | Some (tag, tys) ->
+        encode_record !tys m |> Map.String.add k tag |> D.of_map
+    | None -> Error.internal __POS__ "Type mismatch while encoding a union."
+
   and encode : Ty.t -> internal_data -> data =
-   fun ty t ->
-    match (!ty, t) with
-    | _, `Unknown j -> j
-    | _, `Float f -> D.of_float f
-    | _, `String s -> D.of_string s
-    | Enum_int (_, Bool), `Int 0 -> D.of_bool false
-    | Enum_int (_, Bool), `Int _ -> D.of_bool true
-    | (Enum_int _ | Int | Unknown _), `Int i -> D.of_int i
+   fun ty j ->
+    match (!ty, j) with
+    | Enum_int (_, Bool), `Int i -> encode_bool i
     | Nullable ty, `Array [| t |] -> D.some @@ encode ty t
     | Nullable _, _ -> D.null
     | List ty, t -> D.of_seq @@ encode_list ty t
     | Tuple tys, `Array a ->
         D.of_seq @@ Seq.map2 encode (List.to_seq tys) (Array.to_seq a)
-    | Unknown _, `Array a -> D.of_seq @@ Seq.map (encode ty) (Array.to_seq a)
     | Dict (ty, _), `Assoc m -> D.of_map @@ Map.String.map (encode ty) m
-    | Unknown _, `Assoc m -> D.of_map @@ Map.String.map (encode ty) m
     | Record tys, `Assoc m -> D.of_map @@ encode_record !tys m
-    | Union_int (k, { cases; _ }, int_bool), `Assoc m -> (
-        let tag = Map.String.find k m in
-        match tag with
-        | `Int tag ->
-            let tys = Map.Int.find tag cases in
-            let tag =
-              match (int_bool, tag) with
-              | Bool, 0 -> D.of_bool false
-              | Bool, _ -> D.of_bool true
-              | Not_bool, i -> D.of_int i
-            in
-            encode_record !tys m |> Map.String.add k tag |> D.of_map
-        | _ -> Error.internal __POS__ "Type mismatch while encoding a union.")
-    | Union_string (k, { cases; _ }), `Assoc m -> (
-        let tag = Map.String.find k m in
-        match tag with
-        | `String s ->
-            let tys = Map.String.find s cases in
-            let tag = D.of_string s in
-            encode_record !tys m |> Map.String.add k tag |> D.of_map
-        | _ -> Error.internal __POS__ "Type mismatch while encoding a union.")
-    | _ -> Error.internal __POS__ "Type mismatch while encoding data."
+    | Union_int (k, { cases; _ }, b), `Assoc m ->
+        encode_union k m (function
+          | `Int i ->
+              let tag =
+                match b with Bool -> encode_bool i | Not_bool -> D.of_int i
+              in
+              Some (tag, Map.Int.find i cases)
+          | _ -> None)
+    | Union_string (k, { cases; _ }), `Assoc m ->
+        encode_union k m (function
+          | `String s -> Some (D.of_string s, Map.String.find s cases)
+          | _ -> None)
+    | _, j -> encode_untyped j
 
   let encode tys j = D.of_map @@ encode_record tys j
 
