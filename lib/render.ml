@@ -470,8 +470,7 @@ module Make (M : MONAD) (D : DATA) :
             M.return b
         | Text s ->
             let* b = b in
-            Buffer.add_string b s;
-            M.return b
+            Buffer.add_string b s; M.return b
         | Match (blocks, args, tree) ->
             let* blocks = eval_array vars blocks in
             let args = Array.map (eval_data ~blocks ~vars) args in
@@ -504,8 +503,7 @@ module Make (M : MONAD) (D : DATA) :
             | Fun (types, f) ->
                 let* result = f (encode types vars) in
                 let* b = b in
-                Buffer.add_string b result;
-                M.return b))
+                Buffer.add_string b result; M.return b))
       b nodes
 
   and eval_array vars a =

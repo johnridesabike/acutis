@@ -99,9 +99,7 @@ module Type = struct
 
   let pp_row ppf = function
     | `Closed -> ()
-    | `Open ->
-        pp_sum_sep ppf ();
-        Pp.ellipsis ppf ()
+    | `Open -> pp_sum_sep ppf (); Pp.ellipsis ppf ()
 
   let pp_sum ppf pp_case cases row =
     F.fprintf ppf "@[<hv 0>%a%a@]"
@@ -324,29 +322,18 @@ module Type = struct
           Map.String.merge
             (fun _ a b ->
               match (a, b) with
-              | (Some a as x), Some b ->
-                  unify mode a b;
-                  x
-              | None, (Some b as x) ->
-                  open_rows b;
-                  x
+              | (Some a as x), Some b -> unify mode a b; x
+              | None, (Some b as x) -> open_rows b; x
               | x, None -> x)
             !a !b
     | Construct_var ->
-        b :=
-          Map.String.union
-            (fun _ a b ->
-              unify mode a b;
-              Some b)
-            !a !b
+        b := Map.String.union (fun _ a b -> unify mode a b; Some b) !a !b
     | Construct_literal ->
         a :=
           Map.String.merge
             (fun _ a b ->
               match (a, b) with
-              | (Some a as x), Some b ->
-                  unify mode a b;
-                  x
+              | (Some a as x), Some b -> unify mode a b; x
               | Some _, None -> raise_notrace Clash
               | None, _ -> None)
             !a !b
@@ -354,11 +341,7 @@ module Type = struct
   and unify_union :
         'k 'm. ('k, 'v, 'm) Polymap.t -> unify_mode -> 'm -> 'm -> 'm =
    fun poly mode a b ->
-    Polymap.union poly
-      (fun _ a b ->
-        unify_record mode a b;
-        Some a)
-      a b
+    Polymap.union poly (fun _ a b -> unify_record mode a b; Some a) a b
 
   and subset_union :
         'k 'm. ('k, 'v, 'm) Polymap.t -> unify_mode -> 'm -> 'm -> unit =
@@ -367,9 +350,7 @@ module Type = struct
       (fun _ a b ->
         match (a, b) with
         | (Some _ as x), None -> x
-        | (Some a as x), Some b ->
-            unify_record mode a b;
-            x
+        | (Some a as x), Some b -> unify_record mode a b; x
         | None, Some _ -> raise_notrace Clash
         | None, None -> None)
       a b
@@ -928,9 +909,7 @@ let rec make_pat :
       Dict (d, kys)
   | Var (loc, "_") -> (
       match var_action with
-      | Destruct_add_vars _ ->
-          Type.open_rows ty;
-          Any
+      | Destruct_add_vars _ -> Type.open_rows ty; Any
       | Construct_update_vars _ -> Error.underscore_in_construct loc)
   | Var (loc, b) ->
       (match var_action with
@@ -1087,9 +1066,7 @@ and make_nodes ctx nodes =
             unify_map ~ty:Type.dict ~key:Type.string loc cases pattern ctx
           in
           Some (Map_dict (loc, pattern, ty, cases))
-      | Ast.Interface (loc, i) ->
-          Interface.make loc ctx i;
-          None
+      | Ast.Interface (loc, i) -> Interface.make loc ctx i; None
       | Comment _ -> None)
     nodes
 

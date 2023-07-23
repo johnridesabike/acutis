@@ -105,9 +105,7 @@ end = struct
 
     let make name env =
       match Hashtbl.find_opt env name with
-      | None ->
-          Hashtbl.add env name 1;
-          Printf.sprintf "%s1" name
+      | None -> Hashtbl.add env name 1; Printf.sprintf "%s1" name
       | Some i ->
           let i = succ i in
           Hashtbl.add env name i;

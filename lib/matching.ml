@@ -692,8 +692,7 @@ let make Nonempty.(Typechecker.{ pats; nodes } :: tl_cases) =
   let next_id = ref 0 in
   let next_id () =
     let id = !next_id in
-    incr next_id;
-    id
+    incr next_id; id
   in
   let hd_tree =
     let ((_, hd_pats) :: tl_pats) = pats in

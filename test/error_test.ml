@@ -36,16 +36,8 @@ let render ?(json = "{}") ?(components = Compile.Components.empty) src () =
   ignore @@ RenderSync.eval temp json
 
 let print_error title f =
-  let s =
-    try
-      f ();
-      "no error"
-    with Error.Acutis_error s -> String.trim s
-  in
-  print_endline title;
-  print_endline "---";
-  print_endline s;
-  print_newline ()
+  let s = try f (); "no error" with Error.Acutis_error s -> String.trim s in
+  print_endline title; print_endline "---"; print_endline s; print_newline ()
 
 let () =
   print_error "Illegal character 1" (render "{% match*");
