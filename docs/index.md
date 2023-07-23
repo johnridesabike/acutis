@@ -1,6 +1,6 @@
 ---
 title: Acutis
-description: Acutis is a template language for the web & beyond.
+description: Acutis is a simple and type-safe template language.
 showTitle: false
 layout: main.acutis.js
 next:

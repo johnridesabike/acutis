@@ -51,7 +51,7 @@ let json =
       ("name", S "acutis-lang");
       ("version", S !version);
       ("private", B false);
-      ("description", S "A declarative, type-safe template language");
+      ("description", S "A simple and type-safe template language");
       ( "keywords",
         A
           [

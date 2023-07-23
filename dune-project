@@ -21,7 +21,9 @@
 
 (package
  (name acutis)
- (synopsis "A declarative, type-safe template language")
+ (synopsis "A simple and type-safe template language")
+ (description
+  "Acutis is a template language that features static typing, pattern matching, and asynchronous template components. You can execute your templates like scripts or compile them to self-contained JavaScript files.")
  (depends
   (ocaml
    (>= 4.14))
@@ -31,9 +33,7 @@
   (ocamlformat
    (and
     (= 0.25.1)
-    :with-test)))
- (tags
-  (template language parser interpreter)))
+    :with-test))))
 
 (package
  (name acutis_js)
