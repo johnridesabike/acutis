@@ -222,7 +222,7 @@ module type DATA = sig
   val of_bool : bool -> t
   val of_int : int -> t
   val of_seq : t Seq.t -> t
-  val of_map : t Map.String.t -> t
+  val of_assoc : (string * t) Seq.t -> t
   val pp : Format.formatter -> t -> unit
 end
 
@@ -391,7 +391,7 @@ module Make (M : MONAD) (D : DATA) :
     | `Float f -> D.of_float f
     | `String s -> D.of_string s
     | `Array a -> D.of_seq @@ Seq.map encode_untyped @@ Array.to_seq a
-    | `Assoc m -> D.of_map @@ Map.String.map encode_untyped m
+    | `Assoc m -> D.of_assoc @@ Map.String.(to_seq @@ map encode_untyped m)
 
   let encode_bool = function 0 -> D.of_bool false | _ -> D.of_bool true
 
@@ -400,6 +400,7 @@ module Make (M : MONAD) (D : DATA) :
       (fun _ ty t ->
         match (ty, t) with Some ty, Some t -> Some (encode ty t) | _ -> None)
       tys t
+    |> Map.String.to_seq
 
   and encode_list ty l () =
     match l with
@@ -408,8 +409,7 @@ module Make (M : MONAD) (D : DATA) :
 
   and encode_union k m f =
     match f (Map.String.find k m) with
-    | Some (tag, tys) ->
-        encode_record !tys m |> Map.String.add k tag |> D.of_map
+    | Some (tag, tys) -> D.of_assoc @@ Seq.cons (k, tag) @@ encode_record !tys m
     | None -> Error.internal __POS__ "Type mismatch while encoding a union."
 
   and encode : Ty.t -> internal_data -> data =
@@ -421,8 +421,9 @@ module Make (M : MONAD) (D : DATA) :
     | List ty, t -> D.of_seq @@ encode_list ty t
     | Tuple tys, `Array a ->
         D.of_seq @@ Seq.map2 encode (List.to_seq tys) (Array.to_seq a)
-    | Dict (ty, _), `Assoc m -> D.of_map @@ Map.String.map (encode ty) m
-    | Record tys, `Assoc m -> D.of_map @@ encode_record !tys m
+    | Dict (ty, _), `Assoc m ->
+        D.of_assoc @@ Map.String.(to_seq @@ map (encode ty) m)
+    | Record tys, `Assoc m -> D.of_assoc @@ encode_record !tys m
     | Union_int (k, { cases; _ }, b), `Assoc m ->
         encode_union k m (function
           | `Int i ->
@@ -437,7 +438,7 @@ module Make (M : MONAD) (D : DATA) :
           | _ -> None)
     | _, j -> encode_untyped j
 
-  let encode tys j = D.of_map @@ encode_record tys j
+  let encode tys j = D.of_assoc @@ encode_record tys j
 
   type t = string M.t
 

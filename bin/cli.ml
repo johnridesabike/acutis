@@ -31,7 +31,7 @@ module DataJson = struct
   let of_bool x = `Bool x
   let of_int x = `Int x
   let of_seq x = `List (List.of_seq x)
-  let of_map x = `Assoc (Map.String.bindings x)
+  let of_assoc x = `Assoc (List.of_seq x)
 end
 
 module Render = Render.MakeString (DataJson)

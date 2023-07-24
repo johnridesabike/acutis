@@ -63,7 +63,7 @@ module DataJs = struct
   let of_bool x = Js.bool x |> coerce
   let of_int x = Float.of_int x |> Js.number_of_float |> coerce
   let of_seq x = Array.of_seq x |> Js.array |> coerce
-  let of_map x = Map.String.bindings x |> Array.of_list |> Js.Unsafe.obj
+  let of_assoc x = Array.of_seq x |> Js.Unsafe.obj
 
   let pp ppf j =
     Js.Unsafe.fun_call Js.string_constr [| j |]
