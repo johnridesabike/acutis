@@ -32,6 +32,7 @@ Open enums are inferred correctly
   b = @1 | @2 | @3 | ...
   c = <@"a" | @"b" | @"c" | ...>
   d = {a: int, b: @1 | ...}
+  e = {a: string, b: @1 | ...}
 
 Closed enums are inferred correctly
   $ acutis enum_closed.acutis --printtypes

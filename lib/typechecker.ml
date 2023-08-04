@@ -950,7 +950,7 @@ and make_record :
           | Some pat, None ->
               Some (make_pat var_action mode (Type.unknown ()) pat)
           | Some pat, Some ty -> Some (make_pat var_action mode ty pat)
-          | None, Some _ -> Some Any
+          | None, Some ty -> Some (make_pat var_action mode ty Ast.dummy_var)
           | None, None -> None)
         m tyvars
   | Construct_update_vars _ ->
