@@ -1022,6 +1022,14 @@ This pattern-matching is not exhaustive.
 Here's an example of a pattern which is not matched:
   _, {@tag: true}
 
+Partial matching with unions prints counterexample patterns correctly
+---
+File "<test>", 1:4-5:10
+Matching error.
+This pattern-matching is not exhaustive.
+Here's an example of a pattern which is not matched:
+  _, {@tag: 0, a: @1, b: {@tag: 10, c: _}}
+
 Partial matching with records.
 ---
 File "<test>", 1:4-3:10
@@ -1038,7 +1046,7 @@ This pattern-matching is not exhaustive.
 Here's an example of a pattern which is not matched:
   {@kind: "anonymous", books: _}
 
-Parital matching with enums, closed
+Partial matching with enums, closed
 ---
 File "<test>", 1:4-4:10
 Matching error.
@@ -1046,7 +1054,7 @@ This pattern-matching is not exhaustive.
 Here's an example of a pattern which is not matched:
   _, @1
 
-Parital matching with unions, closed
+Partial matching with unions, closed
 ---
 File "<test>", 1:4-4:10
 Matching error.
@@ -1054,7 +1062,7 @@ This pattern-matching is not exhaustive.
 Here's an example of a pattern which is not matched:
   _, {@tag: 1, a: _}
 
-Parital matching with enums, open
+Partial matching with enums, open
 ---
 File "<test>", 1:4-5:10
 Matching error.
@@ -1062,7 +1070,7 @@ This pattern-matching is not exhaustive.
 Here's an example of a pattern which is not matched:
   _, _
 
-Parital matching with unions, open
+Partial matching with unions, open
 ---
 File "<test>", 1:4-5:10
 Matching error.

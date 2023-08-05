@@ -714,59 +714,106 @@ let make Nonempty.(Typechecker.{ pats; nodes } :: tl_cases) =
   aux hd_tree 1 tl_cases
 
 module ParMatch = struct
-  (** Searches a given tree to find an example of a missing branch. If found,
-      the match is partial. *)
+  (** Searches a given tree to find an example of a missing branch. *)
 
-  (** Represents a path through a tree. This is an intermediary structure which
-      we later convert into a proper pattern.*)
-  type t = Any | Scalar of scalar | Nil | Cons of t | Nest of t list
+  (** We construct a list of values that represent a path of patterns through a
+      tree. If the tree is partial, then we combine the path with a type to make
+      an AST pattern and print it as a counterexample of what is not matched.
+
+      One consideration is that our trees (and our paths) have no knowledge of
+      union types. A path may contain a list of values from one case of a union,
+      but also a value for a tag that belongs to another case. We need to check
+      for this before printing the pattern. *)
+
+  (** Represents whether a path follows its preceding scalar value or a
+      different value. This is relevant for union tags. *)
+  type scalar_path = Same | Diverge
+
+  type path = Any | Nil | Scalar of scalar * scalar_path | Nest of path list
 
   let l = Loc.dummy
 
+  (** Turn closed sum types into an example of their possible values. All other
+      types become wildcards. *)
+  let rec ty_to_pat ty =
+    match !ty with
+    | T.Type.Enum_int ({ cases; row = `Closed }, Bool) ->
+        Ast.Bool (l, Set.Int.min_elt cases)
+    | Enum_int ({ cases; row = `Closed }, Not_bool) ->
+        Ast.Enum_int (l, Set.Int.min_elt cases)
+    | Enum_string { cases; row = `Closed } ->
+        Ast.Enum_string (l, Set.String.min_elt cases)
+    | Union_int (k, { cases; row = `Closed }, Bool) ->
+        let tag, tys = Map.Int.min_binding cases in
+        Ast.Record (l, (l, k, Tag (Tag_bool (l, tag))) :: ty_map_to_pats tys)
+    | Union_int (k, { cases; row = `Closed }, Not_bool) ->
+        let tag, tys = Map.Int.min_binding cases in
+        Ast.Record (l, (l, k, Tag (Tag_int (l, tag))) :: ty_map_to_pats tys)
+    | Union_string (k, { cases; row = `Closed }) ->
+        let tag, tys = Map.String.min_binding cases in
+        Ast.Record (l, (l, k, Tag (Tag_string (l, tag))) :: ty_map_to_pats tys)
+    | Int | String | Float | Tuple _ | Unknown _ | Nullable _ | List _
+    | Record _ | Dict _ | Enum_int _ | Enum_string _ | Union_int _
+    | Union_string _ ->
+        Ast.dummy_var
+
+  and ty_map_to_pats tys =
+    Map.String.to_seq !tys
+    |> Seq.map (fun (k, v) -> (l, k, Ast.Value (ty_to_pat v)))
+    |> List.of_seq
+
   let rec to_pat ty path =
     match (!ty, path) with
-    | T.Type.Enum_int (_, Bool), Scalar (`Int i) -> Ast.Bool (l, i)
-    | Enum_int _, Scalar (`Int i) -> Enum_int (l, i)
-    | Enum_string _, Scalar (`String s) -> Enum_string (l, s)
-    | _, Scalar (`Int i) -> Int (l, i)
-    | _, Scalar (`String s) -> String (l, s)
-    | _, Scalar (`Float f) -> Float (l, f)
-    | Tuple tys, Nest path -> Tuple (l, to_list tys path)
+    | T.Type.Enum_int (_, Bool), Scalar (`Int i, _) -> Ast.Bool (l, i)
+    | Enum_int _, Scalar (`Int i, _) -> Ast.Enum_int (l, i)
+    | Enum_string _, Scalar (`String s, _) -> Ast.Enum_string (l, s)
+    | _, Scalar (`Int i, _) -> Ast.Int (l, i)
+    | _, Scalar (`String s, _) -> Ast.String (l, s)
+    | _, Scalar (`Float f, _) -> Ast.Float (l, f)
+    | Tuple tys, Nest path -> Ast.Tuple (l, to_list tys path)
     | List ty, path -> to_list_pat [] ty path
-    | Nullable ty, Cons (Nest [ path ]) -> Nullable (l, Some (to_pat ty path))
-    | Nullable _, Cons Any -> Nullable (l, Some Ast.dummy_var)
-    | Nullable _, Nil -> Nullable (l, None)
+    | Nullable ty, Nest [ path ] -> Ast.Nullable (l, Some (to_pat ty path))
+    | Nullable _, Any -> Ast.Nullable (l, Some Ast.dummy_var)
+    | Nullable _, Nil -> Ast.Nullable (l, None)
     | Record tys, Nest path -> (
         let s = Map.String.to_seq !tys in
         match to_assoc s path with
         | [] -> Ast.dummy_var
-        | hd :: tl -> Record (l, hd :: tl))
-    | Union_int (key, { cases; _ }, b), Nest (Scalar (`Int i) :: path) ->
+        | hd :: tl -> Ast.Record (l, hd :: tl))
+    | Union_int (k, { cases; _ }, b), Nest (Scalar (`Int i, div) :: path) ->
         let tag =
           match b with
           | Bool -> Ast.Tag_bool (l, i)
           | Not_bool -> Ast.Tag_int (l, i)
         in
         let tys = Map.Int.find i cases in
-        let assoc = to_assoc (Map.String.to_seq !tys) path in
-        Record (l, (l, key, Tag tag) :: assoc)
-    | Union_string (key, { cases; _ }), Nest (Scalar (`String s) :: path) ->
+        let assoc =
+          match div with
+          | Same -> to_assoc (Map.String.to_seq !tys) path
+          | Diverge -> ty_map_to_pats tys
+        in
+        Ast.Record (l, (l, k, Tag tag) :: assoc)
+    | Union_string (k, { cases; _ }), Nest (Scalar (`String s, div) :: path) ->
         let tys = Map.String.find s cases in
-        let assoc = to_assoc (Map.String.to_seq !tys) path in
-        Record (l, (l, key, Tag (Tag_string (l, s))) :: assoc)
+        let assoc =
+          match div with
+          | Same -> to_assoc (Map.String.to_seq !tys) path
+          | Diverge -> ty_map_to_pats tys
+        in
+        Ast.Record (l, (l, k, Tag (Tag_string (l, s))) :: assoc)
     | _ -> Ast.dummy_var
 
   and to_list_pat acc ty = function
-    | Cons (Nest [ hd; tl ]) -> to_list_pat (to_pat ty hd :: acc) ty tl
-    | Nil -> List (l, List.rev acc, None)
-    | Cons Any | _ -> List (l, List.rev acc, Some Ast.dummy_var)
+    | Nest [ hd; tl ] -> to_list_pat (to_pat ty hd :: acc) ty tl
+    | Nil -> Ast.List (l, List.rev acc, None)
+    | Any | _ -> Ast.List (l, List.rev acc, Some Ast.dummy_var)
 
   and to_list tys path = List.map2 to_pat tys path
 
   and[@tail_mod_cons] to_assoc tys path =
     match (tys (), path) with
     | Seq.Cons ((key, ty), tys), hd :: path ->
-        (l, key, Value (to_pat ty hd)) :: to_assoc tys path
+        (l, key, Ast.Value (to_pat ty hd)) :: to_assoc tys path
     | _ -> []
 
   let pp tys ppf l =
@@ -775,28 +822,33 @@ module ParMatch = struct
       (to_list tys l)
 
   module L = struct
-    (** A list indexed by its length. We describe length in terms of
-        nested trees. This is useful to eliminate one case where we parse a nest
-        and want to guarantee that the list returned will not be empty. *)
+    (** A list indexed by its length. We describe length in terms of nested
+        trees. This is useful to eliminate one case where we parse a nest and
+        want to guarantee that the list returned will not be empty. *)
     type (_, _) t =
       | [] : ('a, leaf) t
       | ( :: ) : 'a * ('a, 'n) t -> ('a, ('n, 'k) tree) t
   end
 
   type flag = Partial | Exhaustive
-  type 'a check = { flag : flag; pats : t list; after_nest : (t list, 'a) L.t }
 
-  let exhaustive c = { c with pats = Any :: c.pats }
+  type 'a t = {
+    flag : flag;
+    path : path list;
+    after_nest : (path list, 'a) L.t;
+  }
 
-  let rec check : type a k. (a, leaf) depth -> (a, k) tree -> a check =
+  let exhaustive c = { c with path = Any :: c.path }
+
+  let rec check : type a k. (a, leaf) depth -> (a, k) tree -> a t =
    fun n tree ->
     match tree with
     | End x -> (
         match n with
-        | Z -> { flag = Exhaustive; pats = []; after_nest = [] }
+        | Z -> { flag = Exhaustive; path = []; after_nest = [] }
         | S n ->
             let r = check n x in
-            { r with pats = []; after_nest = r.pats :: r.after_nest })
+            { r with path = []; after_nest = r.path :: r.after_nest })
     | Wildcard { child; _ } -> exhaustive (check n child)
     | Nest { child; wildcard; _ } -> (
         (* Either the child OR the wildcard can be exhaustive.
@@ -810,49 +862,46 @@ module ParMatch = struct
           | String_keys c -> check (S n) c
         in
         match r with
-        | { flag = Exhaustive; pats; after_nest = hd :: tl } -> (
+        | { flag = Exhaustive; path; after_nest = hd :: tl } -> (
             (* Dicts always require a wildcard if they're not empty. *)
-            match (child, wildcard, pats) with
+            match (child, wildcard, path) with
             | String_keys (Optional _), None, _ :: _ ->
-                { flag = Partial; pats = Any :: hd; after_nest = tl }
+                { flag = Partial; path = Any :: hd; after_nest = tl }
             | String_keys (Optional _), Some wildcard, _ ->
                 exhaustive (check n wildcard)
             | _ ->
-                { flag = Exhaustive; pats = Nest pats :: hd; after_nest = tl })
-        | { flag = Partial; pats; after_nest = hd :: tl } -> (
+                { flag = Exhaustive; path = Nest path :: hd; after_nest = tl })
+        | { flag = Partial; path; after_nest = hd :: tl } -> (
             match wildcard with
             | Some wildcard -> exhaustive (check n wildcard)
             | None ->
-                { flag = Partial; pats = Nest pats :: hd; after_nest = tl }))
+                { flag = Partial; path = Nest path :: hd; after_nest = tl }))
     | Cons { child; _ } ->
         let r = check n child in
-        let pats = match r.pats with _ :: pats -> Nil :: pats | [] -> [] in
-        { r with flag = Partial; pats }
+        let path = match r.path with _ :: path -> Nil :: path | [] -> [] in
+        { r with flag = Partial; path }
     | Nil { child; _ } ->
         let r = check n child in
-        { r with flag = Partial; pats = Cons Any :: r.pats }
+        { r with flag = Partial; path = Any :: r.path }
     | Nil_or_cons { nil; cons; _ } -> (
         match check n nil with
         | { flag = Exhaustive; _ } -> (
             match check n cons with
             | { flag = Exhaustive; _ } as r -> r
-            | { flag = Partial; pats; after_nest } ->
-                let pats =
-                  match pats with hd :: tl -> Cons hd :: tl | [] -> []
-                in
-                { pats; flag = Partial; after_nest })
-        | { flag = Partial; pats; after_nest } ->
-            { flag = Partial; pats = Nil :: pats; after_nest })
+            | { flag = Partial; path; after_nest } ->
+                { path; flag = Partial; after_nest })
+        | { flag = Partial; path; after_nest } ->
+            { flag = Partial; path = Nil :: path; after_nest })
     | Switch { wildcard = Some wildcard; _ } -> exhaustive (check n wildcard)
     | Switch { cases; wildcard = None; check_cases = None; _ } ->
         let r = check n cases.if_match in
-        { r with flag = Partial; pats = Any :: r.pats }
+        { r with flag = Partial; path = Any :: r.path }
     | Switch { cases; wildcard = None; check_cases = Some s; _ } ->
         let rec aux s { data; if_match; next } =
           match check n if_match with
-          | { flag = Partial; pats; after_nest } ->
-              { flag = Partial; pats = Scalar data :: pats; after_nest }
-          | { flag = Exhaustive; pats; after_nest } -> (
+          | { flag = Partial; path; after_nest } ->
+              { flag = Partial; path = Scalar (data, Same) :: path; after_nest }
+          | { flag = Exhaustive; path; after_nest } -> (
               let s = Seq.filter (Fun.negate (scalar_equal data)) s in
               match next with
               | None -> (
@@ -860,12 +909,15 @@ module ParMatch = struct
                   | Seq.Nil ->
                       {
                         flag = Exhaustive;
-                        pats = Scalar data :: pats;
+                        path = Scalar (data, Same) :: path;
                         after_nest;
                       }
                   | Seq.Cons (data, _) ->
-                      { flag = Partial; pats = Scalar data :: pats; after_nest }
-                  )
+                      {
+                        flag = Partial;
+                        path = Scalar (data, Diverge) :: path;
+                        after_nest;
+                      })
               | Some case -> aux s case)
         in
         aux s cases
@@ -879,7 +931,7 @@ end
 let partial_match_check loc tys tree =
   match ParMatch.check tree with
   | { flag = Exhaustive; _ } -> ()
-  | { flag = Partial; pats; _ } -> Error.parmatch loc (ParMatch.pp tys) pats
+  | { flag = Partial; path; _ } -> Error.parmatch loc (ParMatch.pp tys) path
 
 let set_to_sexp s = Sexp.of_seq Sexp.int (Set.Int.to_seq s)
 

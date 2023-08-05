@@ -387,6 +387,14 @@ let () =
        "{% match a with {@tag: true} with {@tag: false} %}{% /match %}\n\
         {% match b, a with 1, {@tag: true} with _, {@tag: false } %}\n\
         {% /match %}");
+  print_error
+    "Partial matching with unions prints counterexample patterns correctly"
+    (render
+       "{% match c, d\n\
+       \   with 1, {@tag: 0, a: @1, b: {@tag: 10, c: \"a\"}} %}\n\
+        {% with 2, {@tag: 0, a: @2, b: {@tag: 20}} %}\n\
+        {% with _, {@tag: 1, c: @\"c\"} %}\n\
+        {% /match %}");
   print_error "Partial matching with records."
     (render
        "{% match a with {firstName: name, favoriteColor: \"green\"} %}\n\
@@ -399,26 +407,26 @@ let () =
         {%~  with {@kind: \"anonymous\", books: []} %}\n\
        \  This author hasn't published any books.\n\
         {% /match %}");
-  print_error "Parital matching with enums, closed"
+  print_error "Partial matching with enums, closed"
     (render
        "{% match a, b with 1, @1 %}\n\
         {% with 2, @2 %}\n\
         {% with _, @3 %}\n\
         {% /match %}");
-  print_error "Parital matching with unions, closed"
+  print_error "Partial matching with unions, closed"
     (render
        "{% match a, b with 1, {@tag: 1, a} %} {{ a }}\n\
         {% with 2, {@tag: 2, b} %} {{ b }}\n\
         {% with _, {@tag: 3, c} %} {{ c }}\n\
         {% /match %}");
-  print_error "Parital matching with enums, open"
+  print_error "Partial matching with enums, open"
     (render
        "{% match a, b with 1, @1 %}\n\
         {% with 2, _ %}\n\
         {% with _, @1 %}\n\
         {% with _, @2 %}\n\
         {% /match %}");
-  print_error "Parital matching with unions, open"
+  print_error "Partial matching with unions, open"
     (render
        "{% match a, b with 1, {@tag: 1, a} %} {{ a }}\n\
         {% with 2, _ %} \n\
