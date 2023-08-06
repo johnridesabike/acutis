@@ -885,11 +885,7 @@ module ParMatch = struct
         { r with flag = Partial; path = Any :: r.path }
     | Nil_or_cons { nil; cons; _ } -> (
         match check n nil with
-        | { flag = Exhaustive; _ } -> (
-            match check n cons with
-            | { flag = Exhaustive; _ } as r -> r
-            | { flag = Partial; path; after_nest } ->
-                { path; flag = Partial; after_nest })
+        | { flag = Exhaustive; _ } -> check n cons
         | { flag = Partial; path; after_nest } ->
             { flag = Partial; path = Nil :: path; after_nest })
     | Switch { wildcard = Some wildcard; _ } -> exhaustive (check n wildcard)
