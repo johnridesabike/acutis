@@ -137,7 +137,7 @@ window.onload = function playground(_event) {
     }
     sourceResultElt.value = compileJSResult;
     renderResultElt.value = renderResult;
-    setClean(source);
+    setClean(sourceDirtyElt);
     setClean(propsDirtyElt);
   }
   renderButtonElt.onclick = render;
