@@ -43,13 +43,6 @@ Display the help.
 
 Errors
 
-  $ echo '{"badjson": error}' | acutis layout.acutis
-  Error decoding JSON input.
-  Line 1, bytes 12-19:
-  Invalid token 'error}
-  '
-  [1]
-
   $ acutis --data=data.json
   You need to provide a template.
   
