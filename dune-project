@@ -32,7 +32,7 @@
   dune-build-info
   (ocamlformat
    (and
-    (= 0.25.1)
+    (= 0.26.1)
     :with-test))))
 
 (package

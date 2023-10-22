@@ -85,11 +85,11 @@ type 'a t = { tree : (leaf, int) tree; exits : 'a Exit.t }
    change anyway. *)
 
 let rec equal_tree :
-          'leaf 'key.
-          ('leaf -> 'leaf -> bool) ->
-          ('leaf, 'key) tree ->
-          ('leaf, 'key) tree ->
-          bool =
+      'leaf 'key.
+      ('leaf -> 'leaf -> bool) ->
+      ('leaf, 'key) tree ->
+      ('leaf, 'key) tree ->
+      bool =
  fun equal_leaf a b ->
   match (a, b) with
   | Switch a, Switch { cases; wildcard; ids = _; key = _; check_cases = _ } ->
@@ -582,12 +582,12 @@ let of_scalar key data if_match check_cases =
   Switch { key; ids; cases; wildcard = None; check_cases }
 
 let rec of_tpat :
-          'a 'k.
-          key:'k ->
-          bindings ->
-          (bindings -> ('a, 'k) tree) ->
-          T.destruct T.pat ->
-          ('a, 'k) tree =
+      'a 'k.
+      key:'k ->
+      bindings ->
+      (bindings -> ('a, 'k) tree) ->
+      T.destruct T.pat ->
+      ('a, 'k) tree =
  fun ~key b k -> function
   | Any -> Wildcard { ids; key; child = k b }
   | Var x ->
@@ -937,9 +937,8 @@ let scalar_to_sexp = function
   | `Float f -> Sexp.float f
 
 let rec tree_to_sexp :
-          'leaf 'key.
-          ('leaf -> Sexp.t) -> ('key -> Sexp.t) -> ('leaf, 'key) tree -> Sexp.t
-    =
+      'leaf 'key.
+      ('leaf -> Sexp.t) -> ('key -> Sexp.t) -> ('leaf, 'key) tree -> Sexp.t =
  fun leaf_f key_f -> function
   | Switch { key; ids; cases; wildcard; check_cases } ->
       Sexp.make "switch"

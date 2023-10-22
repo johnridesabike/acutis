@@ -76,12 +76,12 @@ let tuple_get i a = a.(i)
 let assoc_get = Map.String.find
 
 let rec eval_match :
-          'leaf 'args 'key.
-          'args ->
-          ('key -> 'args -> 'data Data.t) ->
-          'data Data.t Map.Int.t ->
-          ('leaf, 'key) Matching.tree ->
-          'data Data.t Map.Int.t * 'leaf =
+      'leaf 'args 'key.
+      'args ->
+      ('key -> 'args -> 'data Data.t) ->
+      'data Data.t Map.Int.t ->
+      ('leaf, 'key) Matching.tree ->
+      'data Data.t Map.Int.t * 'leaf =
  fun args get vars -> function
   | End x -> (vars, x)
   | Switch { key; cases; wildcard; ids; _ } -> (

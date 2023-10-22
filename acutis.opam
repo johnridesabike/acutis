@@ -16,7 +16,7 @@ depends: [
   "menhir"
   "yojson"
   "dune-build-info"
-  "ocamlformat" {= "0.25.1" & with-test}
+  "ocamlformat" {= "0.26.1" & with-test}
   "odoc" {with-doc}
 ]
 build: [

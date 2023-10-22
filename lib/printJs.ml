@@ -530,17 +530,14 @@ let arg_str id ~optional key f =
 let ( let@ ) = ( @@ )
 
 let rec match_tree :
-          'leaf 'key.
-          leafstmt:(vars:expr Map.Int.t -> 'leaf -> statement list) ->
-          get_arg:
-            (optional:bool ->
-            'key ->
-            (expr -> statement list) ->
-            statement list) ->
-          vars:expr Map.Int.t ->
-          ?optional:bool ->
-          ('leaf, 'key) M.tree ->
-          statement list =
+      'leaf 'key.
+      leafstmt:(vars:expr Map.Int.t -> 'leaf -> statement list) ->
+      get_arg:
+        (optional:bool -> 'key -> (expr -> statement list) -> statement list) ->
+      vars:expr Map.Int.t ->
+      ?optional:bool ->
+      ('leaf, 'key) M.tree ->
+      statement list =
  fun ~leafstmt ~get_arg ~vars ?(optional = false) -> function
   | M.Switch { key; ids; cases; wildcard; _ } ->
       let@ arg = get_arg ~optional key in
