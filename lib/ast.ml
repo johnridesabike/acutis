@@ -32,7 +32,12 @@ let value_to_sexp f = function
 let record_to_sexp f l =
   Nonempty.to_sexp (Sexp.triple Loc.to_sexp Sexp.string (value_to_sexp f)) l
 
-type row = Loc.t * Typescheme.row
+type row = Loc.t * [ `Closed | `Open ]
+
+let row_to_sexp row =
+  Sexp.pair Loc.to_sexp
+    (function `Closed -> Sexp.symbol "closed" | `Open -> Sexp.symbol "open")
+    row
 
 type ty =
   | Ty_named of Loc.t * string
@@ -54,23 +59,16 @@ let rec ty_to_sexp = function
   | Ty_list t -> Sexp.make "list" [ ty_to_sexp t ]
   | Ty_dict t -> Sexp.make "dict" [ ty_to_sexp t ]
   | Ty_enum_int (l, row) ->
-      Sexp.make "enum_int"
-        [
-          Sexp.pair Loc.to_sexp Typescheme.row_to_sexp row;
-          Nonempty.to_sexp Sexp.int l;
-        ]
+      Sexp.make "enum_int" [ Nonempty.to_sexp Sexp.int l; row_to_sexp row ]
   | Ty_enum_bool l -> Sexp.make "enum_bool" [ Nonempty.to_sexp Sexp.bool l ]
   | Ty_enum_string (l, row) ->
       Sexp.make "enum_string"
-        [
-          Sexp.pair Loc.to_sexp Typescheme.row_to_sexp row;
-          Nonempty.to_sexp Sexp.string l;
-        ]
+        [ Nonempty.to_sexp Sexp.string l; row_to_sexp row ]
   | Ty_record (l, row) ->
       Sexp.make "record"
         [
-          Sexp.pair Loc.to_sexp Typescheme.row_to_sexp row;
           Nonempty.to_sexp (Sexp.pair Loc.to_sexp (record_to_sexp ty_to_sexp)) l;
+          row_to_sexp row;
         ]
   | Ty_tuple l -> Sexp.make "tuple" [ Sexp.of_seq ty_to_sexp (List.to_seq l) ]
 
@@ -234,7 +232,7 @@ and to_sexp l = Sexp.of_seq node_to_sexp (List.to_seq l)
 
 module F = Format
 
-let pp_sep = Pp.sep_comma
+let pp_sep = Pp.comma
 
 let pp_tag ppf = function
   | Tag_bool (_, i) -> Pp.bool ppf i
@@ -249,34 +247,34 @@ let rec pp_pat ppf = function
   | String (_, s) -> Pp.syntax_string ppf s
   | Nullable (_, None) -> F.pp_print_string ppf "null"
   | Nullable (_, Some pat) -> F.fprintf ppf "!@[<hv 1>@,%a@]" pp_pat pat
-  | Enum_string (_, s) -> F.fprintf ppf "%@%a" Pp.syntax_string s
-  | Enum_int (_, i) -> F.fprintf ppf "%@%i" i
+  | Enum_string (_, s) -> Pp.at Pp.syntax_string ppf s
+  | Enum_int (_, i) -> Pp.at F.pp_print_int ppf i
   | List (_, [], Some tl) -> pp_pat ppf tl
-  | List (_, l, tl) ->
+  | List (_, l, None) ->
+      Pp.surround ~left:'[' ~right:']' (F.pp_print_list ~pp_sep pp_pat) ppf l
+  | List (_, l, Some tl) ->
       Pp.surround ~left:'[' ~right:']'
         (fun ppf () ->
-          (F.pp_print_list ~pp_sep pp_pat) ppf l;
-          (F.pp_print_option (fun ppf pat ->
-               F.fprintf ppf "%a...%a" pp_sep () pp_pat pat))
-            ppf tl)
+          F.pp_print_list ~pp_sep pp_pat ppf l;
+          pp_sep ppf ();
+          Pp.ellipsis ppf ();
+          pp_pat ppf tl)
         ppf ()
   | Tuple (_, l) ->
       Pp.surround ~left:'(' ~right:')' (F.pp_print_list ~pp_sep pp_pat) ppf l
   | Record (_, l) ->
       Pp.surround ~left:'{' ~right:'}'
-        (F.pp_print_list ~pp_sep pp_record_keyvalue)
-        ppf (Nonempty.to_list l)
+        (F.pp_print_seq ~pp_sep pp_record_keyvalue)
+        ppf (Nonempty.to_seq l)
   | Dict (_, l) ->
       Pp.surround ~left:'<' ~right:'>'
-        (F.pp_print_list ~pp_sep pp_keyvalue)
-        ppf l
+        (F.pp_print_list ~pp_sep (Pp.equation ~sep:":" Pp.field pp_pat))
+        ppf
+        (List.map (fun (_, k, v) -> (k, v)) l)
   | Block _ -> F.pp_print_string ppf "#%}...{%#"
   | Field (_, pat, field) -> F.fprintf ppf "%a.%s" pp_pat pat field
 
-and pp_keyvalue ppf (_, k, v) =
-  F.fprintf ppf "@[<hv 2>%a:@ %a@]" Pp.field k pp_pat v
-
-and pp_record_keyvalue ppf (l, k, v) =
+and pp_record_keyvalue ppf (_, k, v) =
   match v with
-  | Tag t -> F.fprintf ppf "@[<hv 2>%@%a:@ %a@]" Pp.field k pp_tag t
-  | Value v -> pp_keyvalue ppf (l, k, v)
+  | Tag t -> Pp.equation ~sep:":" (Pp.at Pp.field) pp_tag ppf (k, t)
+  | Value v -> Pp.equation ~sep:":" Pp.field pp_pat ppf (k, v)

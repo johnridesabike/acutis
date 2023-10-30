@@ -65,7 +65,7 @@ module Components : sig
       @param name The component name when called inside a template.
       @raise Error.Acutis_error *)
 
-  val from_fun : name:string -> Typescheme.t Map.String.t -> 'a -> 'a source
+  val from_fun : name:string -> Typescheme.t -> 'a -> 'a source
 
   type 'a t
 
@@ -76,13 +76,11 @@ module Components : sig
       @raise Error.Acutis_error *)
 end
 
-type 'a template =
-  | Src of 'a template nodes
-  | Fun of Typescheme.t Map.String.t * 'a
+type 'a template = Src of 'a template nodes | Fun of Typescheme.t * 'a
 
 type 'a t = {
   name : string;
-  types : Typescheme.t Map.String.t;
+  types : Typescheme.t;
   nodes : 'a template nodes;
   components : 'a template Map.String.t;
 }
@@ -90,9 +88,6 @@ type 'a t = {
 val make : fname:string -> 'a Components.t -> Lexing.lexbuf -> 'a t
 val from_string : fname:string -> 'a Components.t -> string -> 'a t
 val from_channel : fname:string -> 'a Components.t -> in_channel -> 'a t
-val interface_from_string : fname:string -> string -> Typescheme.t Map.String.t
-
-val interface_from_channel :
-  fname:string -> in_channel -> Typescheme.t Map.String.t
-
+val interface_from_string : fname:string -> string -> Typescheme.t
+val interface_from_channel : fname:string -> in_channel -> Typescheme.t
 val to_sexp : _ nodes -> Sexp.t

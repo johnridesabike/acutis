@@ -20,7 +20,7 @@ type tag =
 
 type 'a value = Tag of tag | Value of 'a
 type 'a record = 'a value assoc_nonempty
-type row = Loc.t * Typescheme.row
+type row = Loc.t * [ `Closed | `Open ]
 
 type ty =
   | Ty_named of Loc.t * string

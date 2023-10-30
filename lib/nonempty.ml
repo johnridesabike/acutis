@@ -10,7 +10,6 @@
 
 type 'a t = ( :: ) of 'a * 'a list
 
-let to_list (hd :: tl) = List.( :: ) (hd, tl)
 let cons a (hd :: tl) = a :: hd :: tl
 let hd (hd :: _) = hd
 
@@ -28,4 +27,6 @@ let map2 f (hd1 :: tl1) (hd2 :: tl2) =
   let hd = f hd1 hd2 in
   hd :: List.map2 f tl1 tl2
 
-let to_sexp f (hd :: tl) = Sexp.of_seq f (fun () -> Cons (hd, List.to_seq tl))
+let to_list (hd :: tl) = List.( :: ) (hd, tl)
+let to_seq (hd :: tl) () = Seq.Cons (hd, List.to_seq tl)
+let to_sexp f l = Sexp.of_seq f (to_seq l)

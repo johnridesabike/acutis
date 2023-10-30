@@ -63,7 +63,7 @@ module type DATA = sig
   val of_bool : bool -> t
   val of_int : int -> t
   val of_seq : t Seq.t -> t
-  val of_map : t Map.String.t -> t
+  val of_assoc : (string * t) Seq.t -> t
 
   (** Debugging *)
 

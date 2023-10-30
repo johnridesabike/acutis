@@ -25,7 +25,7 @@ module DataJson = struct
   let of_bool x = `Bool x
   let of_int x = `Int x
   let of_seq x = `List (List.of_seq x)
-  let of_map x = `Assoc (Map.String.bindings x)
+  let of_assoc x = `Assoc (List.of_seq x)
 end
 
 module RenderSync = Render.MakeString (DataJson)
@@ -36,16 +36,8 @@ let render ?(json = "{}") ?(components = Compile.Components.empty) src () =
   ignore @@ RenderSync.eval temp json
 
 let print_error title f =
-  let s =
-    try
-      f ();
-      "no error"
-    with Error.Acutis_error s -> String.trim s
-  in
-  print_endline title;
-  print_endline "---";
-  print_endline s;
-  print_newline ()
+  let s = try f (); "no error" with Error.Acutis_error s -> String.trim s in
+  print_endline title; print_endline "---"; print_endline s; print_newline ()
 
 let () =
   print_error "Illegal character 1" (render "{% match*");
@@ -277,11 +269,15 @@ let () =
     (render "{% match @0 with @\"a\" %} {% /match %}");
   print_error "| false | true <> only false"
     (render "{% match true with false %} {% /match %}");
+  print_error "Bool <> int"
+    (render "{% match a with @0 with true %} {% /match %}");
 
   print_error "Int tag <> string tag"
     (render
        "{% match a with {@tag: 0} %} {% with {@tag: \"a\", b} %} {{ b }}\n\
         {% /match %}");
+  print_error "Bool tag <> int tag"
+    (render "{% match a with {@tag: 0} with {@tag: true} %} {% /match %}");
   print_error "Random other tags don't compile."
     (render "{% match a with {@tag: []} %} {% /match %}");
   print_error "Tag names must be coherent."
@@ -391,6 +387,14 @@ let () =
        "{% match a with {@tag: true} with {@tag: false} %}{% /match %}\n\
         {% match b, a with 1, {@tag: true} with _, {@tag: false } %}\n\
         {% /match %}");
+  print_error
+    "Partial matching with unions prints counterexample patterns correctly"
+    (render
+       "{% match c, d\n\
+       \   with 1, {@tag: 0, a: @1, b: {@tag: 10, c: \"a\"}} %}\n\
+        {% with 2, {@tag: 0, a: @2, b: {@tag: 20}} %}\n\
+        {% with _, {@tag: 1, c: @\"c\"} %}\n\
+        {% /match %}");
   print_error "Partial matching with records."
     (render
        "{% match a with {firstName: name, favoriteColor: \"green\"} %}\n\
@@ -403,26 +407,26 @@ let () =
         {%~  with {@kind: \"anonymous\", books: []} %}\n\
        \  This author hasn't published any books.\n\
         {% /match %}");
-  print_error "Parital matching with enums, closed"
+  print_error "Partial matching with enums, closed"
     (render
        "{% match a, b with 1, @1 %}\n\
         {% with 2, @2 %}\n\
         {% with _, @3 %}\n\
         {% /match %}");
-  print_error "Parital matching with unions, closed"
+  print_error "Partial matching with unions, closed"
     (render
        "{% match a, b with 1, {@tag: 1, a} %} {{ a }}\n\
         {% with 2, {@tag: 2, b} %} {{ b }}\n\
         {% with _, {@tag: 3, c} %} {{ c }}\n\
         {% /match %}");
-  print_error "Parital matching with enums, open"
+  print_error "Partial matching with enums, open"
     (render
        "{% match a, b with 1, @1 %}\n\
         {% with 2, _ %}\n\
         {% with _, @1 %}\n\
         {% with _, @2 %}\n\
         {% /match %}");
-  print_error "Parital matching with unions, open"
+  print_error "Partial matching with unions, open"
     (render
        "{% match a, b with 1, {@tag: 1, a} %} {{ a }}\n\
         {% with 2, _ %} \n\

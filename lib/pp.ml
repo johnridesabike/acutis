@@ -10,8 +10,10 @@
 
 open Format
 
-let sep_comma ppf () = fprintf ppf ",@ "
+let comma ppf () = fprintf ppf ",@ "
 let syntax_string ppf k = fprintf ppf "%S" k
+let at pp ppf x = fprintf ppf "%@%a" pp x
+let ellipsis ppf () = pp_print_string ppf "..."
 
 (* Sync with lexer*)
 let id_start_char = function 'a' .. 'z' | '_' -> true | _ -> false
@@ -29,3 +31,6 @@ let bool ppf = function
 
 let surround ~left ~right f ppf x =
   fprintf ppf "@[<hv 2>%c@;<0 0>%a@;<0 -2>%c@]" left f x right
+
+let equation ~sep pp_k pp_v ppf (k, v) =
+  fprintf ppf "@[<hv 2>%a%s@ %a@]" pp_k k sep pp_v v

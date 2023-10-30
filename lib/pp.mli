@@ -12,11 +12,17 @@
 
 open Format
 
-val sep_comma : formatter -> unit -> unit
+val comma : formatter -> unit -> unit
 (** Prints [,@ ]. *)
 
 val syntax_string : formatter -> string -> unit
 (** Equivalent to the format string ["%S"]. *)
+
+val at : (formatter -> 'a -> unit) -> formatter -> 'a -> unit
+(** [at pp ppf a] prints [@a]. *)
+
+val ellipsis : formatter -> unit -> unit
+(** Prints [...] *)
 
 val field : formatter -> string -> unit
 (** Prints either [field] or ["string field"] depending on whether the input is
@@ -32,5 +38,14 @@ val surround :
   formatter ->
   'a ->
   unit
-(** [surround ~left ~right f x] prints the result of [f x] with [left] and
-    [right] printed before and after it. *)
+(** [surround ~left ~right f ppf x] prints [x] with [left] and [right] printed
+    before and after it, e.g. [{x}]. *)
+
+val equation :
+  sep:string ->
+  (formatter -> 'key -> unit) ->
+  (formatter -> 'value -> unit) ->
+  formatter ->
+  'key * 'value ->
+  unit
+(** [equation ~sep pp_k pp_v ppf (k, v)] prints [k sep v], e.g. [a = 1]. *)

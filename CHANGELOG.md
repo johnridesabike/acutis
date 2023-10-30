@@ -2,7 +2,7 @@
 
 Most changes are breaking changes.
 
-## Latest
+## 0.23.0
 
 - Add JavaScript compilation. Templates can now compile to self-contained
   JavaScript files. This feature is supported in both the CLI and the Eleventy

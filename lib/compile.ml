@@ -8,6 +8,8 @@
 (*                                                                        *)
 (**************************************************************************)
 
+module T = Typechecker
+
 let parse ~fname lexbuf =
   Lexing.set_filename lexbuf fname;
   let state = Lexer.make_state () in
@@ -71,48 +73,48 @@ and 'a nodes = 'a node list
 let text = function "" -> None | s -> Some (Text s)
 
 let rec make_data block_queue = function
-  | Typechecker.TScalar (x, _) -> (x :> data)
-  | TVar x -> `Var x
-  | TBlock x ->
+  | T.Scalar (x, _) -> (x :> data)
+  | T.Var x -> `Var x
+  | T.Block x ->
       let i = Queue.length block_queue in
       Queue.push (make_nodes x) block_queue;
       `Block i
-  | TNil -> `Null
-  | TCons x -> make_data block_queue x
-  | TTuple l -> `Array (Array.of_list l |> Array.map (make_data block_queue))
-  | TRecord (Some (k, v, _), x, _) ->
-      `Assoc
-        (Map.String.map (make_data block_queue) x
-        |> Map.String.add k (v :> data))
-  | TRecord (None, x, _) | TDict (x, _) ->
+  | T.Nil -> `Null
+  | T.Cons x -> make_data block_queue x
+  | T.Tuple l -> `Array (Array.of_list l |> Array.map (make_data block_queue))
+  | T.Record (Union_tag_int (k, v, _), x, _) ->
+      `Assoc Map.String.(map (make_data block_queue) x |> add k (`Int v))
+  | T.Record (Union_tag_string (k, v, _), x, _) ->
+      `Assoc Map.String.(map (make_data block_queue) x |> add k (`String v))
+  | T.Record (Union_tag_none, x, _) | Dict (x, _) ->
       `Assoc (Map.String.map (make_data block_queue) x)
-  | TField (node, field) -> `Field (make_data block_queue node, field)
+  | T.Field (node, field) -> `Field (make_data block_queue node, field)
 
 and make_nodes l =
   List.filter_map
     (function
-      | Typechecker.TText (s, No_trim, No_trim) -> text s
-      | TText (s, Trim, No_trim) -> text (ltrim s)
-      | TText (s, No_trim, Trim) -> text (rtrim s)
-      | TText (s, Trim, Trim) -> text (String.trim s)
-      | TEcho (nullables, fmt, default, esc) ->
+      | T.Text (s, No_trim, No_trim) -> text s
+      | T.Text (s, Trim, No_trim) -> text (ltrim s)
+      | T.Text (s, No_trim, Trim) -> text (rtrim s)
+      | T.Text (s, Trim, Trim) -> text (String.trim s)
+      | T.Echo (nullables, fmt, default, esc) ->
           Some (Echo (nullables, fmt, default, esc))
-      | TMatch (loc, hd :: tl, tys, cases) ->
+      | T.Match (loc, hd :: tl, tys, cases) ->
           let q = Queue.create () in
           let pats = Array.of_list (hd :: tl) |> Array.map (make_data q) in
           let blocks = Queue.to_seq q |> Array.of_seq in
           Some (Match (blocks, pats, make_match loc tys cases))
-      | TMap_list (loc, pat, tys, cases) ->
+      | T.Map_list (loc, pat, tys, cases) ->
           let q = Queue.create () in
           let pat = make_data q pat in
           let blocks = Queue.to_seq q |> Array.of_seq in
           Some (Map_list (blocks, pat, make_match loc tys cases))
-      | TMap_dict (loc, pat, tys, cases) ->
+      | T.Map_dict (loc, pat, tys, cases) ->
           let q = Queue.create () in
           let pat = make_data q pat in
           let blocks = Queue.to_seq q |> Array.of_seq in
           Some (Map_dict (blocks, pat, make_match loc tys cases))
-      | TComponent (name, props) ->
+      | T.Component (name, props) ->
           let q = Queue.create () in
           let props = Map.String.map (make_data q) props in
           let blocks = Queue.to_seq q |> Array.of_seq in
@@ -125,11 +127,9 @@ and make_match loc tys cases =
   let exits = Matching.Exit.map make_nodes exits in
   { tree; exits }
 
-let make_nodes Typechecker.{ nodes; _ } = make_nodes nodes
+let make_nodes T.{ nodes; _ } = make_nodes nodes
 
 module Components = struct
-  module T = Typechecker
-
   type 'a source = (Ast.t, 'a) T.source
 
   let parse_string ~fname ~name src =
@@ -154,7 +154,7 @@ module Components = struct
           | T.Src (name, src) ->
               if Map.String.mem name acc then Error.duplicate_name name;
               Map.String.add name (T.Src (name, src)) acc
-          | Fun (name, p, f) ->
+          | T.Fun (name, p, f) ->
               if Map.String.mem name acc then Error.duplicate_name name;
               Map.String.add name (T.Fun (name, p, f)) acc)
         Map.String.empty l
@@ -164,19 +164,17 @@ module Components = struct
       Map.String.map
         (function
           | T.Src (name, src) -> T.Src (name, make_nodes src)
-          | Fun (name, p, f) -> Fun (name, p, f))
+          | T.Fun (name, p, f) -> T.Fun (name, p, f))
         typed
     in
     { typed; optimized }
 end
 
-type 'a template =
-  | Src of 'a template nodes
-  | Fun of Typescheme.t Map.String.t * 'a
+type 'a template = Src of 'a template nodes | Fun of Typescheme.t * 'a
 
 type 'a t = {
   name : string;
-  types : Typescheme.t Map.String.t;
+  types : Typescheme.t;
   nodes : 'a template nodes;
   components : 'a template Map.String.t;
 }
@@ -204,12 +202,12 @@ let rec link_nodes graph nodes =
     nodes
 
 let link_src graph = function
-  | Typechecker.Src (_, nodes) -> Src (link_nodes graph nodes)
+  | T.Src (_, nodes) -> Src (link_nodes graph nodes)
   | Fun (_, props, f) -> Fun (props, f)
 
 let make ~fname components src =
   let nodes = parse ~fname src in
-  let typed = Typechecker.make ~root:fname components.Components.typed nodes in
+  let typed = T.make ~root:fname components.Components.typed nodes in
   let g = Dagmap.make ~f:link_src ~root:fname components.optimized in
   let nodes = make_nodes typed |> link_nodes g in
   { name = fname; types = typed.types; nodes; components = Dagmap.linked g }
@@ -221,12 +219,11 @@ let from_channel ~fname components src =
   make ~fname components (Lexing.from_channel src)
 
 let interface_from_string ~fname src =
-  parse_interface ~fname (Lexing.from_string src)
-  |> Typechecker.make_interface_standalone
+  parse_interface ~fname (Lexing.from_string src) |> T.make_interface_standalone
 
 let interface_from_channel ~fname src =
   parse_interface ~fname (Lexing.from_channel src)
-  |> Typechecker.make_interface_standalone
+  |> T.make_interface_standalone
 
 let rec data_to_sexp = function
   | `Null -> Sexp.symbol "null"
