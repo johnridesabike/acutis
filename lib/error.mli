@@ -74,33 +74,11 @@ val missing_component : string list -> string -> _
 
 (** {1 Decode errors.} *)
 
-module DecodePath : sig
-  type t
-
-  val make : string -> t
-  val nullable : t -> t
-  val index : int -> t -> t
-  val key : string -> t -> t
-end
-
 val decode :
-  (Format.formatter -> 'ty -> unit) ->
-  (Format.formatter -> 'data -> unit) ->
-  DecodePath.t ->
-  'ty ->
-  'data ->
-  _
+  fname:string -> stack:'a -> ty:'a -> input:'a -> (string -> 'a) -> 'a array
 
-val missing_key :
-  DecodePath.t -> (Format.formatter -> 'ty -> unit) -> 'ty -> string -> _
-
-val bad_enum :
-  (Format.formatter -> 'ty -> unit) ->
-  (Format.formatter -> 'data -> unit) ->
-  DecodePath.t ->
-  'ty ->
-  'data ->
-  _
+val missing_keys :
+  fname:string -> stack:'a -> ty:'a -> keys:'a -> (string -> 'a) -> 'a array
 
 (** {1 Internal errors.} *)
 

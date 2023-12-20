@@ -9,8 +9,8 @@ homepage: "https://github.com/johnridesabike/acutis"
 doc: "https://johnridesa.bike/acutis/"
 bug-reports: "https://github.com/johnridesabike/acutis/issues"
 depends: [
-  "dune" {>= "3.3"}
-  "ocaml" {>= "4.14"}
+  "dune" {>= "3.5"}
+  "ocaml" {>= "5.0"}
   "acutis" {= version}
   "promise_jsoo"
   "js_of_ocaml"

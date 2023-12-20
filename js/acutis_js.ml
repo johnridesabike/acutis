@@ -25,15 +25,15 @@ module DataJs = struct
 
     type 'a t = Js.Unsafe.any
 
-    let find_opt : string -> 'a t -> 'a option =
-     fun k m -> Js.Unsafe.get m (Js.string k) |> Js.Optdef.to_option
+    let find : string -> 'a t -> 'a = fun k m -> Js.Unsafe.get m (Js.string k)
 
-    let fold : (string -> 'a -> 'acc -> 'acc) -> 'a t -> 'acc -> 'acc =
-     fun f m init ->
-      Js.object_keys m |> Js.to_array
-      |> Array.fold_left
-           (fun init k -> f (Js.to_string k) (Js.Unsafe.get m k) init)
-           init
+    let mem : string -> 'a t -> bool =
+     fun k m -> Js.Unsafe.global##._Object##hasOwn m (Js.string k) |> Js.to_bool
+
+    let iter : (string -> 'a -> unit) -> 'a t -> unit =
+     fun f m ->
+      (Js.object_keys m)##forEach
+        (Js.wrap_callback (fun k _ _ -> f (Js.to_string k) (Js.Unsafe.get m k)))
   end
 
   type t = Js.Unsafe.any
@@ -52,8 +52,8 @@ module DataJs = struct
         match Js.Opt.to_option (Js.some j) with
         | None -> `Null
         | Some j ->
-            if Js.Unsafe.meth_call Js.array_empty "isArray" [| j |] then
-              `List (coerce j |> Js.to_array)
+            if Js.Unsafe.global##._Array##isArray j then
+              `Linear (coerce j |> Js.to_array)
             else `Assoc j)
 
   let null = Js.Unsafe.inject Js.null
@@ -66,7 +66,7 @@ module DataJs = struct
   let of_assoc x = Array.of_seq x |> Js.Unsafe.obj
 
   let pp ppf j =
-    Js.Unsafe.fun_call Js.string_constr [| j |]
+    Js.Unsafe.fun_call Js.Unsafe.global##._String [| j |]
     |> Js.to_string |> Format.pp_print_string ppf
 end
 

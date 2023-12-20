@@ -2,6 +2,11 @@
 
 Most changes are breaking changes.
 
+## Latest
+
+- Add the debug command `--printinst` to the CLI. This prints the new runtime
+  instructions used by both the renderer and the JavaScript printer.
+
 ## 0.23.0
 
 - Add JavaScript compilation. Templates can now compile to self-contained

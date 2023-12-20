@@ -1,6 +1,6 @@
 (**************************************************************************)
 (*                                                                        *)
-(*                   Copyright (c) 2022 John Jackson.                     *)
+(*                   Copyright (c) 2023 John Jackson.                     *)
 (*                                                                        *)
 (*  This Source Code Form is subject to the terms of the Mozilla Public   *)
 (*  License, v. 2.0. If a copy of the MPL was not distributed with this   *)
@@ -28,7 +28,7 @@ module type DATA = sig
     type 'a t
 
     val length : 'a t -> int
-    val fold_left : ('acc -> 'a -> 'acc) -> 'acc -> 'a t -> 'acc
+    val iteri : (int -> 'a -> unit) -> 'a t -> unit
   end
 
   module Assoc : sig
@@ -36,8 +36,9 @@ module type DATA = sig
 
     type 'a t
 
-    val find_opt : string -> 'a t -> 'a option
-    val fold : (string -> 'a -> 'acc -> 'acc) -> 'a t -> 'acc -> 'acc
+    val find : string -> 'a t -> 'a
+    val mem : string -> 'a t -> bool
+    val iter : (string -> 'a -> unit) -> 'a t -> unit
   end
 
   type t
@@ -51,8 +52,8 @@ module type DATA = sig
     | `Int of int
     | `Float of float
     | `String of string
-    | `Assoc of t Assoc.t
-    | `List of t Linear.t ]
+    | `Linear of t Linear.t
+    | `Assoc of t Assoc.t ]
 
   (** Encoding *)
 

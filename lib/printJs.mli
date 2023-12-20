@@ -14,6 +14,7 @@ type jsfun
 (** Information about how to import an external function. *)
 
 val jsfun : module_path:string -> function_path:string -> jsfun
+val pp_jsfun : Format.formatter -> jsfun -> unit
 
 type t = jsfun Compile.t
 

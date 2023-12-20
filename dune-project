@@ -1,4 +1,4 @@
-(lang dune 3.3)
+(lang dune 3.5)
 
 (using menhir 2.1)
 
@@ -26,7 +26,7 @@
   "Acutis is a template language that features static typing, pattern matching, and asynchronous template components. You can execute your templates like scripts or compile them to self-contained JavaScript files.")
  (depends
   (ocaml
-   (>= 4.14))
+   (>= 5.0))
   menhir
   yojson
   dune-build-info
@@ -41,7 +41,7 @@
  (allow_empty)
  (depends
   (ocaml
-   (>= 4.14))
+   (>= 5.0))
   (acutis
    (= :version))
   promise_jsoo

@@ -1149,11 +1149,11 @@ File "<test>"
 Render error.
 The data supplied does not match this template's interface.
 Path:
-  input -> "a" -> "b".
+b <- a <- <input>
 Expected type:
-  string
+string
 Received value:
-  []
+[]
 
 Map type mismatch (1).
 ---
@@ -1161,11 +1161,11 @@ File "<test>"
 Render error.
 The data supplied does not match this template's interface.
 Path:
-  input -> "a".
+a <- <input>
 Expected type:
-  [{a: string}]
+[{a: string}]
 Received value:
-  "a"
+"a"
 
 Map type mismatch (2).
 ---
@@ -1173,23 +1173,23 @@ File "<test>"
 Render error.
 The data supplied does not match this template's interface.
 Path:
-  input -> "a".
+a <- <input>
 Expected type:
-  [int]
+[int]
 Received value:
-  "a"
+"a"
 
 Missing bindings are reported
 ---
-File "<test>"
+File: <test>
 Render error.
 The data supplied does not match this template's interface.
 Path:
-  input.
+<input>
 Expected type:
-  {z: string}
-Input is missing key:
-  z
+{z: string}
+Input is missing keys:
+z
 
 Bad enums are reported: boolean.
 ---
@@ -1197,11 +1197,11 @@ File "<test>"
 Render error.
 The data supplied does not match this template's interface.
 Path:
-  input -> "b".
+b <- <input>
 Expected type:
-  false
-This type does not allow the given value:
-  true
+false
+Received value:
+true
 
 Bad enums are reported: int.
 ---
@@ -1209,11 +1209,11 @@ File "<test>"
 Render error.
 The data supplied does not match this template's interface.
 Path:
-  input -> "a".
+a <- <input>
 Expected type:
-  @1 | @2
-This type does not allow the given value:
-  3
+@1 | @2
+Received value:
+3
 
 Bad enums are reported: int.
 ---
@@ -1221,11 +1221,11 @@ File "<test>"
 Render error.
 The data supplied does not match this template's interface.
 Path:
-  input -> "a".
+a <- <input>
 Expected type:
-  @"a" | @"b"
-This type does not allow the given value:
-  "c"
+@"a" | @"b"
+Received value:
+"c"
 
 Tuple size mismatch.
 ---
@@ -1233,11 +1233,11 @@ File "<test>"
 Render error.
 The data supplied does not match this template's interface.
 Path:
-  input -> "a".
+a <- <input>
 Expected type:
-  (string, string)
+(string, string)
 Received value:
-  [ "a" ]
+[ "a" ]
 
 Bad unions are reported (1).
 ---
@@ -1245,11 +1245,11 @@ File "<test>"
 Render error.
 The data supplied does not match this template's interface.
 Path:
-  input -> "a".
+a <- <input>
 Expected type:
-  {@tag: 1, a: string}
+{@tag: 1, a: string}
 Received value:
-  { "tag": "a", "a": "a" }
+{ "tag": "a", "a": "a" }
 
 Bad unions are reported (2).
 ---
@@ -1257,24 +1257,11 @@ File "<test>"
 Render error.
 The data supplied does not match this template's interface.
 Path:
-  input -> "a".
+a <- <input>
 Expected type:
-  {@tag: 1, a: string}
+{@tag: 1, a: string}
 Received value:
-  { "tag": 2, "a": "a" }
-
-Looong paths format correctly.
----
-File "<test>"
-Render error.
-The data supplied does not match this template's interface.
-Path:
-  input -> "abc" -> "def" -> "ghi" -> "jkl" -> "mno" -> "pqr" -> "stu"
-  -> "vwx" -> "yz".
-Expected type:
-  int
-Received value:
-  "a"
+{ "tag": 2, "a": "a" }
 
 Invalid field names.
 ---

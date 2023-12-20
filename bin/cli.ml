@@ -16,14 +16,19 @@ module DataJson = struct
   module Assoc = struct
     type 'a t = (string * 'a) list
 
-    let fold f l init = List.fold_left (fun acc (k, v) -> f k v acc) init l
-    let find_opt = List.assoc_opt
+    let find = List.assoc
+    let mem = List.mem_assoc
+    let iter f l = List.iter (fun (k, v) -> f k v) l
   end
 
   type t = Yojson.Basic.t
 
   let pp = Yojson.Basic.pretty_print ~std:false
-  let classify = Fun.id
+
+  let classify = function
+    | `List x -> `Linear x
+    | (`Null | `Bool _ | `Int _ | `Float _ | `String _ | `Assoc _) as x -> x
+
   let null = `Null
   let some = Fun.id
   let of_float x = `Float x
@@ -54,6 +59,7 @@ let arg_version = ref false
 let arg_printast = ref false
 let arg_printtypes = ref false
 let arg_printopt = ref false
+let arg_printinst = ref false
 let templates = Queue.create ()
 let arg_funs = Queue.create ()
 
@@ -102,6 +108,9 @@ let args =
     ( "--printopt",
       Arg.Set arg_printopt,
       " Print the template's optimized form and exit." );
+    ( "--printinst",
+      Arg.Set arg_printinst,
+      " Print the template's runtime instructions and exit." );
   ]
 
 let fname_to_compname s =
@@ -158,6 +167,13 @@ let () =
           @@ Compile.from_channel ~fname components
         in
         Compile.to_sexp template.nodes |> Sexp.pp Format.std_formatter
+      else if !arg_printinst then
+        let components = make_components_js () in
+        let compiled =
+          In_channel.with_open_text fname
+          @@ Compile.from_channel ~fname components
+        in
+        Instruct.pp PrintJs.pp_jsfun Format.std_formatter compiled
       else
         match !arg_mode with
         | Render -> (

@@ -10,14 +10,19 @@ module DataJson = struct
   module Assoc = struct
     type 'a t = (string * 'a) list
 
-    let fold f l init = List.fold_left (fun acc (k, v) -> f k v acc) init l
-    let find_opt = List.assoc_opt
+    let find = List.assoc
+    let mem = List.mem_assoc
+    let iter f l = List.iter (fun (k, v) -> f k v) l
   end
 
   type t = Yojson.Basic.t
 
   let pp = Yojson.Basic.pretty_print ~std:false
-  let classify = Fun.id
+
+  let classify = function
+    | `List x -> `Linear x
+    | (`Null | `Bool _ | `Int _ | `Float _ | `String _ | `Assoc _) as x -> x
+
   let null = `Null
   let some = Fun.id
   let of_float x = `Float x
@@ -509,16 +514,6 @@ let () =
   print_error "Bad unions are reported (2)."
     (render "{% match a with {@tag: 1, a} %} {{ a }} {% /match %}"
        ~json:{|{"a": {"tag": 2, "a": "a"}}|});
-  print_error "Looong paths format correctly."
-    (render
-       "{% match abc\n\
-        with {def: {ghi: {jkl: {mno: {pqr: {stu: {vwx: {yz: 1}}}}}}}} %}\n\
-        {% with _ %} {% /match %}"
-       ~json:
-         {|{"abc":
-              {"def": {"ghi": {"jkl": {"mno": {"pqr": {"stu": {"vwx":
-                {"yz": "a"}}}}}}}}
-            }|});
 
   (* Interface parse *)
   print_error "Invalid field names."

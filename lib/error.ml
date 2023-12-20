@@ -214,53 +214,37 @@ let missing_component stack name =
   in
   raise @@ Acutis_error s
 
-module DecodePath = struct
-  type path = Nullable | Index of int | Key of string
-  type t = { name : string; path : path list }
+let decode ~fname ~stack ~ty ~input s =
+  [|
+    s "File \"";
+    s fname;
+    s
+      "\"\n\
+       Render error.\n\
+       The data supplied does not match this template's interface.\n";
+    s "Path:\n";
+    stack;
+    s "\nExpected type:\n";
+    ty;
+    s "\nReceived value:\n";
+    input;
+  |]
 
-  let make name = { name; path = [] }
-  let nullable { name; path } = { name; path = Nullable :: path }
-  let index i { name; path } = { name; path = Index i :: path }
-  let key k { name; path } = { name; path = Key k :: path }
-
-  let pp_path ppf = function
-    | Nullable -> F.pp_print_string ppf "nullable"
-    | Index i -> F.pp_print_int ppf i
-    | Key s -> F.fprintf ppf "%S" s
-
-  let pp_path ppf = function
-    | [] -> F.pp_print_string ppf "input"
-    | l ->
-        F.fprintf ppf "@[input@ -> %a@]"
-          (F.pp_print_list ~pp_sep pp_path)
-          (List.rev l)
-end
-
-let pp pp_ty { DecodePath.name; path } ty mess =
-  F.asprintf
-    "@[<v>File \"%s\"@;\
-     Render error.@;\
-     The data supplied does not match this template's interface.@;\
-     Path:@;\
-     <1 2>%a.@;\
-     Expected type:@;\
-     <1 2>%a@;\
-     %t@]"
-    name DecodePath.pp_path path pp_ty ty mess
-
-let decode pp_ty pp_data stack ty data =
-  let f = F.dprintf "Received value:@;<1 2>%a" pp_data data in
-  raise @@ Acutis_error (pp pp_ty stack ty f)
-
-let missing_key stack pp_ty ty key =
-  let f = F.dprintf "Input is missing key:@;<1 2>%a" Pp.field key in
-  raise @@ Acutis_error (pp pp_ty stack ty f)
-
-let bad_enum pp_ty pp_data stack ty data =
-  let f =
-    F.dprintf "This type does not allow the given value:@;<1 2>%a" pp_data data
-  in
-  raise @@ Acutis_error (pp pp_ty stack ty f)
+let missing_keys ~fname ~stack ~ty ~keys s =
+  [|
+    s "File: ";
+    s fname;
+    s
+      "\n\
+       Render error.\n\
+       The data supplied does not match this template's interface.\n";
+    s "Path:\n";
+    stack;
+    s "\nExpected type:\n";
+    ty;
+    s "\nInput is missing keys:\n";
+    keys;
+  |]
 
 let internal (file, lnum, cnum, enum) s =
   let s =
