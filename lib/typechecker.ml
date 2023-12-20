@@ -251,7 +251,7 @@ module Type = struct
 
   let subset_enum (type s) (module M : Set.S with type t = s) _ (a : s) (b : s)
       =
-    if not (M.subset b a) then raise_notrace Clash
+    if not (M.subset b a) then raise Clash
 
   let unify_sum ~unify ~subset mode a b =
     match mode with
@@ -272,15 +272,14 @@ module Type = struct
             let cases = unify mode a.cases b.cases in
             a.cases <- cases;
             b.cases <- cases
-        | `Closed, `Open -> raise_notrace Clash)
+        | `Closed, `Open -> raise Clash)
 
   let rec unify mode a b =
     match (!a, !b) with
     | Int, Int | Float, Float | String, String -> ()
     | Nullable a, Nullable b | List a, List b -> unify mode a b
     | Tuple a, Tuple b -> (
-        try List.iter2 (unify mode) a b
-        with Invalid_argument _ -> raise_notrace Clash)
+        try List.iter2 (unify mode) a b with Invalid_argument _ -> raise Clash)
     | Record a, Record b -> unify_record mode a b
     | Dict (a, keys1), Dict (b, keys2) ->
         let ks' = Set.String.union !keys1 !keys2 in
@@ -313,7 +312,7 @@ module Type = struct
         a := t
     | Unknown _, t -> a := t
     | t, Unknown _ -> b := t
-    | _ -> raise_notrace Clash
+    | _ -> raise Clash
 
   and unify_record mode a b =
     match mode with
@@ -334,7 +333,7 @@ module Type = struct
             (fun _ a b ->
               match (a, b) with
               | (Some a as x), Some b -> unify mode a b; x
-              | Some _, None -> raise_notrace Clash
+              | Some _, None -> raise Clash
               | None, _ -> None)
             !a !b
 
@@ -351,7 +350,7 @@ module Type = struct
         match (a, b) with
         | (Some _ as x), None -> x
         | (Some a as x), Some b -> unify_record mode a b; x
-        | None, Some _ -> raise_notrace Clash
+        | None, Some _ -> raise Clash
         | None, None -> None)
       a b
     |> ignore

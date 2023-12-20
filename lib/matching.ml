@@ -464,7 +464,7 @@ and merge :
         | Int_keys a, Int_keys b -> Int_keys (merge_child a b)
         | String_keys a, String_keys b -> String_keys (merge_child a b)
         | _ ->
-            Error.internal __POS__
+            Error.internal ~__POS__
               "Type error between int and string keys. This means the \
                typechecker failed."
       in
@@ -564,7 +564,7 @@ and merge :
   | ( ( Wildcard _ | Optional _ | Switch _ | Nil _ | Cons _ | Nil_or_cons _
       | Nest _ | End _ ),
       _ ) ->
-      Error.internal __POS__
+      Error.internal ~__POS__
         "Tried to merge incompatible trees. Either the typechecker failed or \
          the function that constructs trees failed."
 

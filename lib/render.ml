@@ -224,23 +224,23 @@ module Make (M : MONAD) (D : DATA) :
 
       let to_int = function
         | Int x -> x
-        | _ -> Error.internal __POS__ "Expected Int."
+        | _ -> Error.internal ~__POS__ "Expected Int."
 
       let to_float = function
         | Float x -> x
-        | _ -> Error.internal __POS__ "Expected Float."
+        | _ -> Error.internal ~__POS__ "Expected Float."
 
       let to_string = function
         | String x -> x
-        | _ -> Error.internal __POS__ "Expected String."
+        | _ -> Error.internal ~__POS__ "Expected String."
 
       let to_array = function
         | Array x -> x
-        | _ -> Error.internal __POS__ "Expected Array."
+        | _ -> Error.internal ~__POS__ "Expected Array."
 
       let to_hashtbl = function
         | Hashtbl x -> x
-        | _ -> Error.internal __POS__ "Expected Hashtbl."
+        | _ -> Error.internal ~__POS__ "Expected Hashtbl."
 
       let rec equal a b =
         match (a, b) with

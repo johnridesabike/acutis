@@ -246,7 +246,7 @@ let missing_keys ~fname ~stack ~ty ~keys s =
     keys;
   |]
 
-let internal (file, lnum, cnum, enum) s =
+let internal ~__POS__:(file, lnum, cnum, enum) s =
   let s =
     F.asprintf
       "@[<v>Compile error.@;\

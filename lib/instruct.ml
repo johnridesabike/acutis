@@ -474,7 +474,7 @@ end = struct
 
   let make_exits exit exits f =
     match M.Exit.to_seqi exits () with
-    | Seq.Nil -> Error.internal __POS__ "No exits."
+    | Seq.Nil -> Error.internal ~__POS__ "No exits."
     | Seq.Cons (hd, tl) ->
         let rec aux (i, v) seq =
           match seq () with
