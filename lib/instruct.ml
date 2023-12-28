@@ -17,20 +17,26 @@
 
     We can evaluate the language in multiple ways. For example we can interpret
     it as an OCaml program, we can pretty-print it, or we can output it in a
-    concrete language like Javascript (which is just another form of
-    pretty-printing).
+    concrete language like JavaScript (which is just another form of
+    pretty-printing). We can also add modular optimizations.
 
     Our abstract language is roughly based on JavaScript. It has expressions,
     statements, loops, let-bindings, mutable references, hash tables,
-    first-class functions, and async monads (i.e. promises). *)
+    first-class functions, and asynchronous monads (i.e. promises). *)
 
-module type SYM = sig
+module type SEM = sig
   (** Define the semantics of our abstract language. *)
 
   (** {1 Statements and expressions.} *)
 
   type 'a stmt
   (** A statement, generally some side-effecting code. *)
+
+  type 'a obs
+  (** The final evaluation result. *)
+
+  val observe : 'a stmt -> 'a obs
+  (** Observe the evaluation result after all transformations have applied. *)
 
   val ( |: ) : unit stmt -> 'a stmt -> 'a stmt
   (** Sequence statements. {b Evaluation order is unspecified in OCaml}. To
@@ -81,7 +87,7 @@ module type SYM = sig
   (** Information to import a function from external code. *)
 
   val import :
-    import -> ((external_data -> string exp promise) exp -> 'a stmt) -> 'a stmt
+    import -> ((external_data -> string promise) exp -> 'a stmt) -> 'a stmt
   (** The import semantics are abstract because runtimes vary. *)
 
   val export : 'a exp -> 'a stmt
@@ -104,34 +110,34 @@ module type SYM = sig
 
   (** {1 Arrays.} *)
 
-  val array : 'a exp array -> 'a exp array exp
-  val array_init : int exp -> 'a exp -> 'a exp array exp
-  val ( .%() ) : 'a exp array exp -> int exp -> 'a exp
-  val ( .%()<- ) : 'a exp array exp -> int exp -> 'a exp -> unit stmt
-  val array_concat : string exp array exp -> string exp -> string exp
+  val array : 'a exp array -> 'a array exp
+  val array_init : int exp -> 'a exp -> 'a array exp
+  val ( .%() ) : 'a array exp -> int exp -> 'a exp
+  val ( .%()<- ) : 'a array exp -> int exp -> 'a exp -> unit stmt
+  val array_concat : string array exp -> string exp -> string exp
 
   (** {1 Hash tables.} *)
 
   type 'a hashtbl
   (** A mutable map of string keys to ['a] values. *)
 
-  val hashtbl : (string * 'a) exp Seq.t -> 'a exp hashtbl exp
-  val hashtbl_create : unit -> 'a exp hashtbl exp
-  val ( .%{} ) : 'a exp hashtbl exp -> string exp -> 'a exp
-  val ( .%{}<- ) : 'a exp hashtbl exp -> string exp -> 'a exp -> unit stmt
-  val hashtbl_mem : 'a exp hashtbl exp -> string exp -> bool exp
-  val hashtbl_copy : 'a exp hashtbl exp -> 'a exp hashtbl exp
+  val hashtbl : (string * 'a) exp Seq.t -> 'a hashtbl exp
+  val hashtbl_create : unit -> 'a hashtbl exp
+  val ( .%{} ) : 'a hashtbl exp -> string exp -> 'a exp
+  val ( .%{}<- ) : 'a hashtbl exp -> string exp -> 'a exp -> unit stmt
+  val hashtbl_mem : 'a hashtbl exp -> string exp -> bool exp
+  val hashtbl_copy : 'a hashtbl exp -> 'a hashtbl exp
 
   val hashtbl_iter :
-    'a exp hashtbl exp -> (string exp -> 'a exp -> unit stmt) -> unit stmt
+    'a hashtbl exp -> (string exp -> 'a exp -> unit stmt) -> unit stmt
 
   (** {1 Promises.} *)
 
-  val promise : 'a exp -> 'a exp promise exp
+  val promise : 'a exp -> 'a promise exp
 
   val bind_array :
-    string exp promise exp array exp ->
-    (string exp array -> 'a promise) exp ->
+    string promise array exp ->
+    (string array -> 'a promise) exp ->
     'a promise exp
 
   (** {1 Buffers.} *)
@@ -142,22 +148,22 @@ module type SYM = sig
 
   val buffer_create : unit -> buffer exp
   val buffer_add_string : buffer exp -> string exp -> unit stmt
-  val buffer_add_promise : buffer exp -> string exp promise exp -> unit stmt
+  val buffer_add_promise : buffer exp -> string promise exp -> unit stmt
 
   (** These are lambdas to minimize generated code. *)
 
-  val buffer_to_promise : (buffer -> string exp promise) exp
+  val buffer_to_promise : (buffer -> string promise) exp
   val escape : (string -> string) exp
 
   (** {1 Mutable stacks.} *)
 
   type 'a stack
 
-  val stack_create : unit -> 'a exp stack exp
-  val stack_is_empty : 'a exp stack exp -> bool exp
-  val stack_push : 'a exp stack exp -> 'a exp -> unit stmt
-  val stack_drop : 'a exp stack exp -> unit stmt
-  val stack_concat : string exp stack exp -> string exp -> string exp
+  val stack_create : unit -> 'a stack exp
+  val stack_is_empty : 'a stack exp -> bool exp
+  val stack_push : 'a stack exp -> 'a exp -> unit stmt
+  val stack_drop : 'a stack exp -> unit stmt
+  val stack_concat : string stack exp -> string exp -> string exp
 
   (** {1 Raise errors.} *)
 
@@ -178,14 +184,14 @@ module type SYM = sig
     val int : int exp -> t
     val float : float exp -> t
     val string : string exp -> t
-    val array : t array exp -> t
-    val hashtbl : t hashtbl exp -> t
+    val array : data array exp -> t
+    val hashtbl : data hashtbl exp -> t
     val unknown : external_data exp -> t
     val to_int : t -> int exp
     val to_float : t -> float exp
     val to_string : t -> string exp
-    val to_array : t -> t array exp
-    val to_hashtbl : t -> t hashtbl exp
+    val to_array : t -> data array exp
+    val to_hashtbl : t -> data hashtbl exp
     val equal : t -> t -> bool exp
   end
 
@@ -197,10 +203,10 @@ module type SYM = sig
 
       type 'a t
 
-      val length : external_data exp t -> int exp
+      val length : external_data t -> int exp
 
       val iteri :
-        external_data exp t ->
+        external_data t ->
         (int exp -> external_data exp -> unit stmt) ->
         unit stmt
     end
@@ -210,11 +216,11 @@ module type SYM = sig
 
       type 'a t
 
-      val find : external_data exp t -> string exp -> external_data exp
-      val mem : external_data exp t -> string exp -> bool exp
+      val find : external_data t -> string exp -> external_data exp
+      val mem : external_data t -> string exp -> bool exp
 
       val iter :
-        external_data exp t ->
+        external_data t ->
         (string exp -> external_data exp -> unit stmt) ->
         unit stmt
     end
@@ -227,9 +233,9 @@ module type SYM = sig
     val of_bool : int exp -> t
     val of_float : float exp -> t
     val of_string : string exp -> t
-    val of_array : t array exp -> t
-    val of_hashtbl : t hashtbl exp -> t
-    val of_untyped : data exp -> t
+    val of_array : external_data array exp -> t
+    val of_hashtbl : external_data hashtbl exp -> t
+    val of_untyped : Data.t -> t
 
     (** The classification functions are abstract. They may be implemented as
         functions, if/then statements, etc. *)
@@ -251,12 +257,15 @@ module type SYM = sig
 
     val to_linear :
       t ->
-      ok:(t Linear.t -> unit stmt) ->
+      ok:(external_data Linear.t -> unit stmt) ->
       error:(unit -> unit stmt) ->
       unit stmt
 
     val to_assoc :
-      t -> ok:(t Assoc.t -> unit stmt) -> error:(unit -> unit stmt) -> unit stmt
+      t ->
+      ok:(external_data Assoc.t -> unit stmt) ->
+      error:(unit -> unit stmt) ->
+      unit stmt
 
     val is_null : t -> bool exp
     val show : t -> string exp
@@ -264,10 +273,10 @@ module type SYM = sig
 end
 
 (** Create evaluation instructions for a given language implementation. *)
-module Make (I : SYM) : sig
+module Make (I : SEM) : sig
   open I
 
-  val eval : import Compile.t -> (external_data -> string exp promise) stmt
+  val eval : import Compile.t -> (external_data -> string promise) obs
   (** Evaluate a template with the language implemented by {!I}. *)
 end = struct
   module C = Compile
@@ -286,8 +295,8 @@ end = struct
   let is_not_nil x = not (is_nil x)
 
   type runtime = {
-    comps : (data exp hashtbl -> string exp promise) exp hashtbl exp;
-    buffer_to_promise : (buffer -> string exp promise) exp;
+    comps : (data hashtbl -> string promise) hashtbl exp;
+    buffer_to_promise : (buffer -> string promise) exp;
     escape : (string -> string) exp;
   }
 
@@ -585,10 +594,10 @@ end = struct
 
   type decode_runtime = {
     is_error : bool mut;
-    missing_keys : string exp stack exp;
-    stack : string exp stack exp;
-    decode_error : (string -> string exp stack -> external_data -> error) exp;
-    key_error : (string -> string exp stack -> string exp stack -> error) exp;
+    missing_keys : string stack exp;
+    stack : string stack exp;
+    decode_error : (string -> string stack -> external_data -> error) exp;
+    key_error : (string -> string stack -> string stack -> error) exp;
   }
 
   let decode_error_aux =
@@ -1136,7 +1145,7 @@ end = struct
       |> Seq.map (fun (k, v) ->
              comps.%{string k} <-
                lambda (fun props ->
-                   let$ buffer = ("bufer", buffer_create ()) in
+                   let$ buffer = ("buffer", buffer_create ()) in
                    let s1 = nodes runtime buffer props v in
                    let s2 = return (buffer_to_promise @@ buffer) in
                    s1 |: s2))
@@ -1172,6 +1181,211 @@ end = struct
              s1 |: s2 |: s3))
     in
     s1 |: s2 |: s3
+
+  let eval compiled = observe (eval compiled)
+end
+
+module type TRANS = sig
+  (** To transform the language's output, such as for an optimization, we need to
+    define a module that can translate terms "forward" to the transformed state
+    and "backward" to the original representation. *)
+
+  type 'a from_exp
+  type 'a exp
+
+  val fwd : 'a from_exp -> 'a exp
+  val bwd : 'a exp -> 'a from_exp
+
+  type 'a from_stmt
+  type 'a stmt
+
+  val fwds : 'a from_stmt -> 'a stmt
+  val bwds : 'a stmt -> 'a from_stmt
+end
+
+module MakeTrans
+    (T : TRANS)
+    (F : SEM with type 'a exp = 'a T.from_exp and type 'a stmt = 'a T.from_stmt) =
+struct
+  (** Apply a transformation module and a semantics module to produce a new
+      semantics module that uses the transformation state.
+
+      The module this creates won't do any transformations by itself, and its
+      values are defined as identity functions. You need to override specific
+      functions with optimized forms. *)
+
+  open T
+
+  type 'a exp = 'a T.exp
+  type 'a stmt = 'a T.stmt
+  type 'a obs = 'a F.obs
+
+  let observe x = F.observe (bwds x)
+  let ( |: ) a b = fwds F.(bwds a |: bwds b)
+  let return x = fwds (F.return (bwd x))
+
+  let ( let$ ) (s, x) f =
+    fwds (F.( let$ ) (s, bwd x) (fun x -> bwds (f (fwd x))))
+
+  type 'a mut = 'a F.mut
+
+  let ( let& ) (s, x) f = fwds (F.( let& ) (s, bwd x) (fun x -> bwds (f x)))
+  let deref x = fwd (F.deref x)
+  let ( := ) a x = fwds F.(a := bwd x)
+  let incr x = fwds (F.incr x)
+  let lambda f = fwd (F.lambda (fun x -> bwds (f (fwd x))))
+  let ( @@ ) f x = fwd F.(bwd f @@ bwd x)
+
+  let if_ b ~then_ ~else_ =
+    fwds
+      (F.if_ (bwd b)
+         ~then_:(fun () -> bwds (then_ ()))
+         ~else_:
+           (match else_ with
+           | None -> None
+           | Some else_ -> Some (fun () -> bwds (else_ ()))))
+
+  let while_ b f =
+    fwds (F.while_ (fun () -> bwd (b ())) (fun () -> bwds (f ())))
+
+  type external_data = F.external_data
+  type 'a promise = 'a F.promise
+  type import = F.import
+
+  let import i f = fwds (F.import i (fun fi -> bwds (f (fwd fi))))
+  let export x = fwds (F.export (bwd x))
+  let unit = fwds F.unit
+  let not x = fwd (F.not (bwd x))
+  let int x = fwd (F.int x)
+  let float x = fwd (F.float x)
+  let string x = fwd (F.string x)
+  let bool x = fwd (F.bool x)
+  let pair (a, b) = fwd (F.pair (bwd a, bwd b))
+  let equal_int a b = fwd (F.equal_int (bwd a) (bwd b))
+  let equal_string a b = fwd (F.equal_string (bwd a) (bwd b))
+  let int_to_string x = fwd (F.int_to_string (bwd x))
+  let int_to_float x = fwd (F.int_to_float (bwd x))
+  let float_to_string x = fwd (F.float_to_string (bwd x))
+  let bool_to_string x = fwd (F.bool_to_string (bwd x))
+  let array x = fwd (F.array (Array.map bwd x))
+  let array_init i x = fwd (F.array_init (bwd i) (bwd x))
+  let ( .%() ) a i = fwd F.((bwd a).%(bwd i))
+  let ( .%()<- ) a i x = fwds F.((bwd a).%(bwd i) <- bwd x)
+  let array_concat a s = fwd (F.array_concat (bwd a) (bwd s))
+
+  type 'a hashtbl = 'a F.hashtbl
+
+  let hashtbl x = fwd (F.hashtbl (Seq.map bwd x))
+  let hashtbl_create () = fwd (F.hashtbl_create ())
+  let ( .%{} ) h k = fwd F.((bwd h).%{bwd k})
+  let ( .%{}<- ) h k x = fwds F.((bwd h).%{bwd k} <- bwd x)
+  let hashtbl_mem h k = fwd (F.hashtbl_mem (bwd h) (bwd k))
+  let hashtbl_copy h = fwd (F.hashtbl_copy (bwd h))
+
+  let hashtbl_iter h f =
+    fwds (F.hashtbl_iter (bwd h) (fun k v -> bwds (f (fwd k) (fwd v))))
+
+  let promise x = fwd (F.promise (bwd x))
+  let bind_array a f = fwd (F.bind_array (bwd a) (bwd f))
+
+  type buffer = F.buffer
+
+  let buffer_create () = fwd (F.buffer_create ())
+  let buffer_add_string b s = fwds (F.buffer_add_string (bwd b) (bwd s))
+  let buffer_add_promise b p = fwds (F.buffer_add_promise (bwd b) (bwd p))
+  let buffer_to_promise = fwd F.buffer_to_promise
+  let escape = fwd F.escape
+
+  type 'a stack = 'a F.stack
+
+  let stack_create () = fwd (F.stack_create ())
+  let stack_is_empty s = fwd (F.stack_is_empty (bwd s))
+  let stack_push s x = fwds (F.stack_push (bwd s) (bwd x))
+  let stack_drop s = fwds (F.stack_drop (bwd s))
+  let stack_concat s x = fwd (F.stack_concat (bwd s) (bwd x))
+
+  type error = F.error
+
+  let raise e = fwds (F.raise (bwd e))
+  let error s = fwd (F.error (bwd s))
+
+  type data = F.data
+
+  module Data = struct
+    type t = data exp
+
+    let int x = fwd (F.Data.int (bwd x))
+    let float x = fwd (F.Data.float (bwd x))
+    let string x = fwd (F.Data.string (bwd x))
+    let array x = fwd (F.Data.array (bwd x))
+    let hashtbl x = fwd (F.Data.hashtbl (bwd x))
+    let unknown x = fwd (F.Data.unknown (bwd x))
+    let to_int x = fwd (F.Data.to_int (bwd x))
+    let to_float x = fwd (F.Data.to_float (bwd x))
+    let to_string x = fwd (F.Data.to_string (bwd x))
+    let to_array x = fwd (F.Data.to_array (bwd x))
+    let to_hashtbl x = fwd (F.Data.to_hashtbl (bwd x))
+    let equal a b = fwd (F.Data.equal (bwd a) (bwd b))
+  end
+
+  module External = struct
+    module Linear = struct
+      type 'a t = 'a F.External.Linear.t
+
+      let length t = fwd (F.External.Linear.length t)
+
+      let iteri t f =
+        fwds (F.External.Linear.iteri t (fun k v -> bwds (f (fwd k) (fwd v))))
+    end
+
+    module Assoc = struct
+      type 'a t = 'a F.External.Assoc.t
+
+      let find t s = fwd (F.External.Assoc.find t (bwd s))
+      let mem t s = fwd (F.External.Assoc.mem t (bwd s))
+
+      let iter t f =
+        fwds (F.External.Assoc.iter t (fun k v -> bwds (f (fwd k) (fwd v))))
+    end
+
+    type t = external_data exp
+
+    let null = fwd F.External.null
+    let some x = fwd (F.External.some (bwd x))
+    let of_int x = fwd (F.External.of_int (bwd x))
+    let of_bool x = fwd (F.External.of_bool (bwd x))
+    let of_float x = fwd (F.External.of_float (bwd x))
+    let of_string x = fwd (F.External.of_string (bwd x))
+    let of_array x = fwd (F.External.of_array (bwd x))
+    let of_hashtbl x = fwd (F.External.of_hashtbl (bwd x))
+    let of_untyped x = fwd (F.External.of_untyped (bwd x))
+
+    let to_aux f x ~ok ~error =
+      fwds
+        (f (bwd x)
+           ~ok:(fun x -> bwds (ok (fwd x)))
+           ~error:(fun () -> bwds (error ())))
+
+    let to_int = to_aux F.External.to_int
+    let to_string = to_aux F.External.to_string
+    let to_float = to_aux F.External.to_float
+    let to_bool = to_aux F.External.to_bool
+
+    let to_linear x ~ok ~error =
+      fwds
+        (F.External.to_linear (bwd x)
+           ~ok:(fun x -> bwds (ok x))
+           ~error:(fun () -> bwds (error ())))
+
+    let to_assoc x ~ok ~error =
+      fwds
+        (F.External.to_assoc (bwd x)
+           ~ok:(fun x -> bwds (ok x))
+           ~error:(fun () -> bwds (error ())))
+
+    let is_null x = fwd (F.External.is_null (bwd x))
+    let show x = fwd (F.External.show (bwd x))
+  end
 end
 
 (** Pretty-print the instructions for a compiled template. *)
@@ -1188,7 +1402,9 @@ let pp (type a) pp_import ppf c =
         F.dprintf "%s/%i" v i
 
     type 'a stmt = F.formatter -> unit
+    type 'a obs = F.formatter -> unit
 
+    let observe = Fun.id
     let ( |: ) = F.dprintf "%t@ %t"
 
     type 'a exp = F.formatter -> unit

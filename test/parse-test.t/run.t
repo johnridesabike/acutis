@@ -934,48 +934,48 @@ Print the runtime instructions
    <-
    (lambda
     arg/6
-    ((let$ bufer/0 = (buffer_create))
+    ((let$ buffer/0 = (buffer_create))
      (buffer_add_string
-      bufer/0
+      buffer/0
       (runtime_escape/0 @@ (Data.to_string (arg/6.%{"children"}))))
-     (buffer_add_string bufer/0 "\n")
-     (return (buffer_to_promise/0 @@ bufer/0))))
+     (buffer_add_string buffer/0 "\n")
+     (return (buffer_to_promise/0 @@ buffer/0))))
    )
   (components/0
    .%{"Component"}
    <-
    (lambda
     arg/7
-    ((let$ bufer/1 = (buffer_create))
+    ((let$ buffer/1 = (buffer_create))
      (buffer_add_string
-      bufer/1
+      buffer/1
       (runtime_escape/0 @@ (Data.to_string (arg/7.%{"a_prop"}))))
-     (buffer_add_string bufer/1 "\n")
+     (buffer_add_string buffer/1 "\n")
      (buffer_add_string
-      bufer/1
+      buffer/1
       (runtime_escape/0 @@ (Data.to_string (arg/7.%{"c_prop"}))))
-     (buffer_add_string bufer/1 "\n")
+     (buffer_add_string buffer/1 "\n")
      (buffer_add_string
-      bufer/1
+      buffer/1
       (runtime_escape/0 @@ (Data.to_string (arg/7.%{"d_prop"}))))
-     (buffer_add_string bufer/1 "\n")
+     (buffer_add_string buffer/1 "\n")
      (buffer_add_string
-      bufer/1
+      buffer/1
       (runtime_escape/0 @@ (Data.to_string (arg/7.%{"f_prop"}))))
-     (buffer_add_string bufer/1 "\n")
+     (buffer_add_string buffer/1 "\n")
      (buffer_add_string
-      bufer/1
+      buffer/1
       (runtime_escape/0 @@ (Data.to_string (arg/7.%{"g_prop"}))))
-     (buffer_add_string bufer/1 "\n")
+     (buffer_add_string buffer/1 "\n")
      (buffer_add_string
-      bufer/1
+      buffer/1
       (runtime_escape/0 @@ (Data.to_string (arg/7.%{"h_prop"}))))
-     (buffer_add_string bufer/1 "\n")
+     (buffer_add_string buffer/1 "\n")
      (buffer_add_string
-      bufer/1
+      buffer/1
       (runtime_escape/0 @@ (Data.to_string (arg/7.%{"i_prop"}))))
-     (buffer_add_string bufer/1 "\n")
-     (return (buffer_to_promise/0 @@ bufer/1))))
+     (buffer_add_string buffer/1 "\n")
+     (return (buffer_to_promise/0 @@ buffer/1))))
    )
   (export
    (lambda
@@ -2118,45 +2118,45 @@ Print the runtime instructions
            @@ "{\n  a: {a: {b: string}, b: {c: false | true}},\n  a_prop: string,\n  b_prop: string,\n  c_prop: string,\n  d: string,\n  dict: <int>,\n  e: string,\n  e_prop: string,\n  ech_a: string,\n  ech_b: false | true,\n  ech_d: ?string,\n  ech_e: ?string,\n  ech_f: float,\n  ech_i: int,\n  enums: (@\"a\" | ..., @1 | ..., false | true, false | true),\n  f_prop: string,\n  list: [?string],\n  map_d: <int>,\n  map_l: [int],\n  match_a: int,\n  match_b: string,\n  numbers:\n    {\n      exp1: float,\n      exp2: float,\n      exp3: float,\n      frac: float,\n      int: int,\n      negfrac: float,\n      negint: int\n    },\n  record: {\"!#%@\": string, a: string},\n  tagged: {@tag: false} | {@tag: true, a: string},\n  trim_a: string,\n  trim_b: string,\n  trim_c: string,\n  trim_d: string,\n  trim_e: string,\n  trim_f: string,\n  trim_g: string,\n  tuple: (int, float, string)\n}")
           @@ stack/0)
          @@ arg/8))))
-     (let$ buffer/0 = (buffer_create))
-     (buffer_add_string buffer/0 "Echoes\n")
+     (let$ buffer/2 = (buffer_create))
+     (buffer_add_string buffer/2 "Echoes\n")
      (buffer_add_string
-      buffer/0
+      buffer/2
       (runtime_escape/0 @@ (Data.to_string (props/0.%{"ech_a"}))))
-     (buffer_add_string buffer/0 " ")
+     (buffer_add_string buffer/2 " ")
      (buffer_add_string
-      buffer/0
+      buffer/2
       (runtime_escape/0 @@ (Data.to_string (Data.string "b"))))
-     (buffer_add_string buffer/0 " ")
+     (buffer_add_string buffer/2 " ")
      (if
       (not (Data.equal (props/0.%{"ech_d"}) (Data.int 0)))
       (then
        (buffer_add_string
-        buffer/0
+        buffer/2
         (Data.to_string ((Data.to_array (props/0.%{"ech_d"})).%(0)))))
       (else
        (if
         (not (Data.equal (props/0.%{"ech_e"}) (Data.int 0)))
         (then
          (buffer_add_string
-          buffer/0
+          buffer/2
           (Data.to_string ((Data.to_array (props/0.%{"ech_e"})).%(0)))))
         (else
-         (buffer_add_string buffer/0 (Data.to_string (Data.string "f\"g")))))))
-     (buffer_add_string buffer/0 "\n")
+         (buffer_add_string buffer/2 (Data.to_string (Data.string "f\"g")))))))
+     (buffer_add_string buffer/2 "\n")
      (buffer_add_string
-      buffer/0
+      buffer/2
       (runtime_escape/0 @@ (int_to_string (Data.to_int (props/0.%{"ech_i"})))))
-     (buffer_add_string buffer/0 " ")
+     (buffer_add_string buffer/2 " ")
      (buffer_add_string
-      buffer/0
+      buffer/2
       (runtime_escape/0
        @@ (float_to_string (Data.to_float (props/0.%{"ech_f"})))))
-     (buffer_add_string buffer/0 " ")
+     (buffer_add_string buffer/2 " ")
      (buffer_add_string
-      buffer/0
+      buffer/2
       (runtime_escape/0 @@ (bool_to_string (Data.to_int (props/0.%{"ech_b"})))))
-     (buffer_add_string buffer/0 "\n\nNumbers\n")
+     (buffer_add_string buffer/2 "\n\nNumbers\n")
      (let$ arg_match/0 = [(props/0.%{"numbers"})])
      (let$ props/1 = (hashtbl_copy props/0 ))
      (let& exit/0 = -1)
@@ -2191,27 +2191,27 @@ Print the runtime instructions
                   (then (exit/0 := 0) (unit)))))))))))))))
      (if (equal_int (deref exit/0) -1) (then (exit/0 := 1) (unit)))
      (if (equal_int (deref exit/0) 0) (then (unit)) (else (unit)))
-     (buffer_add_string buffer/0 "\n\nTrim")
+     (buffer_add_string buffer/2 "\n\nTrim")
      (buffer_add_string
-      buffer/0
+      buffer/2
       (runtime_escape/0 @@ (Data.to_string (props/0.%{"trim_a"}))))
      (buffer_add_string
-      buffer/0
+      buffer/2
       (runtime_escape/0 @@ (Data.to_string (props/0.%{"trim_b"}))))
-     (buffer_add_string buffer/0 " ")
+     (buffer_add_string buffer/2 " ")
      (buffer_add_string
-      buffer/0
+      buffer/2
       (runtime_escape/0 @@ (Data.to_string (props/0.%{"trim_c"}))))
      (buffer_add_string
-      buffer/0
+      buffer/2
       (runtime_escape/0 @@ (Data.to_string (props/0.%{"trim_d"}))))
-     (buffer_add_string buffer/0 (Data.to_string (props/0.%{"trim_e"})))
-     (buffer_add_string buffer/0 "\n")
-     (buffer_add_string buffer/0 (Data.to_string (props/0.%{"trim_f"})))
-     (buffer_add_string buffer/0 (Data.to_string (props/0.%{"trim_g"})))
-     (buffer_add_string buffer/0 "Comments\na ")
-     (buffer_add_string buffer/0 "b")
-     (buffer_add_string buffer/0 " c\n\nFlat match\n")
+     (buffer_add_string buffer/2 (Data.to_string (props/0.%{"trim_e"})))
+     (buffer_add_string buffer/2 "\n")
+     (buffer_add_string buffer/2 (Data.to_string (props/0.%{"trim_f"})))
+     (buffer_add_string buffer/2 (Data.to_string (props/0.%{"trim_g"})))
+     (buffer_add_string buffer/2 "Comments\na ")
+     (buffer_add_string buffer/2 "b")
+     (buffer_add_string buffer/2 " c\n\nFlat match\n")
      (let$ arg_match/1 = [(props/0.%{"match_a"})])
      (let$ props/2 = (hashtbl_copy props/0 ))
      (let& exit/1 = -1)
@@ -2234,16 +2234,16 @@ Print the runtime instructions
       (else
        (if
         (equal_int (deref exit/1) 1)
-        (then (buffer_add_string buffer/0 " "))
-        (else (buffer_add_string buffer/0 " ")))))
-     (buffer_add_string buffer/0 "\n\nNested match\n")
+        (then (buffer_add_string buffer/2 " "))
+        (else (buffer_add_string buffer/2 " ")))))
+     (buffer_add_string buffer/2 "\n\nNested match\n")
      (let$ arg_match/2 = [(props/0.%{"match_b"})])
      (let$ props/3 = (hashtbl_copy props/0 ))
      (let& exit/2 = -1)
      (let$ arg/18 = (arg_match/2.%(0)))
      (exit/2 := 0)
      (props/3.%{"c"} <- arg/18)
-     (buffer_add_string buffer/0 "\n  ")
+     (buffer_add_string buffer/2 "\n  ")
      (let$ arg_match/3 = [(props/3.%{"d"}), (props/3.%{"e"})])
      (let$ props/4 = (hashtbl_copy props/3 ))
      (let& exit/3 = -1)
@@ -2252,21 +2252,21 @@ Print the runtime instructions
      (exit/3 := 0)
      (props/4.%{"f"} <- arg/19)
      (props/4.%{"g"} <- arg/20)
-     (buffer_add_string buffer/0 " ")
+     (buffer_add_string buffer/2 " ")
      (buffer_add_string
-      buffer/0
+      buffer/2
       (runtime_escape/0 @@ (Data.to_string (props/4.%{"c"}))))
-     (buffer_add_string buffer/0 " ")
+     (buffer_add_string buffer/2 " ")
      (buffer_add_string
-      buffer/0
+      buffer/2
       (runtime_escape/0 @@ (Data.to_string (props/4.%{"f"}))))
-     (buffer_add_string buffer/0 " ")
+     (buffer_add_string buffer/2 " ")
      (buffer_add_string
-      buffer/0
+      buffer/2
       (runtime_escape/0 @@ (Data.to_string (props/4.%{"g"}))))
-     (buffer_add_string buffer/0 " ")
-     (buffer_add_string buffer/0 "\n")
-     (buffer_add_string buffer/0 "\n\nMap list\n")
+     (buffer_add_string buffer/2 " ")
+     (buffer_add_string buffer/2 "\n")
+     (buffer_add_string buffer/2 "\n\nMap list\n")
      (let& index/0 = 0)
      (let& cell/0 = (props/0.%{"map_l"}))
      (while
@@ -2298,15 +2298,15 @@ Print the runtime instructions
          (if
           (equal_int (deref exit/4) 1)
           (then
-           (buffer_add_string buffer/0 " ")
+           (buffer_add_string buffer/2 " ")
            (buffer_add_string
-            buffer/0
+            buffer/2
             (runtime_escape/0 @@ (int_to_string (Data.to_int (props/5.%{"i"})))))
-           (buffer_add_string buffer/0 " "))
-          (else (buffer_add_string buffer/0 " ")))))
+           (buffer_add_string buffer/2 " "))
+          (else (buffer_add_string buffer/2 " ")))))
        (incr index/0)
        (cell/0 := (list/0.%(1)))))
-     (buffer_add_string buffer/0 "\n\nMap dict\n")
+     (buffer_add_string buffer/2 "\n\nMap dict\n")
      (let$ arg/24 = (props/0.%{"map_d"}))
      (hashtbl_iter
       (Data.to_hashtbl arg/24)
@@ -2337,42 +2337,42 @@ Print the runtime instructions
         (if
          (equal_int (deref exit/5) 1)
          (then
-          (buffer_add_string buffer/0 " ")
+          (buffer_add_string buffer/2 " ")
           (buffer_add_string
-           buffer/0
+           buffer/2
            (runtime_escape/0 @@ (Data.to_string (props/6.%{"k"}))))
-          (buffer_add_string buffer/0 " "))
-         (else (buffer_add_string buffer/0 "\n"))))))
-     (buffer_add_string buffer/0 "\n\nComponent with props\n")
+          (buffer_add_string buffer/2 " "))
+         (else (buffer_add_string buffer/2 "\n"))))))
+     (buffer_add_string buffer/2 "\n\nComponent with props\n")
      (let$ blocks/0 = (array_init 3 (promise "")))
-     (let$ buffer/1 = (buffer_create))
-     (buffer_add_string buffer/1 " ")
-     (blocks/0.%(0) <- (buffer_to_promise/0 @@ buffer/1))
-     (let$ buffer/2 = (buffer_create))
+     (let$ buffer/3 = (buffer_create))
+     (buffer_add_string buffer/3 " ")
+     (blocks/0.%(0) <- (buffer_to_promise/0 @@ buffer/3))
+     (let$ buffer/4 = (buffer_create))
      (let$ arg_match/4 = [(props/0.%{"a_prop"})])
      (let$ props/7 = (hashtbl_copy props/0 ))
      (let& exit/6 = -1)
      (let$ arg/28 = (arg_match/4.%(0)))
      (exit/6 := 0)
      (props/7.%{"b_prop"} <- arg/28)
-     (buffer_add_string buffer/2 " ")
+     (buffer_add_string buffer/4 " ")
      (buffer_add_string
-      buffer/2
+      buffer/4
       (runtime_escape/0 @@ (Data.to_string (props/7.%{"b_prop"}))))
-     (buffer_add_string buffer/2 " ")
-     (blocks/0.%(1) <- (buffer_to_promise/0 @@ buffer/2))
-     (let$ buffer/3 = (buffer_create))
+     (buffer_add_string buffer/4 " ")
+     (blocks/0.%(1) <- (buffer_to_promise/0 @@ buffer/4))
+     (let$ buffer/5 = (buffer_create))
      (unit)
-     (blocks/0.%(2) <- (buffer_to_promise/0 @@ buffer/3))
+     (blocks/0.%(2) <- (buffer_to_promise/0 @@ buffer/5))
      (buffer_add_promise
-      buffer/0
+      buffer/2
       (bind_array
        blocks/0
        (lambda
         arg/29
-        ((let$ buffer/4 = (buffer_create))
+        ((let$ buffer/6 = (buffer_create))
          (buffer_add_promise
-          buffer/4
+          buffer/6
           ((components/0.%{"Component"})
            @@ (hashtbl
                [("a_prop", (props/0.%{"b_prop"})),
@@ -2382,27 +2382,27 @@ Print the runtime instructions
                 ("g_prop", (Data.string (arg/29.%(0)))),
                 ("h_prop", (Data.string (arg/29.%(1)))),
                 ("i_prop", (Data.string (arg/29.%(2))))])))
-         (return (buffer_to_promise/0 @@ buffer/4))))
+         (return (buffer_to_promise/0 @@ buffer/6))))
        @]))
-      (buffer_add_string buffer/0 "\n\nComponent with implicit children\n")
+      (buffer_add_string buffer/2 "\n\nComponent with implicit children\n")
       (let$ blocks/1 = (array_init 1 (promise "")))
-      (let$ buffer/5 = (buffer_create))
-      (buffer_add_string buffer/5 " ")
-      (blocks/1.%(0) <- (buffer_to_promise/0 @@ buffer/5))
+      (let$ buffer/7 = (buffer_create))
+      (buffer_add_string buffer/7 " ")
+      (blocks/1.%(0) <- (buffer_to_promise/0 @@ buffer/7))
       (buffer_add_promise
-       buffer/0
+       buffer/2
        (bind_array
         blocks/1
         (lambda
          arg/30
-         ((let$ buffer/6 = (buffer_create))
+         ((let$ buffer/8 = (buffer_create))
           (buffer_add_promise
-           buffer/6
+           buffer/8
            ((components/0.%{"Component2"})
             @@ (hashtbl [("children", (Data.string (arg/30.%(0))))])))
-          (return (buffer_to_promise/0 @@ buffer/6))))
+          (return (buffer_to_promise/0 @@ buffer/8))))
         @]))
-       (buffer_add_string buffer/0 "\n\nPatterns\n\nTuple:\n")
+       (buffer_add_string buffer/2 "\n\nPatterns\n\nTuple:\n")
        (let$ arg_match/5 = [(props/0.%{"tuple"})])
        (let$ props/8 = (hashtbl_copy props/0 ))
        (let& exit/7 = -1)
@@ -2422,9 +2422,9 @@ Print the runtime instructions
        (if (equal_int (deref exit/7) -1) (then (exit/7 := 1) (unit)))
        (if
         (equal_int (deref exit/7) 0)
-        (then (buffer_add_string buffer/0 " "))
-        (else (buffer_add_string buffer/0 " ")))
-       (buffer_add_string buffer/0 "\n\nList:\n")
+        (then (buffer_add_string buffer/2 " "))
+        (else (buffer_add_string buffer/2 " ")))
+       (buffer_add_string buffer/2 "\n\nList:\n")
        (let$ arg_match/6 = [(props/0.%{"list"})])
        (let$ props/9 = (hashtbl_copy props/0 ))
        (let& exit/8 = -1)
@@ -2477,18 +2477,18 @@ Print the runtime instructions
              (props/9.%{"_z"} <- arg/63)))))))
        (if
         (equal_int (deref exit/8) 0)
-        (then (buffer_add_string buffer/0 "\n"))
+        (then (buffer_add_string buffer/2 "\n"))
         (else
          (if
           (equal_int (deref exit/8) 1)
           (then
-           (buffer_add_string buffer/0 " ")
+           (buffer_add_string buffer/2 " ")
            (buffer_add_string
-            buffer/0
+            buffer/2
             (runtime_escape/0 @@ (Data.to_string (props/9.%{"a"}))))
-           (buffer_add_string buffer/0 "\n"))
-          (else (buffer_add_string buffer/0 "\n")))))
-       (buffer_add_string buffer/0 "\n\nRecord:\n")
+           (buffer_add_string buffer/2 "\n"))
+          (else (buffer_add_string buffer/2 "\n")))))
+       (buffer_add_string buffer/2 "\n\nRecord:\n")
        (let$ arg_match/7 = [(props/0.%{"record"})])
        (let$ props/10 = (hashtbl_copy props/0 ))
        (let& exit/9 = -1)
@@ -2502,17 +2502,17 @@ Print the runtime instructions
        (if
         (equal_int (deref exit/9) 0)
         (then
-         (buffer_add_string buffer/0 " ")
+         (buffer_add_string buffer/2 " ")
          (buffer_add_string
-          buffer/0
+          buffer/2
           (runtime_escape/0 @@ (Data.to_string (props/10.%{"a"}))))
-         (buffer_add_string buffer/0 " ")
+         (buffer_add_string buffer/2 " ")
          (buffer_add_string
-          buffer/0
+          buffer/2
           (runtime_escape/0 @@ (Data.to_string (props/10.%{"b"}))))
-         (buffer_add_string buffer/0 " "))
-        (else (buffer_add_string buffer/0 " ")))
-       (buffer_add_string buffer/0 "\n\nEnum:\n")
+         (buffer_add_string buffer/2 " "))
+        (else (buffer_add_string buffer/2 " ")))
+       (buffer_add_string buffer/2 "\n\nEnum:\n")
        (let$ arg_match/8 = [(props/0.%{"enums"})])
        (let$ props/11 = (hashtbl_copy props/0 ))
        (let& exit/10 = -1)
@@ -2534,9 +2534,9 @@ Print the runtime instructions
        (if (equal_int (deref exit/10) -1) (then (exit/10 := 1) (unit)))
        (if
         (equal_int (deref exit/10) 0)
-        (then (buffer_add_string buffer/0 " "))
-        (else (buffer_add_string buffer/0 " ")))
-       (buffer_add_string buffer/0 "\n\nTagged union:\n")
+        (then (buffer_add_string buffer/2 " "))
+        (else (buffer_add_string buffer/2 " ")))
+       (buffer_add_string buffer/2 "\n\nTagged union:\n")
        (let$ arg_match/9 = [(props/0.%{"tagged"})])
        (let$ props/12 = (hashtbl_copy props/0 ))
        (let& exit/11 = -1)
@@ -2555,13 +2555,13 @@ Print the runtime instructions
        (if
         (equal_int (deref exit/11) 0)
         (then
-         (buffer_add_string buffer/0 " ")
+         (buffer_add_string buffer/2 " ")
          (buffer_add_string
-          buffer/0
+          buffer/2
           (runtime_escape/0 @@ (Data.to_string (props/12.%{"a"}))))
-         (buffer_add_string buffer/0 " "))
-        (else (buffer_add_string buffer/0 "\n")))
-       (buffer_add_string buffer/0 "\n\nDictionary:\n")
+         (buffer_add_string buffer/2 " "))
+        (else (buffer_add_string buffer/2 "\n")))
+       (buffer_add_string buffer/2 "\n\nDictionary:\n")
        (let$ arg_match/10 = [(props/0.%{"dict"})])
        (let$ props/13 = (hashtbl_copy props/0 ))
        (let& exit/12 = -1)
@@ -2581,9 +2581,9 @@ Print the runtime instructions
        (if (equal_int (deref exit/12) -1) (then (exit/12 := 1) (unit)))
        (if
         (equal_int (deref exit/12) 0)
-        (then (buffer_add_string buffer/0 " "))
-        (else (buffer_add_string buffer/0 " ")))
-       (buffer_add_string buffer/0 "\n\n! and . precedence works correctly\n")
+        (then (buffer_add_string buffer/2 " "))
+        (else (buffer_add_string buffer/2 " ")))
+       (buffer_add_string buffer/2 "\n\n! and . precedence works correctly\n")
        (let$ arg_match/11 =
         [(Data.array
           [(Data.array
@@ -2607,7 +2607,7 @@ Print the runtime instructions
          (if (equal_int (deref exit/13) -1) (then (exit/13 := 1) (unit)))))
        (if (equal_int (deref exit/13) 0) (then (unit)) (else (unit)))
        (buffer_add_string
-        buffer/0
+        buffer/2
         "\n\nOther syntax features\n\nPatterns with }} parse correctly:\n")
        (let$ arg_match/12 = [(props/0.%{"a"})])
        (let$ props/15 = (hashtbl_copy props/0 ))
@@ -2617,12 +2617,12 @@ Print the runtime instructions
        (let$ arg/52 = ((Data.to_hashtbl arg/51).%{"b"}))
        (exit/14 := 0)
        (props/15.%{"b"} <- arg/52)
-       (buffer_add_string buffer/0 " ")
+       (buffer_add_string buffer/2 " ")
        (buffer_add_string
-        buffer/0
+        buffer/2
         (runtime_escape/0 @@ (Data.to_string (props/15.%{"b"}))))
-       (buffer_add_string buffer/0 " ")
-       (buffer_add_string buffer/0 "\n\nTrailing commas parse correctly:\n")
+       (buffer_add_string buffer/2 " ")
+       (buffer_add_string buffer/2 "\n\nTrailing commas parse correctly:\n")
        (let$ arg_match/13 =
         [(Data.hashtbl
           (hashtbl
@@ -2636,11 +2636,11 @@ Print the runtime instructions
        (let$ arg/53 = (arg_match/13.%(0)))
        (exit/15 := 0)
        (unit)
-       (buffer_add_string buffer/0 " ")
-       (buffer_add_string buffer/0 "\n\nStrings may contain line breaks:\n")
+       (buffer_add_string buffer/2 " ")
+       (buffer_add_string buffer/2 "\n\nStrings may contain line breaks:\n")
        (buffer_add_string
-        buffer/0
+        buffer/2
         (runtime_escape/0 @@ (Data.to_string (Data.string "a\nb"))))
-       (buffer_add_string buffer/0 "\n")
-       (return (buffer_to_promise/0 @@ buffer/0))))
+       (buffer_add_string buffer/2 "\n")
+       (return (buffer_to_promise/0 @@ buffer/2))))
      )

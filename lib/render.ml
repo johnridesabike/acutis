@@ -101,6 +101,10 @@ module Make (M : MONAD) (D : DATA) :
 
     let import = ( |> )
     let export = Fun.id
+
+    type 'a obs = 'a
+
+    let observe = Fun.id
     let unit = ()
     let not = not
     let int = Fun.id

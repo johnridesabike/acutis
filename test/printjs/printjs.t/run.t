@@ -207,71 +207,66 @@
       encoded$5.set("string_enum", props$6);
       encoded$0.set("record", Object.fromEntries(encoded$5));
       let props$7 = arg$0.get("tagged_record_bool");
-      let props$8 = props$7;
-      let tag$0 = props$8.get("tag");
+      let tag$0 = props$7.get("tag");
       if (tag$0 === 0) {
         let encoded$6 = new Map();
         encoded$6.set("tag", tag$0 ? true : false);
-        let props$9 = props$8.get("a");
-        encoded$6.set("a", props$9);
+        let props$8 = props$7.get("a");
+        encoded$6.set("a", props$8);
         encoded$0.set("tagged_record_bool", Object.fromEntries(encoded$6));
       } else {
         if (tag$0 === 1) {
           let encoded$6 = new Map();
           encoded$6.set("tag", tag$0 ? true : false);
-          let props$9 = props$8.get("b");
-          encoded$6.set("b", props$9);
+          let props$8 = props$7.get("b");
+          encoded$6.set("b", props$8);
           encoded$0.set("tagged_record_bool", Object.fromEntries(encoded$6));
         }
       }
-      let props$9 = arg$0.get("tagged_record_int");
-      let props$10 = props$9;
-      let tag$1 = props$10.get("tag");
+      let props$8 = arg$0.get("tagged_record_int");
+      let tag$1 = props$8.get("tag");
       if (tag$1 === 0) {
         let encoded$6 = new Map();
         encoded$6.set("tag", tag$1);
-        
         encoded$0.set("tagged_record_int", Object.fromEntries(encoded$6));
       } else {
         if (tag$1 === 1) {
           let encoded$6 = new Map();
           encoded$6.set("tag", tag$1);
-          let props$11 = props$10.get("tuple");
-          let props$12 = props$11;
+          let props$9 = props$8.get("tuple");
           let encoded$7 =
             Array.from({length: 3}, (arg$1) => { return (null); });
-          let props$13 = props$12[0];
-          encoded$7[0] = props$13;
-          let props$14 = props$12[1];
-          encoded$7[1] = props$14;
-          let props$15 = props$12[2];
-          encoded$7[2] = props$15 ? true : false;
+          let props$10 = props$9[0];
+          encoded$7[0] = props$10;
+          let props$11 = props$9[1];
+          encoded$7[1] = props$11;
+          let props$12 = props$9[2];
+          encoded$7[2] = props$12 ? true : false;
           encoded$6.set("tuple", encoded$7);
           encoded$0.set("tagged_record_int", Object.fromEntries(encoded$6));
         }
       }
-      let props$11 = arg$0.get("tagged_record_open");
-      let props$12 = props$11;
-      let tag$2 = props$12.get("tag");
+      let props$9 = arg$0.get("tagged_record_open");
+      let tag$2 = props$9.get("tag");
       if (tag$2 === 100) {
         let encoded$6 = new Map();
         encoded$6.set("tag", tag$2);
-        let props$13 = props$12.get("a");
-        encoded$6.set("a", props$13);
+        let props$10 = props$9.get("a");
+        encoded$6.set("a", props$10);
         encoded$0.set("tagged_record_open", Object.fromEntries(encoded$6));
       } else {
         if (tag$2 === 200) {
           let encoded$6 = new Map();
           encoded$6.set("tag", tag$2);
-          let props$13 = props$12.get("b");
-          encoded$6.set("b", props$13);
+          let props$10 = props$9.get("b");
+          encoded$6.set("b", props$10);
           encoded$0.set("tagged_record_open", Object.fromEntries(encoded$6));
         } else {
           if (tag$2 === 300) {
             let encoded$6 = new Map();
             encoded$6.set("tag", tag$2);
-            let props$13 = props$12.get("c");
-            encoded$6.set("c", props$13);
+            let props$10 = props$9.get("c");
+            encoded$6.set("c", props$10);
             encoded$0.set("tagged_record_open", Object.fromEntries(encoded$6));
           } else {
             let encoded$6 = new Map();
@@ -280,27 +275,26 @@
           }
         }
       }
-      let props$13 = arg$0.get("tagged_record_string");
-      let props$14 = props$13;
-      let tag$3 = props$14.get("tag");
+      let props$10 = arg$0.get("tagged_record_string");
+      let tag$3 = props$10.get("tag");
       if (tag$3 === "a") {
         let encoded$6 = new Map();
         encoded$6.set("tag", tag$3);
-        let props$15 = props$14.get("record_list");
+        let props$11 = props$10.get("record_list");
         let index$3 = 0;
-        let cell$3 = props$15;
+        let cell$3 = props$11;
         while (!(cell$3 === 0)) { index$3++; cell$3 = cell$3[1]; }
         let encoded$7 =
           Array.from({length: index$3}, (arg$1) => { return (null); });
-        cell$3 = props$15;
+        cell$3 = props$11;
         index$3 = 0;
         while (!(cell$3 === 0)) {
-          let props$16 = cell$3[0];
+          let props$12 = cell$3[0];
           let encoded$8 = new Map();
-          let props$17 = props$16.get("job");
-          encoded$8.set("job", props$17);
-          let props$18 = props$16.get("name");
-          encoded$8.set("name", props$18);
+          let props$13 = props$12.get("job");
+          encoded$8.set("job", props$13);
+          let props$14 = props$12.get("name");
+          encoded$8.set("name", props$14);
           encoded$7[index$3] = Object.fromEntries(encoded$8);
           index$3++;
           cell$3 = cell$3[1];
@@ -311,13 +305,13 @@
         if (tag$3 === "b") {
           let encoded$6 = new Map();
           encoded$6.set("tag", tag$3);
-          let props$15 = props$14.get("open_enum");
-          encoded$6.set("open_enum", props$15);
+          let props$11 = props$10.get("open_enum");
+          encoded$6.set("open_enum", props$11);
           encoded$0.set("tagged_record_string", Object.fromEntries(encoded$6));
         }
       }
-      let props$15 = arg$0.get("unknown");
-      encoded$0.set("unknown", props$15);
+      let props$11 = arg$0.get("unknown");
+      encoded$0.set("unknown", props$11);
       return (import$0(Object.fromEntries(encoded$0)));
     }
   );
@@ -326,20 +320,19 @@
     "Another_function",
     (arg$0) => {
       let encoded$0 = new Map();
-      
       return (import$1(Object.fromEntries(encoded$0)));
     }
   );
   components$0.set(
     "Component",
     (arg$0) => {
-      let bufer$0 = [];
+      let buffer$0 = [];
       if (!(arg$0.get("optional") === 0)) {
-        bufer$0.push(runtime_escape$0(arg$0.get("optional")[0].toString()));
+        buffer$0.push(runtime_escape$0(arg$0.get("optional")[0].toString()));
       } else {
-        bufer$0.push(runtime_escape$0(arg$0.get("children")));
+        buffer$0.push(runtime_escape$0(arg$0.get("children")));
       }
-      bufer$0.push("\n");
+      buffer$0.push("\n");
       let index$0 = 0;
       let cell$0 = arg$0.get("list");
       while (!(cell$0 === 0)) {
@@ -351,11 +344,11 @@
         let arg$3 = arg$1[1];
         exit$0 = 0;
         props$0.set("i", arg$2);
-        bufer$0.push(runtime_escape$0(props$0.get("i").toString()));
+        buffer$0.push(runtime_escape$0(props$0.get("i").toString()));
         index$0++;
         cell$0 = list$0[1];
       }
-      return (buffer_to_promise$0(bufer$0));
+      return (buffer_to_promise$0(buffer$0));
     }
   );
   export default (arg$0) => {
@@ -923,7 +916,6 @@
               if ((input$0["tag"] | 0) === 0) {
                 let decoded$0 = new Map();
                 decoded$0.set("tag", (input$0["tag"] | 0));
-                
                 if (!(missing_keys$0.length === 0)) {
                   return (key_error$0("{}")(missing_keys$0)(stack$0));
                 }
@@ -1486,12 +1478,7 @@
     let props$1 = new Map(props$0);
     let exit$0 = -1;
     let arg$1 = arg_match$0[0];
-    if (arg$1 === 8) {
-      exit$0 = 0;
-      
-    } else {
-      if (arg$1 === 40) { exit$0 = 1;  }
-    }
+    if (arg$1 === 8) { exit$0 = 0; } else { if (arg$1 === 40) { exit$0 = 1; } }
     if (exit$0 === 0) { buffer$0.push("8\n"); } else { buffer$0.push("40\n"); }
     let arg_match$1 = [props$0.get("record")];
     let props$2 = new Map(props$0);
@@ -1500,9 +1487,8 @@
     let arg$3 = arg$2.get("string_enum");
     if (arg$3 === "no") {
       exit$1 = 1;
-      
     } else {
-      if (arg$3 === "yes") { exit$1 = 0;  }
+      if (arg$3 === "yes") { exit$1 = 0; }
     }
     if (exit$1 === 0) {
       buffer$0.push("yes\n");
@@ -1539,7 +1525,6 @@
     let arg$7 = arg$6.get("tag");
     if (arg$7 === 0) {
       exit$3 = 0;
-      
     } else {
       if (arg$7 === 1) {
         let arg$8 = arg$6.get("tuple");
@@ -1572,7 +1557,7 @@
       exit$4 = 0;
       props$5.set("b", arg$10);
     }
-    if (exit$4 === -1) { exit$4 = 1;  }
+    if (exit$4 === -1) { exit$4 = 1; }
     if (exit$4 === 0) {
       buffer$0.push(" ");
       buffer$0.push(runtime_escape$0(props$5.get("b")));
@@ -1700,14 +1685,12 @@
       if (arg$12 === 0) {
         let arg$13 = arg$11[1];
         exit$5 = 0;
-        
       } else {
         let arg$13 = arg$11[0];
         let arg$14 = arg$13[0];
         if (arg$14 === 0) {
           let arg$15 = arg$11[1];
           exit$5 = 1;
-          
         } else {
           let arg$15 = arg$13[0];
           let arg$16 = arg$15[0];
@@ -1748,9 +1731,8 @@
         if (arg$11.has("does_not_exist")) {
           let arg$13 = arg$11.get("does_not_exist");
           exit$5 = 1;
-          
         }
-        if (exit$5 === -1) { exit$5 = 1;  }
+        if (exit$5 === -1) { exit$5 = 1; }
       } else {
         let arg$13 = arg$11.get("a");
         let arg$14 = arg$13[0];
@@ -1759,17 +1741,16 @@
             let arg$15 = arg$11.get("does_not_exist");
             if (arg$15 === 0) {
               exit$5 = 2;
-              
             } else {
               let arg$16 = arg$11.get("does_not_exist");
               let arg$17 = arg$16[0];
               exit$5 = 0;
               props$6.set("a", arg$14);
               props$6.set("b", arg$17);
-              if (exit$5 === -1) { exit$5 = 2;  }
+              if (exit$5 === -1) { exit$5 = 2; }
             }
           }
-          if (exit$5 === -1) { exit$5 = 2;  }
+          if (exit$5 === -1) { exit$5 = 2; }
         } else {
           if (arg$11.has("does_not_exist")) {
             let arg$15 = arg$11.get("does_not_exist");
@@ -1784,7 +1765,7 @@
         }
       }
     }
-    if (exit$5 === -1) { exit$5 = 3;  }
+    if (exit$5 === -1) { exit$5 = 3; }
     if (exit$5 === 0) {
       buffer$0.push(" ");
       buffer$0.push(runtime_escape$0(props$6.get("a")));
@@ -1815,7 +1796,7 @@
           props$7.set("a", arg$13);
           props$7.set("b", arg$14);
         }
-        if (exit$6 === -1) { exit$6 = 1;  }
+        if (exit$6 === -1) { exit$6 = 1; }
       } else {
         if (arg$13 === "a") {
           if (arg$12.has("does_not_exist")) {
@@ -1824,7 +1805,7 @@
             props$7.set("a", arg$13);
             props$7.set("b", arg$14);
           }
-          if (exit$6 === -1) { exit$6 = 2;  }
+          if (exit$6 === -1) { exit$6 = 2; }
         } else {
           if (arg$12.has("does_not_exist")) {
             let arg$14 = arg$12.get("does_not_exist");
@@ -1835,7 +1816,7 @@
         }
       }
     }
-    if (exit$6 === -1) { exit$6 = 3;  }
+    if (exit$6 === -1) { exit$6 = 3; }
     if (exit$6 === 0) {
       buffer$0.push(" Fail. ");
       buffer$0.push(runtime_escape$0(props$7.get("a")));
@@ -1935,7 +1916,6 @@
         let arg$15 = arg_match$7[2];
         if (arg$15 === 0) {
           exit$7 = 0;
-          
         } else {
           exit$7 = 2;
           props$8.set("y", arg$15);
@@ -1947,14 +1927,13 @@
           let arg$17 = arg_match$7[2];
           if (arg$17 === 0) {
             exit$7 = 0;
-            
           } else {
-            if (arg$17 === 1) { exit$7 = 3;  } else { exit$7 = 4;  }
+            if (arg$17 === 1) { exit$7 = 3; } else { exit$7 = 4; }
           }
         }
         if (exit$7 === -1) {
           let arg$17 = arg_match$7[2];
-          if (arg$17 === 0) { exit$7 = 0;  } else { exit$7 = 4;  }
+          if (arg$17 === 0) { exit$7 = 0; } else { exit$7 = 4; }
         }
       }
     } else {
@@ -1973,10 +1952,9 @@
             props$8.set("x", arg$13);
           } else {
             exit$7 = 4;
-            
           }
         }
-        if (exit$7 === -1) { let arg$17 = arg_match$7[2]; exit$7 = 4;  }
+        if (exit$7 === -1) { let arg$17 = arg_match$7[2]; exit$7 = 4; }
       }
     }
     if (exit$7 === 0) {
@@ -2014,7 +1992,6 @@
           let arg$19 = arg_match$8[1];
           if (arg$19 === 40) {
             exit$8 = 1;
-            
           } else {
             if (arg$19 === 41) {
               exit$8 = 0;
@@ -2064,7 +2041,6 @@
           let arg$22 = arg_match$9[1];
           if (arg$22 === 40) {
             exit$9 = 1;
-            
           } else {
             if (arg$22 === 41) {
               exit$9 = 0;

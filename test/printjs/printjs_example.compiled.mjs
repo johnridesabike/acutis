@@ -91,8 +91,6 @@ let buffer_to_promise$0 =
     );
   };
 let components$0 = new Map();
-
-
 export default (arg$0) => {
   let props$0 = new Map();
   let stack$0 = [];
@@ -439,7 +437,6 @@ export default (arg$0) => {
     let arg$10 = arg_match$0[0];
     if (arg$10 === 0) {
       exit$1 = 0;
-      
     } else {
       let arg$11 = arg_match$0[0];
       let arg$12 = arg$11[0];
@@ -449,9 +446,7 @@ export default (arg$0) => {
       props$2.set("alt", arg$13);
       props$2.set("src", arg$14);
     }
-    if (exit$1 === 0) {
-      
-    } else {
+    if (!(exit$1 === 0)) {
       buffer$0.push("<img src=\"");
       buffer$0.push(runtime_escape$0(props$2.get("src")));
       buffer$0.push("\" alt=\"");

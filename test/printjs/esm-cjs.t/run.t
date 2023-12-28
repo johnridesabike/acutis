@@ -105,7 +105,6 @@
       return (import$0(Object.fromEntries(encoded$0)));
     }
   );
-  
   export default (arg$0) => {
     let props$0 = new Map();
     let stack$0 = [];
@@ -113,7 +112,6 @@
     let missing_keys$0 = [];
     stack$0.unshift("<input>");
     if (typeof arg$0 === "object" && !(arg$0 === null)) {
-      
       if (!(missing_keys$0.length === 0)) {
         return (key_error$0("{}")(missing_keys$0)(stack$0));
       }
@@ -250,7 +248,6 @@
       return (import$0["externalFunction"](Object.fromEntries(encoded$0)));
     }
   );
-  
   module.exports =
     (arg$0) => {
       let props$0 = new Map();
@@ -259,7 +256,6 @@
       let missing_keys$0 = [];
       stack$0.unshift("<input>");
       if (typeof arg$0 === "object" && !(arg$0 === null)) {
-        
         if (!(missing_keys$0.length === 0)) {
           return (key_error$0("{}")(missing_keys$0)(stack$0));
         }
