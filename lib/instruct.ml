@@ -1193,8 +1193,8 @@ module type TRANS = sig
   type 'a from_exp
   type 'a exp
 
-  val fwd : 'a from_exp -> 'a exp
-  val bwd : 'a exp -> 'a from_exp
+  val fwde : 'a from_exp -> 'a exp
+  val bwde : 'a exp -> 'a from_exp
 
   type 'a from_stmt
   type 'a stmt
@@ -1205,8 +1205,22 @@ end
 
 module MakeTrans
     (T : TRANS)
-    (F : SEM with type 'a exp = 'a T.from_exp and type 'a stmt = 'a T.from_stmt) =
-struct
+    (F : SEM with type 'a exp = 'a T.from_exp and type 'a stmt = 'a T.from_stmt) :
+  SEM
+    with type 'a stmt = 'a T.stmt
+     and type 'a obs = 'a F.obs
+     and type 'a exp = 'a T.exp
+     and type 'a mut = 'a F.mut
+     and type 'a promise = 'a F.promise
+     and type external_data = F.external_data
+     and type import = F.import
+     and type 'a hashtbl = 'a F.hashtbl
+     and type buffer = F.buffer
+     and type 'a stack = 'a F.stack
+     and type error = F.error
+     and type data = F.data
+     and type 'a External.Linear.t = 'a F.External.Linear.t
+     and type 'a External.Assoc.t = 'a F.External.Assoc.t = struct
   (** Apply a transformation module and a semantics module to produce a new
       semantics module that uses the transformation state.
 
@@ -1215,30 +1229,28 @@ struct
       functions with optimized forms. *)
 
   open T
+  include F
 
   type 'a exp = 'a T.exp
   type 'a stmt = 'a T.stmt
-  type 'a obs = 'a F.obs
 
   let observe x = F.observe (bwds x)
   let ( |: ) a b = fwds F.(bwds a |: bwds b)
-  let return x = fwds (F.return (bwd x))
+  let return x = fwds (F.return (bwde x))
 
   let ( let$ ) (s, x) f =
-    fwds (F.( let$ ) (s, bwd x) (fun x -> bwds (f (fwd x))))
+    fwds (F.( let$ ) (s, bwde x) (fun x -> bwds (f (fwde x))))
 
-  type 'a mut = 'a F.mut
-
-  let ( let& ) (s, x) f = fwds (F.( let& ) (s, bwd x) (fun x -> bwds (f x)))
-  let deref x = fwd (F.deref x)
-  let ( := ) a x = fwds F.(a := bwd x)
+  let ( let& ) (s, x) f = fwds (F.( let& ) (s, bwde x) (fun x -> bwds (f x)))
+  let deref x = fwde (F.deref x)
+  let ( := ) a x = fwds F.(a := bwde x)
   let incr x = fwds (F.incr x)
-  let lambda f = fwd (F.lambda (fun x -> bwds (f (fwd x))))
-  let ( @@ ) f x = fwd F.(bwd f @@ bwd x)
+  let lambda f = fwde (F.lambda (fun x -> bwds (f (fwde x))))
+  let ( @@ ) f x = fwde F.(bwde f @@ bwde x)
 
   let if_ b ~then_ ~else_ =
     fwds
-      (F.if_ (bwd b)
+      (F.if_ (bwde b)
          ~then_:(fun () -> bwds (then_ ()))
          ~else_:
            (match else_ with
@@ -1246,124 +1258,106 @@ struct
            | Some else_ -> Some (fun () -> bwds (else_ ()))))
 
   let while_ b f =
-    fwds (F.while_ (fun () -> bwd (b ())) (fun () -> bwds (f ())))
+    fwds (F.while_ (fun () -> bwde (b ())) (fun () -> bwds (f ())))
 
-  type external_data = F.external_data
-  type 'a promise = 'a F.promise
-  type import = F.import
-
-  let import i f = fwds (F.import i (fun fi -> bwds (f (fwd fi))))
-  let export x = fwds (F.export (bwd x))
+  let import i f = fwds (F.import i (fun fi -> bwds (f (fwde fi))))
+  let export x = fwds (F.export (bwde x))
   let unit = fwds F.unit
-  let not x = fwd (F.not (bwd x))
-  let int x = fwd (F.int x)
-  let float x = fwd (F.float x)
-  let string x = fwd (F.string x)
-  let bool x = fwd (F.bool x)
-  let pair (a, b) = fwd (F.pair (bwd a, bwd b))
-  let equal_int a b = fwd (F.equal_int (bwd a) (bwd b))
-  let equal_string a b = fwd (F.equal_string (bwd a) (bwd b))
-  let int_to_string x = fwd (F.int_to_string (bwd x))
-  let int_to_float x = fwd (F.int_to_float (bwd x))
-  let float_to_string x = fwd (F.float_to_string (bwd x))
-  let bool_to_string x = fwd (F.bool_to_string (bwd x))
-  let array x = fwd (F.array (Array.map bwd x))
-  let array_init i x = fwd (F.array_init (bwd i) (bwd x))
-  let ( .%() ) a i = fwd F.((bwd a).%(bwd i))
-  let ( .%()<- ) a i x = fwds F.((bwd a).%(bwd i) <- bwd x)
-  let array_concat a s = fwd (F.array_concat (bwd a) (bwd s))
-
-  type 'a hashtbl = 'a F.hashtbl
-
-  let hashtbl x = fwd (F.hashtbl (Seq.map bwd x))
-  let hashtbl_create () = fwd (F.hashtbl_create ())
-  let ( .%{} ) h k = fwd F.((bwd h).%{bwd k})
-  let ( .%{}<- ) h k x = fwds F.((bwd h).%{bwd k} <- bwd x)
-  let hashtbl_mem h k = fwd (F.hashtbl_mem (bwd h) (bwd k))
-  let hashtbl_copy h = fwd (F.hashtbl_copy (bwd h))
+  let not x = fwde (F.not (bwde x))
+  let int x = fwde (F.int x)
+  let float x = fwde (F.float x)
+  let string x = fwde (F.string x)
+  let bool x = fwde (F.bool x)
+  let pair (a, b) = fwde (F.pair (bwde a, bwde b))
+  let equal_int a b = fwde (F.equal_int (bwde a) (bwde b))
+  let equal_string a b = fwde (F.equal_string (bwde a) (bwde b))
+  let int_to_string x = fwde (F.int_to_string (bwde x))
+  let int_to_float x = fwde (F.int_to_float (bwde x))
+  let float_to_string x = fwde (F.float_to_string (bwde x))
+  let bool_to_string x = fwde (F.bool_to_string (bwde x))
+  let array x = fwde (F.array (Array.map bwde x))
+  let array_init i x = fwde (F.array_init (bwde i) (bwde x))
+  let ( .%() ) a i = fwde F.((bwde a).%(bwde i))
+  let ( .%()<- ) a i x = fwds F.((bwde a).%(bwde i) <- bwde x)
+  let array_concat a s = fwde (F.array_concat (bwde a) (bwde s))
+  let hashtbl x = fwde (F.hashtbl (Seq.map bwde x))
+  let hashtbl_create () = fwde (F.hashtbl_create ())
+  let ( .%{} ) h k = fwde F.((bwde h).%{bwde k})
+  let ( .%{}<- ) h k x = fwds F.((bwde h).%{bwde k} <- bwde x)
+  let hashtbl_mem h k = fwde (F.hashtbl_mem (bwde h) (bwde k))
+  let hashtbl_copy h = fwde (F.hashtbl_copy (bwde h))
 
   let hashtbl_iter h f =
-    fwds (F.hashtbl_iter (bwd h) (fun k v -> bwds (f (fwd k) (fwd v))))
+    fwds (F.hashtbl_iter (bwde h) (fun k v -> bwds (f (fwde k) (fwde v))))
 
-  let promise x = fwd (F.promise (bwd x))
-  let bind_array a f = fwd (F.bind_array (bwd a) (bwd f))
-
-  type buffer = F.buffer
-
-  let buffer_create () = fwd (F.buffer_create ())
-  let buffer_add_string b s = fwds (F.buffer_add_string (bwd b) (bwd s))
-  let buffer_add_promise b p = fwds (F.buffer_add_promise (bwd b) (bwd p))
-  let buffer_to_promise = fwd F.buffer_to_promise
-  let escape = fwd F.escape
-
-  type 'a stack = 'a F.stack
-
-  let stack_create () = fwd (F.stack_create ())
-  let stack_is_empty s = fwd (F.stack_is_empty (bwd s))
-  let stack_push s x = fwds (F.stack_push (bwd s) (bwd x))
-  let stack_drop s = fwds (F.stack_drop (bwd s))
-  let stack_concat s x = fwd (F.stack_concat (bwd s) (bwd x))
-
-  type error = F.error
-
-  let raise e = fwds (F.raise (bwd e))
-  let error s = fwd (F.error (bwd s))
-
-  type data = F.data
+  let promise x = fwde (F.promise (bwde x))
+  let bind_array a f = fwde (F.bind_array (bwde a) (bwde f))
+  let buffer_create () = fwde (F.buffer_create ())
+  let buffer_add_string b s = fwds (F.buffer_add_string (bwde b) (bwde s))
+  let buffer_add_promise b p = fwds (F.buffer_add_promise (bwde b) (bwde p))
+  let buffer_to_promise = fwde F.buffer_to_promise
+  let escape = fwde F.escape
+  let stack_create () = fwde (F.stack_create ())
+  let stack_is_empty s = fwde (F.stack_is_empty (bwde s))
+  let stack_push s x = fwds (F.stack_push (bwde s) (bwde x))
+  let stack_drop s = fwds (F.stack_drop (bwde s))
+  let stack_concat s x = fwde (F.stack_concat (bwde s) (bwde x))
+  let raise e = fwds (F.raise (bwde e))
+  let error s = fwde (F.error (bwde s))
 
   module Data = struct
     type t = data exp
 
-    let int x = fwd (F.Data.int (bwd x))
-    let float x = fwd (F.Data.float (bwd x))
-    let string x = fwd (F.Data.string (bwd x))
-    let array x = fwd (F.Data.array (bwd x))
-    let hashtbl x = fwd (F.Data.hashtbl (bwd x))
-    let unknown x = fwd (F.Data.unknown (bwd x))
-    let to_int x = fwd (F.Data.to_int (bwd x))
-    let to_float x = fwd (F.Data.to_float (bwd x))
-    let to_string x = fwd (F.Data.to_string (bwd x))
-    let to_array x = fwd (F.Data.to_array (bwd x))
-    let to_hashtbl x = fwd (F.Data.to_hashtbl (bwd x))
-    let equal a b = fwd (F.Data.equal (bwd a) (bwd b))
+    let int x = fwde (F.Data.int (bwde x))
+    let float x = fwde (F.Data.float (bwde x))
+    let string x = fwde (F.Data.string (bwde x))
+    let array x = fwde (F.Data.array (bwde x))
+    let hashtbl x = fwde (F.Data.hashtbl (bwde x))
+    let unknown x = fwde (F.Data.unknown (bwde x))
+    let to_int x = fwde (F.Data.to_int (bwde x))
+    let to_float x = fwde (F.Data.to_float (bwde x))
+    let to_string x = fwde (F.Data.to_string (bwde x))
+    let to_array x = fwde (F.Data.to_array (bwde x))
+    let to_hashtbl x = fwde (F.Data.to_hashtbl (bwde x))
+    let equal a b = fwde (F.Data.equal (bwde a) (bwde b))
   end
 
   module External = struct
     module Linear = struct
       type 'a t = 'a F.External.Linear.t
 
-      let length t = fwd (F.External.Linear.length t)
+      let length t = fwde (F.External.Linear.length t)
 
       let iteri t f =
-        fwds (F.External.Linear.iteri t (fun k v -> bwds (f (fwd k) (fwd v))))
+        fwds (F.External.Linear.iteri t (fun k v -> bwds (f (fwde k) (fwde v))))
     end
 
     module Assoc = struct
       type 'a t = 'a F.External.Assoc.t
 
-      let find t s = fwd (F.External.Assoc.find t (bwd s))
-      let mem t s = fwd (F.External.Assoc.mem t (bwd s))
+      let find t s = fwde (F.External.Assoc.find t (bwde s))
+      let mem t s = fwde (F.External.Assoc.mem t (bwde s))
 
       let iter t f =
-        fwds (F.External.Assoc.iter t (fun k v -> bwds (f (fwd k) (fwd v))))
+        fwds (F.External.Assoc.iter t (fun k v -> bwds (f (fwde k) (fwde v))))
     end
 
     type t = external_data exp
 
-    let null = fwd F.External.null
-    let some x = fwd (F.External.some (bwd x))
-    let of_int x = fwd (F.External.of_int (bwd x))
-    let of_bool x = fwd (F.External.of_bool (bwd x))
-    let of_float x = fwd (F.External.of_float (bwd x))
-    let of_string x = fwd (F.External.of_string (bwd x))
-    let of_array x = fwd (F.External.of_array (bwd x))
-    let of_hashtbl x = fwd (F.External.of_hashtbl (bwd x))
-    let of_untyped x = fwd (F.External.of_untyped (bwd x))
+    let null = fwde F.External.null
+    let some x = fwde (F.External.some (bwde x))
+    let of_int x = fwde (F.External.of_int (bwde x))
+    let of_bool x = fwde (F.External.of_bool (bwde x))
+    let of_float x = fwde (F.External.of_float (bwde x))
+    let of_string x = fwde (F.External.of_string (bwde x))
+    let of_array x = fwde (F.External.of_array (bwde x))
+    let of_hashtbl x = fwde (F.External.of_hashtbl (bwde x))
+    let of_untyped x = fwde (F.External.of_untyped (bwde x))
 
     let to_aux f x ~ok ~error =
       fwds
-        (f (bwd x)
-           ~ok:(fun x -> bwds (ok (fwd x)))
+        (f (bwde x)
+           ~ok:(fun x -> bwds (ok (fwde x)))
            ~error:(fun () -> bwds (error ())))
 
     let to_int = to_aux F.External.to_int
@@ -1373,18 +1367,18 @@ struct
 
     let to_linear x ~ok ~error =
       fwds
-        (F.External.to_linear (bwd x)
+        (F.External.to_linear (bwde x)
            ~ok:(fun x -> bwds (ok x))
            ~error:(fun () -> bwds (error ())))
 
     let to_assoc x ~ok ~error =
       fwds
-        (F.External.to_assoc (bwd x)
+        (F.External.to_assoc (bwde x)
            ~ok:(fun x -> bwds (ok x))
            ~error:(fun () -> bwds (error ())))
 
-    let is_null x = fwd (F.External.is_null (bwd x))
-    let show x = fwd (F.External.show (bwd x))
+    let is_null x = fwde (F.External.is_null (bwde x))
+    let show x = fwde (F.External.show (bwde x))
   end
 end
 

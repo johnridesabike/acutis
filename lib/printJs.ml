@@ -404,8 +404,8 @@ module RemoveIdsAndUnits (F : Instruct.SEM) :
     type 'a from_exp = 'a F.exp
     type 'a exp = { from : 'a from_exp; identity : bool }
 
-    let fwd x = { from = x; identity = false }
-    let bwd x = x.from
+    let fwde x = { from = x; identity = false }
+    let bwde x = x.from
 
     type 'a from_stmt = 'a F.stmt
     type _ stmt = Unit : unit stmt | Unk : 'a F.stmt -> 'a stmt
@@ -436,25 +436,20 @@ module RemoveIdsAndUnits (F : Instruct.SEM) :
     | Unit, Some else_ -> (
         match else_ () with
         | Unit -> Unit
-        | Unk _ ->
-            fwds
-              (F.if_ (bwd (not x))
-                 ~then_:(fun () -> bwds (else_ ()))
-                 ~else_:None))
-    | Unk _, Some else_ -> (
+        | Unk else_ ->
+            fwds (F.if_ (bwde (not x)) ~then_:(fun () -> else_) ~else_:None))
+    | Unk then_, Some else_ -> (
         match else_ () with
-        | Unit ->
-            fwds (F.if_ (bwd x) ~then_:(fun () -> bwds (then_ ())) ~else_:None)
-        | Unk _ ->
+        | Unit -> fwds (F.if_ (bwde x) ~then_:(fun () -> then_) ~else_:None)
+        | Unk else_ ->
             fwds
-              (F.if_ (bwd x)
-                 ~then_:(fun () -> bwds (then_ ()))
-                 ~else_:(Some (fun () -> bwds (else_ ())))))
-    | Unk _, None ->
-        fwds (F.if_ (bwd x) ~then_:(fun () -> bwds (then_ ())) ~else_:None)
+              (F.if_ (bwde x)
+                 ~then_:(fun () -> then_)
+                 ~else_:(Some (fun () -> else_))))
+    | Unk then_, None ->
+        fwds (F.if_ (bwde x) ~then_:(fun () -> then_) ~else_:None)
 
-  let ( let$ ) : string * 'a exp -> ('a exp -> 'b stmt) -> 'b stmt =
-   fun (name, x) f ->
+  let ( let$ ) (name, x) f =
     if x.identity then f x
     else
       fwds
