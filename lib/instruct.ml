@@ -1086,7 +1086,7 @@ end = struct
           | C.Fun (tys, v) -> (comp_defs, (k, tys, v) :: externals))
         compiled.C.components ([], [])
     in
-    let$ escape = ("runtime_escape", escape) in
+    let$ escape = ("acutis_escape", escape) in
     let$ decode_error =
       ( "decode_error",
         lambda (fun ty ->
@@ -1203,6 +1203,13 @@ module type TRANS = sig
   val bwds : 'a stmt -> 'a from_stmt
 end
 
+(** Apply a transformation module and a semantics module to produce a new
+    semantics module that uses the transformation state.
+
+    The module this creates won't do any transformations by itself, and its
+    values are defined as identity functions. You need to override specific
+    functions to apply transformations. This is used in {!PrintJs} to optimize
+    its output. *)
 module MakeTrans
     (T : TRANS)
     (F : SEM with type 'a exp = 'a T.from_exp and type 'a stmt = 'a T.from_stmt) :
@@ -1221,13 +1228,6 @@ module MakeTrans
      and type data = F.data
      and type 'a External.Linear.t = 'a F.External.Linear.t
      and type 'a External.Assoc.t = 'a F.External.Assoc.t = struct
-  (** Apply a transformation module and a semantics module to produce a new
-      semantics module that uses the transformation state.
-
-      The module this creates won't do any transformations by itself, and its
-      values are defined as identity functions. You need to override specific
-      functions with optimized forms. *)
-
   open T
   include F
 

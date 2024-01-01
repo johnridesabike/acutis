@@ -875,7 +875,7 @@ Print the optimized form
 
 Print the runtime instructions
   $ acutis template.acutis component.acutis component2.acutis --printinst
-  (let$ runtime_escape/0 = (escape))
+  (let$ acutis_escape/0 = (escape))
   (let$ decode_error/0 =
    (lambda
     arg/0
@@ -937,7 +937,7 @@ Print the runtime instructions
     ((let$ buffer/0 = (buffer_create))
      (buffer_add_string
       buffer/0
-      (runtime_escape/0 @@ (Data.to_string (arg/6.%{"children"}))))
+      (acutis_escape/0 @@ (Data.to_string (arg/6.%{"children"}))))
      (buffer_add_string buffer/0 "\n")
      (return (buffer_to_promise/0 @@ buffer/0))))
    )
@@ -949,31 +949,31 @@ Print the runtime instructions
     ((let$ buffer/1 = (buffer_create))
      (buffer_add_string
       buffer/1
-      (runtime_escape/0 @@ (Data.to_string (arg/7.%{"a_prop"}))))
+      (acutis_escape/0 @@ (Data.to_string (arg/7.%{"a_prop"}))))
      (buffer_add_string buffer/1 "\n")
      (buffer_add_string
       buffer/1
-      (runtime_escape/0 @@ (Data.to_string (arg/7.%{"c_prop"}))))
+      (acutis_escape/0 @@ (Data.to_string (arg/7.%{"c_prop"}))))
      (buffer_add_string buffer/1 "\n")
      (buffer_add_string
       buffer/1
-      (runtime_escape/0 @@ (Data.to_string (arg/7.%{"d_prop"}))))
+      (acutis_escape/0 @@ (Data.to_string (arg/7.%{"d_prop"}))))
      (buffer_add_string buffer/1 "\n")
      (buffer_add_string
       buffer/1
-      (runtime_escape/0 @@ (Data.to_string (arg/7.%{"f_prop"}))))
+      (acutis_escape/0 @@ (Data.to_string (arg/7.%{"f_prop"}))))
      (buffer_add_string buffer/1 "\n")
      (buffer_add_string
       buffer/1
-      (runtime_escape/0 @@ (Data.to_string (arg/7.%{"g_prop"}))))
+      (acutis_escape/0 @@ (Data.to_string (arg/7.%{"g_prop"}))))
      (buffer_add_string buffer/1 "\n")
      (buffer_add_string
       buffer/1
-      (runtime_escape/0 @@ (Data.to_string (arg/7.%{"h_prop"}))))
+      (acutis_escape/0 @@ (Data.to_string (arg/7.%{"h_prop"}))))
      (buffer_add_string buffer/1 "\n")
      (buffer_add_string
       buffer/1
-      (runtime_escape/0 @@ (Data.to_string (arg/7.%{"i_prop"}))))
+      (acutis_escape/0 @@ (Data.to_string (arg/7.%{"i_prop"}))))
      (buffer_add_string buffer/1 "\n")
      (return (buffer_to_promise/0 @@ buffer/1))))
    )
@@ -2122,11 +2122,11 @@ Print the runtime instructions
      (buffer_add_string buffer/2 "Echoes\n")
      (buffer_add_string
       buffer/2
-      (runtime_escape/0 @@ (Data.to_string (props/0.%{"ech_a"}))))
+      (acutis_escape/0 @@ (Data.to_string (props/0.%{"ech_a"}))))
      (buffer_add_string buffer/2 " ")
      (buffer_add_string
       buffer/2
-      (runtime_escape/0 @@ (Data.to_string (Data.string "b"))))
+      (acutis_escape/0 @@ (Data.to_string (Data.string "b"))))
      (buffer_add_string buffer/2 " ")
      (if
       (not (Data.equal (props/0.%{"ech_d"}) (Data.int 0)))
@@ -2146,16 +2146,16 @@ Print the runtime instructions
      (buffer_add_string buffer/2 "\n")
      (buffer_add_string
       buffer/2
-      (runtime_escape/0 @@ (int_to_string (Data.to_int (props/0.%{"ech_i"})))))
+      (acutis_escape/0 @@ (int_to_string (Data.to_int (props/0.%{"ech_i"})))))
      (buffer_add_string buffer/2 " ")
      (buffer_add_string
       buffer/2
-      (runtime_escape/0
+      (acutis_escape/0
        @@ (float_to_string (Data.to_float (props/0.%{"ech_f"})))))
      (buffer_add_string buffer/2 " ")
      (buffer_add_string
       buffer/2
-      (runtime_escape/0 @@ (bool_to_string (Data.to_int (props/0.%{"ech_b"})))))
+      (acutis_escape/0 @@ (bool_to_string (Data.to_int (props/0.%{"ech_b"})))))
      (buffer_add_string buffer/2 "\n\nNumbers\n")
      (let$ arg_match/0 = [(props/0.%{"numbers"})])
      (let$ props/1 = (hashtbl_copy props/0 ))
@@ -2194,17 +2194,17 @@ Print the runtime instructions
      (buffer_add_string buffer/2 "\n\nTrim")
      (buffer_add_string
       buffer/2
-      (runtime_escape/0 @@ (Data.to_string (props/0.%{"trim_a"}))))
+      (acutis_escape/0 @@ (Data.to_string (props/0.%{"trim_a"}))))
      (buffer_add_string
       buffer/2
-      (runtime_escape/0 @@ (Data.to_string (props/0.%{"trim_b"}))))
+      (acutis_escape/0 @@ (Data.to_string (props/0.%{"trim_b"}))))
      (buffer_add_string buffer/2 " ")
      (buffer_add_string
       buffer/2
-      (runtime_escape/0 @@ (Data.to_string (props/0.%{"trim_c"}))))
+      (acutis_escape/0 @@ (Data.to_string (props/0.%{"trim_c"}))))
      (buffer_add_string
       buffer/2
-      (runtime_escape/0 @@ (Data.to_string (props/0.%{"trim_d"}))))
+      (acutis_escape/0 @@ (Data.to_string (props/0.%{"trim_d"}))))
      (buffer_add_string buffer/2 (Data.to_string (props/0.%{"trim_e"})))
      (buffer_add_string buffer/2 "\n")
      (buffer_add_string buffer/2 (Data.to_string (props/0.%{"trim_f"})))
@@ -2255,15 +2255,15 @@ Print the runtime instructions
      (buffer_add_string buffer/2 " ")
      (buffer_add_string
       buffer/2
-      (runtime_escape/0 @@ (Data.to_string (props/4.%{"c"}))))
+      (acutis_escape/0 @@ (Data.to_string (props/4.%{"c"}))))
      (buffer_add_string buffer/2 " ")
      (buffer_add_string
       buffer/2
-      (runtime_escape/0 @@ (Data.to_string (props/4.%{"f"}))))
+      (acutis_escape/0 @@ (Data.to_string (props/4.%{"f"}))))
      (buffer_add_string buffer/2 " ")
      (buffer_add_string
       buffer/2
-      (runtime_escape/0 @@ (Data.to_string (props/4.%{"g"}))))
+      (acutis_escape/0 @@ (Data.to_string (props/4.%{"g"}))))
      (buffer_add_string buffer/2 " ")
      (buffer_add_string buffer/2 "\n")
      (buffer_add_string buffer/2 "\n\nMap list\n")
@@ -2301,7 +2301,7 @@ Print the runtime instructions
            (buffer_add_string buffer/2 " ")
            (buffer_add_string
             buffer/2
-            (runtime_escape/0 @@ (int_to_string (Data.to_int (props/5.%{"i"})))))
+            (acutis_escape/0 @@ (int_to_string (Data.to_int (props/5.%{"i"})))))
            (buffer_add_string buffer/2 " "))
           (else (buffer_add_string buffer/2 " ")))))
        (incr index/0)
@@ -2340,7 +2340,7 @@ Print the runtime instructions
           (buffer_add_string buffer/2 " ")
           (buffer_add_string
            buffer/2
-           (runtime_escape/0 @@ (Data.to_string (props/6.%{"k"}))))
+           (acutis_escape/0 @@ (Data.to_string (props/6.%{"k"}))))
           (buffer_add_string buffer/2 " "))
          (else (buffer_add_string buffer/2 "\n"))))))
      (buffer_add_string buffer/2 "\n\nComponent with props\n")
@@ -2358,7 +2358,7 @@ Print the runtime instructions
      (buffer_add_string buffer/4 " ")
      (buffer_add_string
       buffer/4
-      (runtime_escape/0 @@ (Data.to_string (props/7.%{"b_prop"}))))
+      (acutis_escape/0 @@ (Data.to_string (props/7.%{"b_prop"}))))
      (buffer_add_string buffer/4 " ")
      (blocks/0.%(1) <- (buffer_to_promise/0 @@ buffer/4))
      (let$ buffer/5 = (buffer_create))
@@ -2485,7 +2485,7 @@ Print the runtime instructions
            (buffer_add_string buffer/2 " ")
            (buffer_add_string
             buffer/2
-            (runtime_escape/0 @@ (Data.to_string (props/9.%{"a"}))))
+            (acutis_escape/0 @@ (Data.to_string (props/9.%{"a"}))))
            (buffer_add_string buffer/2 "\n"))
           (else (buffer_add_string buffer/2 "\n")))))
        (buffer_add_string buffer/2 "\n\nRecord:\n")
@@ -2505,11 +2505,11 @@ Print the runtime instructions
          (buffer_add_string buffer/2 " ")
          (buffer_add_string
           buffer/2
-          (runtime_escape/0 @@ (Data.to_string (props/10.%{"a"}))))
+          (acutis_escape/0 @@ (Data.to_string (props/10.%{"a"}))))
          (buffer_add_string buffer/2 " ")
          (buffer_add_string
           buffer/2
-          (runtime_escape/0 @@ (Data.to_string (props/10.%{"b"}))))
+          (acutis_escape/0 @@ (Data.to_string (props/10.%{"b"}))))
          (buffer_add_string buffer/2 " "))
         (else (buffer_add_string buffer/2 " ")))
        (buffer_add_string buffer/2 "\n\nEnum:\n")
@@ -2558,7 +2558,7 @@ Print the runtime instructions
          (buffer_add_string buffer/2 " ")
          (buffer_add_string
           buffer/2
-          (runtime_escape/0 @@ (Data.to_string (props/12.%{"a"}))))
+          (acutis_escape/0 @@ (Data.to_string (props/12.%{"a"}))))
          (buffer_add_string buffer/2 " "))
         (else (buffer_add_string buffer/2 "\n")))
        (buffer_add_string buffer/2 "\n\nDictionary:\n")
@@ -2620,7 +2620,7 @@ Print the runtime instructions
        (buffer_add_string buffer/2 " ")
        (buffer_add_string
         buffer/2
-        (runtime_escape/0 @@ (Data.to_string (props/15.%{"b"}))))
+        (acutis_escape/0 @@ (Data.to_string (props/15.%{"b"}))))
        (buffer_add_string buffer/2 " ")
        (buffer_add_string buffer/2 "\n\nTrailing commas parse correctly:\n")
        (let$ arg_match/13 =
@@ -2640,7 +2640,7 @@ Print the runtime instructions
        (buffer_add_string buffer/2 "\n\nStrings may contain line breaks:\n")
        (buffer_add_string
         buffer/2
-        (runtime_escape/0 @@ (Data.to_string (Data.string "a\nb"))))
+        (acutis_escape/0 @@ (Data.to_string (Data.string "a\nb"))))
        (buffer_add_string buffer/2 "\n")
        (return (buffer_to_promise/0 @@ buffer/2))))
      )

@@ -110,7 +110,8 @@ module Cjs : JSMODULE = struct
   let export x = (global "module").!("exports") <- x
 end
 
-module MakeJavaScript (M : JSMODULE) = struct
+module MakeJavaScript (M : JSMODULE) :
+  Instruct.SEM with type 'a obs = js and type import = jsfun = struct
   let seq s ppf state =
     F.fprintf ppf "[@,%a%t]"
       (F.pp_print_seq ~pp_sep:Pp.comma (fun ppf x ->
