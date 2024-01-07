@@ -170,7 +170,6 @@ module MakeJavaScript (M : JSMODULE) :
 
   let equal a b ppf state = F.fprintf ppf "%a ===@ %a" a state b state
   let typeof expr ppf state = F.fprintf ppf "typeof %a" expr state
-  let to_int expr ppf state = F.fprintf ppf "(%a | 0)" expr state
 
   include M
 
@@ -355,45 +354,31 @@ module MakeJavaScript (M : JSMODULE) :
     let of_hashtbl x = (global "Object").!("fromEntries") @@ x
     let of_untyped = Fun.id
 
-    let to_int x ~ok ~error =
-      if_
-        (and_
-           (equal (typeof x) (string "number"))
-           ((global "Number").!("isInteger") @@ x))
-        ~then_:(fun () -> ok (to_int x))
-        ~else_:(Some error)
-
-    let to_string x ~ok ~error =
-      if_
-        (equal (typeof x) (string "string"))
-        ~then_:(fun () -> ok x)
-        ~else_:(Some error)
-
-    let to_float x ~ok ~error =
-      if_
-        (equal (typeof x) (string "number"))
-        ~then_:(fun () -> ok x)
-        ~else_:(Some error)
-
-    let to_bool x ~ok ~error =
-      if_
-        (equal (typeof x) (string "boolean"))
-        ~then_:(fun () -> ok x)
-        ~else_:(Some error)
-
-    let to_linear x ~ok ~error =
-      if_
-        ((global "Array").!("isArray") @@ x)
-        ~then_:(fun () -> ok x)
-        ~else_:(Some error)
+    type _ classify =
+      | Int : int classify
+      | String : string classify
+      | Float : float classify
+      | Bool : bool classify
+      | Linear : external_data Linear.t classify
+      | Assoc : external_data Assoc.t classify
 
     let is_null x = or_ (equal x null) (equal x (global "undefined"))
 
-    let to_assoc x ~ok ~error =
-      if_
-        (and_ (equal (typeof x) (string "object")) (not (equal x null)))
-        ~then_:(fun () -> ok x)
-        ~else_:(Some error)
+    let classify (type a) (c : a classify) x ~ok ~error =
+      let cond =
+        match c with
+        | Int ->
+            and_
+              (equal (typeof x) (string "number"))
+              ((global "Number").!("isInteger") @@ x)
+        | String -> equal (typeof x) (string "string")
+        | Float -> equal (typeof x) (string "number")
+        | Bool -> equal (typeof x) (string "boolean")
+        | Linear -> (global "Array").!("isArray") @@ x
+        | Assoc ->
+            and_ (equal (typeof x) (string "object")) (not (equal x null))
+      in
+      if_ cond ~then_:(fun () -> ok x) ~else_:(Some error)
 
     let show x = global "String" @@ x
   end
@@ -458,6 +443,7 @@ module RemoveIdsAndUnits (F : Instruct.SEM) :
              bwds (f { from = x; identity = true })))
 
   let int_to_float x = { x with from = F.int_to_float x.from }
+  let deref x = { from = F.deref x; identity = true }
 
   module Data = struct
     include M.Data

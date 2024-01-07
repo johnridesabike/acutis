@@ -203,10 +203,10 @@ module type SEM = sig
 
       type 'a t
 
-      val length : external_data t -> int exp
+      val length : external_data t exp -> int exp
 
       val iteri :
-        external_data t ->
+        external_data t exp ->
         (int exp -> external_data exp -> unit stmt) ->
         unit stmt
     end
@@ -216,11 +216,11 @@ module type SEM = sig
 
       type 'a t
 
-      val find : external_data t -> string exp -> external_data exp
-      val mem : external_data t -> string exp -> bool exp
+      val find : external_data t exp -> string exp -> external_data exp
+      val mem : external_data t exp -> string exp -> bool exp
 
       val iter :
-        external_data t ->
+        external_data t exp ->
         (string exp -> external_data exp -> unit stmt) ->
         unit stmt
     end
@@ -237,35 +237,20 @@ module type SEM = sig
     val of_hashtbl : external_data hashtbl exp -> t
     val of_untyped : Data.t -> t
 
-    (** The classification functions are abstract. They may be implemented as
-        functions, if/then statements, etc. *)
+    type _ classify =
+      | Int : int classify
+      | String : string classify
+      | Float : float classify
+      | Bool : bool classify
+      | Linear : external_data Linear.t classify
+      | Assoc : external_data Assoc.t classify
 
-    val to_int :
-      t -> ok:(int exp -> unit stmt) -> error:(unit -> unit stmt) -> unit stmt
-
-    val to_string :
+    val classify :
+      'a classify ->
       t ->
-      ok:(string exp -> unit stmt) ->
-      error:(unit -> unit stmt) ->
-      unit stmt
-
-    val to_float :
-      t -> ok:(float exp -> unit stmt) -> error:(unit -> unit stmt) -> unit stmt
-
-    val to_bool :
-      t -> ok:(bool exp -> unit stmt) -> error:(unit -> unit stmt) -> unit stmt
-
-    val to_linear :
-      t ->
-      ok:(external_data Linear.t -> unit stmt) ->
-      error:(unit -> unit stmt) ->
-      unit stmt
-
-    val to_assoc :
-      t ->
-      ok:(external_data Assoc.t -> unit stmt) ->
-      error:(unit -> unit stmt) ->
-      unit stmt
+      ok:('a exp -> 'b stmt) ->
+      error:(unit -> 'b stmt) ->
+      'b stmt
 
     val is_null : t -> bool exp
     val show : t -> string exp
@@ -363,15 +348,18 @@ end = struct
     | `Int i -> Data.int (int i)
     | `Float f -> Data.float (float f)
 
-  let arg_int arg ~optional:_ i f = ( let$ ) ("arg", arg.%(int i)) f
+  let arg_indexed arg index ~optional:_ i f =
+    match i with 0 -> f arg | _ -> f index
+
+  let arg_int arg ~optional:_ i f = ( let$ ) ("match_arg", arg.%(int i)) f
 
   let arg_str arg ~optional key f =
     if optional then
       if_
         (hashtbl_mem arg (string key))
-        ~then_:(fun () -> ( let$ ) ("arg", arg.%{string key}) f)
+        ~then_:(fun () -> ( let$ ) ("match_arg", arg.%{string key}) f)
         ~else_:None
-    else ( let$ ) ("arg", arg.%{string key}) f
+    else ( let$ ) ("match_arg", arg.%{string key}) f
 
   let ( let@ ) = Stdlib.( @@ )
 
@@ -473,12 +461,12 @@ end = struct
             | None -> None))
 
   let match_leaf exitvar props ~vars M.{ names; exit } =
-    let s1 = exitvar := int (M.Exit.key_to_int exit) in
-    let s2 =
+    let s1 =
       Map.String.to_seq names
       |> Seq.map (fun (key, id) -> props.%{string key} <- Map.Int.find id vars)
       |> join_stmts
     in
+    let s2 = exitvar := int (M.Exit.key_to_int exit) in
     s1 |: s2
 
   let make_exits exit exits f =
@@ -524,13 +512,12 @@ end = struct
               (fun () ->
                 let$ props = ("props", hashtbl_copy props) in
                 let$ list = ("list", deref cell |> Data.to_array) in
-                let$ arg =
-                  ("arg", array [| list_hd list; Data.int (deref index) |])
-                in
+                let$ head = ("head", list_hd list) in
                 let& exit = ("exit", unset_exit) in
                 let s1 =
                   match_tree ~exit ~leafstmt:(match_leaf exit props)
-                    ~get_arg:(arg_int arg) ~vars:Map.Int.empty tree
+                    ~get_arg:(arg_indexed head (Data.int (deref index)))
+                    ~vars:Map.Int.empty tree
                 in
                 let s2 =
                   make_exits exit exits (fun l -> nodes runtime buffer props l)
@@ -540,14 +527,14 @@ end = struct
                 s1 |: s2 |: s3 |: s4))
     | C.Map_dict (blocks, data, { tree; exits }) ->
         construct_blocks runtime buffer blocks props (fun blocks buffer ->
-            let$ arg = ("arg", construct_data blocks props data) in
-            hashtbl_iter (Data.to_hashtbl arg) (fun k v ->
+            let$ match_arg = ("match_arg", construct_data blocks props data) in
+            hashtbl_iter (Data.to_hashtbl match_arg) (fun k v ->
                 let$ props = ("props", hashtbl_copy props) in
-                let$ arg = ("arg", array [| v; Data.string k |]) in
                 let& exit = ("exit", unset_exit) in
                 let s1 =
                   match_tree ~exit ~leafstmt:(match_leaf exit props)
-                    ~get_arg:(arg_int arg) ~vars:Map.Int.empty tree
+                    ~get_arg:(arg_indexed v (Data.string k))
+                    ~vars:Map.Int.empty tree
                 in
                 let s2 =
                   make_exits exit exits (fun l -> nodes runtime buffer props l)
@@ -623,12 +610,12 @@ end = struct
   let set_error x = x.is_error := bool true
 
   let decode_string ~set ~debug input =
-    External.to_string input
+    External.classify String input
       ~ok:(fun s -> set (Data.string s))
       ~error:(fun () -> set_error debug)
 
   let decode_string_enum ~set ~debug input cases =
-    External.to_string input
+    External.classify String input
       ~ok:(fun s ->
         let rec aux seq =
           match seq () with
@@ -643,12 +630,12 @@ end = struct
       ~error:(fun () -> set_error debug)
 
   let decode_int ~set ~debug input =
-    External.to_int input
+    External.classify Int input
       ~ok:(fun i -> set (Data.int i))
       ~error:(fun () -> set_error debug)
 
   let decode_int_enum ~set ~debug input cases =
-    External.to_int input
+    External.classify Int input
       ~ok:(fun s ->
         let rec aux seq =
           match seq () with
@@ -663,7 +650,7 @@ end = struct
       ~error:(fun () -> set_error debug)
 
   let decode_bool ~set ~debug input cases =
-    External.to_bool input
+    External.classify Bool input
       ~ok:(fun b ->
         if_ b
           ~then_:(fun () ->
@@ -677,10 +664,10 @@ end = struct
       ~error:(fun () -> set_error debug)
 
   let decode_float ~set ~debug input =
-    External.to_float input
+    External.classify Float input
       ~ok:(fun f -> set (Data.float f))
       ~error:(fun () ->
-        External.to_int input
+        External.classify Int input
           ~ok:(fun i -> set (Data.float (int_to_float i)))
           ~error:(fun () -> set_error debug))
 
@@ -689,11 +676,7 @@ end = struct
     to_data : 'a exp -> Data.t;
     of_data : Data.t -> 'a exp;
     to_extern : 'a exp -> external_data exp;
-    of_extern :
-      External.t ->
-      ok:('a exp -> unit stmt) ->
-      error:(unit -> unit stmt) ->
-      unit stmt;
+    classify : 'a External.classify;
   }
 
   let union_helper_string =
@@ -702,7 +685,7 @@ end = struct
       to_data = Data.string;
       of_data = Data.to_string;
       to_extern = External.of_string;
-      of_extern = External.to_string;
+      classify = String;
     }
 
   let union_helper_int =
@@ -711,7 +694,7 @@ end = struct
       to_data = Data.int;
       of_data = Data.to_int;
       to_extern = External.of_int;
-      of_extern = External.to_int;
+      classify = Int;
     }
 
   let union_helper_bool = { union_helper_int with to_extern = External.of_bool }
@@ -734,7 +717,7 @@ end = struct
       | T.List ty -> decode_list ~set ~debug input ty
       | T.Tuple tys -> decode_tuple ~set ~debug input tys
       | T.Record tys ->
-          External.to_assoc input
+          External.classify Assoc input
             ~ok:(fun input ->
               let$ decoded = ("decoded", hashtbl_create ()) in
               let s1 = decode_record_aux ~debug decoded input !tys in
@@ -744,7 +727,7 @@ end = struct
       | T.Dict (ty, _) -> decode_dict ~set ~debug input ty
       | T.Union_int (key, { cases; row = _ }, Bool) ->
           let key = string key in
-          External.to_assoc input
+          External.classify Assoc input
             ~ok:(fun input ->
               let aux i v () =
                 match Map.Int.find_opt i cases with
@@ -759,7 +742,7 @@ end = struct
               if_
                 (External.Assoc.mem input key)
                 ~then_:(fun () ->
-                  External.to_bool
+                  External.classify Bool
                     (External.Assoc.find input key)
                     ~ok:(fun b ->
                       if_ b ~then_:(aux 1 true_value)
@@ -784,14 +767,14 @@ end = struct
     s1 |: s2
 
   and decode_union : 'a. 'a union_helper -> ('a exp * T.record) Seq.t -> _ =
-   fun { equal; to_data; of_extern; _ } seq ~set ~debug key input row ->
+   fun { equal; to_data; classify; _ } seq ~set ~debug key input row ->
     let key' = string key in
-    External.to_assoc input
+    External.classify Assoc input
       ~ok:(fun input ->
         if_
           (External.Assoc.mem input key')
           ~then_:(fun () ->
-            of_extern
+            External.classify classify
               (External.Assoc.find input key')
               ~ok:(fun i ->
                 let rec aux seq =
@@ -823,7 +806,7 @@ end = struct
 
   and decode_tuple ~set ~debug input tys =
     let length = int (List.length tys) in
-    External.to_linear input
+    External.classify Linear input
       ~ok:(fun l ->
         if_
           (equal_int (External.Linear.length l) length)
@@ -850,7 +833,7 @@ end = struct
       ~error:(fun () -> set_error debug)
 
   and decode_dict ~set ~debug input ty =
-    External.to_assoc input
+    External.classify Assoc input
       ~ok:(fun a ->
         let$ decoded = ("decoded", hashtbl_create ()) in
         External.Assoc.iter a (fun k input ->
@@ -866,7 +849,7 @@ end = struct
       ~error:(fun () -> set_error debug)
 
   and decode_list ~set ~debug input ty =
-    External.to_linear input
+    External.classify Linear input
       ~ok:(fun l ->
         let$ decoded = ("decoded", array [| nil_value; nil_value |]) in
         let& decode_dst = ("decode_dst", decoded) in
@@ -1163,7 +1146,7 @@ end = struct
              in
              let s1 = stack_push stack (string "<input>") in
              let s2 =
-               External.to_assoc input
+               External.classify Assoc input
                  ~ok:(fun input ->
                    decode_record_aux ~debug props input compiled.types)
                  ~error:(fun () ->
@@ -1227,7 +1210,8 @@ module MakeTrans
      and type error = F.error
      and type data = F.data
      and type 'a External.Linear.t = 'a F.External.Linear.t
-     and type 'a External.Assoc.t = 'a F.External.Assoc.t = struct
+     and type 'a External.Assoc.t = 'a F.External.Assoc.t
+     and type 'a External.classify = 'a F.External.classify = struct
   open T
   include F
 
@@ -1323,23 +1307,29 @@ module MakeTrans
   end
 
   module External = struct
-    module Linear = struct
-      type 'a t = 'a F.External.Linear.t
+    include F.External
 
-      let length t = fwde (F.External.Linear.length t)
+    module Linear = struct
+      include F.External.Linear
+
+      let length t = fwde (F.External.Linear.length (bwde t))
 
       let iteri t f =
-        fwds (F.External.Linear.iteri t (fun k v -> bwds (f (fwde k) (fwde v))))
+        fwds
+          (F.External.Linear.iteri (bwde t) (fun k v ->
+               bwds (f (fwde k) (fwde v))))
     end
 
     module Assoc = struct
-      type 'a t = 'a F.External.Assoc.t
+      include F.External.Assoc
 
-      let find t s = fwde (F.External.Assoc.find t (bwde s))
-      let mem t s = fwde (F.External.Assoc.mem t (bwde s))
+      let find t s = fwde (F.External.Assoc.find (bwde t) (bwde s))
+      let mem t s = fwde (F.External.Assoc.mem (bwde t) (bwde s))
 
       let iter t f =
-        fwds (F.External.Assoc.iter t (fun k v -> bwds (f (fwde k) (fwde v))))
+        fwds
+          (F.External.Assoc.iter (bwde t) (fun k v ->
+               bwds (f (fwde k) (fwde v))))
     end
 
     type t = external_data exp
@@ -1354,27 +1344,10 @@ module MakeTrans
     let of_hashtbl x = fwde (F.External.of_hashtbl (bwde x))
     let of_untyped x = fwde (F.External.of_untyped (bwde x))
 
-    let to_aux f x ~ok ~error =
+    let classify c x ~ok ~error =
       fwds
-        (f (bwde x)
+        (F.External.classify c (bwde x)
            ~ok:(fun x -> bwds (ok (fwde x)))
-           ~error:(fun () -> bwds (error ())))
-
-    let to_int = to_aux F.External.to_int
-    let to_string = to_aux F.External.to_string
-    let to_float = to_aux F.External.to_float
-    let to_bool = to_aux F.External.to_bool
-
-    let to_linear x ~ok ~error =
-      fwds
-        (F.External.to_linear (bwde x)
-           ~ok:(fun x -> bwds (ok x))
-           ~error:(fun () -> bwds (error ())))
-
-    let to_assoc x ~ok ~error =
-      fwds
-        (F.External.to_assoc (bwde x)
-           ~ok:(fun x -> bwds (ok x))
            ~error:(fun () -> bwds (error ())))
 
     let is_null x = fwde (F.External.is_null (bwde x))
@@ -1403,35 +1376,35 @@ let pp (type a) pp_import ppf c =
 
     type 'a exp = F.formatter -> unit
 
-    let return = F.dprintf "(@[<hv>return@ %t@])"
+    let return = F.dprintf "(@[return@ %t@])"
 
     let ( let$ ) (v, e) f =
       let v = var v in
-      F.dprintf "(@[<hv>@[<hv>let$@ %t@ =@]@ %t@])@ %t" v e (f v)
+      F.dprintf "(@[@[let$@ %t@ =@]@ %t@])@ %t" v e (f v)
 
     type 'a mut = F.formatter -> unit
 
     let ( let& ) (v, e) f =
       let v = var v in
-      F.dprintf "(@[<hv>@[<hv>let&@ %t@ =@]@ %t@])@ %t" v e (f v)
+      F.dprintf "(@[@[let&@ %t@ =@]@ %t@])@ %t" v e (f v)
 
-    let deref = F.dprintf "(@[<hv>deref@ %t@])"
-    let ( := ) = F.dprintf "(@[<hv>%t@ :=@ %t@])"
-    let incr = F.dprintf "(@[<hv>incr@ %t@])"
+    let deref = F.dprintf "(@[deref@ %t@])"
+    let ( := ) = F.dprintf "(@[%t@ :=@ %t@])"
+    let incr = F.dprintf "(@[incr@ %t@])"
 
     let lambda f =
       let arg = var "arg" in
-      F.dprintf "(@[<hv>lambda@ %t@ (@[<hv>%t@])@])@ " arg (f arg)
+      F.dprintf "(@[lambda@ %t@ (@[<hv>%t@])@])" arg (f arg)
 
-    let ( @@ ) = F.dprintf "(@[<hv>%t@ %@%@ %t@])"
+    let ( @@ ) = F.dprintf "(@[%t@ %@%@ %t@])"
 
     let if_ b ~then_ ~else_ =
-      F.dprintf "(@[<hv>if@ %t@ (@[<hv>then@ %t@])%a@])" b (then_ ())
+      F.dprintf "(@[<hv>@[if@ %t@]@ (@[<hv>then@ %t@])%a@])" b (then_ ())
         (F.pp_print_option (fun ppf else_ ->
              F.fprintf ppf "@ (@[<hv>else@ %t@])" (else_ ())))
         else_
 
-    let while_ b x = F.dprintf "(@[<hv>while@ %t@ (@[<hv>%t@])@])" (b ()) (x ())
+    let while_ b x = F.dprintf "(@[while@ %t@ (@[<hv>%t@])@])" (b ()) (x ())
 
     type external_data
     type 'a promise
@@ -1439,148 +1412,159 @@ let pp (type a) pp_import ppf c =
 
     let import i f =
       let name = var "import" in
-      F.dprintf "(@[<hv>import@ %t@ from@ %a@])@ %t" name pp_import i (f name)
+      F.dprintf "(@[import@ %t@ from@ %a@])@ %t" name pp_import i (f name)
 
-    let export = F.dprintf "(@[<hv>export@ %t@])"
+    let export = F.dprintf "(@[export@ %t@])"
     let unit = F.dprintf "(unit)"
-    let not = F.dprintf "(@[<hv>not@ %t@])"
+    let not = F.dprintf "(@[not@ %t@])"
     let int = F.dprintf "%i"
     let float = F.dprintf "%g"
     let string = F.dprintf "%S"
     let bool = F.dprintf "%B"
-    let pair (a, b) = F.dprintf "(@[<hv>%t,@ %t@])" a b
-    let equal_int = F.dprintf "(@[<hv>equal_int@ %t@ %t@])"
-    let equal_string = F.dprintf "(@[<hv>equal_string@ %t@ %t@])"
-    let int_to_string = F.dprintf "(@[<hv>int_to_string@ %t@])"
-    let int_to_float = F.dprintf "(@[<hv>int_to_float@ %t@])"
-    let float_to_string = F.dprintf "(@[<hv>float_to_string@ %t@])"
-    let bool_to_string = F.dprintf "(@[<hv>bool_to_string@ %t@])"
+    let pair (a, b) = F.dprintf "(@[%t,@ %t@])" a b
+    let equal_int = F.dprintf "(@[equal_int@ %t@ %t@])"
+    let equal_string = F.dprintf "(@[equal_string@ %t@ %t@])"
+    let int_to_string = F.dprintf "(@[int_to_string@ %t@])"
+    let int_to_float = F.dprintf "(@[int_to_float@ %t@])"
+    let float_to_string = F.dprintf "(@[float_to_string@ %t@])"
+    let bool_to_string = F.dprintf "(@[bool_to_string@ %t@])"
 
     let array a =
       F.dprintf "[@[<hv>%a@]]"
-        (F.pp_print_seq ~pp_sep:Pp.comma (fun ppf x -> x ppf))
+        (F.pp_print_seq ~pp_sep:Pp.comma ( |> ))
         (Array.to_seq a)
 
-    let array_init i v = F.dprintf "(@[<hv>array_init@ %t@ %t@])" i v
-    let bindop_get = F.dprintf "(@[<hv>%t@,.%%%c@[<hv>@,%t@,@]%c@])"
-    let bindop_set = F.dprintf "(@[<hv>%t@,.%%%c@[<hv>@,%t@,@]%c@ <-@ %t@])"
+    let array_init = F.dprintf "(@[array_init@ %t@ %t@])"
+    let bindop_get = F.dprintf "(@[%t@,.%%%c@[@,%t@,@]%c@])"
+    let bindop_set = F.dprintf "(@[%t@,.%%%c@[@,%t@,@]%c@ <-@ %t@])"
     let ( .%() ) a i = bindop_get a '(' i ')'
     let ( .%()<- ) a i v = bindop_set a '(' i ')' v
-    let array_concat = F.dprintf "(@[<hv>array_concat@ %t@ %t@])"
+    let array_concat = F.dprintf "(@[array_concat@ %t@ %t@])"
 
     type 'a hashtbl
 
     let hashtbl =
-      F.dprintf "(@[<hv>hashtbl@ [@[<hv>%a@]]@])"
-        (F.pp_print_seq ~pp_sep:Pp.comma (fun ppf x -> x ppf))
+      F.dprintf "(@[hashtbl@ [@[<hv>%a@]]@])"
+        (F.pp_print_seq ~pp_sep:Pp.comma ( |> ))
 
-    let hashtbl_create () = F.dprintf "(@[<hv>hashtbl_create@])"
+    let hashtbl_create () = F.dprintf "(hashtbl_create)"
     let ( .%{} ) t k = bindop_get t '{' k '}'
     let ( .%{}<- ) t k v = bindop_set t '{' k '}' v
-    let hashtbl_mem = F.dprintf "(@[<hv>hashtbl_mem@ %t@ %t@])"
-    let hashtbl_copy = F.dprintf "(@[<hv>hashtbl_copy@ %t @])"
+    let hashtbl_mem = F.dprintf "(@[hashtbl_mem@ %t@ %t@])"
+    let hashtbl_copy = F.dprintf "(@[hashtbl_copy@ %t @])"
 
     let hashtbl_iter t f =
       let arg_k = var "key" in
       let arg_v = var "value" in
-      F.dprintf "(@[<hv>hashtbl_iter@ %t@ (@[<hv>%t@ %t@])@ %t@])" t arg_k arg_v
+      F.dprintf "(@[hashtbl_iter@ %t@ %t@ %t@ %t@])" t arg_k arg_v
         (f arg_k arg_v)
 
-    let promise = F.dprintf "(@[<hv>promise@ %t@])"
-    let bind_array = F.dprintf "(@[<hv>bind_array@ %t@ %t@@])"
+    let promise = F.dprintf "(@[promise@ %t@])"
+    let bind_array = F.dprintf "(@[bind_array@ %t@ %t@])"
 
     type buffer
 
-    let buffer_create () = F.dprintf "(@[<hv>buffer_create@])"
-    let buffer_add_string = F.dprintf "(@[<hv>buffer_add_string@ %t@ %t@])"
-    let buffer_add_promise = F.dprintf "(@[<hv>buffer_add_promise@ %t@ %t@])"
+    let buffer_create () = F.dprintf "(buffer_create)"
+    let buffer_add_string = F.dprintf "(@[buffer_add_string@ %t@ %t@])"
+    let buffer_add_promise = F.dprintf "(@[buffer_add_promise@ %t@ %t@])"
     let buffer_to_promise = F.dprintf "(buffer_to_promise)"
     let escape = F.dprintf "(escape)"
 
     type 'a stack
 
-    let stack_create () = F.dprintf "(@[<hv>stack_create@])"
-    let stack_is_empty = F.dprintf "(@[<hv>stack_is_empty@ %t@])"
-    let stack_push = F.dprintf "(@[<hv>stack_push@ %t@ %t@])"
-    let stack_drop = F.dprintf "(@[<hv>stack_drop@ %t@])"
-    let stack_concat = F.dprintf "(@[<hv>stack_concat@ %t@ %t@])"
+    let stack_create () = F.dprintf "(stack_create)"
+    let stack_is_empty = F.dprintf "(@[stack_is_empty@ %t@])"
+    let stack_push = F.dprintf "(@[stack_push@ %t@ %t@])"
+    let stack_drop = F.dprintf "(@[stack_drop@ %t@])"
+    let stack_concat = F.dprintf "(@[stack_concat@ %t@ %t@])"
 
     type error = F.formatter -> unit
 
-    let raise = F.dprintf "(@[<hv>raise@ %t@])"
-    let error = F.dprintf "(@[<hv>error@ %t@])"
+    let raise = F.dprintf "(@[raise@ %t@])"
+    let error = F.dprintf "(@[error@ %t@])"
 
     type data
 
     module Data = struct
       type t = data exp
 
-      let int = F.dprintf "(@[<hv>Data.int@ %t@])"
-      let float = F.dprintf "(@[<hv>Data.float@ %t@])"
-      let string = F.dprintf "(@[<hv>Data.string@ %t@])"
-      let array = F.dprintf "(@[<hv>Data.array@ %t@])"
-      let hashtbl = F.dprintf "(@[<hv>Data.hashtbl@ %t@])"
-      let unknown = F.dprintf "(@[<hv>Data.unknown@ %t@])"
-      let to_int = F.dprintf "(@[<hv>Data.to_int@ %t@])"
-      let to_float = F.dprintf "(@[<hv>Data.to_float@ %t@])"
-      let to_string = F.dprintf "(@[<hv>Data.to_string@ %t@])"
-      let to_array = F.dprintf "(@[<hv>Data.to_array@ %t@])"
-      let to_hashtbl = F.dprintf "(@[<hv>Data.to_hashtbl@ %t@])"
-      let equal = F.dprintf "(@[<hv>Data.equal@ %t@ %t@])"
+      let int = F.dprintf "(@[Data.int@ %t@])"
+      let float = F.dprintf "(@[Data.float@ %t@])"
+      let string = F.dprintf "(@[Data.string@ %t@])"
+      let array = F.dprintf "(@[Data.array@ %t@])"
+      let hashtbl = F.dprintf "(@[Data.hashtbl@ %t@])"
+      let unknown = F.dprintf "(@[Data.unknown@ %t@])"
+      let to_int = F.dprintf "(@[Data.to_int@ %t@])"
+      let to_float = F.dprintf "(@[Data.to_float@ %t@])"
+      let to_string = F.dprintf "(@[Data.to_string@ %t@])"
+      let to_array = F.dprintf "(@[Data.to_array@ %t@])"
+      let to_hashtbl = F.dprintf "(@[Data.to_hashtbl@ %t@])"
+      let equal = F.dprintf "(@[Data.equal@ %t@ %t@])"
     end
 
     module External = struct
       module Linear = struct
         type 'a t = F.formatter -> unit
 
-        let length = F.dprintf "(@[<hv>External.Linear.length@ %t@])"
+        let length = F.dprintf "(@[External.Linear.length@ %t@])"
 
         let iteri a f =
           let arg_k = var "key" in
           let arg_v = var "value" in
-          F.dprintf "(@[<hv>External.Linear.iteri@ %t@ (@[<hv>%t@ %t@])@ %t@])"
-            a arg_k arg_v (f arg_k arg_v)
+          F.dprintf "(@[External.Linear.iteri@ %t@ %t@ %t@ %t@])" a arg_k arg_v
+            (f arg_k arg_v)
       end
 
       module Assoc = struct
         type 'a t = F.formatter -> unit
 
-        let find = F.dprintf "(@[<hv>External.Assoc.find@ %t@ %t@])"
-        let mem = F.dprintf "(@[<hv>External.Assoc.mem@ %t@ %t@])"
+        let find = F.dprintf "(@[External.Assoc.find@ %t@ %t@])"
+        let mem = F.dprintf "(@[External.Assoc.mem@ %t@ %t@])"
 
         let iter a f =
           let arg_k = var "key" in
           let arg_v = var "value" in
-          F.dprintf "(@[<hv>External.Assoc.iter@ %t@ (@[<hv>%t@ %t@])@ %t@])" a
-            arg_k arg_v (f arg_k arg_v)
+          F.dprintf "(@[External.Assoc.iter@ %t@ %t@ %t@ %t@])" a arg_k arg_v
+            (f arg_k arg_v)
       end
 
       type t = external_data exp
 
       let null = F.dprintf "null"
-      let some = F.dprintf "(@[<hv>External.some@ %t@])"
-      let of_bool = F.dprintf "(@[<hv>External.of_bool@ %t@])"
-      let of_int = F.dprintf "(@[<hv>External.of_int@ %t@])"
-      let of_string = F.dprintf "(@[<hv>External.of_string@ %t@])"
-      let of_float = F.dprintf "(@[<hv>External.of_float@ %t@])"
-      let of_array = F.dprintf "(@[<hv>External.of_array@ %t@])"
-      let of_hashtbl = F.dprintf "(@[<hv>External.of_hashtbl@ %t@])"
-      let of_untyped = F.dprintf "(@[<hv>External.of_untyped@ %t@])"
+      let some = F.dprintf "(@[External.some@ %t@])"
+      let of_bool = F.dprintf "(@[External.of_bool@ %t@])"
+      let of_int = F.dprintf "(@[External.of_int@ %t@])"
+      let of_string = F.dprintf "(@[External.of_string@ %t@])"
+      let of_float = F.dprintf "(@[External.of_float@ %t@])"
+      let of_array = F.dprintf "(@[External.of_array@ %t@])"
+      let of_hashtbl = F.dprintf "(@[External.of_hashtbl@ %t@])"
+      let of_untyped = F.dprintf "(@[External.of_untyped@ %t@])"
 
-      let to_aux name t ~ok ~error =
+      type _ classify =
+        | Int : int classify
+        | String : string classify
+        | Float : float classify
+        | Bool : bool classify
+        | Linear : external_data Linear.t classify
+        | Assoc : external_data Assoc.t classify
+
+      let classify_to_string : type a. a classify -> string = function
+        | Int -> "(int)"
+        | String -> "(string)"
+        | Float -> "(float)"
+        | Bool -> "(bool)"
+        | Linear -> "(linear)"
+        | Assoc -> "(assoc)"
+
+      let classify c t ~ok ~error =
         let arg = var "classified" in
         F.dprintf
-          "(@[<hv>External.%s@ %t@ %t@ (@[<hv>ok@ %t@])@ (@[<hv>error@ %t@])@])"
-          name t arg (ok arg) (error ())
+          "(@[External.classify@ %s@ %t@ %t@ (@[<hv>ok@ %t@])@ (@[<hv>error@ \
+           %t@])@])"
+          (classify_to_string c) t arg (ok arg) (error ())
 
-      let to_int = to_aux "to_int"
-      let to_string = to_aux "to_string"
-      let to_float = to_aux "to_float"
-      let to_bool = to_aux "to_bool"
-      let to_linear = to_aux "to_linear"
-      let to_assoc = to_aux "to_assoc"
-      let is_null = F.dprintf "(@[<hv>External.is_null@ %t@])"
-      let show = F.dprintf "(@[<hv>External.show@ %t@])"
+      let is_null = F.dprintf "(@[External.is_null@ %t@])"
+      let show = F.dprintf "(@[External.show@ %t@])"
     end
   end) in
   F.fprintf ppf "@[<hv>%t@]" (M.eval c)

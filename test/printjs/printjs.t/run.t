@@ -337,16 +337,13 @@
       let cell$0 = arg$0.get("list");
       while (!(cell$0 === 0)) {
         let props$0 = new Map(arg$0);
-        let list$0 = cell$0;
-        let arg$1 = [list$0[0], index$0];
+        let head$0 = cell$0[0];
         let exit$0 = -1;
-        let arg$2 = arg$1[0];
-        let arg$3 = arg$1[1];
+        props$0.set("i", head$0);
         exit$0 = 0;
-        props$0.set("i", arg$2);
         buffer$0.push(acutis_escape$0(props$0.get("i").toString()));
         index$0++;
-        cell$0 = list$0[1];
+        cell$0 = cell$0[1];
       }
       return (buffer_to_promise$0(buffer$0));
     }
@@ -365,7 +362,7 @@
           props$0.set("big_float", input$0);
         } else {
           if (typeof input$0 === "number" && Number.isInteger(input$0)) {
-            props$0.set("big_float", (input$0 | 0));
+            props$0.set("big_float", input$0);
           } else {
             is_error$0 = true;
           }
@@ -379,7 +376,7 @@
         let input$0 = arg$0["big_int"];
         stack$0.unshift("big_int");
         if (typeof input$0 === "number" && Number.isInteger(input$0)) {
-          props$0.set("big_int", (input$0 | 0));
+          props$0.set("big_int", input$0);
         } else {
           is_error$0 = true;
         }
@@ -454,7 +451,7 @@
               typeof input$0[i$0] === "number" &&
               Number.isInteger(input$0[i$0])
             ) {
-              decode_dst_new$0[0] = (input$0[i$0] | 0);
+              decode_dst_new$0[0] = input$0[i$0];
             } else {
               is_error$0 = true;
             }
@@ -499,7 +496,7 @@
                       typeof input$0[i$0][i$1][i$2] === "number" &&
                       Number.isInteger(input$0[i$0][i$1][i$2])
                     ) {
-                      decode_dst_new$2[0] = (input$0[i$0][i$1][i$2] | 0);
+                      decode_dst_new$2[0] = input$0[i$0][i$1][i$2];
                     } else {
                       is_error$0 = true;
                     }
@@ -645,7 +642,7 @@
             decoded$0[0] = input$0;
           } else {
             if (typeof input$0 === "number" && Number.isInteger(input$0)) {
-              decoded$0[0] = (input$0 | 0);
+              decoded$0[0] = input$0;
             } else {
               is_error$0 = true;
             }
@@ -672,7 +669,7 @@
           let decoded$0 = [0];
           stack$0.unshift("<nullable>");
           if (typeof input$0 === "number" && Number.isInteger(input$0)) {
-            decoded$0[0] = (input$0 | 0);
+            decoded$0[0] = input$0;
           } else {
             is_error$0 = true;
           }
@@ -759,11 +756,11 @@
             let input$1 = input$0["int_enum"];
             stack$0.unshift("int_enum");
             if (typeof input$1 === "number" && Number.isInteger(input$1)) {
-              if ((input$1 | 0) === 8) {
-                decoded$0.set("int_enum", (input$1 | 0));
+              if (input$1 === 8) {
+                decoded$0.set("int_enum", input$1);
               } else {
-                if ((input$1 | 0) === 40) {
-                  decoded$0.set("int_enum", (input$1 | 0));
+                if (input$1 === 40) {
+                  decoded$0.set("int_enum", input$1);
                 } else {
                   is_error$0 = true;
                 }
@@ -844,7 +841,7 @@
                   let input$1 = input$0["b"];
                   stack$0.unshift("b");
                   if (typeof input$1 === "number" && Number.isInteger(input$1)) {
-                    decoded$0.set("b", (input$1 | 0));
+                    decoded$0.set("b", input$1);
                   } else {
                     is_error$0 = true;
                   }
@@ -913,17 +910,17 @@
               typeof input$0["tag"] === "number" &&
               Number.isInteger(input$0["tag"])
             ) {
-              if ((input$0["tag"] | 0) === 0) {
+              if (input$0["tag"] === 0) {
                 let decoded$0 = new Map();
-                decoded$0.set("tag", (input$0["tag"] | 0));
+                decoded$0.set("tag", input$0["tag"]);
                 if (!(missing_keys$0.length === 0)) {
                   return (key_error$0("{}")(missing_keys$0)(stack$0));
                 }
                 props$0.set("tagged_record_int", decoded$0);
               } else {
-                if ((input$0["tag"] | 0) === 1) {
+                if (input$0["tag"] === 1) {
                   let decoded$0 = new Map();
-                  decoded$0.set("tag", (input$0["tag"] | 0));
+                  decoded$0.set("tag", input$0["tag"]);
                   if (Object.hasOwn(input$0, "tuple")) {
                     let input$1 = input$0["tuple"];
                     stack$0.unshift("tuple");
@@ -941,7 +938,7 @@
                                 typeof input$1[i$0] === "number" &&
                                 Number.isInteger(input$1[i$0])
                               ) {
-                                decoded$1[i$0] = (input$1[i$0] | 0);
+                                decoded$1[i$0] = input$1[i$0];
                               } else {
                                 is_error$0 = true;
                               }
@@ -1057,14 +1054,14 @@
               typeof input$0["tag"] === "number" &&
               Number.isInteger(input$0["tag"])
             ) {
-              if ((input$0["tag"] | 0) === 100) {
+              if (input$0["tag"] === 100) {
                 let decoded$0 = new Map();
-                decoded$0.set("tag", (input$0["tag"] | 0));
+                decoded$0.set("tag", input$0["tag"]);
                 if (Object.hasOwn(input$0, "a")) {
                   let input$1 = input$0["a"];
                   stack$0.unshift("a");
                   if (typeof input$1 === "number" && Number.isInteger(input$1)) {
-                    decoded$0.set("a", (input$1 | 0));
+                    decoded$0.set("a", input$1);
                   } else {
                     is_error$0 = true;
                   }
@@ -1080,9 +1077,9 @@
                 }
                 props$0.set("tagged_record_open", decoded$0);
               } else {
-                if ((input$0["tag"] | 0) === 200) {
+                if (input$0["tag"] === 200) {
                   let decoded$0 = new Map();
-                  decoded$0.set("tag", (input$0["tag"] | 0));
+                  decoded$0.set("tag", input$0["tag"]);
                   if (Object.hasOwn(input$0, "b")) {
                     let input$1 = input$0["b"];
                     stack$0.unshift("b");
@@ -1105,9 +1102,9 @@
                   }
                   props$0.set("tagged_record_open", decoded$0);
                 } else {
-                  if ((input$0["tag"] | 0) === 300) {
+                  if (input$0["tag"] === 300) {
                     let decoded$0 = new Map();
-                    decoded$0.set("tag", (input$0["tag"] | 0));
+                    decoded$0.set("tag", input$0["tag"]);
                     if (Object.hasOwn(input$0, "c")) {
                       let input$1 = input$0["c"];
                       stack$0.unshift("c");
@@ -1118,7 +1115,7 @@
                           typeof input$1 === "number" &&
                           Number.isInteger(input$1)
                         ) {
-                          decoded$0.set("c", (input$1 | 0));
+                          decoded$0.set("c", input$1);
                         } else {
                           is_error$0 = true;
                         }
@@ -1138,7 +1135,7 @@
                     props$0.set("tagged_record_open", decoded$0);
                   } else {
                     let decoded$0 = new Map();
-                    decoded$0.set("tag", (input$0["tag"] | 0));
+                    decoded$0.set("tag", input$0["tag"]);
                     props$0.set("tagged_record_open", decoded$0);
                   }
                 }
@@ -1286,7 +1283,7 @@
                       typeof input$1 === "number" &&
                       Number.isInteger(input$1)
                     ) {
-                      decoded$0.set("open_enum", (input$1 | 0));
+                      decoded$0.set("open_enum", input$1);
                     } else {
                       is_error$0 = true;
                     }
@@ -1475,18 +1472,22 @@
     let arg_match$0 = [props$0.get("record").get("int_enum")];
     let props$1 = new Map(props$0);
     let exit$0 = -1;
-    let arg$1 = arg_match$0[0];
-    if (arg$1 === 8) { exit$0 = 0; } else { if (arg$1 === 40) { exit$0 = 1; } }
+    let match_arg$0 = arg_match$0[0];
+    if (match_arg$0 === 8) {
+      exit$0 = 0;
+    } else {
+      if (match_arg$0 === 40) { exit$0 = 1; }
+    }
     if (exit$0 === 0) { buffer$0.push("8\n"); } else { buffer$0.push("40\n"); }
     let arg_match$1 = [props$0.get("record")];
     let props$2 = new Map(props$0);
     let exit$1 = -1;
-    let arg$2 = arg_match$1[0];
-    let arg$3 = arg$2.get("string_enum");
-    if (arg$3 === "no") {
+    let match_arg$1 = arg_match$1[0];
+    let match_arg$2 = match_arg$1.get("string_enum");
+    if (match_arg$2 === "no") {
       exit$1 = 1;
     } else {
-      if (arg$3 === "yes") { exit$1 = 0; }
+      if (match_arg$2 === "yes") { exit$1 = 0; }
     }
     if (exit$1 === 0) {
       buffer$0.push("yes\n");
@@ -1496,17 +1497,17 @@
     let arg_match$2 = [props$0.get("tagged_record_bool")];
     let props$3 = new Map(props$0);
     let exit$2 = -1;
-    let arg$4 = arg_match$2[0];
-    let arg$5 = arg$4.get("tag");
-    if (arg$5 === 0) {
-      let arg$6 = arg$4.get("a");
+    let match_arg$3 = arg_match$2[0];
+    let match_arg$4 = match_arg$3.get("tag");
+    if (match_arg$4 === 0) {
+      let match_arg$5 = match_arg$3.get("a");
+      props$3.set("a", match_arg$5);
       exit$2 = 0;
-      props$3.set("a", arg$6);
     } else {
-      if (arg$5 === 1) {
-        let arg$6 = arg$4.get("b");
+      if (match_arg$4 === 1) {
+        let match_arg$5 = match_arg$3.get("b");
+        props$3.set("b", match_arg$5);
         exit$2 = 1;
-        props$3.set("b", arg$6);
       }
     }
     if (exit$2 === 0) {
@@ -1519,20 +1520,20 @@
     let arg_match$3 = [props$0.get("tagged_record_int")];
     let props$4 = new Map(props$0);
     let exit$3 = -1;
-    let arg$6 = arg_match$3[0];
-    let arg$7 = arg$6.get("tag");
-    if (arg$7 === 0) {
+    let match_arg$5 = arg_match$3[0];
+    let match_arg$6 = match_arg$5.get("tag");
+    if (match_arg$6 === 0) {
       exit$3 = 0;
     } else {
-      if (arg$7 === 1) {
-        let arg$8 = arg$6.get("tuple");
-        let arg$9 = arg$8[0];
-        let arg$10 = arg$8[1];
-        let arg$11 = arg$8[2];
+      if (match_arg$6 === 1) {
+        let match_arg$7 = match_arg$5.get("tuple");
+        let match_arg$8 = match_arg$7[0];
+        let match_arg$9 = match_arg$7[1];
+        let match_arg$10 = match_arg$7[2];
+        props$4.set("a", match_arg$8);
+        props$4.set("b", match_arg$9);
+        props$4.set("c", match_arg$10);
         exit$3 = 1;
-        props$4.set("a", arg$9);
-        props$4.set("b", arg$10);
-        props$4.set("c", arg$11);
       }
     }
     if (exit$3 === 0) {
@@ -1548,12 +1549,12 @@
     let arg_match$4 = [props$0.get("tagged_record_open")];
     let props$5 = new Map(props$0);
     let exit$4 = -1;
-    let arg$8 = arg_match$4[0];
-    let arg$9 = arg$8.get("tag");
-    if (arg$9 === 200) {
-      let arg$10 = arg$8.get("b");
+    let match_arg$7 = arg_match$4[0];
+    let match_arg$8 = match_arg$7.get("tag");
+    if (match_arg$8 === 200) {
+      let match_arg$9 = match_arg$7.get("b");
+      props$5.set("b", match_arg$9);
       exit$4 = 0;
-      props$5.set("b", arg$10);
     }
     if (exit$4 === -1) { exit$4 = 1; }
     if (exit$4 === 0) {
@@ -1564,23 +1565,18 @@
       buffer$0.push("Another tag!\n");
     }
     buffer$0.push("\n\nMapping\n-------\n\n");
-    let arg$10 = props$0.get("null_string_dict");
-    for (let x$0 of arg$10) {
+    let match_arg$9 = props$0.get("null_string_dict");
+    for (let x$0 of match_arg$9) {
       let props$6 = new Map(props$0);
-      let arg$11 = [x$0[1], x$0[0]];
       let exit$5 = -1;
-      let arg$12 = arg$11[0];
-      if (arg$12 === 0) {
-        let arg$13 = arg$11[1];
+      if (x$0[1] === 0) {
+        props$6.set("key", x$0[0]);
         exit$5 = 0;
-        props$6.set("key", arg$13);
       } else {
-        let arg$13 = arg$11[0];
-        let arg$14 = arg$13[0];
-        let arg$15 = arg$11[1];
+        let match_arg$10 = x$0[1][0];
+        props$6.set("key", x$0[0]);
+        props$6.set("str", match_arg$10);
         exit$5 = 1;
-        props$6.set("key", arg$15);
-        props$6.set("str", arg$14);
       }
       if (exit$5 === 0) {
         buffer$0.push(acutis_escape$0(props$6.get("key")));
@@ -1596,105 +1592,84 @@
     let cell$0 = props$0.get("int_list");
     while (!(cell$0 === 0)) {
       let props$6 = new Map(props$0);
-      let list$0 = cell$0;
-      let arg$11 = [list$0[0], index$0];
+      let head$0 = cell$0[0];
       let exit$5 = -1;
-      let arg$12 = arg$11[0];
-      let arg$13 = arg$11[1];
+      props$6.set("i", head$0);
       exit$5 = 0;
-      props$6.set("i", arg$12);
       buffer$0.push(acutis_escape$0(props$6.get("i").toString()));
       buffer$0.push("\n");
       index$0++;
-      cell$0 = list$0[1];
+      cell$0 = cell$0[1];
     }
     let index$1 = 0;
     let cell$1 = props$0.get("int_list");
     while (!(cell$1 === 0)) {
       let props$6 = new Map(props$0);
-      let list$0 = cell$1;
-      let arg$11 = [list$0[0], index$1];
+      let head$0 = cell$1[0];
       let exit$5 = -1;
-      let arg$12 = arg$11[0];
-      let arg$13 = arg$11[1];
+      props$6.set("i", head$0);
+      props$6.set("key", index$1);
       exit$5 = 0;
-      props$6.set("i", arg$12);
-      props$6.set("key", arg$13);
       buffer$0.push(acutis_escape$0(props$6.get("key").toString()));
       buffer$0.push(" : ");
       buffer$0.push(acutis_escape$0(props$6.get("i").toString()));
       buffer$0.push("\n");
       index$1++;
-      cell$1 = list$0[1];
+      cell$1 = cell$1[1];
     }
     let index$2 = 0;
     let cell$2 = props$0.get("nested_list");
     while (!(cell$2 === 0)) {
       let props$6 = new Map(props$0);
-      let list$0 = cell$2;
-      let arg$11 = [list$0[0], index$2];
+      let head$0 = cell$2[0];
       let exit$5 = -1;
-      let arg$12 = arg$11[0];
-      let arg$13 = arg$11[1];
+      props$6.set("l", head$0);
       exit$5 = 0;
-      props$6.set("l", arg$12);
       let index$3 = 0;
       let cell$3 = props$6.get("l");
       while (!(cell$3 === 0)) {
         let props$7 = new Map(props$6);
-        let list$1 = cell$3;
-        let arg$14 = [list$1[0], index$3];
+        let head$1 = cell$3[0];
         let exit$6 = -1;
-        let arg$15 = arg$14[0];
-        let arg$16 = arg$14[1];
+        props$7.set("l2", head$1);
         exit$6 = 0;
-        props$7.set("l2", arg$15);
         let index$4 = 0;
         let cell$4 = props$7.get("l2");
         while (!(cell$4 === 0)) {
           let props$8 = new Map(props$7);
-          let list$2 = cell$4;
-          let arg$17 = [list$2[0], index$4];
+          let head$2 = cell$4[0];
           let exit$7 = -1;
-          let arg$18 = arg$17[0];
-          let arg$19 = arg$17[1];
+          props$8.set("i", head$2);
           exit$7 = 0;
-          props$8.set("i", arg$18);
           buffer$0.push(acutis_escape$0(props$8.get("i").toString()));
           buffer$0.push(" ");
           index$4++;
-          cell$4 = list$2[1];
+          cell$4 = cell$4[1];
         }
         index$3++;
-        cell$3 = list$1[1];
+        cell$3 = cell$3[1];
       }
       index$2++;
-      cell$2 = list$0[1];
+      cell$2 = cell$2[1];
     }
     buffer$0.push("\n\n");
     let index$3 = 0;
     let cell$3 = props$0.get("nested_nullable_list");
     while (!(cell$3 === 0)) {
       let props$6 = new Map(props$0);
-      let list$0 = cell$3;
-      let arg$11 = [list$0[0], index$3];
+      let head$0 = cell$3[0];
       let exit$5 = -1;
-      let arg$12 = arg$11[0];
-      if (arg$12 === 0) {
-        let arg$13 = arg$11[1];
+      if (head$0 === 0) {
         exit$5 = 0;
       } else {
-        let arg$13 = arg$11[0];
-        let arg$14 = arg$13[0];
-        if (arg$14 === 0) {
-          let arg$15 = arg$11[1];
+        let match_arg$10 = head$0[0];
+        if (match_arg$10 === 0) {
           exit$5 = 1;
         } else {
-          let arg$15 = arg$13[0];
-          let arg$16 = arg$15[0];
-          let arg$17 = arg$11[1];
+          let match_arg$11 = head$0[0];
+          let match_arg$12 = match_arg$11[0];
+          props$6.set("b", match_arg$12);
           exit$5 = 2;
-          props$6.set("b", arg$16);
         }
       }
       if (exit$5 === 0) {
@@ -1709,7 +1684,7 @@
         }
       }
       index$3++;
-      cell$3 = list$0[1];
+      cell$3 = cell$3[1];
     }
     buffer$0.push(
       "\n\
@@ -1722,42 +1697,42 @@
     let arg_match$5 = [props$0.get("null_string_dict")];
     let props$6 = new Map(props$0);
     let exit$5 = -1;
-    let arg$11 = arg_match$5[0];
-    if (arg$11.has("a")) {
-      let arg$12 = arg$11.get("a");
-      if (arg$12 === 0) {
-        if (arg$11.has("does_not_exist")) {
-          let arg$13 = arg$11.get("does_not_exist");
+    let match_arg$10 = arg_match$5[0];
+    if (match_arg$10.has("a")) {
+      let match_arg$11 = match_arg$10.get("a");
+      if (match_arg$11 === 0) {
+        if (match_arg$10.has("does_not_exist")) {
+          let match_arg$12 = match_arg$10.get("does_not_exist");
           exit$5 = 1;
         }
         if (exit$5 === -1) { exit$5 = 1; }
       } else {
-        let arg$13 = arg$11.get("a");
-        let arg$14 = arg$13[0];
-        if (arg$14 === "a") {
-          if (arg$11.has("does_not_exist")) {
-            let arg$15 = arg$11.get("does_not_exist");
-            if (arg$15 === 0) {
+        let match_arg$12 = match_arg$10.get("a");
+        let match_arg$13 = match_arg$12[0];
+        if (match_arg$13 === "a") {
+          if (match_arg$10.has("does_not_exist")) {
+            let match_arg$14 = match_arg$10.get("does_not_exist");
+            if (match_arg$14 === 0) {
               exit$5 = 2;
             } else {
-              let arg$16 = arg$11.get("does_not_exist");
-              let arg$17 = arg$16[0];
+              let match_arg$15 = match_arg$10.get("does_not_exist");
+              let match_arg$16 = match_arg$15[0];
+              props$6.set("a", match_arg$13);
+              props$6.set("b", match_arg$16);
               exit$5 = 0;
-              props$6.set("a", arg$14);
-              props$6.set("b", arg$17);
               if (exit$5 === -1) { exit$5 = 2; }
             }
           }
           if (exit$5 === -1) { exit$5 = 2; }
         } else {
-          if (arg$11.has("does_not_exist")) {
-            let arg$15 = arg$11.get("does_not_exist");
-            if (!(arg$15 === 0)) {
-              let arg$16 = arg$11.get("does_not_exist");
-              let arg$17 = arg$16[0];
+          if (match_arg$10.has("does_not_exist")) {
+            let match_arg$14 = match_arg$10.get("does_not_exist");
+            if (!(match_arg$14 === 0)) {
+              let match_arg$15 = match_arg$10.get("does_not_exist");
+              let match_arg$16 = match_arg$15[0];
+              props$6.set("a", match_arg$13);
+              props$6.set("b", match_arg$16);
               exit$5 = 0;
-              props$6.set("a", arg$14);
-              props$6.set("b", arg$17);
             }
           }
         }
@@ -1784,32 +1759,32 @@
     let arg_match$6 = [new Map([["a", "a"]])];
     let props$7 = new Map(props$0);
     let exit$6 = -1;
-    let arg$12 = arg_match$6[0];
-    if (arg$12.has("a")) {
-      let arg$13 = arg$12.get("a");
-      if (arg$13 === "") {
-        if (arg$12.has("does_not_exist")) {
-          let arg$14 = arg$12.get("does_not_exist");
+    let match_arg$11 = arg_match$6[0];
+    if (match_arg$11.has("a")) {
+      let match_arg$12 = match_arg$11.get("a");
+      if (match_arg$12 === "") {
+        if (match_arg$11.has("does_not_exist")) {
+          let match_arg$13 = match_arg$11.get("does_not_exist");
+          props$7.set("a", match_arg$12);
+          props$7.set("b", match_arg$13);
           exit$6 = 0;
-          props$7.set("a", arg$13);
-          props$7.set("b", arg$14);
         }
         if (exit$6 === -1) { exit$6 = 1; }
       } else {
-        if (arg$13 === "a") {
-          if (arg$12.has("does_not_exist")) {
-            let arg$14 = arg$12.get("does_not_exist");
+        if (match_arg$12 === "a") {
+          if (match_arg$11.has("does_not_exist")) {
+            let match_arg$13 = match_arg$11.get("does_not_exist");
+            props$7.set("a", match_arg$12);
+            props$7.set("b", match_arg$13);
             exit$6 = 0;
-            props$7.set("a", arg$13);
-            props$7.set("b", arg$14);
           }
           if (exit$6 === -1) { exit$6 = 2; }
         } else {
-          if (arg$12.has("does_not_exist")) {
-            let arg$14 = arg$12.get("does_not_exist");
+          if (match_arg$11.has("does_not_exist")) {
+            let match_arg$13 = match_arg$11.get("does_not_exist");
+            props$7.set("a", match_arg$12);
+            props$7.set("b", match_arg$13);
             exit$6 = 0;
-            props$7.set("a", arg$13);
-            props$7.set("b", arg$14);
           }
         }
       }
@@ -1836,7 +1811,7 @@
       "\n\nConstructing async blocks\n-------------------------\n\n"
     );
     let blocks$0 =
-      Array.from({length: 2}, (arg$13) => { return (Promise.resolve("")); });
+      Array.from({length: 2}, (arg$1) => { return (Promise.resolve("")); });
     let buffer$1 = [];
     buffer$1.push(" Nested block ");
     if (!(props$0.get("null_string") === 0)) {
@@ -1850,17 +1825,17 @@
     blocks$0[1] = buffer_to_promise$0(buffer$2);
     buffer$0.push(
       Promise.all(blocks$0).then(
-        (arg$13) => {
+        (arg$1) => {
           let buffer$3 = [];
-          let arg_match$7 = [new Map([["a", arg$13[0]], ["b", arg$13[1]]])];
+          let arg_match$7 = [new Map([["a", arg$1[0]], ["b", arg$1[1]]])];
           let props$8 = new Map(props$0);
           let exit$7 = -1;
-          let arg$14 = arg_match$7[0];
-          let arg$15 = arg$14.get("a");
-          let arg$16 = arg$14.get("b");
+          let match_arg$12 = arg_match$7[0];
+          let match_arg$13 = match_arg$12.get("a");
+          let match_arg$14 = match_arg$12.get("b");
+          props$8.set("a", match_arg$13);
+          props$8.set("b", match_arg$14);
           exit$7 = 0;
-          props$8.set("a", arg$15);
-          props$8.set("b", arg$16);
           buffer$3.push(acutis_escape$0(props$8.get("a")));
           buffer$3.push(" ");
           buffer$3.push(acutis_escape$0(props$8.get("b")));
@@ -1871,19 +1846,19 @@
     );
     buffer$0.push("Component\n---------\n\n");
     let blocks$1 =
-      Array.from({length: 1}, (arg$13) => { return (Promise.resolve("")); });
+      Array.from({length: 1}, (arg$1) => { return (Promise.resolve("")); });
     let buffer$3 = [];
     buffer$3.push("Children prop");
     blocks$1[0] = buffer_to_promise$0(buffer$3);
     buffer$0.push(
       Promise.all(blocks$1).then(
-        (arg$13) => {
+        (arg$1) => {
           let buffer$4 = [];
           buffer$4.push(
             components$0.get("Component")(
               new Map(
                 [
-                  ["children", arg$13[0]],
+                  ["children", arg$1[0]],
                   ["list", [1, [2, [3, 0]]]],
                   ["optional", 0],
                 ]
@@ -1907,52 +1882,52 @@
     let arg_match$7 = [1, 0, 3];
     let props$8 = new Map(props$0);
     let exit$7 = -1;
-    let arg$13 = arg_match$7[0];
-    if (arg$13 === 1) {
-      let arg$14 = arg_match$7[1];
-      if (arg$14 === 0) {
-        let arg$15 = arg_match$7[2];
-        if (arg$15 === 0) {
+    let match_arg$12 = arg_match$7[0];
+    if (match_arg$12 === 1) {
+      let match_arg$13 = arg_match$7[1];
+      if (match_arg$13 === 0) {
+        let match_arg$14 = arg_match$7[2];
+        if (match_arg$14 === 0) {
           exit$7 = 0;
         } else {
+          props$8.set("y", match_arg$14);
           exit$7 = 2;
-          props$8.set("y", arg$15);
         }
       } else {
-        let arg$15 = arg_match$7[1];
-        let arg$16 = arg$15[0];
-        if (arg$16 === 1) {
-          let arg$17 = arg_match$7[2];
-          if (arg$17 === 0) {
+        let match_arg$14 = arg_match$7[1];
+        let match_arg$15 = match_arg$14[0];
+        if (match_arg$15 === 1) {
+          let match_arg$16 = arg_match$7[2];
+          if (match_arg$16 === 0) {
             exit$7 = 0;
           } else {
-            if (arg$17 === 1) { exit$7 = 3; } else { exit$7 = 4; }
+            if (match_arg$16 === 1) { exit$7 = 3; } else { exit$7 = 4; }
           }
         }
         if (exit$7 === -1) {
-          let arg$17 = arg_match$7[2];
-          if (arg$17 === 0) { exit$7 = 0; } else { exit$7 = 4; }
+          let match_arg$16 = arg_match$7[2];
+          if (match_arg$16 === 0) { exit$7 = 0; } else { exit$7 = 4; }
         }
       }
     } else {
-      let arg$14 = arg_match$7[1];
-      if (arg$14 === 0) {
-        let arg$15 = arg_match$7[2];
+      let match_arg$13 = arg_match$7[1];
+      if (match_arg$13 === 0) {
+        let match_arg$14 = arg_match$7[2];
+        props$8.set("y", match_arg$14);
         exit$7 = 2;
-        props$8.set("y", arg$15);
       } else {
-        let arg$15 = arg_match$7[1];
-        let arg$16 = arg$15[0];
-        if (arg$16 === 1) {
-          let arg$17 = arg_match$7[2];
-          if (arg$17 === 0) {
+        let match_arg$14 = arg_match$7[1];
+        let match_arg$15 = match_arg$14[0];
+        if (match_arg$15 === 1) {
+          let match_arg$16 = arg_match$7[2];
+          if (match_arg$16 === 0) {
+            props$8.set("x", match_arg$12);
             exit$7 = 1;
-            props$8.set("x", arg$13);
           } else {
             exit$7 = 4;
           }
         }
-        if (exit$7 === -1) { let arg$17 = arg_match$7[2]; exit$7 = 4; }
+        if (exit$7 === -1) { let match_arg$16 = arg_match$7[2]; exit$7 = 4; }
       }
     }
     if (exit$7 === 0) {
@@ -1979,39 +1954,39 @@
     let arg_match$8 = [[[10, 20], 30], 40];
     let props$9 = new Map(props$0);
     let exit$8 = -1;
-    let arg$14 = arg_match$8[0];
-    let arg$15 = arg$14[0];
-    let arg$16 = arg$15[0];
-    if (arg$16 === 10) {
-      let arg$17 = arg$15[1];
-      if (arg$17 === 20) {
-        let arg$18 = arg$14[1];
-        if (arg$18 === 30) {
-          let arg$19 = arg_match$8[1];
-          if (arg$19 === 40) {
+    let match_arg$13 = arg_match$8[0];
+    let match_arg$14 = match_arg$13[0];
+    let match_arg$15 = match_arg$14[0];
+    if (match_arg$15 === 10) {
+      let match_arg$16 = match_arg$14[1];
+      if (match_arg$16 === 20) {
+        let match_arg$17 = match_arg$13[1];
+        if (match_arg$17 === 30) {
+          let match_arg$18 = arg_match$8[1];
+          if (match_arg$18 === 40) {
             exit$8 = 1;
           } else {
-            if (arg$19 === 41) {
+            if (match_arg$18 === 41) {
+              props$9.set("_x", match_arg$13);
               exit$8 = 0;
-              props$9.set("_x", arg$14);
             } else {
+              props$9.set("_y", match_arg$13);
+              props$9.set("z", match_arg$18);
               exit$8 = 2;
-              props$9.set("_y", arg$14);
-              props$9.set("z", arg$19);
             }
           }
         }
       }
     }
     if (exit$8 === -1) {
-      let arg$17 = arg_match$8[1];
-      if (arg$17 === 41) {
+      let match_arg$16 = arg_match$8[1];
+      if (match_arg$16 === 41) {
+        props$9.set("_x", match_arg$13);
         exit$8 = 0;
-        props$9.set("_x", arg$14);
       } else {
+        props$9.set("_y", match_arg$13);
+        props$9.set("z", match_arg$16);
         exit$8 = 2;
-        props$9.set("_y", arg$14);
-        props$9.set("z", arg$17);
       }
     }
     if (exit$8 === 0) {
@@ -2028,39 +2003,39 @@
     let arg_match$9 = [[[10, 20], 99], 40];
     let props$10 = new Map(props$0);
     let exit$9 = -1;
-    let arg$17 = arg_match$9[0];
-    let arg$18 = arg$17[0];
-    let arg$19 = arg$18[0];
-    if (arg$19 === 10) {
-      let arg$20 = arg$18[1];
-      if (arg$20 === 20) {
-        let arg$21 = arg$17[1];
-        if (arg$21 === 30) {
-          let arg$22 = arg_match$9[1];
-          if (arg$22 === 40) {
+    let match_arg$16 = arg_match$9[0];
+    let match_arg$17 = match_arg$16[0];
+    let match_arg$18 = match_arg$17[0];
+    if (match_arg$18 === 10) {
+      let match_arg$19 = match_arg$17[1];
+      if (match_arg$19 === 20) {
+        let match_arg$20 = match_arg$16[1];
+        if (match_arg$20 === 30) {
+          let match_arg$21 = arg_match$9[1];
+          if (match_arg$21 === 40) {
             exit$9 = 1;
           } else {
-            if (arg$22 === 41) {
+            if (match_arg$21 === 41) {
+              props$10.set("_x", match_arg$16);
               exit$9 = 0;
-              props$10.set("_x", arg$17);
             } else {
+              props$10.set("_y", match_arg$16);
+              props$10.set("z", match_arg$21);
               exit$9 = 2;
-              props$10.set("_y", arg$17);
-              props$10.set("z", arg$22);
             }
           }
         }
       }
     }
     if (exit$9 === -1) {
-      let arg$20 = arg_match$9[1];
-      if (arg$20 === 41) {
+      let match_arg$19 = arg_match$9[1];
+      if (match_arg$19 === 41) {
+        props$10.set("_x", match_arg$16);
         exit$9 = 0;
-        props$10.set("_x", arg$17);
       } else {
+        props$10.set("_y", match_arg$16);
+        props$10.set("z", match_arg$19);
         exit$9 = 2;
-        props$10.set("_y", arg$17);
-        props$10.set("z", arg$20);
       }
     }
     if (exit$9 === 0) {

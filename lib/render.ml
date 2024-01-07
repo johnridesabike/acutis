@@ -303,23 +303,23 @@ module Make (M : MONAD) (D : DATA) :
             @@ Seq.map (fun (k, v) -> (k, of_untyped v))
             @@ Tbl.to_seq x
 
-      let to_int x ~ok ~error =
-        match D.classify x with `Int x -> ok x | _ -> error ()
+      type _ classify =
+        | Int : int classify
+        | String : string classify
+        | Float : float classify
+        | Bool : bool classify
+        | Linear : external_data Linear.t classify
+        | Assoc : external_data Assoc.t classify
 
-      let to_string x ~ok ~error =
-        match D.classify x with `String x -> ok x | _ -> error ()
-
-      let to_float x ~ok ~error =
-        match D.classify x with `Float x -> ok x | _ -> error ()
-
-      let to_bool x ~ok ~error =
-        match D.classify x with `Bool x -> ok x | _ -> error ()
-
-      let to_linear x ~ok ~error =
-        match D.classify x with `Linear x -> ok x | _ -> error ()
-
-      let to_assoc x ~ok ~error =
-        match D.classify x with `Assoc x -> ok x | _ -> error ()
+      let classify (type a) (c : a classify) t ~(ok : a exp -> 'b stmt) ~error =
+        match (c, D.classify t) with
+        | Int, `Int x -> ok x
+        | String, `String x -> ok x
+        | Float, `Float x -> ok x
+        | Bool, `Bool x -> ok x
+        | Linear, `Linear x -> ok x
+        | Assoc, `Assoc x -> ok x
+        | _ -> error ()
 
       let is_null x = match D.classify x with `Null -> true | _ -> false
 

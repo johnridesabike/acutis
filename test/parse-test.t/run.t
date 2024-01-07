@@ -877,14 +877,11 @@ Print the runtime instructions
   $ acutis template.acutis component.acutis component2.acutis --printinst
   (let$ acutis_escape/0 = (escape))
   (let$ decode_error/0 =
-   (lambda
-    arg/0
+   (lambda arg/0
     ((return
-      (lambda
-       arg/1
+      (lambda arg/1
        ((return
-         (lambda
-          arg/2
+         (lambda arg/2
           ((return
             (error
              (array_concat
@@ -897,19 +894,13 @@ Print the runtime instructions
                arg/0,
                "\nReceived value:\n",
                (External.show arg/2)]
-              "")))))
-         )))
-      )))
-   )
+              ""))))))))))))
   (let$ key_error/0 =
-   (lambda
-    arg/3
+   (lambda arg/3
     ((return
-      (lambda
-       arg/4
+      (lambda arg/4
        ((return
-         (lambda
-          arg/5
+         (lambda arg/5
           ((return
             (error
              (array_concat
@@ -922,174 +913,129 @@ Print the runtime instructions
                arg/3,
                "\nInput is missing keys:\n",
                (stack_concat arg/4 ", ")]
-              "")))))
-         )))
-      )))
-   )
+              ""))))))))))))
   (let$ buffer_to_promise/0 = (buffer_to_promise))
   (let$ components/0 = (hashtbl_create))
   (unit)
-  (components/0
-   .%{"Component2"}
-   <-
-   (lambda
-    arg/6
+  (components/0.%{"Component2"} <-
+   (lambda arg/6
     ((let$ buffer/0 = (buffer_create))
-     (buffer_add_string
-      buffer/0
+     (buffer_add_string buffer/0
       (acutis_escape/0 @@ (Data.to_string (arg/6.%{"children"}))))
      (buffer_add_string buffer/0 "\n")
-     (return (buffer_to_promise/0 @@ buffer/0))))
-   )
-  (components/0
-   .%{"Component"}
-   <-
-   (lambda
-    arg/7
+     (return (buffer_to_promise/0 @@ buffer/0)))))
+  (components/0.%{"Component"} <-
+   (lambda arg/7
     ((let$ buffer/1 = (buffer_create))
-     (buffer_add_string
-      buffer/1
+     (buffer_add_string buffer/1
       (acutis_escape/0 @@ (Data.to_string (arg/7.%{"a_prop"}))))
      (buffer_add_string buffer/1 "\n")
-     (buffer_add_string
-      buffer/1
+     (buffer_add_string buffer/1
       (acutis_escape/0 @@ (Data.to_string (arg/7.%{"c_prop"}))))
      (buffer_add_string buffer/1 "\n")
-     (buffer_add_string
-      buffer/1
+     (buffer_add_string buffer/1
       (acutis_escape/0 @@ (Data.to_string (arg/7.%{"d_prop"}))))
      (buffer_add_string buffer/1 "\n")
-     (buffer_add_string
-      buffer/1
+     (buffer_add_string buffer/1
       (acutis_escape/0 @@ (Data.to_string (arg/7.%{"f_prop"}))))
      (buffer_add_string buffer/1 "\n")
-     (buffer_add_string
-      buffer/1
+     (buffer_add_string buffer/1
       (acutis_escape/0 @@ (Data.to_string (arg/7.%{"g_prop"}))))
      (buffer_add_string buffer/1 "\n")
-     (buffer_add_string
-      buffer/1
+     (buffer_add_string buffer/1
       (acutis_escape/0 @@ (Data.to_string (arg/7.%{"h_prop"}))))
      (buffer_add_string buffer/1 "\n")
-     (buffer_add_string
-      buffer/1
+     (buffer_add_string buffer/1
       (acutis_escape/0 @@ (Data.to_string (arg/7.%{"i_prop"}))))
      (buffer_add_string buffer/1 "\n")
-     (return (buffer_to_promise/0 @@ buffer/1))))
-   )
+     (return (buffer_to_promise/0 @@ buffer/1)))))
   (export
-   (lambda
-    arg/8
+   (lambda arg/8
     ((let$ props/0 = (hashtbl_create))
      (let$ stack/0 = (stack_create))
      (let& is_error/0 = false)
      (let$ missing_keys/0 = (stack_create))
      (stack_push stack/0 "<input>")
-     (External.to_assoc
-      arg/8
-      classified/0
+     (External.classify (assoc) arg/8 classified/0
       (ok
-       (if
-        (External.Assoc.mem classified/0 "a")
+       (if (External.Assoc.mem classified/0 "a")
         (then
          (let$ input/0 = (External.Assoc.find classified/0 "a"))
          (stack_push stack/0 "a")
-         (External.to_assoc
-          input/0
-          classified/1
+         (External.classify (assoc) input/0 classified/1
           (ok
            (let$ decoded/0 = (hashtbl_create))
-           (if
-            (External.Assoc.mem classified/1 "a")
+           (if (External.Assoc.mem classified/1 "a")
             (then
              (let$ input/1 = (External.Assoc.find classified/1 "a"))
              (stack_push stack/0 "a")
-             (External.to_assoc
-              input/1
-              classified/2
+             (External.classify (assoc) input/1 classified/2
               (ok
                (let$ decoded/1 = (hashtbl_create))
-               (if
-                (External.Assoc.mem classified/2 "b")
+               (if (External.Assoc.mem classified/2 "b")
                 (then
                  (let$ input/2 = (External.Assoc.find classified/2 "b"))
                  (stack_push stack/0 "b")
-                 (External.to_string
-                  input/2
-                  classified/3
+                 (External.classify (string) input/2 classified/3
                   (ok (decoded/1.%{"b"} <- (Data.string classified/3)))
                   (error (is_error/0 := true)))
-                 (if
-                  (deref is_error/0)
+                 (if (deref is_error/0)
                   (then
                    (raise
                     (((decode_error/0 @@ "string") @@ stack/0) @@ input/2))))
                  (stack_drop stack/0))
                 (else (stack_push missing_keys/0 "b")))
-               (if
-                (not (stack_is_empty missing_keys/0))
+               (if (not (stack_is_empty missing_keys/0))
                 (then
                  (raise
                   (((key_error/0 @@ "{b: string}") @@ missing_keys/0)
                    @@ stack/0))))
                (decoded/0.%{"a"} <- (Data.hashtbl decoded/1)))
               (error (is_error/0 := true)))
-             (if
-              (deref is_error/0)
+             (if (deref is_error/0)
               (then
                (raise
                 (((decode_error/0 @@ "{b: string}") @@ stack/0) @@ input/1))))
              (stack_drop stack/0))
             (else (stack_push missing_keys/0 "a")))
-           (if
-            (External.Assoc.mem classified/1 "b")
+           (if (External.Assoc.mem classified/1 "b")
             (then
              (let$ input/3 = (External.Assoc.find classified/1 "b"))
              (stack_push stack/0 "b")
-             (External.to_assoc
-              input/3
-              classified/4
+             (External.classify (assoc) input/3 classified/4
               (ok
                (let$ decoded/2 = (hashtbl_create))
-               (if
-                (External.Assoc.mem classified/4 "c")
+               (if (External.Assoc.mem classified/4 "c")
                 (then
                  (let$ input/4 = (External.Assoc.find classified/4 "c"))
                  (stack_push stack/0 "c")
-                 (External.to_bool
-                  input/4
-                  classified/5
+                 (External.classify (bool) input/4 classified/5
                   (ok
-                   (if
-                    classified/5
+                   (if classified/5
                     (then (decoded/2.%{"c"} <- (Data.int 1)))
                     (else (decoded/2.%{"c"} <- (Data.int 0)))))
                   (error (is_error/0 := true)))
-                 (if
-                  (deref is_error/0)
+                 (if (deref is_error/0)
                   (then
                    (raise
                     (((decode_error/0 @@ "false | true") @@ stack/0) @@ input/4))))
                  (stack_drop stack/0))
                 (else (stack_push missing_keys/0 "c")))
-               (if
-                (not (stack_is_empty missing_keys/0))
+               (if (not (stack_is_empty missing_keys/0))
                 (then
                  (raise
                   (((key_error/0 @@ "{c: false | true}") @@ missing_keys/0)
                    @@ stack/0))))
                (decoded/0.%{"b"} <- (Data.hashtbl decoded/2)))
               (error (is_error/0 := true)))
-             (if
-              (deref is_error/0)
+             (if (deref is_error/0)
               (then
                (raise
                 (((decode_error/0 @@ "{c: false | true}") @@ stack/0)
                  @@ input/3))))
              (stack_drop stack/0))
             (else (stack_push missing_keys/0 "b")))
-           (if
-            (not (stack_is_empty missing_keys/0))
+           (if (not (stack_is_empty missing_keys/0))
             (then
              (raise
               (((key_error/0 @@ "{a: {b: string}, b: {c: false | true}}")
@@ -1097,8 +1043,7 @@ Print the runtime instructions
                @@ stack/0))))
            (props/0.%{"a"} <- (Data.hashtbl decoded/0)))
           (error (is_error/0 := true)))
-         (if
-          (deref is_error/0)
+         (if (deref is_error/0)
           (then
            (raise
             (((decode_error/0 @@ "{a: {b: string}, b: {c: false | true}}")
@@ -1106,331 +1051,243 @@ Print the runtime instructions
              @@ input/0))))
          (stack_drop stack/0))
         (else (stack_push missing_keys/0 "a")))
-       (if
-        (External.Assoc.mem classified/0 "a_prop")
+       (if (External.Assoc.mem classified/0 "a_prop")
         (then
          (let$ input/5 = (External.Assoc.find classified/0 "a_prop"))
          (stack_push stack/0 "a_prop")
-         (External.to_string
-          input/5
-          classified/6
+         (External.classify (string) input/5 classified/6
           (ok (props/0.%{"a_prop"} <- (Data.string classified/6)))
           (error (is_error/0 := true)))
-         (if
-          (deref is_error/0)
+         (if (deref is_error/0)
           (then (raise (((decode_error/0 @@ "string") @@ stack/0) @@ input/5))))
          (stack_drop stack/0))
         (else (stack_push missing_keys/0 "a_prop")))
-       (if
-        (External.Assoc.mem classified/0 "b_prop")
+       (if (External.Assoc.mem classified/0 "b_prop")
         (then
          (let$ input/6 = (External.Assoc.find classified/0 "b_prop"))
          (stack_push stack/0 "b_prop")
-         (External.to_string
-          input/6
-          classified/7
+         (External.classify (string) input/6 classified/7
           (ok (props/0.%{"b_prop"} <- (Data.string classified/7)))
           (error (is_error/0 := true)))
-         (if
-          (deref is_error/0)
+         (if (deref is_error/0)
           (then (raise (((decode_error/0 @@ "string") @@ stack/0) @@ input/6))))
          (stack_drop stack/0))
         (else (stack_push missing_keys/0 "b_prop")))
-       (if
-        (External.Assoc.mem classified/0 "c_prop")
+       (if (External.Assoc.mem classified/0 "c_prop")
         (then
          (let$ input/7 = (External.Assoc.find classified/0 "c_prop"))
          (stack_push stack/0 "c_prop")
-         (External.to_string
-          input/7
-          classified/8
+         (External.classify (string) input/7 classified/8
           (ok (props/0.%{"c_prop"} <- (Data.string classified/8)))
           (error (is_error/0 := true)))
-         (if
-          (deref is_error/0)
+         (if (deref is_error/0)
           (then (raise (((decode_error/0 @@ "string") @@ stack/0) @@ input/7))))
          (stack_drop stack/0))
         (else (stack_push missing_keys/0 "c_prop")))
-       (if
-        (External.Assoc.mem classified/0 "d")
+       (if (External.Assoc.mem classified/0 "d")
         (then
          (let$ input/8 = (External.Assoc.find classified/0 "d"))
          (stack_push stack/0 "d")
-         (External.to_string
-          input/8
-          classified/9
+         (External.classify (string) input/8 classified/9
           (ok (props/0.%{"d"} <- (Data.string classified/9)))
           (error (is_error/0 := true)))
-         (if
-          (deref is_error/0)
+         (if (deref is_error/0)
           (then (raise (((decode_error/0 @@ "string") @@ stack/0) @@ input/8))))
          (stack_drop stack/0))
         (else (stack_push missing_keys/0 "d")))
-       (if
-        (External.Assoc.mem classified/0 "dict")
+       (if (External.Assoc.mem classified/0 "dict")
         (then
          (let$ input/9 = (External.Assoc.find classified/0 "dict"))
          (stack_push stack/0 "dict")
-         (External.to_assoc
-          input/9
-          classified/10
+         (External.classify (assoc) input/9 classified/10
           (ok
            (let$ decoded/3 = (hashtbl_create))
-           (External.Assoc.iter
-            classified/10
-            (key/0 value/0)
+           (External.Assoc.iter classified/10 key/0 value/0
             (stack_push stack/0 key/0)
-            (External.to_int
-             value/0
-             classified/11
+            (External.classify (int) value/0 classified/11
              (ok (decoded/3.%{key/0} <- (Data.int classified/11)))
              (error (is_error/0 := true)))
-            (if
-             (deref is_error/0)
+            (if (deref is_error/0)
              (then (raise (((decode_error/0 @@ "int") @@ stack/0) @@ value/0))))
             (props/0.%{"dict"} <- (Data.hashtbl decoded/3))
             (stack_drop stack/0)))
           (error (is_error/0 := true)))
-         (if
-          (deref is_error/0)
+         (if (deref is_error/0)
           (then (raise (((decode_error/0 @@ "<int>") @@ stack/0) @@ input/9))))
          (stack_drop stack/0))
         (else (stack_push missing_keys/0 "dict")))
-       (if
-        (External.Assoc.mem classified/0 "e")
+       (if (External.Assoc.mem classified/0 "e")
         (then
          (let$ input/10 = (External.Assoc.find classified/0 "e"))
          (stack_push stack/0 "e")
-         (External.to_string
-          input/10
-          classified/12
+         (External.classify (string) input/10 classified/12
           (ok (props/0.%{"e"} <- (Data.string classified/12)))
           (error (is_error/0 := true)))
-         (if
-          (deref is_error/0)
+         (if (deref is_error/0)
           (then (raise (((decode_error/0 @@ "string") @@ stack/0) @@ input/10))))
          (stack_drop stack/0))
         (else (stack_push missing_keys/0 "e")))
-       (if
-        (External.Assoc.mem classified/0 "e_prop")
+       (if (External.Assoc.mem classified/0 "e_prop")
         (then
          (let$ input/11 = (External.Assoc.find classified/0 "e_prop"))
          (stack_push stack/0 "e_prop")
-         (External.to_string
-          input/11
-          classified/13
+         (External.classify (string) input/11 classified/13
           (ok (props/0.%{"e_prop"} <- (Data.string classified/13)))
           (error (is_error/0 := true)))
-         (if
-          (deref is_error/0)
+         (if (deref is_error/0)
           (then (raise (((decode_error/0 @@ "string") @@ stack/0) @@ input/11))))
          (stack_drop stack/0))
         (else (stack_push missing_keys/0 "e_prop")))
-       (if
-        (External.Assoc.mem classified/0 "ech_a")
+       (if (External.Assoc.mem classified/0 "ech_a")
         (then
          (let$ input/12 = (External.Assoc.find classified/0 "ech_a"))
          (stack_push stack/0 "ech_a")
-         (External.to_string
-          input/12
-          classified/14
+         (External.classify (string) input/12 classified/14
           (ok (props/0.%{"ech_a"} <- (Data.string classified/14)))
           (error (is_error/0 := true)))
-         (if
-          (deref is_error/0)
+         (if (deref is_error/0)
           (then (raise (((decode_error/0 @@ "string") @@ stack/0) @@ input/12))))
          (stack_drop stack/0))
         (else (stack_push missing_keys/0 "ech_a")))
-       (if
-        (External.Assoc.mem classified/0 "ech_b")
+       (if (External.Assoc.mem classified/0 "ech_b")
         (then
          (let$ input/13 = (External.Assoc.find classified/0 "ech_b"))
          (stack_push stack/0 "ech_b")
-         (External.to_bool
-          input/13
-          classified/15
+         (External.classify (bool) input/13 classified/15
           (ok
-           (if
-            classified/15
+           (if classified/15
             (then (props/0.%{"ech_b"} <- (Data.int 1)))
             (else (props/0.%{"ech_b"} <- (Data.int 0)))))
           (error (is_error/0 := true)))
-         (if
-          (deref is_error/0)
+         (if (deref is_error/0)
           (then
            (raise (((decode_error/0 @@ "false | true") @@ stack/0) @@ input/13))))
          (stack_drop stack/0))
         (else (stack_push missing_keys/0 "ech_b")))
-       (if
-        (External.Assoc.mem classified/0 "ech_d")
+       (if (External.Assoc.mem classified/0 "ech_d")
         (then
          (let$ input/14 = (External.Assoc.find classified/0 "ech_d"))
          (stack_push stack/0 "ech_d")
-         (if
-          (External.is_null input/14)
+         (if (External.is_null input/14)
           (then (props/0.%{"ech_d"} <- (Data.int 0)))
           (else
            (let$ decoded/12 = [(Data.int 0)])
            (stack_push stack/0 "<nullable>")
-           (External.to_string
-            input/14
-            classified/57
+           (External.classify (string) input/14 classified/57
             (ok (decoded/12.%(0) <- (Data.string classified/57)))
             (error (is_error/0 := true)))
-           (if
-            (deref is_error/0)
+           (if (deref is_error/0)
             (then
              (raise (((decode_error/0 @@ "string") @@ stack/0) @@ input/14))))
            (props/0.%{"ech_d"} <- (Data.array decoded/12))
            (stack_drop stack/0)))
-         (if
-          (deref is_error/0)
+         (if (deref is_error/0)
           (then
            (raise (((decode_error/0 @@ "?string") @@ stack/0) @@ input/14))))
          (stack_drop stack/0))
         (else (props/0.%{"ech_d"} <- (Data.int 0))))
-       (if
-        (External.Assoc.mem classified/0 "ech_e")
+       (if (External.Assoc.mem classified/0 "ech_e")
         (then
          (let$ input/15 = (External.Assoc.find classified/0 "ech_e"))
          (stack_push stack/0 "ech_e")
-         (if
-          (External.is_null input/15)
+         (if (External.is_null input/15)
           (then (props/0.%{"ech_e"} <- (Data.int 0)))
           (else
            (let$ decoded/13 = [(Data.int 0)])
            (stack_push stack/0 "<nullable>")
-           (External.to_string
-            input/15
-            classified/58
+           (External.classify (string) input/15 classified/58
             (ok (decoded/13.%(0) <- (Data.string classified/58)))
             (error (is_error/0 := true)))
-           (if
-            (deref is_error/0)
+           (if (deref is_error/0)
             (then
              (raise (((decode_error/0 @@ "string") @@ stack/0) @@ input/15))))
            (props/0.%{"ech_e"} <- (Data.array decoded/13))
            (stack_drop stack/0)))
-         (if
-          (deref is_error/0)
+         (if (deref is_error/0)
           (then
            (raise (((decode_error/0 @@ "?string") @@ stack/0) @@ input/15))))
          (stack_drop stack/0))
         (else (props/0.%{"ech_e"} <- (Data.int 0))))
-       (if
-        (External.Assoc.mem classified/0 "ech_f")
+       (if (External.Assoc.mem classified/0 "ech_f")
         (then
          (let$ input/16 = (External.Assoc.find classified/0 "ech_f"))
          (stack_push stack/0 "ech_f")
-         (External.to_float
-          input/16
-          classified/16
+         (External.classify (float) input/16 classified/16
           (ok (props/0.%{"ech_f"} <- (Data.float classified/16)))
           (error
-           (External.to_int
-            input/16
-            classified/17
+           (External.classify (int) input/16 classified/17
             (ok
              (props/0.%{"ech_f"} <- (Data.float (int_to_float classified/17))))
             (error (is_error/0 := true)))))
-         (if
-          (deref is_error/0)
+         (if (deref is_error/0)
           (then (raise (((decode_error/0 @@ "float") @@ stack/0) @@ input/16))))
          (stack_drop stack/0))
         (else (stack_push missing_keys/0 "ech_f")))
-       (if
-        (External.Assoc.mem classified/0 "ech_i")
+       (if (External.Assoc.mem classified/0 "ech_i")
         (then
          (let$ input/17 = (External.Assoc.find classified/0 "ech_i"))
          (stack_push stack/0 "ech_i")
-         (External.to_int
-          input/17
-          classified/18
+         (External.classify (int) input/17 classified/18
           (ok (props/0.%{"ech_i"} <- (Data.int classified/18)))
           (error (is_error/0 := true)))
-         (if
-          (deref is_error/0)
+         (if (deref is_error/0)
           (then (raise (((decode_error/0 @@ "int") @@ stack/0) @@ input/17))))
          (stack_drop stack/0))
         (else (stack_push missing_keys/0 "ech_i")))
-       (if
-        (External.Assoc.mem classified/0 "enums")
+       (if (External.Assoc.mem classified/0 "enums")
         (then
          (let$ input/18 = (External.Assoc.find classified/0 "enums"))
          (stack_push stack/0 "enums")
-         (External.to_linear
-          input/18
-          classified/19
+         (External.classify (linear) input/18 classified/19
           (ok
-           (if
-            (equal_int (External.Linear.length classified/19) 4)
+           (if (equal_int (External.Linear.length classified/19) 4)
             (then
              (let$ decoded/4 = (array_init 4 (Data.int 0)))
-             (External.Linear.iteri
-              classified/19
-              (key/1 value/1)
+             (External.Linear.iteri classified/19 key/1 value/1
               (stack_push stack/0 (int_to_string key/1))
-              (if
-               (equal_int key/1 0)
+              (if (equal_int key/1 0)
                (then
-                (External.to_string
-                 value/1
-                 classified/20
+                (External.classify (string) value/1 classified/20
                  (ok (decoded/4.%(key/1) <- (Data.string classified/20)))
                  (error (is_error/0 := true)))
-                (if
-                 (deref is_error/0)
+                (if (deref is_error/0)
                  (then
                   (raise
                    (((decode_error/0 @@ "@\"a\" | ...") @@ stack/0) @@ value/1)))))
                (else
-                (if
-                 (equal_int key/1 1)
+                (if (equal_int key/1 1)
                  (then
-                  (External.to_int
-                   value/1
-                   classified/59
+                  (External.classify (int) value/1 classified/59
                    (ok (decoded/4.%(key/1) <- (Data.int classified/59)))
                    (error (is_error/0 := true)))
-                  (if
-                   (deref is_error/0)
+                  (if (deref is_error/0)
                    (then
                     (raise
                      (((decode_error/0 @@ "@1 | ...") @@ stack/0) @@ value/1)))))
                  (else
-                  (if
-                   (equal_int key/1 2)
+                  (if (equal_int key/1 2)
                    (then
-                    (External.to_bool
-                     value/1
-                     classified/60
+                    (External.classify (bool) value/1 classified/60
                      (ok
-                      (if
-                       classified/60
+                      (if classified/60
                        (then (decoded/4.%(key/1) <- (Data.int 1)))
                        (else (decoded/4.%(key/1) <- (Data.int 0)))))
                      (error (is_error/0 := true)))
-                    (if
-                     (deref is_error/0)
+                    (if (deref is_error/0)
                      (then
                       (raise
                        (((decode_error/0 @@ "false | true") @@ stack/0)
                         @@ value/1)))))
                    (else
-                    (if
-                     (equal_int key/1 3)
+                    (if (equal_int key/1 3)
                      (then
-                      (External.to_bool
-                       value/1
-                       classified/61
+                      (External.classify (bool) value/1 classified/61
                        (ok
-                        (if
-                         classified/61
+                        (if classified/61
                          (then (decoded/4.%(key/1) <- (Data.int 1)))
                          (else (decoded/4.%(key/1) <- (Data.int 0)))))
                        (error (is_error/0 := true)))
-                      (if
-                       (deref is_error/0)
+                      (if (deref is_error/0)
                        (then
                         (raise
                          (((decode_error/0 @@ "false | true") @@ stack/0)
@@ -1440,8 +1297,7 @@ Print the runtime instructions
               (stack_drop stack/0)))
             (else (is_error/0 := true))))
           (error (is_error/0 := true)))
-         (if
-          (deref is_error/0)
+         (if (deref is_error/0)
           (then
            (raise
             (((decode_error/0
@@ -1450,332 +1306,237 @@ Print the runtime instructions
              @@ input/18))))
          (stack_drop stack/0))
         (else (stack_push missing_keys/0 "enums")))
-       (if
-        (External.Assoc.mem classified/0 "f_prop")
+       (if (External.Assoc.mem classified/0 "f_prop")
         (then
          (let$ input/19 = (External.Assoc.find classified/0 "f_prop"))
          (stack_push stack/0 "f_prop")
-         (External.to_string
-          input/19
-          classified/21
+         (External.classify (string) input/19 classified/21
           (ok (props/0.%{"f_prop"} <- (Data.string classified/21)))
           (error (is_error/0 := true)))
-         (if
-          (deref is_error/0)
+         (if (deref is_error/0)
           (then (raise (((decode_error/0 @@ "string") @@ stack/0) @@ input/19))))
          (stack_drop stack/0))
         (else (stack_push missing_keys/0 "f_prop")))
-       (if
-        (External.Assoc.mem classified/0 "list")
+       (if (External.Assoc.mem classified/0 "list")
         (then
          (let$ input/20 = (External.Assoc.find classified/0 "list"))
          (stack_push stack/0 "list")
-         (External.to_linear
-          input/20
-          classified/22
+         (External.classify (linear) input/20 classified/22
           (ok
            (let$ decoded/5 = [(Data.int 0), (Data.int 0)])
            (let& decode_dst/0 = decoded/5)
-           (External.Linear.iteri
-            classified/22
-            (key/2 value/2)
+           (External.Linear.iteri classified/22 key/2 value/2
             (let$ decode_dst_new/0 = [(Data.int 0), (Data.int 0)])
             (stack_push stack/0 (int_to_string key/2))
-            (if
-             (External.is_null value/2)
+            (if (External.is_null value/2)
              (then (decode_dst_new/0.%(0) <- (Data.int 0)))
              (else
               (let$ decoded/14 = [(Data.int 0)])
               (stack_push stack/0 "<nullable>")
-              (External.to_string
-               value/2
-               classified/62
+              (External.classify (string) value/2 classified/62
                (ok (decoded/14.%(0) <- (Data.string classified/62)))
                (error (is_error/0 := true)))
-              (if
-               (deref is_error/0)
+              (if (deref is_error/0)
                (then
                 (raise (((decode_error/0 @@ "string") @@ stack/0) @@ value/2))))
               (decode_dst_new/0.%(0) <- (Data.array decoded/14))
               (stack_drop stack/0)))
-            (if
-             (deref is_error/0)
+            (if (deref is_error/0)
              (then
               (raise (((decode_error/0 @@ "?string") @@ stack/0) @@ value/2))))
             ((deref decode_dst/0).%(1) <- (Data.array decode_dst_new/0))
-            (decode_dst/0 := decode_dst_new/0)
-            (stack_drop stack/0))
+            (decode_dst/0 := decode_dst_new/0) (stack_drop stack/0))
            (props/0.%{"list"} <- (decoded/5.%(1))))
           (error (is_error/0 := true)))
-         (if
-          (deref is_error/0)
+         (if (deref is_error/0)
           (then
            (raise (((decode_error/0 @@ "[?string]") @@ stack/0) @@ input/20))))
          (stack_drop stack/0))
         (else (stack_push missing_keys/0 "list")))
-       (if
-        (External.Assoc.mem classified/0 "map_d")
+       (if (External.Assoc.mem classified/0 "map_d")
         (then
          (let$ input/21 = (External.Assoc.find classified/0 "map_d"))
          (stack_push stack/0 "map_d")
-         (External.to_assoc
-          input/21
-          classified/23
+         (External.classify (assoc) input/21 classified/23
           (ok
            (let$ decoded/6 = (hashtbl_create))
-           (External.Assoc.iter
-            classified/23
-            (key/3 value/3)
+           (External.Assoc.iter classified/23 key/3 value/3
             (stack_push stack/0 key/3)
-            (External.to_int
-             value/3
-             classified/24
+            (External.classify (int) value/3 classified/24
              (ok (decoded/6.%{key/3} <- (Data.int classified/24)))
              (error (is_error/0 := true)))
-            (if
-             (deref is_error/0)
+            (if (deref is_error/0)
              (then (raise (((decode_error/0 @@ "int") @@ stack/0) @@ value/3))))
             (props/0.%{"map_d"} <- (Data.hashtbl decoded/6))
             (stack_drop stack/0)))
           (error (is_error/0 := true)))
-         (if
-          (deref is_error/0)
+         (if (deref is_error/0)
           (then (raise (((decode_error/0 @@ "<int>") @@ stack/0) @@ input/21))))
          (stack_drop stack/0))
         (else (stack_push missing_keys/0 "map_d")))
-       (if
-        (External.Assoc.mem classified/0 "map_l")
+       (if (External.Assoc.mem classified/0 "map_l")
         (then
          (let$ input/22 = (External.Assoc.find classified/0 "map_l"))
          (stack_push stack/0 "map_l")
-         (External.to_linear
-          input/22
-          classified/25
+         (External.classify (linear) input/22 classified/25
           (ok
            (let$ decoded/7 = [(Data.int 0), (Data.int 0)])
            (let& decode_dst/1 = decoded/7)
-           (External.Linear.iteri
-            classified/25
-            (key/4 value/4)
+           (External.Linear.iteri classified/25 key/4 value/4
             (let$ decode_dst_new/1 = [(Data.int 0), (Data.int 0)])
             (stack_push stack/0 (int_to_string key/4))
-            (External.to_int
-             value/4
-             classified/26
+            (External.classify (int) value/4 classified/26
              (ok (decode_dst_new/1.%(0) <- (Data.int classified/26)))
              (error (is_error/0 := true)))
-            (if
-             (deref is_error/0)
+            (if (deref is_error/0)
              (then (raise (((decode_error/0 @@ "int") @@ stack/0) @@ value/4))))
             ((deref decode_dst/1).%(1) <- (Data.array decode_dst_new/1))
-            (decode_dst/1 := decode_dst_new/1)
-            (stack_drop stack/0))
+            (decode_dst/1 := decode_dst_new/1) (stack_drop stack/0))
            (props/0.%{"map_l"} <- (decoded/7.%(1))))
           (error (is_error/0 := true)))
-         (if
-          (deref is_error/0)
+         (if (deref is_error/0)
           (then (raise (((decode_error/0 @@ "[int]") @@ stack/0) @@ input/22))))
          (stack_drop stack/0))
         (else (stack_push missing_keys/0 "map_l")))
-       (if
-        (External.Assoc.mem classified/0 "match_a")
+       (if (External.Assoc.mem classified/0 "match_a")
         (then
          (let$ input/23 = (External.Assoc.find classified/0 "match_a"))
          (stack_push stack/0 "match_a")
-         (External.to_int
-          input/23
-          classified/27
+         (External.classify (int) input/23 classified/27
           (ok (props/0.%{"match_a"} <- (Data.int classified/27)))
           (error (is_error/0 := true)))
-         (if
-          (deref is_error/0)
+         (if (deref is_error/0)
           (then (raise (((decode_error/0 @@ "int") @@ stack/0) @@ input/23))))
          (stack_drop stack/0))
         (else (stack_push missing_keys/0 "match_a")))
-       (if
-        (External.Assoc.mem classified/0 "match_b")
+       (if (External.Assoc.mem classified/0 "match_b")
         (then
          (let$ input/24 = (External.Assoc.find classified/0 "match_b"))
          (stack_push stack/0 "match_b")
-         (External.to_string
-          input/24
-          classified/28
+         (External.classify (string) input/24 classified/28
           (ok (props/0.%{"match_b"} <- (Data.string classified/28)))
           (error (is_error/0 := true)))
-         (if
-          (deref is_error/0)
+         (if (deref is_error/0)
           (then (raise (((decode_error/0 @@ "string") @@ stack/0) @@ input/24))))
          (stack_drop stack/0))
         (else (stack_push missing_keys/0 "match_b")))
-       (if
-        (External.Assoc.mem classified/0 "numbers")
+       (if (External.Assoc.mem classified/0 "numbers")
         (then
          (let$ input/25 = (External.Assoc.find classified/0 "numbers"))
          (stack_push stack/0 "numbers")
-         (External.to_assoc
-          input/25
-          classified/29
+         (External.classify (assoc) input/25 classified/29
           (ok
            (let$ decoded/8 = (hashtbl_create))
-           (if
-            (External.Assoc.mem classified/29 "exp1")
+           (if (External.Assoc.mem classified/29 "exp1")
             (then
              (let$ input/26 = (External.Assoc.find classified/29 "exp1"))
              (stack_push stack/0 "exp1")
-             (External.to_float
-              input/26
-              classified/30
+             (External.classify (float) input/26 classified/30
               (ok (decoded/8.%{"exp1"} <- (Data.float classified/30)))
               (error
-               (External.to_int
-                input/26
-                classified/31
+               (External.classify (int) input/26 classified/31
                 (ok
-                 (decoded/8
-                  .%{"exp1"}
-                  <-
+                 (decoded/8.%{"exp1"} <-
                   (Data.float (int_to_float classified/31))))
                 (error (is_error/0 := true)))))
-             (if
-              (deref is_error/0)
+             (if (deref is_error/0)
               (then
                (raise (((decode_error/0 @@ "float") @@ stack/0) @@ input/26))))
              (stack_drop stack/0))
             (else (stack_push missing_keys/0 "exp1")))
-           (if
-            (External.Assoc.mem classified/29 "exp2")
+           (if (External.Assoc.mem classified/29 "exp2")
             (then
              (let$ input/27 = (External.Assoc.find classified/29 "exp2"))
              (stack_push stack/0 "exp2")
-             (External.to_float
-              input/27
-              classified/32
+             (External.classify (float) input/27 classified/32
               (ok (decoded/8.%{"exp2"} <- (Data.float classified/32)))
               (error
-               (External.to_int
-                input/27
-                classified/33
+               (External.classify (int) input/27 classified/33
                 (ok
-                 (decoded/8
-                  .%{"exp2"}
-                  <-
+                 (decoded/8.%{"exp2"} <-
                   (Data.float (int_to_float classified/33))))
                 (error (is_error/0 := true)))))
-             (if
-              (deref is_error/0)
+             (if (deref is_error/0)
               (then
                (raise (((decode_error/0 @@ "float") @@ stack/0) @@ input/27))))
              (stack_drop stack/0))
             (else (stack_push missing_keys/0 "exp2")))
-           (if
-            (External.Assoc.mem classified/29 "exp3")
+           (if (External.Assoc.mem classified/29 "exp3")
             (then
              (let$ input/28 = (External.Assoc.find classified/29 "exp3"))
              (stack_push stack/0 "exp3")
-             (External.to_float
-              input/28
-              classified/34
+             (External.classify (float) input/28 classified/34
               (ok (decoded/8.%{"exp3"} <- (Data.float classified/34)))
               (error
-               (External.to_int
-                input/28
-                classified/35
+               (External.classify (int) input/28 classified/35
                 (ok
-                 (decoded/8
-                  .%{"exp3"}
-                  <-
+                 (decoded/8.%{"exp3"} <-
                   (Data.float (int_to_float classified/35))))
                 (error (is_error/0 := true)))))
-             (if
-              (deref is_error/0)
+             (if (deref is_error/0)
               (then
                (raise (((decode_error/0 @@ "float") @@ stack/0) @@ input/28))))
              (stack_drop stack/0))
             (else (stack_push missing_keys/0 "exp3")))
-           (if
-            (External.Assoc.mem classified/29 "frac")
+           (if (External.Assoc.mem classified/29 "frac")
             (then
              (let$ input/29 = (External.Assoc.find classified/29 "frac"))
              (stack_push stack/0 "frac")
-             (External.to_float
-              input/29
-              classified/36
+             (External.classify (float) input/29 classified/36
               (ok (decoded/8.%{"frac"} <- (Data.float classified/36)))
               (error
-               (External.to_int
-                input/29
-                classified/37
+               (External.classify (int) input/29 classified/37
                 (ok
-                 (decoded/8
-                  .%{"frac"}
-                  <-
+                 (decoded/8.%{"frac"} <-
                   (Data.float (int_to_float classified/37))))
                 (error (is_error/0 := true)))))
-             (if
-              (deref is_error/0)
+             (if (deref is_error/0)
               (then
                (raise (((decode_error/0 @@ "float") @@ stack/0) @@ input/29))))
              (stack_drop stack/0))
             (else (stack_push missing_keys/0 "frac")))
-           (if
-            (External.Assoc.mem classified/29 "int")
+           (if (External.Assoc.mem classified/29 "int")
             (then
              (let$ input/30 = (External.Assoc.find classified/29 "int"))
              (stack_push stack/0 "int")
-             (External.to_int
-              input/30
-              classified/38
+             (External.classify (int) input/30 classified/38
               (ok (decoded/8.%{"int"} <- (Data.int classified/38)))
               (error (is_error/0 := true)))
-             (if
-              (deref is_error/0)
+             (if (deref is_error/0)
               (then
                (raise (((decode_error/0 @@ "int") @@ stack/0) @@ input/30))))
              (stack_drop stack/0))
             (else (stack_push missing_keys/0 "int")))
-           (if
-            (External.Assoc.mem classified/29 "negfrac")
+           (if (External.Assoc.mem classified/29 "negfrac")
             (then
              (let$ input/31 = (External.Assoc.find classified/29 "negfrac"))
              (stack_push stack/0 "negfrac")
-             (External.to_float
-              input/31
-              classified/39
+             (External.classify (float) input/31 classified/39
               (ok (decoded/8.%{"negfrac"} <- (Data.float classified/39)))
               (error
-               (External.to_int
-                input/31
-                classified/40
+               (External.classify (int) input/31 classified/40
                 (ok
-                 (decoded/8
-                  .%{"negfrac"}
-                  <-
+                 (decoded/8.%{"negfrac"} <-
                   (Data.float (int_to_float classified/40))))
                 (error (is_error/0 := true)))))
-             (if
-              (deref is_error/0)
+             (if (deref is_error/0)
               (then
                (raise (((decode_error/0 @@ "float") @@ stack/0) @@ input/31))))
              (stack_drop stack/0))
             (else (stack_push missing_keys/0 "negfrac")))
-           (if
-            (External.Assoc.mem classified/29 "negint")
+           (if (External.Assoc.mem classified/29 "negint")
             (then
              (let$ input/32 = (External.Assoc.find classified/29 "negint"))
              (stack_push stack/0 "negint")
-             (External.to_int
-              input/32
-              classified/41
+             (External.classify (int) input/32 classified/41
               (ok (decoded/8.%{"negint"} <- (Data.int classified/41)))
               (error (is_error/0 := true)))
-             (if
-              (deref is_error/0)
+             (if (deref is_error/0)
               (then
                (raise (((decode_error/0 @@ "int") @@ stack/0) @@ input/32))))
              (stack_drop stack/0))
             (else (stack_push missing_keys/0 "negint")))
-           (if
-            (not (stack_is_empty missing_keys/0))
+           (if (not (stack_is_empty missing_keys/0))
             (then
              (raise
               (((key_error/0
@@ -1784,8 +1545,7 @@ Print the runtime instructions
                @@ stack/0))))
            (props/0.%{"numbers"} <- (Data.hashtbl decoded/8)))
           (error (is_error/0 := true)))
-         (if
-          (deref is_error/0)
+         (if (deref is_error/0)
           (then
            (raise
             (((decode_error/0
@@ -1794,50 +1554,38 @@ Print the runtime instructions
              @@ input/25))))
          (stack_drop stack/0))
         (else (stack_push missing_keys/0 "numbers")))
-       (if
-        (External.Assoc.mem classified/0 "record")
+       (if (External.Assoc.mem classified/0 "record")
         (then
          (let$ input/33 = (External.Assoc.find classified/0 "record"))
          (stack_push stack/0 "record")
-         (External.to_assoc
-          input/33
-          classified/42
+         (External.classify (assoc) input/33 classified/42
           (ok
            (let$ decoded/9 = (hashtbl_create))
-           (if
-            (External.Assoc.mem classified/42 "!#%@")
+           (if (External.Assoc.mem classified/42 "!#%@")
             (then
              (let$ input/34 = (External.Assoc.find classified/42 "!#%@"))
              (stack_push stack/0 "!#%@")
-             (External.to_string
-              input/34
-              classified/43
+             (External.classify (string) input/34 classified/43
               (ok (decoded/9.%{"!#%@"} <- (Data.string classified/43)))
               (error (is_error/0 := true)))
-             (if
-              (deref is_error/0)
+             (if (deref is_error/0)
               (then
                (raise (((decode_error/0 @@ "string") @@ stack/0) @@ input/34))))
              (stack_drop stack/0))
             (else (stack_push missing_keys/0 "!#%@")))
-           (if
-            (External.Assoc.mem classified/42 "a")
+           (if (External.Assoc.mem classified/42 "a")
             (then
              (let$ input/35 = (External.Assoc.find classified/42 "a"))
              (stack_push stack/0 "a")
-             (External.to_string
-              input/35
-              classified/44
+             (External.classify (string) input/35 classified/44
               (ok (decoded/9.%{"a"} <- (Data.string classified/44)))
               (error (is_error/0 := true)))
-             (if
-              (deref is_error/0)
+             (if (deref is_error/0)
               (then
                (raise (((decode_error/0 @@ "string") @@ stack/0) @@ input/35))))
              (stack_drop stack/0))
             (else (stack_push missing_keys/0 "a")))
-           (if
-            (not (stack_is_empty missing_keys/0))
+           (if (not (stack_is_empty missing_keys/0))
             (then
              (raise
               (((key_error/0 @@ "{\"!#%@\": string, a: string}")
@@ -1845,54 +1593,42 @@ Print the runtime instructions
                @@ stack/0))))
            (props/0.%{"record"} <- (Data.hashtbl decoded/9)))
           (error (is_error/0 := true)))
-         (if
-          (deref is_error/0)
+         (if (deref is_error/0)
           (then
            (raise
             (((decode_error/0 @@ "{\"!#%@\": string, a: string}") @@ stack/0)
              @@ input/33))))
          (stack_drop stack/0))
         (else (stack_push missing_keys/0 "record")))
-       (if
-        (External.Assoc.mem classified/0 "tagged")
+       (if (External.Assoc.mem classified/0 "tagged")
         (then
          (let$ input/36 = (External.Assoc.find classified/0 "tagged"))
          (stack_push stack/0 "tagged")
-         (External.to_assoc
-          input/36
-          classified/45
+         (External.classify (assoc) input/36 classified/45
           (ok
-           (if
-            (External.Assoc.mem classified/45 "tag")
+           (if (External.Assoc.mem classified/45 "tag")
             (then
-             (External.to_bool
-              (External.Assoc.find classified/45 "tag")
-              classified/46
+             (External.classify (bool)
+              (External.Assoc.find classified/45 "tag") classified/46
               (ok
-               (if
-                classified/46
+               (if classified/46
                 (then
                  (let$ decoded/10 = (hashtbl_create))
                  (decoded/10.%{"tag"} <- (Data.int 1))
-                 (if
-                  (External.Assoc.mem classified/45 "a")
+                 (if (External.Assoc.mem classified/45 "a")
                   (then
                    (let$ input/37 = (External.Assoc.find classified/45 "a"))
                    (stack_push stack/0 "a")
-                   (External.to_string
-                    input/37
-                    classified/47
+                   (External.classify (string) input/37 classified/47
                     (ok (decoded/10.%{"a"} <- (Data.string classified/47)))
                     (error (is_error/0 := true)))
-                   (if
-                    (deref is_error/0)
+                   (if (deref is_error/0)
                     (then
                      (raise
                       (((decode_error/0 @@ "string") @@ stack/0) @@ input/37))))
                    (stack_drop stack/0))
                   (else (stack_push missing_keys/0 "a")))
-                 (if
-                  (not (stack_is_empty missing_keys/0))
+                 (if (not (stack_is_empty missing_keys/0))
                   (then
                    (raise
                     (((key_error/0 @@ "{a: string}") @@ missing_keys/0)
@@ -1902,8 +1638,7 @@ Print the runtime instructions
                  (let$ decoded/15 = (hashtbl_create))
                  (decoded/15.%{"tag"} <- (Data.int 0))
                  (unit)
-                 (if
-                  (not (stack_is_empty missing_keys/0))
+                 (if (not (stack_is_empty missing_keys/0))
                   (then
                    (raise
                     (((key_error/0 @@ "{}") @@ missing_keys/0) @@ stack/0))))
@@ -1911,8 +1646,7 @@ Print the runtime instructions
               (error (is_error/0 := true))))
             (else (is_error/0 := true))))
           (error (is_error/0 := true)))
-         (if
-          (deref is_error/0)
+         (if (deref is_error/0)
           (then
            (raise
             (((decode_error/0 @@ "{@tag: false} | {@tag: true, a: string}")
@@ -1920,174 +1654,124 @@ Print the runtime instructions
              @@ input/36))))
          (stack_drop stack/0))
         (else (stack_push missing_keys/0 "tagged")))
-       (if
-        (External.Assoc.mem classified/0 "trim_a")
+       (if (External.Assoc.mem classified/0 "trim_a")
         (then
          (let$ input/38 = (External.Assoc.find classified/0 "trim_a"))
          (stack_push stack/0 "trim_a")
-         (External.to_string
-          input/38
-          classified/48
+         (External.classify (string) input/38 classified/48
           (ok (props/0.%{"trim_a"} <- (Data.string classified/48)))
           (error (is_error/0 := true)))
-         (if
-          (deref is_error/0)
+         (if (deref is_error/0)
           (then (raise (((decode_error/0 @@ "string") @@ stack/0) @@ input/38))))
          (stack_drop stack/0))
         (else (stack_push missing_keys/0 "trim_a")))
-       (if
-        (External.Assoc.mem classified/0 "trim_b")
+       (if (External.Assoc.mem classified/0 "trim_b")
         (then
          (let$ input/39 = (External.Assoc.find classified/0 "trim_b"))
          (stack_push stack/0 "trim_b")
-         (External.to_string
-          input/39
-          classified/49
+         (External.classify (string) input/39 classified/49
           (ok (props/0.%{"trim_b"} <- (Data.string classified/49)))
           (error (is_error/0 := true)))
-         (if
-          (deref is_error/0)
+         (if (deref is_error/0)
           (then (raise (((decode_error/0 @@ "string") @@ stack/0) @@ input/39))))
          (stack_drop stack/0))
         (else (stack_push missing_keys/0 "trim_b")))
-       (if
-        (External.Assoc.mem classified/0 "trim_c")
+       (if (External.Assoc.mem classified/0 "trim_c")
         (then
          (let$ input/40 = (External.Assoc.find classified/0 "trim_c"))
          (stack_push stack/0 "trim_c")
-         (External.to_string
-          input/40
-          classified/50
+         (External.classify (string) input/40 classified/50
           (ok (props/0.%{"trim_c"} <- (Data.string classified/50)))
           (error (is_error/0 := true)))
-         (if
-          (deref is_error/0)
+         (if (deref is_error/0)
           (then (raise (((decode_error/0 @@ "string") @@ stack/0) @@ input/40))))
          (stack_drop stack/0))
         (else (stack_push missing_keys/0 "trim_c")))
-       (if
-        (External.Assoc.mem classified/0 "trim_d")
+       (if (External.Assoc.mem classified/0 "trim_d")
         (then
          (let$ input/41 = (External.Assoc.find classified/0 "trim_d"))
          (stack_push stack/0 "trim_d")
-         (External.to_string
-          input/41
-          classified/51
+         (External.classify (string) input/41 classified/51
           (ok (props/0.%{"trim_d"} <- (Data.string classified/51)))
           (error (is_error/0 := true)))
-         (if
-          (deref is_error/0)
+         (if (deref is_error/0)
           (then (raise (((decode_error/0 @@ "string") @@ stack/0) @@ input/41))))
          (stack_drop stack/0))
         (else (stack_push missing_keys/0 "trim_d")))
-       (if
-        (External.Assoc.mem classified/0 "trim_e")
+       (if (External.Assoc.mem classified/0 "trim_e")
         (then
          (let$ input/42 = (External.Assoc.find classified/0 "trim_e"))
          (stack_push stack/0 "trim_e")
-         (External.to_string
-          input/42
-          classified/52
+         (External.classify (string) input/42 classified/52
           (ok (props/0.%{"trim_e"} <- (Data.string classified/52)))
           (error (is_error/0 := true)))
-         (if
-          (deref is_error/0)
+         (if (deref is_error/0)
           (then (raise (((decode_error/0 @@ "string") @@ stack/0) @@ input/42))))
          (stack_drop stack/0))
         (else (stack_push missing_keys/0 "trim_e")))
-       (if
-        (External.Assoc.mem classified/0 "trim_f")
+       (if (External.Assoc.mem classified/0 "trim_f")
         (then
          (let$ input/43 = (External.Assoc.find classified/0 "trim_f"))
          (stack_push stack/0 "trim_f")
-         (External.to_string
-          input/43
-          classified/53
+         (External.classify (string) input/43 classified/53
           (ok (props/0.%{"trim_f"} <- (Data.string classified/53)))
           (error (is_error/0 := true)))
-         (if
-          (deref is_error/0)
+         (if (deref is_error/0)
           (then (raise (((decode_error/0 @@ "string") @@ stack/0) @@ input/43))))
          (stack_drop stack/0))
         (else (stack_push missing_keys/0 "trim_f")))
-       (if
-        (External.Assoc.mem classified/0 "trim_g")
+       (if (External.Assoc.mem classified/0 "trim_g")
         (then
          (let$ input/44 = (External.Assoc.find classified/0 "trim_g"))
          (stack_push stack/0 "trim_g")
-         (External.to_string
-          input/44
-          classified/54
+         (External.classify (string) input/44 classified/54
           (ok (props/0.%{"trim_g"} <- (Data.string classified/54)))
           (error (is_error/0 := true)))
-         (if
-          (deref is_error/0)
+         (if (deref is_error/0)
           (then (raise (((decode_error/0 @@ "string") @@ stack/0) @@ input/44))))
          (stack_drop stack/0))
         (else (stack_push missing_keys/0 "trim_g")))
-       (if
-        (External.Assoc.mem classified/0 "tuple")
+       (if (External.Assoc.mem classified/0 "tuple")
         (then
          (let$ input/45 = (External.Assoc.find classified/0 "tuple"))
          (stack_push stack/0 "tuple")
-         (External.to_linear
-          input/45
-          classified/55
+         (External.classify (linear) input/45 classified/55
           (ok
-           (if
-            (equal_int (External.Linear.length classified/55) 3)
+           (if (equal_int (External.Linear.length classified/55) 3)
             (then
              (let$ decoded/11 = (array_init 3 (Data.int 0)))
-             (External.Linear.iteri
-              classified/55
-              (key/5 value/5)
+             (External.Linear.iteri classified/55 key/5 value/5
               (stack_push stack/0 (int_to_string key/5))
-              (if
-               (equal_int key/5 0)
+              (if (equal_int key/5 0)
                (then
-                (External.to_int
-                 value/5
-                 classified/56
+                (External.classify (int) value/5 classified/56
                  (ok (decoded/11.%(key/5) <- (Data.int classified/56)))
                  (error (is_error/0 := true)))
-                (if
-                 (deref is_error/0)
+                (if (deref is_error/0)
                  (then
                   (raise (((decode_error/0 @@ "int") @@ stack/0) @@ value/5)))))
                (else
-                (if
-                 (equal_int key/5 1)
+                (if (equal_int key/5 1)
                  (then
-                  (External.to_float
-                   value/5
-                   classified/63
+                  (External.classify (float) value/5 classified/63
                    (ok (decoded/11.%(key/5) <- (Data.float classified/63)))
                    (error
-                    (External.to_int
-                     value/5
-                     classified/64
+                    (External.classify (int) value/5 classified/64
                      (ok
-                      (decoded/11
-                       .%(key/5)
-                       <-
+                      (decoded/11.%(key/5) <-
                        (Data.float (int_to_float classified/64))))
                      (error (is_error/0 := true)))))
-                  (if
-                   (deref is_error/0)
+                  (if (deref is_error/0)
                    (then
                     (raise
                      (((decode_error/0 @@ "float") @@ stack/0) @@ value/5)))))
                  (else
-                  (if
-                   (equal_int key/5 2)
+                  (if (equal_int key/5 2)
                    (then
-                    (External.to_string
-                     value/5
-                     classified/65
+                    (External.classify (string) value/5 classified/65
                      (ok (decoded/11.%(key/5) <- (Data.string classified/65)))
                      (error (is_error/0 := true)))
-                    (if
-                     (deref is_error/0)
+                    (if (deref is_error/0)
                      (then
                       (raise
                        (((decode_error/0 @@ "string") @@ stack/0) @@ value/5)))))
@@ -2096,16 +1780,14 @@ Print the runtime instructions
               (stack_drop stack/0)))
             (else (is_error/0 := true))))
           (error (is_error/0 := true)))
-         (if
-          (deref is_error/0)
+         (if (deref is_error/0)
           (then
            (raise
             (((decode_error/0 @@ "(int, float, string)") @@ stack/0)
              @@ input/45))))
          (stack_drop stack/0))
         (else (stack_push missing_keys/0 "tuple")))
-       (if
-        (not (stack_is_empty missing_keys/0))
+       (if (not (stack_is_empty missing_keys/0))
         (then
          (raise
           (((key_error/0
@@ -2120,90 +1802,71 @@ Print the runtime instructions
          @@ arg/8))))
      (let$ buffer/2 = (buffer_create))
      (buffer_add_string buffer/2 "Echoes\n")
-     (buffer_add_string
-      buffer/2
+     (buffer_add_string buffer/2
       (acutis_escape/0 @@ (Data.to_string (props/0.%{"ech_a"}))))
      (buffer_add_string buffer/2 " ")
-     (buffer_add_string
-      buffer/2
+     (buffer_add_string buffer/2
       (acutis_escape/0 @@ (Data.to_string (Data.string "b"))))
      (buffer_add_string buffer/2 " ")
-     (if
-      (not (Data.equal (props/0.%{"ech_d"}) (Data.int 0)))
+     (if (not (Data.equal (props/0.%{"ech_d"}) (Data.int 0)))
       (then
-       (buffer_add_string
-        buffer/2
+       (buffer_add_string buffer/2
         (Data.to_string ((Data.to_array (props/0.%{"ech_d"})).%(0)))))
       (else
-       (if
-        (not (Data.equal (props/0.%{"ech_e"}) (Data.int 0)))
+       (if (not (Data.equal (props/0.%{"ech_e"}) (Data.int 0)))
         (then
-         (buffer_add_string
-          buffer/2
+         (buffer_add_string buffer/2
           (Data.to_string ((Data.to_array (props/0.%{"ech_e"})).%(0)))))
         (else
          (buffer_add_string buffer/2 (Data.to_string (Data.string "f\"g")))))))
      (buffer_add_string buffer/2 "\n")
-     (buffer_add_string
-      buffer/2
+     (buffer_add_string buffer/2
       (acutis_escape/0 @@ (int_to_string (Data.to_int (props/0.%{"ech_i"})))))
      (buffer_add_string buffer/2 " ")
-     (buffer_add_string
-      buffer/2
+     (buffer_add_string buffer/2
       (acutis_escape/0
        @@ (float_to_string (Data.to_float (props/0.%{"ech_f"})))))
      (buffer_add_string buffer/2 " ")
-     (buffer_add_string
-      buffer/2
+     (buffer_add_string buffer/2
       (acutis_escape/0 @@ (bool_to_string (Data.to_int (props/0.%{"ech_b"})))))
      (buffer_add_string buffer/2 "\n\nNumbers\n")
      (let$ arg_match/0 = [(props/0.%{"numbers"})])
      (let$ props/1 = (hashtbl_copy props/0 ))
      (let& exit/0 = -1)
-     (let$ arg/9 = (arg_match/0.%(0)))
-     (let$ arg/10 = ((Data.to_hashtbl arg/9).%{"exp1"}))
-     (if
-      (Data.equal arg/10 (Data.float 150))
+     (let$ match_arg/0 = (arg_match/0.%(0)))
+     (let$ match_arg/1 = ((Data.to_hashtbl match_arg/0).%{"exp1"}))
+     (if (Data.equal match_arg/1 (Data.float 150))
       (then
-       (let$ arg/11 = ((Data.to_hashtbl arg/9).%{"exp2"}))
-       (if
-        (Data.equal arg/11 (Data.float -1000))
+       (let$ match_arg/2 = ((Data.to_hashtbl match_arg/0).%{"exp2"}))
+       (if (Data.equal match_arg/2 (Data.float -1000))
         (then
-         (let$ arg/12 = ((Data.to_hashtbl arg/9).%{"exp3"}))
-         (if
-          (Data.equal arg/12 (Data.float 0.2))
+         (let$ match_arg/3 = ((Data.to_hashtbl match_arg/0).%{"exp3"}))
+         (if (Data.equal match_arg/3 (Data.float 0.2))
           (then
-           (let$ arg/13 = ((Data.to_hashtbl arg/9).%{"frac"}))
-           (if
-            (Data.equal arg/13 (Data.float 10.55))
+           (let$ match_arg/4 = ((Data.to_hashtbl match_arg/0).%{"frac"}))
+           (if (Data.equal match_arg/4 (Data.float 10.55))
             (then
-             (let$ arg/14 = ((Data.to_hashtbl arg/9).%{"int"}))
-             (if
-              (Data.equal arg/14 (Data.int 1000))
+             (let$ match_arg/5 = ((Data.to_hashtbl match_arg/0).%{"int"}))
+             (if (Data.equal match_arg/5 (Data.int 1000))
               (then
-               (let$ arg/15 = ((Data.to_hashtbl arg/9).%{"negfrac"}))
-               (if
-                (Data.equal arg/15 (Data.float -12.34))
+               (let$ match_arg/6 = ((Data.to_hashtbl match_arg/0).%{"negfrac"}))
+               (if (Data.equal match_arg/6 (Data.float -12.34))
                 (then
-                 (let$ arg/16 = ((Data.to_hashtbl arg/9).%{"negint"}))
-                 (if
-                  (Data.equal arg/16 (Data.int -999))
-                  (then (exit/0 := 0) (unit)))))))))))))))
-     (if (equal_int (deref exit/0) -1) (then (exit/0 := 1) (unit)))
+                 (let$ match_arg/7 =
+                  ((Data.to_hashtbl match_arg/0).%{"negint"}))
+                 (if (Data.equal match_arg/7 (Data.int -999))
+                  (then (unit) (exit/0 := 0)))))))))))))))
+     (if (equal_int (deref exit/0) -1) (then (unit) (exit/0 := 1)))
      (if (equal_int (deref exit/0) 0) (then (unit)) (else (unit)))
      (buffer_add_string buffer/2 "\n\nTrim")
-     (buffer_add_string
-      buffer/2
+     (buffer_add_string buffer/2
       (acutis_escape/0 @@ (Data.to_string (props/0.%{"trim_a"}))))
-     (buffer_add_string
-      buffer/2
+     (buffer_add_string buffer/2
       (acutis_escape/0 @@ (Data.to_string (props/0.%{"trim_b"}))))
      (buffer_add_string buffer/2 " ")
-     (buffer_add_string
-      buffer/2
+     (buffer_add_string buffer/2
       (acutis_escape/0 @@ (Data.to_string (props/0.%{"trim_c"}))))
-     (buffer_add_string
-      buffer/2
+     (buffer_add_string buffer/2
       (acutis_escape/0 @@ (Data.to_string (props/0.%{"trim_d"}))))
      (buffer_add_string buffer/2 (Data.to_string (props/0.%{"trim_e"})))
      (buffer_add_string buffer/2 "\n")
@@ -2215,131 +1878,98 @@ Print the runtime instructions
      (let$ arg_match/1 = [(props/0.%{"match_a"})])
      (let$ props/2 = (hashtbl_copy props/0 ))
      (let& exit/1 = -1)
-     (let$ arg/17 = (arg_match/1.%(0)))
-     (if
-      (Data.equal arg/17 (Data.int 1))
-      (then (exit/1 := 0) (unit))
+     (let$ match_arg/8 = (arg_match/1.%(0)))
+     (if (Data.equal match_arg/8 (Data.int 1))
+      (then (unit) (exit/1 := 0))
       (else
-       (if
-        (Data.equal arg/17 (Data.int 2))
-        (then (exit/1 := 0) (unit))
+       (if (Data.equal match_arg/8 (Data.int 2))
+        (then (unit) (exit/1 := 0))
         (else
-         (if
-          (Data.equal arg/17 (Data.int 3))
-          (then (exit/1 := 1) (unit))
-          (else (exit/1 := 2) (unit)))))))
-     (if
-      (equal_int (deref exit/1) 0)
+         (if (Data.equal match_arg/8 (Data.int 3))
+          (then (unit) (exit/1 := 1))
+          (else (unit) (exit/1 := 2)))))))
+     (if (equal_int (deref exit/1) 0)
       (then (unit))
       (else
-       (if
-        (equal_int (deref exit/1) 1)
+       (if (equal_int (deref exit/1) 1)
         (then (buffer_add_string buffer/2 " "))
         (else (buffer_add_string buffer/2 " ")))))
      (buffer_add_string buffer/2 "\n\nNested match\n")
      (let$ arg_match/2 = [(props/0.%{"match_b"})])
      (let$ props/3 = (hashtbl_copy props/0 ))
      (let& exit/2 = -1)
-     (let$ arg/18 = (arg_match/2.%(0)))
+     (let$ match_arg/9 = (arg_match/2.%(0)))
+     (props/3.%{"c"} <- match_arg/9)
      (exit/2 := 0)
-     (props/3.%{"c"} <- arg/18)
      (buffer_add_string buffer/2 "\n  ")
      (let$ arg_match/3 = [(props/3.%{"d"}), (props/3.%{"e"})])
      (let$ props/4 = (hashtbl_copy props/3 ))
      (let& exit/3 = -1)
-     (let$ arg/19 = (arg_match/3.%(0)))
-     (let$ arg/20 = (arg_match/3.%(1)))
+     (let$ match_arg/10 = (arg_match/3.%(0)))
+     (let$ match_arg/11 = (arg_match/3.%(1)))
+     (props/4.%{"f"} <- match_arg/10)
+     (props/4.%{"g"} <- match_arg/11)
      (exit/3 := 0)
-     (props/4.%{"f"} <- arg/19)
-     (props/4.%{"g"} <- arg/20)
      (buffer_add_string buffer/2 " ")
-     (buffer_add_string
-      buffer/2
+     (buffer_add_string buffer/2
       (acutis_escape/0 @@ (Data.to_string (props/4.%{"c"}))))
      (buffer_add_string buffer/2 " ")
-     (buffer_add_string
-      buffer/2
+     (buffer_add_string buffer/2
       (acutis_escape/0 @@ (Data.to_string (props/4.%{"f"}))))
      (buffer_add_string buffer/2 " ")
-     (buffer_add_string
-      buffer/2
+     (buffer_add_string buffer/2
       (acutis_escape/0 @@ (Data.to_string (props/4.%{"g"}))))
      (buffer_add_string buffer/2 " ")
      (buffer_add_string buffer/2 "\n")
      (buffer_add_string buffer/2 "\n\nMap list\n")
      (let& index/0 = 0)
      (let& cell/0 = (props/0.%{"map_l"}))
-     (while
-      (not (Data.equal (deref cell/0) (Data.int 0)))
+     (while (not (Data.equal (deref cell/0) (Data.int 0)))
       ((let$ props/5 = (hashtbl_copy props/0 ))
        (let$ list/0 = (Data.to_array (deref cell/0)))
-       (let$ arg/21 = [(list/0.%(0)), (Data.int (deref index/0))])
+       (let$ head/0 = (list/0.%(0)))
        (let& exit/4 = -1)
-       (let$ arg/22 = (arg/21.%(0)))
-       (if
-        (Data.equal arg/22 (Data.int 1))
-        (then (let$ arg/23 = (arg/21.%(1))) (exit/4 := 0) (unit))
+       (if (Data.equal head/0 (Data.int 1))
+        (then (unit) (exit/4 := 0))
         (else
-         (if
-          (Data.equal arg/22 (Data.int 2))
-          (then (let$ arg/54 = (arg/21.%(1))) (exit/4 := 0) (unit))
+         (if (Data.equal head/0 (Data.int 2))
+          (then (unit) (exit/4 := 0))
           (else
-           (if
-            (Data.equal arg/22 (Data.int 3))
-            (then
-             (let$ arg/55 = (arg/21.%(1)))
-             (exit/4 := 1)
-             (props/5.%{"i"} <- arg/55))
-            (else (let$ arg/56 = (arg/21.%(1))) (exit/4 := 2) (unit)))))))
-       (if
-        (equal_int (deref exit/4) 0)
+           (if (Data.equal head/0 (Data.int 3))
+            (then (props/5.%{"i"} <- (Data.int (deref index/0))) (exit/4 := 1))
+            (else (unit) (exit/4 := 2)))))))
+       (if (equal_int (deref exit/4) 0)
         (then (unit))
         (else
-         (if
-          (equal_int (deref exit/4) 1)
+         (if (equal_int (deref exit/4) 1)
           (then
            (buffer_add_string buffer/2 " ")
-           (buffer_add_string
-            buffer/2
+           (buffer_add_string buffer/2
             (acutis_escape/0 @@ (int_to_string (Data.to_int (props/5.%{"i"})))))
            (buffer_add_string buffer/2 " "))
           (else (buffer_add_string buffer/2 " ")))))
        (incr index/0)
        (cell/0 := (list/0.%(1)))))
      (buffer_add_string buffer/2 "\n\nMap dict\n")
-     (let$ arg/24 = (props/0.%{"map_d"}))
-     (hashtbl_iter
-      (Data.to_hashtbl arg/24)
-      (key/6 value/6)
-      (let$ props/6 = (hashtbl_copy props/0 ))
-      (let$ arg/25 = [value/6, (Data.string key/6)])
-      (let& exit/5 = -1)
-      (let$ arg/26 = (arg/25.%(0)))
-      (if
-       (Data.equal arg/26 (Data.int 1))
-       (then (let$ arg/27 = (arg/25.%(1))) (exit/5 := 0) (unit))
+     (let$ match_arg/12 = (props/0.%{"map_d"}))
+     (hashtbl_iter (Data.to_hashtbl match_arg/12) key/6 value/6
+      (let$ props/6 = (hashtbl_copy props/0 )) (let& exit/5 = -1)
+      (if (Data.equal value/6 (Data.int 1))
+       (then (unit) (exit/5 := 0))
        (else
-        (if
-         (Data.equal arg/26 (Data.int 2))
-         (then (let$ arg/57 = (arg/25.%(1))) (exit/5 := 0) (unit))
+        (if (Data.equal value/6 (Data.int 2))
+         (then (unit) (exit/5 := 0))
          (else
-          (if
-           (Data.equal arg/26 (Data.int 3))
-           (then
-            (let$ arg/58 = (arg/25.%(1)))
-            (exit/5 := 1)
-            (props/6.%{"k"} <- arg/58))
-           (else (let$ arg/59 = (arg/25.%(1))) (exit/5 := 2) (unit)))))))
-      (if
-       (equal_int (deref exit/5) 0)
+          (if (Data.equal value/6 (Data.int 3))
+           (then (props/6.%{"k"} <- (Data.string key/6)) (exit/5 := 1))
+           (else (unit) (exit/5 := 2)))))))
+      (if (equal_int (deref exit/5) 0)
        (then (unit))
        (else
-        (if
-         (equal_int (deref exit/5) 1)
+        (if (equal_int (deref exit/5) 1)
          (then
           (buffer_add_string buffer/2 " ")
-          (buffer_add_string
-           buffer/2
+          (buffer_add_string buffer/2
            (acutis_escape/0 @@ (Data.to_string (props/6.%{"k"}))))
           (buffer_add_string buffer/2 " "))
          (else (buffer_add_string buffer/2 "\n"))))))
@@ -2352,295 +1982,252 @@ Print the runtime instructions
      (let$ arg_match/4 = [(props/0.%{"a_prop"})])
      (let$ props/7 = (hashtbl_copy props/0 ))
      (let& exit/6 = -1)
-     (let$ arg/28 = (arg_match/4.%(0)))
+     (let$ match_arg/13 = (arg_match/4.%(0)))
+     (props/7.%{"b_prop"} <- match_arg/13)
      (exit/6 := 0)
-     (props/7.%{"b_prop"} <- arg/28)
      (buffer_add_string buffer/4 " ")
-     (buffer_add_string
-      buffer/4
+     (buffer_add_string buffer/4
       (acutis_escape/0 @@ (Data.to_string (props/7.%{"b_prop"}))))
      (buffer_add_string buffer/4 " ")
      (blocks/0.%(1) <- (buffer_to_promise/0 @@ buffer/4))
      (let$ buffer/5 = (buffer_create))
      (unit)
      (blocks/0.%(2) <- (buffer_to_promise/0 @@ buffer/5))
-     (buffer_add_promise
-      buffer/2
-      (bind_array
-       blocks/0
-       (lambda
-        arg/29
+     (buffer_add_promise buffer/2
+      (bind_array blocks/0
+       (lambda arg/9
         ((let$ buffer/6 = (buffer_create))
-         (buffer_add_promise
-          buffer/6
+         (buffer_add_promise buffer/6
           ((components/0.%{"Component"})
            @@ (hashtbl
                [("a_prop", (props/0.%{"b_prop"})),
                 ("c_prop", (props/0.%{"c_prop"})),
                 ("d_prop", (props/0.%{"e_prop"})),
                 ("f_prop", (props/0.%{"f_prop"})),
-                ("g_prop", (Data.string (arg/29.%(0)))),
-                ("h_prop", (Data.string (arg/29.%(1)))),
-                ("i_prop", (Data.string (arg/29.%(2))))])))
-         (return (buffer_to_promise/0 @@ buffer/6))))
-       @]))
-      (buffer_add_string buffer/2 "\n\nComponent with implicit children\n")
-      (let$ blocks/1 = (array_init 1 (promise "")))
-      (let$ buffer/7 = (buffer_create))
-      (buffer_add_string buffer/7 " ")
-      (blocks/1.%(0) <- (buffer_to_promise/0 @@ buffer/7))
-      (buffer_add_promise
-       buffer/2
-       (bind_array
-        blocks/1
-        (lambda
-         arg/30
-         ((let$ buffer/8 = (buffer_create))
-          (buffer_add_promise
-           buffer/8
-           ((components/0.%{"Component2"})
-            @@ (hashtbl [("children", (Data.string (arg/30.%(0))))])))
-          (return (buffer_to_promise/0 @@ buffer/8))))
-        @]))
-       (buffer_add_string buffer/2 "\n\nPatterns\n\nTuple:\n")
-       (let$ arg_match/5 = [(props/0.%{"tuple"})])
-       (let$ props/8 = (hashtbl_copy props/0 ))
-       (let& exit/7 = -1)
-       (let$ arg/31 = (arg_match/5.%(0)))
-       (let$ arg/32 = ((Data.to_array arg/31).%(0)))
-       (if
-        (Data.equal arg/32 (Data.int 1))
+                ("g_prop", (Data.string (arg/9.%(0)))),
+                ("h_prop", (Data.string (arg/9.%(1)))),
+                ("i_prop", (Data.string (arg/9.%(2))))])))
+         (return (buffer_to_promise/0 @@ buffer/6))))))
+     (buffer_add_string buffer/2 "\n\nComponent with implicit children\n")
+     (let$ blocks/1 = (array_init 1 (promise "")))
+     (let$ buffer/7 = (buffer_create))
+     (buffer_add_string buffer/7 " ")
+     (blocks/1.%(0) <- (buffer_to_promise/0 @@ buffer/7))
+     (buffer_add_promise buffer/2
+      (bind_array blocks/1
+       (lambda arg/10
+        ((let$ buffer/8 = (buffer_create))
+         (buffer_add_promise buffer/8
+          ((components/0.%{"Component2"})
+           @@ (hashtbl [("children", (Data.string (arg/10.%(0))))])))
+         (return (buffer_to_promise/0 @@ buffer/8))))))
+     (buffer_add_string buffer/2 "\n\nPatterns\n\nTuple:\n")
+     (let$ arg_match/5 = [(props/0.%{"tuple"})])
+     (let$ props/8 = (hashtbl_copy props/0 ))
+     (let& exit/7 = -1)
+     (let$ match_arg/14 = (arg_match/5.%(0)))
+     (let$ match_arg/15 = ((Data.to_array match_arg/14).%(0)))
+     (if (Data.equal match_arg/15 (Data.int 1))
+      (then
+       (let$ match_arg/16 = ((Data.to_array match_arg/14).%(1)))
+       (if (Data.equal match_arg/16 (Data.float 2.5))
         (then
-         (let$ arg/33 = ((Data.to_array arg/31).%(1)))
-         (if
-          (Data.equal arg/33 (Data.float 2.5))
-          (then
-           (let$ arg/34 = ((Data.to_array arg/31).%(2)))
-           (if
-            (Data.equal arg/34 (Data.string "a"))
-            (then (exit/7 := 0) (unit)))))))
-       (if (equal_int (deref exit/7) -1) (then (exit/7 := 1) (unit)))
-       (if
-        (equal_int (deref exit/7) 0)
-        (then (buffer_add_string buffer/2 " "))
-        (else (buffer_add_string buffer/2 " ")))
-       (buffer_add_string buffer/2 "\n\nList:\n")
-       (let$ arg_match/6 = [(props/0.%{"list"})])
-       (let$ props/9 = (hashtbl_copy props/0 ))
-       (let& exit/8 = -1)
-       (let$ arg/35 = (arg_match/6.%(0)))
-       (if
-        (Data.equal arg/35 (Data.int 0))
-        (then (exit/8 := 0) (unit))
+         (let$ match_arg/17 = ((Data.to_array match_arg/14).%(2)))
+         (if (Data.equal match_arg/17 (Data.string "a"))
+          (then (unit) (exit/7 := 0)))))))
+     (if (equal_int (deref exit/7) -1) (then (unit) (exit/7 := 1)))
+     (if (equal_int (deref exit/7) 0)
+      (then (buffer_add_string buffer/2 " "))
+      (else (buffer_add_string buffer/2 " ")))
+     (buffer_add_string buffer/2 "\n\nList:\n")
+     (let$ arg_match/6 = [(props/0.%{"list"})])
+     (let$ props/9 = (hashtbl_copy props/0 ))
+     (let& exit/8 = -1)
+     (let$ match_arg/18 = (arg_match/6.%(0)))
+     (if (Data.equal match_arg/18 (Data.int 0))
+      (then (unit) (exit/8 := 0))
+      (else
+       (let$ match_arg/37 = (arg_match/6.%(0)))
+       (let$ match_arg/38 = ((Data.to_array match_arg/37).%(0)))
+       (if (Data.equal match_arg/38 (Data.int 0))
+        (then
+         (let$ match_arg/39 = ((Data.to_array match_arg/37).%(1)))
+         (props/9.%{"_tl"} <- match_arg/39)
+         (props/9.%{"_z"} <- match_arg/38)
+         (exit/8 := 2))
         (else
-         (let$ arg/60 = (arg_match/6.%(0)))
-         (let$ arg/61 = ((Data.to_array arg/60).%(0)))
-         (if
-          (Data.equal arg/61 (Data.int 0))
+         (let$ match_arg/40 = ((Data.to_array match_arg/37).%(0)))
+         (let$ match_arg/41 = ((Data.to_array match_arg/40).%(0)))
+         (let$ match_arg/42 = ((Data.to_array match_arg/37).%(1)))
+         (if (Data.equal match_arg/42 (Data.int 0))
           (then
-           (let$ arg/62 = ((Data.to_array arg/60).%(1)))
-           (exit/8 := 2)
-           (props/9.%{"_tl"} <- arg/62)
-           (props/9.%{"_z"} <- arg/61))
+           (props/9.%{"_tl"} <- match_arg/42)
+           (props/9.%{"_z"} <- match_arg/40)
+           (exit/8 := 2))
           (else
-           (let$ arg/63 = ((Data.to_array arg/60).%(0)))
-           (let$ arg/64 = ((Data.to_array arg/63).%(0)))
-           (let$ arg/65 = ((Data.to_array arg/60).%(1)))
-           (if
-            (Data.equal arg/65 (Data.int 0))
+           (let$ match_arg/44 = ((Data.to_array match_arg/37).%(1)))
+           (let$ match_arg/45 = ((Data.to_array match_arg/44).%(0)))
+           (if (Data.equal match_arg/45 (Data.int 0))
             (then
-             (exit/8 := 2)
-             (props/9.%{"_tl"} <- arg/65)
-             (props/9.%{"_z"} <- arg/63))
-            (else
-             (let$ arg/67 = ((Data.to_array arg/60).%(1)))
-             (let$ arg/68 = ((Data.to_array arg/67).%(0)))
-             (if
-              (Data.equal arg/68 (Data.int 0))
-              (then
-               (let$ arg/69 = ((Data.to_array arg/67).%(1)))
-               (if
-                (Data.equal arg/69 (Data.int 0))
-                (then (exit/8 := 1) (props/9.%{"a"} <- arg/64)))))
-             (if
-              (equal_int (deref exit/8) -1)
-              (then
-               (exit/8 := 2)
-               (props/9.%{"_tl"} <- arg/67)
-               (props/9.%{"_z"} <- arg/63)))))
-           (if
-            (equal_int (deref exit/8) -1)
+             (let$ match_arg/46 = ((Data.to_array match_arg/44).%(1)))
+             (if (Data.equal match_arg/46 (Data.int 0))
+              (then (props/9.%{"a"} <- match_arg/41) (exit/8 := 1)))))
+           (if (equal_int (deref exit/8) -1)
             (then
-             (let$ arg/66 = ((Data.to_array arg/60).%(1)))
-             (exit/8 := 2)
-             (props/9.%{"_tl"} <- arg/66)
-             (props/9.%{"_z"} <- arg/63)))))))
-       (if
-        (equal_int (deref exit/8) 0)
-        (then (buffer_add_string buffer/2 "\n"))
-        (else
-         (if
-          (equal_int (deref exit/8) 1)
+             (props/9.%{"_tl"} <- match_arg/44)
+             (props/9.%{"_z"} <- match_arg/40)
+             (exit/8 := 2)))))
+         (if (equal_int (deref exit/8) -1)
           (then
-           (buffer_add_string buffer/2 " ")
-           (buffer_add_string
-            buffer/2
-            (acutis_escape/0 @@ (Data.to_string (props/9.%{"a"}))))
-           (buffer_add_string buffer/2 "\n"))
-          (else (buffer_add_string buffer/2 "\n")))))
-       (buffer_add_string buffer/2 "\n\nRecord:\n")
-       (let$ arg_match/7 = [(props/0.%{"record"})])
-       (let$ props/10 = (hashtbl_copy props/0 ))
-       (let& exit/9 = -1)
-       (let$ arg/36 = (arg_match/7.%(0)))
-       (let$ arg/37 = ((Data.to_hashtbl arg/36).%{"!#%@"}))
-       (let$ arg/38 = ((Data.to_hashtbl arg/36).%{"a"}))
-       (exit/9 := 0)
-       (props/10.%{"a"} <- arg/38)
-       (props/10.%{"b"} <- arg/37)
-       (if (equal_int (deref exit/9) -1) (then (exit/9 := 1) (unit)))
-       (if
-        (equal_int (deref exit/9) 0)
+           (let$ match_arg/43 = ((Data.to_array match_arg/37).%(1)))
+           (props/9.%{"_tl"} <- match_arg/43)
+           (props/9.%{"_z"} <- match_arg/40)
+           (exit/8 := 2)))))))
+     (if (equal_int (deref exit/8) 0)
+      (then (buffer_add_string buffer/2 "\n"))
+      (else
+       (if (equal_int (deref exit/8) 1)
         (then
          (buffer_add_string buffer/2 " ")
-         (buffer_add_string
-          buffer/2
-          (acutis_escape/0 @@ (Data.to_string (props/10.%{"a"}))))
-         (buffer_add_string buffer/2 " ")
-         (buffer_add_string
-          buffer/2
-          (acutis_escape/0 @@ (Data.to_string (props/10.%{"b"}))))
-         (buffer_add_string buffer/2 " "))
-        (else (buffer_add_string buffer/2 " ")))
-       (buffer_add_string buffer/2 "\n\nEnum:\n")
-       (let$ arg_match/8 = [(props/0.%{"enums"})])
-       (let$ props/11 = (hashtbl_copy props/0 ))
-       (let& exit/10 = -1)
-       (let$ arg/39 = (arg_match/8.%(0)))
-       (let$ arg/40 = ((Data.to_array arg/39).%(0)))
-       (if
-        (Data.equal arg/40 (Data.string "a"))
+         (buffer_add_string buffer/2
+          (acutis_escape/0 @@ (Data.to_string (props/9.%{"a"}))))
+         (buffer_add_string buffer/2 "\n"))
+        (else (buffer_add_string buffer/2 "\n")))))
+     (buffer_add_string buffer/2 "\n\nRecord:\n")
+     (let$ arg_match/7 = [(props/0.%{"record"})])
+     (let$ props/10 = (hashtbl_copy props/0 ))
+     (let& exit/9 = -1)
+     (let$ match_arg/19 = (arg_match/7.%(0)))
+     (let$ match_arg/20 = ((Data.to_hashtbl match_arg/19).%{"!#%@"}))
+     (let$ match_arg/21 = ((Data.to_hashtbl match_arg/19).%{"a"}))
+     (props/10.%{"a"} <- match_arg/21)
+     (props/10.%{"b"} <- match_arg/20)
+     (exit/9 := 0)
+     (if (equal_int (deref exit/9) -1) (then (unit) (exit/9 := 1)))
+     (if (equal_int (deref exit/9) 0)
+      (then
+       (buffer_add_string buffer/2 " ")
+       (buffer_add_string buffer/2
+        (acutis_escape/0 @@ (Data.to_string (props/10.%{"a"}))))
+       (buffer_add_string buffer/2 " ")
+       (buffer_add_string buffer/2
+        (acutis_escape/0 @@ (Data.to_string (props/10.%{"b"}))))
+       (buffer_add_string buffer/2 " "))
+      (else (buffer_add_string buffer/2 " ")))
+     (buffer_add_string buffer/2 "\n\nEnum:\n")
+     (let$ arg_match/8 = [(props/0.%{"enums"})])
+     (let$ props/11 = (hashtbl_copy props/0 ))
+     (let& exit/10 = -1)
+     (let$ match_arg/22 = (arg_match/8.%(0)))
+     (let$ match_arg/23 = ((Data.to_array match_arg/22).%(0)))
+     (if (Data.equal match_arg/23 (Data.string "a"))
+      (then
+       (let$ match_arg/24 = ((Data.to_array match_arg/22).%(1)))
+       (if (Data.equal match_arg/24 (Data.int 1))
         (then
-         (let$ arg/41 = ((Data.to_array arg/39).%(1)))
-         (if
-          (Data.equal arg/41 (Data.int 1))
+         (let$ match_arg/25 = ((Data.to_array match_arg/22).%(2)))
+         (if (Data.equal match_arg/25 (Data.int 1))
           (then
-           (let$ arg/42 = ((Data.to_array arg/39).%(2)))
-           (if
-            (Data.equal arg/42 (Data.int 1))
-            (then
-             (let$ arg/43 = ((Data.to_array arg/39).%(3)))
-             (if (Data.equal arg/43 (Data.int 0)) (then (exit/10 := 0) (unit)))))))))
-       (if (equal_int (deref exit/10) -1) (then (exit/10 := 1) (unit)))
-       (if
-        (equal_int (deref exit/10) 0)
-        (then (buffer_add_string buffer/2 " "))
-        (else (buffer_add_string buffer/2 " ")))
-       (buffer_add_string buffer/2 "\n\nTagged union:\n")
-       (let$ arg_match/9 = [(props/0.%{"tagged"})])
-       (let$ props/12 = (hashtbl_copy props/0 ))
-       (let& exit/11 = -1)
-       (let$ arg/44 = (arg_match/9.%(0)))
-       (let$ arg/45 = ((Data.to_hashtbl arg/44).%{"tag"}))
-       (if
-        (Data.equal arg/45 (Data.int 0))
-        (then (exit/11 := 1) (unit))
-        (else
-         (if
-          (Data.equal arg/45 (Data.int 1))
-          (then
-           (let$ arg/70 = ((Data.to_hashtbl arg/44).%{"a"}))
-           (exit/11 := 0)
-           (props/12.%{"a"} <- arg/70)))))
-       (if
-        (equal_int (deref exit/11) 0)
+           (let$ match_arg/26 = ((Data.to_array match_arg/22).%(3)))
+           (if (Data.equal match_arg/26 (Data.int 0))
+            (then (unit) (exit/10 := 0)))))))))
+     (if (equal_int (deref exit/10) -1) (then (unit) (exit/10 := 1)))
+     (if (equal_int (deref exit/10) 0)
+      (then (buffer_add_string buffer/2 " "))
+      (else (buffer_add_string buffer/2 " ")))
+     (buffer_add_string buffer/2 "\n\nTagged union:\n")
+     (let$ arg_match/9 = [(props/0.%{"tagged"})])
+     (let$ props/12 = (hashtbl_copy props/0 ))
+     (let& exit/11 = -1)
+     (let$ match_arg/27 = (arg_match/9.%(0)))
+     (let$ match_arg/28 = ((Data.to_hashtbl match_arg/27).%{"tag"}))
+     (if (Data.equal match_arg/28 (Data.int 0))
+      (then (unit) (exit/11 := 1))
+      (else
+       (if (Data.equal match_arg/28 (Data.int 1))
         (then
-         (buffer_add_string buffer/2 " ")
-         (buffer_add_string
-          buffer/2
-          (acutis_escape/0 @@ (Data.to_string (props/12.%{"a"}))))
-         (buffer_add_string buffer/2 " "))
-        (else (buffer_add_string buffer/2 "\n")))
-       (buffer_add_string buffer/2 "\n\nDictionary:\n")
-       (let$ arg_match/10 = [(props/0.%{"dict"})])
-       (let$ props/13 = (hashtbl_copy props/0 ))
-       (let& exit/12 = -1)
-       (let$ arg/46 = (arg_match/10.%(0)))
-       (if
-        (hashtbl_mem (Data.to_hashtbl arg/46) "a")
+         (let$ match_arg/47 = ((Data.to_hashtbl match_arg/27).%{"a"}))
+         (props/12.%{"a"} <- match_arg/47)
+         (exit/11 := 0)))))
+     (if (equal_int (deref exit/11) 0)
+      (then
+       (buffer_add_string buffer/2 " ")
+       (buffer_add_string buffer/2
+        (acutis_escape/0 @@ (Data.to_string (props/12.%{"a"}))))
+       (buffer_add_string buffer/2 " "))
+      (else (buffer_add_string buffer/2 "\n")))
+     (buffer_add_string buffer/2 "\n\nDictionary:\n")
+     (let$ arg_match/10 = [(props/0.%{"dict"})])
+     (let$ props/13 = (hashtbl_copy props/0 ))
+     (let& exit/12 = -1)
+     (let$ match_arg/29 = (arg_match/10.%(0)))
+     (if (hashtbl_mem (Data.to_hashtbl match_arg/29) "a")
+      (then
+       (let$ match_arg/30 = ((Data.to_hashtbl match_arg/29).%{"a"}))
+       (if (Data.equal match_arg/30 (Data.int 1))
         (then
-         (let$ arg/47 = ((Data.to_hashtbl arg/46).%{"a"}))
-         (if
-          (Data.equal arg/47 (Data.int 1))
+         (if (hashtbl_mem (Data.to_hashtbl match_arg/29) "b")
           (then
-           (if
-            (hashtbl_mem (Data.to_hashtbl arg/46) "b")
-            (then
-             (let$ arg/48 = ((Data.to_hashtbl arg/46).%{"b"}))
-             (if (Data.equal arg/48 (Data.int 2)) (then (exit/12 := 0) (unit)))))))))
-       (if (equal_int (deref exit/12) -1) (then (exit/12 := 1) (unit)))
-       (if
-        (equal_int (deref exit/12) 0)
-        (then (buffer_add_string buffer/2 " "))
-        (else (buffer_add_string buffer/2 " ")))
-       (buffer_add_string buffer/2 "\n\n! and . precedence works correctly\n")
-       (let$ arg_match/11 =
+           (let$ match_arg/31 = ((Data.to_hashtbl match_arg/29).%{"b"}))
+           (if (Data.equal match_arg/31 (Data.int 2))
+            (then (unit) (exit/12 := 0)))))))))
+     (if (equal_int (deref exit/12) -1) (then (unit) (exit/12 := 1)))
+     (if (equal_int (deref exit/12) 0)
+      (then (buffer_add_string buffer/2 " "))
+      (else (buffer_add_string buffer/2 " ")))
+     (buffer_add_string buffer/2 "\n\n! and . precedence works correctly\n")
+     (let$ arg_match/11 =
+      [(Data.array
         [(Data.array
-          [(Data.array
-            [((Data.to_hashtbl ((Data.to_hashtbl (props/0.%{"a"})).%{"b"}))
-              .%{"c"})])])])
-       (let$ props/14 = (hashtbl_copy props/0 ))
-       (let& exit/13 = -1)
-       (let$ arg/49 = (arg_match/11.%(0)))
-       (if
-        (Data.equal arg/49 (Data.int 0))
-        (then (exit/13 := 1) (unit))
-        (else
-         (let$ arg/71 = (arg_match/11.%(0)))
-         (let$ arg/72 = ((Data.to_array arg/71).%(0)))
-         (if
-          (not (Data.equal arg/72 (Data.int 0)))
-          (then
-           (let$ arg/73 = ((Data.to_array arg/71).%(0)))
-           (let$ arg/74 = ((Data.to_array arg/73).%(0)))
-           (if (Data.equal arg/74 (Data.int 0)) (then (exit/13 := 0) (unit)))))
-         (if (equal_int (deref exit/13) -1) (then (exit/13 := 1) (unit)))))
-       (if (equal_int (deref exit/13) 0) (then (unit)) (else (unit)))
-       (buffer_add_string
-        buffer/2
-        "\n\nOther syntax features\n\nPatterns with }} parse correctly:\n")
-       (let$ arg_match/12 = [(props/0.%{"a"})])
-       (let$ props/15 = (hashtbl_copy props/0 ))
-       (let& exit/14 = -1)
-       (let$ arg/50 = (arg_match/12.%(0)))
-       (let$ arg/51 = ((Data.to_hashtbl arg/50).%{"a"}))
-       (let$ arg/52 = ((Data.to_hashtbl arg/51).%{"b"}))
-       (exit/14 := 0)
-       (props/15.%{"b"} <- arg/52)
-       (buffer_add_string buffer/2 " ")
-       (buffer_add_string
-        buffer/2
-        (acutis_escape/0 @@ (Data.to_string (props/15.%{"b"}))))
-       (buffer_add_string buffer/2 " ")
-       (buffer_add_string buffer/2 "\n\nTrailing commas parse correctly:\n")
-       (let$ arg_match/13 =
-        [(Data.hashtbl
-          (hashtbl
-           [("a",
-             (Data.array
-              [(Data.int 1), (Data.array [(Data.int 2), (Data.int 0)])])),
-            ("b", (Data.array [(Data.int 3), (Data.int 4)])),
-            ("c", (Data.hashtbl (hashtbl [("k", (Data.int 5))])))]))])
-       (let$ props/16 = (hashtbl_copy props/0 ))
-       (let& exit/15 = -1)
-       (let$ arg/53 = (arg_match/13.%(0)))
-       (exit/15 := 0)
-       (unit)
-       (buffer_add_string buffer/2 " ")
-       (buffer_add_string buffer/2 "\n\nStrings may contain line breaks:\n")
-       (buffer_add_string
-        buffer/2
-        (acutis_escape/0 @@ (Data.to_string (Data.string "a\nb"))))
-       (buffer_add_string buffer/2 "\n")
-       (return (buffer_to_promise/0 @@ buffer/2))))
-     )
+          [((Data.to_hashtbl ((Data.to_hashtbl (props/0.%{"a"})).%{"b"}))
+            .%{"c"})])])])
+     (let$ props/14 = (hashtbl_copy props/0 ))
+     (let& exit/13 = -1)
+     (let$ match_arg/32 = (arg_match/11.%(0)))
+     (if (Data.equal match_arg/32 (Data.int 0))
+      (then (unit) (exit/13 := 1))
+      (else
+       (let$ match_arg/48 = (arg_match/11.%(0)))
+       (let$ match_arg/49 = ((Data.to_array match_arg/48).%(0)))
+       (if (not (Data.equal match_arg/49 (Data.int 0)))
+        (then
+         (let$ match_arg/50 = ((Data.to_array match_arg/48).%(0)))
+         (let$ match_arg/51 = ((Data.to_array match_arg/50).%(0)))
+         (if (Data.equal match_arg/51 (Data.int 0))
+          (then (unit) (exit/13 := 0)))))
+       (if (equal_int (deref exit/13) -1) (then (unit) (exit/13 := 1)))))
+     (if (equal_int (deref exit/13) 0) (then (unit)) (else (unit)))
+     (buffer_add_string buffer/2
+      "\n\nOther syntax features\n\nPatterns with }} parse correctly:\n")
+     (let$ arg_match/12 = [(props/0.%{"a"})])
+     (let$ props/15 = (hashtbl_copy props/0 ))
+     (let& exit/14 = -1)
+     (let$ match_arg/33 = (arg_match/12.%(0)))
+     (let$ match_arg/34 = ((Data.to_hashtbl match_arg/33).%{"a"}))
+     (let$ match_arg/35 = ((Data.to_hashtbl match_arg/34).%{"b"}))
+     (props/15.%{"b"} <- match_arg/35)
+     (exit/14 := 0)
+     (buffer_add_string buffer/2 " ")
+     (buffer_add_string buffer/2
+      (acutis_escape/0 @@ (Data.to_string (props/15.%{"b"}))))
+     (buffer_add_string buffer/2 " ")
+     (buffer_add_string buffer/2 "\n\nTrailing commas parse correctly:\n")
+     (let$ arg_match/13 =
+      [(Data.hashtbl
+        (hashtbl
+         [("a",
+           (Data.array
+            [(Data.int 1), (Data.array [(Data.int 2), (Data.int 0)])])),
+          ("b", (Data.array [(Data.int 3), (Data.int 4)])),
+          ("c", (Data.hashtbl (hashtbl [("k", (Data.int 5))])))]))])
+     (let$ props/16 = (hashtbl_copy props/0 ))
+     (let& exit/15 = -1)
+     (let$ match_arg/36 = (arg_match/13.%(0)))
+     (unit)
+     (exit/15 := 0)
+     (buffer_add_string buffer/2 " ")
+     (buffer_add_string buffer/2 "\n\nStrings may contain line breaks:\n")
+     (buffer_add_string buffer/2
+      (acutis_escape/0 @@ (Data.to_string (Data.string "a\nb"))))
+     (buffer_add_string buffer/2 "\n")
+     (return (buffer_to_promise/0 @@ buffer/2)))))

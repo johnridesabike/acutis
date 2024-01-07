@@ -413,38 +413,35 @@ export default (arg$0) => {
   let cell$0 = props$0.get("blogPosts");
   while (!(cell$0 === 0)) {
     let props$1 = new Map(props$0);
-    let list$0 = cell$0;
-    let arg$1 = [list$0[0], index$0];
+    let head$0 = cell$0[0];
     let exit$0 = -1;
-    let arg$2 = arg$1[0];
-    let arg$3 = arg$2.get("author");
-    let arg$4 = arg$3.get("name");
-    let arg$5 = arg$2.get("content");
-    let arg$6 = arg$2.get("date");
-    let arg$7 = arg$2.get("image");
-    let arg$8 = arg$2.get("title");
-    let arg$9 = arg$1[1];
+    let match_arg$0 = head$0.get("author");
+    let match_arg$1 = match_arg$0.get("name");
+    let match_arg$2 = head$0.get("content");
+    let match_arg$3 = head$0.get("date");
+    let match_arg$4 = head$0.get("image");
+    let match_arg$5 = head$0.get("title");
+    props$1.set("content", match_arg$2);
+    props$1.set("date", match_arg$3);
+    props$1.set("image", match_arg$4);
+    props$1.set("name", match_arg$1);
+    props$1.set("title", match_arg$5);
     exit$0 = 0;
-    props$1.set("content", arg$5);
-    props$1.set("date", arg$6);
-    props$1.set("image", arg$7);
-    props$1.set("name", arg$4);
-    props$1.set("title", arg$8);
     buffer$0.push("\n  <article class=\"h-entry\">\n    <header>\n      ");
     let arg_match$0 = [props$1.get("image")];
     let props$2 = new Map(props$1);
     let exit$1 = -1;
-    let arg$10 = arg_match$0[0];
-    if (arg$10 === 0) {
+    let match_arg$6 = arg_match$0[0];
+    if (match_arg$6 === 0) {
       exit$1 = 0;
     } else {
-      let arg$11 = arg_match$0[0];
-      let arg$12 = arg$11[0];
-      let arg$13 = arg$12.get("alt");
-      let arg$14 = arg$12.get("src");
+      let match_arg$7 = arg_match$0[0];
+      let match_arg$8 = match_arg$7[0];
+      let match_arg$9 = match_arg$8.get("alt");
+      let match_arg$10 = match_arg$8.get("src");
+      props$2.set("alt", match_arg$9);
+      props$2.set("src", match_arg$10);
       exit$1 = 1;
-      props$2.set("alt", arg$13);
-      props$2.set("src", arg$14);
     }
     if (!(exit$1 === 0)) {
       buffer$0.push("<img src=\"");
@@ -467,7 +464,7 @@ export default (arg$0) => {
     buffer$0.push(props$1.get("content"));
     buffer$0.push(" </div>\n  </article>\n");
     index$0++;
-    cell$0 = list$0[1];
+    cell$0 = cell$0[1];
   }
   buffer$0.push("\n");
   return (buffer_to_promise$0(buffer$0));
