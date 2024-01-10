@@ -1808,15 +1808,17 @@ Print the runtime instructions
      (buffer_add_string buffer/2
       (acutis_escape/0 @@ (Data.to_string (Data.string "b"))))
      (buffer_add_string buffer/2 " ")
-     (if (not (Data.equal (props/0.%{"ech_d"}) (Data.int 0)))
+     (let$ nullable/0 = (props/0.%{"ech_d"}))
+     (if (not (Data.equal nullable/0 (Data.int 0)))
       (then
        (buffer_add_string buffer/2
-        (Data.to_string ((Data.to_array (props/0.%{"ech_d"})).%(0)))))
+        (Data.to_string ((Data.to_array nullable/0).%(0)))))
       (else
-       (if (not (Data.equal (props/0.%{"ech_e"}) (Data.int 0)))
+       (let$ nullable/1 = (props/0.%{"ech_e"}))
+       (if (not (Data.equal nullable/1 (Data.int 0)))
         (then
          (buffer_add_string buffer/2
-          (Data.to_string ((Data.to_array (props/0.%{"ech_e"})).%(0)))))
+          (Data.to_string ((Data.to_array nullable/1).%(0)))))
         (else
          (buffer_add_string buffer/2 (Data.to_string (Data.string "f\"g")))))))
      (buffer_add_string buffer/2 "\n")

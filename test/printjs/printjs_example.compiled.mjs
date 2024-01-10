@@ -453,8 +453,9 @@ export default (arg$0) => {
     buffer$0.push("<h2 class=\"p-name\"> ");
     buffer$0.push(acutis_escape$0(props$1.get("title")));
     buffer$0.push(" </h2>\n      <span class=\"p-author\"> By ");
-    if (!(props$1.get("name") === 0)) {
-      buffer$0.push(acutis_escape$0(props$1.get("name")[0]));
+    let nullable$0 = props$1.get("name");
+    if (!(nullable$0 === 0)) {
+      buffer$0.push(acutis_escape$0(nullable$0[0]));
     } else {
       buffer$0.push(acutis_escape$0("Anonymous"));
     }

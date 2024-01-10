@@ -327,8 +327,9 @@
     "Component",
     (arg$0) => {
       let buffer$0 = [];
-      if (!(arg$0.get("optional") === 0)) {
-        buffer$0.push(acutis_escape$0(arg$0.get("optional")[0].toString()));
+      let nullable$0 = arg$0.get("optional");
+      if (!(nullable$0 === 0)) {
+        buffer$0.push(acutis_escape$0(nullable$0[0].toString()));
       } else {
         buffer$0.push(acutis_escape$0(arg$0.get("children")));
       }
@@ -1449,19 +1450,21 @@
     buffer$0.push("\nNot escaped ");
     buffer$0.push(props$0.get("dangerous"));
     buffer$0.push("\n\nNullable echo chaining\n----------------------\n\n");
-    if (!(props$0.get("null_int") === 0)) {
-      buffer$0.push(acutis_escape$0(props$0.get("null_int")[0].toString()));
+    let nullable$0 = props$0.get("null_int");
+    if (!(nullable$0 === 0)) {
+      buffer$0.push(acutis_escape$0(nullable$0[0].toString()));
     } else {
-      if (!(props$0.get("null_float") === 0)) {
-        buffer$0.push(acutis_escape$0(props$0.get("null_float")[0].toString()));
+      let nullable$1 = props$0.get("null_float");
+      if (!(nullable$1 === 0)) {
+        buffer$0.push(acutis_escape$0(nullable$1[0].toString()));
       } else {
-        if (!(props$0.get("null_bool") === 0)) {
-          buffer$0.push(
-            acutis_escape$0(props$0.get("null_bool")[0] ? "true" : "false")
-          );
+        let nullable$2 = props$0.get("null_bool");
+        if (!(nullable$2 === 0)) {
+          buffer$0.push(acutis_escape$0(nullable$2[0] ? "true" : "false"));
         } else {
-          if (!(props$0.get("null_string") === 0)) {
-            buffer$0.push(acutis_escape$0(props$0.get("null_string")[0]));
+          let nullable$3 = props$0.get("null_string");
+          if (!(nullable$3 === 0)) {
+            buffer$0.push(acutis_escape$0(nullable$3[0]));
           } else {
             buffer$0.push(acutis_escape$0("pass"));
           }
@@ -1814,8 +1817,9 @@
       Array.from({length: 2}, (arg$1) => { return (Promise.resolve("")); });
     let buffer$1 = [];
     buffer$1.push(" Nested block ");
-    if (!(props$0.get("null_string") === 0)) {
-      buffer$1.push(acutis_escape$0(props$0.get("null_string")[0]));
+    let nullable$1 = props$0.get("null_string");
+    if (!(nullable$1 === 0)) {
+      buffer$1.push(acutis_escape$0(nullable$1[0]));
     } else {
       buffer$1.push(acutis_escape$0("pass"));
     }

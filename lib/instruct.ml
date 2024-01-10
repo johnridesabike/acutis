@@ -312,9 +312,9 @@ end = struct
   let rec echoes runtime buf props esc default default_fmt = function
     | [] -> fmt runtime buf esc (echo props default) default_fmt
     | (f, e) :: tl ->
-        let e = echo props e in
-        if_ (is_not_nil e)
-          ~then_:(fun () -> fmt runtime buf esc (get_nullable e) f)
+        let$ nullable = ("nullable", echo props e) in
+        if_ (is_not_nil nullable)
+          ~then_:(fun () -> fmt runtime buf esc (get_nullable nullable) f)
           ~else_:
             (Some
                (fun () -> echoes runtime buf props esc default default_fmt tl))
