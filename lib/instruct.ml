@@ -583,29 +583,29 @@ end = struct
     is_error : bool mut;
     missing_keys : string stack exp;
     stack : string stack exp;
-    decode_error : (string -> string stack -> external_data -> error) exp;
-    key_error : (string -> string stack -> string stack -> error) exp;
+    decode_error : (string -> external_data -> error) exp;
+    key_error : (string -> error) exp;
   }
 
   let decode_error_aux =
     let b = Buffer.create 64 in
     let ppf = Format.formatter_of_buffer b in
-    fun { stack; decode_error; _ } ty input ->
+    fun { decode_error; _ } ty input ->
       T.pp ppf ty;
       Format.pp_print_flush ppf ();
       let s = Buffer.contents b in
       Buffer.clear b;
-      ((decode_error @@ string s) @@ stack) @@ input
+      (decode_error @@ string s) @@ input
 
   let error_key_aux =
     let b = Buffer.create 64 in
     let ppf = Format.formatter_of_buffer b in
-    fun { stack; key_error; missing_keys; _ } ty ->
+    fun { key_error; _ } ty ->
       T.pp ppf ty;
       Format.pp_print_flush ppf ();
       let s = Buffer.contents b in
       Buffer.clear b;
-      ((key_error @@ string s) @@ missing_keys) @@ stack
+      key_error @@ string s
 
   let set_error x = x.is_error := bool true
 
@@ -1070,42 +1070,6 @@ end = struct
         compiled.C.components ([], [])
     in
     let$ escape = ("acutis_escape", escape) in
-    let$ decode_error =
-      ( "decode_error",
-        lambda (fun ty ->
-            return
-              (lambda (fun stack ->
-                   return
-                     (lambda (fun input ->
-                          return
-                            (error
-                               (array_concat
-                                  (array
-                                     (Error.decode ~fname:compiled.name
-                                        ~stack:
-                                          (stack_concat stack (string " <- "))
-                                        ~ty ~input:(External.show input) string))
-                                  (string "")))))))) )
-    in
-    let$ key_error =
-      ( "key_error",
-        lambda (fun ty ->
-            return
-              (lambda (fun keys ->
-                   return
-                     (lambda (fun stack ->
-                          return
-                            (error
-                               (array_concat
-                                  (array
-                                     (Error.missing_keys ~fname:compiled.name
-                                        ~stack:
-                                          (stack_concat stack (string " <- "))
-                                        ~ty
-                                        ~keys:(stack_concat keys (string ", "))
-                                        string))
-                                  (string "")))))))) )
-    in
     let$ buffer_to_promise = ("buffer_to_promise", buffer_to_promise) in
     let$ comps = ("components", hashtbl_create ()) in
     let runtime = { escape; comps; buffer_to_promise } in
@@ -1137,13 +1101,44 @@ end = struct
     let s3 =
       export
         (lambda (fun input ->
-             let$ props = ("props", hashtbl_create ()) in
              let$ stack = ("stack", stack_create ()) in
              let& is_error = ("is_error", bool false) in
              let$ missing_keys = ("missing_keys", stack_create ()) in
+             let$ decode_error =
+               ( "decode_error",
+                 lambda (fun ty ->
+                     return
+                       (lambda (fun input ->
+                            return
+                              (error
+                                 (array_concat
+                                    (array
+                                       (Error.decode ~fname:compiled.name
+                                          ~stack:
+                                            (stack_concat stack (string " <- "))
+                                          ~ty ~input:(External.show input)
+                                          string))
+                                    (string "")))))) )
+             in
+             let$ key_error =
+               ( "key_error",
+                 lambda (fun ty ->
+                     return
+                       (error
+                          (array_concat
+                             (array
+                                (Error.missing_keys ~fname:compiled.name
+                                   ~stack:(stack_concat stack (string " <- "))
+                                   ~ty
+                                   ~keys:
+                                     (stack_concat missing_keys (string ", "))
+                                   string))
+                             (string "")))) )
+             in
              let debug =
                { is_error; missing_keys; stack; decode_error; key_error }
              in
+             let$ props = ("props", hashtbl_create ()) in
              let s1 = stack_push stack (string "<input>") in
              let s2 =
                External.classify Assoc input

@@ -29,72 +29,6 @@
       }
       return (result$0);
     };
-  let decode_error$0 =
-    (arg$0) => {
-      return (
-        (arg$1) => {
-          return (
-            (arg$2) => {
-              return (
-                Promise.reject(
-                  new Error(
-                    [
-                      "File \"",
-                      "template.acutis",
-                      "\"\n\
-  Render error.\n\
-  The data supplied does not match this template's interface.\n\
-  ",
-                      "Path:\n",
-                      arg$1.join(" <- "),
-                      "\nExpected type:\n",
-                      arg$0,
-                      "\nReceived value:\n",
-                      String(arg$2),
-                    ].join(
-                      ""
-                    )
-                  )
-                )
-              );
-            }
-          );
-        }
-      );
-    };
-  let key_error$0 =
-    (arg$0) => {
-      return (
-        (arg$1) => {
-          return (
-            (arg$2) => {
-              return (
-                Promise.reject(
-                  new Error(
-                    [
-                      "File: ",
-                      "template.acutis",
-                      "\n\
-  Render error.\n\
-  The data supplied does not match this template's interface.\n\
-  ",
-                      "Path:\n",
-                      arg$2.join(" <- "),
-                      "\nExpected type:\n",
-                      arg$0,
-                      "\nInput is missing keys:\n",
-                      arg$1.join(", "),
-                    ].join(
-                      ""
-                    )
-                  )
-                )
-              );
-            }
-          );
-        }
-      );
-    };
   let buffer_to_promise$0 =
     (arg$0) => {
       return (
@@ -350,10 +284,64 @@
     }
   );
   export default (arg$0) => {
-    let props$0 = new Map();
     let stack$0 = [];
     let is_error$0 = false;
     let missing_keys$0 = [];
+    let decode_error$0 =
+      (arg$1) => {
+        return (
+          (arg$2) => {
+            return (
+              Promise.reject(
+                new Error(
+                  [
+                    "File \"",
+                    "template.acutis",
+                    "\"\n\
+  Render error.\n\
+  The data supplied does not match this template's interface.\n\
+  ",
+                    "Path:\n",
+                    stack$0.join(" <- "),
+                    "\nExpected type:\n",
+                    arg$1,
+                    "\nReceived value:\n",
+                    String(arg$2),
+                  ].join(
+                    ""
+                  )
+                )
+              )
+            );
+          }
+        );
+      };
+    let key_error$0 =
+      (arg$1) => {
+        return (
+          Promise.reject(
+            new Error(
+              [
+                "File: ",
+                "template.acutis",
+                "\n\
+  Render error.\n\
+  The data supplied does not match this template's interface.\n\
+  ",
+                "Path:\n",
+                stack$0.join(" <- "),
+                "\nExpected type:\n",
+                arg$1,
+                "\nInput is missing keys:\n",
+                missing_keys$0.join(", "),
+              ].join(
+                ""
+              )
+            )
+          )
+        );
+      };
+    let props$0 = new Map();
     stack$0.unshift("<input>");
     if (typeof arg$0 === "object" && !(arg$0 === null)) {
       if (Object.hasOwn(arg$0, "big_float")) {
@@ -368,7 +356,7 @@
             is_error$0 = true;
           }
         }
-        if (is_error$0) { return (decode_error$0("float")(stack$0)(input$0)); }
+        if (is_error$0) { return (decode_error$0("float")(input$0)); }
         stack$0.shift();
       } else {
         missing_keys$0.unshift("big_float");
@@ -381,7 +369,7 @@
         } else {
           is_error$0 = true;
         }
-        if (is_error$0) { return (decode_error$0("int")(stack$0)(input$0)); }
+        if (is_error$0) { return (decode_error$0("int")(input$0)); }
         stack$0.shift();
       } else {
         missing_keys$0.unshift("big_int");
@@ -398,9 +386,7 @@
         } else {
           is_error$0 = true;
         }
-        if (is_error$0) {
-          return (decode_error$0("false | true")(stack$0)(input$0));
-        }
+        if (is_error$0) { return (decode_error$0("false | true")(input$0)); }
         stack$0.shift();
       } else {
         missing_keys$0.unshift("bool1");
@@ -417,9 +403,7 @@
         } else {
           is_error$0 = true;
         }
-        if (is_error$0) {
-          return (decode_error$0("false | true")(stack$0)(input$0));
-        }
+        if (is_error$0) { return (decode_error$0("false | true")(input$0)); }
         stack$0.shift();
       } else {
         missing_keys$0.unshift("bool2");
@@ -432,9 +416,7 @@
         } else {
           is_error$0 = true;
         }
-        if (is_error$0) {
-          return (decode_error$0("string")(stack$0)(input$0));
-        }
+        if (is_error$0) { return (decode_error$0("string")(input$0)); }
         stack$0.shift();
       } else {
         missing_keys$0.unshift("dangerous");
@@ -456,9 +438,7 @@
             } else {
               is_error$0 = true;
             }
-            if (is_error$0) {
-              return (decode_error$0("int")(stack$0)(input$0[i$0]));
-            }
+            if (is_error$0) { return (decode_error$0("int")(input$0[i$0])); }
             decode_dst$0[1] = decode_dst_new$0;
             decode_dst$0 = decode_dst_new$0;
             stack$0.shift();
@@ -467,7 +447,7 @@
         } else {
           is_error$0 = true;
         }
-        if (is_error$0) { return (decode_error$0("[int]")(stack$0)(input$0)); }
+        if (is_error$0) { return (decode_error$0("[int]")(input$0)); }
         stack$0.shift();
       } else {
         missing_keys$0.unshift("int_list");
@@ -502,9 +482,7 @@
                       is_error$0 = true;
                     }
                     if (is_error$0) {
-                      return (
-                        decode_error$0("int")(stack$0)(input$0[i$0][i$1][i$2])
-                      );
+                      return (decode_error$0("int")(input$0[i$0][i$1][i$2]));
                     }
                     decode_dst$2[1] = decode_dst_new$2;
                     decode_dst$2 = decode_dst_new$2;
@@ -515,7 +493,7 @@
                   is_error$0 = true;
                 }
                 if (is_error$0) {
-                  return (decode_error$0("[int]")(stack$0)(input$0[i$0][i$1]));
+                  return (decode_error$0("[int]")(input$0[i$0][i$1]));
                 }
                 decode_dst$1[1] = decode_dst_new$1;
                 decode_dst$1 = decode_dst_new$1;
@@ -526,7 +504,7 @@
               is_error$0 = true;
             }
             if (is_error$0) {
-              return (decode_error$0("[[int]]")(stack$0)(input$0[i$0]));
+              return (decode_error$0("[[int]]")(input$0[i$0]));
             }
             decode_dst$0[1] = decode_dst_new$0;
             decode_dst$0 = decode_dst_new$0;
@@ -536,9 +514,7 @@
         } else {
           is_error$0 = true;
         }
-        if (is_error$0) {
-          return (decode_error$0("[[[int]]]")(stack$0)(input$0));
-        }
+        if (is_error$0) { return (decode_error$0("[[[int]]]")(input$0)); }
         stack$0.shift();
       } else {
         missing_keys$0.unshift("nested_list");
@@ -572,23 +548,19 @@
                   is_error$0 = true;
                 }
                 if (is_error$0) {
-                  return (
-                    decode_error$0("false | true")(stack$0)(input$0[i$0])
-                  );
+                  return (decode_error$0("false | true")(input$0[i$0]));
                 }
                 decoded$1[0] = decoded$2;
                 stack$0.shift();
               }
               if (is_error$0) {
-                return (
-                  decode_error$0("?false | true")(stack$0)(input$0[i$0])
-                );
+                return (decode_error$0("?false | true")(input$0[i$0]));
               }
               decode_dst_new$0[0] = decoded$1;
               stack$0.shift();
             }
             if (is_error$0) {
-              return (decode_error$0("??false | true")(stack$0)(input$0[i$0]));
+              return (decode_error$0("??false | true")(input$0[i$0]));
             }
             decode_dst$0[1] = decode_dst_new$0;
             decode_dst$0 = decode_dst_new$0;
@@ -599,7 +571,7 @@
           is_error$0 = true;
         }
         if (is_error$0) {
-          return (decode_error$0("[??false | true]")(stack$0)(input$0));
+          return (decode_error$0("[??false | true]")(input$0));
         }
         stack$0.shift();
       } else {
@@ -618,15 +590,11 @@
           } else {
             is_error$0 = true;
           }
-          if (is_error$0) {
-            return (decode_error$0("false | true")(stack$0)(input$0));
-          }
+          if (is_error$0) { return (decode_error$0("false | true")(input$0)); }
           props$0.set("null_bool", decoded$0);
           stack$0.shift();
         }
-        if (is_error$0) {
-          return (decode_error$0("?false | true")(stack$0)(input$0));
-        }
+        if (is_error$0) { return (decode_error$0("?false | true")(input$0)); }
         stack$0.shift();
       } else {
         props$0.set("null_bool", 0);
@@ -648,15 +616,11 @@
               is_error$0 = true;
             }
           }
-          if (is_error$0) {
-            return (decode_error$0("float")(stack$0)(input$0));
-          }
+          if (is_error$0) { return (decode_error$0("float")(input$0)); }
           props$0.set("null_float", decoded$0);
           stack$0.shift();
         }
-        if (is_error$0) {
-          return (decode_error$0("?float")(stack$0)(input$0));
-        }
+        if (is_error$0) { return (decode_error$0("?float")(input$0)); }
         stack$0.shift();
       } else {
         props$0.set("null_float", 0);
@@ -674,11 +638,11 @@
           } else {
             is_error$0 = true;
           }
-          if (is_error$0) { return (decode_error$0("int")(stack$0)(input$0)); }
+          if (is_error$0) { return (decode_error$0("int")(input$0)); }
           props$0.set("null_int", decoded$0);
           stack$0.shift();
         }
-        if (is_error$0) { return (decode_error$0("?int")(stack$0)(input$0)); }
+        if (is_error$0) { return (decode_error$0("?int")(input$0)); }
         stack$0.shift();
       } else {
         props$0.set("null_int", 0);
@@ -696,15 +660,11 @@
           } else {
             is_error$0 = true;
           }
-          if (is_error$0) {
-            return (decode_error$0("string")(stack$0)(input$0));
-          }
+          if (is_error$0) { return (decode_error$0("string")(input$0)); }
           props$0.set("null_string", decoded$0);
           stack$0.shift();
         }
-        if (is_error$0) {
-          return (decode_error$0("?string")(stack$0)(input$0));
-        }
+        if (is_error$0) { return (decode_error$0("?string")(input$0)); }
         stack$0.shift();
       } else {
         props$0.set("null_string", 0);
@@ -727,13 +687,13 @@
                 is_error$0 = true;
               }
               if (is_error$0) {
-                return (decode_error$0("string")(stack$0)(input$0[x$0]));
+                return (decode_error$0("string")(input$0[x$0]));
               }
               decoded$0.set(x$0, decoded$1);
               stack$0.shift();
             }
             if (is_error$0) {
-              return (decode_error$0("?string")(stack$0)(input$0[x$0]));
+              return (decode_error$0("?string")(input$0[x$0]));
             }
             props$0.set("null_string_dict", decoded$0);
             stack$0.shift();
@@ -741,9 +701,7 @@
         } else {
           is_error$0 = true;
         }
-        if (is_error$0) {
-          return (decode_error$0("<?string>")(stack$0)(input$0));
-        }
+        if (is_error$0) { return (decode_error$0("<?string>")(input$0)); }
         stack$0.shift();
       } else {
         missing_keys$0.unshift("null_string_dict");
@@ -769,9 +727,7 @@
             } else {
               is_error$0 = true;
             }
-            if (is_error$0) {
-              return (decode_error$0("@8 | @40")(stack$0)(input$1));
-            }
+            if (is_error$0) { return (decode_error$0("@8 | @40")(input$1)); }
             stack$0.shift();
           } else {
             missing_keys$0.unshift("int_enum");
@@ -793,7 +749,7 @@
               is_error$0 = true;
             }
             if (is_error$0) {
-              return (decode_error$0("@\"no\" | @\"yes\"")(stack$0)(input$1));
+              return (decode_error$0("@\"no\" | @\"yes\"")(input$1));
             }
             stack$0.shift();
           } else {
@@ -803,10 +759,6 @@
             return (
               key_error$0(
                 "{int_enum: @8 | @40, string_enum: @\"no\" | @\"yes\"}"
-              )(
-                missing_keys$0
-              )(
-                stack$0
               )
             );
           }
@@ -818,8 +770,6 @@
           return (
             decode_error$0(
               "{int_enum: @8 | @40, string_enum: @\"no\" | @\"yes\"}"
-            )(
-              stack$0
             )(
               input$0
             )
@@ -846,15 +796,13 @@
                   } else {
                     is_error$0 = true;
                   }
-                  if (is_error$0) {
-                    return (decode_error$0("int")(stack$0)(input$1));
-                  }
+                  if (is_error$0) { return (decode_error$0("int")(input$1)); }
                   stack$0.shift();
                 } else {
                   missing_keys$0.unshift("b");
                 }
                 if (!(missing_keys$0.length === 0)) {
-                  return (key_error$0("{b: int}")(missing_keys$0)(stack$0));
+                  return (key_error$0("{b: int}"));
                 }
                 props$0.set("tagged_record_bool", decoded$0);
               } else {
@@ -869,14 +817,14 @@
                     is_error$0 = true;
                   }
                   if (is_error$0) {
-                    return (decode_error$0("string")(stack$0)(input$1));
+                    return (decode_error$0("string")(input$1));
                   }
                   stack$0.shift();
                 } else {
                   missing_keys$0.unshift("a");
                 }
                 if (!(missing_keys$0.length === 0)) {
-                  return (key_error$0("{a: string}")(missing_keys$0)(stack$0));
+                  return (key_error$0("{a: string}"));
                 }
                 props$0.set("tagged_record_bool", decoded$0);
               }
@@ -892,8 +840,6 @@
         if (is_error$0) {
           return (
             decode_error$0("{@tag: false, a: string} | {@tag: true, b: int}")(
-              stack$0
-            )(
               input$0
             )
           );
@@ -915,7 +861,7 @@
                 let decoded$0 = new Map();
                 decoded$0.set("tag", input$0["tag"]);
                 if (!(missing_keys$0.length === 0)) {
-                  return (key_error$0("{}")(missing_keys$0)(stack$0));
+                  return (key_error$0("{}"));
                 }
                 props$0.set("tagged_record_int", decoded$0);
               } else {
@@ -945,9 +891,7 @@
                               }
                             }
                             if (is_error$0) {
-                              return (
-                                decode_error$0("float")(stack$0)(input$1[i$0])
-                              );
+                              return (decode_error$0("float")(input$1[i$0]));
                             }
                           } else {
                             if (i$0 === 1) {
@@ -958,9 +902,7 @@
                               }
                               if (is_error$0) {
                                 return (
-                                  decode_error$0("string")(stack$0)(
-                                    input$1[i$0]
-                                  )
+                                  decode_error$0("string")(input$1[i$0])
                                 );
                               }
                             } else {
@@ -976,7 +918,7 @@
                                 }
                                 if (is_error$0) {
                                   return (
-                                    decode_error$0("false | true")(stack$0)(
+                                    decode_error$0("false | true")(
                                       input$1[i$0]
                                     )
                                   );
@@ -998,8 +940,6 @@
                     if (is_error$0) {
                       return (
                         decode_error$0("(float, string, false | true)")(
-                          stack$0
-                        )(
                           input$1
                         )
                       );
@@ -1010,11 +950,7 @@
                   }
                   if (!(missing_keys$0.length === 0)) {
                     return (
-                      key_error$0("{tuple: (float, string, false | true)}")(
-                        missing_keys$0
-                      )(
-                        stack$0
-                      )
+                      key_error$0("{tuple: (float, string, false | true)}")
                     );
                   }
                   props$0.set("tagged_record_int", decoded$0);
@@ -1035,8 +971,6 @@
           return (
             decode_error$0(
               "{@tag: 0} | {@tag: 1, tuple: (float, string, false | true)}"
-            )(
-              stack$0
             )(
               input$0
             )
@@ -1066,15 +1000,13 @@
                   } else {
                     is_error$0 = true;
                   }
-                  if (is_error$0) {
-                    return (decode_error$0("int")(stack$0)(input$1));
-                  }
+                  if (is_error$0) { return (decode_error$0("int")(input$1)); }
                   stack$0.shift();
                 } else {
                   missing_keys$0.unshift("a");
                 }
                 if (!(missing_keys$0.length === 0)) {
-                  return (key_error$0("{a: int}")(missing_keys$0)(stack$0));
+                  return (key_error$0("{a: int}"));
                 }
                 props$0.set("tagged_record_open", decoded$0);
               } else {
@@ -1090,16 +1022,14 @@
                       is_error$0 = true;
                     }
                     if (is_error$0) {
-                      return (decode_error$0("string")(stack$0)(input$1));
+                      return (decode_error$0("string")(input$1));
                     }
                     stack$0.shift();
                   } else {
                     missing_keys$0.unshift("b");
                   }
                   if (!(missing_keys$0.length === 0)) {
-                    return (
-                      key_error$0("{b: string}")(missing_keys$0)(stack$0)
-                    );
+                    return (key_error$0("{b: string}"));
                   }
                   props$0.set("tagged_record_open", decoded$0);
                 } else {
@@ -1122,16 +1052,14 @@
                         }
                       }
                       if (is_error$0) {
-                        return (decode_error$0("float")(stack$0)(input$1));
+                        return (decode_error$0("float")(input$1));
                       }
                       stack$0.shift();
                     } else {
                       missing_keys$0.unshift("c");
                     }
                     if (!(missing_keys$0.length === 0)) {
-                      return (
-                        key_error$0("{c: float}")(missing_keys$0)(stack$0)
-                      );
+                      return (key_error$0("{c: float}"));
                     }
                     props$0.set("tagged_record_open", decoded$0);
                   } else {
@@ -1154,8 +1082,6 @@
           return (
             decode_error$0(
               "{@tag: 100, a: int} | {@tag: 200, b: string} | {@tag: 300, c: float} | ..."
-            )(
-              stack$0
             )(
               input$0
             )
@@ -1197,9 +1123,7 @@
                             is_error$0 = true;
                           }
                           if (is_error$0) {
-                            return (
-                              decode_error$0("string")(stack$0)(input$2)
-                            );
+                            return (decode_error$0("string")(input$2));
                           }
                           stack$0.shift();
                         } else {
@@ -1214,22 +1138,14 @@
                             is_error$0 = true;
                           }
                           if (is_error$0) {
-                            return (
-                              decode_error$0("string")(stack$0)(input$2)
-                            );
+                            return (decode_error$0("string")(input$2));
                           }
                           stack$0.shift();
                         } else {
                           missing_keys$0.unshift("name");
                         }
                         if (!(missing_keys$0.length === 0)) {
-                          return (
-                            key_error$0("{job: string, name: string}")(
-                              missing_keys$0
-                            )(
-                              stack$0
-                            )
-                          );
+                          return (key_error$0("{job: string, name: string}"));
                         }
                         decode_dst_new$0[0] = decoded$2;
                       } else {
@@ -1238,8 +1154,6 @@
                       if (is_error$0) {
                         return (
                           decode_error$0("{job: string, name: string}")(
-                            stack$0
-                          )(
                             input$1[i$0]
                           )
                         );
@@ -1254,9 +1168,7 @@
                   }
                   if (is_error$0) {
                     return (
-                      decode_error$0("[{job: string, name: string}]")(stack$0)(
-                        input$1
-                      )
+                      decode_error$0("[{job: string, name: string}]")(input$1)
                     );
                   }
                   stack$0.shift();
@@ -1265,11 +1177,7 @@
                 }
                 if (!(missing_keys$0.length === 0)) {
                   return (
-                    key_error$0("{record_list: [{job: string, name: string}]}")(
-                      missing_keys$0
-                    )(
-                      stack$0
-                    )
+                    key_error$0("{record_list: [{job: string, name: string}]}")
                   );
                 }
                 props$0.set("tagged_record_string", decoded$0);
@@ -1289,20 +1197,14 @@
                       is_error$0 = true;
                     }
                     if (is_error$0) {
-                      return (
-                        decode_error$0("@0 | @1 | ...")(stack$0)(input$1)
-                      );
+                      return (decode_error$0("@0 | @1 | ...")(input$1));
                     }
                     stack$0.shift();
                   } else {
                     missing_keys$0.unshift("open_enum");
                   }
                   if (!(missing_keys$0.length === 0)) {
-                    return (
-                      key_error$0("{open_enum: @0 | @1 | ...}")(missing_keys$0)(
-                        stack$0
-                      )
-                    );
+                    return (key_error$0("{open_enum: @0 | @1 | ...}"));
                   }
                   props$0.set("tagged_record_string", decoded$0);
                 } else {
@@ -1324,8 +1226,6 @@
               "{@tag: \"a\", record_list: [{job: string, name: string}]} |\n\
   {@tag: \"b\", open_enum: @0 | @1 | ...}"
             )(
-              stack$0
-            )(
               input$0
             )
           );
@@ -1342,9 +1242,7 @@
         } else {
           is_error$0 = true;
         }
-        if (is_error$0) {
-          return (decode_error$0("string")(stack$0)(input$0));
-        }
+        if (is_error$0) { return (decode_error$0("string")(input$0)); }
         stack$0.shift();
       } else {
         missing_keys$0.unshift("unicode_string");
@@ -1353,7 +1251,7 @@
         let input$0 = arg$0["unknown"];
         stack$0.unshift("unknown");
         props$0.set("unknown", input$0);
-        if (is_error$0) { return (decode_error$0("_")(stack$0)(input$0)); }
+        if (is_error$0) { return (decode_error$0("_")(input$0)); }
         stack$0.shift();
       } else {
         props$0.set("unknown", 0);
@@ -1390,10 +1288,6 @@
     unicode_string: string,\n\
     unknown: _\n\
   }"
-          )(
-            missing_keys$0
-          )(
-            stack$0
           )
         );
       }
@@ -1429,8 +1323,6 @@
     unicode_string: string,\n\
     unknown: _\n\
   }"
-        )(
-          stack$0
         )(
           arg$0
         )

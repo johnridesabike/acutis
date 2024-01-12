@@ -18,72 +18,6 @@ let acutis_escape$0 =
     }
     return (result$0);
   };
-let decode_error$0 =
-  (arg$0) => {
-    return (
-      (arg$1) => {
-        return (
-          (arg$2) => {
-            return (
-              Promise.reject(
-                new Error(
-                  [
-                    "File \"",
-                    "printjs_example.acutis",
-                    "\"\n\
-Render error.\n\
-The data supplied does not match this template's interface.\n\
-",
-                    "Path:\n",
-                    arg$1.join(" <- "),
-                    "\nExpected type:\n",
-                    arg$0,
-                    "\nReceived value:\n",
-                    String(arg$2),
-                  ].join(
-                    ""
-                  )
-                )
-              )
-            );
-          }
-        );
-      }
-    );
-  };
-let key_error$0 =
-  (arg$0) => {
-    return (
-      (arg$1) => {
-        return (
-          (arg$2) => {
-            return (
-              Promise.reject(
-                new Error(
-                  [
-                    "File: ",
-                    "printjs_example.acutis",
-                    "\n\
-Render error.\n\
-The data supplied does not match this template's interface.\n\
-",
-                    "Path:\n",
-                    arg$2.join(" <- "),
-                    "\nExpected type:\n",
-                    arg$0,
-                    "\nInput is missing keys:\n",
-                    arg$1.join(", "),
-                  ].join(
-                    ""
-                  )
-                )
-              )
-            );
-          }
-        );
-      }
-    );
-  };
 let buffer_to_promise$0 =
   (arg$0) => {
     return (
@@ -92,10 +26,64 @@ let buffer_to_promise$0 =
   };
 let components$0 = new Map();
 export default (arg$0) => {
-  let props$0 = new Map();
   let stack$0 = [];
   let is_error$0 = false;
   let missing_keys$0 = [];
+  let decode_error$0 =
+    (arg$1) => {
+      return (
+        (arg$2) => {
+          return (
+            Promise.reject(
+              new Error(
+                [
+                  "File \"",
+                  "printjs_example.acutis",
+                  "\"\n\
+Render error.\n\
+The data supplied does not match this template's interface.\n\
+",
+                  "Path:\n",
+                  stack$0.join(" <- "),
+                  "\nExpected type:\n",
+                  arg$1,
+                  "\nReceived value:\n",
+                  String(arg$2),
+                ].join(
+                  ""
+                )
+              )
+            )
+          );
+        }
+      );
+    };
+  let key_error$0 =
+    (arg$1) => {
+      return (
+        Promise.reject(
+          new Error(
+            [
+              "File: ",
+              "printjs_example.acutis",
+              "\n\
+Render error.\n\
+The data supplied does not match this template's interface.\n\
+",
+              "Path:\n",
+              stack$0.join(" <- "),
+              "\nExpected type:\n",
+              arg$1,
+              "\nInput is missing keys:\n",
+              missing_keys$0.join(", "),
+            ].join(
+              ""
+            )
+          )
+        )
+      );
+    };
+  let props$0 = new Map();
   stack$0.unshift("<input>");
   if (typeof arg$0 === "object" && !(arg$0 === null)) {
     if (Object.hasOwn(arg$0, "blogPosts")) {
@@ -128,29 +116,27 @@ export default (arg$0) => {
                       is_error$0 = true;
                     }
                     if (is_error$0) {
-                      return (decode_error$0("string")(stack$0)(input$2));
+                      return (decode_error$0("string")(input$2));
                     }
                     decoded$2.set("name", decoded$3);
                     stack$0.shift();
                   }
                   if (is_error$0) {
-                    return (decode_error$0("?string")(stack$0)(input$2));
+                    return (decode_error$0("?string")(input$2));
                   }
                   stack$0.shift();
                 } else {
                   decoded$2.set("name", 0);
                 }
                 if (!(missing_keys$0.length === 0)) {
-                  return (
-                    key_error$0("{name: ?string}")(missing_keys$0)(stack$0)
-                  );
+                  return (key_error$0("{name: ?string}"));
                 }
                 decoded$1.set("author", decoded$2);
               } else {
                 is_error$0 = true;
               }
               if (is_error$0) {
-                return (decode_error$0("{name: ?string}")(stack$0)(input$1));
+                return (decode_error$0("{name: ?string}")(input$1));
               }
               stack$0.shift();
             } else {
@@ -164,9 +150,7 @@ export default (arg$0) => {
               } else {
                 is_error$0 = true;
               }
-              if (is_error$0) {
-                return (decode_error$0("string")(stack$0)(input$1));
-              }
+              if (is_error$0) { return (decode_error$0("string")(input$1)); }
               stack$0.shift();
             } else {
               missing_keys$0.unshift("content");
@@ -179,9 +163,7 @@ export default (arg$0) => {
               } else {
                 is_error$0 = true;
               }
-              if (is_error$0) {
-                return (decode_error$0("string")(stack$0)(input$1));
-              }
+              if (is_error$0) { return (decode_error$0("string")(input$1)); }
               stack$0.shift();
             } else {
               missing_keys$0.unshift("date");
@@ -205,7 +187,7 @@ export default (arg$0) => {
                       is_error$0 = true;
                     }
                     if (is_error$0) {
-                      return (decode_error$0("string")(stack$0)(input$2));
+                      return (decode_error$0("string")(input$2));
                     }
                     stack$0.shift();
                   } else {
@@ -220,20 +202,14 @@ export default (arg$0) => {
                       is_error$0 = true;
                     }
                     if (is_error$0) {
-                      return (decode_error$0("string")(stack$0)(input$2));
+                      return (decode_error$0("string")(input$2));
                     }
                     stack$0.shift();
                   } else {
                     missing_keys$0.unshift("src");
                   }
                   if (!(missing_keys$0.length === 0)) {
-                    return (
-                      key_error$0("{alt: string, src: string}")(
-                        missing_keys$0
-                      )(
-                        stack$0
-                      )
-                    );
+                    return (key_error$0("{alt: string, src: string}"));
                   }
                   decoded$2[0] = decoded$3;
                 } else {
@@ -241,9 +217,7 @@ export default (arg$0) => {
                 }
                 if (is_error$0) {
                   return (
-                    decode_error$0("{alt: string, src: string}")(stack$0)(
-                      input$1
-                    )
+                    decode_error$0("{alt: string, src: string}")(input$1)
                   );
                 }
                 decoded$1.set("image", decoded$2);
@@ -251,9 +225,7 @@ export default (arg$0) => {
               }
               if (is_error$0) {
                 return (
-                  decode_error$0("?{alt: string, src: string}")(stack$0)(
-                    input$1
-                  )
+                  decode_error$0("?{alt: string, src: string}")(input$1)
                 );
               }
               stack$0.shift();
@@ -268,9 +240,7 @@ export default (arg$0) => {
               } else {
                 is_error$0 = true;
               }
-              if (is_error$0) {
-                return (decode_error$0("string")(stack$0)(input$1));
-              }
+              if (is_error$0) { return (decode_error$0("string")(input$1)); }
               stack$0.shift();
             } else {
               missing_keys$0.unshift("title");
@@ -285,10 +255,6 @@ export default (arg$0) => {
   image: ?{alt: string, src: string},\n\
   title: string\n\
 }"
-                )(
-                  missing_keys$0
-                )(
-                  stack$0
                 )
               );
             }
@@ -306,8 +272,6 @@ export default (arg$0) => {
   image: ?{alt: string, src: string},\n\
   title: string\n\
 }"
-              )(
-                stack$0
               )(
                 input$0[i$0]
               )
@@ -334,8 +298,6 @@ export default (arg$0) => {
   }\n\
 ]"
           )(
-            stack$0
-          )(
             input$0
           )
         );
@@ -352,9 +314,7 @@ export default (arg$0) => {
       } else {
         is_error$0 = true;
       }
-      if (is_error$0) {
-        return (decode_error$0("string")(stack$0)(input$0));
-      }
+      if (is_error$0) { return (decode_error$0("string")(input$0)); }
       stack$0.shift();
     } else {
       missing_keys$0.unshift("siteTitle");
@@ -375,10 +335,6 @@ export default (arg$0) => {
     ],\n\
   siteTitle: string\n\
 }"
-        )(
-          missing_keys$0
-        )(
-          stack$0
         )
       );
     }
@@ -398,8 +354,6 @@ export default (arg$0) => {
     ],\n\
   siteTitle: string\n\
 }"
-      )(
-        stack$0
       )(
         arg$0
       )
