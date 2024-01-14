@@ -70,7 +70,6 @@ module Exit = struct
 
   type 'a t = 'a array
 
-  let get = Array.get
   let map = Array.map
   let key_to_int = Fun.id
   let to_seqi = Array.to_seqi
