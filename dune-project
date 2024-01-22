@@ -1,6 +1,6 @@
-(lang dune 3.5)
+(lang dune 3.13)
 
-(using menhir 2.1)
+(using menhir 3.0)
 
 (name acutis)
 
@@ -22,8 +22,11 @@
 (package
  (name acutis)
  (synopsis "A simple and type-safe template language")
- (description
-  "Acutis is a template language that features static typing, pattern matching, and asynchronous template components. You can execute your templates like scripts or compile them to self-contained JavaScript files.")
+ (description "
+Acutis is a template language that features static typing, pattern matching, and
+asynchronous template components. You can execute your templates like scripts or
+compile them to self-contained JavaScript files.
+")
  (depends
   (ocaml
    (>= 5.0))
