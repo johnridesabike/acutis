@@ -19,7 +19,7 @@ module type MONAD = sig
   val bind : 'a t -> ('a -> 'b t) -> 'b t
 end
 
-module type DATA = sig
+module type DECODABLE = sig
   (** Decode and encode input data. *)
 
   module Linear : sig
@@ -82,10 +82,10 @@ module type S = sig
 end
 
 (** A functor that builds an implementation for a given monadic output type and
-    a given data input type. *)
-module Make (M : MONAD) (D : DATA) :
+    a given decodable input type. *)
+module Make (M : MONAD) (D : DECODABLE) :
   S with type t = string M.t and type data = D.t
 
-(** A simpler version of {!Make} that only requires a data module and outputs
-    a string. *)
-module MakeString (D : DATA) : S with type t = string and type data = D.t
+(** A simpler version of {!Make} that only requires a decodable module and
+    outputs a string. *)
+module MakeString (D : DECODABLE) : S with type t = string and type data = D.t

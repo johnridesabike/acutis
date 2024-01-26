@@ -15,7 +15,7 @@ module type MONAD = sig
   val bind : 'a t -> ('a -> 'b t) -> 'b t
 end
 
-module type DATA = sig
+module type DECODABLE = sig
   module Linear : sig
     type 'a t
 
@@ -61,7 +61,7 @@ module type S = sig
   val eval : (data -> t) Compile.t -> data -> t
 end
 
-module Make (M : MONAD) (D : DATA) :
+module Make (M : MONAD) (D : DECODABLE) :
   S with type t = string M.t and type data = D.t = struct
   type t = string M.t
   type data = D.t
