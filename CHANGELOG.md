@@ -2,10 +2,13 @@
 
 Most changes are breaking changes.
 
-## Latest
+## 0.24.0
 
 - Add the debug command `--printinst` to the CLI. This prints the new runtime
   instructions used by both the renderer and the JavaScript printer.
+- Both the interpreted and compiled-to-JavaScript implementations use the same
+  internal semantics now. This should not be a breaking change but may affect
+  some edge cases or how errors are handled.
 
 ## 0.23.0
 
