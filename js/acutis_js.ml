@@ -92,9 +92,10 @@ module Concurrent = struct
   type buffer = Js.js_string Js.t promise Js.js_array Js.t
 
   let promise = Promise.resolve
+  let bind = Promise.then_
 
-  let bind_array a f =
-    Promise.then_ (Promise.all (Js.array a)) @@ fun a -> f (Js.to_array a)
+  let promise_array a =
+    Promise.then_ (Promise.all (Js.array a)) @@ fun a -> promise (Js.to_array a)
 
   let buffer_create () = new%js Js.array_empty
 

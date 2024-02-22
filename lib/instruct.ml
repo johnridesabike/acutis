@@ -134,11 +134,8 @@ module type SEM = sig
   (** {1 Promises.} *)
 
   val promise : 'a exp -> 'a promise exp
-
-  val bind_array :
-    string promise array exp ->
-    (string array -> 'a promise) exp ->
-    'a promise exp
+  val bind : 'a promise exp -> ('a -> 'b promise) exp -> 'b promise exp
+  val promise_array : 'a promise array exp -> 'a array promise exp
 
   (** {1 Buffers.} *)
 
@@ -567,7 +564,7 @@ end = struct
       in
       let s2 =
         buffer_add_promise buffer
-          (bind_array blocks
+          (bind (promise_array blocks)
              (lambda (fun blocks_resolved ->
                   let$ buffer = ("buffer", buffer_create ()) in
                   let s1 = f blocks_resolved buffer in
@@ -1270,7 +1267,8 @@ module MakeTrans
     fwds (F.hashtbl_iter (bwde h) (fun k v -> bwds (f (fwde k) (fwde v))))
 
   let promise x = fwde (F.promise (bwde x))
-  let bind_array a f = fwde (F.bind_array (bwde a) (bwde f))
+  let bind a f = fwde (F.bind (bwde a) (bwde f))
+  let promise_array a = fwde (F.promise_array (bwde a))
   let buffer_create () = fwde (F.buffer_create ())
   let buffer_add_string b s = fwds (F.buffer_add_string (bwde b) (bwde s))
   let buffer_add_promise b p = fwds (F.buffer_add_promise (bwde b) (bwde p))
@@ -1455,7 +1453,8 @@ let pp (type a) pp_import ppf c =
         (f arg_k arg_v)
 
     let promise = F.dprintf "(@[promise@ %t@])"
-    let bind_array = F.dprintf "(@[bind_array@ %t@ %t@])"
+    let bind = F.dprintf "(@[bind@ %t@ %t@])"
+    let promise_array = F.dprintf "(@[promise_array@ %t@])"
 
     type buffer
 

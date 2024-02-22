@@ -257,7 +257,8 @@ module MakeJavaScript (M : JSMODULE) :
   let hashtbl_copy x = new_ "Map" [ x ]
   let hashtbl_iter x f = for_of x (fun entry -> f entry.%(int 0) entry.%(int 1))
   let promise = ( @@ ) (global "Promise").!("resolve")
-  let bind_array a f = ((global "Promise").!("all") @@ a).!("then") @@ f
+  let bind a f = a.!("then") @@ f
+  let promise_array a = (global "Promise").!("all") @@ a
 
   type buffer
 
@@ -268,7 +269,8 @@ module MakeJavaScript (M : JSMODULE) :
   let buffer_to_promise =
     lambda (fun a ->
         return
-          (bind_array a (lambda (fun x -> return (array_concat x (string ""))))))
+          (bind (promise_array a)
+             (lambda (fun x -> return (array_concat x (string ""))))))
 
   let escape =
     let add_set a b =

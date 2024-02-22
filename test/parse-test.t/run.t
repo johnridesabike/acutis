@@ -1920,7 +1920,7 @@ Print the runtime instructions
      (unit)
      (blocks/0.%(2) <- (buffer_to_promise/0 @@ buffer/5))
      (buffer_add_promise buffer/2
-      (bind_array blocks/0
+      (bind (promise_array blocks/0)
        (lambda arg/6
         ((let$ buffer/6 = (buffer_create))
          (buffer_add_promise buffer/6
@@ -1940,7 +1940,7 @@ Print the runtime instructions
      (buffer_add_string buffer/7 " ")
      (blocks/1.%(0) <- (buffer_to_promise/0 @@ buffer/7))
      (buffer_add_promise buffer/2
-      (bind_array blocks/1
+      (bind (promise_array blocks/1)
        (lambda arg/7
         ((let$ buffer/8 = (buffer_create))
          (buffer_add_promise buffer/8

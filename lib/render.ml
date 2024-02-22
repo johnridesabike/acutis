@@ -13,7 +13,8 @@ module type CONCURRENT = sig
   type buffer
 
   val promise : 'a -> 'a promise
-  val bind_array : 'a promise array -> ('a array -> 'b promise) -> 'b promise
+  val bind : 'a promise -> ('a -> 'b promise) -> 'b promise
+  val promise_array : 'a promise array -> 'a array promise
   val buffer_create : unit -> buffer
   val buffer_add_string : buffer -> string -> unit
   val buffer_add_promise : buffer -> string promise -> unit
@@ -311,7 +312,8 @@ module MakeString = Make (struct
   type buffer = Buffer.t
 
   let promise = Fun.id
-  let bind_array = ( |> )
+  let bind = ( |> )
+  let promise_array = Fun.id
   let buffer_create () = Buffer.create 1024
   let buffer_add_string = Buffer.add_string
   let buffer_add_promise = Buffer.add_string
