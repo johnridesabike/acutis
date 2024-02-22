@@ -70,15 +70,47 @@ module DataJs = struct
     |> Js.to_string |> Format.pp_print_string ppf
 end
 
-module Promise_with_fixed_bind = struct
-  type 'a t = 'a Promise.t
+module Promise = struct
+  type 'a t
 
-  let return = Promise.return
-  let bind = Promise.Syntax.( let* )
+  class type promise_constr = object
+    method resolve : 'a -> 'a t Js.meth
+    method all : 'a t Js.js_array Js.t -> 'a Js.js_array Js.t t Js.meth
+  end
+
+  let promise : promise_constr Js.t = Js.Unsafe.global##._Promise
+  let resolve x = promise##resolve x
+  let all a = promise##all a
+
+  let then_ : 'a t -> ('a -> 'b t) -> 'b t =
+   fun t f ->
+    Js.Unsafe.meth_call t "then" [| Js.Unsafe.inject (Js.wrap_callback f) |]
+end
+
+module Concurrent = struct
+  type 'a promise = 'a Promise.t
+  type buffer = Js.js_string Js.t promise Js.js_array Js.t
+
+  let promise = Promise.resolve
+
+  let bind_array a f =
+    Promise.then_ (Promise.all (Js.array a)) @@ fun a -> f (Js.to_array a)
+
+  let buffer_create () = new%js Js.array_empty
+
+  let buffer_add_string (b : buffer) s =
+    b##push (promise (Js.string s)) |> ignore
+
+  let buffer_add_promise (b : buffer) p =
+    b##push (Promise.then_ p @@ fun s -> promise (Js.string s)) |> ignore
+
+  let buffer_to_promise (b : buffer) =
+    Promise.then_ (Promise.all b) @@ fun a ->
+    promise (a##join (Js.string "") |> Js.to_string)
 end
 
 module RenderSync = Render.MakeString (DataJs)
-module RenderAsync = Render.Make (Promise_with_fixed_bind) (DataJs)
+module RenderAsync = Render.Make (Concurrent) (DataJs)
 
 let fname_to_compname s =
   Filename.basename s |> Filename.remove_extension |> String.capitalize_ascii
@@ -99,7 +131,8 @@ let () =
        method funAsync name ty fn =
          let fn : RenderAsync.data -> RenderAsync.t =
           fun data ->
-           Js.Unsafe.fun_call fn [| data |] |> Promise.map Js.to_string
+           Promise.then_ (Js.Unsafe.fun_call fn [| data |]) @@ fun s ->
+           Promise.resolve (Js.to_string s)
          in
          Compile.Components.from_fun ~name:(Js.to_string name) ty fn
 
@@ -143,7 +176,8 @@ let () =
   Js.export "Render"
     (object%js
        method async template js =
-         RenderAsync.eval template js |> Promise.map Js.string
+         Promise.then_ (RenderAsync.eval template js) @@ fun s ->
+         Promise.resolve (Js.string s)
 
        method sync template js = RenderSync.eval template js |> Js.string
     end)

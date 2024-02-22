@@ -12,7 +12,6 @@ depends: [
   "dune" {>= "3.13"}
   "ocaml" {>= "5.0"}
   "acutis" {= version}
-  "promise_jsoo"
   "js_of_ocaml"
   "js_of_ocaml-compiler"
   "js_of_ocaml-ppx"

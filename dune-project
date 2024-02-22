@@ -47,7 +47,6 @@ compile them to self-contained JavaScript files.
    (>= 5.0))
   (acutis
    (= :version))
-  promise_jsoo
   js_of_ocaml
   js_of_ocaml-compiler
   js_of_ocaml-ppx))

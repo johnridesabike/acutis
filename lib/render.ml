@@ -8,11 +8,16 @@
 (*                                                                        *)
 (**************************************************************************)
 
-module type MONAD = sig
-  type 'a t
+module type CONCURRENT = sig
+  type 'a promise
+  type buffer
 
-  val return : 'a -> 'a t
-  val bind : 'a t -> ('a -> 'b t) -> 'b t
+  val promise : 'a -> 'a promise
+  val bind_array : 'a promise array -> ('a array -> 'b promise) -> 'b promise
+  val buffer_create : unit -> buffer
+  val buffer_add_string : buffer -> string -> unit
+  val buffer_add_promise : buffer -> string promise -> unit
+  val buffer_to_promise : buffer -> string promise
 end
 
 module type DECODABLE = sig
@@ -61,13 +66,13 @@ module type S = sig
   val eval : (data -> t) Compile.t -> data -> t
 end
 
-module Make (M : MONAD) (D : DECODABLE) :
-  S with type t = string M.t and type data = D.t = struct
-  type t = string M.t
+module Make (C : CONCURRENT) (D : DECODABLE) :
+  S with type t = string C.promise and type data = D.t = struct
+  type t = string C.promise
   type data = D.t
 
   include Instruct.Make (struct
-    let ( let* ) = M.bind
+    include C
 
     type 'a stmt = 'a
 
@@ -96,8 +101,7 @@ module Make (M : MONAD) (D : DECODABLE) :
       done
 
     type external_data = D.t
-    type 'a promise = 'a M.t
-    type import = D.t -> string M.t
+    type import = D.t -> string promise
 
     let import = ( |> )
     let export = Fun.id
@@ -145,39 +149,6 @@ module Make (M : MONAD) (D : DECODABLE) :
     let hashtbl_mem = Tbl.mem
     let hashtbl_copy = Tbl.copy
     let hashtbl_iter x f = Tbl.iter f x
-    let promise = M.return
-
-    let bind_array a f =
-      let result = Array.make (Array.length a) String.empty in
-      let* _ =
-        Array.fold_left
-          (fun idx b ->
-            let* idx = idx in
-            let* b = b in
-            result.(idx) <- b;
-            M.return @@ succ idx)
-          (M.return 0) a
-      in
-      f result
-
-    type buffer = Buffer.t M.t ref
-
-    let buffer_create () = ref @@ M.return @@ Buffer.create 1024
-
-    let buffer_add_string b s =
-      b :=
-        let* b = !b in
-        Buffer.add_string b s; M.return b
-
-    let buffer_add_promise b o =
-      b :=
-        let* b = !b in
-        let* o = o in
-        Buffer.add_string b o; M.return b
-
-    let buffer_to_promise b =
-      let* b = !b in
-      M.return @@ Buffer.contents b
 
     let escape s =
       let b = Buffer.create (String.length s) in
@@ -336,8 +307,13 @@ module Make (M : MONAD) (D : DECODABLE) :
 end
 
 module MakeString = Make (struct
-  type 'a t = 'a
+  type 'a promise = 'a
+  type buffer = Buffer.t
 
-  let return = Fun.id
-  let bind = ( |> )
+  let promise = Fun.id
+  let bind_array = ( |> )
+  let buffer_create () = Buffer.create 1024
+  let buffer_add_string = Buffer.add_string
+  let buffer_add_promise = Buffer.add_string
+  let buffer_to_promise = Buffer.contents
 end)
