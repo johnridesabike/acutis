@@ -263,10 +263,9 @@ module MakeJavaScript (M : JSMODULE) :
   type buffer
 
   let buffer_create () = array [||]
-  let buffer_add_string b s = stmt (b.!("push") @@ s)
-  let buffer_add_promise = buffer_add_string
+  let buffer_append b s = stmt (b.!("push") @@ s)
 
-  let buffer_to_promise =
+  let buffer_contents =
     lambda (fun a ->
         return
           (bind (promise_array a)

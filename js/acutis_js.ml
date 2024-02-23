@@ -99,13 +99,10 @@ module Concurrent = struct
 
   let buffer_create () = new%js Js.array_empty
 
-  let buffer_add_string (b : buffer) s =
-    b##push (promise (Js.string s)) |> ignore
-
-  let buffer_add_promise (b : buffer) p =
+  let buffer_append (b : buffer) p =
     b##push (Promise.then_ p @@ fun s -> promise (Js.string s)) |> ignore
 
-  let buffer_to_promise (b : buffer) =
+  let buffer_contents (b : buffer) =
     Promise.then_ (Promise.all b) @@ fun a ->
     promise (a##join (Js.string "") |> Js.to_string)
 end

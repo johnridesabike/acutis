@@ -16,9 +16,8 @@ module type CONCURRENT = sig
   val bind : 'a promise -> ('a -> 'b promise) -> 'b promise
   val promise_array : 'a promise array -> 'a array promise
   val buffer_create : unit -> buffer
-  val buffer_add_string : buffer -> string -> unit
-  val buffer_add_promise : buffer -> string promise -> unit
-  val buffer_to_promise : buffer -> string promise
+  val buffer_append : buffer -> string promise -> unit
+  val buffer_contents : buffer -> string promise
 end
 
 module type DECODABLE = sig
@@ -315,7 +314,6 @@ module MakeString = Make (struct
   let bind = ( |> )
   let promise_array = Fun.id
   let buffer_create () = Buffer.create 1024
-  let buffer_add_string = Buffer.add_string
-  let buffer_add_promise = Buffer.add_string
-  let buffer_to_promise = Buffer.contents
+  let buffer_append = Buffer.add_string
+  let buffer_contents = Buffer.contents
 end)

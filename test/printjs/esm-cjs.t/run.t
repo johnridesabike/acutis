@@ -22,7 +22,7 @@
       }
       return (result$0);
     };
-  let buffer_to_promise$0 =
+  let buffer_contents$0 =
     (arg$0) => {
       return (
         Promise.all(arg$0).then((arg$1) => { return (arg$1.join("")); })
@@ -108,8 +108,8 @@
     let blocks$0 =
       Array.from({length: 1}, (arg$1) => { return (Promise.resolve("")); });
     let buffer$1 = [];
-    buffer$1.push(" text ");
-    blocks$0[0] = buffer_to_promise$0(buffer$1);
+    buffer$1.push(Promise.resolve(" text "));
+    blocks$0[0] = buffer_contents$0(buffer$1);
     buffer$0.push(
       Promise.all(blocks$0).then(
         (arg$1) => {
@@ -119,12 +119,12 @@
               new Map([["children", arg$1[0]]])
             )
           );
-          return (buffer_to_promise$0(buffer$2));
+          return (buffer_contents$0(buffer$2));
         }
       )
     );
-    buffer$0.push("\n");
-    return (buffer_to_promise$0(buffer$0));
+    buffer$0.push(Promise.resolve("\n"));
+    return (buffer_contents$0(buffer$0));
   };
 
   $ acutis \
@@ -151,7 +151,7 @@
       }
       return (result$0);
     };
-  let buffer_to_promise$0 =
+  let buffer_contents$0 =
     (arg$0) => {
       return (
         Promise.all(arg$0).then((arg$1) => { return (arg$1.join("")); })
@@ -238,8 +238,8 @@
       let blocks$0 =
         Array.from({length: 1}, (arg$1) => { return (Promise.resolve("")); });
       let buffer$1 = [];
-      buffer$1.push(" text ");
-      blocks$0[0] = buffer_to_promise$0(buffer$1);
+      buffer$1.push(Promise.resolve(" text "));
+      blocks$0[0] = buffer_contents$0(buffer$1);
       buffer$0.push(
         Promise.all(blocks$0).then(
           (arg$1) => {
@@ -249,10 +249,10 @@
                 new Map([["children", arg$1[0]]])
               )
             );
-            return (buffer_to_promise$0(buffer$2));
+            return (buffer_contents$0(buffer$2));
           }
         )
       );
-      buffer$0.push("\n");
-      return (buffer_to_promise$0(buffer$0));
+      buffer$0.push(Promise.resolve("\n"));
+      return (buffer_contents$0(buffer$0));
     };

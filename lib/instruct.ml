@@ -140,16 +140,14 @@ module type SEM = sig
   (** {1 Buffers.} *)
 
   type buffer
-  (** This type is not a typical "buffer" since it must work with promises. The
-      language may implement it however is most suitable. *)
+  (** A buffer of concurrent string promises. *)
 
   val buffer_create : unit -> buffer exp
-  val buffer_add_string : buffer exp -> string exp -> unit stmt
-  val buffer_add_promise : buffer exp -> string promise exp -> unit stmt
+  val buffer_append : buffer exp -> string promise exp -> unit stmt
 
   (** These are lambdas to minimize generated code. *)
 
-  val buffer_to_promise : (buffer -> string promise) exp
+  val buffer_contents : (buffer -> string promise) exp
   val escape : (string -> string) exp
 
   (** {1 Mutable stacks.} *)
@@ -278,7 +276,7 @@ end = struct
 
   type runtime = {
     comps : (data hashtbl -> string promise) hashtbl exp;
-    buffer_to_promise : (buffer -> string promise) exp;
+    buffer_contents : (buffer -> string promise) exp;
     escape : (string -> string) exp;
   }
 
@@ -289,8 +287,8 @@ end = struct
 
   let parse_escape runtime buf esc x =
     match esc with
-    | C.No_escape -> buffer_add_string buf x
-    | C.Escape -> buffer_add_string buf (runtime.escape @@ x)
+    | C.No_escape -> buffer_append buf (promise x)
+    | C.Escape -> buffer_append buf (promise (runtime.escape @@ x))
 
   let fmt runtime buf esc x = function
     | C.Fmt_string -> parse_escape runtime buf esc (Data.to_string x)
@@ -482,7 +480,7 @@ end = struct
         aux hd tl
 
   let rec node runtime buffer props = function
-    | C.Text s -> buffer_add_string buffer (string s)
+    | C.Text s -> buffer_append buffer (promise (string s))
     | C.Echo (echs, fmt, default, esc) ->
         echoes runtime buffer props esc default fmt echs
     | C.Match (blocks, data, { tree; exits }) ->
@@ -539,7 +537,7 @@ end = struct
                 s1 |: s2))
     | Component (name, _, blocks, dict) ->
         construct_blocks runtime buffer blocks props (fun blocks buffer ->
-            buffer_add_promise buffer
+            buffer_append buffer
               (runtime.comps.%{string name}
               @@ construct_data_hashtbl blocks props dict))
 
@@ -556,19 +554,17 @@ end = struct
         |> Seq.map (fun (i, block) ->
                let$ buffer = ("buffer", buffer_create ()) in
                let s1 = nodes runtime buffer props block in
-               let s2 =
-                 blocks.%(int i) <- runtime.buffer_to_promise @@ buffer
-               in
+               let s2 = blocks.%(int i) <- runtime.buffer_contents @@ buffer in
                s1 |: s2)
         |> join_stmts
       in
       let s2 =
-        buffer_add_promise buffer
+        buffer_append buffer
           (bind (promise_array blocks)
              (lambda (fun blocks_resolved ->
                   let$ buffer = ("buffer", buffer_create ()) in
                   let s1 = f blocks_resolved buffer in
-                  let s2 = return (runtime.buffer_to_promise @@ buffer) in
+                  let s2 = return (runtime.buffer_contents @@ buffer) in
                   s1 |: s2)))
       in
       s1 |: s2
@@ -1067,9 +1063,9 @@ end = struct
         compiled.C.components ([], [])
     in
     let$ escape = ("acutis_escape", escape) in
-    let$ buffer_to_promise = ("buffer_to_promise", buffer_to_promise) in
+    let$ buffer_contents = ("buffer_contents", buffer_contents) in
     let$ comps = ("components", hashtbl_create ()) in
-    let runtime = { escape; comps; buffer_to_promise } in
+    let runtime = { escape; comps; buffer_contents } in
     let s1 =
       List.to_seq externals
       |> Seq.map (fun (k, tys, v) ->
@@ -1091,7 +1087,7 @@ end = struct
                lambda (fun props ->
                    let$ buffer = ("buffer", buffer_create ()) in
                    let s1 = nodes runtime buffer props v in
-                   let s2 = return (buffer_to_promise @@ buffer) in
+                   let s2 = return (buffer_contents @@ buffer) in
                    s1 |: s2))
       |> join_stmts
     in
@@ -1150,7 +1146,7 @@ end = struct
              let s3 =
                let$ buffer = ("buffer", buffer_create ()) in
                let s1 = nodes runtime buffer props compiled.nodes in
-               let s2 = return (buffer_to_promise @@ buffer) in
+               let s2 = return (buffer_contents @@ buffer) in
                s1 |: s2
              in
              s1 |: s2 |: s3))
@@ -1270,9 +1266,8 @@ module MakeTrans
   let bind a f = fwde (F.bind (bwde a) (bwde f))
   let promise_array a = fwde (F.promise_array (bwde a))
   let buffer_create () = fwde (F.buffer_create ())
-  let buffer_add_string b s = fwds (F.buffer_add_string (bwde b) (bwde s))
-  let buffer_add_promise b p = fwds (F.buffer_add_promise (bwde b) (bwde p))
-  let buffer_to_promise = fwde F.buffer_to_promise
+  let buffer_append b s = fwds (F.buffer_append (bwde b) (bwde s))
+  let buffer_contents = fwde F.buffer_contents
   let escape = fwde F.escape
   let stack_create () = fwde (F.stack_create ())
   let stack_is_empty s = fwde (F.stack_is_empty (bwde s))
@@ -1459,9 +1454,8 @@ let pp (type a) pp_import ppf c =
     type buffer
 
     let buffer_create () = F.dprintf "(buffer_create)"
-    let buffer_add_string = F.dprintf "(@[buffer_add_string@ %t@ %t@])"
-    let buffer_add_promise = F.dprintf "(@[buffer_add_promise@ %t@ %t@])"
-    let buffer_to_promise = F.dprintf "(buffer_to_promise)"
+    let buffer_append = F.dprintf "(@[buffer_append@ %t@ %t@])"
+    let buffer_contents = F.dprintf "(buffer_contents)"
     let escape = F.dprintf "(escape)"
 
     type 'a stack

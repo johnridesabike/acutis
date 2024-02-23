@@ -18,7 +18,7 @@ let acutis_escape$0 =
     }
     return (result$0);
   };
-let buffer_to_promise$0 =
+let buffer_contents$0 =
   (arg$0) => {
     return (
       Promise.all(arg$0).then((arg$1) => { return (arg$1.join("")); })
@@ -360,9 +360,9 @@ The data supplied does not match this template's interface.\n\
     );
   }
   let buffer$0 = [];
-  buffer$0.push("<h1> Blog posts for ");
-  buffer$0.push(acutis_escape$0(props$0.get("siteTitle")));
-  buffer$0.push(" </h1>");
+  buffer$0.push(Promise.resolve("<h1> Blog posts for "));
+  buffer$0.push(Promise.resolve(acutis_escape$0(props$0.get("siteTitle"))));
+  buffer$0.push(Promise.resolve(" </h1>"));
   let index$0 = 0;
   let cell$0 = props$0.get("blogPosts");
   while (!(cell$0 === 0)) {
@@ -381,7 +381,11 @@ The data supplied does not match this template's interface.\n\
     props$1.set("name", match_arg$1);
     props$1.set("title", match_arg$5);
     exit$0 = 0;
-    buffer$0.push("\n  <article class=\"h-entry\">\n    <header>\n      ");
+    buffer$0.push(
+      Promise.resolve(
+        "\n  <article class=\"h-entry\">\n    <header>\n      "
+      )
+    );
     let arg_match$0 = [props$1.get("image")];
     let props$2 = new Map(props$1);
     let exit$1 = -1;
@@ -398,29 +402,39 @@ The data supplied does not match this template's interface.\n\
       exit$1 = 1;
     }
     if (!(exit$1 === 0)) {
-      buffer$0.push("<img src=\"");
-      buffer$0.push(acutis_escape$0(props$2.get("src")));
-      buffer$0.push("\" alt=\"");
-      buffer$0.push(acutis_escape$0(props$2.get("alt")));
-      buffer$0.push("\">\n      ");
+      buffer$0.push(Promise.resolve("<img src=\""));
+      buffer$0.push(Promise.resolve(acutis_escape$0(props$2.get("src"))));
+      buffer$0.push(Promise.resolve("\" alt=\""));
+      buffer$0.push(Promise.resolve(acutis_escape$0(props$2.get("alt"))));
+      buffer$0.push(Promise.resolve("\">\n      "));
     }
-    buffer$0.push("<h2 class=\"p-name\"> ");
-    buffer$0.push(acutis_escape$0(props$1.get("title")));
-    buffer$0.push(" </h2>\n      <span class=\"p-author\"> By ");
+    buffer$0.push(Promise.resolve("<h2 class=\"p-name\"> "));
+    buffer$0.push(Promise.resolve(acutis_escape$0(props$1.get("title"))));
+    buffer$0.push(
+      Promise.resolve(" </h2>\n      <span class=\"p-author\"> By ")
+    );
     let nullable$0 = props$1.get("name");
     if (!(nullable$0 === 0)) {
-      buffer$0.push(acutis_escape$0(nullable$0[0]));
+      buffer$0.push(Promise.resolve(acutis_escape$0(nullable$0[0])));
     } else {
-      buffer$0.push(acutis_escape$0("Anonymous"));
+      buffer$0.push(Promise.resolve(acutis_escape$0("Anonymous")));
     }
-    buffer$0.push(" </span>\n      <span class=\"dt-published\"> Posted on ");
-    buffer$0.push(acutis_escape$0(props$1.get("date")));
-    buffer$0.push(" </span>\n    </header>\n    <div class=\"e-content\"> ");
-    buffer$0.push(props$1.get("content"));
-    buffer$0.push(" </div>\n  </article>\n");
+    buffer$0.push(
+      Promise.resolve(
+        " </span>\n      <span class=\"dt-published\"> Posted on "
+      )
+    );
+    buffer$0.push(Promise.resolve(acutis_escape$0(props$1.get("date"))));
+    buffer$0.push(
+      Promise.resolve(
+        " </span>\n    </header>\n    <div class=\"e-content\"> "
+      )
+    );
+    buffer$0.push(Promise.resolve(props$1.get("content")));
+    buffer$0.push(Promise.resolve(" </div>\n  </article>\n"));
     index$0++;
     cell$0 = cell$0[1];
   }
-  buffer$0.push("\n");
-  return (buffer_to_promise$0(buffer$0));
+  buffer$0.push(Promise.resolve("\n"));
+  return (buffer_contents$0(buffer$0));
 };

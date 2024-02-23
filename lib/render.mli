@@ -20,9 +20,8 @@ module type CONCURRENT = sig
   val bind : 'a promise -> ('a -> 'b promise) -> 'b promise
   val promise_array : 'a promise array -> 'a array promise
   val buffer_create : unit -> buffer
-  val buffer_add_string : buffer -> string -> unit
-  val buffer_add_promise : buffer -> string promise -> unit
-  val buffer_to_promise : buffer -> string promise
+  val buffer_append : buffer -> string promise -> unit
+  val buffer_contents : buffer -> string promise
 end
 
 module type DECODABLE = sig
