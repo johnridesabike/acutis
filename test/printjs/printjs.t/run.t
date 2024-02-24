@@ -354,7 +354,7 @@
         if (typeof input$0 === "number") {
           props$0.set("big_float", input$0);
         } else {
-          if (typeof input$0 === "number" && Number.isInteger(input$0)) {
+          if (Number.isInteger(input$0)) {
             props$0.set("big_float", input$0);
           } else {
             is_error$0 = true;
@@ -368,7 +368,7 @@
       if (Object.hasOwn(arg$0, "big_int")) {
         let input$0 = arg$0["big_int"];
         stack$0.unshift("big_int");
-        if (typeof input$0 === "number" && Number.isInteger(input$0)) {
+        if (Number.isInteger(input$0)) {
           props$0.set("big_int", input$0);
         } else {
           is_error$0 = true;
@@ -434,10 +434,7 @@
           for (let i$0 = 0; i$0 < input$0.length; i$0++) {
             let decode_dst_new$0 = [0, 0];
             stack$0.unshift(i$0.toString());
-            if (
-              typeof input$0[i$0] === "number" &&
-              Number.isInteger(input$0[i$0])
-            ) {
+            if (Number.isInteger(input$0[i$0])) {
               decode_dst_new$0[0] = input$0[i$0];
             } else {
               is_error$0 = true;
@@ -477,10 +474,7 @@
                   for (let i$2 = 0; i$2 < input$0[i$0][i$1].length; i$2++) {
                     let decode_dst_new$2 = [0, 0];
                     stack$0.unshift(i$2.toString());
-                    if (
-                      typeof input$0[i$0][i$1][i$2] === "number" &&
-                      Number.isInteger(input$0[i$0][i$1][i$2])
-                    ) {
+                    if (Number.isInteger(input$0[i$0][i$1][i$2])) {
                       decode_dst_new$2[0] = input$0[i$0][i$1][i$2];
                     } else {
                       is_error$0 = true;
@@ -614,7 +608,7 @@
           if (typeof input$0 === "number") {
             decoded$0[0] = input$0;
           } else {
-            if (typeof input$0 === "number" && Number.isInteger(input$0)) {
+            if (Number.isInteger(input$0)) {
               decoded$0[0] = input$0;
             } else {
               is_error$0 = true;
@@ -637,7 +631,7 @@
         } else {
           let decoded$0 = [0];
           stack$0.unshift("<nullable>");
-          if (typeof input$0 === "number" && Number.isInteger(input$0)) {
+          if (Number.isInteger(input$0)) {
             decoded$0[0] = input$0;
           } else {
             is_error$0 = true;
@@ -718,7 +712,7 @@
           if (Object.hasOwn(input$0, "int_enum")) {
             let input$1 = input$0["int_enum"];
             stack$0.unshift("int_enum");
-            if (typeof input$1 === "number" && Number.isInteger(input$1)) {
+            if (Number.isInteger(input$1)) {
               if (input$1 === 8) {
                 decoded$0.set("int_enum", input$1);
               } else {
@@ -795,7 +789,7 @@
                 if (Object.hasOwn(input$0, "b")) {
                   let input$1 = input$0["b"];
                   stack$0.unshift("b");
-                  if (typeof input$1 === "number" && Number.isInteger(input$1)) {
+                  if (Number.isInteger(input$1)) {
                     decoded$0.set("b", input$1);
                   } else {
                     is_error$0 = true;
@@ -857,10 +851,7 @@
         stack$0.unshift("tagged_record_int");
         if (typeof input$0 === "object" && !(input$0 === null)) {
           if (Object.hasOwn(input$0, "tag")) {
-            if (
-              typeof input$0["tag"] === "number" &&
-              Number.isInteger(input$0["tag"])
-            ) {
+            if (Number.isInteger(input$0["tag"])) {
               if (input$0["tag"] === 0) {
                 let decoded$0 = new Map();
                 decoded$0.set("tag", input$0["tag"]);
@@ -885,10 +876,7 @@
                             if (typeof input$1[i$0] === "number") {
                               decoded$1[i$0] = input$1[i$0];
                             } else {
-                              if (
-                                typeof input$1[i$0] === "number" &&
-                                Number.isInteger(input$1[i$0])
-                              ) {
+                              if (Number.isInteger(input$1[i$0])) {
                                 decoded$1[i$0] = input$1[i$0];
                               } else {
                                 is_error$0 = true;
@@ -989,17 +977,14 @@
         stack$0.unshift("tagged_record_open");
         if (typeof input$0 === "object" && !(input$0 === null)) {
           if (Object.hasOwn(input$0, "tag")) {
-            if (
-              typeof input$0["tag"] === "number" &&
-              Number.isInteger(input$0["tag"])
-            ) {
+            if (Number.isInteger(input$0["tag"])) {
               if (input$0["tag"] === 100) {
                 let decoded$0 = new Map();
                 decoded$0.set("tag", input$0["tag"]);
                 if (Object.hasOwn(input$0, "a")) {
                   let input$1 = input$0["a"];
                   stack$0.unshift("a");
-                  if (typeof input$1 === "number" && Number.isInteger(input$1)) {
+                  if (Number.isInteger(input$1)) {
                     decoded$0.set("a", input$1);
                   } else {
                     is_error$0 = true;
@@ -1046,10 +1031,7 @@
                       if (typeof input$1 === "number") {
                         decoded$0.set("c", input$1);
                       } else {
-                        if (
-                          typeof input$1 === "number" &&
-                          Number.isInteger(input$1)
-                        ) {
+                        if (Number.isInteger(input$1)) {
                           decoded$0.set("c", input$1);
                         } else {
                           is_error$0 = true;
@@ -1192,10 +1174,7 @@
                   if (Object.hasOwn(input$0, "open_enum")) {
                     let input$1 = input$0["open_enum"];
                     stack$0.unshift("open_enum");
-                    if (
-                      typeof input$1 === "number" &&
-                      Number.isInteger(input$1)
-                    ) {
+                    if (Number.isInteger(input$1)) {
                       decoded$0.set("open_enum", input$1);
                     } else {
                       is_error$0 = true;

@@ -368,10 +368,7 @@ module MakeJavaScript (M : JSMODULE) :
     let classify (type a) (c : a classify) x ~ok ~error =
       let cond =
         match c with
-        | Int ->
-            and_
-              (equal (typeof x) (string "number"))
-              ((global "Number").!("isInteger") @@ x)
+        | Int -> (global "Number").!("isInteger") @@ x
         | String -> equal (typeof x) (string "string")
         | Float -> equal (typeof x) (string "number")
         | Bool -> equal (typeof x) (string "boolean")
