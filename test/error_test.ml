@@ -491,12 +491,14 @@ let () =
   print_error "Basic type mismatch."
     (render "{% match a with {b} %} {{ b }} {% /match %}"
        ~json:{|{"a": {"b": []}}|});
-  let json = {|{"a": "a", "b": true, "c": []}|} in
+  let json = {|{"a": "a", "b": true, "c": [], "d": {"e": 0}}|} in
   print_error "Map type mismatch (1)."
     (render "{% map a with {a} %}{{ a }}{% /map %}" ~json);
   print_error "Map type mismatch (2)."
     (render "{% map [1, 2, ...a] with a %}{{ %i a }}{% /map %}" ~json);
   print_error "Missing bindings are reported" (render "{{ z }}" ~json);
+  print_error "Missing bindings are reported (with nested record)"
+    (render "{{ aa }} {{ %i d.e }}" ~json);
   print_error "Bad enums are reported: boolean."
     (render "{% match b with false %} {% /match %}" ~json);
   print_error "Bad enums are reported: int."

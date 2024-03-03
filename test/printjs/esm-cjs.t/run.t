@@ -42,7 +42,6 @@
   export default (arg$0) => {
     let stack$0 = [];
     let is_error$0 = false;
-    let missing_keys$0 = [];
     let decode_error$0 =
       (arg$1) => {
         return (
@@ -75,34 +74,42 @@
     let key_error$0 =
       (arg$1) => {
         return (
-          Promise.reject(
-            new Error(
-              [
-                "File: ",
-                "template.acutis",
-                "\n\
+          (arg$2) => {
+            return (
+              Promise.reject(
+                new Error(
+                  [
+                    "File: ",
+                    "template.acutis",
+                    "\n\
   Render error.\n\
   The data supplied does not match this template's interface.\n\
   ",
-                "Path:\n",
-                stack$0.join(" <- "),
-                "\nExpected type:\n",
-                arg$1,
-                "\nInput is missing keys:\n",
-                missing_keys$0.join(", "),
-              ].join(
-                ""
+                    "Path:\n",
+                    stack$0.join(" <- "),
+                    "\nExpected type:\n",
+                    arg$1,
+                    "\nInput is missing keys:\n",
+                    arg$2.join(", "),
+                  ].join(
+                    ""
+                  )
+                )
               )
-            )
-          )
+            );
+          }
         );
       };
     let props$0 = new Map();
     stack$0.unshift("<input>");
+    let type$0 = "{}";
     if (typeof arg$0 === "object" && !(arg$0 === null)) {
-      if (!(missing_keys$0.length === 0)) { return (key_error$0("{}")); }
+      let missing_keys$0 = [];
+      if (!(missing_keys$0.length === 0)) {
+        return (key_error$0(type$0)(missing_keys$0));
+      }
     } else {
-      return (decode_error$0("{}")(arg$0));
+      return (decode_error$0(type$0)(arg$0));
     }
     let buffer$0 = [];
     let blocks$0 =
@@ -172,7 +179,6 @@
     (arg$0) => {
       let stack$0 = [];
       let is_error$0 = false;
-      let missing_keys$0 = [];
       let decode_error$0 =
         (arg$1) => {
           return (
@@ -205,34 +211,42 @@
       let key_error$0 =
         (arg$1) => {
           return (
-            Promise.reject(
-              new Error(
-                [
-                  "File: ",
-                  "template.acutis",
-                  "\n\
+            (arg$2) => {
+              return (
+                Promise.reject(
+                  new Error(
+                    [
+                      "File: ",
+                      "template.acutis",
+                      "\n\
   Render error.\n\
   The data supplied does not match this template's interface.\n\
   ",
-                  "Path:\n",
-                  stack$0.join(" <- "),
-                  "\nExpected type:\n",
-                  arg$1,
-                  "\nInput is missing keys:\n",
-                  missing_keys$0.join(", "),
-                ].join(
-                  ""
+                      "Path:\n",
+                      stack$0.join(" <- "),
+                      "\nExpected type:\n",
+                      arg$1,
+                      "\nInput is missing keys:\n",
+                      arg$2.join(", "),
+                    ].join(
+                      ""
+                    )
+                  )
                 )
-              )
-            )
+              );
+            }
           );
         };
       let props$0 = new Map();
       stack$0.unshift("<input>");
+      let type$0 = "{}";
       if (typeof arg$0 === "object" && !(arg$0 === null)) {
-        if (!(missing_keys$0.length === 0)) { return (key_error$0("{}")); }
+        let missing_keys$0 = [];
+        if (!(missing_keys$0.length === 0)) {
+          return (key_error$0(type$0)(missing_keys$0));
+        }
       } else {
-        return (decode_error$0("{}")(arg$0));
+        return (decode_error$0(type$0)(arg$0));
       }
       let buffer$0 = [];
       let blocks$0 =

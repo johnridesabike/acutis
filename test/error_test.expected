@@ -1191,6 +1191,18 @@ Expected type:
 Input is missing keys:
 z
 
+Missing bindings are reported (with nested record)
+---
+File: <test>
+Render error.
+The data supplied does not match this template's interface.
+Path:
+<input>
+Expected type:
+{aa: string, d: {e: int}}
+Input is missing keys:
+aa
+
 Bad enums are reported: boolean.
 ---
 File "<test>"

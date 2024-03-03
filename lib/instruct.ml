@@ -574,31 +574,19 @@ end = struct
 
   type decode_runtime = {
     is_error : bool mut;
-    missing_keys : string stack exp;
     stack : string stack exp;
     decode_error : (string -> external_data -> error) exp;
-    key_error : (string -> error) exp;
+    key_error : (string -> string stack -> error) exp;
   }
 
-  let decode_error_aux =
-    let b = Buffer.create 64 in
+  let show_type =
+    let b = Buffer.create 128 in
     let ppf = Format.formatter_of_buffer b in
-    fun { decode_error; _ } ty input ->
+    fun ty ->
       T.pp ppf ty;
       Format.pp_print_flush ppf ();
       let s = Buffer.contents b in
-      Buffer.clear b;
-      (decode_error @@ string s) @@ input
-
-  let error_key_aux =
-    let b = Buffer.create 64 in
-    let ppf = Format.formatter_of_buffer b in
-    fun { key_error; _ } ty ->
-      T.pp ppf ty;
-      Format.pp_print_flush ppf ();
-      let s = Buffer.contents b in
-      Buffer.clear b;
-      key_error @@ string s
+      Buffer.clear b; string s
 
   let set_error x = x.is_error := bool true
 
@@ -693,6 +681,7 @@ end = struct
   let union_helper_bool = { union_helper_int with to_extern = External.of_bool }
 
   let rec decode_typescheme ~set ~debug input ty =
+    let$ ty_str = ("type", show_type ty) in
     let s1 =
       match !ty with
       | T.Unknown _ -> set (Data.unknown input)
@@ -713,7 +702,7 @@ end = struct
           External.classify Assoc input
             ~ok:(fun input ->
               let$ decoded = ("decoded", hashtbl_create ()) in
-              let s1 = decode_record_aux ~debug decoded input !tys in
+              let s1 = decode_record_aux ~debug decoded input !tys ty_str in
               let s2 = set (Data.hashtbl decoded) in
               s1 |: s2)
             ~error:(fun () -> set_error debug)
@@ -727,7 +716,9 @@ end = struct
                 | Some tys ->
                     let$ decoded = ("decoded", hashtbl_create ()) in
                     let s1 = decoded.%{key} <- v in
-                    let s2 = decode_record_aux ~debug decoded input !tys in
+                    let s2 =
+                      decode_record_aux ~debug decoded input !tys ty_str
+                    in
                     let s3 = set (Data.hashtbl decoded) in
                     s1 |: s2 |: s3
                 | None -> set_error debug
@@ -746,21 +737,21 @@ end = struct
       | T.Union_int (key, { cases; row }, Not_bool) ->
           decode_union union_helper_int
             (Map.Int.to_seq cases |> Seq.map (fun (k, v) -> (int k, v)))
-            ~set ~debug key input row
+            ~set ~debug key input row ty_str
       | Union_string (key, { cases; row }) ->
           decode_union union_helper_string
             (Map.String.to_seq cases |> Seq.map (fun (k, v) -> (string k, v)))
-            ~set ~debug key input row
+            ~set ~debug key input row ty_str
     in
     let s2 =
       if_ (deref debug.is_error)
-        ~then_:(fun () -> raise (decode_error_aux debug ty input))
+        ~then_:(fun () -> raise ((debug.decode_error @@ ty_str) @@ input))
         ~else_:None
     in
     s1 |: s2
 
   and decode_union : 'a. 'a union_helper -> ('a exp * T.record) Seq.t -> _ =
-   fun { equal; to_data; classify; _ } seq ~set ~debug key input row ->
+   fun { equal; to_data; classify; _ } seq ~set ~debug key input row ty_str ->
     let key' = string key in
     External.classify Assoc input
       ~ok:(fun input ->
@@ -786,7 +777,7 @@ end = struct
                           let$ decoded = ("decoded", hashtbl_create ()) in
                           let s1 = decoded.%{key'} <- to_data i in
                           let s2 =
-                            decode_record_aux ~debug decoded input !tys
+                            decode_record_aux ~debug decoded input !tys ty_str
                           in
                           let s3 = set (Data.hashtbl decoded) in
                           s1 |: s2 |: s3)
@@ -885,7 +876,8 @@ end = struct
              let s4 = stack_drop debug.stack in
              s1 |: s2 |: s3 |: s4))
 
-  and decode_record_aux ~debug decoded input tys =
+  and decode_record_aux ~debug decoded input tys ty_str =
+    let$ missing_keys = ("missing_keys", stack_create ()) in
     let s1 =
       Map.String.to_seq tys
       |> Seq.map (fun (k, ty) ->
@@ -907,13 +899,13 @@ end = struct
                     (fun () ->
                       match !ty with
                       | Nullable _ | Unknown _ -> decoded.%{k'} <- nil_value
-                      | _ -> stack_push debug.missing_keys k')))
+                      | _ -> stack_push missing_keys k')))
       |> join_stmts
     in
     let s2 =
       if_
-        (not (stack_is_empty debug.missing_keys))
-        ~then_:(fun () -> raise (error_key_aux debug (T.record (ref tys))))
+        (not (stack_is_empty missing_keys))
+        ~then_:(fun () -> raise ((debug.key_error @@ ty_str) @@ missing_keys))
         ~else_:None
     in
     s1 |: s2
@@ -1096,7 +1088,6 @@ end = struct
         (lambda (fun input ->
              let$ stack = ("stack", stack_create ()) in
              let& is_error = ("is_error", bool false) in
-             let$ missing_keys = ("missing_keys", stack_create ()) in
              let$ decode_error =
                ( "decode_error",
                  lambda (fun ty ->
@@ -1117,31 +1108,31 @@ end = struct
                ( "key_error",
                  lambda (fun ty ->
                      return
-                       (error
-                          (array_concat
-                             (array
-                                (Error.missing_keys ~fname:compiled.name
-                                   ~stack:(stack_concat stack (string " <- "))
-                                   ~ty
-                                   ~keys:
-                                     (stack_concat missing_keys (string ", "))
-                                   string))
-                             (string "")))) )
+                       (lambda (fun keys ->
+                            return
+                              (error
+                                 (array_concat
+                                    (array
+                                       (Error.missing_keys ~fname:compiled.name
+                                          ~stack:
+                                            (stack_concat stack (string " <- "))
+                                          ~ty
+                                          ~keys:
+                                            (stack_concat keys (string ", "))
+                                          string))
+                                    (string "")))))) )
              in
-             let debug =
-               { is_error; missing_keys; stack; decode_error; key_error }
-             in
+             let debug = { is_error; stack; decode_error; key_error } in
              let$ props = ("props", hashtbl_create ()) in
              let s1 = stack_push stack (string "<input>") in
              let s2 =
+               let$ ty_str =
+                 ("type", show_type (T.record (ref compiled.types)))
+               in
                External.classify Assoc input
                  ~ok:(fun input ->
-                   decode_record_aux ~debug props input compiled.types)
-                 ~error:(fun () ->
-                   raise
-                     (decode_error_aux debug
-                        (T.record (ref compiled.types))
-                        input))
+                   decode_record_aux ~debug props input compiled.types ty_str)
+                 ~error:(fun () -> raise ((decode_error @@ ty_str) @@ input))
              in
              let s3 =
                let$ buffer = ("buffer", buffer_create ()) in

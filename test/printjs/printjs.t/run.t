@@ -290,7 +290,6 @@
   export default (arg$0) => {
     let stack$0 = [];
     let is_error$0 = false;
-    let missing_keys$0 = [];
     let decode_error$0 =
       (arg$1) => {
         return (
@@ -323,34 +322,70 @@
     let key_error$0 =
       (arg$1) => {
         return (
-          Promise.reject(
-            new Error(
-              [
-                "File: ",
-                "template.acutis",
-                "\n\
+          (arg$2) => {
+            return (
+              Promise.reject(
+                new Error(
+                  [
+                    "File: ",
+                    "template.acutis",
+                    "\n\
   Render error.\n\
   The data supplied does not match this template's interface.\n\
   ",
-                "Path:\n",
-                stack$0.join(" <- "),
-                "\nExpected type:\n",
-                arg$1,
-                "\nInput is missing keys:\n",
-                missing_keys$0.join(", "),
-              ].join(
-                ""
+                    "Path:\n",
+                    stack$0.join(" <- "),
+                    "\nExpected type:\n",
+                    arg$1,
+                    "\nInput is missing keys:\n",
+                    arg$2.join(", "),
+                  ].join(
+                    ""
+                  )
+                )
               )
-            )
-          )
+            );
+          }
         );
       };
     let props$0 = new Map();
     stack$0.unshift("<input>");
+    let type$0 =
+      "{\n\
+    big_float: float,\n\
+    big_int: int,\n\
+    bool1: false | true,\n\
+    bool2: false | true,\n\
+    dangerous: string,\n\
+    int_list: [int],\n\
+    nested_list: [[[int]]],\n\
+    nested_nullable_list: [??false | true],\n\
+    null_bool: ?false | true,\n\
+    null_float: ?float,\n\
+    null_int: ?int,\n\
+    null_string: ?string,\n\
+    null_string_dict: <?string>,\n\
+    record: {int_enum: @8 | @40, string_enum: @\"no\" | @\"yes\"},\n\
+    tagged_record_bool: {@tag: false, a: string} | {@tag: true, b: int},\n\
+    tagged_record_int:\n\
+      {@tag: 0} | {@tag: 1, tuple: (float, string, false | true)},\n\
+    tagged_record_open:\n\
+      {@tag: 100, a: int} |\n\
+      {@tag: 200, b: string} |\n\
+      {@tag: 300, c: float} |\n\
+      ...,\n\
+    tagged_record_string:\n\
+      {@tag: \"a\", record_list: [{job: string, name: string}]} |\n\
+      {@tag: \"b\", open_enum: @0 | @1 | ...},\n\
+    unicode_string: string,\n\
+    unknown: _\n\
+  }";
     if (typeof arg$0 === "object" && !(arg$0 === null)) {
+      let missing_keys$0 = [];
       if (Object.hasOwn(arg$0, "big_float")) {
         let input$0 = arg$0["big_float"];
         stack$0.unshift("big_float");
+        let type$1 = "float";
         if (typeof input$0 === "number") {
           props$0.set("big_float", input$0);
         } else {
@@ -360,7 +395,7 @@
             is_error$0 = true;
           }
         }
-        if (is_error$0) { return (decode_error$0("float")(input$0)); }
+        if (is_error$0) { return (decode_error$0(type$1)(input$0)); }
         stack$0.shift();
       } else {
         missing_keys$0.unshift("big_float");
@@ -368,12 +403,13 @@
       if (Object.hasOwn(arg$0, "big_int")) {
         let input$0 = arg$0["big_int"];
         stack$0.unshift("big_int");
+        let type$1 = "int";
         if (Number.isInteger(input$0)) {
           props$0.set("big_int", input$0);
         } else {
           is_error$0 = true;
         }
-        if (is_error$0) { return (decode_error$0("int")(input$0)); }
+        if (is_error$0) { return (decode_error$0(type$1)(input$0)); }
         stack$0.shift();
       } else {
         missing_keys$0.unshift("big_int");
@@ -381,6 +417,7 @@
       if (Object.hasOwn(arg$0, "bool1")) {
         let input$0 = arg$0["bool1"];
         stack$0.unshift("bool1");
+        let type$1 = "false | true";
         if (typeof input$0 === "boolean") {
           if (input$0) {
             props$0.set("bool1", 1);
@@ -390,7 +427,7 @@
         } else {
           is_error$0 = true;
         }
-        if (is_error$0) { return (decode_error$0("false | true")(input$0)); }
+        if (is_error$0) { return (decode_error$0(type$1)(input$0)); }
         stack$0.shift();
       } else {
         missing_keys$0.unshift("bool1");
@@ -398,6 +435,7 @@
       if (Object.hasOwn(arg$0, "bool2")) {
         let input$0 = arg$0["bool2"];
         stack$0.unshift("bool2");
+        let type$1 = "false | true";
         if (typeof input$0 === "boolean") {
           if (input$0) {
             props$0.set("bool2", 1);
@@ -407,7 +445,7 @@
         } else {
           is_error$0 = true;
         }
-        if (is_error$0) { return (decode_error$0("false | true")(input$0)); }
+        if (is_error$0) { return (decode_error$0(type$1)(input$0)); }
         stack$0.shift();
       } else {
         missing_keys$0.unshift("bool2");
@@ -415,12 +453,13 @@
       if (Object.hasOwn(arg$0, "dangerous")) {
         let input$0 = arg$0["dangerous"];
         stack$0.unshift("dangerous");
+        let type$1 = "string";
         if (typeof input$0 === "string") {
           props$0.set("dangerous", input$0);
         } else {
           is_error$0 = true;
         }
-        if (is_error$0) { return (decode_error$0("string")(input$0)); }
+        if (is_error$0) { return (decode_error$0(type$1)(input$0)); }
         stack$0.shift();
       } else {
         missing_keys$0.unshift("dangerous");
@@ -428,18 +467,20 @@
       if (Object.hasOwn(arg$0, "int_list")) {
         let input$0 = arg$0["int_list"];
         stack$0.unshift("int_list");
+        let type$1 = "[int]";
         if (Array.isArray(input$0)) {
           let decoded$0 = [0, 0];
           let decode_dst$0 = decoded$0;
           for (let i$0 = 0; i$0 < input$0.length; i$0++) {
             let decode_dst_new$0 = [0, 0];
             stack$0.unshift(i$0.toString());
+            let type$2 = "int";
             if (Number.isInteger(input$0[i$0])) {
               decode_dst_new$0[0] = input$0[i$0];
             } else {
               is_error$0 = true;
             }
-            if (is_error$0) { return (decode_error$0("int")(input$0[i$0])); }
+            if (is_error$0) { return (decode_error$0(type$2)(input$0[i$0])); }
             decode_dst$0[1] = decode_dst_new$0;
             decode_dst$0 = decode_dst_new$0;
             stack$0.shift();
@@ -448,7 +489,7 @@
         } else {
           is_error$0 = true;
         }
-        if (is_error$0) { return (decode_error$0("[int]")(input$0)); }
+        if (is_error$0) { return (decode_error$0(type$1)(input$0)); }
         stack$0.shift();
       } else {
         missing_keys$0.unshift("int_list");
@@ -456,31 +497,35 @@
       if (Object.hasOwn(arg$0, "nested_list")) {
         let input$0 = arg$0["nested_list"];
         stack$0.unshift("nested_list");
+        let type$1 = "[[[int]]]";
         if (Array.isArray(input$0)) {
           let decoded$0 = [0, 0];
           let decode_dst$0 = decoded$0;
           for (let i$0 = 0; i$0 < input$0.length; i$0++) {
             let decode_dst_new$0 = [0, 0];
             stack$0.unshift(i$0.toString());
+            let type$2 = "[[int]]";
             if (Array.isArray(input$0[i$0])) {
               let decoded$1 = [0, 0];
               let decode_dst$1 = decoded$1;
               for (let i$1 = 0; i$1 < input$0[i$0].length; i$1++) {
                 let decode_dst_new$1 = [0, 0];
                 stack$0.unshift(i$1.toString());
+                let type$3 = "[int]";
                 if (Array.isArray(input$0[i$0][i$1])) {
                   let decoded$2 = [0, 0];
                   let decode_dst$2 = decoded$2;
                   for (let i$2 = 0; i$2 < input$0[i$0][i$1].length; i$2++) {
                     let decode_dst_new$2 = [0, 0];
                     stack$0.unshift(i$2.toString());
+                    let type$4 = "int";
                     if (Number.isInteger(input$0[i$0][i$1][i$2])) {
                       decode_dst_new$2[0] = input$0[i$0][i$1][i$2];
                     } else {
                       is_error$0 = true;
                     }
                     if (is_error$0) {
-                      return (decode_error$0("int")(input$0[i$0][i$1][i$2]));
+                      return (decode_error$0(type$4)(input$0[i$0][i$1][i$2]));
                     }
                     decode_dst$2[1] = decode_dst_new$2;
                     decode_dst$2 = decode_dst_new$2;
@@ -491,7 +536,7 @@
                   is_error$0 = true;
                 }
                 if (is_error$0) {
-                  return (decode_error$0("[int]")(input$0[i$0][i$1]));
+                  return (decode_error$0(type$3)(input$0[i$0][i$1]));
                 }
                 decode_dst$1[1] = decode_dst_new$1;
                 decode_dst$1 = decode_dst_new$1;
@@ -501,9 +546,7 @@
             } else {
               is_error$0 = true;
             }
-            if (is_error$0) {
-              return (decode_error$0("[[int]]")(input$0[i$0]));
-            }
+            if (is_error$0) { return (decode_error$0(type$2)(input$0[i$0])); }
             decode_dst$0[1] = decode_dst_new$0;
             decode_dst$0 = decode_dst_new$0;
             stack$0.shift();
@@ -512,7 +555,7 @@
         } else {
           is_error$0 = true;
         }
-        if (is_error$0) { return (decode_error$0("[[[int]]]")(input$0)); }
+        if (is_error$0) { return (decode_error$0(type$1)(input$0)); }
         stack$0.shift();
       } else {
         missing_keys$0.unshift("nested_list");
@@ -520,22 +563,26 @@
       if (Object.hasOwn(arg$0, "nested_nullable_list")) {
         let input$0 = arg$0["nested_nullable_list"];
         stack$0.unshift("nested_nullable_list");
+        let type$1 = "[??false | true]";
         if (Array.isArray(input$0)) {
           let decoded$0 = [0, 0];
           let decode_dst$0 = decoded$0;
           for (let i$0 = 0; i$0 < input$0.length; i$0++) {
             let decode_dst_new$0 = [0, 0];
             stack$0.unshift(i$0.toString());
+            let type$2 = "??false | true";
             if (input$0[i$0] === null || input$0[i$0] === undefined) {
               decode_dst_new$0[0] = 0;
             } else {
               let decoded$1 = [0];
               stack$0.unshift("<nullable>");
+              let type$3 = "?false | true";
               if (input$0[i$0] === null || input$0[i$0] === undefined) {
                 decoded$1[0] = 0;
               } else {
                 let decoded$2 = [0];
                 stack$0.unshift("<nullable>");
+                let type$4 = "false | true";
                 if (typeof input$0[i$0] === "boolean") {
                   if (input$0[i$0]) {
                     decoded$2[0] = 1;
@@ -546,20 +593,18 @@
                   is_error$0 = true;
                 }
                 if (is_error$0) {
-                  return (decode_error$0("false | true")(input$0[i$0]));
+                  return (decode_error$0(type$4)(input$0[i$0]));
                 }
                 decoded$1[0] = decoded$2;
                 stack$0.shift();
               }
               if (is_error$0) {
-                return (decode_error$0("?false | true")(input$0[i$0]));
+                return (decode_error$0(type$3)(input$0[i$0]));
               }
               decode_dst_new$0[0] = decoded$1;
               stack$0.shift();
             }
-            if (is_error$0) {
-              return (decode_error$0("??false | true")(input$0[i$0]));
-            }
+            if (is_error$0) { return (decode_error$0(type$2)(input$0[i$0])); }
             decode_dst$0[1] = decode_dst_new$0;
             decode_dst$0 = decode_dst_new$0;
             stack$0.shift();
@@ -568,9 +613,7 @@
         } else {
           is_error$0 = true;
         }
-        if (is_error$0) {
-          return (decode_error$0("[??false | true]")(input$0));
-        }
+        if (is_error$0) { return (decode_error$0(type$1)(input$0)); }
         stack$0.shift();
       } else {
         missing_keys$0.unshift("nested_nullable_list");
@@ -578,21 +621,23 @@
       if (Object.hasOwn(arg$0, "null_bool")) {
         let input$0 = arg$0["null_bool"];
         stack$0.unshift("null_bool");
+        let type$1 = "?false | true";
         if (input$0 === null || input$0 === undefined) {
           props$0.set("null_bool", 0);
         } else {
           let decoded$0 = [0];
           stack$0.unshift("<nullable>");
+          let type$2 = "false | true";
           if (typeof input$0 === "boolean") {
             if (input$0) { decoded$0[0] = 1; } else { decoded$0[0] = 0; }
           } else {
             is_error$0 = true;
           }
-          if (is_error$0) { return (decode_error$0("false | true")(input$0)); }
+          if (is_error$0) { return (decode_error$0(type$2)(input$0)); }
           props$0.set("null_bool", decoded$0);
           stack$0.shift();
         }
-        if (is_error$0) { return (decode_error$0("?false | true")(input$0)); }
+        if (is_error$0) { return (decode_error$0(type$1)(input$0)); }
         stack$0.shift();
       } else {
         props$0.set("null_bool", 0);
@@ -600,11 +645,13 @@
       if (Object.hasOwn(arg$0, "null_float")) {
         let input$0 = arg$0["null_float"];
         stack$0.unshift("null_float");
+        let type$1 = "?float";
         if (input$0 === null || input$0 === undefined) {
           props$0.set("null_float", 0);
         } else {
           let decoded$0 = [0];
           stack$0.unshift("<nullable>");
+          let type$2 = "float";
           if (typeof input$0 === "number") {
             decoded$0[0] = input$0;
           } else {
@@ -614,11 +661,11 @@
               is_error$0 = true;
             }
           }
-          if (is_error$0) { return (decode_error$0("float")(input$0)); }
+          if (is_error$0) { return (decode_error$0(type$2)(input$0)); }
           props$0.set("null_float", decoded$0);
           stack$0.shift();
         }
-        if (is_error$0) { return (decode_error$0("?float")(input$0)); }
+        if (is_error$0) { return (decode_error$0(type$1)(input$0)); }
         stack$0.shift();
       } else {
         props$0.set("null_float", 0);
@@ -626,21 +673,23 @@
       if (Object.hasOwn(arg$0, "null_int")) {
         let input$0 = arg$0["null_int"];
         stack$0.unshift("null_int");
+        let type$1 = "?int";
         if (input$0 === null || input$0 === undefined) {
           props$0.set("null_int", 0);
         } else {
           let decoded$0 = [0];
           stack$0.unshift("<nullable>");
+          let type$2 = "int";
           if (Number.isInteger(input$0)) {
             decoded$0[0] = input$0;
           } else {
             is_error$0 = true;
           }
-          if (is_error$0) { return (decode_error$0("int")(input$0)); }
+          if (is_error$0) { return (decode_error$0(type$2)(input$0)); }
           props$0.set("null_int", decoded$0);
           stack$0.shift();
         }
-        if (is_error$0) { return (decode_error$0("?int")(input$0)); }
+        if (is_error$0) { return (decode_error$0(type$1)(input$0)); }
         stack$0.shift();
       } else {
         props$0.set("null_int", 0);
@@ -648,21 +697,23 @@
       if (Object.hasOwn(arg$0, "null_string")) {
         let input$0 = arg$0["null_string"];
         stack$0.unshift("null_string");
+        let type$1 = "?string";
         if (input$0 === null || input$0 === undefined) {
           props$0.set("null_string", 0);
         } else {
           let decoded$0 = [0];
           stack$0.unshift("<nullable>");
+          let type$2 = "string";
           if (typeof input$0 === "string") {
             decoded$0[0] = input$0;
           } else {
             is_error$0 = true;
           }
-          if (is_error$0) { return (decode_error$0("string")(input$0)); }
+          if (is_error$0) { return (decode_error$0(type$2)(input$0)); }
           props$0.set("null_string", decoded$0);
           stack$0.shift();
         }
-        if (is_error$0) { return (decode_error$0("?string")(input$0)); }
+        if (is_error$0) { return (decode_error$0(type$1)(input$0)); }
         stack$0.shift();
       } else {
         props$0.set("null_string", 0);
@@ -670,36 +721,37 @@
       if (Object.hasOwn(arg$0, "null_string_dict")) {
         let input$0 = arg$0["null_string_dict"];
         stack$0.unshift("null_string_dict");
+        let type$1 = "<?string>";
         if (typeof input$0 === "object" && !(input$0 === null)) {
           let decoded$0 = new Map();
           for (let x$0 of Object.keys(input$0)) {
             stack$0.unshift(x$0);
+            let type$2 = "?string";
             if (input$0[x$0] === null || input$0[x$0] === undefined) {
               decoded$0.set(x$0, 0);
             } else {
               let decoded$1 = [0];
               stack$0.unshift("<nullable>");
+              let type$3 = "string";
               if (typeof input$0[x$0] === "string") {
                 decoded$1[0] = input$0[x$0];
               } else {
                 is_error$0 = true;
               }
               if (is_error$0) {
-                return (decode_error$0("string")(input$0[x$0]));
+                return (decode_error$0(type$3)(input$0[x$0]));
               }
               decoded$0.set(x$0, decoded$1);
               stack$0.shift();
             }
-            if (is_error$0) {
-              return (decode_error$0("?string")(input$0[x$0]));
-            }
+            if (is_error$0) { return (decode_error$0(type$2)(input$0[x$0])); }
             props$0.set("null_string_dict", decoded$0);
             stack$0.shift();
           }
         } else {
           is_error$0 = true;
         }
-        if (is_error$0) { return (decode_error$0("<?string>")(input$0)); }
+        if (is_error$0) { return (decode_error$0(type$1)(input$0)); }
         stack$0.shift();
       } else {
         missing_keys$0.unshift("null_string_dict");
@@ -707,11 +759,14 @@
       if (Object.hasOwn(arg$0, "record")) {
         let input$0 = arg$0["record"];
         stack$0.unshift("record");
+        let type$1 = "{int_enum: @8 | @40, string_enum: @\"no\" | @\"yes\"}";
         if (typeof input$0 === "object" && !(input$0 === null)) {
           let decoded$0 = new Map();
+          let missing_keys$1 = [];
           if (Object.hasOwn(input$0, "int_enum")) {
             let input$1 = input$0["int_enum"];
             stack$0.unshift("int_enum");
+            let type$2 = "@8 | @40";
             if (Number.isInteger(input$1)) {
               if (input$1 === 8) {
                 decoded$0.set("int_enum", input$1);
@@ -725,14 +780,15 @@
             } else {
               is_error$0 = true;
             }
-            if (is_error$0) { return (decode_error$0("@8 | @40")(input$1)); }
+            if (is_error$0) { return (decode_error$0(type$2)(input$1)); }
             stack$0.shift();
           } else {
-            missing_keys$0.unshift("int_enum");
+            missing_keys$1.unshift("int_enum");
           }
           if (Object.hasOwn(input$0, "string_enum")) {
             let input$1 = input$0["string_enum"];
             stack$0.unshift("string_enum");
+            let type$2 = "@\"no\" | @\"yes\"";
             if (typeof input$1 === "string") {
               if (input$1 === "no") {
                 decoded$0.set("string_enum", input$1);
@@ -746,33 +802,19 @@
             } else {
               is_error$0 = true;
             }
-            if (is_error$0) {
-              return (decode_error$0("@\"no\" | @\"yes\"")(input$1));
-            }
+            if (is_error$0) { return (decode_error$0(type$2)(input$1)); }
             stack$0.shift();
           } else {
-            missing_keys$0.unshift("string_enum");
+            missing_keys$1.unshift("string_enum");
           }
-          if (!(missing_keys$0.length === 0)) {
-            return (
-              key_error$0(
-                "{int_enum: @8 | @40, string_enum: @\"no\" | @\"yes\"}"
-              )
-            );
+          if (!(missing_keys$1.length === 0)) {
+            return (key_error$0(type$1)(missing_keys$1));
           }
           props$0.set("record", decoded$0);
         } else {
           is_error$0 = true;
         }
-        if (is_error$0) {
-          return (
-            decode_error$0(
-              "{int_enum: @8 | @40, string_enum: @\"no\" | @\"yes\"}"
-            )(
-              input$0
-            )
-          );
-        }
+        if (is_error$0) { return (decode_error$0(type$1)(input$0)); }
         stack$0.shift();
       } else {
         missing_keys$0.unshift("record");
@@ -780,49 +822,52 @@
       if (Object.hasOwn(arg$0, "tagged_record_bool")) {
         let input$0 = arg$0["tagged_record_bool"];
         stack$0.unshift("tagged_record_bool");
+        let type$1 = "{@tag: false, a: string} | {@tag: true, b: int}";
         if (typeof input$0 === "object" && !(input$0 === null)) {
           if (Object.hasOwn(input$0, "tag")) {
             if (typeof input$0["tag"] === "boolean") {
               if (input$0["tag"]) {
                 let decoded$0 = new Map();
                 decoded$0.set("tag", 1);
+                let missing_keys$1 = [];
                 if (Object.hasOwn(input$0, "b")) {
                   let input$1 = input$0["b"];
                   stack$0.unshift("b");
+                  let type$2 = "int";
                   if (Number.isInteger(input$1)) {
                     decoded$0.set("b", input$1);
                   } else {
                     is_error$0 = true;
                   }
-                  if (is_error$0) { return (decode_error$0("int")(input$1)); }
+                  if (is_error$0) { return (decode_error$0(type$2)(input$1)); }
                   stack$0.shift();
                 } else {
-                  missing_keys$0.unshift("b");
+                  missing_keys$1.unshift("b");
                 }
-                if (!(missing_keys$0.length === 0)) {
-                  return (key_error$0("{b: int}"));
+                if (!(missing_keys$1.length === 0)) {
+                  return (key_error$0(type$1)(missing_keys$1));
                 }
                 props$0.set("tagged_record_bool", decoded$0);
               } else {
                 let decoded$0 = new Map();
                 decoded$0.set("tag", 0);
+                let missing_keys$1 = [];
                 if (Object.hasOwn(input$0, "a")) {
                   let input$1 = input$0["a"];
                   stack$0.unshift("a");
+                  let type$2 = "string";
                   if (typeof input$1 === "string") {
                     decoded$0.set("a", input$1);
                   } else {
                     is_error$0 = true;
                   }
-                  if (is_error$0) {
-                    return (decode_error$0("string")(input$1));
-                  }
+                  if (is_error$0) { return (decode_error$0(type$2)(input$1)); }
                   stack$0.shift();
                 } else {
-                  missing_keys$0.unshift("a");
+                  missing_keys$1.unshift("a");
                 }
-                if (!(missing_keys$0.length === 0)) {
-                  return (key_error$0("{a: string}"));
+                if (!(missing_keys$1.length === 0)) {
+                  return (key_error$0(type$1)(missing_keys$1));
                 }
                 props$0.set("tagged_record_bool", decoded$0);
               }
@@ -835,13 +880,7 @@
         } else {
           is_error$0 = true;
         }
-        if (is_error$0) {
-          return (
-            decode_error$0("{@tag: false, a: string} | {@tag: true, b: int}")(
-              input$0
-            )
-          );
-        }
+        if (is_error$0) { return (decode_error$0(type$1)(input$0)); }
         stack$0.shift();
       } else {
         missing_keys$0.unshift("tagged_record_bool");
@@ -849,23 +888,28 @@
       if (Object.hasOwn(arg$0, "tagged_record_int")) {
         let input$0 = arg$0["tagged_record_int"];
         stack$0.unshift("tagged_record_int");
+        let type$1 =
+          "{@tag: 0} | {@tag: 1, tuple: (float, string, false | true)}";
         if (typeof input$0 === "object" && !(input$0 === null)) {
           if (Object.hasOwn(input$0, "tag")) {
             if (Number.isInteger(input$0["tag"])) {
               if (input$0["tag"] === 0) {
                 let decoded$0 = new Map();
                 decoded$0.set("tag", input$0["tag"]);
-                if (!(missing_keys$0.length === 0)) {
-                  return (key_error$0("{}"));
+                let missing_keys$1 = [];
+                if (!(missing_keys$1.length === 0)) {
+                  return (key_error$0(type$1)(missing_keys$1));
                 }
                 props$0.set("tagged_record_int", decoded$0);
               } else {
                 if (input$0["tag"] === 1) {
                   let decoded$0 = new Map();
                   decoded$0.set("tag", input$0["tag"]);
+                  let missing_keys$1 = [];
                   if (Object.hasOwn(input$0, "tuple")) {
                     let input$1 = input$0["tuple"];
                     stack$0.unshift("tuple");
+                    let type$2 = "(float, string, false | true)";
                     if (Array.isArray(input$1)) {
                       if (input$1.length === 3) {
                         let decoded$1 =
@@ -873,6 +917,7 @@
                         for (let i$0 = 0; i$0 < input$1.length; i$0++) {
                           stack$0.unshift(i$0.toString());
                           if (i$0 === 0) {
+                            let type$3 = "float";
                             if (typeof input$1[i$0] === "number") {
                               decoded$1[i$0] = input$1[i$0];
                             } else {
@@ -883,22 +928,22 @@
                               }
                             }
                             if (is_error$0) {
-                              return (decode_error$0("float")(input$1[i$0]));
+                              return (decode_error$0(type$3)(input$1[i$0]));
                             }
                           } else {
                             if (i$0 === 1) {
+                              let type$3 = "string";
                               if (typeof input$1[i$0] === "string") {
                                 decoded$1[i$0] = input$1[i$0];
                               } else {
                                 is_error$0 = true;
                               }
                               if (is_error$0) {
-                                return (
-                                  decode_error$0("string")(input$1[i$0])
-                                );
+                                return (decode_error$0(type$3)(input$1[i$0]));
                               }
                             } else {
                               if (i$0 === 2) {
+                                let type$3 = "false | true";
                                 if (typeof input$1[i$0] === "boolean") {
                                   if (input$1[i$0]) {
                                     decoded$1[i$0] = 1;
@@ -910,9 +955,7 @@
                                 }
                                 if (is_error$0) {
                                   return (
-                                    decode_error$0("false | true")(
-                                      input$1[i$0]
-                                    )
+                                    decode_error$0(type$3)(input$1[i$0])
                                   );
                                 }
                               } else {
@@ -930,20 +973,14 @@
                       is_error$0 = true;
                     }
                     if (is_error$0) {
-                      return (
-                        decode_error$0("(float, string, false | true)")(
-                          input$1
-                        )
-                      );
+                      return (decode_error$0(type$2)(input$1));
                     }
                     stack$0.shift();
                   } else {
-                    missing_keys$0.unshift("tuple");
+                    missing_keys$1.unshift("tuple");
                   }
-                  if (!(missing_keys$0.length === 0)) {
-                    return (
-                      key_error$0("{tuple: (float, string, false | true)}")
-                    );
+                  if (!(missing_keys$1.length === 0)) {
+                    return (key_error$0(type$1)(missing_keys$1));
                   }
                   props$0.set("tagged_record_int", decoded$0);
                 } else {
@@ -959,15 +996,7 @@
         } else {
           is_error$0 = true;
         }
-        if (is_error$0) {
-          return (
-            decode_error$0(
-              "{@tag: 0} | {@tag: 1, tuple: (float, string, false | true)}"
-            )(
-              input$0
-            )
-          );
-        }
+        if (is_error$0) { return (decode_error$0(type$1)(input$0)); }
         stack$0.shift();
       } else {
         missing_keys$0.unshift("tagged_record_int");
@@ -975,59 +1004,67 @@
       if (Object.hasOwn(arg$0, "tagged_record_open")) {
         let input$0 = arg$0["tagged_record_open"];
         stack$0.unshift("tagged_record_open");
+        let type$1 =
+          "{@tag: 100, a: int} | {@tag: 200, b: string} | {@tag: 300, c: float} | ...";
         if (typeof input$0 === "object" && !(input$0 === null)) {
           if (Object.hasOwn(input$0, "tag")) {
             if (Number.isInteger(input$0["tag"])) {
               if (input$0["tag"] === 100) {
                 let decoded$0 = new Map();
                 decoded$0.set("tag", input$0["tag"]);
+                let missing_keys$1 = [];
                 if (Object.hasOwn(input$0, "a")) {
                   let input$1 = input$0["a"];
                   stack$0.unshift("a");
+                  let type$2 = "int";
                   if (Number.isInteger(input$1)) {
                     decoded$0.set("a", input$1);
                   } else {
                     is_error$0 = true;
                   }
-                  if (is_error$0) { return (decode_error$0("int")(input$1)); }
+                  if (is_error$0) { return (decode_error$0(type$2)(input$1)); }
                   stack$0.shift();
                 } else {
-                  missing_keys$0.unshift("a");
+                  missing_keys$1.unshift("a");
                 }
-                if (!(missing_keys$0.length === 0)) {
-                  return (key_error$0("{a: int}"));
+                if (!(missing_keys$1.length === 0)) {
+                  return (key_error$0(type$1)(missing_keys$1));
                 }
                 props$0.set("tagged_record_open", decoded$0);
               } else {
                 if (input$0["tag"] === 200) {
                   let decoded$0 = new Map();
                   decoded$0.set("tag", input$0["tag"]);
+                  let missing_keys$1 = [];
                   if (Object.hasOwn(input$0, "b")) {
                     let input$1 = input$0["b"];
                     stack$0.unshift("b");
+                    let type$2 = "string";
                     if (typeof input$1 === "string") {
                       decoded$0.set("b", input$1);
                     } else {
                       is_error$0 = true;
                     }
                     if (is_error$0) {
-                      return (decode_error$0("string")(input$1));
+                      return (decode_error$0(type$2)(input$1));
                     }
                     stack$0.shift();
                   } else {
-                    missing_keys$0.unshift("b");
+                    missing_keys$1.unshift("b");
                   }
-                  if (!(missing_keys$0.length === 0)) {
-                    return (key_error$0("{b: string}"));
+                  if (!(missing_keys$1.length === 0)) {
+                    return (key_error$0(type$1)(missing_keys$1));
                   }
                   props$0.set("tagged_record_open", decoded$0);
                 } else {
                   if (input$0["tag"] === 300) {
                     let decoded$0 = new Map();
                     decoded$0.set("tag", input$0["tag"]);
+                    let missing_keys$1 = [];
                     if (Object.hasOwn(input$0, "c")) {
                       let input$1 = input$0["c"];
                       stack$0.unshift("c");
+                      let type$2 = "float";
                       if (typeof input$1 === "number") {
                         decoded$0.set("c", input$1);
                       } else {
@@ -1038,14 +1075,14 @@
                         }
                       }
                       if (is_error$0) {
-                        return (decode_error$0("float")(input$1));
+                        return (decode_error$0(type$2)(input$1));
                       }
                       stack$0.shift();
                     } else {
-                      missing_keys$0.unshift("c");
+                      missing_keys$1.unshift("c");
                     }
-                    if (!(missing_keys$0.length === 0)) {
-                      return (key_error$0("{c: float}"));
+                    if (!(missing_keys$1.length === 0)) {
+                      return (key_error$0(type$1)(missing_keys$1));
                     }
                     props$0.set("tagged_record_open", decoded$0);
                   } else {
@@ -1064,15 +1101,7 @@
         } else {
           is_error$0 = true;
         }
-        if (is_error$0) {
-          return (
-            decode_error$0(
-              "{@tag: 100, a: int} | {@tag: 200, b: string} | {@tag: 300, c: float} | ..."
-            )(
-              input$0
-            )
-          );
-        }
+        if (is_error$0) { return (decode_error$0(type$1)(input$0)); }
         stack$0.shift();
       } else {
         missing_keys$0.unshift("tagged_record_open");
@@ -1080,69 +1109,74 @@
       if (Object.hasOwn(arg$0, "tagged_record_string")) {
         let input$0 = arg$0["tagged_record_string"];
         stack$0.unshift("tagged_record_string");
+        let type$1 =
+          "{@tag: \"a\", record_list: [{job: string, name: string}]} |\n\
+  {@tag: \"b\", open_enum: @0 | @1 | ...}";
         if (typeof input$0 === "object" && !(input$0 === null)) {
           if (Object.hasOwn(input$0, "tag")) {
             if (typeof input$0["tag"] === "string") {
               if (input$0["tag"] === "a") {
                 let decoded$0 = new Map();
                 decoded$0.set("tag", input$0["tag"]);
+                let missing_keys$1 = [];
                 if (Object.hasOwn(input$0, "record_list")) {
                   let input$1 = input$0["record_list"];
                   stack$0.unshift("record_list");
+                  let type$2 = "[{job: string, name: string}]";
                   if (Array.isArray(input$1)) {
                     let decoded$1 = [0, 0];
                     let decode_dst$0 = decoded$1;
                     for (let i$0 = 0; i$0 < input$1.length; i$0++) {
                       let decode_dst_new$0 = [0, 0];
                       stack$0.unshift(i$0.toString());
+                      let type$3 = "{job: string, name: string}";
                       if (
                         typeof input$1[i$0] === "object" &&
                         !(input$1[i$0] === null)
                       ) {
                         let decoded$2 = new Map();
+                        let missing_keys$2 = [];
                         if (Object.hasOwn(input$1[i$0], "job")) {
                           let input$2 = input$1[i$0]["job"];
                           stack$0.unshift("job");
+                          let type$4 = "string";
                           if (typeof input$2 === "string") {
                             decoded$2.set("job", input$2);
                           } else {
                             is_error$0 = true;
                           }
                           if (is_error$0) {
-                            return (decode_error$0("string")(input$2));
+                            return (decode_error$0(type$4)(input$2));
                           }
                           stack$0.shift();
                         } else {
-                          missing_keys$0.unshift("job");
+                          missing_keys$2.unshift("job");
                         }
                         if (Object.hasOwn(input$1[i$0], "name")) {
                           let input$2 = input$1[i$0]["name"];
                           stack$0.unshift("name");
+                          let type$4 = "string";
                           if (typeof input$2 === "string") {
                             decoded$2.set("name", input$2);
                           } else {
                             is_error$0 = true;
                           }
                           if (is_error$0) {
-                            return (decode_error$0("string")(input$2));
+                            return (decode_error$0(type$4)(input$2));
                           }
                           stack$0.shift();
                         } else {
-                          missing_keys$0.unshift("name");
+                          missing_keys$2.unshift("name");
                         }
-                        if (!(missing_keys$0.length === 0)) {
-                          return (key_error$0("{job: string, name: string}"));
+                        if (!(missing_keys$2.length === 0)) {
+                          return (key_error$0(type$3)(missing_keys$2));
                         }
                         decode_dst_new$0[0] = decoded$2;
                       } else {
                         is_error$0 = true;
                       }
                       if (is_error$0) {
-                        return (
-                          decode_error$0("{job: string, name: string}")(
-                            input$1[i$0]
-                          )
-                        );
+                        return (decode_error$0(type$3)(input$1[i$0]));
                       }
                       decode_dst$0[1] = decode_dst_new$0;
                       decode_dst$0 = decode_dst_new$0;
@@ -1152,42 +1186,38 @@
                   } else {
                     is_error$0 = true;
                   }
-                  if (is_error$0) {
-                    return (
-                      decode_error$0("[{job: string, name: string}]")(input$1)
-                    );
-                  }
+                  if (is_error$0) { return (decode_error$0(type$2)(input$1)); }
                   stack$0.shift();
                 } else {
-                  missing_keys$0.unshift("record_list");
+                  missing_keys$1.unshift("record_list");
                 }
-                if (!(missing_keys$0.length === 0)) {
-                  return (
-                    key_error$0("{record_list: [{job: string, name: string}]}")
-                  );
+                if (!(missing_keys$1.length === 0)) {
+                  return (key_error$0(type$1)(missing_keys$1));
                 }
                 props$0.set("tagged_record_string", decoded$0);
               } else {
                 if (input$0["tag"] === "b") {
                   let decoded$0 = new Map();
                   decoded$0.set("tag", input$0["tag"]);
+                  let missing_keys$1 = [];
                   if (Object.hasOwn(input$0, "open_enum")) {
                     let input$1 = input$0["open_enum"];
                     stack$0.unshift("open_enum");
+                    let type$2 = "@0 | @1 | ...";
                     if (Number.isInteger(input$1)) {
                       decoded$0.set("open_enum", input$1);
                     } else {
                       is_error$0 = true;
                     }
                     if (is_error$0) {
-                      return (decode_error$0("@0 | @1 | ...")(input$1));
+                      return (decode_error$0(type$2)(input$1));
                     }
                     stack$0.shift();
                   } else {
-                    missing_keys$0.unshift("open_enum");
+                    missing_keys$1.unshift("open_enum");
                   }
-                  if (!(missing_keys$0.length === 0)) {
-                    return (key_error$0("{open_enum: @0 | @1 | ...}"));
+                  if (!(missing_keys$1.length === 0)) {
+                    return (key_error$0(type$1)(missing_keys$1));
                   }
                   props$0.set("tagged_record_string", decoded$0);
                 } else {
@@ -1203,16 +1233,7 @@
         } else {
           is_error$0 = true;
         }
-        if (is_error$0) {
-          return (
-            decode_error$0(
-              "{@tag: \"a\", record_list: [{job: string, name: string}]} |\n\
-  {@tag: \"b\", open_enum: @0 | @1 | ...}"
-            )(
-              input$0
-            )
-          );
-        }
+        if (is_error$0) { return (decode_error$0(type$1)(input$0)); }
         stack$0.shift();
       } else {
         missing_keys$0.unshift("tagged_record_string");
@@ -1220,12 +1241,13 @@
       if (Object.hasOwn(arg$0, "unicode_string")) {
         let input$0 = arg$0["unicode_string"];
         stack$0.unshift("unicode_string");
+        let type$1 = "string";
         if (typeof input$0 === "string") {
           props$0.set("unicode_string", input$0);
         } else {
           is_error$0 = true;
         }
-        if (is_error$0) { return (decode_error$0("string")(input$0)); }
+        if (is_error$0) { return (decode_error$0(type$1)(input$0)); }
         stack$0.shift();
       } else {
         missing_keys$0.unshift("unicode_string");
@@ -1233,83 +1255,18 @@
       if (Object.hasOwn(arg$0, "unknown")) {
         let input$0 = arg$0["unknown"];
         stack$0.unshift("unknown");
+        let type$1 = "_";
         props$0.set("unknown", input$0);
-        if (is_error$0) { return (decode_error$0("_")(input$0)); }
+        if (is_error$0) { return (decode_error$0(type$1)(input$0)); }
         stack$0.shift();
       } else {
         props$0.set("unknown", 0);
       }
       if (!(missing_keys$0.length === 0)) {
-        return (
-          key_error$0(
-            "{\n\
-    big_float: float,\n\
-    big_int: int,\n\
-    bool1: false | true,\n\
-    bool2: false | true,\n\
-    dangerous: string,\n\
-    int_list: [int],\n\
-    nested_list: [[[int]]],\n\
-    nested_nullable_list: [??false | true],\n\
-    null_bool: ?false | true,\n\
-    null_float: ?float,\n\
-    null_int: ?int,\n\
-    null_string: ?string,\n\
-    null_string_dict: <?string>,\n\
-    record: {int_enum: @8 | @40, string_enum: @\"no\" | @\"yes\"},\n\
-    tagged_record_bool: {@tag: false, a: string} | {@tag: true, b: int},\n\
-    tagged_record_int:\n\
-      {@tag: 0} | {@tag: 1, tuple: (float, string, false | true)},\n\
-    tagged_record_open:\n\
-      {@tag: 100, a: int} |\n\
-      {@tag: 200, b: string} |\n\
-      {@tag: 300, c: float} |\n\
-      ...,\n\
-    tagged_record_string:\n\
-      {@tag: \"a\", record_list: [{job: string, name: string}]} |\n\
-      {@tag: \"b\", open_enum: @0 | @1 | ...},\n\
-    unicode_string: string,\n\
-    unknown: _\n\
-  }"
-          )
-        );
+        return (key_error$0(type$0)(missing_keys$0));
       }
     } else {
-      return (
-        decode_error$0(
-          "{\n\
-    big_float: float,\n\
-    big_int: int,\n\
-    bool1: false | true,\n\
-    bool2: false | true,\n\
-    dangerous: string,\n\
-    int_list: [int],\n\
-    nested_list: [[[int]]],\n\
-    nested_nullable_list: [??false | true],\n\
-    null_bool: ?false | true,\n\
-    null_float: ?float,\n\
-    null_int: ?int,\n\
-    null_string: ?string,\n\
-    null_string_dict: <?string>,\n\
-    record: {int_enum: @8 | @40, string_enum: @\"no\" | @\"yes\"},\n\
-    tagged_record_bool: {@tag: false, a: string} | {@tag: true, b: int},\n\
-    tagged_record_int:\n\
-      {@tag: 0} | {@tag: 1, tuple: (float, string, false | true)},\n\
-    tagged_record_open:\n\
-      {@tag: 100, a: int} |\n\
-      {@tag: 200, b: string} |\n\
-      {@tag: 300, c: float} |\n\
-      ...,\n\
-    tagged_record_string:\n\
-      {@tag: \"a\", record_list: [{job: string, name: string}]} |\n\
-      {@tag: \"b\", open_enum: @0 | @1 | ...},\n\
-    unicode_string: string,\n\
-    unknown: _\n\
-  }"
-        )(
-          arg$0
-        )
-      );
+      return (decode_error$0(type$0)(arg$0));
     }
     let buffer$0 = [];
     buffer$0.push(Promise.resolve("Formatters\n----------\n\n%i    "));

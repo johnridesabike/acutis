@@ -146,7 +146,9 @@
   Path:
   long_type <- <input>
   Expected type:
+  {@tag: false} |
   {
+    @tag: true,
     another_loooong_field: string,
     looong_field: string,
     yet_another_field: string
