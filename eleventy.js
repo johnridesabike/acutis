@@ -36,9 +36,9 @@ FileWalker.prototype._walk = function (filePath, f) {
               files.map((file) =>
                 this.ignoresGlobal.has(file)
                   ? Promise.resolve()
-                  : this._walk(path.join(filePath, file), f)
-              )
-            )
+                  : this._walk(path.join(filePath, file), f),
+              ),
+            ),
           );
       } else if (filePath.toLowerCase().endsWith(".acutis")) {
         return fs.readFile(filePath).then((src) => f(stats, filePath, src));
@@ -57,7 +57,7 @@ function acutisErrorToJsError(e) {
   if (Utils.isError(e)) {
     console.error(Utils.getError(e) + "\n");
     throw Error(
-      "Error compiling an Acutis file. See the full error message above."
+      "Error compiling an Acutis file. See the full error message above.",
     );
   } else {
     throw e;
@@ -95,13 +95,13 @@ module.exports = function (eleventyConfig, config) {
       let result =
         config && "components" in config
           ? getFuncs(config.components).map(({ key, f }) =>
-              Component.funAsync(key, f.interface, f)
+              Component.funAsync(key, f.interface, f),
             )
           : [];
       let dir = this.config.dir;
       return new FileWalker(path.join(dir.input, dir.includes))
         .walk((_stats, filePath, src) =>
-          result.push(Component.uint8Array(filePath, src))
+          result.push(Component.uint8Array(filePath, src)),
         )
         .then(() => (components = Compile.components(result)))
         .catch(acutisErrorToJsError);
@@ -114,14 +114,17 @@ module.exports = function (eleventyConfig, config) {
         if (typeof str === "function") {
           return Promise.resolve(str);
         } else {
-          return Promise.resolve(str)
-            .then((src) => {
-              let template = Compile.string(inputPath, components, src);
-              return function (data) {
-                return Render.async(template, data).catch(acutisErrorToJsError);
-              };
-            })
-            .catch(acutisErrorToJsError);
+           // Compile and decode exceptions are raised synchronously and
+          // component exceptions are raised asynchronously. To catch them all
+          // consistently, we wrap each operation in a new promise.
+          return new Promise((resolve) => {
+            let template = Compile.string(inputPath, components, str);
+            return resolve(function (data) {
+              return new Promise((resolve) =>
+                resolve(Render.async(template, data)),
+              ).catch(acutisErrorToJsError);
+            });
+          }).catch(acutisErrorToJsError);
         }
       } else {
         let template = cache.get(inputPath);
@@ -131,7 +134,10 @@ module.exports = function (eleventyConfig, config) {
             .then((src) => {
               let template = Compile.uint8Array(inputPath, components, src);
               return function (data) {
-                return Render.async(template, data).catch(acutisErrorToJsError);
+                // See above comment.
+                return new Promise((resolve) =>
+                  resolve(Render.async(template, data)),
+                ).catch(acutisErrorToJsError);
               };
             })
             .catch(acutisErrorToJsError);
@@ -241,9 +247,9 @@ module.exports.printJs = function (eleventyConfig, config) {
               let components = Compile.components(
                 compFuns
                   .map(({ key, f }) =>
-                    Component.funPath(relativeCompPath, key, f.interface)
+                    Component.funPath(relativeCompPath, key, f.interface),
                   )
-                  .concat(compSrc)
+                  .concat(compSrc),
               );
               let template = Compile.uint8Array(filePath, components, src);
               let js = Compile.toCJSString(template);
@@ -251,7 +257,7 @@ module.exports.printJs = function (eleventyConfig, config) {
             } else {
               return Promise.resolve();
             }
-          })
+          }),
       )
       .then(() => oracle.reset())
       .catch(acutisErrorToJsError);
