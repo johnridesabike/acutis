@@ -106,7 +106,7 @@
   >     bool: false,
   >     int_enum: 1,
   >     string_enum: "a",
-  >     tuple: ["a"],
+  >     tuple: ["a", "b"],
   >     nested: {level_1: ["a", 1]},
   >     long_type: {tag: false},
   >     list: [{a: "a"}, {a: "b"}],
@@ -131,8 +131,8 @@
   >     bool: false,
   >     int_enum: 1,
   >     string_enum: "a",
-  >     tuple: ["a"],
-  >     nested: {level_1: ["a", 1]},
+  >     tuple: ["a", "b"],
+  >     nested: {level_1: ["a", "b"]},
   >     long_type: {tag: true, bad: "fail"},
   >     list: [{a: "a"}, {a: "b"}],
   >     })
@@ -163,8 +163,8 @@
   >     bool: false,
   >     int_enum: 1,
   >     string_enum: "a",
-  >     tuple: ["a"],
-  >     nested: {level_1: ["a", 1]},
+  >     tuple: ["a", "b"],
+  >     nested: {level_1: ["a", "b"]},
   >     long_type: "fail",
   >     list: [{a: "a"}, {a: "b"}],
   >     })
@@ -203,6 +203,42 @@
   >   .catch((e) => console.error(e.message));
   > EOF
   $ node run.mjs
+  File "template.acutis"
+  Render error.
+  The data supplied does not match this template's interface.
+  Path:
+  tuple <- <input>
+  Expected type:
+  (string, string)
+  Received value:
+  a
+  
+  File "template.acutis"
+  Render error.
+  The data supplied does not match this template's interface.
+  Path:
+  1 <- level_1 <- nested <- <input>
+  Expected type:
+  string
+  Received value:
+  1
+  
+  File: template.acutis
+  Render error.
+  The data supplied does not match this template's interface.
+  Path:
+  long_type <- <input>
+  Expected type:
+  {@tag: false} |
+  {
+    @tag: true,
+    another_loooong_field: string,
+    looong_field: string,
+    yet_another_field: string
+  }
+  Input is missing keys:
+  yet_another_field, looong_field, another_loooong_field
+  
   File "template.acutis"
   Render error.
   The data supplied does not match this template's interface.

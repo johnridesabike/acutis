@@ -27,31 +27,27 @@ let buffer_contents$0 =
 let components$0 = new Map();
 export default (arg$0) => {
   let stack$0 = [];
-  let is_error$0 = false;
+  let errors$0 = [];
   let decode_error$0 =
     (arg$1) => {
       return (
         (arg$2) => {
           return (
-            Promise.reject(
-              new Error(
-                [
-                  "File \"",
-                  "printjs_example.acutis",
-                  "\"\n\
+            [
+              "File \"",
+              "printjs_example.acutis",
+              "\"\n\
 Render error.\n\
 The data supplied does not match this template's interface.\n\
 ",
-                  "Path:\n",
-                  stack$0.join(" <- "),
-                  "\nExpected type:\n",
-                  arg$1,
-                  "\nReceived value:\n",
-                  String(arg$2),
-                ].join(
-                  ""
-                )
-              )
+              "Path:\n",
+              stack$0.join(" <- "),
+              "\nExpected type:\n",
+              arg$1,
+              "\nReceived value:\n",
+              String(arg$2),
+            ].join(
+              ""
             )
           );
         }
@@ -62,25 +58,21 @@ The data supplied does not match this template's interface.\n\
       return (
         (arg$2) => {
           return (
-            Promise.reject(
-              new Error(
-                [
-                  "File: ",
-                  "printjs_example.acutis",
-                  "\n\
+            [
+              "File: ",
+              "printjs_example.acutis",
+              "\n\
 Render error.\n\
 The data supplied does not match this template's interface.\n\
 ",
-                  "Path:\n",
-                  stack$0.join(" <- "),
-                  "\nExpected type:\n",
-                  arg$1,
-                  "\nInput is missing keys:\n",
-                  arg$2.join(", "),
-                ].join(
-                  ""
-                )
-              )
+              "Path:\n",
+              stack$0.join(" <- "),
+              "\nExpected type:\n",
+              arg$1,
+              "\nInput is missing keys:\n",
+              arg$2.join(", "),
+            ].join(
+              ""
             )
           );
         }
@@ -154,29 +146,22 @@ The data supplied does not match this template's interface.\n\
                     if (typeof input$2 === "string") {
                       decoded$3[0] = input$2;
                     } else {
-                      is_error$0 = true;
-                    }
-                    if (is_error$0) {
-                      return (decode_error$0(type$5)(input$2));
+                      errors$0.unshift(decode_error$0(type$5)(input$2));
                     }
                     decoded$2.set("name", decoded$3);
                     stack$0.shift();
-                  }
-                  if (is_error$0) {
-                    return (decode_error$0(type$4)(input$2));
                   }
                   stack$0.shift();
                 } else {
                   decoded$2.set("name", 0);
                 }
                 if (!(missing_keys$2.length === 0)) {
-                  return (key_error$0(type$3)(missing_keys$2));
+                  errors$0.unshift(key_error$0(type$3)(missing_keys$2));
                 }
                 decoded$1.set("author", decoded$2);
               } else {
-                is_error$0 = true;
+                errors$0.unshift(decode_error$0(type$3)(input$1));
               }
-              if (is_error$0) { return (decode_error$0(type$3)(input$1)); }
               stack$0.shift();
             } else {
               missing_keys$1.unshift("author");
@@ -188,9 +173,8 @@ The data supplied does not match this template's interface.\n\
               if (typeof input$1 === "string") {
                 decoded$1.set("content", input$1);
               } else {
-                is_error$0 = true;
+                errors$0.unshift(decode_error$0(type$3)(input$1));
               }
-              if (is_error$0) { return (decode_error$0(type$3)(input$1)); }
               stack$0.shift();
             } else {
               missing_keys$1.unshift("content");
@@ -202,9 +186,8 @@ The data supplied does not match this template's interface.\n\
               if (typeof input$1 === "string") {
                 decoded$1.set("date", input$1);
               } else {
-                is_error$0 = true;
+                errors$0.unshift(decode_error$0(type$3)(input$1));
               }
-              if (is_error$0) { return (decode_error$0(type$3)(input$1)); }
               stack$0.shift();
             } else {
               missing_keys$1.unshift("date");
@@ -229,10 +212,7 @@ The data supplied does not match this template's interface.\n\
                     if (typeof input$2 === "string") {
                       decoded$3.set("alt", input$2);
                     } else {
-                      is_error$0 = true;
-                    }
-                    if (is_error$0) {
-                      return (decode_error$0(type$5)(input$2));
+                      errors$0.unshift(decode_error$0(type$5)(input$2));
                     }
                     stack$0.shift();
                   } else {
@@ -245,27 +225,22 @@ The data supplied does not match this template's interface.\n\
                     if (typeof input$2 === "string") {
                       decoded$3.set("src", input$2);
                     } else {
-                      is_error$0 = true;
-                    }
-                    if (is_error$0) {
-                      return (decode_error$0(type$5)(input$2));
+                      errors$0.unshift(decode_error$0(type$5)(input$2));
                     }
                     stack$0.shift();
                   } else {
                     missing_keys$2.unshift("src");
                   }
                   if (!(missing_keys$2.length === 0)) {
-                    return (key_error$0(type$4)(missing_keys$2));
+                    errors$0.unshift(key_error$0(type$4)(missing_keys$2));
                   }
                   decoded$2[0] = decoded$3;
                 } else {
-                  is_error$0 = true;
+                  errors$0.unshift(decode_error$0(type$4)(input$1));
                 }
-                if (is_error$0) { return (decode_error$0(type$4)(input$1)); }
                 decoded$1.set("image", decoded$2);
                 stack$0.shift();
               }
-              if (is_error$0) { return (decode_error$0(type$3)(input$1)); }
               stack$0.shift();
             } else {
               decoded$1.set("image", 0);
@@ -277,30 +252,27 @@ The data supplied does not match this template's interface.\n\
               if (typeof input$1 === "string") {
                 decoded$1.set("title", input$1);
               } else {
-                is_error$0 = true;
+                errors$0.unshift(decode_error$0(type$3)(input$1));
               }
-              if (is_error$0) { return (decode_error$0(type$3)(input$1)); }
               stack$0.shift();
             } else {
               missing_keys$1.unshift("title");
             }
             if (!(missing_keys$1.length === 0)) {
-              return (key_error$0(type$2)(missing_keys$1));
+              errors$0.unshift(key_error$0(type$2)(missing_keys$1));
             }
             decode_dst_new$0[0] = decoded$1;
           } else {
-            is_error$0 = true;
+            errors$0.unshift(decode_error$0(type$2)(input$0[i$0]));
           }
-          if (is_error$0) { return (decode_error$0(type$2)(input$0[i$0])); }
           decode_dst$0[1] = decode_dst_new$0;
           decode_dst$0 = decode_dst_new$0;
           stack$0.shift();
         }
         props$0.set("blogPosts", decoded$0[1]);
       } else {
-        is_error$0 = true;
+        errors$0.unshift(decode_error$0(type$1)(input$0));
       }
-      if (is_error$0) { return (decode_error$0(type$1)(input$0)); }
       stack$0.shift();
     } else {
       missing_keys$0.unshift("blogPosts");
@@ -312,95 +284,98 @@ The data supplied does not match this template's interface.\n\
       if (typeof input$0 === "string") {
         props$0.set("siteTitle", input$0);
       } else {
-        is_error$0 = true;
+        errors$0.unshift(decode_error$0(type$1)(input$0));
       }
-      if (is_error$0) { return (decode_error$0(type$1)(input$0)); }
       stack$0.shift();
     } else {
       missing_keys$0.unshift("siteTitle");
     }
     if (!(missing_keys$0.length === 0)) {
-      return (key_error$0(type$0)(missing_keys$0));
+      errors$0.unshift(key_error$0(type$0)(missing_keys$0));
     }
   } else {
-    return (decode_error$0(type$0)(arg$0));
+    errors$0.unshift(decode_error$0(type$0)(arg$0));
   }
-  let buffer$0 = [];
-  buffer$0.push(Promise.resolve("<h1> Blog posts for "));
-  buffer$0.push(Promise.resolve(acutis_escape$0(props$0.get("siteTitle"))));
-  buffer$0.push(Promise.resolve(" </h1>"));
-  let index$0 = 0;
-  let cell$0 = props$0.get("blogPosts");
-  while (!(cell$0 === 0)) {
-    let props$1 = new Map(props$0);
-    let head$0 = cell$0[0];
-    let exit$0 = -1;
-    let match_arg$0 = head$0.get("author");
-    let match_arg$1 = match_arg$0.get("name");
-    let match_arg$2 = head$0.get("content");
-    let match_arg$3 = head$0.get("date");
-    let match_arg$4 = head$0.get("image");
-    let match_arg$5 = head$0.get("title");
-    props$1.set("content", match_arg$2);
-    props$1.set("date", match_arg$3);
-    props$1.set("image", match_arg$4);
-    props$1.set("name", match_arg$1);
-    props$1.set("title", match_arg$5);
-    exit$0 = 0;
-    buffer$0.push(
-      Promise.resolve(
-        "\n  <article class=\"h-entry\">\n    <header>\n      "
-      )
-    );
-    let arg_match$0 = [props$1.get("image")];
-    let props$2 = new Map(props$1);
-    let exit$1 = -1;
-    let match_arg$6 = arg_match$0[0];
-    if (match_arg$6 === 0) {
-      exit$1 = 0;
-    } else {
-      let match_arg$7 = arg_match$0[0];
-      let match_arg$8 = match_arg$7[0];
-      let match_arg$9 = match_arg$8.get("alt");
-      let match_arg$10 = match_arg$8.get("src");
-      props$2.set("alt", match_arg$9);
-      props$2.set("src", match_arg$10);
-      exit$1 = 1;
+  if (errors$0.length === 0) {
+    let buffer$0 = [];
+    buffer$0.push(Promise.resolve("<h1> Blog posts for "));
+    buffer$0.push(Promise.resolve(acutis_escape$0(props$0.get("siteTitle"))));
+    buffer$0.push(Promise.resolve(" </h1>"));
+    let index$0 = 0;
+    let cell$0 = props$0.get("blogPosts");
+    while (!(cell$0 === 0)) {
+      let props$1 = new Map(props$0);
+      let head$0 = cell$0[0];
+      let exit$0 = -1;
+      let match_arg$0 = head$0.get("author");
+      let match_arg$1 = match_arg$0.get("name");
+      let match_arg$2 = head$0.get("content");
+      let match_arg$3 = head$0.get("date");
+      let match_arg$4 = head$0.get("image");
+      let match_arg$5 = head$0.get("title");
+      props$1.set("content", match_arg$2);
+      props$1.set("date", match_arg$3);
+      props$1.set("image", match_arg$4);
+      props$1.set("name", match_arg$1);
+      props$1.set("title", match_arg$5);
+      exit$0 = 0;
+      buffer$0.push(
+        Promise.resolve(
+          "\n  <article class=\"h-entry\">\n    <header>\n      "
+        )
+      );
+      let arg_match$0 = [props$1.get("image")];
+      let props$2 = new Map(props$1);
+      let exit$1 = -1;
+      let match_arg$6 = arg_match$0[0];
+      if (match_arg$6 === 0) {
+        exit$1 = 0;
+      } else {
+        let match_arg$7 = arg_match$0[0];
+        let match_arg$8 = match_arg$7[0];
+        let match_arg$9 = match_arg$8.get("alt");
+        let match_arg$10 = match_arg$8.get("src");
+        props$2.set("alt", match_arg$9);
+        props$2.set("src", match_arg$10);
+        exit$1 = 1;
+      }
+      if (!(exit$1 === 0)) {
+        buffer$0.push(Promise.resolve("<img src=\""));
+        buffer$0.push(Promise.resolve(acutis_escape$0(props$2.get("src"))));
+        buffer$0.push(Promise.resolve("\" alt=\""));
+        buffer$0.push(Promise.resolve(acutis_escape$0(props$2.get("alt"))));
+        buffer$0.push(Promise.resolve("\">\n      "));
+      }
+      buffer$0.push(Promise.resolve("<h2 class=\"p-name\"> "));
+      buffer$0.push(Promise.resolve(acutis_escape$0(props$1.get("title"))));
+      buffer$0.push(
+        Promise.resolve(" </h2>\n      <span class=\"p-author\"> By ")
+      );
+      let nullable$0 = props$1.get("name");
+      if (!(nullable$0 === 0)) {
+        buffer$0.push(Promise.resolve(acutis_escape$0(nullable$0[0])));
+      } else {
+        buffer$0.push(Promise.resolve(acutis_escape$0("Anonymous")));
+      }
+      buffer$0.push(
+        Promise.resolve(
+          " </span>\n      <span class=\"dt-published\"> Posted on "
+        )
+      );
+      buffer$0.push(Promise.resolve(acutis_escape$0(props$1.get("date"))));
+      buffer$0.push(
+        Promise.resolve(
+          " </span>\n    </header>\n    <div class=\"e-content\"> "
+        )
+      );
+      buffer$0.push(Promise.resolve(props$1.get("content")));
+      buffer$0.push(Promise.resolve(" </div>\n  </article>\n"));
+      index$0++;
+      cell$0 = cell$0[1];
     }
-    if (!(exit$1 === 0)) {
-      buffer$0.push(Promise.resolve("<img src=\""));
-      buffer$0.push(Promise.resolve(acutis_escape$0(props$2.get("src"))));
-      buffer$0.push(Promise.resolve("\" alt=\""));
-      buffer$0.push(Promise.resolve(acutis_escape$0(props$2.get("alt"))));
-      buffer$0.push(Promise.resolve("\">\n      "));
-    }
-    buffer$0.push(Promise.resolve("<h2 class=\"p-name\"> "));
-    buffer$0.push(Promise.resolve(acutis_escape$0(props$1.get("title"))));
-    buffer$0.push(
-      Promise.resolve(" </h2>\n      <span class=\"p-author\"> By ")
-    );
-    let nullable$0 = props$1.get("name");
-    if (!(nullable$0 === 0)) {
-      buffer$0.push(Promise.resolve(acutis_escape$0(nullable$0[0])));
-    } else {
-      buffer$0.push(Promise.resolve(acutis_escape$0("Anonymous")));
-    }
-    buffer$0.push(
-      Promise.resolve(
-        " </span>\n      <span class=\"dt-published\"> Posted on "
-      )
-    );
-    buffer$0.push(Promise.resolve(acutis_escape$0(props$1.get("date"))));
-    buffer$0.push(
-      Promise.resolve(
-        " </span>\n    </header>\n    <div class=\"e-content\"> "
-      )
-    );
-    buffer$0.push(Promise.resolve(props$1.get("content")));
-    buffer$0.push(Promise.resolve(" </div>\n  </article>\n"));
-    index$0++;
-    cell$0 = cell$0[1];
+    buffer$0.push(Promise.resolve("\n"));
+    return (buffer_contents$0(buffer$0));
+  } else {
+    return (Promise.reject(new Error(errors$0.join("\n\n"))));
   }
-  buffer$0.push(Promise.resolve("\n"));
-  return (buffer_contents$0(buffer$0));
 };

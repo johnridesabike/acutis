@@ -2,6 +2,12 @@
 
 Most changes are breaking changes.
 
+## Latest
+
+- All decode errors are reported instead of only the first one.
+- Decode errors are implemented in a promise type instead of raising an
+  exception.
+
 ## 0.24.0
 
 - Add the debug command `--printinst` to the CLI. This prints the new runtime

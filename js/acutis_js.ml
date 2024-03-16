@@ -75,11 +75,13 @@ module Promise = struct
 
   class type promise_constr = object
     method resolve : 'a -> 'a t Js.meth
+    method reject : 'e -> 'a t Js.meth
     method all : 'a t Js.js_array Js.t -> 'a Js.js_array Js.t t Js.meth
   end
 
   let promise : promise_constr Js.t = Js.Unsafe.global##._Promise
   let resolve x = promise##resolve x
+  let reject x = promise##reject x
   let all a = promise##all a
 
   let then_ : 'a t -> ('a -> 'b t) -> 'b t =
@@ -97,6 +99,7 @@ module Concurrent = struct
   let promise_array a =
     Promise.then_ (Promise.all (Js.array a)) @@ fun a -> promise (Js.to_array a)
 
+  let error s = Promise.reject (Error.Acutis_error s)
   let buffer_create () = new%js Js.array_empty
 
   let buffer_append (b : buffer) p =

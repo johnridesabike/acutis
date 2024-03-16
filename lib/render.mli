@@ -19,6 +19,7 @@ module type CONCURRENT = sig
   val promise : 'a -> 'a promise
   val bind : 'a promise -> ('a -> 'b promise) -> 'b promise
   val promise_array : 'a promise array -> 'a array promise
+  val error : string -> 'a promise
   val buffer_create : unit -> buffer
   val buffer_append : buffer -> string promise -> unit
   val buffer_contents : buffer -> string promise

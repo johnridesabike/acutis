@@ -15,6 +15,7 @@ module type CONCURRENT = sig
   val promise : 'a -> 'a promise
   val bind : 'a promise -> ('a -> 'b promise) -> 'b promise
   val promise_array : 'a promise array -> 'a array promise
+  val error : string -> 'a promise
   val buffer_create : unit -> buffer
   val buffer_append : buffer -> string promise -> unit
   val buffer_contents : buffer -> string promise
@@ -91,9 +92,8 @@ module Make (C : CONCURRENT) (D : DECODABLE) :
     let incr = incr
     let lambda = Fun.id
     let ( @@ ) = ( @@ )
-
-    let if_ b ~then_ ~else_ =
-      if b then then_ () else match else_ with None -> () | Some f -> f ()
+    let if_ b ~then_ = if b then then_ ()
+    let if_else b ~then_ ~else_ = if b then then_ () else else_ ()
 
     let while_ f g =
       while f () do
@@ -173,11 +173,6 @@ module Make (C : CONCURRENT) (D : DECODABLE) :
     let stack_push x a = Stack.push a x
     let stack_drop x = Stack.pop x |> ignore
     let stack_concat x = concat_seq (Stack.to_seq x)
-
-    type error = exn
-
-    let raise = raise
-    let error s = Error.Acutis_error s
 
     type data =
       | Int of int
@@ -313,6 +308,7 @@ module MakeString = Make (struct
   let promise = Fun.id
   let bind = ( |> )
   let promise_array = Fun.id
+  let error s = raise (Error.Acutis_error s)
   let buffer_create () = Buffer.create 1024
   let buffer_append = Buffer.add_string
   let buffer_contents = Buffer.contents

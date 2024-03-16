@@ -203,16 +203,17 @@ module MakeJavaScript (M : JSMODULE) :
 
   let ( @@ ) = ( @@ )
 
-  let if_ exp ~then_ ~else_ ppf state =
+  let if_ b ~then_ ppf state =
     let state' = State.add_block state in
-    F.fprintf ppf "@[<hv 2>@[<hv 2>if (@,%a@;<0 -2>)@] {@ %a" exp state
-      (then_ ()) state';
-    (match else_ with
-    | None -> ()
-    | Some e ->
-        let state' = State.add_block state in
-        F.fprintf ppf "@;<1 -2>} else {@ %a" (e ()) state');
-    F.fprintf ppf "@;<1 -2>}@]"
+    F.fprintf ppf "@[<hv 2>@[<hv 2>if (@,%a@;<0 -2>)@] {@ %a@;<1 -2>}@]" b state
+      (then_ ()) state'
+
+  let if_else b ~then_ ~else_ ppf state =
+    let state' = State.add_block state in
+    F.fprintf ppf "@[<hv 2>@[<hv 2>if (@,%a@;<0 -2>)@] {@ %a" b state (then_ ())
+      state';
+    let state' = State.add_block state in
+    F.fprintf ppf "@;<1 -2>} else {@ %a@;<1 -2>}@]" (else_ ()) state'
 
   let while_ cond stmts ppf state =
     F.fprintf ppf "@[<hv 2>while (%a) " (cond ()) state;
@@ -259,6 +260,7 @@ module MakeJavaScript (M : JSMODULE) :
   let promise = ( @@ ) (global "Promise").!("resolve")
   let bind a f = a.!("then") @@ f
   let promise_array a = (global "Promise").!("all") @@ a
+  let error s = (global "Promise").!("reject") @@ new_ "Error" [ s ]
 
   type buffer
 
@@ -300,11 +302,6 @@ module MakeJavaScript (M : JSMODULE) :
   let stack_push x y = stmt (x.!("unshift") @@ y)
   let stack_drop x = stmt (x.!("shift") @@ unit)
   let stack_concat = array_concat
-
-  type error = js
-
-  let raise = return
-  let error s = (global "Promise").!("reject") @@ new_ "Error" [ s ]
 
   type data
 
@@ -376,7 +373,7 @@ module MakeJavaScript (M : JSMODULE) :
         | Assoc ->
             and_ (equal (typeof x) (string "object")) (not (equal x null))
       in
-      if_ cond ~then_:(fun () -> ok x) ~else_:(Some error)
+      if_else cond ~then_:(fun () -> ok x) ~else_:error
 
     let show x = global "String" @@ x
   end
@@ -414,24 +411,17 @@ module RemoveIdsAndUnits (F : Instruct.SEM) :
 
   let unit = Unit
 
-  let if_ x ~then_ ~else_ =
-    match (then_ (), else_) with
-    | Unit, None -> Unit
-    | Unit, Some else_ -> (
-        match else_ () with
-        | Unit -> Unit
-        | Unk else_ ->
-            fwds (F.if_ (bwde (not x)) ~then_:(fun () -> else_) ~else_:None))
-    | Unk then_, Some else_ -> (
-        match else_ () with
-        | Unit -> fwds (F.if_ (bwde x) ~then_:(fun () -> then_) ~else_:None)
-        | Unk else_ ->
-            fwds
-              (F.if_ (bwde x)
-                 ~then_:(fun () -> then_)
-                 ~else_:(Some (fun () -> else_))))
-    | Unk then_, None ->
-        fwds (F.if_ (bwde x) ~then_:(fun () -> then_) ~else_:None)
+  let if_else :
+      type a.
+      bool exp -> then_:(unit -> a stmt) -> else_:(unit -> a stmt) -> a stmt =
+   fun x ~then_ ~else_ ->
+    match (then_ (), else_ ()) with
+    | Unit, Unit -> Unit
+    | Unit, Unk else_ -> fwds (F.if_ (bwde (not x)) ~then_:(fun () -> else_))
+    | Unk then_, Unit -> fwds (F.if_ (bwde x) ~then_:(fun () -> then_))
+    | Unk then_, Unk else_ ->
+        fwds
+          (F.if_else (bwde x) ~then_:(fun () -> then_) ~else_:(fun () -> else_))
 
   let ( let$ ) (name, x) f =
     if x.identity then f x

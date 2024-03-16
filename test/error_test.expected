@@ -1275,6 +1275,38 @@ Expected type:
 Received value:
 { "tag": 2, "a": "a" }
 
+Multiple decode errors are reported.
+---
+File: <test>
+Render error.
+The data supplied does not match this template's interface.
+Path:
+d <- <input>
+Expected type:
+{e: string}
+Input is missing keys:
+e
+
+File "<test>"
+Render error.
+The data supplied does not match this template's interface.
+Path:
+c <- <input>
+Expected type:
+string
+Received value:
+0
+
+File "<test>"
+Render error.
+The data supplied does not match this template's interface.
+Path:
+b <- a <- <input>
+Expected type:
+string
+Received value:
+[]
+
 Invalid field names.
 ---
 File "<test>", 1:27-1:31

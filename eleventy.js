@@ -114,16 +114,14 @@ module.exports = function (eleventyConfig, config) {
         if (typeof str === "function") {
           return Promise.resolve(str);
         } else {
-           // Compile and decode exceptions are raised synchronously and
-          // component exceptions are raised asynchronously. To catch them all
-          // consistently, we wrap each operation in a new promise.
+          // Compile exceptions are raised synchronously and runtime exceptions
+          // are raised asynchronously. To catch them all, we wrap compilation
+          // in a promise.
           return new Promise((resolve) => {
             let template = Compile.string(inputPath, components, str);
-            return resolve(function (data) {
-              return new Promise((resolve) =>
-                resolve(Render.async(template, data)),
-              ).catch(acutisErrorToJsError);
-            });
+            resolve((data) =>
+              Render.async(template, data).catch(acutisErrorToJsError),
+            );
           }).catch(acutisErrorToJsError);
         }
       } else {
@@ -133,12 +131,8 @@ module.exports = function (eleventyConfig, config) {
             .readFile(inputPath)
             .then((src) => {
               let template = Compile.uint8Array(inputPath, components, src);
-              return function (data) {
-                // See above comment.
-                return new Promise((resolve) =>
-                  resolve(Render.async(template, data)),
-                ).catch(acutisErrorToJsError);
-              };
+              return (data) =>
+                Render.async(template, data).catch(acutisErrorToJsError);
             })
             .catch(acutisErrorToJsError);
           cache.set(inputPath, template);

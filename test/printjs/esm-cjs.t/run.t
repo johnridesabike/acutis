@@ -41,31 +41,27 @@
   );
   export default (arg$0) => {
     let stack$0 = [];
-    let is_error$0 = false;
+    let errors$0 = [];
     let decode_error$0 =
       (arg$1) => {
         return (
           (arg$2) => {
             return (
-              Promise.reject(
-                new Error(
-                  [
-                    "File \"",
-                    "template.acutis",
-                    "\"\n\
+              [
+                "File \"",
+                "template.acutis",
+                "\"\n\
   Render error.\n\
   The data supplied does not match this template's interface.\n\
   ",
-                    "Path:\n",
-                    stack$0.join(" <- "),
-                    "\nExpected type:\n",
-                    arg$1,
-                    "\nReceived value:\n",
-                    String(arg$2),
-                  ].join(
-                    ""
-                  )
-                )
+                "Path:\n",
+                stack$0.join(" <- "),
+                "\nExpected type:\n",
+                arg$1,
+                "\nReceived value:\n",
+                String(arg$2),
+              ].join(
+                ""
               )
             );
           }
@@ -76,25 +72,21 @@
         return (
           (arg$2) => {
             return (
-              Promise.reject(
-                new Error(
-                  [
-                    "File: ",
-                    "template.acutis",
-                    "\n\
+              [
+                "File: ",
+                "template.acutis",
+                "\n\
   Render error.\n\
   The data supplied does not match this template's interface.\n\
   ",
-                    "Path:\n",
-                    stack$0.join(" <- "),
-                    "\nExpected type:\n",
-                    arg$1,
-                    "\nInput is missing keys:\n",
-                    arg$2.join(", "),
-                  ].join(
-                    ""
-                  )
-                )
+                "Path:\n",
+                stack$0.join(" <- "),
+                "\nExpected type:\n",
+                arg$1,
+                "\nInput is missing keys:\n",
+                arg$2.join(", "),
+              ].join(
+                ""
               )
             );
           }
@@ -106,32 +98,36 @@
     if (typeof arg$0 === "object" && !(arg$0 === null)) {
       let missing_keys$0 = [];
       if (!(missing_keys$0.length === 0)) {
-        return (key_error$0(type$0)(missing_keys$0));
+        errors$0.unshift(key_error$0(type$0)(missing_keys$0));
       }
     } else {
-      return (decode_error$0(type$0)(arg$0));
+      errors$0.unshift(decode_error$0(type$0)(arg$0));
     }
-    let buffer$0 = [];
-    let blocks$0 =
-      Array.from({length: 1}, (arg$1) => { return (Promise.resolve("")); });
-    let buffer$1 = [];
-    buffer$1.push(Promise.resolve(" text "));
-    blocks$0[0] = buffer_contents$0(buffer$1);
-    buffer$0.push(
-      Promise.all(blocks$0).then(
-        (arg$1) => {
-          let buffer$2 = [];
-          buffer$2.push(
-            components$0.get("ExternalFunction")(
-              new Map([["children", arg$1[0]]])
-            )
-          );
-          return (buffer_contents$0(buffer$2));
-        }
-      )
-    );
-    buffer$0.push(Promise.resolve("\n"));
-    return (buffer_contents$0(buffer$0));
+    if (errors$0.length === 0) {
+      let buffer$0 = [];
+      let blocks$0 =
+        Array.from({length: 1}, (arg$1) => { return (Promise.resolve("")); });
+      let buffer$1 = [];
+      buffer$1.push(Promise.resolve(" text "));
+      blocks$0[0] = buffer_contents$0(buffer$1);
+      buffer$0.push(
+        Promise.all(blocks$0).then(
+          (arg$1) => {
+            let buffer$2 = [];
+            buffer$2.push(
+              components$0.get("ExternalFunction")(
+                new Map([["children", arg$1[0]]])
+              )
+            );
+            return (buffer_contents$0(buffer$2));
+          }
+        )
+      );
+      buffer$0.push(Promise.resolve("\n"));
+      return (buffer_contents$0(buffer$0));
+    } else {
+      return (Promise.reject(new Error(errors$0.join("\n\n"))));
+    }
   };
 
   $ acutis \
@@ -178,31 +174,27 @@
   module.exports =
     (arg$0) => {
       let stack$0 = [];
-      let is_error$0 = false;
+      let errors$0 = [];
       let decode_error$0 =
         (arg$1) => {
           return (
             (arg$2) => {
               return (
-                Promise.reject(
-                  new Error(
-                    [
-                      "File \"",
-                      "template.acutis",
-                      "\"\n\
+                [
+                  "File \"",
+                  "template.acutis",
+                  "\"\n\
   Render error.\n\
   The data supplied does not match this template's interface.\n\
   ",
-                      "Path:\n",
-                      stack$0.join(" <- "),
-                      "\nExpected type:\n",
-                      arg$1,
-                      "\nReceived value:\n",
-                      String(arg$2),
-                    ].join(
-                      ""
-                    )
-                  )
+                  "Path:\n",
+                  stack$0.join(" <- "),
+                  "\nExpected type:\n",
+                  arg$1,
+                  "\nReceived value:\n",
+                  String(arg$2),
+                ].join(
+                  ""
                 )
               );
             }
@@ -213,25 +205,21 @@
           return (
             (arg$2) => {
               return (
-                Promise.reject(
-                  new Error(
-                    [
-                      "File: ",
-                      "template.acutis",
-                      "\n\
+                [
+                  "File: ",
+                  "template.acutis",
+                  "\n\
   Render error.\n\
   The data supplied does not match this template's interface.\n\
   ",
-                      "Path:\n",
-                      stack$0.join(" <- "),
-                      "\nExpected type:\n",
-                      arg$1,
-                      "\nInput is missing keys:\n",
-                      arg$2.join(", "),
-                    ].join(
-                      ""
-                    )
-                  )
+                  "Path:\n",
+                  stack$0.join(" <- "),
+                  "\nExpected type:\n",
+                  arg$1,
+                  "\nInput is missing keys:\n",
+                  arg$2.join(", "),
+                ].join(
+                  ""
                 )
               );
             }
@@ -243,30 +231,34 @@
       if (typeof arg$0 === "object" && !(arg$0 === null)) {
         let missing_keys$0 = [];
         if (!(missing_keys$0.length === 0)) {
-          return (key_error$0(type$0)(missing_keys$0));
+          errors$0.unshift(key_error$0(type$0)(missing_keys$0));
         }
       } else {
-        return (decode_error$0(type$0)(arg$0));
+        errors$0.unshift(decode_error$0(type$0)(arg$0));
       }
-      let buffer$0 = [];
-      let blocks$0 =
-        Array.from({length: 1}, (arg$1) => { return (Promise.resolve("")); });
-      let buffer$1 = [];
-      buffer$1.push(Promise.resolve(" text "));
-      blocks$0[0] = buffer_contents$0(buffer$1);
-      buffer$0.push(
-        Promise.all(blocks$0).then(
-          (arg$1) => {
-            let buffer$2 = [];
-            buffer$2.push(
-              components$0.get("ExternalFunction")(
-                new Map([["children", arg$1[0]]])
-              )
-            );
-            return (buffer_contents$0(buffer$2));
-          }
-        )
-      );
-      buffer$0.push(Promise.resolve("\n"));
-      return (buffer_contents$0(buffer$0));
+      if (errors$0.length === 0) {
+        let buffer$0 = [];
+        let blocks$0 =
+          Array.from({length: 1}, (arg$1) => { return (Promise.resolve("")); });
+        let buffer$1 = [];
+        buffer$1.push(Promise.resolve(" text "));
+        blocks$0[0] = buffer_contents$0(buffer$1);
+        buffer$0.push(
+          Promise.all(blocks$0).then(
+            (arg$1) => {
+              let buffer$2 = [];
+              buffer$2.push(
+                components$0.get("ExternalFunction")(
+                  new Map([["children", arg$1[0]]])
+                )
+              );
+              return (buffer_contents$0(buffer$2));
+            }
+          )
+        );
+        buffer$0.push(Promise.resolve("\n"));
+        return (buffer_contents$0(buffer$0));
+      } else {
+        return (Promise.reject(new Error(errors$0.join("\n\n"))));
+      }
     };

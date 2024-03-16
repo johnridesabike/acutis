@@ -516,6 +516,9 @@ let () =
   print_error "Bad unions are reported (2)."
     (render "{% match a with {@tag: 1, a} %} {{ a }} {% /match %}"
        ~json:{|{"a": {"tag": 2, "a": "a"}}|});
+  print_error "Multiple decode errors are reported."
+    (render "{% match a with {b} %} {{ b }} {% /match %} {{ c }} {{ d.e }}"
+       ~json:{|{"a": {"b": []}, "c": 0, "d": {}}|});
 
   (* Interface parse *)
   print_error "Invalid field names."
