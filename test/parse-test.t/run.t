@@ -879,36 +879,36 @@ Print the runtime instructions
   (let$ buffer_contents/0 = (buffer_contents))
   (let$ components/0 = (hashtbl_create))
   (unit)
-  (components/0.%{"Component2"} <-
+  (components/0.%{"Component"} <-
    (lambda arg/0
     ((let$ buffer/0 = (buffer_create))
      (buffer_append buffer/0
-      (promise (acutis_escape/0 @@ (Data.to_string (arg/0.%{"children"})))))
+      (promise (acutis_escape/0 @@ (Data.to_string (arg/0.%{"a_prop"})))))
+     (buffer_append buffer/0 (promise "\n"))
+     (buffer_append buffer/0
+      (promise (acutis_escape/0 @@ (Data.to_string (arg/0.%{"c_prop"})))))
+     (buffer_append buffer/0 (promise "\n"))
+     (buffer_append buffer/0
+      (promise (acutis_escape/0 @@ (Data.to_string (arg/0.%{"d_prop"})))))
+     (buffer_append buffer/0 (promise "\n"))
+     (buffer_append buffer/0
+      (promise (acutis_escape/0 @@ (Data.to_string (arg/0.%{"f_prop"})))))
+     (buffer_append buffer/0 (promise "\n"))
+     (buffer_append buffer/0
+      (promise (acutis_escape/0 @@ (Data.to_string (arg/0.%{"g_prop"})))))
+     (buffer_append buffer/0 (promise "\n"))
+     (buffer_append buffer/0
+      (promise (acutis_escape/0 @@ (Data.to_string (arg/0.%{"h_prop"})))))
+     (buffer_append buffer/0 (promise "\n"))
+     (buffer_append buffer/0
+      (promise (acutis_escape/0 @@ (Data.to_string (arg/0.%{"i_prop"})))))
      (buffer_append buffer/0 (promise "\n"))
      (return (buffer_contents/0 @@ buffer/0)))))
-  (components/0.%{"Component"} <-
+  (components/0.%{"Component2"} <-
    (lambda arg/1
     ((let$ buffer/1 = (buffer_create))
      (buffer_append buffer/1
-      (promise (acutis_escape/0 @@ (Data.to_string (arg/1.%{"a_prop"})))))
-     (buffer_append buffer/1 (promise "\n"))
-     (buffer_append buffer/1
-      (promise (acutis_escape/0 @@ (Data.to_string (arg/1.%{"c_prop"})))))
-     (buffer_append buffer/1 (promise "\n"))
-     (buffer_append buffer/1
-      (promise (acutis_escape/0 @@ (Data.to_string (arg/1.%{"d_prop"})))))
-     (buffer_append buffer/1 (promise "\n"))
-     (buffer_append buffer/1
-      (promise (acutis_escape/0 @@ (Data.to_string (arg/1.%{"f_prop"})))))
-     (buffer_append buffer/1 (promise "\n"))
-     (buffer_append buffer/1
-      (promise (acutis_escape/0 @@ (Data.to_string (arg/1.%{"g_prop"})))))
-     (buffer_append buffer/1 (promise "\n"))
-     (buffer_append buffer/1
-      (promise (acutis_escape/0 @@ (Data.to_string (arg/1.%{"h_prop"})))))
-     (buffer_append buffer/1 (promise "\n"))
-     (buffer_append buffer/1
-      (promise (acutis_escape/0 @@ (Data.to_string (arg/1.%{"i_prop"})))))
+      (promise (acutis_escape/0 @@ (Data.to_string (arg/1.%{"children"})))))
      (buffer_append buffer/1 (promise "\n"))
      (return (buffer_contents/0 @@ buffer/1)))))
   (export

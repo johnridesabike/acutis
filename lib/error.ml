@@ -204,7 +204,7 @@ let cycle stack =
       (F.pp_print_list ~pp_sep F.pp_print_string)
       (List.rev stack)
   in
-  raise @@ Acutis_error s
+  Acutis_error s
 
 let missing_component stack name =
   let s =
@@ -212,7 +212,7 @@ let missing_component stack name =
       "@[<v>Compile error.@;Missing template:@;<1 2>%s@;Required by:@;<1 2>%s@]"
       name (List.hd stack)
   in
-  raise @@ Acutis_error s
+  Acutis_error s
 
 let decode ~fname ~stack ~ty ~input s =
   [|

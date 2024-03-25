@@ -72,6 +72,7 @@ module Exit = struct
 
   let map = Array.map
   let key_to_int = Fun.id
+  let to_seq = Array.to_seq
   let to_seqi = Array.to_seqi
 end
 

@@ -59,16 +59,16 @@ type data =
   | `Field of data * string
   | `Block of int ]
 
-type 'a node =
+type node =
   | Text of string
   | Echo of (echo_format * echo) list * echo_format * echo * escape
-  | Match of 'a blocks * data array * 'a nodes Matching.t
-  | Map_list of 'a blocks * data * 'a nodes Matching.t
-  | Map_dict of 'a blocks * data * 'a nodes Matching.t
-  | Component of string * 'a * 'a nodes array * data Map.String.t
+  | Match of blocks * data array * nodes Matching.t
+  | Map_list of blocks * data * nodes Matching.t
+  | Map_dict of blocks * data * nodes Matching.t
+  | Component of string * nodes array * data Map.String.t
 
-and 'a blocks = 'a nodes array
-and 'a nodes = 'a node list
+and blocks = nodes array
+and nodes = node list
 
 let text = function "" -> None | s -> Some (Text s)
 
@@ -118,7 +118,7 @@ and make_nodes l =
           let q = Queue.create () in
           let props = Map.String.map (make_data q) props in
           let blocks = Queue.to_seq q |> Array.of_seq in
-          Some (Component (name, (), blocks, props)))
+          Some (Component (name, blocks, props)))
     l
 
 and make_match loc tys cases =
@@ -142,7 +142,7 @@ module Components = struct
 
   type 'a t = {
     typed : (T.t, 'a) T.source Map.String.t;
-    optimized : (unit nodes, 'a) T.source Map.String.t;
+    optimized : (nodes, 'a) T.source Map.String.t;
   }
 
   let empty = { typed = Map.String.empty; optimized = Map.String.empty }
@@ -170,47 +170,59 @@ module Components = struct
     { typed; optimized }
 end
 
-type 'a template = Src of 'a template nodes | Fun of Typescheme.t * 'a
-
 type 'a t = {
   name : string;
   types : Typescheme.t;
-  nodes : 'a template nodes;
-  components : 'a template Map.String.t;
+  nodes : nodes;
+  components : nodes Map.String.t;
+  externals : (Typescheme.t * 'a) Map.String.t;
 }
 
-let rec link_nodes graph nodes =
-  List.map
-    (function
-      | (Text _ | Echo _) as x -> x
-      | Match (blocks, pats, t) ->
-          let blocks = Array.map (link_nodes graph) blocks in
-          let exits = Matching.Exit.map (link_nodes graph) t.exits in
-          Match (blocks, pats, { t with exits })
-      | Map_list (blocks, pats, t) ->
-          let blocks = Array.map (link_nodes graph) blocks in
-          let exits = Matching.Exit.map (link_nodes graph) t.exits in
-          Map_list (blocks, pats, { t with exits })
-      | Map_dict (blocks, pats, t) ->
-          let blocks = Array.map (link_nodes graph) blocks in
-          let exits = Matching.Exit.map (link_nodes graph) t.exits in
-          Map_dict (blocks, pats, { t with exits })
-      | Component (name, (), blocks, pats) ->
-          let blocks = Array.map (link_nodes graph) blocks in
-          let data = Dagmap.get name graph in
-          Component (name, data, blocks, pats))
-    nodes
+type 'a linked_components = {
+  components : nodes Map.String.t;
+  externals : (Typescheme.t * 'a) Map.String.t;
+  stack : string list;
+}
 
-let link_src graph = function
-  | T.Src (_, nodes) -> Src (link_nodes graph nodes)
-  | Fun (_, props, f) -> Fun (props, f)
+let empty_linked =
+  { components = Map.String.empty; externals = Map.String.empty; stack = [] }
 
-let make ~fname components src =
+let make ~fname components_src src =
   let nodes = parse ~fname src in
-  let typed = T.make ~root:fname components.Components.typed nodes in
-  let g = Dagmap.make ~f:link_src ~root:fname components.optimized in
-  let nodes = make_nodes typed |> link_nodes g in
-  { name = fname; types = typed.types; nodes; components = Dagmap.linked g }
+  let typed = T.make ~root:fname components_src.Components.typed nodes in
+  let nodes = make_nodes typed in
+  (* Only retrieve the  components that need to be linked. *)
+  let rec get_components linked nodes =
+    List.fold_left
+      (fun linked -> function
+        | Text _ | Echo _ -> linked
+        | Match (blocks, _, m) ->
+            let linked = Array.fold_left get_components linked blocks in
+            Matching.Exit.to_seq m.exits |> Seq.fold_left get_components linked
+        | Map_list (blocks, _, m) ->
+            let linked = Array.fold_left get_components linked blocks in
+            Matching.Exit.to_seq m.exits |> Seq.fold_left get_components linked
+        | Map_dict (blocks, _, m) ->
+            let linked = Array.fold_left get_components linked blocks in
+            Matching.Exit.to_seq m.exits |> Seq.fold_left get_components linked
+        | Component (name, blocks, _) -> (
+            let linked = Array.fold_left get_components linked blocks in
+            match Map.String.find_opt name components_src.optimized with
+            | None -> raise @@ Error.missing_component linked.stack name
+            | Some (Src (_, nodes)) ->
+                let components = Map.String.add name nodes linked.components in
+                get_components
+                  { linked with components; stack = name :: linked.stack }
+                  nodes
+            | Some (Fun (_, props, f)) ->
+                let externals =
+                  Map.String.add name (props, f) linked.externals
+                in
+                { linked with externals }))
+      linked nodes
+  in
+  let { components; externals; _ } = get_components empty_linked nodes in
+  { name = fname; types = typed.types; nodes; components; externals }
 
 let from_string ~fname components src =
   make ~fname components (Lexing.from_string src)
@@ -271,7 +283,7 @@ let rec node_to_sexp = function
           data_to_sexp data;
           Matching.to_sexp to_sexp matching;
         ]
-  | Component (name, _function, blocks, props) ->
+  | Component (name, blocks, props) ->
       Sexp.make "component"
         [
           Sexp.of_seq (Sexp.pair Sexp.int to_sexp) (Array.to_seqi blocks);

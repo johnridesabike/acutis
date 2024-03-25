@@ -69,8 +69,8 @@ val parmatch : Loc.t -> (Format.formatter -> 'a -> unit) -> 'a -> _
 (** {1 Other compile errors.} *)
 
 val duplicate_name : string -> _
-val cycle : string list -> _
-val missing_component : string list -> string -> _
+val cycle : string list -> exn
+val missing_component : string list -> string -> exn
 
 (** {1 Decode errors.} *)
 

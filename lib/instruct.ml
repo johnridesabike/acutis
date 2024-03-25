@@ -517,7 +517,7 @@ end = struct
                   make_exits exit exits (fun l -> nodes runtime buffer props l)
                 in
                 s1 |: s2))
-    | Component (name, _, blocks, dict) ->
+    | Component (name, blocks, dict) ->
         construct_blocks runtime buffer blocks props (fun blocks buffer ->
             buffer_append buffer
               (runtime.comps.%{string name}
@@ -976,21 +976,13 @@ end = struct
     |> join_stmts
 
   let eval compiled =
-    let comp_defs, externals =
-      Map.String.fold
-        (fun k v (comp_defs, externals) ->
-          match v with
-          | C.Src v -> ((k, v) :: comp_defs, externals)
-          | C.Fun (tys, v) -> (comp_defs, (k, tys, v) :: externals))
-        compiled.C.components ([], [])
-    in
     let$ escape = ("acutis_escape", escape) in
     let$ buffer_contents = ("buffer_contents", buffer_contents) in
     let$ comps = ("components", hashtbl_create ()) in
     let runtime = { escape; comps; buffer_contents } in
     let s1 =
-      List.to_seq externals
-      |> Seq.map (fun (k, tys, v) ->
+      Map.String.to_seq compiled.C.externals
+      |> Seq.map (fun (k, (tys, v)) ->
              import v (fun import ->
                  comps.%{string k} <-
                    lambda (fun props ->
@@ -1003,7 +995,7 @@ end = struct
       |> join_stmts
     in
     let s2 =
-      List.to_seq comp_defs
+      Map.String.to_seq compiled.components
       |> Seq.map (fun (k, v) ->
              comps.%{string k} <-
                lambda (fun props ->

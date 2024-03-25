@@ -246,6 +246,7 @@ module Exit : sig
 
   val map : ('a -> 'b) -> 'a t -> 'b t
   val key_to_int : key -> int
+  val to_seq : 'a t -> 'a Seq.t
   val to_seqi : 'a t -> (key * 'a) Seq.t
 end
 

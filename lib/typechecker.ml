@@ -469,14 +469,7 @@ and nodes = node list
 
 type t = { nodes : nodes; types : Type.t Map.String.t }
 
-type ('a, 'b) source =
-  | Src of string * 'a
-  | Fun of string * Type.t Map.String.t * 'b
-
-let get_types = function Src (_, { types; _ }) | Fun (_, types, _) -> types
-
 module Context = struct
-  type typed_tree = t
   type used = Unused | Used
 
   type binding = {
@@ -495,19 +488,17 @@ module Context = struct
     interface : (Loc.t * Type.t) Map.String.t ref option ref;
     interface_loc : Loc.t ref;
         (** When there's more than one interface, this is for the last one. *)
-    graph : ((Ast.t, 'a) source, (typed_tree, 'a) source) Dagmap.t;
   }
   (** We have to wrap each mutable value in a [ref] instead of using mutable
       fields because a new context record is created for each scope. *)
 
-  let make graph =
+  let make () =
     {
       global = ref Map.String.empty;
       scope = Map.String.empty;
       all_bindings = Queue.create ();
       interface = ref None;
       interface_loc = ref Loc.dummy;
-      graph;
     }
 
   let get k scope global =
@@ -773,6 +764,8 @@ type (_, _) var_action =
       (** When we construct a pattern, we update the context for each new
           variable. *)
 
+type _ Effect.t += Get_component_types : string -> Type.t Map.String.t Effect.t
+
 (** When we type-check a pattern, we create a temporary type and unify it
     with the input type. Information retained in the resulting typed-pattern
     structure, for example dictionary keys or sum-type data, must come from the
@@ -1031,7 +1024,7 @@ and make_nodes ctx nodes =
           Some (Echo (nullables, fmt, default, esc))
       | Ast.Component (loc, comp, comp', props) ->
           if comp <> comp' then Error.component_name_mismatch loc comp comp';
-          let types = get_types (Dagmap.get comp ctx.graph) in
+          let types = Effect.perform (Get_component_types comp) in
           (* The original should not mutate*)
           let types = Type.copy_record types in
           let missing_to_nullable _ ty prop =
@@ -1069,8 +1062,8 @@ and make_nodes ctx nodes =
       | Comment _ -> None)
     nodes
 
-let make g ast =
-  let ctx = Context.make g in
+let make ast =
+  let ctx = Context.make () in
   let nodes = make_nodes ctx ast in
   Queue.iter
     (function
@@ -1084,9 +1077,108 @@ let make g ast =
       Type.check_interface !(ctx.interface_loc) ~intf:!intf ~impl:!(ctx.global);
       { nodes; types = Map.String.map snd !intf }
 
-let make_src g = function
-  | Src (name, ast) -> Src (name, make g ast)
-  | Fun (name, p, f) -> Fun (name, p, f)
+(** Components need to form a directed acyclic graph. We use EXPERIMENTAL
+    effects to manage the graph's state and and compile components on-demand by
+    their dependents.
 
-let make_components m = Dagmap.make ~f:make_src m |> Dagmap.link_all
-let make ~root components ast = make (Dagmap.prelinked root components) ast
+    Effects allow us to keep all of the graph's data and logic local inside its
+    handler, and without needing to manually thread the state or callbacks
+    through the rest of the typechecker. *)
+
+type ('a, 'b) source =
+  | Src of string * 'a
+  | Fun of string * Type.t Map.String.t * 'b
+
+type 'a graph = {
+  not_linked : (Ast.t, 'a) source Map.String.t;
+  linked : (t, 'a) source Map.String.t;
+  stack : string list;
+}
+
+let make_components =
+  let error stack name =
+    if List.exists (String.equal name) stack then Error.cycle (name :: stack)
+    else Error.missing_component stack name
+  in
+  let rec continue :
+      type a.
+      'f graph -> (a, t) Effect.Shallow.continuation -> a -> t * 'f graph =
+   fun ({ linked; not_linked; stack } as graph) k v ->
+    let retc ret = (ret, graph) in
+    let exnc = raise in
+    let rec effc :
+        type b.
+        b Effect.t ->
+        ((b, t) Effect.Shallow.continuation -> t * 'f graph) option = function
+      | Get_component_types key ->
+          Some
+            (fun k ->
+              match Map.String.find_opt key linked with
+              | Some (Src (_, { types; _ }) | Fun (_, types, _)) ->
+                  continue graph k types
+              | None -> (
+                  match Map.String.find_opt key not_linked with
+                  | Some (Src (key', ast)) ->
+                      let not_linked = Map.String.remove key not_linked in
+                      let typed, { not_linked; linked; _ } =
+                        continue
+                          { not_linked; linked; stack = key :: stack }
+                          (Effect.Shallow.fiber make)
+                          ast
+                      in
+                      let linked =
+                        Map.String.add key (Src (key', typed)) linked
+                      in
+                      continue { not_linked; linked; stack } k typed.types
+                  | Some (Fun (_, types, _) as f) ->
+                      let not_linked = Map.String.remove key not_linked in
+                      let linked = Map.String.add key f linked in
+                      continue { not_linked; linked; stack } k types
+                  | None ->
+                      Effect.Shallow.discontinue_with k (error stack key)
+                        { retc; exnc; effc }))
+      | _ -> None
+    in
+    Effect.Shallow.continue_with k v { retc; exnc; effc }
+  in
+  let rec loop ~not_linked ~linked =
+    match Map.String.choose_opt not_linked with
+    | None -> linked
+    | Some (key, Src (key', ast)) ->
+        let not_linked = Map.String.remove key not_linked in
+        let typed, { not_linked; linked; _ } =
+          continue
+            { not_linked; linked; stack = [ key ] }
+            (Effect.Shallow.fiber make)
+            ast
+        in
+        loop ~not_linked ~linked:(Map.String.add key (Src (key', typed)) linked)
+    | Some (key, Fun (key', types, f)) ->
+        loop
+          ~not_linked:(Map.String.remove key not_linked)
+          ~linked:(Map.String.add key (Fun (key', types, f)) linked)
+  in
+  fun not_linked -> loop ~not_linked ~linked:Map.String.empty
+
+let make ~root components ast =
+  let rec continue : type a. (a, t) Effect.Shallow.continuation -> a -> t =
+    let retc = Fun.id in
+    let exnc = raise in
+    let rec effc :
+        type b. b Effect.t -> ((b, t) Effect.Shallow.continuation -> t) option =
+      function
+      | Get_component_types key ->
+          Some
+            (fun k ->
+              match Map.String.find_opt key components with
+              | Some (Src (_, { types; _ }) | Fun (_, types, _)) ->
+                  continue k types
+              | None ->
+                  Effect.Shallow.discontinue_with k
+                    (Error.missing_component [ root ] key)
+                    { retc; exnc; effc })
+      | _ -> None
+    in
+    fun k v -> Effect.Shallow.continue_with k v { retc; exnc; effc }
+  in
+  continue (Effect.Shallow.fiber make) ast

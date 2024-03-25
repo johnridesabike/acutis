@@ -39,16 +39,16 @@ type data =
         constructors will get their rendered content by their indices. *)
   ]
 
-type 'a node =
+type node =
   | Text of string
   | Echo of (echo_format * echo) list * echo_format * echo * escape
-  | Match of 'a blocks * data array * 'a nodes Matching.t
-  | Map_list of 'a blocks * data * 'a nodes Matching.t
-  | Map_dict of 'a blocks * data * 'a nodes Matching.t
-  | Component of string * 'a * 'a nodes array * data Map.String.t
+  | Match of blocks * data array * nodes Matching.t
+  | Map_list of blocks * data * nodes Matching.t
+  | Map_dict of blocks * data * nodes Matching.t
+  | Component of string * nodes array * data Map.String.t
 
-and 'a blocks = 'a nodes array
-and 'a nodes = 'a node list
+and blocks = nodes array
+and nodes = node list
 
 module Components : sig
   type 'a source
@@ -76,13 +76,12 @@ module Components : sig
       @raise Error.Acutis_error *)
 end
 
-type 'a template = Src of 'a template nodes | Fun of Typescheme.t * 'a
-
 type 'a t = {
   name : string;
   types : Typescheme.t;
-  nodes : 'a template nodes;
-  components : 'a template Map.String.t;
+  nodes : nodes;
+  components : nodes Map.String.t;
+  externals : (Typescheme.t * 'a) Map.String.t;
 }
 
 val make : fname:string -> 'a Components.t -> Lexing.lexbuf -> 'a t
@@ -90,4 +89,4 @@ val from_string : fname:string -> 'a Components.t -> string -> 'a t
 val from_channel : fname:string -> 'a Components.t -> in_channel -> 'a t
 val interface_from_string : fname:string -> string -> Typescheme.t
 val interface_from_channel : fname:string -> in_channel -> Typescheme.t
-val to_sexp : _ nodes -> Sexp.t
+val to_sexp : nodes -> Sexp.t

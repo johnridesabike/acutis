@@ -2,5 +2,8 @@
  (name acutis_js)
  (modes js)
  (libraries acutis)
+ (js_of_ocaml
+  (flags
+   (--enable effects)))
  (preprocess
   (pps js_of_ocaml-ppx)))

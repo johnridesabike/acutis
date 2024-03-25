@@ -36,7 +36,15 @@
       );
     };
   let components$0 = new Map();
-  import {"stringify" as import$0} from "./jscomponents.mjs";
+  import {"another_function" as import$0} from "./jscomponents.mjs";
+  components$0.set(
+    "Another_function",
+    (arg$0) => {
+      let encoded$0 = new Map();
+      return (import$0(Object.fromEntries(encoded$0)));
+    }
+  );
+  import {"stringify" as import$1} from "./jscomponents.mjs";
   components$0.set(
     "Stringify",
     (arg$0) => {
@@ -246,14 +254,6 @@
       }
       let props$11 = arg$0.get("unknown");
       encoded$0.set("unknown", props$11);
-      return (import$0(Object.fromEntries(encoded$0)));
-    }
-  );
-  import {"another_function" as import$1} from "./jscomponents.mjs";
-  components$0.set(
-    "Another_function",
-    (arg$0) => {
-      let encoded$0 = new Map();
       return (import$1(Object.fromEntries(encoded$0)));
     }
   );
