@@ -1619,63 +1619,66 @@
           "\n\nConstructing async blocks\n-------------------------\n\n"
         )
       );
-      let blocks$0 =
-        Array.from({length: 2}, (arg$1) => { return (Promise.resolve("")); });
-      let buffer$1 = [];
-      buffer$1.push(Promise.resolve(" Nested block "));
+      let block_buffer$0 = [];
+      block_buffer$0.push(Promise.resolve(" Nested block "));
       let nullable$1 = props$0.get("null_string");
       if (!(nullable$1 === 0)) {
-        buffer$1.push(Promise.resolve(acutis_escape$0(nullable$1[0])));
+        block_buffer$0.push(Promise.resolve(acutis_escape$0(nullable$1[0])));
       } else {
-        buffer$1.push(Promise.resolve(acutis_escape$0("pass")));
+        block_buffer$0.push(Promise.resolve(acutis_escape$0("pass")));
       }
-      blocks$0[0] = buffer_contents$0(buffer$1);
-      let buffer$2 = [];
-      buffer$2.push(Promise.resolve(" Another nested block"));
-      blocks$0[1] = buffer_contents$0(buffer$2);
       buffer$0.push(
-        Promise.all(blocks$0).then(
+        buffer_contents$0(block_buffer$0).then(
           (arg$1) => {
-            let buffer$3 = [];
-            let arg_match$7 = [new Map([["a", arg$1[0]], ["b", arg$1[1]]])];
-            let props$8 = new Map(props$0);
-            let exit$7 = -1;
-            let match_arg$12 = arg_match$7[0];
-            let match_arg$13 = match_arg$12.get("a");
-            let match_arg$14 = match_arg$12.get("b");
-            props$8.set("a", match_arg$13);
-            props$8.set("b", match_arg$14);
-            exit$7 = 0;
-            buffer$3.push(Promise.resolve(acutis_escape$0(props$8.get("a"))));
-            buffer$3.push(Promise.resolve(" "));
-            buffer$3.push(Promise.resolve(acutis_escape$0(props$8.get("b"))));
-            buffer$3.push(Promise.resolve("\n"));
-            return (buffer_contents$0(buffer$3));
+            let block_buffer$1 = [];
+            block_buffer$1.push(Promise.resolve(" Another nested block"));
+            return (
+              buffer_contents$0(block_buffer$1).then(
+                (arg$2) => {
+                  let buffer$1 = [];
+                  let arg_match$7 = [new Map([["a", arg$1], ["b", arg$2]])];
+                  let props$8 = new Map(props$0);
+                  let exit$7 = -1;
+                  let match_arg$12 = arg_match$7[0];
+                  let match_arg$13 = match_arg$12.get("a");
+                  let match_arg$14 = match_arg$12.get("b");
+                  props$8.set("a", match_arg$13);
+                  props$8.set("b", match_arg$14);
+                  exit$7 = 0;
+                  buffer$1.push(
+                    Promise.resolve(acutis_escape$0(props$8.get("a")))
+                  );
+                  buffer$1.push(Promise.resolve(" "));
+                  buffer$1.push(
+                    Promise.resolve(acutis_escape$0(props$8.get("b")))
+                  );
+                  buffer$1.push(Promise.resolve("\n"));
+                  return (buffer_contents$0(buffer$1));
+                }
+              )
+            );
           }
         )
       );
       buffer$0.push(Promise.resolve("Component\n---------\n\n"));
-      let blocks$1 =
-        Array.from({length: 1}, (arg$1) => { return (Promise.resolve("")); });
-      let buffer$3 = [];
-      buffer$3.push(Promise.resolve("Children prop"));
-      blocks$1[0] = buffer_contents$0(buffer$3);
+      let block_buffer$1 = [];
+      block_buffer$1.push(Promise.resolve("Children prop"));
       buffer$0.push(
-        Promise.all(blocks$1).then(
+        buffer_contents$0(block_buffer$1).then(
           (arg$1) => {
-            let buffer$4 = [];
-            buffer$4.push(
+            let buffer$1 = [];
+            buffer$1.push(
               components$0.get("Component")(
                 new Map(
                   [
-                    ["children", arg$1[0]],
+                    ["children", arg$1],
                     ["list", [1, [2, [3, 0]]]],
                     ["optional", 0],
                   ]
                 )
               )
             );
-            return (buffer_contents$0(buffer$4));
+            return (buffer_contents$0(buffer$1));
           }
         )
       );

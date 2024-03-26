@@ -1911,54 +1911,55 @@ Print the runtime instructions
             (buffer_append buffer/2 (promise " ")))
            (else (buffer_append buffer/2 (promise "\n")))))))
        (buffer_append buffer/2 (promise "\n\nComponent with props\n"))
-       (let$ blocks/0 = (array_init 3 (promise "")))
-       (let$ buffer/3 = (buffer_create))
-       (buffer_append buffer/3 (promise " "))
-       (blocks/0.%(0) <- (buffer_contents/0 @@ buffer/3))
-       (let$ buffer/4 = (buffer_create))
-       (let$ arg_match/4 = [(props/0.%{"a_prop"})])
-       (let$ props/7 = (hashtbl_copy props/0 ))
-       (let& exit/6 = -1)
-       (let$ match_arg/13 = (arg_match/4.%(0)))
-       (props/7.%{"b_prop"} <- match_arg/13)
-       (exit/6 := 0)
-       (buffer_append buffer/4 (promise " "))
-       (buffer_append buffer/4
-        (promise (acutis_escape/0 @@ (Data.to_string (props/7.%{"b_prop"})))))
-       (buffer_append buffer/4 (promise " "))
-       (blocks/0.%(1) <- (buffer_contents/0 @@ buffer/4))
-       (let$ buffer/5 = (buffer_create))
-       (unit)
-       (blocks/0.%(2) <- (buffer_contents/0 @@ buffer/5))
+       (let$ block_buffer/0 = (buffer_create))
+       (buffer_append block_buffer/0 (promise " "))
        (buffer_append buffer/2
-        (bind (promise_array blocks/0)
+        (bind (buffer_contents/0 @@ block_buffer/0)
          (lambda arg/7
-          ((let$ buffer/6 = (buffer_create))
-           (buffer_append buffer/6
-            ((components/0.%{"Component"})
-             @@ (hashtbl
-                 [("a_prop", (props/0.%{"b_prop"})),
-                  ("c_prop", (props/0.%{"c_prop"})),
-                  ("d_prop", (props/0.%{"e_prop"})),
-                  ("f_prop", (props/0.%{"f_prop"})),
-                  ("g_prop", (Data.string (arg/7.%(0)))),
-                  ("h_prop", (Data.string (arg/7.%(1)))),
-                  ("i_prop", (Data.string (arg/7.%(2))))])))
-           (return (buffer_contents/0 @@ buffer/6))))))
+          ((let$ block_buffer/1 = (buffer_create))
+           (let$ arg_match/4 = [(props/0.%{"a_prop"})])
+           (let$ props/7 = (hashtbl_copy props/0 ))
+           (let& exit/6 = -1)
+           (let$ match_arg/13 = (arg_match/4.%(0)))
+           (props/7.%{"b_prop"} <- match_arg/13)
+           (exit/6 := 0)
+           (buffer_append block_buffer/1 (promise " "))
+           (buffer_append block_buffer/1
+            (promise
+             (acutis_escape/0 @@ (Data.to_string (props/7.%{"b_prop"})))))
+           (buffer_append block_buffer/1 (promise " "))
+           (return
+            (bind (buffer_contents/0 @@ block_buffer/1)
+             (lambda arg/8
+              ((let$ block_buffer/2 = (buffer_create))
+               (unit)
+               (return
+                (bind (buffer_contents/0 @@ block_buffer/2)
+                 (lambda arg/9
+                  ((let$ buffer/3 = (buffer_create))
+                   (buffer_append buffer/3
+                    ((components/0.%{"Component"})
+                     @@ (hashtbl
+                         [("a_prop", (props/0.%{"b_prop"})),
+                          ("c_prop", (props/0.%{"c_prop"})),
+                          ("d_prop", (props/0.%{"e_prop"})),
+                          ("f_prop", (props/0.%{"f_prop"})),
+                          ("g_prop", (Data.string arg/7)),
+                          ("h_prop", (Data.string arg/8)),
+                          ("i_prop", (Data.string arg/9))])))
+                   (return (buffer_contents/0 @@ buffer/3))))))))))))))
        (buffer_append buffer/2
         (promise "\n\nComponent with implicit children\n"))
-       (let$ blocks/1 = (array_init 1 (promise "")))
-       (let$ buffer/7 = (buffer_create))
-       (buffer_append buffer/7 (promise " "))
-       (blocks/1.%(0) <- (buffer_contents/0 @@ buffer/7))
+       (let$ block_buffer/3 = (buffer_create))
+       (buffer_append block_buffer/3 (promise " "))
        (buffer_append buffer/2
-        (bind (promise_array blocks/1)
-         (lambda arg/8
-          ((let$ buffer/8 = (buffer_create))
-           (buffer_append buffer/8
+        (bind (buffer_contents/0 @@ block_buffer/3)
+         (lambda arg/10
+          ((let$ buffer/4 = (buffer_create))
+           (buffer_append buffer/4
             ((components/0.%{"Component2"})
-             @@ (hashtbl [("children", (Data.string (arg/8.%(0))))])))
-           (return (buffer_contents/0 @@ buffer/8))))))
+             @@ (hashtbl [("children", (Data.string arg/10))])))
+           (return (buffer_contents/0 @@ buffer/4))))))
        (buffer_append buffer/2 (promise "\n\nPatterns\n\nTuple:\n"))
        (let$ arg_match/5 = [(props/0.%{"tuple"})])
        (let$ props/8 = (hashtbl_copy props/0 ))

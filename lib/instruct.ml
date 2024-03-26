@@ -134,7 +134,6 @@ module type SEM = sig
 
   val promise : 'a exp -> 'a promise exp
   val bind : 'a promise exp -> ('a -> 'b promise) exp -> 'b promise exp
-  val promise_array : 'a promise array exp -> 'a array promise exp
   val error : string exp -> 'a promise exp
 
   (** {1 Buffers.} *)
@@ -314,7 +313,7 @@ end = struct
     | `Var s -> props.%{string s}
     | `Array a -> construct_data_array blocks props a |> Data.array
     | `Assoc d -> construct_data_hashtbl blocks props d |> Data.hashtbl
-    | `Block i -> blocks.%(int i) |> Data.string
+    | `Block i -> blocks.(i) |> Data.string
     | `Field (d, s) ->
         (construct_data blocks props d |> Data.to_hashtbl).%{string s}
 
@@ -524,32 +523,43 @@ end = struct
               @@ construct_data_hashtbl blocks props dict))
 
   and construct_blocks runtime buffer raw_blocks props f =
+    match Array.to_seqi raw_blocks () with
     (* With no blocks, just continue evaluating with a dummy value. *)
-    if Array.length raw_blocks = 0 then f (array [||]) buffer
-    else
-      let$ blocks =
-        ( "blocks",
-          array_init (int (Array.length raw_blocks)) (promise (string "")) )
-      in
-      let s1 =
-        Array.to_seqi raw_blocks
-        |> Seq.map (fun (i, block) ->
-               let$ buffer = ("buffer", buffer_create ()) in
-               let s1 = nodes runtime buffer props block in
-               let s2 = blocks.%(int i) <- runtime.buffer_contents @@ buffer in
-               s1 |: s2)
-        |> join_stmts
-      in
-      let s2 =
-        buffer_append buffer
-          (bind (promise_array blocks)
-             (lambda (fun blocks_resolved ->
-                  let$ buffer = ("buffer", buffer_create ()) in
-                  let s1 = f blocks_resolved buffer in
-                  let s2 = return (runtime.buffer_contents @@ buffer) in
-                  s1 |: s2)))
-      in
-      s1 |: s2
+    | Seq.Nil -> f [||] buffer
+    (* From the first block, we construct a chain of binded promises. *)
+    | Seq.Cons ((i, block), seq) ->
+        let blocks = Array.make (Array.length raw_blocks) (string "") in
+        let rec aux seq =
+          match seq () with
+          | Seq.Cons ((i, block), seq) ->
+              let$ block_buffer = ("block_buffer", buffer_create ()) in
+              let s1 = nodes runtime block_buffer props block in
+              let s2 =
+                return
+                  (bind
+                     (runtime.buffer_contents @@ block_buffer)
+                     (lambda (fun block ->
+                          blocks.(i) <- block;
+                          aux seq)))
+              in
+              s1 |: s2
+          | Seq.Nil ->
+              let$ buffer = ("buffer", buffer_create ()) in
+              let s1 = f blocks buffer in
+              let s2 = return (runtime.buffer_contents @@ buffer) in
+              s1 |: s2
+        in
+        let$ block_buffer = ("block_buffer", buffer_create ()) in
+        let s1 = nodes runtime block_buffer props block in
+        let s2 =
+          buffer_append buffer
+            (bind
+               (runtime.buffer_contents @@ block_buffer)
+               (lambda (fun block ->
+                    blocks.(i) <- block;
+                    aux seq)))
+        in
+        s1 |: s2
 
   and nodes runtime buffer props l =
     List.to_seq l |> Seq.map (node runtime buffer props) |> join_stmts
@@ -1175,7 +1185,6 @@ module MakeTrans
 
   let promise x = fwde (F.promise (bwde x))
   let bind a f = fwde (F.bind (bwde a) (bwde f))
-  let promise_array a = fwde (F.promise_array (bwde a))
   let error s = fwde (F.error (bwde s))
   let buffer_create () = fwde (F.buffer_create ())
   let buffer_append b s = fwds (F.buffer_append (bwde b) (bwde s))
@@ -1361,7 +1370,6 @@ let pp (type a) pp_import ppf c =
 
     let promise = F.dprintf "(@[promise@ %t@])"
     let bind = F.dprintf "(@[bind@ %t@ %t@])"
-    let promise_array = F.dprintf "(@[promise_array@ %t@])"
     let error = F.dprintf "(@[error@ %t@])"
 
     type buffer

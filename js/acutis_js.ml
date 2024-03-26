@@ -95,10 +95,6 @@ module Concurrent = struct
 
   let promise = Promise.resolve
   let bind = Promise.then_
-
-  let promise_array a =
-    Promise.then_ (Promise.all (Js.array a)) @@ fun a -> promise (Js.to_array a)
-
   let error s = Promise.reject (Error.Acutis_error s)
   let buffer_create () = new%js Js.array_empty
 

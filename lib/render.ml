@@ -14,7 +14,6 @@ module type CONCURRENT = sig
 
   val promise : 'a -> 'a promise
   val bind : 'a promise -> ('a -> 'b promise) -> 'b promise
-  val promise_array : 'a promise array -> 'a array promise
   val error : string -> 'a promise
   val buffer_create : unit -> buffer
   val buffer_append : buffer -> string promise -> unit
@@ -307,7 +306,6 @@ module MakeString = Make (struct
 
   let promise = Fun.id
   let bind = ( |> )
-  let promise_array = Fun.id
   let error s = raise (Error.Acutis_error s)
   let buffer_create () = Buffer.create 1024
   let buffer_append = Buffer.add_string

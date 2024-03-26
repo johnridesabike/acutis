@@ -105,21 +105,18 @@
     }
     if (errors$0.length === 0) {
       let buffer$0 = [];
-      let blocks$0 =
-        Array.from({length: 1}, (arg$1) => { return (Promise.resolve("")); });
-      let buffer$1 = [];
-      buffer$1.push(Promise.resolve(" text "));
-      blocks$0[0] = buffer_contents$0(buffer$1);
+      let block_buffer$0 = [];
+      block_buffer$0.push(Promise.resolve(" text "));
       buffer$0.push(
-        Promise.all(blocks$0).then(
+        buffer_contents$0(block_buffer$0).then(
           (arg$1) => {
-            let buffer$2 = [];
-            buffer$2.push(
+            let buffer$1 = [];
+            buffer$1.push(
               components$0.get("ExternalFunction")(
-                new Map([["children", arg$1[0]]])
+                new Map([["children", arg$1]])
               )
             );
-            return (buffer_contents$0(buffer$2));
+            return (buffer_contents$0(buffer$1));
           }
         )
       );
@@ -238,21 +235,18 @@
       }
       if (errors$0.length === 0) {
         let buffer$0 = [];
-        let blocks$0 =
-          Array.from({length: 1}, (arg$1) => { return (Promise.resolve("")); });
-        let buffer$1 = [];
-        buffer$1.push(Promise.resolve(" text "));
-        blocks$0[0] = buffer_contents$0(buffer$1);
+        let block_buffer$0 = [];
+        block_buffer$0.push(Promise.resolve(" text "));
         buffer$0.push(
-          Promise.all(blocks$0).then(
+          buffer_contents$0(block_buffer$0).then(
             (arg$1) => {
-              let buffer$2 = [];
-              buffer$2.push(
+              let buffer$1 = [];
+              buffer$1.push(
                 components$0.get("ExternalFunction")(
-                  new Map([["children", arg$1[0]]])
+                  new Map([["children", arg$1]])
                 )
               );
-              return (buffer_contents$0(buffer$2));
+              return (buffer_contents$0(buffer$1));
             }
           )
         );
