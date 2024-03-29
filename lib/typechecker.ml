@@ -1078,7 +1078,7 @@ let make ast =
       { nodes; types = Map.String.map snd !intf }
 
 (** Components need to form a directed acyclic graph. We use EXPERIMENTAL
-    effects to manage the graph's state and and compile components on-demand by
+    effects to manage the graph's state and compile components on-demand by
     their dependents.
 
     Effects allow us to keep all of the graph's data and logic local inside its

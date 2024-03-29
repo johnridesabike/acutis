@@ -10,10 +10,15 @@
 
 module F = Format
 
-module State = struct
+module State : sig
+  type t
   (** This tracks variable names used across JavaScript scopes so let-bindings
       are safe. JavaScript block scope is not equivalent to our native scope. *)
 
+  val make : unit -> t
+  val var : string -> t -> F.formatter -> t -> unit
+  val add_block : t -> t
+end = struct
   type t = (string * int) list ref
 
   let make () = ref []
@@ -220,10 +225,6 @@ module MakeJavaScript (M : JSMODULE) :
     let state = State.add_block state in
     F.fprintf ppf "{@ %a@;<1 -2>}@]" (stmts ()) state
 
-  type external_data
-  type 'a promise
-  type import = jsfun
-
   let unit _ _ = ()
   let not x ppf state = F.fprintf ppf "@[<hv 2>!(%a)@]" x state
   let int x ppf _ = F.pp_print_int ppf x
@@ -233,10 +234,41 @@ module MakeJavaScript (M : JSMODULE) :
   let pair (a, b) = seq Seq.(fun () -> Cons (a, fun () -> Cons (b, empty)))
   let equal_int = equal
   let equal_string = equal
-  let int_to_string x = x.!("toString") @@ unit
-  let int_to_float = Fun.id
-  let float_to_string = int_to_string
-  let bool_to_string x = tern x (string "true") (string "false")
+  let string_of_int x = x.!("toString") @@ unit
+  let float_of_int = Fun.id
+  let string_of_float = string_of_int
+  let string_of_bool x = tern x (string "true") (string "false")
+
+  let escape str =
+    let add_set a b =
+      stmt (fun ppf state -> F.fprintf ppf "%a +=@ %a" a state b state)
+    in
+    let& result = ("result", string "") in
+    for_ str.!("length") (fun i ->
+        let$ c = ("c", str.%(i)) in
+        switch c
+          [
+            (string "&", add_set result (string "&amp;"));
+            (string "\"", add_set result (string "&quot;"));
+            (string "'", add_set result (string "&apos;"));
+            (string ">", add_set result (string "&gt;"));
+            (string "<", add_set result (string "&lt;"));
+            (string "/", add_set result (string "&#x2F;"));
+            (string "`", add_set result (string "&#x60;"));
+            (string "=", add_set result (string "&#x3D;"));
+          ]
+          (add_set result c))
+    |: return result
+
+  type 'a promise
+
+  let bind a f = a.!("then") @@ f
+  let promise_array a = (global "Promise").!("all") @@ a
+  let error s = (global "Promise").!("reject") @@ new_ "Error" [ s ]
+
+  type external_data
+  type import = jsfun
+
   let array a = seq (Array.to_seq a)
 
   let array_init i x =
@@ -257,43 +289,16 @@ module MakeJavaScript (M : JSMODULE) :
   let hashtbl_mem x k = x.!("has") @@ k
   let hashtbl_copy x = new_ "Map" [ x ]
   let hashtbl_iter x f = for_of x (fun entry -> f entry.%(int 0) entry.%(int 1))
-  let promise = ( @@ ) (global "Promise").!("resolve")
-  let bind a f = a.!("then") @@ f
-  let promise_array a = (global "Promise").!("all") @@ a
-  let error s = (global "Promise").!("reject") @@ new_ "Error" [ s ]
 
   type buffer
 
   let buffer_create () = array [||]
-  let buffer_append b s = stmt (b.!("push") @@ s)
+  let buffer_add_string b s = stmt (b.!("push") @@ s)
+  let buffer_add_promise = buffer_add_string
 
-  let buffer_contents =
-    lambda (fun a ->
-        return
-          (bind (promise_array a)
-             (lambda (fun x -> return (array_concat x (string ""))))))
-
-  let escape =
-    let add_set a b =
-      stmt (fun ppf state -> F.fprintf ppf "%a +=@ %a" a state b state)
-    in
-    lambda (fun str ->
-        let& result = ("result", string "") in
-        for_ str.!("length") (fun i ->
-            let$ c = ("c", str.%(i)) in
-            switch c
-              [
-                (string "&", add_set result (string "&amp;"));
-                (string "\"", add_set result (string "&quot;"));
-                (string "'", add_set result (string "&apos;"));
-                (string ">", add_set result (string "&gt;"));
-                (string "<", add_set result (string "&lt;"));
-                (string "/", add_set result (string "&#x2F;"));
-                (string "`", add_set result (string "&#x60;"));
-                (string "=", add_set result (string "&#x3D;"));
-              ]
-              (add_set result c))
-        |: return result)
+  let buffer_contents a =
+    bind (promise_array a)
+      (lambda (fun x -> return (array_concat x (string ""))))
 
   type 'a stack
 
@@ -430,7 +435,7 @@ module RemoveIdsAndUnits (F : Instruct.SEM) :
         (F.( let$ ) (name, x.from) (fun x ->
              bwds (f { from = x; identity = true })))
 
-  let int_to_float x = { x with from = F.int_to_float x.from }
+  let float_of_int x = { x with from = F.float_of_int x.from }
   let deref x = { from = F.deref x; identity = true }
 
   module Data = struct

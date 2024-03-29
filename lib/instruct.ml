@@ -76,21 +76,6 @@ module type SEM = sig
 
   val while_ : (unit -> bool exp) -> (unit -> unit stmt) -> unit stmt
 
-  type external_data
-  (** Data from the outside world that we need to decode. *)
-
-  type 'a promise
-  (** An asynchronous monad. *)
-
-  type import
-  (** Information to import a function from external code. *)
-
-  val import :
-    import -> ((external_data -> string promise) exp -> 'a stmt) -> 'a stmt
-  (** The import semantics are abstract because runtimes vary. *)
-
-  val export : 'a exp -> 'a stmt
-
   (** {1 Standard values.} *)
 
   val unit : unit stmt
@@ -102,10 +87,34 @@ module type SEM = sig
   val pair : 'a exp * 'b exp -> ('a * 'b) exp
   val equal_int : int exp -> int exp -> bool exp
   val equal_string : string exp -> string exp -> bool exp
-  val int_to_string : int exp -> string exp
-  val int_to_float : int exp -> float exp
-  val float_to_string : float exp -> string exp
-  val bool_to_string : int exp -> string exp
+  val string_of_int : int exp -> string exp
+  val float_of_int : int exp -> float exp
+  val string_of_float : float exp -> string exp
+  val string_of_bool : int exp -> string exp
+
+  val escape : string exp -> string stmt
+  (** E.g. sanitize HTML syntax. *)
+
+  (** {1 Promises.} *)
+
+  type 'a promise
+  (** An asynchronous monad. *)
+
+  val bind : 'a promise exp -> ('a -> 'b promise) exp -> 'b promise exp
+  val error : string exp -> 'a promise exp
+
+  (** {1 Importing and exporting.} *)
+
+  type external_data
+  (** Data from the outside world that we need to decode. *)
+
+  type import
+  (** Information to import a function from external code. *)
+
+  val import :
+    import -> ((external_data -> string promise) exp -> 'a stmt) -> 'a stmt
+
+  val export : 'a exp -> 'a stmt
 
   (** {1 Arrays.} *)
 
@@ -130,24 +139,15 @@ module type SEM = sig
   val hashtbl_iter :
     'a hashtbl exp -> (string exp -> 'a exp -> unit stmt) -> unit stmt
 
-  (** {1 Promises.} *)
-
-  val promise : 'a exp -> 'a promise exp
-  val bind : 'a promise exp -> ('a -> 'b promise) exp -> 'b promise exp
-  val error : string exp -> 'a promise exp
-
   (** {1 Buffers.} *)
 
   type buffer
-  (** A buffer of concurrent string promises. *)
+  (** A concurrent buffer. *)
 
   val buffer_create : unit -> buffer exp
-  val buffer_append : buffer exp -> string promise exp -> unit stmt
-
-  (** These are lambdas to minimize generated code. *)
-
-  val buffer_contents : (buffer -> string promise) exp
-  val escape : (string -> string) exp
+  val buffer_add_string : buffer exp -> string exp -> unit stmt
+  val buffer_add_promise : buffer exp -> string promise exp -> unit stmt
+  val buffer_contents : buffer exp -> string promise exp
 
   (** {1 Mutable stacks.} *)
 
@@ -279,16 +279,16 @@ end = struct
 
   let parse_escape runtime buf esc x =
     match esc with
-    | C.No_escape -> buffer_append buf (promise x)
-    | C.Escape -> buffer_append buf (promise (runtime.escape @@ x))
+    | C.No_escape -> buffer_add_string buf x
+    | C.Escape -> buffer_add_string buf (runtime.escape @@ x)
 
   let fmt runtime buf esc x = function
     | C.Fmt_string -> parse_escape runtime buf esc (Data.to_string x)
-    | C.Fmt_int -> parse_escape runtime buf esc (int_to_string (Data.to_int x))
+    | C.Fmt_int -> parse_escape runtime buf esc (string_of_int (Data.to_int x))
     | C.Fmt_float ->
-        parse_escape runtime buf esc (float_to_string (Data.to_float x))
+        parse_escape runtime buf esc (string_of_float (Data.to_float x))
     | C.Fmt_bool ->
-        parse_escape runtime buf esc (bool_to_string (Data.to_int x))
+        parse_escape runtime buf esc (string_of_bool (Data.to_int x))
 
   let rec echo props (ech : C.echo) =
     match ech with
@@ -461,7 +461,7 @@ end = struct
         aux hd tl
 
   let rec node runtime buffer props = function
-    | C.Text s -> buffer_append buffer (promise (string s))
+    | C.Text s -> buffer_add_string buffer (string s)
     | C.Echo (echs, fmt, default, esc) ->
         echoes runtime buffer props esc default fmt echs
     | C.Match (blocks, data, { tree; exits }) ->
@@ -518,7 +518,7 @@ end = struct
                 s1 |: s2))
     | Component (name, blocks, dict) ->
         construct_blocks runtime buffer blocks props (fun blocks buffer ->
-            buffer_append buffer
+            buffer_add_promise buffer
               (runtime.comps.%{string name}
               @@ construct_data_hashtbl blocks props dict))
 
@@ -552,7 +552,7 @@ end = struct
         let$ block_buffer = ("block_buffer", buffer_create ()) in
         let s1 = nodes runtime block_buffer props block in
         let s2 =
-          buffer_append buffer
+          buffer_add_promise buffer
             (bind
                (runtime.buffer_contents @@ block_buffer)
                (lambda (fun block ->
@@ -667,7 +667,7 @@ end = struct
           ~ok:(fun f -> set (Data.float f))
           ~error:(fun () ->
             External.classify Int input
-              ~ok:(fun i -> set (Data.float (int_to_float i)))
+              ~ok:(fun i -> set (Data.float (float_of_int i)))
               ~error:(fun () -> push_error debug ty_str input))
     | T.Nullable ty ->
         if_else (External.is_null input)
@@ -691,7 +691,7 @@ end = struct
                   let$ decode_dst_new =
                     ("decode_dst_new", array [| nil_value; nil_value |])
                   in
-                  let s1 = stack_push debug.stack (int_to_string i) in
+                  let s1 = stack_push debug.stack (string_of_int i) in
                   let s2 =
                     decode
                       ~set:(fun data -> decode_dst_new.%(int 0) <- data)
@@ -727,7 +727,7 @@ end = struct
                                 ~debug input ty)
                             ~else_:(fun () -> aux (succ i') tl)
                     in
-                    let s1 = stack_push debug.stack (int_to_string i) in
+                    let s1 = stack_push debug.stack (string_of_int i) in
                     let s2 = aux 0 tys in
                     let s3 = set (Data.array decoded) in
                     let s4 = stack_drop debug.stack in
@@ -986,8 +986,11 @@ end = struct
     |> join_stmts
 
   let eval compiled =
-    let$ escape = ("acutis_escape", escape) in
-    let$ buffer_contents = ("buffer_contents", buffer_contents) in
+    (* Make these lambdas to minimize generated JavaScript code. *)
+    let$ escape = ("acutis_escape", lambda escape) in
+    let$ buffer_contents =
+      ("buffer_contents", lambda (fun b -> return (buffer_contents b)))
+    in
     let$ comps = ("components", hashtbl_create ()) in
     let runtime = { escape; comps; buffer_contents } in
     let s1 =
@@ -1153,8 +1156,6 @@ module MakeTrans
   let while_ b f =
     fwds (F.while_ (fun () -> bwde (b ())) (fun () -> bwds (f ())))
 
-  let import i f = fwds (F.import i (fun fi -> bwds (f (fwde fi))))
-  let export x = fwds (F.export (bwde x))
   let unit = fwds F.unit
   let not x = fwde (F.not (bwde x))
   let int x = fwde (F.int x)
@@ -1164,10 +1165,15 @@ module MakeTrans
   let pair (a, b) = fwde (F.pair (bwde a, bwde b))
   let equal_int a b = fwde (F.equal_int (bwde a) (bwde b))
   let equal_string a b = fwde (F.equal_string (bwde a) (bwde b))
-  let int_to_string x = fwde (F.int_to_string (bwde x))
-  let int_to_float x = fwde (F.int_to_float (bwde x))
-  let float_to_string x = fwde (F.float_to_string (bwde x))
-  let bool_to_string x = fwde (F.bool_to_string (bwde x))
+  let string_of_int x = fwde (F.string_of_int (bwde x))
+  let float_of_int x = fwde (F.float_of_int (bwde x))
+  let string_of_float x = fwde (F.string_of_float (bwde x))
+  let string_of_bool x = fwde (F.string_of_bool (bwde x))
+  let escape s = fwds (F.escape (bwde s))
+  let bind a f = fwde (F.bind (bwde a) (bwde f))
+  let error s = fwde (F.error (bwde s))
+  let import i f = fwds (F.import i (fun fi -> bwds (f (fwde fi))))
+  let export x = fwds (F.export (bwde x))
   let array x = fwde (F.array (Array.map bwde x))
   let array_init i x = fwde (F.array_init (bwde i) (bwde x))
   let ( .%() ) a i = fwde F.((bwde a).%(bwde i))
@@ -1183,13 +1189,10 @@ module MakeTrans
   let hashtbl_iter h f =
     fwds (F.hashtbl_iter (bwde h) (fun k v -> bwds (f (fwde k) (fwde v))))
 
-  let promise x = fwde (F.promise (bwde x))
-  let bind a f = fwde (F.bind (bwde a) (bwde f))
-  let error s = fwde (F.error (bwde s))
   let buffer_create () = fwde (F.buffer_create ())
-  let buffer_append b s = fwds (F.buffer_append (bwde b) (bwde s))
-  let buffer_contents = fwde F.buffer_contents
-  let escape = fwde F.escape
+  let buffer_add_string b s = fwds (F.buffer_add_string (bwde b) (bwde s))
+  let buffer_add_promise b s = fwds (F.buffer_add_promise (bwde b) (bwde s))
+  let buffer_contents b = fwde (F.buffer_contents (bwde b))
   let stack_create () = fwde (F.stack_create ())
   let stack_is_empty s = fwde (F.stack_is_empty (bwde s))
   let stack_push s x = fwds (F.stack_push (bwde s) (bwde x))
@@ -1314,16 +1317,6 @@ let pp (type a) pp_import ppf c =
         (then_ ()) (else_ ())
 
     let while_ b x = F.dprintf "(@[while@ %t@ (@[<hv>%t@])@])" (b ()) (x ())
-
-    type external_data
-    type 'a promise
-    type import = a
-
-    let import i f =
-      let name = var "import" in
-      F.dprintf "(@[import@ %t@ from@ %a@])@ %t" name pp_import i (f name)
-
-    let export = F.dprintf "(@[export@ %t@])"
     let unit = F.dprintf "(unit)"
     let not = F.dprintf "(@[not@ %t@])"
     let int = F.dprintf "%i"
@@ -1333,10 +1326,25 @@ let pp (type a) pp_import ppf c =
     let pair (a, b) = F.dprintf "(@[%t,@ %t@])" a b
     let equal_int = F.dprintf "(@[equal_int@ %t@ %t@])"
     let equal_string = F.dprintf "(@[equal_string@ %t@ %t@])"
-    let int_to_string = F.dprintf "(@[int_to_string@ %t@])"
-    let int_to_float = F.dprintf "(@[int_to_float@ %t@])"
-    let float_to_string = F.dprintf "(@[float_to_string@ %t@])"
-    let bool_to_string = F.dprintf "(@[bool_to_string@ %t@])"
+    let string_of_int = F.dprintf "(@[string_of_int@ %t@])"
+    let float_of_int = F.dprintf "(@[float_of_int@ %t@])"
+    let string_of_float = F.dprintf "(@[string_of_float@ %t@])"
+    let string_of_bool = F.dprintf "(@[string_of_bool@ %t@])"
+    let escape = F.dprintf "(@[escape@ %t@])"
+
+    type 'a promise
+
+    let bind = F.dprintf "(@[bind@ %t@ %t@])"
+    let error = F.dprintf "(@[error@ %t@])"
+
+    type external_data
+    type import = a
+
+    let import i f =
+      let name = var "import" in
+      F.dprintf "(@[import@ %t@ from@ %a@])@ %t" name pp_import i (f name)
+
+    let export = F.dprintf "(@[export@ %t@])"
 
     let array a =
       F.dprintf "[@[<hv>%a@]]"
@@ -1368,16 +1376,12 @@ let pp (type a) pp_import ppf c =
       F.dprintf "(@[hashtbl_iter@ %t@ %t@ %t@ %t@])" t arg_k arg_v
         (f arg_k arg_v)
 
-    let promise = F.dprintf "(@[promise@ %t@])"
-    let bind = F.dprintf "(@[bind@ %t@ %t@])"
-    let error = F.dprintf "(@[error@ %t@])"
-
     type buffer
 
     let buffer_create () = F.dprintf "(buffer_create)"
-    let buffer_append = F.dprintf "(@[buffer_append@ %t@ %t@])"
-    let buffer_contents = F.dprintf "(buffer_contents)"
-    let escape = F.dprintf "(escape)"
+    let buffer_add_string = F.dprintf "(@[buffer_add_string@ %t@ %t@])"
+    let buffer_add_promise = F.dprintf "(@[buffer_add_promise@ %t@ %t@])"
+    let buffer_contents = F.dprintf "(@[buffer_contents@ %t@])"
 
     type 'a stack
 

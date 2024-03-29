@@ -73,16 +73,8 @@ end
 module Promise = struct
   type 'a t
 
-  class type promise_constr = object
-    method resolve : 'a -> 'a t Js.meth
-    method reject : 'e -> 'a t Js.meth
-    method all : 'a t Js.js_array Js.t -> 'a Js.js_array Js.t t Js.meth
-  end
-
-  let promise : promise_constr Js.t = Js.Unsafe.global##._Promise
-  let resolve x = promise##resolve x
-  let reject x = promise##reject x
-  let all a = promise##all a
+  let resolve : 'a -> 'a t = fun x -> Js.Unsafe.global##._Promise##resolve x
+  let reject : 'e -> 'a t = fun x -> Js.Unsafe.global##._Promise##reject x
 
   let then_ : 'a t -> ('a -> 'b t) -> 'b t =
    fun t f ->
@@ -91,19 +83,40 @@ end
 
 module Concurrent = struct
   type 'a promise = 'a Promise.t
-  type buffer = Js.js_string Js.t promise Js.js_array Js.t
 
-  let promise = Promise.resolve
   let bind = Promise.then_
   let error s = Promise.reject (Error.Acutis_error s)
-  let buffer_create () = new%js Js.array_empty
 
-  let buffer_append (b : buffer) p =
-    b##push (Promise.then_ p @@ fun s -> promise (Js.string s)) |> ignore
+  type buffer = { sync : Buffer.t; mutable async : Buffer.t promise }
+  (** The main buffer is async, but most writes are synchronous. We'll avoid
+      binds by mainly using a sync buffer that gets flushed to the async one
+      when needed. BTW, I haven't measured the performance difference yet. *)
 
-  let buffer_contents (b : buffer) =
-    Promise.then_ (Promise.all b) @@ fun a ->
-    promise (a##join (Js.string "") |> Js.to_string)
+  let buffer_create () =
+    { sync = Buffer.create 1024; async = Promise.resolve (Buffer.create 1024) }
+
+  let buffer_add_string b s = Buffer.add_string b.sync s
+
+  let buffer_add_promise b p =
+    let sync = Buffer.contents b.sync in
+    Buffer.clear b.sync;
+    b.async <-
+      Promise.then_ b.async (fun b_async ->
+          Promise.then_ p (fun s ->
+              Buffer.add_string b_async sync;
+              Buffer.add_string b_async s;
+              Promise.resolve b_async))
+
+  let buffer_contents b =
+    let sync = Buffer.contents b.sync in
+    Buffer.clear b.sync;
+    b.async <-
+      Promise.then_ b.async (fun b_async ->
+          Buffer.add_string b_async sync;
+          Buffer.clear b.sync;
+          Promise.resolve b_async);
+    Promise.then_ b.async (fun b_async ->
+        Promise.resolve (Buffer.contents b_async))
 end
 
 module RenderSync = Render.MakeString (DataJs)

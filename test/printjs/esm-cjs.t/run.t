@@ -106,7 +106,7 @@
     if (errors$0.length === 0) {
       let buffer$0 = [];
       let block_buffer$0 = [];
-      block_buffer$0.push(Promise.resolve(" text "));
+      block_buffer$0.push(" text ");
       buffer$0.push(
         buffer_contents$0(block_buffer$0).then(
           (arg$1) => {
@@ -120,7 +120,7 @@
           }
         )
       );
-      buffer$0.push(Promise.resolve("\n"));
+      buffer$0.push("\n");
       return (buffer_contents$0(buffer$0));
     } else {
       return (Promise.reject(new Error(errors$0.join("\n\n"))));
@@ -236,7 +236,7 @@
       if (errors$0.length === 0) {
         let buffer$0 = [];
         let block_buffer$0 = [];
-        block_buffer$0.push(Promise.resolve(" text "));
+        block_buffer$0.push(" text ");
         buffer$0.push(
           buffer_contents$0(block_buffer$0).then(
             (arg$1) => {
@@ -250,7 +250,7 @@
             }
           )
         );
-        buffer$0.push(Promise.resolve("\n"));
+        buffer$0.push("\n");
         return (buffer_contents$0(buffer$0));
       } else {
         return (Promise.reject(new Error(errors$0.join("\n\n"))));

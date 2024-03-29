@@ -12,11 +12,11 @@ module type CONCURRENT = sig
   type 'a promise
   type buffer
 
-  val promise : 'a -> 'a promise
   val bind : 'a promise -> ('a -> 'b promise) -> 'b promise
   val error : string -> 'a promise
   val buffer_create : unit -> buffer
-  val buffer_append : buffer -> string promise -> unit
+  val buffer_add_string : buffer -> string -> unit
+  val buffer_add_promise : buffer -> string promise -> unit
   val buffer_contents : buffer -> string promise
 end
 
@@ -99,15 +99,6 @@ module Make (C : CONCURRENT) (D : DECODABLE) :
         g ()
       done
 
-    type external_data = D.t
-    type import = D.t -> string promise
-
-    let import = ( |> )
-    let export = Fun.id
-
-    type 'a obs = 'a
-
-    let observe = Fun.id
     let unit = ()
     let not = not
     let int = Fun.id
@@ -117,10 +108,36 @@ module Make (C : CONCURRENT) (D : DECODABLE) :
     let pair = Fun.id
     let equal_int = Int.equal
     let equal_string = String.equal
-    let int_to_string = Int.to_string
-    let int_to_float = Float.of_int
-    let float_to_string = Float.to_string
-    let bool_to_string = function 0 -> "false" | _ -> "true"
+    let string_of_int = string_of_int
+    let float_of_int = float_of_int
+    let string_of_float = string_of_float
+    let string_of_bool = function 0 -> "false" | _ -> "true"
+
+    let escape s =
+      let b = Buffer.create (String.length s) in
+      String.iter
+        (function
+          | '&' -> Buffer.add_string b "&amp;"
+          | '"' -> Buffer.add_string b "&quot;"
+          | '\'' -> Buffer.add_string b "&apos;"
+          | '>' -> Buffer.add_string b "&gt;"
+          | '<' -> Buffer.add_string b "&lt;"
+          | '/' -> Buffer.add_string b "&#x2F;"
+          | '`' -> Buffer.add_string b "&#x60;"
+          | '=' -> Buffer.add_string b "&#x3D;"
+          | c -> Buffer.add_char b c)
+        s;
+      Buffer.contents b
+
+    type external_data = D.t
+    type import = D.t -> string promise
+
+    let import = ( |> )
+    let export = Fun.id
+
+    type 'a obs = 'a
+
+    let observe = Fun.id
     let array = Fun.id
     let array_init = Array.make
     let ( .%() ) = Array.get
@@ -148,22 +165,6 @@ module Make (C : CONCURRENT) (D : DECODABLE) :
     let hashtbl_mem = Tbl.mem
     let hashtbl_copy = Tbl.copy
     let hashtbl_iter x f = Tbl.iter f x
-
-    let escape s =
-      let b = Buffer.create (String.length s) in
-      String.iter
-        (function
-          | '&' -> Buffer.add_string b "&amp;"
-          | '"' -> Buffer.add_string b "&quot;"
-          | '\'' -> Buffer.add_string b "&apos;"
-          | '>' -> Buffer.add_string b "&gt;"
-          | '<' -> Buffer.add_string b "&lt;"
-          | '/' -> Buffer.add_string b "&#x2F;"
-          | '`' -> Buffer.add_string b "&#x60;"
-          | '=' -> Buffer.add_string b "&#x3D;"
-          | c -> Buffer.add_char b c)
-        s;
-      Buffer.contents b
 
     type 'a stack = 'a Stack.t
 
@@ -304,10 +305,10 @@ module MakeString = Make (struct
   type 'a promise = 'a
   type buffer = Buffer.t
 
-  let promise = Fun.id
   let bind = ( |> )
   let error s = raise (Error.Acutis_error s)
   let buffer_create () = Buffer.create 1024
-  let buffer_append = Buffer.add_string
+  let buffer_add_string = Buffer.add_string
+  let buffer_add_promise = Buffer.add_string
   let buffer_contents = Buffer.contents
 end)

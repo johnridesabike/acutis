@@ -263,13 +263,11 @@
       let buffer$0 = [];
       let nullable$0 = arg$0.get("optional");
       if (!(nullable$0 === 0)) {
-        buffer$0.push(
-          Promise.resolve(acutis_escape$0(nullable$0[0].toString()))
-        );
+        buffer$0.push(acutis_escape$0(nullable$0[0].toString()));
       } else {
-        buffer$0.push(Promise.resolve(acutis_escape$0(arg$0.get("children"))));
+        buffer$0.push(acutis_escape$0(arg$0.get("children")));
       }
-      buffer$0.push(Promise.resolve("\n"));
+      buffer$0.push("\n");
       let index$0 = 0;
       let cell$0 = arg$0.get("list");
       while (!(cell$0 === 0)) {
@@ -278,9 +276,7 @@
         let exit$0 = -1;
         props$0.set("i", head$0);
         exit$0 = 0;
-        buffer$0.push(
-          Promise.resolve(acutis_escape$0(props$0.get("i").toString()))
-        );
+        buffer$0.push(acutis_escape$0(props$0.get("i").toString()));
         index$0++;
         cell$0 = cell$0[1];
       }
@@ -1191,65 +1187,41 @@
     }
     if (errors$0.length === 0) {
       let buffer$0 = [];
-      buffer$0.push(Promise.resolve("Formatters\n----------\n\n%i    "));
-      buffer$0.push(
-        Promise.resolve(acutis_escape$0(props$0.get("big_int").toString()))
-      );
-      buffer$0.push(Promise.resolve("\n%f    "));
-      buffer$0.push(
-        Promise.resolve(acutis_escape$0(props$0.get("big_float").toString()))
-      );
-      buffer$0.push(Promise.resolve("\n%b    "));
-      buffer$0.push(
-        Promise.resolve(
-          acutis_escape$0(props$0.get("bool1") ? "true" : "false")
-        )
-      );
-      buffer$0.push(Promise.resolve("\n%b    "));
-      buffer$0.push(
-        Promise.resolve(
-          acutis_escape$0(props$0.get("bool2") ? "true" : "false")
-        )
-      );
-      buffer$0.push(Promise.resolve("\n\nEscaping\n--------\n\nEscaped     "));
-      buffer$0.push(Promise.resolve(acutis_escape$0(props$0.get("dangerous"))));
-      buffer$0.push(Promise.resolve("\nNot escaped "));
-      buffer$0.push(Promise.resolve(props$0.get("dangerous")));
-      buffer$0.push(
-        Promise.resolve(
-          "\n\nNullable echo chaining\n----------------------\n\n"
-        )
-      );
+      buffer$0.push("Formatters\n----------\n\n%i    ");
+      buffer$0.push(acutis_escape$0(props$0.get("big_int").toString()));
+      buffer$0.push("\n%f    ");
+      buffer$0.push(acutis_escape$0(props$0.get("big_float").toString()));
+      buffer$0.push("\n%b    ");
+      buffer$0.push(acutis_escape$0(props$0.get("bool1") ? "true" : "false"));
+      buffer$0.push("\n%b    ");
+      buffer$0.push(acutis_escape$0(props$0.get("bool2") ? "true" : "false"));
+      buffer$0.push("\n\nEscaping\n--------\n\nEscaped     ");
+      buffer$0.push(acutis_escape$0(props$0.get("dangerous")));
+      buffer$0.push("\nNot escaped ");
+      buffer$0.push(props$0.get("dangerous"));
+      buffer$0.push("\n\nNullable echo chaining\n----------------------\n\n");
       let nullable$0 = props$0.get("null_int");
       if (!(nullable$0 === 0)) {
-        buffer$0.push(
-          Promise.resolve(acutis_escape$0(nullable$0[0].toString()))
-        );
+        buffer$0.push(acutis_escape$0(nullable$0[0].toString()));
       } else {
         let nullable$1 = props$0.get("null_float");
         if (!(nullable$1 === 0)) {
-          buffer$0.push(
-            Promise.resolve(acutis_escape$0(nullable$1[0].toString()))
-          );
+          buffer$0.push(acutis_escape$0(nullable$1[0].toString()));
         } else {
           let nullable$2 = props$0.get("null_bool");
           if (!(nullable$2 === 0)) {
-            buffer$0.push(
-              Promise.resolve(
-                acutis_escape$0(nullable$2[0] ? "true" : "false")
-              )
-            );
+            buffer$0.push(acutis_escape$0(nullable$2[0] ? "true" : "false"));
           } else {
             let nullable$3 = props$0.get("null_string");
             if (!(nullable$3 === 0)) {
-              buffer$0.push(Promise.resolve(acutis_escape$0(nullable$3[0])));
+              buffer$0.push(acutis_escape$0(nullable$3[0]));
             } else {
-              buffer$0.push(Promise.resolve(acutis_escape$0("pass")));
+              buffer$0.push(acutis_escape$0("pass"));
             }
           }
         }
       }
-      buffer$0.push(Promise.resolve("\n\nMatching\n--------\n\n"));
+      buffer$0.push("\n\nMatching\n--------\n\n");
       let arg_match$0 = [props$0.get("record").get("int_enum")];
       let props$1 = new Map(props$0);
       let exit$0 = -1;
@@ -1260,9 +1232,9 @@
         if (match_arg$0 === 40) { exit$0 = 1; }
       }
       if (exit$0 === 0) {
-        buffer$0.push(Promise.resolve("8\n"));
+        buffer$0.push("8\n");
       } else {
-        buffer$0.push(Promise.resolve("40\n"));
+        buffer$0.push("40\n");
       }
       let arg_match$1 = [props$0.get("record")];
       let props$2 = new Map(props$0);
@@ -1275,9 +1247,9 @@
         if (match_arg$2 === "yes") { exit$1 = 0; }
       }
       if (exit$1 === 0) {
-        buffer$0.push(Promise.resolve("yes\n"));
+        buffer$0.push("yes\n");
       } else {
-        buffer$0.push(Promise.resolve("no\n"));
+        buffer$0.push("no\n");
       }
       let arg_match$2 = [props$0.get("tagged_record_bool")];
       let props$3 = new Map(props$0);
@@ -1296,13 +1268,11 @@
         }
       }
       if (exit$2 === 0) {
-        buffer$0.push(Promise.resolve(acutis_escape$0(props$3.get("a"))));
-        buffer$0.push(Promise.resolve("\n"));
+        buffer$0.push(acutis_escape$0(props$3.get("a")));
+        buffer$0.push("\n");
       } else {
-        buffer$0.push(
-          Promise.resolve(acutis_escape$0(props$3.get("b").toString()))
-        );
-        buffer$0.push(Promise.resolve("\n"));
+        buffer$0.push(acutis_escape$0(props$3.get("b").toString()));
+        buffer$0.push("\n");
       }
       let arg_match$3 = [props$0.get("tagged_record_int")];
       let props$4 = new Map(props$0);
@@ -1324,18 +1294,14 @@
         }
       }
       if (exit$3 === 0) {
-        buffer$0.push(Promise.resolve("Fail\n"));
+        buffer$0.push("Fail\n");
       } else {
-        buffer$0.push(
-          Promise.resolve(acutis_escape$0(props$4.get("a").toString()))
-        );
-        buffer$0.push(Promise.resolve(" "));
-        buffer$0.push(Promise.resolve(acutis_escape$0(props$4.get("b"))));
-        buffer$0.push(Promise.resolve(" "));
-        buffer$0.push(
-          Promise.resolve(acutis_escape$0(props$4.get("c") ? "true" : "false"))
-        );
-        buffer$0.push(Promise.resolve("\n"));
+        buffer$0.push(acutis_escape$0(props$4.get("a").toString()));
+        buffer$0.push(" ");
+        buffer$0.push(acutis_escape$0(props$4.get("b")));
+        buffer$0.push(" ");
+        buffer$0.push(acutis_escape$0(props$4.get("c") ? "true" : "false"));
+        buffer$0.push("\n");
       }
       let arg_match$4 = [props$0.get("tagged_record_open")];
       let props$5 = new Map(props$0);
@@ -1349,13 +1315,13 @@
       }
       if (exit$4 === -1) { exit$4 = 1; }
       if (exit$4 === 0) {
-        buffer$0.push(Promise.resolve(" "));
-        buffer$0.push(Promise.resolve(acutis_escape$0(props$5.get("b"))));
-        buffer$0.push(Promise.resolve("\n"));
+        buffer$0.push(" ");
+        buffer$0.push(acutis_escape$0(props$5.get("b")));
+        buffer$0.push("\n");
       } else {
-        buffer$0.push(Promise.resolve("Another tag!\n"));
+        buffer$0.push("Another tag!\n");
       }
-      buffer$0.push(Promise.resolve("\n\nMapping\n-------\n\n"));
+      buffer$0.push("\n\nMapping\n-------\n\n");
       let match_arg$9 = props$0.get("null_string_dict");
       for (let x$0 of match_arg$9) {
         let props$6 = new Map(props$0);
@@ -1370,13 +1336,13 @@
           exit$5 = 1;
         }
         if (exit$5 === 0) {
-          buffer$0.push(Promise.resolve(acutis_escape$0(props$6.get("key"))));
-          buffer$0.push(Promise.resolve(" is null.\n"));
+          buffer$0.push(acutis_escape$0(props$6.get("key")));
+          buffer$0.push(" is null.\n");
         } else {
-          buffer$0.push(Promise.resolve(acutis_escape$0(props$6.get("key"))));
-          buffer$0.push(Promise.resolve(" is "));
-          buffer$0.push(Promise.resolve(acutis_escape$0(props$6.get("str"))));
-          buffer$0.push(Promise.resolve("\n"));
+          buffer$0.push(acutis_escape$0(props$6.get("key")));
+          buffer$0.push(" is ");
+          buffer$0.push(acutis_escape$0(props$6.get("str")));
+          buffer$0.push("\n");
         }
       }
       let index$0 = 0;
@@ -1387,10 +1353,8 @@
         let exit$5 = -1;
         props$6.set("i", head$0);
         exit$5 = 0;
-        buffer$0.push(
-          Promise.resolve(acutis_escape$0(props$6.get("i").toString()))
-        );
-        buffer$0.push(Promise.resolve("\n"));
+        buffer$0.push(acutis_escape$0(props$6.get("i").toString()));
+        buffer$0.push("\n");
         index$0++;
         cell$0 = cell$0[1];
       }
@@ -1403,14 +1367,10 @@
         props$6.set("i", head$0);
         props$6.set("key", index$1);
         exit$5 = 0;
-        buffer$0.push(
-          Promise.resolve(acutis_escape$0(props$6.get("key").toString()))
-        );
-        buffer$0.push(Promise.resolve(" : "));
-        buffer$0.push(
-          Promise.resolve(acutis_escape$0(props$6.get("i").toString()))
-        );
-        buffer$0.push(Promise.resolve("\n"));
+        buffer$0.push(acutis_escape$0(props$6.get("key").toString()));
+        buffer$0.push(" : ");
+        buffer$0.push(acutis_escape$0(props$6.get("i").toString()));
+        buffer$0.push("\n");
         index$1++;
         cell$1 = cell$1[1];
       }
@@ -1438,10 +1398,8 @@
             let exit$7 = -1;
             props$8.set("i", head$2);
             exit$7 = 0;
-            buffer$0.push(
-              Promise.resolve(acutis_escape$0(props$8.get("i").toString()))
-            );
-            buffer$0.push(Promise.resolve(" "));
+            buffer$0.push(acutis_escape$0(props$8.get("i").toString()));
+            buffer$0.push(" ");
             index$4++;
             cell$4 = cell$4[1];
           }
@@ -1451,7 +1409,7 @@
         index$2++;
         cell$2 = cell$2[1];
       }
-      buffer$0.push(Promise.resolve("\n\n"));
+      buffer$0.push("\n\n");
       let index$3 = 0;
       let cell$3 = props$0.get("nested_nullable_list");
       while (!(cell$3 === 0)) {
@@ -1472,34 +1430,26 @@
           }
         }
         if (exit$5 === 0) {
-          buffer$0.push(Promise.resolve("Level 1 null\n"));
+          buffer$0.push("Level 1 null\n");
         } else {
           if (exit$5 === 1) {
-            buffer$0.push(
-              Promise.resolve("Level 2 null (This shouldn't render.)\n")
-            );
+            buffer$0.push("Level 2 null (This shouldn't render.)\n");
           } else {
-            buffer$0.push(Promise.resolve("Level 3 "));
-            buffer$0.push(
-              Promise.resolve(
-                acutis_escape$0(props$6.get("b") ? "true" : "false")
-              )
-            );
-            buffer$0.push(Promise.resolve("\n"));
+            buffer$0.push("Level 3 ");
+            buffer$0.push(acutis_escape$0(props$6.get("b") ? "true" : "false"));
+            buffer$0.push("\n");
           }
         }
         index$3++;
         cell$3 = cell$3[1];
       }
       buffer$0.push(
-        Promise.resolve(
-          "\n\
+        "\n\
   \n\
   Dictionaries match correctly\n\
   ----------------------------\n\
   \n\
   "
-        )
       );
       let arg_match$5 = [props$0.get("null_string_dict")];
       let props$6 = new Map(props$0);
@@ -1547,19 +1497,19 @@
       }
       if (exit$5 === -1) { exit$5 = 3; }
       if (exit$5 === 0) {
-        buffer$0.push(Promise.resolve(" "));
-        buffer$0.push(Promise.resolve(acutis_escape$0(props$6.get("a"))));
-        buffer$0.push(Promise.resolve(" "));
-        buffer$0.push(Promise.resolve(acutis_escape$0(props$6.get("b"))));
-        buffer$0.push(Promise.resolve("\n"));
+        buffer$0.push(" ");
+        buffer$0.push(acutis_escape$0(props$6.get("a")));
+        buffer$0.push(" ");
+        buffer$0.push(acutis_escape$0(props$6.get("b")));
+        buffer$0.push("\n");
       } else {
         if (exit$5 === 1) {
-          buffer$0.push(Promise.resolve(" Fail.\n"));
+          buffer$0.push(" Fail.\n");
         } else {
           if (exit$5 === 2) {
-            buffer$0.push(Promise.resolve(" Pass.\n"));
+            buffer$0.push(" Pass.\n");
           } else {
-            buffer$0.push(Promise.resolve(" Fail.\n"));
+            buffer$0.push(" Fail.\n");
           }
         }
       }
@@ -1598,40 +1548,38 @@
       }
       if (exit$6 === -1) { exit$6 = 3; }
       if (exit$6 === 0) {
-        buffer$0.push(Promise.resolve(" Fail. "));
-        buffer$0.push(Promise.resolve(acutis_escape$0(props$7.get("a"))));
-        buffer$0.push(Promise.resolve(" "));
-        buffer$0.push(Promise.resolve(acutis_escape$0(props$7.get("b"))));
-        buffer$0.push(Promise.resolve("\n"));
+        buffer$0.push(" Fail. ");
+        buffer$0.push(acutis_escape$0(props$7.get("a")));
+        buffer$0.push(" ");
+        buffer$0.push(acutis_escape$0(props$7.get("b")));
+        buffer$0.push("\n");
       } else {
         if (exit$6 === 1) {
-          buffer$0.push(Promise.resolve(" Fail.\n"));
+          buffer$0.push(" Fail.\n");
         } else {
           if (exit$6 === 2) {
-            buffer$0.push(Promise.resolve(" Pass.\n"));
+            buffer$0.push(" Pass.\n");
           } else {
-            buffer$0.push(Promise.resolve(" Fail.\n"));
+            buffer$0.push(" Fail.\n");
           }
         }
       }
       buffer$0.push(
-        Promise.resolve(
-          "\n\nConstructing async blocks\n-------------------------\n\n"
-        )
+        "\n\nConstructing async blocks\n-------------------------\n\n"
       );
       let block_buffer$0 = [];
-      block_buffer$0.push(Promise.resolve(" Nested block "));
+      block_buffer$0.push(" Nested block ");
       let nullable$1 = props$0.get("null_string");
       if (!(nullable$1 === 0)) {
-        block_buffer$0.push(Promise.resolve(acutis_escape$0(nullable$1[0])));
+        block_buffer$0.push(acutis_escape$0(nullable$1[0]));
       } else {
-        block_buffer$0.push(Promise.resolve(acutis_escape$0("pass")));
+        block_buffer$0.push(acutis_escape$0("pass"));
       }
       buffer$0.push(
         buffer_contents$0(block_buffer$0).then(
           (arg$1) => {
             let block_buffer$1 = [];
-            block_buffer$1.push(Promise.resolve(" Another nested block"));
+            block_buffer$1.push(" Another nested block");
             return (
               buffer_contents$0(block_buffer$1).then(
                 (arg$2) => {
@@ -1645,14 +1593,10 @@
                   props$8.set("a", match_arg$13);
                   props$8.set("b", match_arg$14);
                   exit$7 = 0;
-                  buffer$1.push(
-                    Promise.resolve(acutis_escape$0(props$8.get("a")))
-                  );
-                  buffer$1.push(Promise.resolve(" "));
-                  buffer$1.push(
-                    Promise.resolve(acutis_escape$0(props$8.get("b")))
-                  );
-                  buffer$1.push(Promise.resolve("\n"));
+                  buffer$1.push(acutis_escape$0(props$8.get("a")));
+                  buffer$1.push(" ");
+                  buffer$1.push(acutis_escape$0(props$8.get("b")));
+                  buffer$1.push("\n");
                   return (buffer_contents$0(buffer$1));
                 }
               )
@@ -1660,9 +1604,9 @@
           }
         )
       );
-      buffer$0.push(Promise.resolve("Component\n---------\n\n"));
+      buffer$0.push("Component\n---------\n\n");
       let block_buffer$1 = [];
-      block_buffer$1.push(Promise.resolve("Children prop"));
+      block_buffer$1.push("Children prop");
       buffer$0.push(
         buffer_contents$0(block_buffer$1).then(
           (arg$1) => {
@@ -1682,17 +1626,15 @@
           }
         )
       );
-      buffer$0.push(Promise.resolve("\n\n"));
+      buffer$0.push("\n\n");
       buffer$0.push(components$0.get("Another_function")(new Map([])));
       buffer$0.push(
-        Promise.resolve(
-          "\n\
+        "\n\
   \n\
   Complicated pattern matching\n\
   ----------------------------\n\
   \n\
   "
-        )
       );
       let arg_match$7 = [1, 0, 3];
       let props$8 = new Map(props$0);
@@ -1746,26 +1688,22 @@
         }
       }
       if (exit$7 === 0) {
-        buffer$0.push(Promise.resolve(" 0\n"));
+        buffer$0.push(" 0\n");
       } else {
         if (exit$7 === 1) {
-          buffer$0.push(Promise.resolve(" 1 "));
-          buffer$0.push(
-            Promise.resolve(acutis_escape$0(props$8.get("x").toString()))
-          );
-          buffer$0.push(Promise.resolve("\n"));
+          buffer$0.push(" 1 ");
+          buffer$0.push(acutis_escape$0(props$8.get("x").toString()));
+          buffer$0.push("\n");
         } else {
           if (exit$7 === 2) {
-            buffer$0.push(Promise.resolve(" 2 "));
-            buffer$0.push(
-              Promise.resolve(acutis_escape$0(props$8.get("y").toString()))
-            );
-            buffer$0.push(Promise.resolve("\n"));
+            buffer$0.push(" 2 ");
+            buffer$0.push(acutis_escape$0(props$8.get("y").toString()));
+            buffer$0.push("\n");
           } else {
             if (exit$7 === 3) {
-              buffer$0.push(Promise.resolve(" 3\n"));
+              buffer$0.push(" 3\n");
             } else {
-              buffer$0.push(Promise.resolve(" 4\n"));
+              buffer$0.push(" 4\n");
             }
           }
         }
@@ -1809,16 +1747,14 @@
         }
       }
       if (exit$8 === 0) {
-        buffer$0.push(Promise.resolve("\n"));
+        buffer$0.push("\n");
       } else {
         if (exit$8 === 1) {
-          buffer$0.push(Promise.resolve(" Pass\n"));
+          buffer$0.push(" Pass\n");
         } else {
-          buffer$0.push(Promise.resolve(" "));
-          buffer$0.push(
-            Promise.resolve(acutis_escape$0(props$9.get("z").toString()))
-          );
-          buffer$0.push(Promise.resolve("\n"));
+          buffer$0.push(" ");
+          buffer$0.push(acutis_escape$0(props$9.get("z").toString()));
+          buffer$0.push("\n");
         }
       }
       let arg_match$9 = [[[10, 20], 99], 40];
@@ -1860,40 +1796,32 @@
         }
       }
       if (exit$9 === 0) {
-        buffer$0.push(Promise.resolve("\n"));
+        buffer$0.push("\n");
       } else {
         if (exit$9 === 1) {
-          buffer$0.push(Promise.resolve(" Fail\n"));
+          buffer$0.push(" Fail\n");
         } else {
-          buffer$0.push(Promise.resolve(" "));
-          buffer$0.push(
-            Promise.resolve(acutis_escape$0(props$10.get("z").toString()))
-          );
-          buffer$0.push(Promise.resolve("\n"));
+          buffer$0.push(" ");
+          buffer$0.push(acutis_escape$0(props$10.get("z").toString()));
+          buffer$0.push("\n");
         }
       }
       buffer$0.push(
-        Promise.resolve(
-          "String encoding\n\
+        "String encoding\n\
   ---------------\n\
   \n\
   😇👨‍💻😇\n\
   \\\" \\ \\ \\\"\n\
   \n\
   "
-        )
       );
+      buffer$0.push(acutis_escape$0(props$0.get("unicode_string")));
       buffer$0.push(
-        Promise.resolve(acutis_escape$0(props$0.get("unicode_string")))
-      );
-      buffer$0.push(
-        Promise.resolve(
-          "\n\
+        "\n\
   \n\
   External JavaScript template component: stringify arbitrary data\n\
   \n\
   "
-        )
       );
       buffer$0.push(
         components$0.get("Stringify")(
@@ -1913,7 +1841,7 @@
           )
         )
       );
-      buffer$0.push(Promise.resolve("\n"));
+      buffer$0.push("\n");
       return (buffer_contents$0(buffer$0));
     } else {
       return (Promise.reject(new Error(errors$0.join("\n\n"))));
