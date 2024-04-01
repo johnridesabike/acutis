@@ -267,9 +267,9 @@ end = struct
   let is_not_nil x = not (is_nil x)
 
   type runtime = {
-    comps : (data hashtbl -> string promise) hashtbl exp;
-    buffer_contents : (buffer -> string promise) exp;
+    components : (data hashtbl -> string promise) hashtbl exp;
     escape : (string -> string) exp;
+    buffer : buffer exp;
   }
 
   let join_stmts seq =
@@ -277,18 +277,17 @@ end = struct
     | Seq.Nil -> unit
     | Seq.Cons (s, seq) -> Seq.fold_left ( |: ) s seq
 
-  let parse_escape runtime buf esc x =
+  let parse_escape runtime esc x =
     match esc with
-    | C.No_escape -> buffer_add_string buf x
-    | C.Escape -> buffer_add_string buf (runtime.escape @@ x)
+    | C.No_escape -> buffer_add_string runtime.buffer x
+    | C.Escape -> buffer_add_string runtime.buffer (runtime.escape @@ x)
 
-  let fmt runtime buf esc x = function
-    | C.Fmt_string -> parse_escape runtime buf esc (Data.to_string x)
-    | C.Fmt_int -> parse_escape runtime buf esc (string_of_int (Data.to_int x))
+  let fmt runtime esc x = function
+    | C.Fmt_string -> parse_escape runtime esc (Data.to_string x)
+    | C.Fmt_int -> parse_escape runtime esc (string_of_int (Data.to_int x))
     | C.Fmt_float ->
-        parse_escape runtime buf esc (string_of_float (Data.to_float x))
-    | C.Fmt_bool ->
-        parse_escape runtime buf esc (string_of_bool (Data.to_int x))
+        parse_escape runtime esc (string_of_float (Data.to_float x))
+    | C.Fmt_bool -> parse_escape runtime esc (string_of_bool (Data.to_int x))
 
   let rec echo props (ech : C.echo) =
     match ech with
@@ -296,13 +295,13 @@ end = struct
     | `String s -> Data.string (string s)
     | `Field (e, s) -> (echo props e |> Data.to_hashtbl).%{string s}
 
-  let rec echoes runtime buf props esc default default_fmt = function
-    | [] -> fmt runtime buf esc (echo props default) default_fmt
+  let rec echoes runtime props esc default default_fmt = function
+    | [] -> fmt runtime esc (echo props default) default_fmt
     | (f, e) :: tl ->
         let$ nullable = ("nullable", echo props e) in
         if_else (is_not_nil nullable)
-          ~then_:(fun () -> fmt runtime buf esc (get_nullable nullable) f)
-          ~else_:(fun () -> echoes runtime buf props esc default default_fmt tl)
+          ~then_:(fun () -> fmt runtime esc (get_nullable nullable) f)
+          ~else_:(fun () -> echoes runtime props esc default default_fmt tl)
 
   let rec construct_data blocks props (data : C.data) =
     match data with
@@ -460,12 +459,12 @@ end = struct
         in
         aux hd tl
 
-  let rec node runtime buffer props = function
-    | C.Text s -> buffer_add_string buffer (string s)
+  let rec node runtime props = function
+    | C.Text s -> buffer_add_string runtime.buffer (string s)
     | C.Echo (echs, fmt, default, esc) ->
-        echoes runtime buffer props esc default fmt echs
+        echoes runtime props esc default fmt echs
     | C.Match (blocks, data, { tree; exits }) ->
-        construct_blocks runtime buffer blocks props (fun blocks buffer ->
+        construct_blocks runtime blocks props (fun blocks runtime ->
             let$ arg_match =
               ("arg_match", construct_data_array blocks props data)
             in
@@ -475,12 +474,10 @@ end = struct
               match_tree ~exit ~leafstmt:(match_leaf exit props)
                 ~get_arg:(arg_int arg_match) ~vars:Map.Int.empty tree
             in
-            let s2 =
-              make_exits exit exits (fun l -> nodes runtime buffer props l)
-            in
+            let s2 = make_exits exit exits (nodes runtime props) in
             s1 |: s2)
     | C.Map_list (blocks, data, { tree; exits }) ->
-        construct_blocks runtime buffer blocks props (fun blocks buffer ->
+        construct_blocks runtime blocks props (fun blocks runtime ->
             let& index = ("index", int 0) in
             let& cell = ("cell", construct_data blocks props data) in
             while_
@@ -495,14 +492,12 @@ end = struct
                     ~get_arg:(arg_indexed head (Data.int (deref index)))
                     ~vars:Map.Int.empty tree
                 in
-                let s2 =
-                  make_exits exit exits (fun l -> nodes runtime buffer props l)
-                in
+                let s2 = make_exits exit exits (nodes runtime props) in
                 let s3 = incr index in
                 let s4 = cell := list_tl list in
                 s1 |: s2 |: s3 |: s4))
     | C.Map_dict (blocks, data, { tree; exits }) ->
-        construct_blocks runtime buffer blocks props (fun blocks buffer ->
+        construct_blocks runtime blocks props (fun blocks runtime ->
             let$ match_arg = ("match_arg", construct_data blocks props data) in
             hashtbl_iter (Data.to_hashtbl match_arg) (fun k v ->
                 let$ props = ("props", hashtbl_copy props) in
@@ -512,32 +507,29 @@ end = struct
                     ~get_arg:(arg_indexed v (Data.string k))
                     ~vars:Map.Int.empty tree
                 in
-                let s2 =
-                  make_exits exit exits (fun l -> nodes runtime buffer props l)
-                in
+                let s2 = make_exits exit exits (nodes runtime props) in
                 s1 |: s2))
     | Component (name, blocks, dict) ->
-        construct_blocks runtime buffer blocks props (fun blocks buffer ->
-            buffer_add_promise buffer
-              (runtime.comps.%{string name}
+        construct_blocks runtime blocks props (fun blocks runtime ->
+            buffer_add_promise runtime.buffer
+              (runtime.components.%{string name}
               @@ construct_data_hashtbl blocks props dict))
 
-  and construct_blocks runtime buffer raw_blocks props f =
+  and construct_blocks runtime raw_blocks props f =
     match Array.to_seqi raw_blocks () with
     (* With no blocks, just continue evaluating with a dummy value. *)
-    | Seq.Nil -> f [||] buffer
+    | Seq.Nil -> f [||] runtime
     (* From the first block, we construct a chain of binded promises. *)
     | Seq.Cons ((i, block), seq) ->
         let blocks = Array.make (Array.length raw_blocks) (string "") in
         let rec aux seq =
           match seq () with
           | Seq.Cons ((i, block), seq) ->
-              let$ block_buffer = ("block_buffer", buffer_create ()) in
-              let s1 = nodes runtime block_buffer props block in
+              let$ buffer = ("block_buffer", buffer_create ()) in
+              let s1 = nodes { runtime with buffer } props block in
               let s2 =
                 return
-                  (bind
-                     (runtime.buffer_contents @@ block_buffer)
+                  (bind (buffer_contents buffer)
                      (lambda (fun block ->
                           blocks.(i) <- block;
                           aux seq)))
@@ -545,24 +537,23 @@ end = struct
               s1 |: s2
           | Seq.Nil ->
               let$ buffer = ("buffer", buffer_create ()) in
-              let s1 = f blocks buffer in
-              let s2 = return (runtime.buffer_contents @@ buffer) in
+              let s1 = f blocks { runtime with buffer } in
+              let s2 = return (buffer_contents buffer) in
               s1 |: s2
         in
-        let$ block_buffer = ("block_buffer", buffer_create ()) in
-        let s1 = nodes runtime block_buffer props block in
+        let$ buffer = ("block_buffer", buffer_create ()) in
+        let s1 = nodes { runtime with buffer } props block in
         let s2 =
-          buffer_add_promise buffer
-            (bind
-               (runtime.buffer_contents @@ block_buffer)
+          buffer_add_promise runtime.buffer
+            (bind (buffer_contents buffer)
                (lambda (fun block ->
                     blocks.(i) <- block;
                     aux seq)))
         in
         s1 |: s2
 
-  and nodes runtime buffer props l =
-    List.to_seq l |> Seq.map (node runtime buffer props) |> join_stmts
+  and nodes runtime props l =
+    List.to_seq l |> Seq.map (node runtime props) |> join_stmts
 
   type decode_runtime = {
     stack : string stack exp;
@@ -986,18 +977,13 @@ end = struct
     |> join_stmts
 
   let eval compiled =
-    (* Make these lambdas to minimize generated JavaScript code. *)
     let$ escape = ("acutis_escape", lambda escape) in
-    let$ buffer_contents =
-      ("buffer_contents", lambda (fun b -> return (buffer_contents b)))
-    in
-    let$ comps = ("components", hashtbl_create ()) in
-    let runtime = { escape; comps; buffer_contents } in
+    let$ components = ("components", hashtbl_create ()) in
     let s1 =
       Map.String.to_seq compiled.C.externals
       |> Seq.map (fun (k, (tys, v)) ->
              import v (fun import ->
-                 comps.%{string k} <-
+                 components.%{string k} <-
                    lambda (fun props ->
                        let$ encoded = ("encoded", hashtbl_create ()) in
                        let s1 = encode_record_aux encoded props tys in
@@ -1010,11 +996,11 @@ end = struct
     let s2 =
       Map.String.to_seq compiled.components
       |> Seq.map (fun (k, v) ->
-             comps.%{string k} <-
+             components.%{string k} <-
                lambda (fun props ->
                    let$ buffer = ("buffer", buffer_create ()) in
-                   let s1 = nodes runtime buffer props v in
-                   let s2 = return (buffer_contents @@ buffer) in
+                   let s1 = nodes { components; escape; buffer } props v in
+                   let s2 = return (buffer_contents buffer) in
                    s1 |: s2))
       |> join_stmts
     in
@@ -1070,8 +1056,10 @@ end = struct
                if_else (stack_is_empty errors)
                  ~then_:(fun () ->
                    let$ buffer = ("buffer", buffer_create ()) in
-                   let s1 = nodes runtime buffer props compiled.nodes in
-                   let s2 = return (buffer_contents @@ buffer) in
+                   let s1 =
+                     nodes { components; escape; buffer } props compiled.nodes
+                   in
+                   let s2 = return (buffer_contents buffer) in
                    s1 |: s2)
                  ~else_:(fun () ->
                    return (error (stack_concat errors (string "\n\n"))))

@@ -876,49 +876,48 @@ Print the optimized form
 Print the runtime instructions
   $ acutis template.acutis component.acutis component2.acutis --printinst
   (let$ acutis_escape/0 = (lambda arg/0 ((escape arg/0))))
-  (let$ buffer_contents/0 = (lambda arg/1 ((return (buffer_contents arg/1)))))
   (let$ components/0 = (hashtbl_create))
   (unit)
   (components/0.%{"Component"} <-
-   (lambda arg/2
+   (lambda arg/1
     ((let$ buffer/0 = (buffer_create))
      (buffer_add_string buffer/0
-      (acutis_escape/0 @@ (Data.to_string (arg/2.%{"a_prop"}))))
+      (acutis_escape/0 @@ (Data.to_string (arg/1.%{"a_prop"}))))
      (buffer_add_string buffer/0 "\n")
      (buffer_add_string buffer/0
-      (acutis_escape/0 @@ (Data.to_string (arg/2.%{"c_prop"}))))
+      (acutis_escape/0 @@ (Data.to_string (arg/1.%{"c_prop"}))))
      (buffer_add_string buffer/0 "\n")
      (buffer_add_string buffer/0
-      (acutis_escape/0 @@ (Data.to_string (arg/2.%{"d_prop"}))))
+      (acutis_escape/0 @@ (Data.to_string (arg/1.%{"d_prop"}))))
      (buffer_add_string buffer/0 "\n")
      (buffer_add_string buffer/0
-      (acutis_escape/0 @@ (Data.to_string (arg/2.%{"f_prop"}))))
+      (acutis_escape/0 @@ (Data.to_string (arg/1.%{"f_prop"}))))
      (buffer_add_string buffer/0 "\n")
      (buffer_add_string buffer/0
-      (acutis_escape/0 @@ (Data.to_string (arg/2.%{"g_prop"}))))
+      (acutis_escape/0 @@ (Data.to_string (arg/1.%{"g_prop"}))))
      (buffer_add_string buffer/0 "\n")
      (buffer_add_string buffer/0
-      (acutis_escape/0 @@ (Data.to_string (arg/2.%{"h_prop"}))))
+      (acutis_escape/0 @@ (Data.to_string (arg/1.%{"h_prop"}))))
      (buffer_add_string buffer/0 "\n")
      (buffer_add_string buffer/0
-      (acutis_escape/0 @@ (Data.to_string (arg/2.%{"i_prop"}))))
+      (acutis_escape/0 @@ (Data.to_string (arg/1.%{"i_prop"}))))
      (buffer_add_string buffer/0 "\n")
-     (return (buffer_contents/0 @@ buffer/0)))))
+     (return (buffer_contents buffer/0)))))
   (components/0.%{"Component2"} <-
-   (lambda arg/3
+   (lambda arg/2
     ((let$ buffer/1 = (buffer_create))
      (buffer_add_string buffer/1
-      (acutis_escape/0 @@ (Data.to_string (arg/3.%{"children"}))))
+      (acutis_escape/0 @@ (Data.to_string (arg/2.%{"children"}))))
      (buffer_add_string buffer/1 "\n")
-     (return (buffer_contents/0 @@ buffer/1)))))
+     (return (buffer_contents buffer/1)))))
   (export
-   (lambda arg/4
+   (lambda arg/3
     ((let$ stack/0 = (stack_create))
      (let$ errors/0 = (stack_create))
      (let$ decode_error/0 =
-      (lambda arg/5
+      (lambda arg/4
        ((return
-         (lambda arg/6
+         (lambda arg/5
           ((return
             (array_concat
              ["File \"",
@@ -927,14 +926,14 @@ Print the runtime instructions
               "Path:\n",
               (stack_concat stack/0 " <- "),
               "\nExpected type:\n",
-              arg/5,
+              arg/4,
               "\nReceived value:\n",
-              (External.show arg/6)]
+              (External.show arg/5)]
              ""))))))))
      (let$ key_error/0 =
-      (lambda arg/7
+      (lambda arg/6
        ((return
-         (lambda arg/8
+         (lambda arg/7
           ((return
             (array_concat
              ["File: ",
@@ -943,15 +942,15 @@ Print the runtime instructions
               "Path:\n",
               (stack_concat stack/0 " <- "),
               "\nExpected type:\n",
-              arg/7,
+              arg/6,
               "\nInput is missing keys:\n",
-              (stack_concat arg/8 ", ")]
+              (stack_concat arg/7 ", ")]
              ""))))))))
      (let$ props/0 = (hashtbl_create))
      (stack_push stack/0 "<input>")
      (let$ type/0 =
       "{\n  a: {a: {b: string}, b: {c: false | true}},\n  a_prop: string,\n  b_prop: string,\n  c_prop: string,\n  d: string,\n  dict: <int>,\n  e: string,\n  e_prop: string,\n  ech_a: string,\n  ech_b: false | true,\n  ech_d: ?string,\n  ech_e: ?string,\n  ech_f: float,\n  ech_i: int,\n  enums: (@\"a\" | ..., @1 | ..., false | true, false | true),\n  f_prop: string,\n  list: [?string],\n  map_d: <int>,\n  map_l: [int],\n  match_a: int,\n  match_b: string,\n  numbers:\n    {\n      exp1: float,\n      exp2: float,\n      exp3: float,\n      frac: float,\n      int: int,\n      negfrac: float,\n      negint: int\n    },\n  record: {\"!#%@\": string, a: string},\n  tagged: {@tag: false} | {@tag: true, a: string},\n  trim_a: string,\n  trim_b: string,\n  trim_c: string,\n  trim_d: string,\n  trim_e: string,\n  trim_f: string,\n  trim_g: string,\n  tuple: (int, float, string)\n}")
-     (External.classify (assoc) arg/4 classified/0
+     (External.classify (assoc) arg/3 classified/0
       (ok
        (let$ missing_keys/0 = (stack_create))
        (if_else (External.Assoc.mem classified/0 "a")
@@ -1715,7 +1714,7 @@ Print the runtime instructions
         (else (stack_push missing_keys/0 "tuple")))
        (if (not (stack_is_empty missing_keys/0))
         (then (stack_push errors/0 ((key_error/0 @@ type/0) @@ missing_keys/0)))))
-      (error (stack_push errors/0 ((decode_error/0 @@ type/0) @@ arg/4))))
+      (error (stack_push errors/0 ((decode_error/0 @@ type/0) @@ arg/3))))
      (if_else (stack_is_empty errors/0)
       (then
        (let$ buffer/2 = (buffer_create))
@@ -1908,8 +1907,8 @@ Print the runtime instructions
        (let$ block_buffer/0 = (buffer_create))
        (buffer_add_string block_buffer/0 " ")
        (buffer_add_promise buffer/2
-        (bind (buffer_contents/0 @@ block_buffer/0)
-         (lambda arg/9
+        (bind (buffer_contents block_buffer/0)
+         (lambda arg/8
           ((let$ block_buffer/1 = (buffer_create))
            (let$ arg_match/4 = [(props/0.%{"a_prop"})])
            (let$ props/7 = (hashtbl_copy props/0 ))
@@ -1922,13 +1921,13 @@ Print the runtime instructions
             (acutis_escape/0 @@ (Data.to_string (props/7.%{"b_prop"}))))
            (buffer_add_string block_buffer/1 " ")
            (return
-            (bind (buffer_contents/0 @@ block_buffer/1)
-             (lambda arg/10
+            (bind (buffer_contents block_buffer/1)
+             (lambda arg/9
               ((let$ block_buffer/2 = (buffer_create))
                (unit)
                (return
-                (bind (buffer_contents/0 @@ block_buffer/2)
-                 (lambda arg/11
+                (bind (buffer_contents block_buffer/2)
+                 (lambda arg/10
                   ((let$ buffer/3 = (buffer_create))
                    (buffer_add_promise buffer/3
                     ((components/0.%{"Component"})
@@ -1937,21 +1936,21 @@ Print the runtime instructions
                           ("c_prop", (props/0.%{"c_prop"})),
                           ("d_prop", (props/0.%{"e_prop"})),
                           ("f_prop", (props/0.%{"f_prop"})),
-                          ("g_prop", (Data.string arg/9)),
-                          ("h_prop", (Data.string arg/10)),
-                          ("i_prop", (Data.string arg/11))])))
-                   (return (buffer_contents/0 @@ buffer/3))))))))))))))
+                          ("g_prop", (Data.string arg/8)),
+                          ("h_prop", (Data.string arg/9)),
+                          ("i_prop", (Data.string arg/10))])))
+                   (return (buffer_contents buffer/3))))))))))))))
        (buffer_add_string buffer/2 "\n\nComponent with implicit children\n")
        (let$ block_buffer/3 = (buffer_create))
        (buffer_add_string block_buffer/3 " ")
        (buffer_add_promise buffer/2
-        (bind (buffer_contents/0 @@ block_buffer/3)
-         (lambda arg/12
+        (bind (buffer_contents block_buffer/3)
+         (lambda arg/11
           ((let$ buffer/4 = (buffer_create))
            (buffer_add_promise buffer/4
             ((components/0.%{"Component2"})
-             @@ (hashtbl [("children", (Data.string arg/12))])))
-           (return (buffer_contents/0 @@ buffer/4))))))
+             @@ (hashtbl [("children", (Data.string arg/11))])))
+           (return (buffer_contents buffer/4))))))
        (buffer_add_string buffer/2 "\n\nPatterns\n\nTuple:\n")
        (let$ arg_match/5 = [(props/0.%{"tuple"})])
        (let$ props/8 = (hashtbl_copy props/0 ))
@@ -2172,5 +2171,5 @@ Print the runtime instructions
        (buffer_add_string buffer/2
         (acutis_escape/0 @@ (Data.to_string (Data.string "a\nb"))))
        (buffer_add_string buffer/2 "\n")
-       (return (buffer_contents/0 @@ buffer/2)))
+       (return (buffer_contents buffer/2)))
       (else (return (error (stack_concat errors/0 "\n\n"))))))))

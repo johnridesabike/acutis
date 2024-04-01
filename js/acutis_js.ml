@@ -113,7 +113,6 @@ module Concurrent = struct
     b.async <-
       Promise.then_ b.async (fun b_async ->
           Buffer.add_string b_async sync;
-          Buffer.clear b.sync;
           Promise.resolve b_async);
     Promise.then_ b.async (fun b_async ->
         Promise.resolve (Buffer.contents b_async))

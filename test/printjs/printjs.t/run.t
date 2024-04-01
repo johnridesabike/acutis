@@ -29,12 +29,6 @@
       }
       return (result$0);
     };
-  let buffer_contents$0 =
-    (arg$0) => {
-      return (
-        Promise.all(arg$0).then((arg$1) => { return (arg$1.join("")); })
-      );
-    };
   let components$0 = new Map();
   import {"another_function" as import$0} from "./jscomponents.mjs";
   components$0.set(
@@ -280,7 +274,9 @@
         index$0++;
         cell$0 = cell$0[1];
       }
-      return (buffer_contents$0(buffer$0));
+      return (
+        Promise.all(buffer$0).then((arg$1) => { return (arg$1.join("")); })
+      );
     }
   );
   export default (arg$0) => {
@@ -1576,12 +1572,16 @@
         block_buffer$0.push(acutis_escape$0("pass"));
       }
       buffer$0.push(
-        buffer_contents$0(block_buffer$0).then(
+        Promise.all(block_buffer$0).then(
+          (arg$1) => { return (arg$1.join("")); }
+        ).then(
           (arg$1) => {
             let block_buffer$1 = [];
             block_buffer$1.push(" Another nested block");
             return (
-              buffer_contents$0(block_buffer$1).then(
+              Promise.all(block_buffer$1).then(
+                (arg$2) => { return (arg$2.join("")); }
+              ).then(
                 (arg$2) => {
                   let buffer$1 = [];
                   let arg_match$7 = [new Map([["a", arg$1], ["b", arg$2]])];
@@ -1597,7 +1597,11 @@
                   buffer$1.push(" ");
                   buffer$1.push(acutis_escape$0(props$8.get("b")));
                   buffer$1.push("\n");
-                  return (buffer_contents$0(buffer$1));
+                  return (
+                    Promise.all(buffer$1).then(
+                      (arg$3) => { return (arg$3.join("")); }
+                    )
+                  );
                 }
               )
             );
@@ -1608,7 +1612,9 @@
       let block_buffer$1 = [];
       block_buffer$1.push("Children prop");
       buffer$0.push(
-        buffer_contents$0(block_buffer$1).then(
+        Promise.all(block_buffer$1).then(
+          (arg$1) => { return (arg$1.join("")); }
+        ).then(
           (arg$1) => {
             let buffer$1 = [];
             buffer$1.push(
@@ -1622,7 +1628,11 @@
                 )
               )
             );
-            return (buffer_contents$0(buffer$1));
+            return (
+              Promise.all(buffer$1).then(
+                (arg$2) => { return (arg$2.join("")); }
+              )
+            );
           }
         )
       );
@@ -1842,7 +1852,9 @@
         )
       );
       buffer$0.push("\n");
-      return (buffer_contents$0(buffer$0));
+      return (
+        Promise.all(buffer$0).then((arg$1) => { return (arg$1.join("")); })
+      );
     } else {
       return (Promise.reject(new Error(errors$0.join("\n\n"))));
     }

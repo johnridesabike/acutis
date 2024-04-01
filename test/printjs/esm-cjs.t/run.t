@@ -22,12 +22,6 @@
       }
       return (result$0);
     };
-  let buffer_contents$0 =
-    (arg$0) => {
-      return (
-        Promise.all(arg$0).then((arg$1) => { return (arg$1.join("")); })
-      );
-    };
   let components$0 = new Map();
   import {"externalFunction" as import$0} from "./jsfile.cjs";
   components$0.set(
@@ -108,7 +102,9 @@
       let block_buffer$0 = [];
       block_buffer$0.push(" text ");
       buffer$0.push(
-        buffer_contents$0(block_buffer$0).then(
+        Promise.all(block_buffer$0).then(
+          (arg$1) => { return (arg$1.join("")); }
+        ).then(
           (arg$1) => {
             let buffer$1 = [];
             buffer$1.push(
@@ -116,12 +112,18 @@
                 new Map([["children", arg$1]])
               )
             );
-            return (buffer_contents$0(buffer$1));
+            return (
+              Promise.all(buffer$1).then(
+                (arg$2) => { return (arg$2.join("")); }
+              )
+            );
           }
         )
       );
       buffer$0.push("\n");
-      return (buffer_contents$0(buffer$0));
+      return (
+        Promise.all(buffer$0).then((arg$1) => { return (arg$1.join("")); })
+      );
     } else {
       return (Promise.reject(new Error(errors$0.join("\n\n"))));
     }
@@ -150,12 +152,6 @@
         }
       }
       return (result$0);
-    };
-  let buffer_contents$0 =
-    (arg$0) => {
-      return (
-        Promise.all(arg$0).then((arg$1) => { return (arg$1.join("")); })
-      );
     };
   let components$0 = new Map();
   let import$0 = require("./jsfile.cjs");
@@ -238,7 +234,9 @@
         let block_buffer$0 = [];
         block_buffer$0.push(" text ");
         buffer$0.push(
-          buffer_contents$0(block_buffer$0).then(
+          Promise.all(block_buffer$0).then(
+            (arg$1) => { return (arg$1.join("")); }
+          ).then(
             (arg$1) => {
               let buffer$1 = [];
               buffer$1.push(
@@ -246,12 +244,18 @@
                   new Map([["children", arg$1]])
                 )
               );
-              return (buffer_contents$0(buffer$1));
+              return (
+                Promise.all(buffer$1).then(
+                  (arg$2) => { return (arg$2.join("")); }
+                )
+              );
             }
           )
         );
         buffer$0.push("\n");
-        return (buffer_contents$0(buffer$0));
+        return (
+          Promise.all(buffer$0).then((arg$1) => { return (arg$1.join("")); })
+        );
       } else {
         return (Promise.reject(new Error(errors$0.join("\n\n"))));
       }

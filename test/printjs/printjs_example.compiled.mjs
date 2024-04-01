@@ -18,12 +18,6 @@ let acutis_escape$0 =
     }
     return (result$0);
   };
-let buffer_contents$0 =
-  (arg$0) => {
-    return (
-      Promise.all(arg$0).then((arg$1) => { return (arg$1.join("")); })
-    );
-  };
 let components$0 = new Map();
 export default (arg$0) => {
   let stack$0 = [];
@@ -364,7 +358,9 @@ The data supplied does not match this template's interface.\n\
       cell$0 = cell$0[1];
     }
     buffer$0.push("\n");
-    return (buffer_contents$0(buffer$0));
+    return (
+      Promise.all(buffer$0).then((arg$1) => { return (arg$1.join("")); })
+    );
   } else {
     return (Promise.reject(new Error(errors$0.join("\n\n"))));
   }
