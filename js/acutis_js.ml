@@ -73,53 +73,16 @@ end
 module Promise = struct
   type 'a t
 
-  let resolve : 'a -> 'a t = fun x -> Js.Unsafe.global##._Promise##resolve x
-  let reject : 'e -> 'a t = fun x -> Js.Unsafe.global##._Promise##reject x
+  let return : 'a -> 'a t = fun x -> Js.Unsafe.global##._Promise##resolve x
+  let error : 'e -> 'a t = fun x -> Js.Unsafe.global##._Promise##reject x
 
-  let then_ : 'a t -> ('a -> 'b t) -> 'b t =
+  let bind : 'a t -> ('a -> 'b t) -> 'b t =
    fun t f ->
     Js.Unsafe.meth_call t "then" [| Js.Unsafe.inject (Js.wrap_callback f) |]
 end
 
-module Concurrent = struct
-  type 'a promise = 'a Promise.t
-
-  let bind = Promise.then_
-  let error s = Promise.reject (Error.Acutis_error s)
-
-  type buffer = { sync : Buffer.t; mutable async : Buffer.t promise }
-  (** The main buffer is async, but most writes are synchronous. We'll avoid
-      binds by mainly using a sync buffer that gets flushed to the async one
-      when needed. BTW, I haven't measured the performance difference yet. *)
-
-  let buffer_create () =
-    { sync = Buffer.create 1024; async = Promise.resolve (Buffer.create 1024) }
-
-  let buffer_add_string b s = Buffer.add_string b.sync s
-
-  let buffer_add_promise b p =
-    let sync = Buffer.contents b.sync in
-    Buffer.clear b.sync;
-    b.async <-
-      Promise.then_ b.async (fun b_async ->
-          Promise.then_ p (fun s ->
-              Buffer.add_string b_async sync;
-              Buffer.add_string b_async s;
-              Promise.resolve b_async))
-
-  let buffer_contents b =
-    let sync = Buffer.contents b.sync in
-    Buffer.clear b.sync;
-    b.async <-
-      Promise.then_ b.async (fun b_async ->
-          Buffer.add_string b_async sync;
-          Promise.resolve b_async);
-    Promise.then_ b.async (fun b_async ->
-        Promise.resolve (Buffer.contents b_async))
-end
-
 module RenderSync = Render.MakeString (DataJs)
-module RenderAsync = Render.Make (Concurrent) (DataJs)
+module RenderAsync = Render.Make (Promise) (DataJs)
 
 let fname_to_compname s =
   Filename.basename s |> Filename.remove_extension |> String.capitalize_ascii
@@ -140,8 +103,8 @@ let () =
        method funAsync name ty fn =
          let fn : RenderAsync.data -> RenderAsync.t =
           fun data ->
-           Promise.then_ (Js.Unsafe.fun_call fn [| data |]) @@ fun s ->
-           Promise.resolve (Js.to_string s)
+           Promise.bind (Js.Unsafe.fun_call fn [| data |]) @@ fun s ->
+           Promise.return (Js.to_string s)
          in
          Compile.Components.from_fun ~name:(Js.to_string name) ty fn
 
@@ -185,8 +148,8 @@ let () =
   Js.export "Render"
     (object%js
        method async template js =
-         Promise.then_ (RenderAsync.eval template js) @@ fun s ->
-         Promise.resolve (Js.string s)
+         Promise.bind (RenderAsync.eval template js) @@ fun s ->
+         Promise.return (Js.string s)
 
        method sync template js = RenderSync.eval template js |> Js.string
     end)

@@ -10,18 +10,14 @@
 
 (** The main runtime for executing templates. *)
 
-module type CONCURRENT = sig
-  (** A concurrency interface. *)
+module type MONAD = sig
+  (** A standard monad interface for async operations. *)
 
-  type 'a promise
-  type buffer
+  type 'a t
 
-  val bind : 'a promise -> ('a -> 'b promise) -> 'b promise
-  val error : string -> 'a promise
-  val buffer_create : unit -> buffer
-  val buffer_add_string : buffer -> string -> unit
-  val buffer_add_promise : buffer -> string promise -> unit
-  val buffer_contents : buffer -> string promise
+  val return : 'a -> 'a t
+  val bind : 'a t -> ('a -> 'b t) -> 'b t
+  val error : string -> 'a t
 end
 
 module type DECODABLE = sig
@@ -86,10 +82,10 @@ module type S = sig
   (** Apply data to a template and return the rendered output. *)
 end
 
-(** A functor that builds an implementation for a given concurrency interface
-    and a given decodable input type. *)
-module Make (C : CONCURRENT) (D : DECODABLE) :
-  S with type t = string C.promise and type data = D.t
+(** A functor that builds an implementation for a given monad interface and a
+    given decodable input type. *)
+module Make (M : MONAD) (D : DECODABLE) :
+  S with type t = string M.t and type data = D.t
 
 (** A simpler version of {!Make} that only requires a decodable module and
     outputs a string. *)

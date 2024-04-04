@@ -8,16 +8,12 @@
 (*                                                                        *)
 (**************************************************************************)
 
-module type CONCURRENT = sig
-  type 'a promise
-  type buffer
+module type MONAD = sig
+  type 'a t
 
-  val bind : 'a promise -> ('a -> 'b promise) -> 'b promise
-  val error : string -> 'a promise
-  val buffer_create : unit -> buffer
-  val buffer_add_string : buffer -> string -> unit
-  val buffer_add_promise : buffer -> string promise -> unit
-  val buffer_contents : buffer -> string promise
+  val return : 'a -> 'a t
+  val bind : 'a t -> ('a -> 'b t) -> 'b t
+  val error : string -> 'a t
 end
 
 module type DECODABLE = sig
@@ -66,14 +62,12 @@ module type S = sig
   val eval : (data -> t) Compile.t -> data -> t
 end
 
-module Make (C : CONCURRENT) (D : DECODABLE) :
-  S with type t = string C.promise and type data = D.t = struct
-  type t = string C.promise
+module Make (M : MONAD) (D : DECODABLE) :
+  S with type t = string M.t and type data = D.t = struct
+  type t = string M.t
   type data = D.t
 
   include Instruct.Make (struct
-    include C
-
     type 'a stmt = 'a
 
     let ( |: ) a b = a; b
@@ -113,21 +107,11 @@ module Make (C : CONCURRENT) (D : DECODABLE) :
     let string_of_float = string_of_float
     let string_of_bool = function 0 -> "false" | _ -> "true"
 
-    let escape s =
-      let b = Buffer.create (String.length s) in
-      String.iter
-        (function
-          | '&' -> Buffer.add_string b "&amp;"
-          | '"' -> Buffer.add_string b "&quot;"
-          | '\'' -> Buffer.add_string b "&apos;"
-          | '>' -> Buffer.add_string b "&gt;"
-          | '<' -> Buffer.add_string b "&lt;"
-          | '/' -> Buffer.add_string b "&#x2F;"
-          | '`' -> Buffer.add_string b "&#x60;"
-          | '=' -> Buffer.add_string b "&#x3D;"
-          | c -> Buffer.add_char b c)
-        s;
-      Buffer.contents b
+    type 'a promise = 'a M.t
+
+    let promise = M.return
+    let bind = M.bind
+    let error = M.error
 
     type external_data = D.t
     type import = D.t -> string promise
@@ -165,6 +149,29 @@ module Make (C : CONCURRENT) (D : DECODABLE) :
     let hashtbl_mem = Tbl.mem
     let hashtbl_copy = Tbl.copy
     let hashtbl_iter x f = Tbl.iter f x
+
+    type buffer = Buffer.t
+
+    let buffer_create () = Buffer.create 1024
+    let buffer_add_string = Buffer.add_string
+    let buffer_add_buffer = Buffer.add_buffer
+
+    let buffer_add_escape b s =
+      String.iter
+        (function
+          | '&' -> Buffer.add_string b "&amp;"
+          | '"' -> Buffer.add_string b "&quot;"
+          | '\'' -> Buffer.add_string b "&apos;"
+          | '>' -> Buffer.add_string b "&gt;"
+          | '<' -> Buffer.add_string b "&lt;"
+          | '/' -> Buffer.add_string b "&#x2F;"
+          | '`' -> Buffer.add_string b "&#x60;"
+          | '=' -> Buffer.add_string b "&#x3D;"
+          | c -> Buffer.add_char b c)
+        s
+
+    let buffer_contents = Buffer.contents
+    let buffer_clear = Buffer.clear
 
     type 'a stack = 'a Stack.t
 
@@ -302,13 +309,9 @@ module Make (C : CONCURRENT) (D : DECODABLE) :
 end
 
 module MakeString = Make (struct
-  type 'a promise = 'a
-  type buffer = Buffer.t
+  type 'a t = 'a
 
+  let return = Fun.id
   let bind = ( |> )
   let error s = raise (Error.Acutis_error s)
-  let buffer_create () = Buffer.create 1024
-  let buffer_add_string = Buffer.add_string
-  let buffer_add_promise = Buffer.add_string
-  let buffer_contents = Buffer.contents
 end)

@@ -82,6 +82,7 @@ let ( let$ ) (name, x) f ppf state =
 let set a b =
   stmt (fun ppf state -> F.fprintf ppf "%a =@ @[<hv 2>%a@]" a state b state)
 
+let ( + ) a b ppf state = F.fprintf ppf "@[%a +@ %a@]" a state b state
 let ( .%() ) a b ppf state = F.fprintf ppf "%a[%a]" a state b state
 let ( .%()<- ) a i b = set a.%(i) b
 let ( .!() ) a b ppf state = F.fprintf ppf "%a.%s" a state b
@@ -89,6 +90,82 @@ let ( .!()<- ) a i b = set a.!(i) b
 let string x ppf _ = pp_string ppf x
 let global x ppf _ = F.pp_print_string ppf x
 let comment ppf str = F.fprintf ppf "/* %s */@," str
+
+let obj l ppf state =
+  F.fprintf ppf "@[<hv 2>{@,%a@;<0 -2>}@]"
+    (F.pp_print_list ~pp_sep:Pp.comma (fun ppf (k, v) ->
+         F.fprintf ppf "@[<hv 2>%s:@ %a@]" k v state))
+    l
+
+let lambda f ppf state =
+  let state = State.add_block state in
+  let arg = State.var "arg" state in
+  F.fprintf ppf "(%a) => {@ %a@;<1 -2>}" arg state (f arg) state
+
+let return x =
+  stmt (fun ppf -> F.fprintf ppf "return (@,@[<hv 2>%a@]@;<0 -2>)" x)
+
+let for_ expr stmts ppf state =
+  let state' = State.add_block state in
+  let i = State.var "i" state' in
+  F.fprintf ppf "@[<hv 2>for (let %a = 0; %a < %a; %a++) {@ %a@;<0 -2>}@]" i
+    state' i state' expr state i state' (stmts i) state'
+
+let switch exp cases default ppf state =
+  F.fprintf ppf "@[<v 2>@[<hv 2>switch (%a)@] {@ " exp state;
+  let state = State.add_block state in
+  F.pp_print_list ~pp_sep:F.pp_print_cut
+    (fun ppf (exp, stmts) ->
+      F.fprintf ppf "@[<hv 2>case %a:@ %a@ break;@]" exp state stmts state)
+    ppf cases;
+  F.fprintf ppf "@ @[<hv 2>default:@ %a@]" default state;
+  F.fprintf ppf "@;<1 -2>}@]"
+
+let buffer_create () = obj [ ("contents", string "") ]
+
+let buffer_add_string =
+  lambda (fun b ->
+      return (lambda (fun s -> set b.!("contents") (b.!("contents") + s))))
+
+let buffer_add_buffer =
+  lambda (fun b ->
+      return
+        (lambda (fun s ->
+             set b.!("contents") (b.!("contents") + s.!("contents")))))
+
+let buffer_add_escape =
+  lambda (fun b ->
+      return
+        (lambda (fun s ->
+             let buffer_add s = set b.!("contents") (b.!("contents") + s) in
+             for_ s.!("length") (fun i ->
+                 let$ c = ("c", s.%(i)) in
+                 switch c
+                   [
+                     (string "&", buffer_add (string "&amp;"));
+                     (string "\"", buffer_add (string "&quot;"));
+                     (string "'", buffer_add (string "&apos;"));
+                     (string ">", buffer_add (string "&gt;"));
+                     (string "<", buffer_add (string "&lt;"));
+                     (string "/", buffer_add (string "&#x2F;"));
+                     (string "`", buffer_add (string "&#x60;"));
+                     (string "=", buffer_add (string "&#x3D;"));
+                   ]
+                   (buffer_add c)))))
+
+let buffer_contents b = b.!("contents")
+let buffer_clear b = set b.!("contents") (string "")
+
+module type RUNTIME = sig
+  type buffer
+
+  val buffer_create : unit -> js
+  val buffer_add_string : js -> js -> js
+  val buffer_add_buffer : js -> js -> js
+  val buffer_add_escape : js -> js -> js
+  val buffer_contents : js -> js
+  val buffer_clear : js -> js
+end
 
 module type JSMODULE = sig
   val import : jsfun -> (js -> js) -> js
@@ -115,7 +192,7 @@ module Cjs : JSMODULE = struct
   let export x = (global "module").!("exports") <- x
 end
 
-module MakeJavaScript (M : JSMODULE) :
+module MakeJavaScript (M : JSMODULE) (R : RUNTIME) :
   Instruct.SEM with type 'a obs = js and type import = jsfun = struct
   let seq s ppf state =
     F.fprintf ppf "[@,%a%t]"
@@ -133,39 +210,17 @@ module MakeJavaScript (M : JSMODULE) :
            F.fprintf ppf "@[<hv 2>%a@]" x state))
       args
 
-  let obj l ppf state =
-    F.fprintf ppf "@[<hv 2>{@,%a@;<0 -2>}@]"
-      (F.pp_print_list ~pp_sep:Pp.comma (fun ppf (k, v) ->
-           F.fprintf ppf "@[<hv 2>%s:@ %a@]" k v state))
-      l
-
   let new_ name args ppf state =
     F.fprintf ppf "@[<hv 2>new %s(@,@[<hv 2>%a@]@;<0 -2>)@]" name
       (F.pp_print_list ~pp_sep:Pp.comma (fun ppf x ->
            F.fprintf ppf "@[<hv 2>%a@]" x state))
       args
 
-  let for_ expr stmts ppf state =
-    let state' = State.add_block state in
-    let i = State.var "i" state' in
-    F.fprintf ppf "@[<hv 2>for (let %a = 0; %a < %a; %a++) {@ %a@;<0 -2>}@]" i
-      state' i state' expr state i state' (stmts i) state'
-
   let for_of expr stmts ppf state =
     let state' = State.add_block state in
     let x = State.var "x" state' in
     F.fprintf ppf "@[<hv 2>for (let %a of %a) {@ %a@;<0 -2>}@]" x state' expr
       state (stmts x) state'
-
-  let switch exp cases default ppf state =
-    F.fprintf ppf "@[<v 2>@[<hv 2>switch (%a)@] {@ " exp state;
-    let state = State.add_block state in
-    F.pp_print_list ~pp_sep:F.pp_print_cut
-      (fun ppf (exp, stmts) ->
-        F.fprintf ppf "@[<hv 2>case %a:@ %a@ break;@]" exp state stmts state)
-      ppf cases;
-    F.fprintf ppf "@ @[<hv 2>default:@ %a@]" default state;
-    F.fprintf ppf "@;<1 -2>}@]"
 
   let and_ a b ppf state =
     F.fprintf ppf "@[<hv>%a &&@]@ @[<hv>%a@]" a state b state
@@ -177,12 +232,11 @@ module MakeJavaScript (M : JSMODULE) :
   let typeof expr ppf state = F.fprintf ppf "typeof %a" expr state
 
   include M
+  include R
 
   type 'a exp = js
 
-  let return x =
-    stmt (fun ppf -> F.fprintf ppf "return (@,@[<hv 2>%a@]@;<0 -2>)" x)
-
+  let return = return
   let ( let$ ) = ( let$ )
 
   type 'a stmt = js
@@ -200,12 +254,7 @@ module MakeJavaScript (M : JSMODULE) :
     stmt (fun ppf state -> F.fprintf ppf "%a =@ @[<hv 2>%a@]" a state b state)
 
   let incr a = stmt (fun ppf -> F.fprintf ppf "%a++" a)
-
-  let lambda f ppf state =
-    let state = State.add_block state in
-    let arg = State.var "arg" state in
-    F.fprintf ppf "(%a) => {@ %a@;<1 -2>}" arg state (f arg) state
-
+  let lambda = lambda
   let ( @@ ) = ( @@ )
 
   let if_ b ~then_ ppf state =
@@ -239,31 +288,10 @@ module MakeJavaScript (M : JSMODULE) :
   let string_of_float = string_of_int
   let string_of_bool x = tern x (string "true") (string "false")
 
-  let escape str =
-    let add_set a b =
-      stmt (fun ppf state -> F.fprintf ppf "%a +=@ %a" a state b state)
-    in
-    let& result = ("result", string "") in
-    for_ str.!("length") (fun i ->
-        let$ c = ("c", str.%(i)) in
-        switch c
-          [
-            (string "&", add_set result (string "&amp;"));
-            (string "\"", add_set result (string "&quot;"));
-            (string "'", add_set result (string "&apos;"));
-            (string ">", add_set result (string "&gt;"));
-            (string "<", add_set result (string "&lt;"));
-            (string "/", add_set result (string "&#x2F;"));
-            (string "`", add_set result (string "&#x60;"));
-            (string "=", add_set result (string "&#x3D;"));
-          ]
-          (add_set result c))
-    |: return result
-
   type 'a promise
 
-  let bind a f = a.!("then") @@ f
-  let promise_array a = (global "Promise").!("all") @@ a
+  let promise x = (global "Promise").!("resolve") @@ x
+  let bind p f = p.!("then") @@ f
   let error s = (global "Promise").!("reject") @@ new_ "Error" [ s ]
 
   type external_data
@@ -289,16 +317,6 @@ module MakeJavaScript (M : JSMODULE) :
   let hashtbl_mem x k = x.!("has") @@ k
   let hashtbl_copy x = new_ "Map" [ x ]
   let hashtbl_iter x f = for_of x (fun entry -> f entry.%(int 0) entry.%(int 1))
-
-  type buffer
-
-  let buffer_create () = array [||]
-  let buffer_add_string b s = stmt (b.!("push") @@ s)
-  let buffer_add_promise = buffer_add_string
-
-  let buffer_contents a =
-    bind (promise_array a)
-      (lambda (fun x -> return (array_concat x (string ""))))
 
   type 'a stack
 
@@ -467,10 +485,28 @@ module RemoveIdsAndUnits (F : Instruct.SEM) :
 end
 
 let pp (module Jsmod : JSMODULE) ppf c =
-  let module I = Instruct.Make (RemoveIdsAndUnits (MakeJavaScript (Jsmod))) in
+  let state = State.make () in
+  let instructions =
+    let$ buffer_add_string = ("buffer_add_string", buffer_add_string) in
+    let$ buffer_add_buffer = ("buffer_add_buffer", buffer_add_buffer) in
+    let$ buffer_add_escape = ("buffer_add_escape", buffer_add_escape) in
+    let module Runtime = struct
+      type buffer
+
+      let buffer_create = buffer_create
+      let buffer_add_escape b s = stmt ((buffer_add_escape @@ b) @@ s)
+      let buffer_add_string b s = stmt ((buffer_add_string @@ b) @@ s)
+      let buffer_add_buffer b s = stmt ((buffer_add_buffer @@ b) @@ s)
+      let buffer_contents = buffer_contents
+      let buffer_clear = buffer_clear
+    end in
+    let module I =
+      Instruct.Make (RemoveIdsAndUnits (MakeJavaScript (Jsmod) (Runtime))) in
+    I.eval c
+  in
   F.fprintf ppf "@[<v>";
   comment ppf "THIS FILE WAS GENERATED BY ACUTIS.";
-  I.eval c ppf (State.make ());
+  instructions ppf state;
   F.fprintf ppf "@]"
 
 let esm = pp (module Esm)

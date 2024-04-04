@@ -875,49 +875,50 @@ Print the optimized form
 
 Print the runtime instructions
   $ acutis template.acutis component.acutis component2.acutis --printinst
-  (let$ acutis_escape/0 = (lambda arg/0 ((escape arg/0))))
   (let$ components/0 = (hashtbl_create))
   (unit)
   (components/0.%{"Component"} <-
-   (lambda arg/1
-    ((let$ buffer/0 = (buffer_create))
-     (buffer_add_string buffer/0
-      (acutis_escape/0 @@ (Data.to_string (arg/1.%{"a_prop"}))))
-     (buffer_add_string buffer/0 "\n")
-     (buffer_add_string buffer/0
-      (acutis_escape/0 @@ (Data.to_string (arg/1.%{"c_prop"}))))
-     (buffer_add_string buffer/0 "\n")
-     (buffer_add_string buffer/0
-      (acutis_escape/0 @@ (Data.to_string (arg/1.%{"d_prop"}))))
-     (buffer_add_string buffer/0 "\n")
-     (buffer_add_string buffer/0
-      (acutis_escape/0 @@ (Data.to_string (arg/1.%{"f_prop"}))))
-     (buffer_add_string buffer/0 "\n")
-     (buffer_add_string buffer/0
-      (acutis_escape/0 @@ (Data.to_string (arg/1.%{"g_prop"}))))
-     (buffer_add_string buffer/0 "\n")
-     (buffer_add_string buffer/0
-      (acutis_escape/0 @@ (Data.to_string (arg/1.%{"h_prop"}))))
-     (buffer_add_string buffer/0 "\n")
-     (buffer_add_string buffer/0
-      (acutis_escape/0 @@ (Data.to_string (arg/1.%{"i_prop"}))))
-     (buffer_add_string buffer/0 "\n")
-     (return (buffer_contents buffer/0)))))
+   (lambda arg/0
+    ((let$ buf_sync/0 = (buffer_create))
+     (let& buf_async/0 = (promise (buffer_create)))
+     (buffer_add_escape buf_sync/0 (Data.to_string (arg/0.%{"a_prop"})))
+     (buffer_add_string buf_sync/0 "\n")
+     (buffer_add_escape buf_sync/0 (Data.to_string (arg/0.%{"c_prop"})))
+     (buffer_add_string buf_sync/0 "\n")
+     (buffer_add_escape buf_sync/0 (Data.to_string (arg/0.%{"d_prop"})))
+     (buffer_add_string buf_sync/0 "\n")
+     (buffer_add_escape buf_sync/0 (Data.to_string (arg/0.%{"f_prop"})))
+     (buffer_add_string buf_sync/0 "\n")
+     (buffer_add_escape buf_sync/0 (Data.to_string (arg/0.%{"g_prop"})))
+     (buffer_add_string buf_sync/0 "\n")
+     (buffer_add_escape buf_sync/0 (Data.to_string (arg/0.%{"h_prop"})))
+     (buffer_add_string buf_sync/0 "\n")
+     (buffer_add_escape buf_sync/0 (Data.to_string (arg/0.%{"i_prop"})))
+     (buffer_add_string buf_sync/0 "\n")
+     (return
+      (bind (deref buf_async/0)
+       (lambda arg/1
+        ((buffer_add_buffer arg/1 buf_sync/0)
+         (return (promise (buffer_contents arg/1))))))))))
   (components/0.%{"Component2"} <-
    (lambda arg/2
-    ((let$ buffer/1 = (buffer_create))
-     (buffer_add_string buffer/1
-      (acutis_escape/0 @@ (Data.to_string (arg/2.%{"children"}))))
-     (buffer_add_string buffer/1 "\n")
-     (return (buffer_contents buffer/1)))))
+    ((let$ buf_sync/1 = (buffer_create))
+     (let& buf_async/1 = (promise (buffer_create)))
+     (buffer_add_escape buf_sync/1 (Data.to_string (arg/2.%{"children"})))
+     (buffer_add_string buf_sync/1 "\n")
+     (return
+      (bind (deref buf_async/1)
+       (lambda arg/3
+        ((buffer_add_buffer arg/3 buf_sync/1)
+         (return (promise (buffer_contents arg/3))))))))))
   (export
-   (lambda arg/3
+   (lambda arg/4
     ((let$ stack/0 = (stack_create))
      (let$ errors/0 = (stack_create))
      (let$ decode_error/0 =
-      (lambda arg/4
+      (lambda arg/5
        ((return
-         (lambda arg/5
+         (lambda arg/6
           ((return
             (array_concat
              ["File \"",
@@ -926,14 +927,14 @@ Print the runtime instructions
               "Path:\n",
               (stack_concat stack/0 " <- "),
               "\nExpected type:\n",
-              arg/4,
+              arg/5,
               "\nReceived value:\n",
-              (External.show arg/5)]
+              (External.show arg/6)]
              ""))))))))
      (let$ key_error/0 =
-      (lambda arg/6
+      (lambda arg/7
        ((return
-         (lambda arg/7
+         (lambda arg/8
           ((return
             (array_concat
              ["File: ",
@@ -942,15 +943,15 @@ Print the runtime instructions
               "Path:\n",
               (stack_concat stack/0 " <- "),
               "\nExpected type:\n",
-              arg/6,
+              arg/7,
               "\nInput is missing keys:\n",
-              (stack_concat arg/7 ", ")]
+              (stack_concat arg/8 ", ")]
              ""))))))))
      (let$ props/0 = (hashtbl_create))
      (stack_push stack/0 "<input>")
      (let$ type/0 =
       "{\n  a: {a: {b: string}, b: {c: false | true}},\n  a_prop: string,\n  b_prop: string,\n  c_prop: string,\n  d: string,\n  dict: <int>,\n  e: string,\n  e_prop: string,\n  ech_a: string,\n  ech_b: false | true,\n  ech_d: ?string,\n  ech_e: ?string,\n  ech_f: float,\n  ech_i: int,\n  enums: (@\"a\" | ..., @1 | ..., false | true, false | true),\n  f_prop: string,\n  list: [?string],\n  map_d: <int>,\n  map_l: [int],\n  match_a: int,\n  match_b: string,\n  numbers:\n    {\n      exp1: float,\n      exp2: float,\n      exp3: float,\n      frac: float,\n      int: int,\n      negfrac: float,\n      negint: int\n    },\n  record: {\"!#%@\": string, a: string},\n  tagged: {@tag: false} | {@tag: true, a: string},\n  trim_a: string,\n  trim_b: string,\n  trim_c: string,\n  trim_d: string,\n  trim_e: string,\n  trim_f: string,\n  trim_g: string,\n  tuple: (int, float, string)\n}")
-     (External.classify (assoc) arg/3 classified/0
+     (External.classify (assoc) arg/4 classified/0
       (ok
        (let$ missing_keys/0 = (stack_create))
        (if_else (External.Assoc.mem classified/0 "a")
@@ -1714,41 +1715,39 @@ Print the runtime instructions
         (else (stack_push missing_keys/0 "tuple")))
        (if (not (stack_is_empty missing_keys/0))
         (then (stack_push errors/0 ((key_error/0 @@ type/0) @@ missing_keys/0)))))
-      (error (stack_push errors/0 ((decode_error/0 @@ type/0) @@ arg/3))))
+      (error (stack_push errors/0 ((decode_error/0 @@ type/0) @@ arg/4))))
      (if_else (stack_is_empty errors/0)
       (then
-       (let$ buffer/2 = (buffer_create))
-       (buffer_add_string buffer/2 "Echoes\n")
-       (buffer_add_string buffer/2
-        (acutis_escape/0 @@ (Data.to_string (props/0.%{"ech_a"}))))
-       (buffer_add_string buffer/2 " ")
-       (buffer_add_string buffer/2
-        (acutis_escape/0 @@ (Data.to_string (Data.string "b"))))
-       (buffer_add_string buffer/2 " ")
+       (let$ buf_sync/2 = (buffer_create))
+       (let& buf_async/2 = (promise (buffer_create)))
+       (buffer_add_string buf_sync/2 "Echoes\n")
+       (buffer_add_escape buf_sync/2 (Data.to_string (props/0.%{"ech_a"})))
+       (buffer_add_string buf_sync/2 " ")
+       (buffer_add_escape buf_sync/2 (Data.to_string (Data.string "b")))
+       (buffer_add_string buf_sync/2 " ")
        (let$ nullable/0 = (props/0.%{"ech_d"}))
        (if_else (not (Data.equal nullable/0 (Data.int 0)))
         (then
-         (buffer_add_string buffer/2
+         (buffer_add_string buf_sync/2
           (Data.to_string ((Data.to_array nullable/0).%(0)))))
         (else
          (let$ nullable/1 = (props/0.%{"ech_e"}))
          (if_else (not (Data.equal nullable/1 (Data.int 0)))
           (then
-           (buffer_add_string buffer/2
+           (buffer_add_string buf_sync/2
             (Data.to_string ((Data.to_array nullable/1).%(0)))))
           (else
-           (buffer_add_string buffer/2 (Data.to_string (Data.string "f\"g")))))))
-       (buffer_add_string buffer/2 "\n")
-       (buffer_add_string buffer/2
-        (acutis_escape/0 @@ (string_of_int (Data.to_int (props/0.%{"ech_i"})))))
-       (buffer_add_string buffer/2 " ")
-       (buffer_add_string buffer/2
-        (acutis_escape/0
-         @@ (string_of_float (Data.to_float (props/0.%{"ech_f"})))))
-       (buffer_add_string buffer/2 " ")
-       (buffer_add_string buffer/2
-        (acutis_escape/0 @@ (string_of_bool (Data.to_int (props/0.%{"ech_b"})))))
-       (buffer_add_string buffer/2 "\n\nNumbers\n")
+           (buffer_add_string buf_sync/2 (Data.to_string (Data.string "f\"g")))))))
+       (buffer_add_string buf_sync/2 "\n")
+       (buffer_add_escape buf_sync/2
+        (string_of_int (Data.to_int (props/0.%{"ech_i"}))))
+       (buffer_add_string buf_sync/2 " ")
+       (buffer_add_escape buf_sync/2
+        (string_of_float (Data.to_float (props/0.%{"ech_f"}))))
+       (buffer_add_string buf_sync/2 " ")
+       (buffer_add_escape buf_sync/2
+        (string_of_bool (Data.to_int (props/0.%{"ech_b"}))))
+       (buffer_add_string buf_sync/2 "\n\nNumbers\n")
        (let$ arg_match/0 = [(props/0.%{"numbers"})])
        (let$ props/1 = (hashtbl_copy props/0 ))
        (let& exit/0 = -1)
@@ -1785,23 +1784,19 @@ Print the runtime instructions
         (else (unit)))
        (if (equal_int (deref exit/0) -1) (then (unit) (exit/0 := 1)))
        (if_else (equal_int (deref exit/0) 0) (then (unit)) (else (unit)))
-       (buffer_add_string buffer/2 "\n\nTrim")
-       (buffer_add_string buffer/2
-        (acutis_escape/0 @@ (Data.to_string (props/0.%{"trim_a"}))))
-       (buffer_add_string buffer/2
-        (acutis_escape/0 @@ (Data.to_string (props/0.%{"trim_b"}))))
-       (buffer_add_string buffer/2 " ")
-       (buffer_add_string buffer/2
-        (acutis_escape/0 @@ (Data.to_string (props/0.%{"trim_c"}))))
-       (buffer_add_string buffer/2
-        (acutis_escape/0 @@ (Data.to_string (props/0.%{"trim_d"}))))
-       (buffer_add_string buffer/2 (Data.to_string (props/0.%{"trim_e"})))
-       (buffer_add_string buffer/2 "\n")
-       (buffer_add_string buffer/2 (Data.to_string (props/0.%{"trim_f"})))
-       (buffer_add_string buffer/2 (Data.to_string (props/0.%{"trim_g"})))
-       (buffer_add_string buffer/2 "Comments\na ")
-       (buffer_add_string buffer/2 "b")
-       (buffer_add_string buffer/2 " c\n\nFlat match\n")
+       (buffer_add_string buf_sync/2 "\n\nTrim")
+       (buffer_add_escape buf_sync/2 (Data.to_string (props/0.%{"trim_a"})))
+       (buffer_add_escape buf_sync/2 (Data.to_string (props/0.%{"trim_b"})))
+       (buffer_add_string buf_sync/2 " ")
+       (buffer_add_escape buf_sync/2 (Data.to_string (props/0.%{"trim_c"})))
+       (buffer_add_escape buf_sync/2 (Data.to_string (props/0.%{"trim_d"})))
+       (buffer_add_string buf_sync/2 (Data.to_string (props/0.%{"trim_e"})))
+       (buffer_add_string buf_sync/2 "\n")
+       (buffer_add_string buf_sync/2 (Data.to_string (props/0.%{"trim_f"})))
+       (buffer_add_string buf_sync/2 (Data.to_string (props/0.%{"trim_g"})))
+       (buffer_add_string buf_sync/2 "Comments\na ")
+       (buffer_add_string buf_sync/2 "b")
+       (buffer_add_string buf_sync/2 " c\n\nFlat match\n")
        (let$ arg_match/1 = [(props/0.%{"match_a"})])
        (let$ props/2 = (hashtbl_copy props/0 ))
        (let& exit/1 = -1)
@@ -1819,16 +1814,16 @@ Print the runtime instructions
         (then (unit))
         (else
          (if_else (equal_int (deref exit/1) 1)
-          (then (buffer_add_string buffer/2 " "))
-          (else (buffer_add_string buffer/2 " ")))))
-       (buffer_add_string buffer/2 "\n\nNested match\n")
+          (then (buffer_add_string buf_sync/2 " "))
+          (else (buffer_add_string buf_sync/2 " ")))))
+       (buffer_add_string buf_sync/2 "\n\nNested match\n")
        (let$ arg_match/2 = [(props/0.%{"match_b"})])
        (let$ props/3 = (hashtbl_copy props/0 ))
        (let& exit/2 = -1)
        (let$ match_arg/9 = (arg_match/2.%(0)))
        (props/3.%{"c"} <- match_arg/9)
        (exit/2 := 0)
-       (buffer_add_string buffer/2 "\n  ")
+       (buffer_add_string buf_sync/2 "\n  ")
        (let$ arg_match/3 = [(props/3.%{"d"}), (props/3.%{"e"})])
        (let$ props/4 = (hashtbl_copy props/3 ))
        (let& exit/3 = -1)
@@ -1837,18 +1832,15 @@ Print the runtime instructions
        (props/4.%{"f"} <- match_arg/10)
        (props/4.%{"g"} <- match_arg/11)
        (exit/3 := 0)
-       (buffer_add_string buffer/2 " ")
-       (buffer_add_string buffer/2
-        (acutis_escape/0 @@ (Data.to_string (props/4.%{"c"}))))
-       (buffer_add_string buffer/2 " ")
-       (buffer_add_string buffer/2
-        (acutis_escape/0 @@ (Data.to_string (props/4.%{"f"}))))
-       (buffer_add_string buffer/2 " ")
-       (buffer_add_string buffer/2
-        (acutis_escape/0 @@ (Data.to_string (props/4.%{"g"}))))
-       (buffer_add_string buffer/2 " ")
-       (buffer_add_string buffer/2 "\n")
-       (buffer_add_string buffer/2 "\n\nMap list\n")
+       (buffer_add_string buf_sync/2 " ")
+       (buffer_add_escape buf_sync/2 (Data.to_string (props/4.%{"c"})))
+       (buffer_add_string buf_sync/2 " ")
+       (buffer_add_escape buf_sync/2 (Data.to_string (props/4.%{"f"})))
+       (buffer_add_string buf_sync/2 " ")
+       (buffer_add_escape buf_sync/2 (Data.to_string (props/4.%{"g"})))
+       (buffer_add_string buf_sync/2 " ")
+       (buffer_add_string buf_sync/2 "\n")
+       (buffer_add_string buf_sync/2 "\n\nMap list\n")
        (let& index/0 = 0)
        (let& cell/0 = (props/0.%{"map_l"}))
        (while (not (Data.equal (deref cell/0) (Data.int 0)))
@@ -1872,15 +1864,14 @@ Print the runtime instructions
           (else
            (if_else (equal_int (deref exit/4) 1)
             (then
-             (buffer_add_string buffer/2 " ")
-             (buffer_add_string buffer/2
-              (acutis_escape/0
-               @@ (string_of_int (Data.to_int (props/5.%{"i"})))))
-             (buffer_add_string buffer/2 " "))
-            (else (buffer_add_string buffer/2 " ")))))
+             (buffer_add_string buf_sync/2 " ")
+             (buffer_add_escape buf_sync/2
+              (string_of_int (Data.to_int (props/5.%{"i"}))))
+             (buffer_add_string buf_sync/2 " "))
+            (else (buffer_add_string buf_sync/2 " ")))))
          (incr index/0)
          (cell/0 := (list/0.%(1)))))
-       (buffer_add_string buffer/2 "\n\nMap dict\n")
+       (buffer_add_string buf_sync/2 "\n\nMap dict\n")
        (let$ match_arg/12 = (props/0.%{"map_d"}))
        (hashtbl_iter (Data.to_hashtbl match_arg/12) key/6 value/6
         (let$ props/6 = (hashtbl_copy props/0 )) (let& exit/5 = -1)
@@ -1898,60 +1889,129 @@ Print the runtime instructions
          (else
           (if_else (equal_int (deref exit/5) 1)
            (then
-            (buffer_add_string buffer/2 " ")
-            (buffer_add_string buffer/2
-             (acutis_escape/0 @@ (Data.to_string (props/6.%{"k"}))))
-            (buffer_add_string buffer/2 " "))
-           (else (buffer_add_string buffer/2 "\n"))))))
-       (buffer_add_string buffer/2 "\n\nComponent with props\n")
-       (let$ block_buffer/0 = (buffer_create))
-       (buffer_add_string block_buffer/0 " ")
-       (buffer_add_promise buffer/2
-        (bind (buffer_contents block_buffer/0)
-         (lambda arg/8
-          ((let$ block_buffer/1 = (buffer_create))
-           (let$ arg_match/4 = [(props/0.%{"a_prop"})])
-           (let$ props/7 = (hashtbl_copy props/0 ))
-           (let& exit/6 = -1)
-           (let$ match_arg/13 = (arg_match/4.%(0)))
-           (props/7.%{"b_prop"} <- match_arg/13)
-           (exit/6 := 0)
-           (buffer_add_string block_buffer/1 " ")
-           (buffer_add_string block_buffer/1
-            (acutis_escape/0 @@ (Data.to_string (props/7.%{"b_prop"}))))
-           (buffer_add_string block_buffer/1 " ")
-           (return
-            (bind (buffer_contents block_buffer/1)
-             (lambda arg/9
-              ((let$ block_buffer/2 = (buffer_create))
-               (unit)
-               (return
-                (bind (buffer_contents block_buffer/2)
-                 (lambda arg/10
-                  ((let$ buffer/3 = (buffer_create))
-                   (buffer_add_promise buffer/3
-                    ((components/0.%{"Component"})
-                     @@ (hashtbl
-                         [("a_prop", (props/0.%{"b_prop"})),
-                          ("c_prop", (props/0.%{"c_prop"})),
-                          ("d_prop", (props/0.%{"e_prop"})),
-                          ("f_prop", (props/0.%{"f_prop"})),
-                          ("g_prop", (Data.string arg/8)),
-                          ("h_prop", (Data.string arg/9)),
-                          ("i_prop", (Data.string arg/10))])))
-                   (return (buffer_contents buffer/3))))))))))))))
-       (buffer_add_string buffer/2 "\n\nComponent with implicit children\n")
-       (let$ block_buffer/3 = (buffer_create))
-       (buffer_add_string block_buffer/3 " ")
-       (buffer_add_promise buffer/2
-        (bind (buffer_contents block_buffer/3)
-         (lambda arg/11
-          ((let$ buffer/4 = (buffer_create))
-           (buffer_add_promise buffer/4
-            ((components/0.%{"Component2"})
-             @@ (hashtbl [("children", (Data.string arg/11))])))
-           (return (buffer_contents buffer/4))))))
-       (buffer_add_string buffer/2 "\n\nPatterns\n\nTuple:\n")
+            (buffer_add_string buf_sync/2 " ")
+            (buffer_add_escape buf_sync/2 (Data.to_string (props/6.%{"k"})))
+            (buffer_add_string buf_sync/2 " "))
+           (else (buffer_add_string buf_sync/2 "\n"))))))
+       (buffer_add_string buf_sync/2 "\n\nComponent with props\n")
+       (let$ block_buf_sync/0 = (buffer_create))
+       (let& block_buf_aync/0 = (promise (buffer_create)))
+       (buffer_add_string block_buf_sync/0 " ")
+       (let$ sync_contents/1 = (buffer_contents buf_sync/2))
+       (buffer_clear buf_sync/2)
+       (buf_async/2 :=
+        (bind (deref buf_async/2)
+         (lambda arg/18
+          ((return
+            (bind
+             (bind
+              (bind (deref block_buf_aync/0)
+               (lambda arg/17
+                ((buffer_add_buffer arg/17 block_buf_sync/0)
+                 (return (promise (buffer_contents arg/17))))))
+              (lambda arg/9
+               ((let$ block_buf_sync/1 = (buffer_create))
+                (let& block_buf_aync/1 = (promise (buffer_create)))
+                (let$ arg_match/4 = [(props/0.%{"a_prop"})])
+                (let$ props/7 = (hashtbl_copy props/0 ))
+                (let& exit/6 = -1)
+                (let$ match_arg/13 = (arg_match/4.%(0)))
+                (props/7.%{"b_prop"} <- match_arg/13)
+                (exit/6 := 0)
+                (buffer_add_string block_buf_sync/1 " ")
+                (buffer_add_escape block_buf_sync/1
+                 (Data.to_string (props/7.%{"b_prop"})))
+                (buffer_add_string block_buf_sync/1 " ")
+                (return
+                 (bind
+                  (bind (deref block_buf_aync/1)
+                   (lambda arg/16
+                    ((buffer_add_buffer arg/16 block_buf_sync/1)
+                     (return (promise (buffer_contents arg/16))))))
+                  (lambda arg/10
+                   ((let$ block_buf_sync/2 = (buffer_create))
+                    (let& block_buf_aync/2 = (promise (buffer_create)))
+                    (unit)
+                    (return
+                     (bind
+                      (bind (deref block_buf_aync/2)
+                       (lambda arg/15
+                        ((buffer_add_buffer arg/15 block_buf_sync/2)
+                         (return (promise (buffer_contents arg/15))))))
+                      (lambda arg/11
+                       ((let$ buf_sync/3 = (buffer_create))
+                        (let& buf_async/3 = (promise (buffer_create)))
+                        (let$ sync_contents/0 = (buffer_contents buf_sync/3))
+                        (buffer_clear buf_sync/3)
+                        (buf_async/3 :=
+                         (bind (deref buf_async/3)
+                          (lambda arg/12
+                           ((return
+                             (bind
+                              ((components/0.%{"Component"})
+                               @@ (hashtbl
+                                   [("a_prop", (props/0.%{"b_prop"})),
+                                    ("c_prop", (props/0.%{"c_prop"})),
+                                    ("d_prop", (props/0.%{"e_prop"})),
+                                    ("f_prop", (props/0.%{"f_prop"})),
+                                    ("g_prop", (Data.string arg/9)),
+                                    ("h_prop", (Data.string arg/10)),
+                                    ("i_prop", (Data.string arg/11))]))
+                              (lambda arg/13
+                               ((buffer_add_string arg/12 sync_contents/0)
+                                (buffer_add_string arg/12 arg/13)
+                                (return (promise arg/12))))))))))
+                        (return
+                         (bind (deref buf_async/3)
+                          (lambda arg/14
+                           ((buffer_add_buffer arg/14 buf_sync/3)
+                            (return (promise (buffer_contents arg/14))))))))))))))))))
+             (lambda arg/19
+              ((buffer_add_string arg/18 sync_contents/1)
+               (buffer_add_string arg/18 arg/19)
+               (return (promise arg/18))))))))))
+       (buffer_add_string buf_sync/2 "\n\nComponent with implicit children\n")
+       (let$ block_buf_sync/3 = (buffer_create))
+       (let& block_buf_aync/3 = (promise (buffer_create)))
+       (buffer_add_string block_buf_sync/3 " ")
+       (let$ sync_contents/3 = (buffer_contents buf_sync/2))
+       (buffer_clear buf_sync/2)
+       (buf_async/2 :=
+        (bind (deref buf_async/2)
+         (lambda arg/25
+          ((return
+            (bind
+             (bind
+              (bind (deref block_buf_aync/3)
+               (lambda arg/24
+                ((buffer_add_buffer arg/24 block_buf_sync/3)
+                 (return (promise (buffer_contents arg/24))))))
+              (lambda arg/20
+               ((let$ buf_sync/4 = (buffer_create))
+                (let& buf_async/4 = (promise (buffer_create)))
+                (let$ sync_contents/2 = (buffer_contents buf_sync/4))
+                (buffer_clear buf_sync/4)
+                (buf_async/4 :=
+                 (bind (deref buf_async/4)
+                  (lambda arg/21
+                   ((return
+                     (bind
+                      ((components/0.%{"Component2"})
+                       @@ (hashtbl [("children", (Data.string arg/20))]))
+                      (lambda arg/22
+                       ((buffer_add_string arg/21 sync_contents/2)
+                        (buffer_add_string arg/21 arg/22)
+                        (return (promise arg/21))))))))))
+                (return
+                 (bind (deref buf_async/4)
+                  (lambda arg/23
+                   ((buffer_add_buffer arg/23 buf_sync/4)
+                    (return (promise (buffer_contents arg/23))))))))))
+             (lambda arg/26
+              ((buffer_add_string arg/25 sync_contents/3)
+               (buffer_add_string arg/25 arg/26)
+               (return (promise arg/25))))))))))
+       (buffer_add_string buf_sync/2 "\n\nPatterns\n\nTuple:\n")
        (let$ arg_match/5 = [(props/0.%{"tuple"})])
        (let$ props/8 = (hashtbl_copy props/0 ))
        (let& exit/7 = -1)
@@ -1970,9 +2030,9 @@ Print the runtime instructions
         (else (unit)))
        (if (equal_int (deref exit/7) -1) (then (unit) (exit/7 := 1)))
        (if_else (equal_int (deref exit/7) 0)
-        (then (buffer_add_string buffer/2 " "))
-        (else (buffer_add_string buffer/2 " ")))
-       (buffer_add_string buffer/2 "\n\nList:\n")
+        (then (buffer_add_string buf_sync/2 " "))
+        (else (buffer_add_string buf_sync/2 " ")))
+       (buffer_add_string buf_sync/2 "\n\nList:\n")
        (let$ arg_match/6 = [(props/0.%{"list"})])
        (let$ props/9 = (hashtbl_copy props/0 ))
        (let& exit/8 = -1)
@@ -2017,16 +2077,15 @@ Print the runtime instructions
              (props/9.%{"_z"} <- match_arg/21)
              (exit/8 := 2)))))))
        (if_else (equal_int (deref exit/8) 0)
-        (then (buffer_add_string buffer/2 "\n"))
+        (then (buffer_add_string buf_sync/2 "\n"))
         (else
          (if_else (equal_int (deref exit/8) 1)
           (then
-           (buffer_add_string buffer/2 " ")
-           (buffer_add_string buffer/2
-            (acutis_escape/0 @@ (Data.to_string (props/9.%{"a"}))))
-           (buffer_add_string buffer/2 "\n"))
-          (else (buffer_add_string buffer/2 "\n")))))
-       (buffer_add_string buffer/2 "\n\nRecord:\n")
+           (buffer_add_string buf_sync/2 " ")
+           (buffer_add_escape buf_sync/2 (Data.to_string (props/9.%{"a"})))
+           (buffer_add_string buf_sync/2 "\n"))
+          (else (buffer_add_string buf_sync/2 "\n")))))
+       (buffer_add_string buf_sync/2 "\n\nRecord:\n")
        (let$ arg_match/7 = [(props/0.%{"record"})])
        (let$ props/10 = (hashtbl_copy props/0 ))
        (let& exit/9 = -1)
@@ -2039,15 +2098,13 @@ Print the runtime instructions
        (if (equal_int (deref exit/9) -1) (then (unit) (exit/9 := 1)))
        (if_else (equal_int (deref exit/9) 0)
         (then
-         (buffer_add_string buffer/2 " ")
-         (buffer_add_string buffer/2
-          (acutis_escape/0 @@ (Data.to_string (props/10.%{"a"}))))
-         (buffer_add_string buffer/2 " ")
-         (buffer_add_string buffer/2
-          (acutis_escape/0 @@ (Data.to_string (props/10.%{"b"}))))
-         (buffer_add_string buffer/2 " "))
-        (else (buffer_add_string buffer/2 " ")))
-       (buffer_add_string buffer/2 "\n\nEnum:\n")
+         (buffer_add_string buf_sync/2 " ")
+         (buffer_add_escape buf_sync/2 (Data.to_string (props/10.%{"a"})))
+         (buffer_add_string buf_sync/2 " ")
+         (buffer_add_escape buf_sync/2 (Data.to_string (props/10.%{"b"})))
+         (buffer_add_string buf_sync/2 " "))
+        (else (buffer_add_string buf_sync/2 " ")))
+       (buffer_add_string buf_sync/2 "\n\nEnum:\n")
        (let$ arg_match/8 = [(props/0.%{"enums"})])
        (let$ props/11 = (hashtbl_copy props/0 ))
        (let& exit/10 = -1)
@@ -2070,9 +2127,9 @@ Print the runtime instructions
         (else (unit)))
        (if (equal_int (deref exit/10) -1) (then (unit) (exit/10 := 1)))
        (if_else (equal_int (deref exit/10) 0)
-        (then (buffer_add_string buffer/2 " "))
-        (else (buffer_add_string buffer/2 " ")))
-       (buffer_add_string buffer/2 "\n\nTagged union:\n")
+        (then (buffer_add_string buf_sync/2 " "))
+        (else (buffer_add_string buf_sync/2 " ")))
+       (buffer_add_string buf_sync/2 "\n\nTagged union:\n")
        (let$ arg_match/9 = [(props/0.%{"tagged"})])
        (let$ props/12 = (hashtbl_copy props/0 ))
        (let& exit/11 = -1)
@@ -2089,12 +2146,11 @@ Print the runtime instructions
           (else (unit)))))
        (if_else (equal_int (deref exit/11) 0)
         (then
-         (buffer_add_string buffer/2 " ")
-         (buffer_add_string buffer/2
-          (acutis_escape/0 @@ (Data.to_string (props/12.%{"a"}))))
-         (buffer_add_string buffer/2 " "))
-        (else (buffer_add_string buffer/2 "\n")))
-       (buffer_add_string buffer/2 "\n\nDictionary:\n")
+         (buffer_add_string buf_sync/2 " ")
+         (buffer_add_escape buf_sync/2 (Data.to_string (props/12.%{"a"})))
+         (buffer_add_string buf_sync/2 " "))
+        (else (buffer_add_string buf_sync/2 "\n")))
+       (buffer_add_string buf_sync/2 "\n\nDictionary:\n")
        (let$ arg_match/10 = [(props/0.%{"dict"})])
        (let$ props/13 = (hashtbl_copy props/0 ))
        (let& exit/12 = -1)
@@ -2113,9 +2169,9 @@ Print the runtime instructions
           (else (unit)))))
        (if (equal_int (deref exit/12) -1) (then (unit) (exit/12 := 1)))
        (if_else (equal_int (deref exit/12) 0)
-        (then (buffer_add_string buffer/2 " "))
-        (else (buffer_add_string buffer/2 " ")))
-       (buffer_add_string buffer/2 "\n\n! and . precedence works correctly\n")
+        (then (buffer_add_string buf_sync/2 " "))
+        (else (buffer_add_string buf_sync/2 " ")))
+       (buffer_add_string buf_sync/2 "\n\n! and . precedence works correctly\n")
        (let$ arg_match/11 =
         [(Data.array
           [(Data.array
@@ -2138,7 +2194,7 @@ Print the runtime instructions
             (else (unit)))))
          (if (equal_int (deref exit/13) -1) (then (unit) (exit/13 := 1)))))
        (if_else (equal_int (deref exit/13) 0) (then (unit)) (else (unit)))
-       (buffer_add_string buffer/2
+       (buffer_add_string buf_sync/2
         "\n\nOther syntax features\n\nPatterns with }} parse correctly:\n")
        (let$ arg_match/12 = [(props/0.%{"a"})])
        (let$ props/15 = (hashtbl_copy props/0 ))
@@ -2148,11 +2204,10 @@ Print the runtime instructions
        (let$ match_arg/50 = ((Data.to_hashtbl match_arg/49).%{"b"}))
        (props/15.%{"b"} <- match_arg/50)
        (exit/14 := 0)
-       (buffer_add_string buffer/2 " ")
-       (buffer_add_string buffer/2
-        (acutis_escape/0 @@ (Data.to_string (props/15.%{"b"}))))
-       (buffer_add_string buffer/2 " ")
-       (buffer_add_string buffer/2 "\n\nTrailing commas parse correctly:\n")
+       (buffer_add_string buf_sync/2 " ")
+       (buffer_add_escape buf_sync/2 (Data.to_string (props/15.%{"b"})))
+       (buffer_add_string buf_sync/2 " ")
+       (buffer_add_string buf_sync/2 "\n\nTrailing commas parse correctly:\n")
        (let$ arg_match/13 =
         [(Data.hashtbl
           (hashtbl
@@ -2166,10 +2221,13 @@ Print the runtime instructions
        (let$ match_arg/51 = (arg_match/13.%(0)))
        (unit)
        (exit/15 := 0)
-       (buffer_add_string buffer/2 " ")
-       (buffer_add_string buffer/2 "\n\nStrings may contain line breaks:\n")
-       (buffer_add_string buffer/2
-        (acutis_escape/0 @@ (Data.to_string (Data.string "a\nb"))))
-       (buffer_add_string buffer/2 "\n")
-       (return (buffer_contents buffer/2)))
+       (buffer_add_string buf_sync/2 " ")
+       (buffer_add_string buf_sync/2 "\n\nStrings may contain line breaks:\n")
+       (buffer_add_escape buf_sync/2 (Data.to_string (Data.string "a\nb")))
+       (buffer_add_string buf_sync/2 "\n")
+       (return
+        (bind (deref buf_async/2)
+         (lambda arg/27
+          ((buffer_add_buffer arg/27 buf_sync/2)
+           (return (promise (buffer_contents arg/27))))))))
       (else (return (error (stack_concat errors/0 "\n\n"))))))))

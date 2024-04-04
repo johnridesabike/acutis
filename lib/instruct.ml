@@ -92,14 +92,12 @@ module type SEM = sig
   val string_of_float : float exp -> string exp
   val string_of_bool : int exp -> string exp
 
-  val escape : string exp -> string stmt
-  (** E.g. sanitize HTML syntax. *)
-
   (** {1 Promises.} *)
 
   type 'a promise
   (** An asynchronous monad. *)
 
+  val promise : 'a exp -> 'a promise exp
   val bind : 'a promise exp -> ('a -> 'b promise) exp -> 'b promise exp
   val error : string exp -> 'a promise exp
 
@@ -146,8 +144,13 @@ module type SEM = sig
 
   val buffer_create : unit -> buffer exp
   val buffer_add_string : buffer exp -> string exp -> unit stmt
-  val buffer_add_promise : buffer exp -> string promise exp -> unit stmt
-  val buffer_contents : buffer exp -> string promise exp
+  val buffer_add_buffer : buffer exp -> buffer exp -> unit stmt
+
+  val buffer_add_escape : buffer exp -> string exp -> unit stmt
+  (** E.g. sanitize HTML syntax. *)
+
+  val buffer_contents : buffer exp -> string exp
+  val buffer_clear : buffer exp -> unit stmt
 
   (** {1 Mutable stacks.} *)
 
@@ -251,9 +254,6 @@ module Make (I : SEM) : sig
   val eval : import Compile.t -> (external_data -> string promise) obs
   (** Evaluate a template with the language implemented by {!I}. *)
 end = struct
-  module C = Compile
-  module M = Matching
-  module T = Typechecker.Type
   open I
 
   let nil_value = Data.int (int 0)
@@ -266,10 +266,41 @@ end = struct
   let is_nil x = Data.equal x nil_value
   let is_not_nil x = not (is_nil x)
 
+  type async_buffer = { sync : buffer exp; async : buffer promise mut }
+  (** Using the assumption that synchronous writes are significantly faster
+      than asynchronous writes, we use a dual-buffer strategy. Most of our
+      writes are to a regular sync buffer. Whenever we need to use the async
+      buffer, we flush the sync buffer to it. *)
+
+  let buffer_add_promise { sync; async } p =
+    let$ sync_contents = ("sync_contents", buffer_contents sync) in
+    let s1 = buffer_clear sync in
+    let s2 =
+      async :=
+        bind (deref async)
+          (lambda (fun b ->
+               return
+                 (bind p
+                    (lambda (fun promise_str ->
+                         let s1 = buffer_add_string b sync_contents in
+                         let s2 = buffer_add_string b promise_str in
+                         let s3 = return (promise b) in
+                         s1 |: s2 |: s3)))))
+    in
+    s1 |: s2
+
+  (** This should always be the final use of the buffer. Writing to it
+      afterwards is unsafe. *)
+  let buffer_contents_async { sync; async } =
+    bind (deref async)
+      (lambda (fun b ->
+           let s1 = buffer_add_buffer b sync in
+           let s2 = return (promise (buffer_contents b)) in
+           s1 |: s2))
+
   type runtime = {
     components : (data hashtbl -> string promise) hashtbl exp;
-    escape : (string -> string) exp;
-    buffer : buffer exp;
+    buffer : async_buffer;
   }
 
   let join_stmts seq =
@@ -279,17 +310,19 @@ end = struct
 
   let parse_escape runtime esc x =
     match esc with
-    | C.No_escape -> buffer_add_string runtime.buffer x
-    | C.Escape -> buffer_add_string runtime.buffer (runtime.escape @@ x)
+    | Compile.No_escape -> buffer_add_string runtime.buffer.sync x
+    | Compile.Escape -> buffer_add_escape runtime.buffer.sync x
 
   let fmt runtime esc x = function
-    | C.Fmt_string -> parse_escape runtime esc (Data.to_string x)
-    | C.Fmt_int -> parse_escape runtime esc (string_of_int (Data.to_int x))
-    | C.Fmt_float ->
+    | Compile.Fmt_string -> parse_escape runtime esc (Data.to_string x)
+    | Compile.Fmt_int ->
+        parse_escape runtime esc (string_of_int (Data.to_int x))
+    | Compile.Fmt_float ->
         parse_escape runtime esc (string_of_float (Data.to_float x))
-    | C.Fmt_bool -> parse_escape runtime esc (string_of_bool (Data.to_int x))
+    | Compile.Fmt_bool ->
+        parse_escape runtime esc (string_of_bool (Data.to_int x))
 
-  let rec echo props (ech : C.echo) =
+  let rec echo props (ech : Compile.echo) =
     match ech with
     | `Var s -> props.%{string s}
     | `String s -> Data.string (string s)
@@ -303,7 +336,7 @@ end = struct
           ~then_:(fun () -> fmt runtime esc (get_nullable nullable) f)
           ~else_:(fun () -> echoes runtime props esc default default_fmt tl)
 
-  let rec construct_data blocks props (data : C.data) =
+  let rec construct_data blocks props (data : Compile.data) =
     match data with
     | `Null -> nil_value
     | `Int i -> Data.int (int i)
@@ -353,18 +386,18 @@ end = struct
         get_arg:(optional:bool -> 'key -> (Data.t -> unit stmt) -> unit stmt) ->
         vars:Data.t Map.Int.t ->
         ?optional:bool ->
-        ('leaf, 'key) M.tree ->
+        ('leaf, 'key) Matching.tree ->
         unit stmt =
    fun ~exit ~leafstmt ~get_arg ~vars ?(optional = false) -> function
-    | M.Switch { key; ids; cases; wildcard; _ } ->
+    | Matching.Switch { key; ids; cases; wildcard; _ } ->
         let@ arg = get_arg ~optional key in
         let vars = add_vars ids arg vars in
         switchcase ~exit ~leafstmt ~get_arg ~vars ~arg ~wildcard cases
-    | M.Wildcard { key; ids; child } ->
+    | Matching.Wildcard { key; ids; child } ->
         let@ arg = get_arg ~optional key in
         let vars = add_vars ids arg vars in
         match_tree ~exit ~leafstmt ~get_arg ~vars child
-    | M.Nest { key; ids; child; wildcard } -> (
+    | Matching.Nest { key; ids; child; wildcard } -> (
         let@ arg = get_arg ~optional key in
         let vars = add_vars ids arg vars in
         let s1 =
@@ -389,23 +422,23 @@ end = struct
                   match_tree ~exit ~leafstmt ~get_arg ~vars tree)
             in
             s1 |: s2)
-    | M.Nil { key; ids; child } ->
+    | Matching.Nil { key; ids; child } ->
         let@ arg = get_arg ~optional key in
         let vars = add_vars ids arg vars in
         if_ (is_nil arg) ~then_:(fun () ->
             match_tree ~exit ~leafstmt ~get_arg ~vars child)
-    | M.Cons { key; ids; child } ->
+    | Matching.Cons { key; ids; child } ->
         let@ arg = get_arg ~optional key in
         let vars = add_vars ids arg vars in
         if_ (is_not_nil arg) ~then_:(fun () ->
             match_tree ~exit ~leafstmt ~get_arg ~vars child)
-    | M.Nil_or_cons { key; ids; nil; cons } ->
+    | Matching.Nil_or_cons { key; ids; nil; cons } ->
         let@ arg = get_arg ~optional key in
         let vars = add_vars ids arg vars in
         if_else (is_nil arg)
           ~then_:(fun () -> match_tree ~exit ~leafstmt ~get_arg ~vars nil)
           ~else_:(fun () -> match_tree ~exit ~leafstmt ~get_arg ~vars cons)
-    | M.Optional { child; next } -> (
+    | Matching.Optional { child; next } -> (
         let s1 =
           match_tree ~exit ~leafstmt ~get_arg ~optional:true ~vars child
         in
@@ -419,10 +452,10 @@ end = struct
                   match_tree ~exit ~leafstmt ~get_arg ~vars next)
             in
             s1 |: s2)
-    | M.End leaf -> leafstmt ~vars leaf
+    | Matching.End leaf -> leafstmt ~vars leaf
 
   and switchcase ~exit ~leafstmt ~get_arg ~vars ~arg ~wildcard
-      M.{ data; if_match; next } =
+      Matching.{ data; if_match; next } =
     if_else
       (Data.equal arg (of_scalar data))
       ~then_:(fun () -> match_tree ~exit ~leafstmt ~get_arg ~vars if_match)
@@ -435,17 +468,17 @@ end = struct
             | Some l -> fun () -> match_tree ~exit ~leafstmt ~get_arg ~vars l
             | None -> fun () -> unit))
 
-  let match_leaf exitvar props ~vars M.{ names; exit } =
+  let match_leaf exitvar props ~vars Matching.{ names; exit } =
     let s1 =
       Map.String.to_seq names
       |> Seq.map (fun (key, id) -> props.%{string key} <- Map.Int.find id vars)
       |> join_stmts
     in
-    let s2 = exitvar := int (M.Exit.key_to_int exit) in
+    let s2 = exitvar := int (Matching.Exit.key_to_int exit) in
     s1 |: s2
 
   let make_exits exit exits f =
-    match M.Exit.to_seqi exits () with
+    match Matching.Exit.to_seqi exits () with
     | Seq.Nil -> Error.internal ~__POS__ "No exits."
     | Seq.Cons (hd, tl) ->
         let rec aux (i, v) seq =
@@ -453,17 +486,17 @@ end = struct
           | Seq.Nil -> f v
           | Seq.Cons (hd, tl) ->
               if_else
-                (equal_int (deref exit) (int (M.Exit.key_to_int i)))
+                (equal_int (deref exit) (int (Matching.Exit.key_to_int i)))
                 ~then_:(fun () -> f v)
                 ~else_:(fun () -> aux hd tl)
         in
         aux hd tl
 
   let rec node runtime props = function
-    | C.Text s -> buffer_add_string runtime.buffer (string s)
-    | C.Echo (echs, fmt, default, esc) ->
+    | Compile.Text s -> buffer_add_string runtime.buffer.sync (string s)
+    | Compile.Echo (echs, fmt, default, esc) ->
         echoes runtime props esc default fmt echs
-    | C.Match (blocks, data, { tree; exits }) ->
+    | Compile.Match (blocks, data, { tree; exits }) ->
         construct_blocks runtime blocks props (fun blocks runtime ->
             let$ arg_match =
               ("arg_match", construct_data_array blocks props data)
@@ -476,7 +509,7 @@ end = struct
             in
             let s2 = make_exits exit exits (nodes runtime props) in
             s1 |: s2)
-    | C.Map_list (blocks, data, { tree; exits }) ->
+    | Compile.Map_list (blocks, data, { tree; exits }) ->
         construct_blocks runtime blocks props (fun blocks runtime ->
             let& index = ("index", int 0) in
             let& cell = ("cell", construct_data blocks props data) in
@@ -496,7 +529,7 @@ end = struct
                 let s3 = incr index in
                 let s4 = cell := list_tl list in
                 s1 |: s2 |: s3 |: s4))
-    | C.Map_dict (blocks, data, { tree; exits }) ->
+    | Compile.Map_dict (blocks, data, { tree; exits }) ->
         construct_blocks runtime blocks props (fun blocks runtime ->
             let$ match_arg = ("match_arg", construct_data blocks props data) in
             hashtbl_iter (Data.to_hashtbl match_arg) (fun k v ->
@@ -525,27 +558,35 @@ end = struct
         let rec aux seq =
           match seq () with
           | Seq.Cons ((i, block), seq) ->
-              let$ buffer = ("block_buffer", buffer_create ()) in
+              let$ sync = ("block_buf_sync", buffer_create ()) in
+              let& async = ("block_buf_aync", promise (buffer_create ())) in
+              let buffer = { sync; async } in
               let s1 = nodes { runtime with buffer } props block in
               let s2 =
                 return
-                  (bind (buffer_contents buffer)
+                  (bind
+                     (buffer_contents_async buffer)
                      (lambda (fun block ->
                           blocks.(i) <- block;
                           aux seq)))
               in
               s1 |: s2
           | Seq.Nil ->
-              let$ buffer = ("buffer", buffer_create ()) in
+              let$ sync = ("buf_sync", buffer_create ()) in
+              let& async = ("buf_async", promise (buffer_create ())) in
+              let buffer = { sync; async } in
               let s1 = f blocks { runtime with buffer } in
-              let s2 = return (buffer_contents buffer) in
+              let s2 = return (buffer_contents_async buffer) in
               s1 |: s2
         in
-        let$ buffer = ("block_buffer", buffer_create ()) in
+        let$ sync = ("block_buf_sync", buffer_create ()) in
+        let& async = ("block_buf_aync", promise (buffer_create ())) in
+        let buffer = { sync; async } in
         let s1 = nodes { runtime with buffer } props block in
         let s2 =
           buffer_add_promise runtime.buffer
-            (bind (buffer_contents buffer)
+            (bind
+               (buffer_contents_async buffer)
                (lambda (fun block ->
                     blocks.(i) <- block;
                     aux seq)))
@@ -554,6 +595,8 @@ end = struct
 
   and nodes runtime props l =
     List.to_seq l |> Seq.map (node runtime props) |> join_stmts
+
+  module T = Typechecker.Type
 
   type decode_runtime = {
     stack : string stack exp;
@@ -977,10 +1020,9 @@ end = struct
     |> join_stmts
 
   let eval compiled =
-    let$ escape = ("acutis_escape", lambda escape) in
     let$ components = ("components", hashtbl_create ()) in
     let s1 =
-      Map.String.to_seq compiled.C.externals
+      Map.String.to_seq compiled.Compile.externals
       |> Seq.map (fun (k, (tys, v)) ->
              import v (fun import ->
                  components.%{string k} <-
@@ -998,9 +1040,11 @@ end = struct
       |> Seq.map (fun (k, v) ->
              components.%{string k} <-
                lambda (fun props ->
-                   let$ buffer = ("buffer", buffer_create ()) in
-                   let s1 = nodes { components; escape; buffer } props v in
-                   let s2 = return (buffer_contents buffer) in
+                   let$ sync = ("buf_sync", buffer_create ()) in
+                   let& async = ("buf_async", promise (buffer_create ())) in
+                   let buffer = { sync; async } in
+                   let s1 = nodes { components; buffer } props v in
+                   let s2 = return (buffer_contents_async buffer) in
                    s1 |: s2))
       |> join_stmts
     in
@@ -1055,11 +1099,11 @@ end = struct
              let s3 =
                if_else (stack_is_empty errors)
                  ~then_:(fun () ->
-                   let$ buffer = ("buffer", buffer_create ()) in
-                   let s1 =
-                     nodes { components; escape; buffer } props compiled.nodes
-                   in
-                   let s2 = return (buffer_contents buffer) in
+                   let$ sync = ("buf_sync", buffer_create ()) in
+                   let& async = ("buf_async", promise (buffer_create ())) in
+                   let buffer = { sync; async } in
+                   let s1 = nodes { components; buffer } props compiled.nodes in
+                   let s2 = return (buffer_contents_async buffer) in
                    s1 |: s2)
                  ~else_:(fun () ->
                    return (error (stack_concat errors (string "\n\n"))))
@@ -1157,8 +1201,8 @@ module MakeTrans
   let float_of_int x = fwde (F.float_of_int (bwde x))
   let string_of_float x = fwde (F.string_of_float (bwde x))
   let string_of_bool x = fwde (F.string_of_bool (bwde x))
-  let escape s = fwds (F.escape (bwde s))
-  let bind a f = fwde (F.bind (bwde a) (bwde f))
+  let promise x = fwde (F.promise (bwde x))
+  let bind p f = fwde (F.bind (bwde p) (bwde f))
   let error s = fwde (F.error (bwde s))
   let import i f = fwds (F.import i (fun fi -> bwds (f (fwde fi))))
   let export x = fwds (F.export (bwde x))
@@ -1179,8 +1223,10 @@ module MakeTrans
 
   let buffer_create () = fwde (F.buffer_create ())
   let buffer_add_string b s = fwds (F.buffer_add_string (bwde b) (bwde s))
-  let buffer_add_promise b s = fwds (F.buffer_add_promise (bwde b) (bwde s))
+  let buffer_add_buffer b s = fwds (F.buffer_add_buffer (bwde b) (bwde s))
+  let buffer_add_escape b s = fwds (F.buffer_add_escape (bwde b) (bwde s))
   let buffer_contents b = fwde (F.buffer_contents (bwde b))
+  let buffer_clear b = fwds (F.buffer_clear (bwde b))
   let stack_create () = fwde (F.stack_create ())
   let stack_is_empty s = fwde (F.stack_is_empty (bwde s))
   let stack_push s x = fwds (F.stack_push (bwde s) (bwde x))
@@ -1318,10 +1364,10 @@ let pp (type a) pp_import ppf c =
     let float_of_int = F.dprintf "(@[float_of_int@ %t@])"
     let string_of_float = F.dprintf "(@[string_of_float@ %t@])"
     let string_of_bool = F.dprintf "(@[string_of_bool@ %t@])"
-    let escape = F.dprintf "(@[escape@ %t@])"
 
     type 'a promise
 
+    let promise = F.dprintf "(@[promise@ %t@])"
     let bind = F.dprintf "(@[bind@ %t@ %t@])"
     let error = F.dprintf "(@[error@ %t@])"
 
@@ -1368,8 +1414,10 @@ let pp (type a) pp_import ppf c =
 
     let buffer_create () = F.dprintf "(buffer_create)"
     let buffer_add_string = F.dprintf "(@[buffer_add_string@ %t@ %t@])"
-    let buffer_add_promise = F.dprintf "(@[buffer_add_promise@ %t@ %t@])"
+    let buffer_add_buffer = F.dprintf "(@[buffer_add_buffer@ %t@ %t@])"
+    let buffer_add_escape = F.dprintf "(@[buffer_add_escape@ %t@ %t@])"
     let buffer_contents = F.dprintf "(@[buffer_contents@ %t@])"
+    let buffer_clear = F.dprintf "(@[buffer_clear@ %t@])"
 
     type 'a stack
 
