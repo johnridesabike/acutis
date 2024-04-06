@@ -207,21 +207,11 @@
   Render error.
   The data supplied does not match this template's interface.
   Path:
-  tuple <- <input>
+  list <- <input>
   Expected type:
-  (string, string)
+  [{a: string}]
   Received value:
-  a
-  
-  File "template.acutis"
-  Render error.
-  The data supplied does not match this template's interface.
-  Path:
-  1 <- level_1 <- nested <- <input>
-  Expected type:
-  string
-  Received value:
-  1
+  fail
   
   File: template.acutis
   Render error.
@@ -243,11 +233,21 @@
   Render error.
   The data supplied does not match this template's interface.
   Path:
-  list <- <input>
+  1 <- level_1 <- nested <- <input>
   Expected type:
-  [{a: string}]
+  string
   Received value:
-  fail
+  1
+  
+  File "template.acutis"
+  Render error.
+  The data supplied does not match this template's interface.
+  Path:
+  tuple <- <input>
+  Expected type:
+  (string, string)
+  Received value:
+  a
 
 
   $ cat > run.mjs << EOF

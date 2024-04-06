@@ -72,14 +72,6 @@ val duplicate_name : string -> _
 val cycle : string list -> exn
 val missing_component : string list -> string -> exn
 
-(** {1 Decode errors.} *)
-
-val decode :
-  fname:string -> stack:'a -> ty:'a -> input:'a -> (string -> 'a) -> 'a array
-
-val missing_keys :
-  fname:string -> stack:'a -> ty:'a -> keys:'a -> (string -> 'a) -> 'a array
-
 (** {1 Internal errors.} *)
 
 val internal : __POS__:string * int * int * int -> string -> _

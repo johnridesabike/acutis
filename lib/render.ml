@@ -75,6 +75,7 @@ module Make (M : MONAD) (D : DECODABLE) :
     type 'a exp = 'a
 
     let return = Fun.id
+    let stmt = Fun.id
     let ( let$ ) (_, x) f = f x
 
     type 'a mut = 'a ref
@@ -88,8 +89,8 @@ module Make (M : MONAD) (D : DECODABLE) :
     let if_ b ~then_ = if b then then_ ()
     let if_else b ~then_ ~else_ = if b then then_ () else else_ ()
 
-    let while_ f g =
-      while f () do
+    let while_ f b g =
+      while f !b do
         g ()
       done
 
@@ -99,7 +100,6 @@ module Make (M : MONAD) (D : DECODABLE) :
     let float = Fun.id
     let string = Fun.id
     let bool = Fun.id
-    let pair = Fun.id
     let equal_int = Int.equal
     let equal_string = String.equal
     let string_of_int = string_of_int
@@ -126,17 +126,6 @@ module Make (M : MONAD) (D : DECODABLE) :
     let array_init = Array.make
     let ( .%() ) = Array.get
     let ( .%()<- ) = Array.set
-
-    let concat_seq seq sep =
-      match seq () with
-      | Seq.Nil -> ""
-      | Seq.Cons (hd, tl) ->
-          let b = Buffer.create 16 in
-          Buffer.add_string b hd;
-          Seq.iter (fun s -> Buffer.add_string b sep; Buffer.add_string b s) tl;
-          Buffer.contents b
-
-    let array_concat x = concat_seq (Array.to_seq x)
 
     module Tbl = Hashtbl.Make (String)
 
@@ -172,14 +161,7 @@ module Make (M : MONAD) (D : DECODABLE) :
 
     let buffer_contents = Buffer.contents
     let buffer_clear = Buffer.clear
-
-    type 'a stack = 'a Stack.t
-
-    let stack_create = Stack.create
-    let stack_is_empty = Stack.is_empty
-    let stack_push x a = Stack.push a x
-    let stack_drop x = Stack.pop x |> ignore
-    let stack_concat x = concat_seq (Stack.to_seq x)
+    let buffer_length = Buffer.length
 
     type data =
       | Int of int

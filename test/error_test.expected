@@ -1277,15 +1277,15 @@ Received value:
 
 Multiple decode errors are reported.
 ---
-File: <test>
+File "<test>"
 Render error.
 The data supplied does not match this template's interface.
 Path:
-d <- <input>
+b <- a <- <input>
 Expected type:
-{e: string}
-Input is missing keys:
-e
+string
+Received value:
+[]
 
 File "<test>"
 Render error.
@@ -1297,15 +1297,15 @@ string
 Received value:
 0
 
-File "<test>"
+File: <test>
 Render error.
 The data supplied does not match this template's interface.
 Path:
-b <- a <- <input>
+d <- <input>
 Expected type:
-string
-Received value:
-[]
+{e: string}
+Input is missing keys:
+e
 
 Invalid field names.
 ---

@@ -32,29 +32,37 @@ let buffer_add_escape$0 =
   };
 let components$0 = new Map();
 export default (arg$0) => {
-  let stack$0 = [];
-  let errors$0 = [];
+  let errors$0 = {contents: ""};
   let decode_error$0 =
     (arg$1) => {
       return (
         (arg$2) => {
           return (
-            [
-              "File \"",
-              "printjs_example.acutis",
-              "\"\n\
+            (arg$3) => {
+              if (!(errors$0.contents.length === 0)) {
+                buffer_add_string$0(errors$0)("\n\n");
+              }
+              buffer_add_string$0(errors$0)("File \"");
+              buffer_add_string$0(errors$0)("printjs_example.acutis");
+              buffer_add_string$0(errors$0)(
+                "\"\n\
 Render error.\n\
 The data supplied does not match this template's interface.\n\
-",
-              "Path:\n",
-              stack$0.join(" <- "),
-              "\nExpected type:\n",
-              arg$1,
-              "\nReceived value:\n",
-              String(arg$2),
-            ].join(
-              ""
-            )
+"
+              );
+              buffer_add_string$0(errors$0)("Path:\n");
+              buffer_add_string$0(errors$0)(arg$1[0]);
+              let stack$0 = arg$1[1];
+              while (!(stack$0 === 0)) {
+                buffer_add_string$0(errors$0)(" <- ");
+                buffer_add_string$0(errors$0)(stack$0[0]);
+                stack$0 = stack$0[1];
+              }
+              buffer_add_string$0(errors$0)("\nExpected type:\n");
+              buffer_add_string$0(errors$0)(arg$2);
+              buffer_add_string$0(errors$0)("\nReceived value:\n");
+              buffer_add_string$0(errors$0)(String(arg$3));
+            }
           );
         }
       );
@@ -64,28 +72,43 @@ The data supplied does not match this template's interface.\n\
       return (
         (arg$2) => {
           return (
-            [
-              "File: ",
-              "printjs_example.acutis",
-              "\n\
+            (arg$3) => {
+              if (!(errors$0.contents.length === 0)) {
+                buffer_add_string$0(errors$0)("\n\n");
+              }
+              buffer_add_string$0(errors$0)("File: ");
+              buffer_add_string$0(errors$0)("printjs_example.acutis");
+              buffer_add_string$0(errors$0)(
+                "\n\
 Render error.\n\
 The data supplied does not match this template's interface.\n\
-",
-              "Path:\n",
-              stack$0.join(" <- "),
-              "\nExpected type:\n",
-              arg$1,
-              "\nInput is missing keys:\n",
-              arg$2.join(", "),
-            ].join(
-              ""
-            )
+"
+              );
+              buffer_add_string$0(errors$0)("Path:\n");
+              buffer_add_string$0(errors$0)(arg$1[0]);
+              let stack$0 = arg$1[1];
+              while (!(stack$0 === 0)) {
+                buffer_add_string$0(errors$0)(" <- ");
+                buffer_add_string$0(errors$0)(stack$0[0]);
+                stack$0 = stack$0[1];
+              }
+              buffer_add_string$0(errors$0)("\nExpected type:\n");
+              buffer_add_string$0(errors$0)(arg$2);
+              buffer_add_string$0(errors$0)("\nInput is missing keys:\n");
+              buffer_add_string$0(errors$0)(arg$3[0]);
+              let stack$1 = arg$3[1];
+              while (!(stack$1 === 0)) {
+                buffer_add_string$0(errors$0)(", ");
+                buffer_add_string$0(errors$0)(stack$1[0]);
+                stack$1 = stack$1[1];
+              }
+            }
           );
         }
       );
     };
   let props$0 = new Map();
-  stack$0.unshift("<input>");
+  let stack$0 = ["<input>", 0];
   let type$0 =
     "{\n\
   blogPosts:\n\
@@ -101,10 +124,10 @@ The data supplied does not match this template's interface.\n\
   siteTitle: string\n\
 }";
   if (typeof arg$0 === "object" && !(arg$0 === null)) {
-    let missing_keys$0 = [];
+    let missing_keys$0 = 0;
     if (Object.hasOwn(arg$0, "blogPosts")) {
       let input$0 = arg$0["blogPosts"];
-      stack$0.unshift("blogPosts");
+      let stack$1 = ["blogPosts", stack$0];
       let type$1 =
         "[\n\
   {\n\
@@ -120,7 +143,7 @@ The data supplied does not match this template's interface.\n\
         let decode_dst$0 = decoded$0;
         for (let i$0 = 0; i$0 < input$0.length; i$0++) {
           let decode_dst_new$0 = [0, 0];
-          stack$0.unshift(i$0.toString());
+          let stack$2 = [String(i$0), stack$1];
           let type$2 =
             "{\n\
   author: {name: ?string},\n\
@@ -131,178 +154,165 @@ The data supplied does not match this template's interface.\n\
 }";
           if (typeof input$0[i$0] === "object" && !(input$0[i$0] === null)) {
             let decoded$1 = new Map();
-            let missing_keys$1 = [];
+            let missing_keys$1 = 0;
             if (Object.hasOwn(input$0[i$0], "author")) {
               let input$1 = input$0[i$0]["author"];
-              stack$0.unshift("author");
+              let stack$3 = ["author", stack$2];
               let type$3 = "{name: ?string}";
               if (typeof input$1 === "object" && !(input$1 === null)) {
                 let decoded$2 = new Map();
-                let missing_keys$2 = [];
+                let missing_keys$2 = 0;
                 if (Object.hasOwn(input$1, "name")) {
                   let input$2 = input$1["name"];
-                  stack$0.unshift("name");
+                  let stack$4 = ["name", stack$3];
                   let type$4 = "?string";
                   if (input$2 === null || input$2 === undefined) {
                     decoded$2.set("name", 0);
                   } else {
                     let decoded$3 = [0];
-                    stack$0.unshift("<nullable>");
+                    let stack$5 = ["<nullable>", stack$4];
                     let type$5 = "string";
                     if (typeof input$2 === "string") {
                       decoded$3[0] = input$2;
                     } else {
-                      errors$0.unshift(decode_error$0(type$5)(input$2));
+                      decode_error$0(stack$5)(type$5)(input$2);
                     }
                     decoded$2.set("name", decoded$3);
-                    stack$0.shift();
                   }
-                  stack$0.shift();
                 } else {
                   decoded$2.set("name", 0);
                 }
-                if (!(missing_keys$2.length === 0)) {
-                  errors$0.unshift(key_error$0(type$3)(missing_keys$2));
+                if (!(missing_keys$2 === 0)) {
+                  key_error$0(stack$3)(type$3)(missing_keys$2);
                 }
                 decoded$1.set("author", decoded$2);
               } else {
-                errors$0.unshift(decode_error$0(type$3)(input$1));
+                decode_error$0(stack$3)(type$3)(input$1);
               }
-              stack$0.shift();
             } else {
-              missing_keys$1.unshift("author");
+              missing_keys$1 = ["author", missing_keys$1];
             }
             if (Object.hasOwn(input$0[i$0], "content")) {
               let input$1 = input$0[i$0]["content"];
-              stack$0.unshift("content");
+              let stack$3 = ["content", stack$2];
               let type$3 = "string";
               if (typeof input$1 === "string") {
                 decoded$1.set("content", input$1);
               } else {
-                errors$0.unshift(decode_error$0(type$3)(input$1));
+                decode_error$0(stack$3)(type$3)(input$1);
               }
-              stack$0.shift();
             } else {
-              missing_keys$1.unshift("content");
+              missing_keys$1 = ["content", missing_keys$1];
             }
             if (Object.hasOwn(input$0[i$0], "date")) {
               let input$1 = input$0[i$0]["date"];
-              stack$0.unshift("date");
+              let stack$3 = ["date", stack$2];
               let type$3 = "string";
               if (typeof input$1 === "string") {
                 decoded$1.set("date", input$1);
               } else {
-                errors$0.unshift(decode_error$0(type$3)(input$1));
+                decode_error$0(stack$3)(type$3)(input$1);
               }
-              stack$0.shift();
             } else {
-              missing_keys$1.unshift("date");
+              missing_keys$1 = ["date", missing_keys$1];
             }
             if (Object.hasOwn(input$0[i$0], "image")) {
               let input$1 = input$0[i$0]["image"];
-              stack$0.unshift("image");
+              let stack$3 = ["image", stack$2];
               let type$3 = "?{alt: string, src: string}";
               if (input$1 === null || input$1 === undefined) {
                 decoded$1.set("image", 0);
               } else {
                 let decoded$2 = [0];
-                stack$0.unshift("<nullable>");
+                let stack$4 = ["<nullable>", stack$3];
                 let type$4 = "{alt: string, src: string}";
                 if (typeof input$1 === "object" && !(input$1 === null)) {
                   let decoded$3 = new Map();
-                  let missing_keys$2 = [];
+                  let missing_keys$2 = 0;
                   if (Object.hasOwn(input$1, "alt")) {
                     let input$2 = input$1["alt"];
-                    stack$0.unshift("alt");
+                    let stack$5 = ["alt", stack$4];
                     let type$5 = "string";
                     if (typeof input$2 === "string") {
                       decoded$3.set("alt", input$2);
                     } else {
-                      errors$0.unshift(decode_error$0(type$5)(input$2));
+                      decode_error$0(stack$5)(type$5)(input$2);
                     }
-                    stack$0.shift();
                   } else {
-                    missing_keys$2.unshift("alt");
+                    missing_keys$2 = ["alt", missing_keys$2];
                   }
                   if (Object.hasOwn(input$1, "src")) {
                     let input$2 = input$1["src"];
-                    stack$0.unshift("src");
+                    let stack$5 = ["src", stack$4];
                     let type$5 = "string";
                     if (typeof input$2 === "string") {
                       decoded$3.set("src", input$2);
                     } else {
-                      errors$0.unshift(decode_error$0(type$5)(input$2));
+                      decode_error$0(stack$5)(type$5)(input$2);
                     }
-                    stack$0.shift();
                   } else {
-                    missing_keys$2.unshift("src");
+                    missing_keys$2 = ["src", missing_keys$2];
                   }
-                  if (!(missing_keys$2.length === 0)) {
-                    errors$0.unshift(key_error$0(type$4)(missing_keys$2));
+                  if (!(missing_keys$2 === 0)) {
+                    key_error$0(stack$4)(type$4)(missing_keys$2);
                   }
                   decoded$2[0] = decoded$3;
                 } else {
-                  errors$0.unshift(decode_error$0(type$4)(input$1));
+                  decode_error$0(stack$4)(type$4)(input$1);
                 }
                 decoded$1.set("image", decoded$2);
-                stack$0.shift();
               }
-              stack$0.shift();
             } else {
               decoded$1.set("image", 0);
             }
             if (Object.hasOwn(input$0[i$0], "title")) {
               let input$1 = input$0[i$0]["title"];
-              stack$0.unshift("title");
+              let stack$3 = ["title", stack$2];
               let type$3 = "string";
               if (typeof input$1 === "string") {
                 decoded$1.set("title", input$1);
               } else {
-                errors$0.unshift(decode_error$0(type$3)(input$1));
+                decode_error$0(stack$3)(type$3)(input$1);
               }
-              stack$0.shift();
             } else {
-              missing_keys$1.unshift("title");
+              missing_keys$1 = ["title", missing_keys$1];
             }
-            if (!(missing_keys$1.length === 0)) {
-              errors$0.unshift(key_error$0(type$2)(missing_keys$1));
+            if (!(missing_keys$1 === 0)) {
+              key_error$0(stack$2)(type$2)(missing_keys$1);
             }
             decode_dst_new$0[0] = decoded$1;
           } else {
-            errors$0.unshift(decode_error$0(type$2)(input$0[i$0]));
+            decode_error$0(stack$2)(type$2)(input$0[i$0]);
           }
           decode_dst$0[1] = decode_dst_new$0;
           decode_dst$0 = decode_dst_new$0;
-          stack$0.shift();
         }
         props$0.set("blogPosts", decoded$0[1]);
       } else {
-        errors$0.unshift(decode_error$0(type$1)(input$0));
+        decode_error$0(stack$1)(type$1)(input$0);
       }
-      stack$0.shift();
     } else {
-      missing_keys$0.unshift("blogPosts");
+      missing_keys$0 = ["blogPosts", missing_keys$0];
     }
     if (Object.hasOwn(arg$0, "siteTitle")) {
       let input$0 = arg$0["siteTitle"];
-      stack$0.unshift("siteTitle");
+      let stack$1 = ["siteTitle", stack$0];
       let type$1 = "string";
       if (typeof input$0 === "string") {
         props$0.set("siteTitle", input$0);
       } else {
-        errors$0.unshift(decode_error$0(type$1)(input$0));
+        decode_error$0(stack$1)(type$1)(input$0);
       }
-      stack$0.shift();
     } else {
-      missing_keys$0.unshift("siteTitle");
+      missing_keys$0 = ["siteTitle", missing_keys$0];
     }
-    if (!(missing_keys$0.length === 0)) {
-      errors$0.unshift(key_error$0(type$0)(missing_keys$0));
+    if (!(missing_keys$0 === 0)) {
+      key_error$0(stack$0)(type$0)(missing_keys$0);
     }
   } else {
-    errors$0.unshift(decode_error$0(type$0)(arg$0));
+    decode_error$0(stack$0)(type$0)(arg$0);
   }
-  if (errors$0.length === 0) {
+  if (errors$0.contents.length === 0) {
     let buf_sync$0 = {contents: ""};
     let buf_async$0 = Promise.resolve({contents: ""});
     buffer_add_string$0(buf_sync$0)("<h1> Blog posts for ");
@@ -384,6 +394,6 @@ The data supplied does not match this template's interface.\n\
       )
     );
   } else {
-    return (Promise.reject(new Error(errors$0.join("\n\n"))));
+    return (Promise.reject(new Error(errors$0.contents)));
   }
 };

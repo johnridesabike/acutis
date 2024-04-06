@@ -214,38 +214,6 @@ let missing_component stack name =
   in
   Acutis_error s
 
-let decode ~fname ~stack ~ty ~input s =
-  [|
-    s "File \"";
-    s fname;
-    s
-      "\"\n\
-       Render error.\n\
-       The data supplied does not match this template's interface.\n";
-    s "Path:\n";
-    stack;
-    s "\nExpected type:\n";
-    ty;
-    s "\nReceived value:\n";
-    input;
-  |]
-
-let missing_keys ~fname ~stack ~ty ~keys s =
-  [|
-    s "File: ";
-    s fname;
-    s
-      "\n\
-       Render error.\n\
-       The data supplied does not match this template's interface.\n";
-    s "Path:\n";
-    stack;
-    s "\nExpected type:\n";
-    ty;
-    s "\nInput is missing keys:\n";
-    keys;
-  |]
-
 let internal ~__POS__:(file, lnum, cnum, enum) s =
   let s =
     F.asprintf

@@ -155,7 +155,9 @@ let buffer_add_escape =
 
 let buffer_contents b = b.!("contents")
 let buffer_clear b = set b.!("contents") (string "")
+let buffer_length b = b.!("contents").!("length")
 
+(** This is for mostly functions which are defined at runtime. *)
 module type RUNTIME = sig
   type buffer
 
@@ -165,6 +167,7 @@ module type RUNTIME = sig
   val buffer_add_escape : js -> js -> js
   val buffer_contents : js -> js
   val buffer_clear : js -> js
+  val buffer_length : js -> js
 end
 
 module type JSMODULE = sig
@@ -237,6 +240,7 @@ module MakeJavaScript (M : JSMODULE) (R : RUNTIME) :
   type 'a exp = js
 
   let return = return
+  let stmt = stmt
   let ( let$ ) = ( let$ )
 
   type 'a stmt = js
@@ -269,8 +273,8 @@ module MakeJavaScript (M : JSMODULE) (R : RUNTIME) :
     let state' = State.add_block state in
     F.fprintf ppf "@;<1 -2>} else {@ %a@;<1 -2>}@]" (else_ ()) state'
 
-  let while_ cond stmts ppf state =
-    F.fprintf ppf "@[<hv 2>while (%a) " (cond ()) state;
+  let while_ cond mut stmts ppf state =
+    F.fprintf ppf "@[<hv 2>while (%a) " (cond mut) state;
     let state = State.add_block state in
     F.fprintf ppf "{@ %a@;<1 -2>}@]" (stmts ()) state
 
@@ -280,10 +284,9 @@ module MakeJavaScript (M : JSMODULE) (R : RUNTIME) :
   let float x ppf _ = F.pp_print_float ppf x
   let string = string
   let bool x ppf _ = F.pp_print_bool ppf x
-  let pair (a, b) = seq Seq.(fun () -> Cons (a, fun () -> Cons (b, empty)))
   let equal_int = equal
   let equal_string = equal
-  let string_of_int x = x.!("toString") @@ unit
+  let string_of_int x = global "String" @@ x
   let float_of_int = Fun.id
   let string_of_float = string_of_int
   let string_of_bool x = tern x (string "true") (string "false")
@@ -306,25 +309,17 @@ module MakeJavaScript (M : JSMODULE) (R : RUNTIME) :
 
   let ( .%() ) = ( .%() )
   let ( .%()<- ) = ( .%()<- )
-  let array_concat a s = a.!("join") @@ s
 
   type 'a hashtbl
 
-  let hashtbl s = new_ "Map" [ seq s ]
+  let pair (a, b) = seq Seq.(fun () -> Cons (a, fun () -> Cons (b, empty)))
+  let hashtbl s = new_ "Map" [ seq (Seq.map pair s) ]
   let hashtbl_create () = new_ "Map" [ unit ]
   let ( .%{} ) x k = x.!("get") @@ k
   let ( .%{}<- ) x k v = stmt (apply_n x.!("set") [ k; v ])
   let hashtbl_mem x k = x.!("has") @@ k
   let hashtbl_copy x = new_ "Map" [ x ]
   let hashtbl_iter x f = for_of x (fun entry -> f entry.%(int 0) entry.%(int 1))
-
-  type 'a stack
-
-  let stack_create () = array [||]
-  let stack_is_empty x = equal x.!("length") (int 0)
-  let stack_push x y = stmt (x.!("unshift") @@ y)
-  let stack_drop x = stmt (x.!("shift") @@ unit)
-  let stack_concat = array_concat
 
   type data
 
@@ -453,6 +448,9 @@ module RemoveIdsAndUnits (F : Instruct.SEM) :
         (F.( let$ ) (name, x.from) (fun x ->
              bwds (f { from = x; identity = true })))
 
+  let lambda f =
+    fwde (F.lambda (fun x -> bwds (f { from = x; identity = true })))
+
   let float_of_int x = { x with from = F.float_of_int x.from }
   let deref x = { from = F.deref x; identity = true }
 
@@ -499,6 +497,7 @@ let pp (module Jsmod : JSMODULE) ppf c =
       let buffer_add_buffer b s = stmt ((buffer_add_buffer @@ b) @@ s)
       let buffer_contents = buffer_contents
       let buffer_clear = buffer_clear
+      let buffer_length = buffer_length
     end in
     let module I =
       Instruct.Make (RemoveIdsAndUnits (MakeJavaScript (Jsmod) (Runtime))) in
