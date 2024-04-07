@@ -94,28 +94,6 @@ module type SEM = sig
   val string_of_float : float exp -> string exp
   val string_of_bool : int exp -> string exp
 
-  (** {1 Promises.} *)
-
-  type 'a promise
-  (** An asynchronous monad. *)
-
-  val promise : 'a exp -> 'a promise exp
-  val bind : 'a promise exp -> ('a -> 'b promise) exp -> 'b promise exp
-  val error : string exp -> 'a promise exp
-
-  (** {1 Importing and exporting.} *)
-
-  type external_data
-  (** Data from the outside world that we need to decode. *)
-
-  type import
-  (** Information to import a function from external code. *)
-
-  val import :
-    import -> ((external_data -> string promise) exp -> 'a stmt) -> 'a stmt
-
-  val export : 'a exp -> 'a stmt
-
   (** {1 Arrays.} *)
 
   val array : 'a exp array -> 'a array exp
@@ -141,7 +119,7 @@ module type SEM = sig
   (** {1 Buffers.} *)
 
   type buffer
-  (** A concurrent buffer. *)
+  (** A mutable string buffer. *)
 
   val buffer_create : unit -> buffer exp
   val buffer_add_string : buffer exp -> string exp -> unit stmt
@@ -154,11 +132,33 @@ module type SEM = sig
   val buffer_length : buffer exp -> int exp
   val buffer_clear : buffer exp -> unit stmt
 
+  (** {1 Promises.} *)
+
+  type 'a promise
+  (** An asynchronous monad. *)
+
+  val promise : 'a exp -> 'a promise exp
+  val bind : 'a promise exp -> ('a -> 'b promise) exp -> 'b promise exp
+  val error : string exp -> 'a promise exp
+
+  (** {1 Importing and exporting.} *)
+
+  type external_data
+  (** Data from the outside world that we need to decode. *)
+
+  type import
+  (** Information to import a function from external code. *)
+
+  val import :
+    import -> ((external_data -> string promise) exp -> 'a stmt) -> 'a stmt
+
+  val export : 'a exp -> 'a stmt
+
   (** {1 Runtime data.} *)
 
   type data
-  (** Boxed runtime data. Either a string, an integer, a float, an array, or a
-      hash table. *)
+  (** Runtime data. Either a string, an integer, a float, an array, or a hash
+      table. *)
 
   module Data : sig
     type t = data exp
@@ -1160,11 +1160,11 @@ module MakeTrans
      and type 'a obs = 'a F.obs
      and type 'a exp = 'a T.exp
      and type 'a mut = 'a F.mut
+     and type 'a hashtbl = 'a F.hashtbl
+     and type buffer = F.buffer
      and type 'a promise = 'a F.promise
      and type external_data = F.external_data
      and type import = F.import
-     and type 'a hashtbl = 'a F.hashtbl
-     and type buffer = F.buffer
      and type data = F.data
      and type 'a External.Linear.t = 'a F.External.Linear.t
      and type 'a External.Assoc.t = 'a F.External.Assoc.t
@@ -1212,11 +1212,6 @@ module MakeTrans
   let float_of_int x = fwde (F.float_of_int (bwde x))
   let string_of_float x = fwde (F.string_of_float (bwde x))
   let string_of_bool x = fwde (F.string_of_bool (bwde x))
-  let promise x = fwde (F.promise (bwde x))
-  let bind p f = fwde (F.bind (bwde p) (bwde f))
-  let error s = fwde (F.error (bwde s))
-  let import i f = fwds (F.import i (fun fi -> bwds (f (fwde fi))))
-  let export x = fwds (F.export (bwde x))
   let array x = fwde (F.array (Array.map bwde x))
   let array_make i x = fwde (F.array_make (bwde i) (bwde x))
   let ( .%() ) a i = fwde F.((bwde a).%(bwde i))
@@ -1238,6 +1233,11 @@ module MakeTrans
   let buffer_contents b = fwde (F.buffer_contents (bwde b))
   let buffer_clear b = fwds (F.buffer_clear (bwde b))
   let buffer_length b = fwde (F.buffer_length (bwde b))
+  let promise x = fwde (F.promise (bwde x))
+  let bind p f = fwde (F.bind (bwde p) (bwde f))
+  let error s = fwde (F.error (bwde s))
+  let import i f = fwds (F.import i (fun fi -> bwds (f (fwde fi))))
+  let export x = fwds (F.export (bwde x))
 
   module Data = struct
     type t = data exp
@@ -1373,21 +1373,6 @@ let pp (type a) pp_import ppf c =
     let string_of_float = F.dprintf "(@[string_of_float@ %t@])"
     let string_of_bool = F.dprintf "(@[string_of_bool@ %t@])"
 
-    type 'a promise
-
-    let promise = F.dprintf "(@[promise@ %t@])"
-    let bind = F.dprintf "(@[bind@ %t@ %t@])"
-    let error = F.dprintf "(@[error@ %t@])"
-
-    type external_data
-    type import = a
-
-    let import i f =
-      let name = var "import" in
-      F.dprintf "(@[import@ %t@ from@ %a@])@ %t" name pp_import i (f name)
-
-    let export = F.dprintf "(@[export@ %t@])"
-
     let array a =
       F.dprintf "[@[<hv>%a@]]"
         (F.pp_print_seq ~pp_sep:Pp.comma ( |> ))
@@ -1427,6 +1412,21 @@ let pp (type a) pp_import ppf c =
     let buffer_contents = F.dprintf "(@[buffer_contents@ %t@])"
     let buffer_clear = F.dprintf "(@[buffer_clear@ %t@])"
     let buffer_length = F.dprintf "(@[buffer_length@ %t@])"
+
+    type 'a promise
+
+    let promise = F.dprintf "(@[promise@ %t@])"
+    let bind = F.dprintf "(@[bind@ %t@ %t@])"
+    let error = F.dprintf "(@[error@ %t@])"
+
+    type external_data
+    type import = a
+
+    let import i f =
+      let name = var "import" in
+      F.dprintf "(@[import@ %t@ from@ %a@])@ %t" name pp_import i (f name)
+
+    let export = F.dprintf "(@[export@ %t@])"
 
     type data
 

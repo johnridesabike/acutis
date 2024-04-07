@@ -107,18 +107,6 @@ module Make (M : MONAD) (D : DECODABLE) :
     let string_of_float = string_of_float
     let string_of_bool = function 0 -> "false" | _ -> "true"
 
-    type 'a promise = 'a M.t
-
-    let promise = M.return
-    let bind = M.bind
-    let error = M.error
-
-    type external_data = D.t
-    type import = D.t -> string promise
-
-    let import = ( |> )
-    let export = Fun.id
-
     type 'a obs = 'a
 
     let observe = Fun.id
@@ -162,6 +150,18 @@ module Make (M : MONAD) (D : DECODABLE) :
     let buffer_contents = Buffer.contents
     let buffer_clear = Buffer.clear
     let buffer_length = Buffer.length
+
+    type 'a promise = 'a M.t
+
+    let promise = M.return
+    let bind = M.bind
+    let error = M.error
+
+    type external_data = D.t
+    type import = D.t -> string promise
+
+    let import = ( |> )
+    let export = Fun.id
 
     type data =
       | Int of int

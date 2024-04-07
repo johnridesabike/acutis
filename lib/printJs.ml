@@ -364,16 +364,6 @@ let pp (module Jsmod : JSMODULE) ppf c =
       let float_of_int = Fun.id
       let string_of_float = to_string
       let string_of_bool x = tern x (string "true") (string "false")
-
-      type 'a promise
-
-      let promise x = (global "Promise").!("resolve") @@ x
-      let bind p f = p.!("then") @@ f
-      let error s = (global "Promise").!("reject") @@ new_ "Error" [ s ]
-
-      type external_data
-      type nonrec import = import
-
       let array a = seq (Array.to_seq a)
 
       let array_make i x =
@@ -404,6 +394,14 @@ let pp (module Jsmod : JSMODULE) ppf c =
       let buffer_clear b = set b.!("contents") (string "")
       let buffer_length b = b.!("contents").!("length")
 
+      type 'a promise
+
+      let promise x = (global "Promise").!("resolve") @@ x
+      let bind p f = p.!("then") @@ f
+      let error s = (global "Promise").!("reject") @@ new_ "Error" [ s ]
+
+      type external_data
+      type nonrec import = import
       type data
 
       module Data = struct
