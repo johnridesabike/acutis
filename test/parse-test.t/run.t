@@ -1244,7 +1244,7 @@ Print the runtime instructions
           (ok
            (if_else (equal_int (External.Linear.length classified/21) 4)
             (then
-             (let$ decoded/6 = (array_init 4 (Data.int 0)))
+             (let$ decoded/6 = (array_make 4 (Data.int 0)))
              (External.Linear.iteri classified/21 key/1 value/1
               (let$ stack/26 =
                (Data.array [(Data.string (string_of_int key/1)), stack/25]))
@@ -1720,7 +1720,7 @@ Print the runtime instructions
           (ok
            (if_else (equal_int (External.Linear.length classified/61) 3)
             (then
-             (let$ decoded/15 = (array_init 3 (Data.int 0)))
+             (let$ decoded/15 = (array_make 3 (Data.int 0)))
              (External.Linear.iteri classified/61 key/5 value/5
               (let$ stack/58 =
                (Data.array [(Data.string (string_of_int key/5)), stack/57]))

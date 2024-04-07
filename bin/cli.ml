@@ -132,7 +132,7 @@ let make_components_js () =
        let typescheme = Compile.interface_from_string ~fname:"-" interface in
        let name = fname_to_compname function_path in
        Compile.Components.from_fun ~name typescheme
-         (PrintJs.jsfun ~module_path ~function_path)
+         (PrintJs.import ~module_path ~function_path)
   in
   Seq.append l funl |> Compile.Components.of_seq
 
@@ -173,7 +173,7 @@ let () =
           In_channel.with_open_text fname
           @@ Compile.from_channel ~fname components
         in
-        Instruct.pp PrintJs.pp_jsfun Format.std_formatter compiled
+        Instruct.pp PrintJs.pp_import Format.std_formatter compiled
       else
         match !arg_mode with
         | Render -> (

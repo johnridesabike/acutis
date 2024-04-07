@@ -118,7 +118,7 @@ let () =
          let function_path = Js.to_string name in
          let module_path = Js.to_string module_path in
          Compile.Components.from_fun ~name:function_path ty
-           (PrintJs.jsfun ~module_path ~function_path)
+           (PrintJs.import ~module_path ~function_path)
     end)
 
 let () =

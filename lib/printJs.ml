@@ -31,14 +31,14 @@ end = struct
   let add_block state = ref !state
 end
 
-type jsfun = { module_path : string; function_path : string }
+type import = { module_path : string; function_path : string }
 
-let jsfun ~module_path ~function_path = { module_path; function_path }
+let import ~module_path ~function_path = { module_path; function_path }
 
-let pp_jsfun ppf { module_path; function_path } =
+let pp_import ppf { module_path; function_path } =
   Format.fprintf ppf "(@[%S %S@])" module_path function_path
 
-type t = jsfun Compile.t
+type t = import Compile.t
 type js = F.formatter -> State.t -> unit
 
 let trailing_comma =
@@ -66,137 +66,71 @@ let pp_string ppf s =
   done;
   F.pp_print_char ppf '"'
 
-let stmt x ppf state = F.fprintf ppf "@[<hv 2>%a;@]" x state
-let ( |: ) a b ppf state = F.fprintf ppf "%a@ %a" a state b state
+(** Define common functions in this submodule so it can be easily included in
+    a functor argument. *)
+module Javascript = struct
+  type 'a exp = js
+  type 'a stmt = js
+  type 'a mut = js
 
-let ( @@ ) f e ppf state =
-  F.fprintf ppf "@[<hv 2>%a(@,@[<hv 2>%a@]@;<0 -2>)@]" f state e state
+  let stmt x ppf state = F.fprintf ppf "@[<hv 2>%a;@]" x state
+  let ( |: ) a b ppf state = F.fprintf ppf "%a@ %a" a state b state
 
-let ( let$ ) (name, x) f ppf state =
-  let name = State.var name state in
-  (stmt (fun ppf state ->
-       F.fprintf ppf "let %a =@ @[<hv 2>%a@]" name state x state)
-  |: f name)
-    ppf state
+  let ( @@ ) f e ppf state =
+    F.fprintf ppf "@[<hv 2>%a(@,@[<hv 2>%a@]@;<0 -2>)@]" f state e state
 
-let set a b =
-  stmt (fun ppf state -> F.fprintf ppf "%a =@ @[<hv 2>%a@]" a state b state)
-
-let ( + ) a b ppf state = F.fprintf ppf "@[%a +@ %a@]" a state b state
-let ( .%() ) a b ppf state = F.fprintf ppf "%a[%a]" a state b state
-let ( .%()<- ) a i b = set a.%(i) b
-let ( .!() ) a b ppf state = F.fprintf ppf "%a.%s" a state b
-let ( .!()<- ) a i b = set a.!(i) b
-let string x ppf _ = pp_string ppf x
-let global x ppf _ = F.pp_print_string ppf x
-let comment ppf str = F.fprintf ppf "/* %s */@," str
-
-let obj l ppf state =
-  F.fprintf ppf "@[<hv 2>{@,%a@;<0 -2>}@]"
-    (F.pp_print_list ~pp_sep:Pp.comma (fun ppf (k, v) ->
-         F.fprintf ppf "@[<hv 2>%s:@ %a@]" k v state))
-    l
-
-let lambda f ppf state =
-  let state = State.add_block state in
-  let arg = State.var "arg" state in
-  F.fprintf ppf "(%a) => {@ %a@;<1 -2>}" arg state (f arg) state
-
-let return x =
-  stmt (fun ppf -> F.fprintf ppf "return (@,@[<hv 2>%a@]@;<0 -2>)" x)
-
-let for_ expr stmts ppf state =
-  let state' = State.add_block state in
-  let i = State.var "i" state' in
-  F.fprintf ppf "@[<hv 2>for (let %a = 0; %a < %a; %a++) {@ %a@;<0 -2>}@]" i
-    state' i state' expr state i state' (stmts i) state'
-
-let switch exp cases default ppf state =
-  F.fprintf ppf "@[<v 2>@[<hv 2>switch (%a)@] {@ " exp state;
-  let state = State.add_block state in
-  F.pp_print_list ~pp_sep:F.pp_print_cut
-    (fun ppf (exp, stmts) ->
-      F.fprintf ppf "@[<hv 2>case %a:@ %a@ break;@]" exp state stmts state)
-    ppf cases;
-  F.fprintf ppf "@ @[<hv 2>default:@ %a@]" default state;
-  F.fprintf ppf "@;<1 -2>}@]"
-
-let buffer_create () = obj [ ("contents", string "") ]
-
-let buffer_add_string =
-  lambda (fun b ->
-      return (lambda (fun s -> set b.!("contents") (b.!("contents") + s))))
-
-let buffer_add_buffer =
-  lambda (fun b ->
-      return
-        (lambda (fun s ->
-             set b.!("contents") (b.!("contents") + s.!("contents")))))
-
-let buffer_add_escape =
-  lambda (fun b ->
-      return
-        (lambda (fun s ->
-             let buffer_add s = set b.!("contents") (b.!("contents") + s) in
-             for_ s.!("length") (fun i ->
-                 let$ c = ("c", s.%(i)) in
-                 switch c
-                   [
-                     (string "&", buffer_add (string "&amp;"));
-                     (string "\"", buffer_add (string "&quot;"));
-                     (string "'", buffer_add (string "&apos;"));
-                     (string ">", buffer_add (string "&gt;"));
-                     (string "<", buffer_add (string "&lt;"));
-                     (string "/", buffer_add (string "&#x2F;"));
-                     (string "`", buffer_add (string "&#x60;"));
-                     (string "=", buffer_add (string "&#x3D;"));
-                   ]
-                   (buffer_add c)))))
-
-let buffer_contents b = b.!("contents")
-let buffer_clear b = set b.!("contents") (string "")
-let buffer_length b = b.!("contents").!("length")
-
-(** This is for mostly functions which are defined at runtime. *)
-module type RUNTIME = sig
-  type buffer
-
-  val buffer_create : unit -> js
-  val buffer_add_string : js -> js -> js
-  val buffer_add_buffer : js -> js -> js
-  val buffer_add_escape : js -> js -> js
-  val buffer_contents : js -> js
-  val buffer_clear : js -> js
-  val buffer_length : js -> js
-end
-
-module type JSMODULE = sig
-  val import : jsfun -> (js -> js) -> js
-  val export : js -> js
-end
-
-module Esm : JSMODULE = struct
-  let import { module_path; function_path } f ppf state =
-    let import = State.var "import" state in
+  let ( let$ ) (name, x) f ppf state =
+    let name = State.var name state in
     (stmt (fun ppf state ->
-         F.fprintf ppf "import {%a as %a} from %a" pp_string function_path
-           import state pp_string module_path)
-    |: f import)
+         F.fprintf ppf "let %a =@ @[<hv 2>%a@]" name state x state)
+    |: f name)
       ppf state
 
-  let export x = stmt (fun ppf -> F.fprintf ppf "export default %a" x)
-end
+  let ( let& ) = ( let$ )
 
-module Cjs : JSMODULE = struct
-  let import { module_path; function_path } f =
-    let$ import = ("import", global "require" @@ string module_path) in
-    f import.%(string function_path)
+  let set a b =
+    stmt (fun ppf state -> F.fprintf ppf "%a =@ @[<hv 2>%a@]" a state b state)
 
-  let export x = (global "module").!("exports") <- x
-end
+  let ( + ) a b ppf state = F.fprintf ppf "@[%a +@ %a@]" a state b state
+  let ( .%() ) a b ppf state = F.fprintf ppf "%a[%a]" a state b state
+  let ( .%()<- ) a i b = set a.%(i) b
+  let ( .!() ) a b ppf state = F.fprintf ppf "%a.%s" a state b
+  let ( .!()<- ) a i b = set a.!(i) b
+  let string x ppf _ = pp_string ppf x
+  let global x ppf _ = F.pp_print_string ppf x
+  let comment ppf str = F.fprintf ppf "/* %s */@," str
+  let to_string x = global "String" @@ x
 
-module MakeJavaScript (M : JSMODULE) (R : RUNTIME) :
-  Instruct.SEM with type 'a obs = js and type import = jsfun = struct
+  let obj l ppf state =
+    F.fprintf ppf "@[<hv 2>{@,%a@;<0 -2>}@]"
+      (F.pp_print_list ~pp_sep:Pp.comma (fun ppf (k, v) ->
+           F.fprintf ppf "@[<hv 2>%s:@ %a@]" k v state))
+      l
+
+  let lambda f ppf state =
+    let state = State.add_block state in
+    let arg = State.var "arg" state in
+    F.fprintf ppf "(%a) => {@ %a@;<1 -2>}" arg state (f arg) state
+
+  let return x =
+    stmt (fun ppf -> F.fprintf ppf "return (@,@[<hv 2>%a@]@;<0 -2>)" x)
+
+  let for_ expr stmts ppf state =
+    let state' = State.add_block state in
+    let i = State.var "i" state' in
+    F.fprintf ppf "@[<hv 2>for (let %a = 0; %a < %a; %a++) {@ %a@;<0 -2>}@]" i
+      state' i state' expr state i state' (stmts i) state'
+
+  let switch exp cases default ppf state =
+    F.fprintf ppf "@[<v 2>@[<hv 2>switch (%a)@] {@ " exp state;
+    let state = State.add_block state in
+    F.pp_print_list ~pp_sep:F.pp_print_cut
+      (fun ppf (exp, stmts) ->
+        F.fprintf ppf "@[<hv 2>case %a:@ %a@ break;@]" exp state stmts state)
+      ppf cases;
+    F.fprintf ppf "@ @[<hv 2>default:@ %a@]" default state;
+    F.fprintf ppf "@;<1 -2>}@]"
+
   let seq s ppf state =
     F.fprintf ppf "[@,%a%t]"
       (F.pp_print_seq ~pp_sep:Pp.comma (fun ppf x ->
@@ -233,175 +167,43 @@ module MakeJavaScript (M : JSMODULE) (R : RUNTIME) :
 
   let equal a b ppf state = F.fprintf ppf "%a ===@ %a" a state b state
   let typeof expr ppf state = F.fprintf ppf "typeof %a" expr state
+end
 
-  include M
-  include R
+open Javascript
 
-  type 'a exp = js
+module type JSMODULE = sig
+  val import : import -> (js -> js) -> js
+  val export : js -> js
+end
 
-  let return = return
-  let stmt = stmt
-  let ( let$ ) = ( let$ )
+module Esm : JSMODULE = struct
+  let import { module_path; function_path } f ppf state =
+    let import = State.var "import" state in
+    (stmt (fun ppf state ->
+         F.fprintf ppf "import {%a as %a} from %a" pp_string function_path
+           import state pp_string module_path)
+    |: f import)
+      ppf state
 
-  type 'a stmt = js
-  type 'a obs = js
+  let export x = stmt (fun ppf -> F.fprintf ppf "export default %a" x)
+end
 
-  let observe = Fun.id
-  let ( |: ) = ( |: )
+module Cjs : JSMODULE = struct
+  let import { module_path; function_path } f =
+    let$ import = ("import", global "require" @@ string module_path) in
+    f import.%(string function_path)
 
-  type 'a mut = js
-
-  let ( let& ) = ( let$ )
-  let deref = Fun.id
-
-  let ( := ) a b =
-    stmt (fun ppf state -> F.fprintf ppf "%a =@ @[<hv 2>%a@]" a state b state)
-
-  let incr a = stmt (fun ppf -> F.fprintf ppf "%a++" a)
-  let lambda = lambda
-  let ( @@ ) = ( @@ )
-
-  let if_ b ~then_ ppf state =
-    let state' = State.add_block state in
-    F.fprintf ppf "@[<hv 2>@[<hv 2>if (@,%a@;<0 -2>)@] {@ %a@;<1 -2>}@]" b state
-      (then_ ()) state'
-
-  let if_else b ~then_ ~else_ ppf state =
-    let state' = State.add_block state in
-    F.fprintf ppf "@[<hv 2>@[<hv 2>if (@,%a@;<0 -2>)@] {@ %a" b state (then_ ())
-      state';
-    let state' = State.add_block state in
-    F.fprintf ppf "@;<1 -2>} else {@ %a@;<1 -2>}@]" (else_ ()) state'
-
-  let while_ cond mut stmts ppf state =
-    F.fprintf ppf "@[<hv 2>while (%a) " (cond mut) state;
-    let state = State.add_block state in
-    F.fprintf ppf "{@ %a@;<1 -2>}@]" (stmts ()) state
-
-  let unit _ _ = ()
-  let not x ppf state = F.fprintf ppf "@[<hv 2>!(%a)@]" x state
-  let int x ppf _ = F.pp_print_int ppf x
-  let float x ppf _ = F.pp_print_float ppf x
-  let string = string
-  let bool x ppf _ = F.pp_print_bool ppf x
-  let equal_int = equal
-  let equal_string = equal
-  let string_of_int x = global "String" @@ x
-  let float_of_int = Fun.id
-  let string_of_float = string_of_int
-  let string_of_bool x = tern x (string "true") (string "false")
-
-  type 'a promise
-
-  let promise x = (global "Promise").!("resolve") @@ x
-  let bind p f = p.!("then") @@ f
-  let error s = (global "Promise").!("reject") @@ new_ "Error" [ s ]
-
-  type external_data
-  type import = jsfun
-
-  let array a = seq (Array.to_seq a)
-
-  let array_init i x =
-    apply_n
-      (global "Array").!("from")
-      [ obj [ ("length", i) ]; lambda (fun _ -> return x) ]
-
-  let ( .%() ) = ( .%() )
-  let ( .%()<- ) = ( .%()<- )
-
-  type 'a hashtbl
-
-  let pair (a, b) = seq Seq.(fun () -> Cons (a, fun () -> Cons (b, empty)))
-  let hashtbl s = new_ "Map" [ seq (Seq.map pair s) ]
-  let hashtbl_create () = new_ "Map" [ unit ]
-  let ( .%{} ) x k = x.!("get") @@ k
-  let ( .%{}<- ) x k v = stmt (apply_n x.!("set") [ k; v ])
-  let hashtbl_mem x k = x.!("has") @@ k
-  let hashtbl_copy x = new_ "Map" [ x ]
-  let hashtbl_iter x f = for_of x (fun entry -> f entry.%(int 0) entry.%(int 1))
-
-  type data
-
-  module Data = struct
-    type t = data exp
-
-    let int = Fun.id
-    let float = Fun.id
-    let string = Fun.id
-    let array = Fun.id
-    let hashtbl = Fun.id
-    let unknown = Fun.id
-    let to_int = Fun.id
-    let to_float = Fun.id
-    let to_string = Fun.id
-    let to_array = Fun.id
-    let to_hashtbl = Fun.id
-    let equal = equal
-  end
-
-  module External = struct
-    module Linear = struct
-      type 'a t = js
-
-      let length a = a.!("length")
-      let iteri a f = for_ (length a) (fun i -> f i a.%(i))
-    end
-
-    module Assoc = struct
-      type 'a t = js
-
-      let find x k = x.%(k)
-      let mem x k = apply_n (global "Object").!("hasOwn") [ x; k ]
-
-      let iter x f =
-        for_of ((global "Object").!("keys") @@ x) (fun key -> f key x.%(key))
-    end
-
-    type t = external_data exp
-
-    let null = global "null"
-    let some = Fun.id
-    let of_bool x = tern x (bool true) (bool false)
-    let of_int = Fun.id
-    let of_float = Fun.id
-    let of_string = Fun.id
-    let of_array = Fun.id
-    let of_hashtbl x = (global "Object").!("fromEntries") @@ x
-    let of_untyped = Fun.id
-
-    type _ classify =
-      | Int : int classify
-      | String : string classify
-      | Float : float classify
-      | Bool : bool classify
-      | Linear : external_data Linear.t classify
-      | Assoc : external_data Assoc.t classify
-
-    let is_null x = or_ (equal x null) (equal x (global "undefined"))
-
-    let classify (type a) (c : a classify) x ~ok ~error =
-      let cond =
-        match c with
-        | Int -> (global "Number").!("isInteger") @@ x
-        | String -> equal (typeof x) (string "string")
-        | Float -> equal (typeof x) (string "number")
-        | Bool -> equal (typeof x) (string "boolean")
-        | Linear -> (global "Array").!("isArray") @@ x
-        | Assoc ->
-            and_ (equal (typeof x) (string "object")) (not (equal x null))
-      in
-      if_else cond ~then_:(fun () -> ok x) ~else_:error
-
-    let show x = global "String" @@ x
-  end
+  let export x = (global "module").!("exports") <- x
 end
 
 module RemoveIdsAndUnits (F : Instruct.SEM) :
   Instruct.SEM with type 'a obs = 'a F.obs and type import = F.import = struct
   module Trans = struct
     type 'a from_exp = 'a F.exp
+
     type 'a exp = { from : 'a from_exp; identity : bool }
+    (** The identity property should track which functions are implemented as
+        [Fun.id] in the main runtime below. *)
 
     let fwde x = { from = x; identity = false }
     let bwde x = x.from
@@ -482,25 +284,204 @@ module RemoveIdsAndUnits (F : Instruct.SEM) :
   end
 end
 
+let buffer_add_string =
+  lambda (fun b ->
+      return (lambda (fun s -> set b.!("contents") (b.!("contents") + s))))
+
+let buffer_add_buffer =
+  lambda (fun b ->
+      return
+        (lambda (fun s ->
+             set b.!("contents") (b.!("contents") + s.!("contents")))))
+
+let buffer_add_escape =
+  lambda (fun b ->
+      return
+        (lambda (fun s ->
+             let buffer_add s = set b.!("contents") (b.!("contents") + s) in
+             for_ s.!("length") (fun i ->
+                 let$ c = ("c", s.%(i)) in
+                 switch c
+                   [
+                     (string "&", buffer_add (string "&amp;"));
+                     (string "\"", buffer_add (string "&quot;"));
+                     (string "'", buffer_add (string "&apos;"));
+                     (string ">", buffer_add (string "&gt;"));
+                     (string "<", buffer_add (string "&lt;"));
+                     (string "/", buffer_add (string "&#x2F;"));
+                     (string "`", buffer_add (string "&#x60;"));
+                     (string "=", buffer_add (string "&#x3D;"));
+                   ]
+                   (buffer_add c)))))
+
 let pp (module Jsmod : JSMODULE) ppf c =
   let state = State.make () in
   let instructions =
     let$ buffer_add_string = ("buffer_add_string", buffer_add_string) in
     let$ buffer_add_buffer = ("buffer_add_buffer", buffer_add_buffer) in
     let$ buffer_add_escape = ("buffer_add_escape", buffer_add_escape) in
-    let module Runtime = struct
+    let module Runtime :
+      Instruct.SEM with type 'a obs = js and type import = import = struct
+      include Jsmod
+      include Javascript
+
+      type 'a obs = 'a stmt
+
+      let observe = Fun.id
+      let deref = Fun.id
+
+      let ( := ) a b =
+        stmt (fun ppf state ->
+            F.fprintf ppf "%a =@ @[<hv 2>%a@]" a state b state)
+
+      let incr a = stmt (fun ppf -> F.fprintf ppf "%a++" a)
+
+      let if_ b ~then_ ppf state =
+        let state' = State.add_block state in
+        F.fprintf ppf "@[<hv 2>@[<hv 2>if (@,%a@;<0 -2>)@] {@ %a@;<1 -2>}@]" b
+          state (then_ ()) state'
+
+      let if_else b ~then_ ~else_ ppf state =
+        let state' = State.add_block state in
+        F.fprintf ppf "@[<hv 2>@[<hv 2>if (@,%a@;<0 -2>)@] {@ %a" b state
+          (then_ ()) state';
+        let state' = State.add_block state in
+        F.fprintf ppf "@;<1 -2>} else {@ %a@;<1 -2>}@]" (else_ ()) state'
+
+      let while_ cond mut stmts ppf state =
+        F.fprintf ppf "@[<hv 2>while (%a) " (cond mut) state;
+        let state = State.add_block state in
+        F.fprintf ppf "{@ %a@;<1 -2>}@]" (stmts ()) state
+
+      let unit _ _ = ()
+      let not x ppf state = F.fprintf ppf "@[<hv 2>!(%a)@]" x state
+      let int x ppf _ = F.pp_print_int ppf x
+      let float x ppf _ = F.pp_print_float ppf x
+      let bool x ppf _ = F.pp_print_bool ppf x
+      let equal_int = equal
+      let equal_string = equal
+      let string_of_int = to_string
+      let float_of_int = Fun.id
+      let string_of_float = to_string
+      let string_of_bool x = tern x (string "true") (string "false")
+
+      type 'a promise
+
+      let promise x = (global "Promise").!("resolve") @@ x
+      let bind p f = p.!("then") @@ f
+      let error s = (global "Promise").!("reject") @@ new_ "Error" [ s ]
+
+      type external_data
+      type nonrec import = import
+
+      let array a = seq (Array.to_seq a)
+
+      let array_make i x =
+        apply_n
+          (global "Array").!("from")
+          [ obj [ ("length", i) ]; lambda (fun _ -> return x) ]
+
+      type 'a hashtbl
+
+      let pair (a, b) = seq Seq.(fun () -> Cons (a, fun () -> Cons (b, empty)))
+      let hashtbl s = new_ "Map" [ seq (Seq.map pair s) ]
+      let hashtbl_create () = new_ "Map" [ unit ]
+      let ( .%{} ) x k = x.!("get") @@ k
+      let ( .%{}<- ) x k v = stmt (apply_n x.!("set") [ k; v ])
+      let hashtbl_mem x k = x.!("has") @@ k
+      let hashtbl_copy x = new_ "Map" [ x ]
+
+      let hashtbl_iter x f =
+        for_of x (fun entry -> f entry.%(int 0) entry.%(int 1))
+
       type buffer
 
-      let buffer_create = buffer_create
+      let buffer_create () = obj [ ("contents", string "") ]
       let buffer_add_escape b s = stmt ((buffer_add_escape @@ b) @@ s)
       let buffer_add_string b s = stmt ((buffer_add_string @@ b) @@ s)
       let buffer_add_buffer b s = stmt ((buffer_add_buffer @@ b) @@ s)
-      let buffer_contents = buffer_contents
-      let buffer_clear = buffer_clear
-      let buffer_length = buffer_length
+      let buffer_contents b = b.!("contents")
+      let buffer_clear b = set b.!("contents") (string "")
+      let buffer_length b = b.!("contents").!("length")
+
+      type data
+
+      module Data = struct
+        type t = data exp
+
+        let int = Fun.id
+        let float = Fun.id
+        let string = Fun.id
+        let array = Fun.id
+        let hashtbl = Fun.id
+        let unknown = Fun.id
+        let to_int = Fun.id
+        let to_float = Fun.id
+        let to_string = Fun.id
+        let to_array = Fun.id
+        let to_hashtbl = Fun.id
+        let equal = equal
+      end
+
+      module External = struct
+        module Linear = struct
+          type 'a t = js
+
+          let length a = a.!("length")
+          let iteri a f = for_ (length a) (fun i -> f i a.%(i))
+        end
+
+        module Assoc = struct
+          type 'a t = js
+
+          let find x k = x.%(k)
+          let mem x k = apply_n (global "Object").!("hasOwn") [ x; k ]
+
+          let iter x f =
+            for_of
+              ((global "Object").!("keys") @@ x)
+              (fun key -> f key x.%(key))
+        end
+
+        type t = external_data exp
+
+        let null = global "null"
+        let some = Fun.id
+        let of_bool x = tern x (bool true) (bool false)
+        let of_int = Fun.id
+        let of_float = Fun.id
+        let of_string = Fun.id
+        let of_array = Fun.id
+        let of_hashtbl x = (global "Object").!("fromEntries") @@ x
+        let of_untyped = Fun.id
+
+        type _ classify =
+          | Int : int classify
+          | String : string classify
+          | Float : float classify
+          | Bool : bool classify
+          | Linear : external_data Linear.t classify
+          | Assoc : external_data Assoc.t classify
+
+        let is_null x = or_ (equal x null) (equal x (global "undefined"))
+
+        let classify (type a) (c : a classify) x ~ok ~error =
+          let cond =
+            match c with
+            | Int -> (global "Number").!("isInteger") @@ x
+            | String -> equal (typeof x) (string "string")
+            | Float -> equal (typeof x) (string "number")
+            | Bool -> equal (typeof x) (string "boolean")
+            | Linear -> (global "Array").!("isArray") @@ x
+            | Assoc ->
+                and_ (equal (typeof x) (string "object")) (not (equal x null))
+          in
+          if_else cond ~then_:(fun () -> ok x) ~else_:error
+
+        let show = to_string
+      end
     end in
-    let module I =
-      Instruct.Make (RemoveIdsAndUnits (MakeJavaScript (Jsmod) (Runtime))) in
+    let module I = Instruct.Make (RemoveIdsAndUnits (Runtime)) in
     I.eval c
   in
   F.fprintf ppf "@[<v>";

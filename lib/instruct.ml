@@ -119,7 +119,7 @@ module type SEM = sig
   (** {1 Arrays.} *)
 
   val array : 'a exp array -> 'a array exp
-  val array_init : int exp -> 'a exp -> 'a array exp
+  val array_make : int exp -> 'a exp -> 'a array exp
   val ( .%() ) : 'a array exp -> int exp -> 'a exp
   val ( .%()<- ) : 'a array exp -> int exp -> 'a exp -> unit stmt
 
@@ -743,7 +743,7 @@ end = struct
             if_else
               (equal_int (External.Linear.length l) length)
               ~then_:(fun () ->
-                let$ decoded = ("decoded", array_init length nil_value) in
+                let$ decoded = ("decoded", array_make length nil_value) in
                 External.Linear.iteri l (fun i input ->
                     let$ stack =
                       ("stack", stack_add debug.stack (string_of_int i))
@@ -906,7 +906,7 @@ end = struct
         in
         s
         |:
-        let$ encoded = ("encoded", array_init (deref index) External.null) in
+        let$ encoded = ("encoded", array_make (deref index) External.null) in
         let s = cell := props in
         let s = s |: (index := int 0) in
         let s =
@@ -925,7 +925,7 @@ end = struct
     | T.Tuple tys ->
         let$ props = ("props", Data.to_array props) in
         let$ encoded =
-          ("encoded", array_init (int (List.length tys)) External.null)
+          ("encoded", array_make (int (List.length tys)) External.null)
         in
         let s =
           List.to_seq tys
@@ -1218,7 +1218,7 @@ module MakeTrans
   let import i f = fwds (F.import i (fun fi -> bwds (f (fwde fi))))
   let export x = fwds (F.export (bwde x))
   let array x = fwde (F.array (Array.map bwde x))
-  let array_init i x = fwde (F.array_init (bwde i) (bwde x))
+  let array_make i x = fwde (F.array_make (bwde i) (bwde x))
   let ( .%() ) a i = fwde F.((bwde a).%(bwde i))
   let ( .%()<- ) a i x = fwds F.((bwde a).%(bwde i) <- bwde x)
   let hashtbl x = fwde (F.hashtbl (Seq.map (fun (a, b) -> (bwde a, bwde b)) x))
@@ -1393,7 +1393,7 @@ let pp (type a) pp_import ppf c =
         (F.pp_print_seq ~pp_sep:Pp.comma ( |> ))
         (Array.to_seq a)
 
-    let array_init = F.dprintf "(@[array_init@ %t@ %t@])"
+    let array_make = F.dprintf "(@[array_make@ %t@ %t@])"
     let bindop_get = F.dprintf "(@[%t@,.%%%c@[@,%t@,@]%c@])"
     let bindop_set = F.dprintf "(@[%t@,.%%%c@[@,%t@,@]%c@ <-@ %t@])"
     let ( .%() ) a i = bindop_get a '(' i ')'

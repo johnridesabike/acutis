@@ -123,7 +123,7 @@ module Make (M : MONAD) (D : DECODABLE) :
 
     let observe = Fun.id
     let array = Fun.id
-    let array_init = Array.make
+    let array_make = Array.make
     let ( .%() ) = Array.get
     let ( .%()<- ) = Array.set
 
