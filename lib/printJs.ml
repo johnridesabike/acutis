@@ -137,10 +137,6 @@ module Javascript = struct
            F.fprintf ppf "@[<hv 2>%a@]" x state))
       s trailing_comma
 
-  let tern cond i e ppf state =
-    F.fprintf ppf "%a@ ? @[<hv 2>%a@]@ : @[<hv 2>%a@]" cond state i state e
-      state
-
   let apply_n f args ppf state =
     F.fprintf ppf "@[<hv 2>%a(@,%a@;<0 -2>)@]" f state
       (F.pp_print_list ~pp_sep:Pp.comma (fun ppf x ->
@@ -161,9 +157,6 @@ module Javascript = struct
 
   let and_ a b ppf state =
     F.fprintf ppf "@[<hv>%a &&@]@ @[<hv>%a@]" a state b state
-
-  let or_ a b ppf state =
-    F.fprintf ppf "@[<hv>%a ||@]@ @[<hv>%a@]" a state b state
 
   let equal a b ppf state = F.fprintf ppf "%a ===@ %a" a state b state
   let typeof expr ppf state = F.fprintf ppf "typeof %a" expr state
@@ -279,6 +272,7 @@ module RemoveIdsAndUnits (F : Instruct.SEM) :
     let of_int x = { x with from = F.External.of_int x.from }
     let of_float x = { x with from = F.External.of_float x.from }
     let of_string x = { x with from = F.External.of_string x.from }
+    let of_bool x = { x with from = F.External.of_bool x.from }
     let of_array x = { x with from = F.External.of_array x.from }
     let of_untyped x = { x with from = F.External.of_untyped x.from }
   end
@@ -363,7 +357,7 @@ let pp (module Jsmod : JSMODULE) ppf c =
       let string_of_int = to_string
       let float_of_int = Fun.id
       let string_of_float = to_string
-      let string_of_bool x = tern x (string "true") (string "false")
+      let string_of_bool = to_string
       let array a = seq (Array.to_seq a)
 
       let array_make i x =
@@ -402,10 +396,9 @@ let pp (module Jsmod : JSMODULE) ppf c =
 
       type external_data
       type nonrec import = import
-      type data
 
       module Data = struct
-        type t = data exp
+        type t
 
         let int = Fun.id
         let float = Fun.id
@@ -441,14 +434,14 @@ let pp (module Jsmod : JSMODULE) ppf c =
               (fun key -> f key x.%(key))
         end
 
-        type t = external_data exp
+        type t = external_data
 
         let null = global "null"
         let some = Fun.id
-        let of_bool x = tern x (bool true) (bool false)
         let of_int = Fun.id
         let of_float = Fun.id
         let of_string = Fun.id
+        let of_bool = Fun.id
         let of_array = Fun.id
         let of_hashtbl x = (global "Object").!("fromEntries") @@ x
         let of_untyped = Fun.id
@@ -458,10 +451,9 @@ let pp (module Jsmod : JSMODULE) ppf c =
           | String : string classify
           | Float : float classify
           | Bool : bool classify
-          | Linear : external_data Linear.t classify
-          | Assoc : external_data Assoc.t classify
-
-        let is_null x = or_ (equal x null) (equal x (global "undefined"))
+          | Not_null : t classify
+          | Linear : t Linear.t classify
+          | Assoc : t Assoc.t classify
 
         let classify (type a) (c : a classify) x ~ok ~error =
           let cond =
@@ -470,6 +462,8 @@ let pp (module Jsmod : JSMODULE) ppf c =
             | String -> equal (typeof x) (string "string")
             | Float -> equal (typeof x) (string "number")
             | Bool -> equal (typeof x) (string "boolean")
+            | Not_null ->
+                and_ (not (equal x null)) (not (equal x (global "undefined")))
             | Linear -> (global "Array").!("isArray") @@ x
             | Assoc ->
                 and_ (equal (typeof x) (string "object")) (not (equal x null))

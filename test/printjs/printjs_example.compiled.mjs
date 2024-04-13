@@ -166,9 +166,7 @@ The data supplied does not match this template's interface.\n\
                   let input$2 = input$1["name"];
                   let stack$4 = ["name", stack$3];
                   let type$4 = "?string";
-                  if (input$2 === null || input$2 === undefined) {
-                    decoded$2.set("name", 0);
-                  } else {
+                  if (!(input$2 === null) && !(input$2 === undefined)) {
                     let decoded$3 = [0];
                     let stack$5 = ["<nullable>", stack$4];
                     let type$5 = "string";
@@ -178,6 +176,8 @@ The data supplied does not match this template's interface.\n\
                       decode_error$0(stack$5)(type$5)(input$2);
                     }
                     decoded$2.set("name", decoded$3);
+                  } else {
+                    decoded$2.set("name", 0);
                   }
                 } else {
                   decoded$2.set("name", 0);
@@ -220,9 +220,7 @@ The data supplied does not match this template's interface.\n\
               let input$1 = input$0[i$0]["image"];
               let stack$3 = ["image", stack$2];
               let type$3 = "?{alt: string, src: string}";
-              if (input$1 === null || input$1 === undefined) {
-                decoded$1.set("image", 0);
-              } else {
+              if (!(input$1 === null) && !(input$1 === undefined)) {
                 let decoded$2 = [0];
                 let stack$4 = ["<nullable>", stack$3];
                 let type$4 = "{alt: string, src: string}";
@@ -261,6 +259,8 @@ The data supplied does not match this template's interface.\n\
                   decode_error$0(stack$4)(type$4)(input$1);
                 }
                 decoded$1.set("image", decoded$2);
+              } else {
+                decoded$1.set("image", 0);
               }
             } else {
               decoded$1.set("image", 0);

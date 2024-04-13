@@ -105,7 +105,7 @@ module Make (M : MONAD) (D : DECODABLE) :
     let string_of_int = string_of_int
     let float_of_int = float_of_int
     let string_of_float = string_of_float
-    let string_of_bool = function 0 -> "false" | _ -> "true"
+    let string_of_bool = string_of_bool
 
     type 'a obs = 'a
 
@@ -163,16 +163,14 @@ module Make (M : MONAD) (D : DECODABLE) :
     let import = ( |> )
     let export = Fun.id
 
-    type data =
-      | Int of int
-      | Float of float
-      | String of string
-      | Array of data array
-      | Hashtbl of data hashtbl
-      | Unknown of external_data
-
     module Data = struct
-      type t = data exp
+      type t =
+        | Int of int
+        | Float of float
+        | String of string
+        | Array of t array
+        | Hashtbl of t hashtbl
+        | Unknown of external_data
 
       let int x = Int x
       let float x = Float x
@@ -236,35 +234,36 @@ module Make (M : MONAD) (D : DECODABLE) :
         let iter f x = D.Assoc.iter x f
       end
 
-      type t = external_data exp
+      type t = external_data
 
       let null = D.null
       let some = D.some
       let of_int = D.of_int
-      let of_bool = function 0 -> D.of_bool false | _ -> D.of_bool true
       let of_string = D.of_string
       let of_float = D.of_float
+      let of_bool = D.of_bool
       let of_array x = D.of_seq (Array.to_seq x)
       let of_hashtbl x = D.of_assoc (Tbl.to_seq x)
 
       let rec of_untyped = function
-        | Unknown x -> x
-        | Int x -> of_int x
-        | Float x -> of_float x
-        | String x -> of_string x
-        | Array x -> D.of_seq @@ Seq.map of_untyped @@ Array.to_seq x
-        | Hashtbl x ->
-            D.of_assoc
-            @@ Seq.map (fun (k, v) -> (k, of_untyped v))
-            @@ Tbl.to_seq x
+        | Data.Unknown x -> x
+        | Data.Int x -> of_int x
+        | Data.Float x -> of_float x
+        | Data.String x -> of_string x
+        | Data.Array x -> Array.to_seq x |> Seq.map of_untyped |> D.of_seq
+        | Data.Hashtbl x ->
+            Tbl.to_seq x
+            |> Seq.map (fun (k, v) -> (k, of_untyped v))
+            |> D.of_assoc
 
       type _ classify =
         | Int : int classify
         | String : string classify
         | Float : float classify
         | Bool : bool classify
-        | Linear : external_data Linear.t classify
-        | Assoc : external_data Assoc.t classify
+        | Not_null : t classify
+        | Linear : t Linear.t classify
+        | Assoc : t Assoc.t classify
 
       let classify (type a) (c : a classify) t ~(ok : a exp -> 'b stmt) ~error =
         match (c, D.classify t) with
@@ -274,9 +273,9 @@ module Make (M : MONAD) (D : DECODABLE) :
         | Bool, `Bool x -> ok x
         | Linear, `Linear x -> ok x
         | Assoc, `Assoc x -> ok x
-        | _ -> error ()
-
-      let is_null x = match D.classify x with `Null -> true | _ -> false
+        | (Int | String | Float | Bool | Linear | Assoc), _ | Not_null, `Null ->
+            error ()
+        | Not_null, _ -> ok t
 
       let show =
         let b = Buffer.create 64 in

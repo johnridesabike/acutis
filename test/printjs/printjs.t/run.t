@@ -129,7 +129,7 @@
             encoded$3[index$2] = null;
           } else {
             let props$5 = props$4[0];
-            encoded$3[index$2] = props$5 ? true : false;
+            encoded$3[index$2] = !(props$5 === 0);
           }
         }
         index$2++;
@@ -158,14 +158,14 @@
       let tag$0 = props$7.get("tag");
       if (tag$0 === 0) {
         let encoded$6 = new Map();
-        encoded$6.set("tag", tag$0 ? true : false);
+        encoded$6.set("tag", !(tag$0 === 0));
         let props$8 = props$7.get("a");
         encoded$6.set("a", props$8);
         encoded$0.set("tagged_record_bool", Object.fromEntries(encoded$6));
       } else {
         if (tag$0 === 1) {
           let encoded$6 = new Map();
-          encoded$6.set("tag", tag$0 ? true : false);
+          encoded$6.set("tag", !(tag$0 === 0));
           let props$8 = props$7.get("b");
           encoded$6.set("b", props$8);
           encoded$0.set("tagged_record_bool", Object.fromEntries(encoded$6));
@@ -189,7 +189,7 @@
           let props$11 = props$9[1];
           encoded$7[1] = props$11;
           let props$12 = props$9[2];
-          encoded$7[2] = props$12 ? true : false;
+          encoded$7[2] = !(props$12 === 0);
           encoded$6.set("tuple", encoded$7);
           encoded$0.set("tagged_record_int", Object.fromEntries(encoded$6));
         }
@@ -570,15 +570,11 @@
             let decode_dst_new$0 = [0, 0];
             let stack$2 = [String(i$0), stack$1];
             let type$2 = "??false | true";
-            if (input$0[i$0] === null || input$0[i$0] === undefined) {
-              decode_dst_new$0[0] = 0;
-            } else {
+            if (!(input$0[i$0] === null) && !(input$0[i$0] === undefined)) {
               let decoded$1 = [0];
               let stack$3 = ["<nullable>", stack$2];
               let type$3 = "?false | true";
-              if (input$0[i$0] === null || input$0[i$0] === undefined) {
-                decoded$1[0] = 0;
-              } else {
+              if (!(input$0[i$0] === null) && !(input$0[i$0] === undefined)) {
                 let decoded$2 = [0];
                 let stack$4 = ["<nullable>", stack$3];
                 let type$4 = "false | true";
@@ -592,8 +588,12 @@
                   decode_error$0(stack$4)(type$4)(input$0[i$0]);
                 }
                 decoded$1[0] = decoded$2;
+              } else {
+                decoded$1[0] = 0;
               }
               decode_dst_new$0[0] = decoded$1;
+            } else {
+              decode_dst_new$0[0] = 0;
             }
             decode_dst$0[1] = decode_dst_new$0;
             decode_dst$0 = decode_dst_new$0;
@@ -609,9 +609,7 @@
         let input$0 = arg$0["null_bool"];
         let stack$1 = ["null_bool", stack$0];
         let type$1 = "?false | true";
-        if (input$0 === null || input$0 === undefined) {
-          props$0.set("null_bool", 0);
-        } else {
+        if (!(input$0 === null) && !(input$0 === undefined)) {
           let decoded$0 = [0];
           let stack$2 = ["<nullable>", stack$1];
           let type$2 = "false | true";
@@ -621,6 +619,8 @@
             decode_error$0(stack$2)(type$2)(input$0);
           }
           props$0.set("null_bool", decoded$0);
+        } else {
+          props$0.set("null_bool", 0);
         }
       } else {
         props$0.set("null_bool", 0);
@@ -629,9 +629,7 @@
         let input$0 = arg$0["null_float"];
         let stack$1 = ["null_float", stack$0];
         let type$1 = "?float";
-        if (input$0 === null || input$0 === undefined) {
-          props$0.set("null_float", 0);
-        } else {
+        if (!(input$0 === null) && !(input$0 === undefined)) {
           let decoded$0 = [0];
           let stack$2 = ["<nullable>", stack$1];
           let type$2 = "float";
@@ -645,6 +643,8 @@
             }
           }
           props$0.set("null_float", decoded$0);
+        } else {
+          props$0.set("null_float", 0);
         }
       } else {
         props$0.set("null_float", 0);
@@ -653,9 +653,7 @@
         let input$0 = arg$0["null_int"];
         let stack$1 = ["null_int", stack$0];
         let type$1 = "?int";
-        if (input$0 === null || input$0 === undefined) {
-          props$0.set("null_int", 0);
-        } else {
+        if (!(input$0 === null) && !(input$0 === undefined)) {
           let decoded$0 = [0];
           let stack$2 = ["<nullable>", stack$1];
           let type$2 = "int";
@@ -665,6 +663,8 @@
             decode_error$0(stack$2)(type$2)(input$0);
           }
           props$0.set("null_int", decoded$0);
+        } else {
+          props$0.set("null_int", 0);
         }
       } else {
         props$0.set("null_int", 0);
@@ -673,9 +673,7 @@
         let input$0 = arg$0["null_string"];
         let stack$1 = ["null_string", stack$0];
         let type$1 = "?string";
-        if (input$0 === null || input$0 === undefined) {
-          props$0.set("null_string", 0);
-        } else {
+        if (!(input$0 === null) && !(input$0 === undefined)) {
           let decoded$0 = [0];
           let stack$2 = ["<nullable>", stack$1];
           let type$2 = "string";
@@ -685,6 +683,8 @@
             decode_error$0(stack$2)(type$2)(input$0);
           }
           props$0.set("null_string", decoded$0);
+        } else {
+          props$0.set("null_string", 0);
         }
       } else {
         props$0.set("null_string", 0);
@@ -698,9 +698,7 @@
           for (let x$0 of Object.keys(input$0)) {
             let stack$2 = [x$0, stack$1];
             let type$2 = "?string";
-            if (input$0[x$0] === null || input$0[x$0] === undefined) {
-              decoded$0.set(x$0, 0);
-            } else {
+            if (!(input$0[x$0] === null) && !(input$0[x$0] === undefined)) {
               let decoded$1 = [0];
               let stack$3 = ["<nullable>", stack$2];
               let type$3 = "string";
@@ -710,6 +708,8 @@
                 decode_error$0(stack$3)(type$3)(input$0[x$0]);
               }
               decoded$0.set(x$0, decoded$1);
+            } else {
+              decoded$0.set(x$0, 0);
             }
             props$0.set("null_string_dict", decoded$0);
           }
@@ -1173,9 +1173,9 @@
       buffer_add_string$0(buf_sync$0)("\n%f    ");
       buffer_add_escape$0(buf_sync$0)(String(props$0.get("big_float")));
       buffer_add_string$0(buf_sync$0)("\n%b    ");
-      buffer_add_escape$0(buf_sync$0)(props$0.get("bool1") ? "true" : "false");
+      buffer_add_escape$0(buf_sync$0)(String(!(props$0.get("bool1") === 0)));
       buffer_add_string$0(buf_sync$0)("\n%b    ");
-      buffer_add_escape$0(buf_sync$0)(props$0.get("bool2") ? "true" : "false");
+      buffer_add_escape$0(buf_sync$0)(String(!(props$0.get("bool2") === 0)));
       buffer_add_string$0(buf_sync$0)("\n\nEscaping\n--------\n\nEscaped     ");
       buffer_add_escape$0(buf_sync$0)(props$0.get("dangerous"));
       buffer_add_string$0(buf_sync$0)("\nNot escaped ");
@@ -1193,7 +1193,7 @@
         } else {
           let nullable$2 = props$0.get("null_bool");
           if (!(nullable$2 === 0)) {
-            buffer_add_escape$0(buf_sync$0)(nullable$2[0] ? "true" : "false");
+            buffer_add_escape$0(buf_sync$0)(String(!(nullable$2[0] === 0)));
           } else {
             let nullable$3 = props$0.get("null_string");
             if (!(nullable$3 === 0)) {
@@ -1283,7 +1283,7 @@
         buffer_add_string$0(buf_sync$0)(" ");
         buffer_add_escape$0(buf_sync$0)(props$4.get("b"));
         buffer_add_string$0(buf_sync$0)(" ");
-        buffer_add_escape$0(buf_sync$0)(props$4.get("c") ? "true" : "false");
+        buffer_add_escape$0(buf_sync$0)(String(!(props$4.get("c") === 0)));
         buffer_add_string$0(buf_sync$0)("\n");
       }
       let arg_match$4 = [props$0.get("tagged_record_open")];
@@ -1421,9 +1421,7 @@
             );
           } else {
             buffer_add_string$0(buf_sync$0)("Level 3 ");
-            buffer_add_escape$0(buf_sync$0)(
-              props$6.get("b") ? "true" : "false"
-            );
+            buffer_add_escape$0(buf_sync$0)(String(!(props$6.get("b") === 0)));
             buffer_add_string$0(buf_sync$0)("\n");
           }
         }

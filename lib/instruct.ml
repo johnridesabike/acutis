@@ -92,7 +92,7 @@ module type SEM = sig
   val string_of_int : int exp -> string exp
   val float_of_int : int exp -> float exp
   val string_of_float : float exp -> string exp
-  val string_of_bool : int exp -> string exp
+  val string_of_bool : bool exp -> string exp
 
   (** {1 Arrays.} *)
 
@@ -154,43 +154,37 @@ module type SEM = sig
 
   val export : 'a exp -> 'a stmt
 
-  (** {1 Runtime data.} *)
-
-  type data
-  (** Runtime data. Either a string, an integer, a float, an array, or a hash
-      table. *)
-
   module Data : sig
-    type t = data exp
+    (** {Runtime data.} *)
 
-    val int : int exp -> t
-    val float : float exp -> t
-    val string : string exp -> t
-    val array : data array exp -> t
-    val hashtbl : data hashtbl exp -> t
-    val unknown : external_data exp -> t
-    val to_int : t -> int exp
-    val to_float : t -> float exp
-    val to_string : t -> string exp
-    val to_array : t -> data array exp
-    val to_hashtbl : t -> data hashtbl exp
-    val equal : t -> t -> bool exp
+    type t
+    (** Runtime data. Either a string, an integer, a float, an array, or a hash
+        table. *)
+
+    val int : int exp -> t exp
+    val float : float exp -> t exp
+    val string : string exp -> t exp
+    val array : t array exp -> t exp
+    val hashtbl : t hashtbl exp -> t exp
+    val unknown : external_data exp -> t exp
+    val to_int : t exp -> int exp
+    val to_float : t exp -> float exp
+    val to_string : t exp -> string exp
+    val to_array : t exp -> t array exp
+    val to_hashtbl : t exp -> t hashtbl exp
+    val equal : t exp -> t exp -> bool exp
   end
 
   module External : sig
-    (** The foreign data before it's parsed into [Data.t]. *)
+    (** Foreign data before it's parsed into [Data.t]. *)
 
     module Linear : sig
       (** Some kind of one-dimensional data container, e.g. an array. *)
 
       type 'a t
 
-      val length : external_data t exp -> int exp
-
-      val iteri :
-        external_data t exp ->
-        (int exp -> external_data exp -> unit stmt) ->
-        unit stmt
+      val length : 'a t exp -> int exp
+      val iteri : 'a t exp -> (int exp -> 'a exp -> unit stmt) -> unit stmt
     end
 
     module Assoc : sig
@@ -198,44 +192,40 @@ module type SEM = sig
 
       type 'a t
 
-      val find : external_data t exp -> string exp -> external_data exp
-      val mem : external_data t exp -> string exp -> bool exp
-
-      val iter :
-        external_data t exp ->
-        (string exp -> external_data exp -> unit stmt) ->
-        unit stmt
+      val find : 'a t exp -> string exp -> 'a exp
+      val mem : 'a t exp -> string exp -> bool exp
+      val iter : 'a t exp -> (string exp -> 'a exp -> unit stmt) -> unit stmt
     end
 
-    type t = external_data exp
+    type t = external_data
 
-    val null : t
-    val some : t -> t
-    val of_int : int exp -> t
-    val of_bool : int exp -> t
-    val of_float : float exp -> t
-    val of_string : string exp -> t
-    val of_array : external_data array exp -> t
-    val of_hashtbl : external_data hashtbl exp -> t
-    val of_untyped : Data.t -> t
+    val null : t exp
+    val some : t exp -> t exp
+    val of_int : int exp -> t exp
+    val of_float : float exp -> t exp
+    val of_string : string exp -> t exp
+    val of_bool : bool exp -> t exp
+    val of_array : external_data array exp -> t exp
+    val of_hashtbl : external_data hashtbl exp -> t exp
+    val of_untyped : Data.t exp -> t exp
 
     type _ classify =
       | Int : int classify
       | String : string classify
       | Float : float classify
       | Bool : bool classify
-      | Linear : external_data Linear.t classify
-      | Assoc : external_data Assoc.t classify
+      | Not_null : t classify
+      | Linear : t Linear.t classify
+      | Assoc : t Assoc.t classify
 
     val classify :
       'a classify ->
-      t ->
+      t exp ->
       ok:('a exp -> 'b stmt) ->
       error:(unit -> 'b stmt) ->
       'b stmt
 
-    val is_null : t -> bool exp
-    val show : t -> string exp
+    val show : t exp -> string exp
   end
 end
 
@@ -257,6 +247,7 @@ end = struct
   let get_nullable e = list_hd (Data.to_array e)
   let is_nil x = Data.equal x nil_value
   let is_not_nil x = not (is_nil x)
+  let int_to_bool i = not (equal_int i (int 0))
 
   (** We use the [data] type as linked-list stacks. *)
 
@@ -304,7 +295,7 @@ end = struct
            s |: return (promise (buffer_contents b))))
 
   type runtime = {
-    components : (data hashtbl -> string promise) hashtbl exp;
+    components : (Data.t hashtbl -> string promise) hashtbl exp;
     buffer : async_buffer;
   }
 
@@ -325,7 +316,7 @@ end = struct
     | Compile.Fmt_float ->
         parse_escape runtime esc (string_of_float (Data.to_float x))
     | Compile.Fmt_bool ->
-        parse_escape runtime esc (string_of_bool (Data.to_int x))
+        parse_escape runtime esc (string_of_bool (int_to_bool (Data.to_int x)))
 
   let rec echo props (ech : Compile.echo) =
     match ech with
@@ -387,9 +378,10 @@ end = struct
   let rec match_tree :
         'leaf 'key.
         exit:int mut ->
-        leafstmt:(vars:Data.t Map.Int.t -> 'leaf -> unit stmt) ->
-        get_arg:(optional:bool -> 'key -> (Data.t -> unit stmt) -> unit stmt) ->
-        vars:Data.t Map.Int.t ->
+        leafstmt:(vars:Data.t exp Map.Int.t -> 'leaf -> unit stmt) ->
+        get_arg:
+          (optional:bool -> 'key -> (Data.t exp -> unit stmt) -> unit stmt) ->
+        vars:Data.t exp Map.Int.t ->
         ?optional:bool ->
         ('leaf, 'key) Matching.tree ->
         unit stmt =
@@ -589,9 +581,9 @@ end = struct
   module T = Typechecker.Type
 
   type decode_runtime = {
-    stack : data exp;
-    decode_error : (data -> string -> external_data -> unit) exp;
-    key_error : (data -> string -> data -> unit) exp;
+    stack : Data.t exp;
+    decode_error : (Data.t -> string -> external_data -> unit) exp;
+    key_error : (Data.t -> string -> Data.t -> unit) exp;
   }
 
   let show_type =
@@ -611,8 +603,8 @@ end = struct
 
   type 'a union_helper = {
     equal : 'a exp -> 'a exp -> bool exp;
-    to_data : 'a exp -> Data.t;
-    of_data : Data.t -> 'a exp;
+    to_data : 'a exp -> Data.t exp;
+    of_data : Data.t exp -> 'a exp;
     to_extern : 'a exp -> external_data exp;
     classify : 'a External.classify;
   }
@@ -635,7 +627,10 @@ end = struct
       classify = Int;
     }
 
-  let union_helper_bool = { union_helper_int with to_extern = External.of_bool }
+  let external_of_int_bool i = External.of_bool (int_to_bool i)
+
+  let union_helper_bool =
+    { union_helper_int with to_extern = external_of_int_bool }
 
   let rec decode ~set ~debug input ty =
     let$ ty_str = ("type", show_type ty) in
@@ -696,9 +691,8 @@ end = struct
               ~ok:(fun i -> set (Data.float (float_of_int i)))
               ~error:(fun () -> push_error debug ty_str input))
     | T.Nullable ty ->
-        if_else (External.is_null input)
-          ~then_:(fun () -> set nil_value)
-          ~else_:(fun () ->
+        External.classify Not_null input
+          ~ok:(fun input ->
             let$ decoded = ("decoded", array [| nil_value |]) in
             let$ stack =
               ("stack", stack_add debug.stack (string "<nullable>"))
@@ -708,8 +702,8 @@ end = struct
                 ~set:(fun data -> decoded.%(int 0) <- data)
                 ~debug:{ debug with stack } input ty
             in
-            let s = s |: set (Data.array decoded) in
-            s)
+            s |: set (Data.array decoded))
+          ~error:(fun () -> set nil_value)
     | T.List ty ->
         External.classify Linear input
           ~ok:(fun l ->
@@ -885,7 +879,7 @@ end = struct
   let rec encode ~set props ty =
     match !ty with
     | T.Unknown _ -> set (External.of_untyped props)
-    | T.Enum_int (_, Bool) -> set (External.of_bool (Data.to_int props))
+    | T.Enum_int (_, Bool) -> set (external_of_int_bool (Data.to_int props))
     | T.String | T.Enum_string _ ->
         set (External.of_string (Data.to_string props))
     | T.Int | T.Enum_int _ -> set (External.of_int (Data.to_int props))
@@ -1128,9 +1122,9 @@ end = struct
 end
 
 module type TRANS = sig
-  (** To transform the language's output, such as for an optimization, we need to
-    define a module that can translate terms "forward" to the transformed state
-    and "backward" to the original representation. *)
+  (** To transform the language's output, such as for an optimization, we need
+      to define a module that can translate terms "forward" to the transformed
+      state and "backward" to the original representation. *)
 
   type 'a from_exp
   type 'a exp
@@ -1165,7 +1159,7 @@ module MakeTrans
      and type 'a promise = 'a F.promise
      and type external_data = F.external_data
      and type import = F.import
-     and type data = F.data
+     and type Data.t = F.Data.t
      and type 'a External.Linear.t = 'a F.External.Linear.t
      and type 'a External.Assoc.t = 'a F.External.Assoc.t
      and type 'a External.classify = 'a F.External.classify = struct
@@ -1240,7 +1234,7 @@ module MakeTrans
   let export x = fwds (F.export (bwde x))
 
   module Data = struct
-    type t = data exp
+    type t = F.Data.t
 
     let int x = fwde (F.Data.int (bwde x))
     let float x = fwde (F.Data.float (bwde x))
@@ -1282,14 +1276,14 @@ module MakeTrans
                bwds (f (fwde k) (fwde v))))
     end
 
-    type t = external_data exp
+    type t = external_data
 
     let null = fwde F.External.null
     let some x = fwde (F.External.some (bwde x))
     let of_int x = fwde (F.External.of_int (bwde x))
-    let of_bool x = fwde (F.External.of_bool (bwde x))
     let of_float x = fwde (F.External.of_float (bwde x))
     let of_string x = fwde (F.External.of_string (bwde x))
+    let of_bool x = fwde (F.External.of_bool (bwde x))
     let of_array x = fwde (F.External.of_array (bwde x))
     let of_hashtbl x = fwde (F.External.of_hashtbl (bwde x))
     let of_untyped x = fwde (F.External.of_untyped (bwde x))
@@ -1300,7 +1294,6 @@ module MakeTrans
            ~ok:(fun x -> bwds (ok (fwde x)))
            ~error:(fun () -> bwds (error ())))
 
-    let is_null x = fwde (F.External.is_null (bwde x))
     let show x = fwde (F.External.show (bwde x))
   end
 end
@@ -1428,10 +1421,8 @@ let pp (type a) pp_import ppf c =
 
     let export = F.dprintf "(@[export@ %t@])"
 
-    type data
-
     module Data = struct
-      type t = data exp
+      type t
 
       let int = F.dprintf "(@[Data.int@ %t@])"
       let float = F.dprintf "(@[Data.float@ %t@])"
@@ -1473,14 +1464,14 @@ let pp (type a) pp_import ppf c =
             (f arg_k arg_v)
       end
 
-      type t = external_data exp
+      type t = external_data
 
       let null = F.dprintf "null"
       let some = F.dprintf "(@[External.some@ %t@])"
-      let of_bool = F.dprintf "(@[External.of_bool@ %t@])"
       let of_int = F.dprintf "(@[External.of_int@ %t@])"
       let of_string = F.dprintf "(@[External.of_string@ %t@])"
       let of_float = F.dprintf "(@[External.of_float@ %t@])"
+      let of_bool = F.dprintf "(@[External.of_bool@ %t@])"
       let of_array = F.dprintf "(@[External.of_array@ %t@])"
       let of_hashtbl = F.dprintf "(@[External.of_hashtbl@ %t@])"
       let of_untyped = F.dprintf "(@[External.of_untyped@ %t@])"
@@ -1490,25 +1481,26 @@ let pp (type a) pp_import ppf c =
         | String : string classify
         | Float : float classify
         | Bool : bool classify
-        | Linear : external_data Linear.t classify
-        | Assoc : external_data Assoc.t classify
+        | Not_null : t classify
+        | Linear : t Linear.t classify
+        | Assoc : t Assoc.t classify
 
       let classify_to_string : type a. a classify -> string = function
         | Int -> "(int)"
         | String -> "(string)"
         | Float -> "(float)"
         | Bool -> "(bool)"
+        | Not_null -> "(not_null)"
         | Linear -> "(linear)"
         | Assoc -> "(assoc)"
 
       let classify c t ~ok ~error =
-        let arg = var "classified" in
+        let classified = var "classified" in
         F.dprintf
-          "(@[External.classify@ %s@ %t@ %t@ (@[<hv>ok@ %t@])@ (@[<hv>error@ \
-           %t@])@])"
-          (classify_to_string c) t arg (ok arg) (error ())
+          "(@[External.classify@ %s@ %t@ (@[<hv>@[<hv>ok@ %t@]@ %t@])@ \
+           (@[<hv>error@ %t@])@])"
+          (classify_to_string c) t classified (ok classified) (error ())
 
-      let is_null = F.dprintf "(@[External.is_null@ %t@])"
       let show = F.dprintf "(@[External.show@ %t@])"
     end
   end) in
