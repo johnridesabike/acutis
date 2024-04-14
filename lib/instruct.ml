@@ -155,11 +155,10 @@ module type SEM = sig
   val export : 'a exp -> 'a stmt
 
   module Data : sig
-    (** {Runtime data.} *)
+    (** Runtime data. *)
 
     type t
-    (** Runtime data. Either a string, an integer, a float, an array, or a hash
-        table. *)
+    (** Either a string, an integer, a float, an array, or a hash table. *)
 
     val int : int exp -> t exp
     val float : float exp -> t exp
