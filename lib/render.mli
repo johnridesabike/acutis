@@ -66,10 +66,7 @@ module type DECODABLE = sig
   val of_int : int -> t
   val of_seq : t Seq.t -> t
   val of_assoc : (string * t) Seq.t -> t
-
-  (** Debugging *)
-
-  val pp : Format.formatter -> t -> unit
+  val to_string : t -> string
 end
 
 module type S = sig

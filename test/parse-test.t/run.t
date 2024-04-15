@@ -938,7 +938,7 @@ Print the runtime instructions
               (buffer_add_string errors/0 "\nExpected type:\n")
               (buffer_add_string errors/0 arg/6)
               (buffer_add_string errors/0 "\nReceived value:\n")
-              (buffer_add_string errors/0 (External.show arg/7)))))))))))
+              (buffer_add_string errors/0 (External.to_string arg/7)))))))))))
      (let$ key_error/0 =
       (lambda arg/8
        ((return

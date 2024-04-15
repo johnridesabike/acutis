@@ -470,7 +470,7 @@ let pp (module Jsmod : JSMODULE) ppf c =
           in
           if_else cond ~then_:(fun () -> ok x) ~else_:error
 
-        let show = to_string
+        let to_string = to_string
       end
     end in
     let module I = Instruct.Make (RemoveIdsAndUnits (Runtime)) in

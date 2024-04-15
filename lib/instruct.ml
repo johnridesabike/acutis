@@ -224,7 +224,7 @@ module type SEM = sig
       error:(unit -> 'b stmt) ->
       'b stmt
 
-    val show : t exp -> string exp
+    val to_string : t exp -> string exp
   end
 end
 
@@ -1020,7 +1020,7 @@ end = struct
                         s
                         |: buffer_add_string buf (string "\nReceived value:\n")
                       in
-                      s |: buffer_add_string buf (External.show input))))))
+                      s |: buffer_add_string buf (External.to_string input))))))
 
   let key_error buf name =
     lambda (fun stack ->
@@ -1293,7 +1293,7 @@ module MakeTrans
            ~ok:(fun x -> bwds (ok (fwde x)))
            ~error:(fun () -> bwds (error ())))
 
-    let show x = fwde (F.External.show (bwde x))
+    let to_string x = fwde (F.External.to_string (bwde x))
   end
 end
 
@@ -1500,7 +1500,7 @@ let pp (type a) pp_import ppf c =
            (@[<hv>error@ %t@])@])"
           (classify_to_string c) t classified (ok classified) (error ())
 
-      let show = F.dprintf "(@[External.show@ %t@])"
+      let to_string = F.dprintf "(@[External.to_string@ %t@])"
     end
   end) in
   F.fprintf ppf "@[<hv>%t@]" (M.eval c)

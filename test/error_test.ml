@@ -17,7 +17,7 @@ module DataJson = struct
 
   type t = Yojson.Basic.t
 
-  let pp = Yojson.Basic.pretty_print ~std:false
+  let to_string t = Yojson.Basic.pretty_to_string t
 
   let classify = function
     | `List x -> `Linear x

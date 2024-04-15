@@ -65,9 +65,8 @@ module DataJs = struct
   let of_seq x = Array.of_seq x |> Js.array |> coerce
   let of_assoc x = Array.of_seq x |> Js.Unsafe.obj
 
-  let pp ppf j =
-    Js.Unsafe.fun_call Js.Unsafe.global##._String [| j |]
-    |> Js.to_string |> Format.pp_print_string ppf
+  let to_string j =
+    Js.Unsafe.fun_call Js.Unsafe.global##._String [| j |] |> Js.to_string
 end
 
 module Promise = struct

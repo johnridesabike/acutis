@@ -52,7 +52,7 @@ module type DECODABLE = sig
   val of_int : int -> t
   val of_seq : t Seq.t -> t
   val of_assoc : (string * t) Seq.t -> t
-  val pp : Format.formatter -> t -> unit
+  val to_string : t -> string
 end
 
 module type S = sig
@@ -277,14 +277,7 @@ module Make (M : MONAD) (D : DECODABLE) :
             error ()
         | Not_null, _ -> ok t
 
-      let show =
-        let b = Buffer.create 64 in
-        let ppf = Format.formatter_of_buffer b in
-        fun x ->
-          D.pp ppf x;
-          Format.pp_print_flush ppf ();
-          let s = Buffer.contents b in
-          Buffer.clear b; s
+      let to_string = D.to_string
     end
   end)
 end
