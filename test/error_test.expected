@@ -272,13 +272,13 @@ Bad echo format (1)
 ---
 File "<test>", 1:6-1:7
 Parse error.
-This is missing a format specification.
+This is not a valid format specification.
 
 Bad echo format (2)
 ---
 File "<test>", 1:5-1:6
-Syntax error.
-Unexpected character: 'z'
+Parse error.
+This is not a valid format specification.
 
 Bad prop (1)
 ---

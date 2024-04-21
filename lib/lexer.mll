@@ -13,7 +13,7 @@ module B = Buffer
 module L = Lexing
 open Parser
 
-type mode = Text | Expr | Echo | Format of mode | Queue of token * mode
+type mode = Text | Expr | Echo | Queue of token * mode
 
 type state = mode ref
 
@@ -142,16 +142,11 @@ and expr state = parse
   | '?'           { QUESTION }
   | '.'           { DOT }
   | "..."         { ELLIPSIS }
-  | '%'           { state := Format !state; PERCENT }
+  | '%' 'b'       { state := Queue(CHAR_B, !state); PERCENT }
+  | '%' 'f'       { state := Queue(CHAR_F, !state); PERCENT }
+  | '%' 'i'       { state := Queue(CHAR_I, !state); PERCENT }
+  | '%'           { PERCENT }
   | eof           { EOF }
-  | _ as c        { Error.lex_unexpected lexbuf c }
-
-and echo_format prev_state state = parse
-  | 'i'           { CHAR_I }
-  | 'f'           { CHAR_F }
-  | 'b'           { CHAR_B }
-  | newline       { L.new_line lexbuf; state := prev_state; expr state lexbuf }
-  | white         { state := prev_state; expr state lexbuf }
   | _ as c        { Error.lex_unexpected lexbuf c }
 
 and string pos buf = parse
@@ -177,6 +172,5 @@ let acutis state lexbuf =
   match !state with
   | Text -> text state (B.create 256) lexbuf
   | Expr | Echo -> expr state lexbuf
-  | Format prev_state -> echo_format prev_state state lexbuf
   | Queue (tok , state') -> state := state'; tok
 }

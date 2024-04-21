@@ -173,7 +173,7 @@ Expected a '}}'.
 
 acutis: TEXT ECHO_BEGIN PERCENT WITH
 
-This is missing a format specification.
+This is not a valid format specification.
 
 ############################################################################
 # Component errors
