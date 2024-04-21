@@ -280,6 +280,12 @@ File "<test>", 1:5-1:6
 Parse error.
 This is not a valid format specification.
 
+Bad echo format (3)
+---
+File "<test>", 1:6-1:7
+Parse error.
+This is not a valid format specification.
+
 Bad prop (1)
 ---
 File "<test>", 1:6-1:10

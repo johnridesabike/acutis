@@ -110,6 +110,7 @@ let () =
 
   print_error "Bad echo format (1)" (render "{{ % a }}");
   print_error "Bad echo format (2)" (render "{{ %z a }}");
+  print_error "Bad echo format (3)" (render "{{ % i a }}");
 
   print_error "Bad prop (1)" (render "{% Z null=1 / %}");
   print_error "Bad prop (2)" (render "{% A a # %}");
