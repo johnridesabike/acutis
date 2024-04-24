@@ -11,4 +11,4 @@ The row is opened for variants in newly inferred record fields
 {% match d with {a: 1} %}{% with {b: @1} %}{% with {a: _} %}{% /match %}
 
 A row is opened when its field is excluded from record pattern.
-{% match e with {a, b: @1} %} {{ a }} {% with {a} %} {{ a }} {% /match %}
+{% match e with {a, b: @1} %} {% a %} {% with {a} %} {% a %} {% /match %}

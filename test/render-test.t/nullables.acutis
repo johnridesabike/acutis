@@ -1,10 +1,10 @@
-{{ a ? b ? c }}
+{% a ? b ? c %}
 {% NullProps b z=#%}z{%# / %}
 {% NullProps z=#%}z{%# / %}
 
 Nullable props default to null:
 {% NullPropsDefault x=!"pass" / %}
 
-{%~ match not_found with !a %} {{ a }} {% with null ~%}
+{%~ match not_found with !a %} {% a %} {% with null ~%}
   Unabound variables successfully default to null
 {%~ /match %}

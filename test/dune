@@ -8,7 +8,7 @@
   (run ./error_test.exe)))
 
 (rule
- (aliases runtest error_test)
+ (aliases runtest error-test)
  (action
   (diff error_test.expected error_test.output)))
 

@@ -1,1 +1,1 @@
-{{ children }} Oh hai {{ name }}.
+{% children %} Oh hai {% name %}.

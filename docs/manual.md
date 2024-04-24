@@ -6,13 +6,13 @@ layout: main.acutis.js
 next: null
 ---
 
-An Acutis template is made of three basic building blocks:
+An Acutis template is made of two basic building blocks:
 
 - **Text**, which is rendered as-is.
-- **Echoes**, which are values wrapped in `{{` "mustaches" `}}`.
 - **Expressions**, which are wrapped in `{%` and `%}`.
 
-Most of the language features occur within `{%` expressions `%}`.
+Expressions can echo (print) data that's given to the template, and they can
+destructure data and conditionally render template blocks based on its patterns.
 
 [[toc]]
 
@@ -34,7 +34,7 @@ terms used interchangeably.
 If you apply the data from the last section to this template:
 
 ```acutis
-My favorite color is {{ color }}.
+My favorite color is {% color %}.
 ```
 
 It renders:
@@ -49,25 +49,25 @@ The `?` (question mark) echoes the value on its right-hand side if the value on
 its left-hand side is `null`.
 
 ```acutis
-My favorite color is {{ color ? fallbackColor }}.
+My favorite color is {% color ? fallbackColor %}.
 
-You can chain ?s: {{ a ? b ? "If this prints, a and b are both null." }}
+You can chain ?s: {% a ? b ? "If this prints, a and b are both null." %}
 ```
 
 ### Escaping
 
-Acutis escapes echoes by default. It transforms the following characters into
-HTML entities:
+Acutis escapes echoed values by default. It transforms the following characters
+into HTML entities:
 
 ```acutis
 & " ' > < / ` =
 ```
 
-If you use triple-mustaches, `{{{` and `}}}`, then Acutis will not escape the
-value.
+If you delineate an expression with "double-mustaches," `{{%` and `%}}`, then
+Acutis will not escape the value.
 
 ```acutis
-My favorite color is {{{ color }}}.
+My favorite color is {{% color %}}.
 ```
 
 ### Format specifiers
@@ -94,10 +94,10 @@ Example template usage:
 ```acutis
 Format specification  Output
 --------------------  ------------
-{{ %i num }}          123456
-{{ %f frac }}         1234.56789
-{{ %b binaryf }}      false
-{{ %b binaryt }}      true
+{% %i num %}          123456
+{% %f frac %}         1234.56789
+{% %b binaryf %}      false
+{% %b binaryt %}      true
 ```
 
 These format specifications are designed to cover only basic use cases. If you
@@ -119,7 +119,7 @@ The `~` (tilde) symbol trims whitespace before or after an echo or expression.
 
 ```acutis
 <p>
-  {{~ color ~}}
+  {%~ color ~%}
 </p>
 ```
 
@@ -286,7 +286,7 @@ When echoing or constructing a value, you may access a record's field with `.`
 (dot) syntax.
 
 ```acutis
-{{ book.title }}
+{% book.title %}
 ```
 
 ### Dictionary
@@ -463,7 +463,7 @@ We can use this with the `match` expression and the `with` clause:
 ```acutis
 {% match article
    with {published: true, title, dates: {posted, updated}} %}
-  {{ title }} was posted on {{ posted }} and updated on {{ updated }}.
+  {% title %} was posted on {% posted %} and updated on {% updated %}.
 {% with {published: false} %}
   {* Don't render unpublished articles. *}
 {% /match %}
@@ -485,7 +485,7 @@ Acutis allows multiple `with` patterns to render single block expression.
    with "Konnichiwa" %}
   I can speak this language.
 {% with unknown %}
-  I don't know what "{{ unknown }}" means.
+  I don't know what "{% unknown %}" means.
 {% /match %}
 ```
 
@@ -503,13 +503,13 @@ Consider this JSON object:
 And this template:
 
 ```acutis
-My favorite is {{ color }}.
+My favorite is {% color %}.
 
 {% match other with {color} ~%}
-  Another is {{ color }}.
+  Another is {% color %}.
 {%~ /match %}
 
-But my favorite is still {{ color }}.
+But my favorite is still {% color %}.
 ```
 
 Which renders:
@@ -536,9 +536,9 @@ handle nested patterns easily. Here's an example:
 
 ```acutis
 {% match author with {name, books: [{title}]} %}
-  {{ name }}'s latest books is {{ title }}.
+  {% name %}'s latest books is {% title %}.
 {% with {name, books: []} %}
-  {{ name }} hasn't published any books yet.
+  {% name %} hasn't published any books yet.
 {% /match %}
 ```
 
@@ -566,8 +566,8 @@ construct data.
 
 ```acutis
 {% match {name: "John", symbol: !"Eagle"}
-   with {name, symbol: !symbol} ~%} {{ name }}'s symbol is the {{ symbol }}.
-{% with {name, symbol: null} ~%} {{ name }} has no symbol.
+   with {name, symbol: !symbol} ~%} {% name %}'s symbol is the {% symbol %}.
+{% with {name, symbol: null} ~%} {% name %} has no symbol.
 {% /match %}
 ```
 
@@ -583,11 +583,11 @@ Here's an example using a [template component][components]:
 ```acutis
 {% Layout
   sections={
-    header: #%} <h1> {{ title }} </h1> {%#,
+    header: #%} <h1> {% title %} </h1> {%#,
     sidebar: #%}
       <h2> Menu </h2>
       {% map menu with {title, slug} %}
-        <a href="{{ slug }}">{{ title }}</a>
+        <a href="{% slug %}">{% title %}</a>
       {% /map %}
    {%#
   }
@@ -599,7 +599,7 @@ patterns too. For example, prefixing a block with a `!` will wrap it as a
 nullable, e.g. `{optional: !#%}...{%#}`.
 
 Since blocks are rendered as regular strings, echoing will still escape them
-unless you explicitly don't, e.g. `{{{ header }}}`.
+unless you explicitly don't, e.g. `{{% header %}}`.
 
 ## Mapping
 
@@ -621,7 +621,7 @@ And this template:
 
 ```acutis
 {% map articles with {title, author} ~%}
-  The article "{{ title }}" was written by {{ author }}.
+  The article "{% title %}" was written by {% author %}.
 {% /map %}
 ```
 
@@ -638,9 +638,9 @@ different template sections based on an value's content.
 ```acutis
 {% map articles
    with {title, author: null} %}
-  The article "{{ title }}" was written anonymously.
+  The article "{% title %}" was written anonymously.
 {% with {title, author: !author} %}
-  The article "{{ title }}" was written by {{ author }}.
+  The article "{% title %}" was written by {% author %}.
 {% /map %}
 ```
 
@@ -651,7 +651,7 @@ at zero.
 
 ```acutis
 {% map articles with {title, author}, index %}
-  {{ %i index }}. {{ title }} was written by {{ author }}.
+  {% %i index %}. {% title %} was written by {% author %}.
 {% /map %}
 ```
 
@@ -661,9 +661,9 @@ conditionally render sections by matching the index with specific numbers.
 ```acutis
 {% map articles
    with {title}, 0 %}
-  Our first article is {{ title }}.
+  Our first article is {% title %}.
 {% with {title} %}
-  {{ title }}
+  {% title %}
 {% /map %}
 ```
 
@@ -677,7 +677,7 @@ associated with each value.
     <author: {name: "John"},
      editor: {name: "Carlo"}>
     with {name}, role ~%}
-  {{ name }} is the {{ role }}.
+  {% name %} is the {% role %}.
 {% /map_dict %}
 ```
 
@@ -753,7 +753,7 @@ can suppress this warning by prefixing the name with an `_` (underscore).
 
 ```acutis
 {% match list with [head, ...tail] %}
-  The list's head is {{ head }}.
+  The list's head is {% head %}.
   This will fail to compile. We forgot to use 'tail'.
 {% with [] %} The list is empty.
 {% /match %}
@@ -761,7 +761,7 @@ can suppress this warning by prefixing the name with an `_` (underscore).
 
 ```acutis
 {% match list with [head, ..._tail] %}
-  The list's head is {{ head }}.
+  The list's head is {% head %}.
   This will compile without an error.
 {% with [] %} The list is empty.
 {% /match %}
@@ -813,14 +813,14 @@ A couple of basic components:
 File: `Byline.acutis`
 
 ```acutis
-Written by {{ name }}.
+Written by {% name %}.
 ```
 
 File: `Articles.acutis`
 
 ```acutis
 {% map articles with {title, author} %}
-  {{ title }} {% Byline name=author / %}
+  {% title %} {% Byline name=author / %}
 {% /map %}
 ```
 

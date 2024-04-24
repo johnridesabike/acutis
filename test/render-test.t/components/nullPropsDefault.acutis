@@ -1,1 +1,1 @@
-{{ x ? "fail" }} {{ y ? "pass"}}
+{% x ? "fail" %} {% y ? "pass" %}

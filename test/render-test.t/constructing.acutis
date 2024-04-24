@@ -30,4 +30,4 @@ Constructing nested template blocks inside data patterns works:
 {% /match %}
 
 Appending to a list literal works:
-{%~ map ["pass", "pass", ...["pass", "pass"]] with x ~%} {{ x }} {% /map %}
+{%~ map ["pass", "pass", ...["pass", "pass"]] with x ~%} {% x %} {% /map %}

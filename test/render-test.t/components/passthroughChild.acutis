@@ -1,1 +1,1 @@
-{{ passthroughChild }}
+{% passthroughChild %}

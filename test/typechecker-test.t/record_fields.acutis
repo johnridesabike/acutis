@@ -1,4 +1,4 @@
-{% match x with {a} %} {{ a }} {% /match %}
-{{ %i x.b }}
-{% match {a: !x.c.d} with {a: !a} %} {{ a }} {% with {a: null} %} {% /match %}
-{{ %i x.e."f" ? %b x."e".g }}
+{% match x with {a} %} {% a %} {% /match %}
+{% %i x.b %}
+{% match {a: !x.c.d} with {a: !a} %} {% a %} {% with {a: null} %} {% /match %}
+{% %i x.e."f" ? %b x."e".g %}

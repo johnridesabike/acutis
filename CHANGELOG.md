@@ -2,8 +2,10 @@
 
 Most changes are breaking changes.
 
-## Latest
+## 0.25.0
 
+- Echo syntax is now the same as other expressions, `{%` and `%}`. Unescaped
+  echoes use `{{%` and `%}}`.
 - All decode errors are reported instead of only the first one.
 - Decode errors are implemented in a promise type instead of raising an
   exception.

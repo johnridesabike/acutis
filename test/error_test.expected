@@ -32,19 +32,19 @@ Illegal name: echo null
 ---
 File "<test>", 1:4-1:8
 Parse error.
-This is not a valid echo.
+This is not a valid expression.
 
 Illegal name: echo false
 ---
 File "<test>", 1:4-1:9
 Parse error.
-This is not a valid echo.
+This is not a valid expression.
 
 Illegal name: echo true
 ---
 File "<test>", 1:4-1:8
 Parse error.
-This is not a valid echo.
+This is not a valid expression.
 
 Illegal name: _
 ---
@@ -90,35 +90,23 @@ Expected a component name.
 
 Unclosed components (this one is confusing.)
 ---
-File "<test>", 1:16-1:16
+File "<test>", 1:7-1:8
 Parse error.
-Unclosed component.
+Expected a '%}'.
+
+Empty expressions
+---
+File "<test>", 1:6-1:9
+Parse error.
+This is not a valid expression.
 
 Unexpected tokens (1)
 ---
-File "<test>", 1:4-1:5
-Parse error.
-Expected a '%}', 'match', 'map', 'map_dict', or a component name.
-
-Unexpected tokens (2)
----
-File "<test>", 1:5-1:6
-Parse error.
-Expected a '%}', 'match', 'map', 'map_dict', or a component name.
-
-Unexpected tokens (3)
----
 File "<test>", 1:5-1:9
 Parse error.
-Expected a '%}', 'match', 'map', 'map_dict', or a component name.
+This is not a valid expression.
 
-Unexpected tokens (4)
----
-File "<test>", 1:10-1:11
-Parse error.
-Expected a '%}', 'match', 'map', 'map_dict', or a component name.
-
-Unexpected tokens (5)
+Unexpected tokens (3)
 ---
 File "<test>", 1:40-1:41
 Parse error.
@@ -126,9 +114,9 @@ Expected a '%}'.
 
 Unexpected tokens (inside # blocks)
 ---
-File "<test>", 1:20-1:24
+File "<test>", 1:20-1:21
 Parse error.
-Expected a '%}', '#', 'match', 'map', 'map_dict', or a component name.
+This is not a valid expression, or maybe a '#' is missing.
 
 Bad pattern (1)
 ---
@@ -236,55 +224,73 @@ Bad echo (1)
 ---
 File "<test>", 1:4-1:8
 Parse error.
-This is not a valid echo.
+This is not a valid expression.
 
 Bad echo (2)
 ---
 File "<test>", 1:5-1:9
 Parse error.
-This is not a valid echo.
+This is not a valid expression.
 
 Bad echo (3)
 ---
-File "<test>", 1:8-1:12
+File "<test>", 1:5-1:9
 Parse error.
 This is not a valid echo.
 
 Bad echo (4)
 ---
-File "<test>", 1:7-1:11
+File "<test>", 1:8-1:12
 Parse error.
 This is not a valid echo.
 
 Bad echo (5)
 ---
-File "<test>", 1:7-1:9
+File "<test>", 1:7-1:11
 Parse error.
-Expected a '}}}'.
+This is not a valid echo.
 
 Bad echo (6)
 ---
+File "<test>", 1:9-1:9
+Parse error.
+Expected a '%}}'.
+
+Bad echo (7)
+---
 File "<test>", 1:6-1:9
 Parse error.
-Expected a '}}'.
+Expected a '%}'.
+
+Bad echo (8)
+---
+File "<test>", 1:4-1:5
+Parse error.
+This is not a valid expression.
+
+Bad echo (9)
+---
+File "<test>", 1:8-1:17
+Parse error.
+This is not a valid echo.
 
 Bad echo format (1)
 ---
-File "<test>", 1:6-1:7
-Parse error.
-This is not a valid format specification.
+File "<test>", 1:4-1:5
+Syntax error.
+Unexpected character: '%'
 
 Bad echo format (2)
 ---
-File "<test>", 1:5-1:6
-Parse error.
-This is not a valid format specification.
+File "<test>", 1:4-1:5
+Syntax error.
+Unexpected character: '%'
 
 Bad echo format (3)
 ---
-File "<test>", 1:6-1:7
-Parse error.
-This is not a valid format specification.
+File "<test>", 1:4-1:5
+Syntax error.
+Unexpected character: '%'
 
 Bad prop (1)
 ---

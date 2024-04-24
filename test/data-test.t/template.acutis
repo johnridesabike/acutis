@@ -1,20 +1,20 @@
 Record:
 {% match record
     with {a: "z", b: 0, c: 0.0} %}
-{%  with {a, b, c} ~%} {{ a }} {{ %i b }} {{ %f c }}
+{%  with {a, b, c} ~%} {% a %} {% %i b %} {% %f c %}
 {%~ /match %}
 
 Dictionary:
-{% map_dict dict with a ~%} {{ a }} {% /map_dict %}
+{% map_dict dict with a ~%} {% a %} {% /map_dict %}
 
 List:
-{% map list with a ~%} {{ a }} {% /map %}
+{% map list with a ~%} {% a %} {% /map %}
 
 Nullables:
-{% map nullables with !a ~%} {{ a }} {% with null ~%} null {% /map %}
+{% map nullables with !a ~%} {% a %} {% with null ~%} null {% /map %}
 
 Tuple:
-{% match tuple with (a, b) ~%} {{ a }} {{ %f b }} {% /match %}
+{% match tuple with (a, b) ~%} {% a %} {% %f b %} {% /match %}
 
 Booleans:
 {% match binaryt, binaryf
@@ -23,5 +23,5 @@ Booleans:
 {% /match %}
 
 Union:
-{% match union with {@tag: 0, a} ~%} {{ a }}
+{% match union with {@tag: 0, a} ~%} {% a %}
 {%~ with {@tag: 1} %} fail {% /match %}

@@ -47,7 +47,7 @@ function acutisSyntax(Prism) {
     punctuation: /[{}[\],.:/=()<>|]/,
   };
 
-  var pattern = /{{({?)[\s\S]*?(}?)}}|{%[\s\S]*?%}|{\*[\s\S]*?\*}/g;
+  var pattern = /{({?)%[\s\S]*?%(}?)}|{\*[\s\S]*?\*}/g;
   var markupTemplating = Prism.languages["markup-templating"];
 
   Prism.hooks.add("before-tokenize", (env) =>

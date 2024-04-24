@@ -5,7 +5,7 @@
 
 (menhir
  (modules parser)
- (flags --strict --dump --exn-carries-state))
+ (flags --dump --exn-carries-state))
 
 ;; These rules generate the Menhir error messages:
 

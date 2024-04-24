@@ -15,6 +15,6 @@ Tagged unions work:
 Decoding open tagged unions works:
 {% match open
     with {@tag: "something", x}
-    with {@tag: "else", x} %} fail {{ x }}
+    with {@tag: "else", x} %} fail {% x %}
 {%  with _ ~%} success
 {%~ /match ~%}

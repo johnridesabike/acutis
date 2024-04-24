@@ -65,6 +65,6 @@
     wrap="off"
   ></textarea>
 </div>
-<script src="{{ site.url }}/acutis.js"></script>
-<script src="{{ site.url }}/playground.js"></script>
+<script src="{% site.url %}/acutis.js"></script>
+<script src="{% site.url %}/playground.js"></script>
 {% /Layout %}

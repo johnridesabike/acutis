@@ -23,17 +23,17 @@
 <!DOCTYPE html>
 <html lang="en-US">
   <head>
-    <title>{{ title }}</title>
+    <title>{% title %}</title>
     {% match description with null %} <!-- no description -->
     {% with !description %}
-      <meta name="description" content="{{ description }}" />
+      <meta name="description" content="{% description %}" />
     {% /match %}
     <meta
       name="viewport"
       content="width=device-width, initial-scale=1, shrink-to-fit=no"
     />
-    <link rel="stylesheet" href="{{ site.url }}/style.css" />
-    <link rel="icon" href="{{ site.url}}/icon.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="{% site.url %}/style.css" />
+    <link rel="icon" href="{% site.url %}/icon.svg" type="image/svg+xml" />
   </head>
   <body>
     <a class="skip-nav" href="#content">Skip to content.</a>
@@ -42,38 +42,38 @@
         <header class="site-header">
           {%~ match showTitle with false ~%}
             <h1 class="site-header__title">
-              <a href="{{ site.url }}/">
+              <a href="{% site.url %}/">
                 <img
-                  src="{{ site.url}}/icon.svg"
+                  src="{% site.url %}/icon.svg"
                   height="48"
                   width="48"
                   alt="Acutis icon."
                   style="vertical-align:middle;"
                 />
-                {{ title }}
+                {% title %}
               </a>
             </h1>
           {%~ with true ~%}
             <p class="site-header__title">
-              <a href="{{ site.url }}/">
+              <a href="{% site.url %}/">
                 <img
-                  src="{{ site.url}}/icon.svg"
+                  src="{% site.url %}/icon.svg"
                   height="48"
                   width="48"
                   alt="Acutis icon."
                   style="vertical-align:middle;"
                 />
-                {{ title }}
+                {% title %}
               </a>
             </p>
           {%~ /match ~%}
-          <p class="site-header__subtitle">{{ subtitle }}</p>
+          <p class="site-header__subtitle">{% subtitle %}</p>
         </header>
         <nav class="site-header__nav">
           <ol class="site-header__nav-list">
             {%~ map menu with {path, name} ~%}
               <li>
-                {% Link path page %}{{ name }}{% /Link %}
+                {% Link path page %}{% name %}{% /Link %}
               </li>
             {%~ /map ~%}
           </ol>
@@ -86,16 +86,16 @@
             with false ~%} {* No title *}
         {%~ with true %}
           <header class="header">
-            <h1>{{ title }}</h1>
+            <h1>{% title %}</h1>
           </header>
         {%~ /match ~%}
-        {{{ children }}}
+        {{% children %}}
         {%~ match next
            with null ~%} {* nothing! *}
         {%~ with !{text, url} ~%}
           <nav class="next">
             <h2 class="next__header">Next:</h2>
-            <a href="{{ site.url }}{{ url }}" class="next__url">{{ text }}</a>
+            <a href="{% site.url %}{% url %}" class="next__url">{% text %}</a>
           </nav>
         {%~ /match %}
       </article>

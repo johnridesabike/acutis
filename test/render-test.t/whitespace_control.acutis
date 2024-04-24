@@ -1,5 +1,5 @@
 {% match a with {b: {c}} ~%}
-  _ {{~ c ~}} _ 
+  _ {%~ c ~%} _ 
 {%~ /match %}
 
 {% OhHai name="Mark" ~%} I did not. {%~ /OhHai %}

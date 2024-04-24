@@ -1,13 +1,13 @@
 {% match a
-   with {@tag: "a", b} %} {{ b }}
+   with {@tag: "a", b} %} {% b %}
 {% with {@tag: "b", b: 1} %}
 {% with _ %} {% /match %}
 {% match b
-   with {@tag: 0, b} %} {{ b }}
+   with {@tag: 0, b} %} {% b %}
 {% with {@tag: 1, b: 1} %}
 {% with _ %} {% /match %}
 {% match c
-   with {@tag: "a", b} %} {{ b }}
+   with {@tag: "a", b} %} {% b %}
 {% with {@tag: "b", b: 1} %}
 {% with _ %} {% /match %}
 {% map [{@tag: "c", b: 1.5}, c] with _ %} {% /map %}

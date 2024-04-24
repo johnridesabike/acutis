@@ -12,7 +12,7 @@ Any type can interface with unknown.
 
 Interfaces may add record fields.
 {% interface record = {a: int, b: string} %}
-{% match record with {a} %} {{ %i a }} {% /match %}
+{% match record with {a} %} {% %i a %} {% /match %}
 
 Interfaces may add cases to open enums.
 {% interface

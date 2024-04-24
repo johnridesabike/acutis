@@ -16,12 +16,9 @@ open Ast
 %token <string> COMMENT       (* {* *} *)
 
 (* Expression syntax *)
-%token ECHO_BEGIN             (* {{ *)
-%token TRIPLE_ECHO_BEGIN      (* {{{ *)
-%token ECHO_END               (* }} *)
-%token TRIPLE_ECHO_END        (* }}} *)
-%token TILDE_LEFT             (* ~%} or ~}} *)
-%token TILDE_RIGHT            (* {%~ or {{~ *)
+%token UNESCAPE_BEGIN         (* {{% *)
+%token UNESCAPE_END           (* %}} *)
+%token TILDE                  (* ~ *)
 %token QUESTION               (* ? *)
 %token MATCH                  (* match *)
 %token MAP                    (* map *)
@@ -58,10 +55,9 @@ open Ast
 %nonassoc DOT                 (* highest precedence *)
 
 (* Echo format syntax *)
-%token PERCENT                (* % *)
-%token CHAR_I                 (* i *)
-%token CHAR_F                 (* f *)
-%token CHAR_B                 (* b *)
+%token FMT_I                  (* %i *)
+%token FMT_F                  (* %f *)
+%token FMT_B                  (* %b *)
 
 %start <Ast.t> acutis
 %start <Ast.interface> interface_standalone
@@ -172,10 +168,10 @@ children: n = nodes;  { ($loc, "children", Block ($loc, n)) }
 (** Echo rules *)
 
 echo_format:
-  | (* empty *)       { Fmt_string }
-  | PERCENT; CHAR_I;  { Fmt_int }
-  | PERCENT; CHAR_F;  { Fmt_float }
-  | PERCENT; CHAR_B;  { Fmt_bool }
+  | (* empty *) { Fmt_string }
+  | FMT_I;      { Fmt_int }
+  | FMT_F;      { Fmt_float }
+  | FMT_B;      { Fmt_bool }
 
 echo_value:
   | s = ID;                               { Echo_var ($loc, s) }
@@ -185,35 +181,19 @@ echo_value:
 echo: fmt = echo_format; e = echo_value;  { (fmt, e) }
 
 (* Do this reversed to efficiently take the last item. *)
-echoes_rev: l = nonempty_sep_rev(QUESTION, echo); { l }
-
-trim_left:
-  | (* empty *)  { No_trim }
-  | TILDE_LEFT   { Trim }
-
-trim_right:
-  | (* empty *)  { No_trim }
-  | TILDE_RIGHT  { Trim }
-
-text: l = trim_left; txt = TEXT; r = trim_right;  { Text (txt, l, r) }
+echoes: l = nonempty_sep_rev(QUESTION, echo); { l }
 
 (** Putting it all together *)
 
-node:
-  | txt = text;
-    { txt }
+expr:
   | txt = COMMENT;
     { Comment txt }
-  | ECHO_BEGIN; e = echoes_rev; ECHO_END;
-    {
-      let Nonempty.((fmt, default) :: l) = e in
-      Echo (List.rev l, fmt, default, Escape)
-    }
-  | TRIPLE_ECHO_BEGIN; e = echoes_rev; TRIPLE_ECHO_END;
-    {
-      let Nonempty.((fmt, default) :: l) = e in
-      Echo (List.rev l, fmt, default, No_escape)
-    }
+  | e = echoes;
+    { let Nonempty.((fmt, default) :: l) = e in
+      Echo (List.rev l, fmt, default, Escape) }
+  | UNESCAPE_BEGIN; e = echoes; UNESCAPE_END;
+    { let Nonempty.((fmt, default) :: l) = e in
+      Echo (List.rev l, fmt, default, No_escape) }
   | MATCH; pats = nonempty_sep(COMMA, pattern); child = cases; BACKSLASH; MATCH;
     { Match ($loc, pats, child) }
   | MAP; pat = pattern; child = cases; BACKSLASH; MAP;
@@ -269,12 +249,16 @@ interface:
 
 (** Putting it all together *)
 
-nodes:
-  | t = text;                             { [ t ] }
-  | t1 = text; l = nodes_rev; t2 = text;  { t1 :: List.rev (t2 :: l) }
+trim:
+  | (* empty *) { No_trim }
+  | TILDE       { Trim }
+
+text: l = trim; txt = TEXT; r = trim; { Text (txt, l, r) }
+
+nodes: l = nodes_rev; { List.rev l }
 nodes_rev:
-  | (* empty *)               { [] }
-  | l = nodes_rev; n = node;  { n :: l }
+  | t = text                            { [ t ] }
+  | l = nodes_rev; e = expr; t = text;  { t :: e :: l }
 
 acutis: n = nodes; EOF; { n }
 

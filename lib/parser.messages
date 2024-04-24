@@ -21,9 +21,9 @@
 ############################################################################
 
 acutis: WITH
-acutis: TILDE_LEFT WITH
+acutis: TILDE WITH
 interface_standalone: WITH
-interface_standalone: ID EQUALS FALSE ECHO_BEGIN
+interface_standalone: ID EQUALS FALSE TILDE
 
 Unexpected token.
 
@@ -33,10 +33,9 @@ Unexpected token.
 
 acutis: TEXT WITH
 acutis: TEXT NULL
-acutis: TEXT TILDE_RIGHT NULL
-acutis: TEXT TEXT TILDE_RIGHT NULL
+acutis: TEXT TILDE NULL
 
-Expected a '%}', 'match', 'map', 'map_dict', or a component name.
+This is not a valid expression.
 
 acutis: TEXT MATCH NULL WITH NULL TEXT EOF
 
@@ -49,7 +48,7 @@ Expected a '%}'.
 
 acutis: TEXT MATCH HASH TEXT WITH
 
-Expected a '%}', '#', 'match', 'map', 'map_dict', or a component name.
+This is not a valid expression, or maybe a '#' is missing.
 
 acutis: TEXT MATCH NULL WITH NULL TEXT BACKSLASH WITH
 
@@ -71,7 +70,7 @@ acutis: TEXT MATCH WITH
 acutis: TEXT MATCH EXCLAMATION WITH
 acutis: TEXT MATCH AT WITH
 acutis: TEXT MATCH NULL COMMA WITH
-acutis: TEXT MATCH NULL TILDE_LEFT
+acutis: TEXT MATCH NULL TILDE
 acutis: TEXT MAP_DICT WITH
 acutis: TEXT MAP WITH
 acutis: TEXT MATCH LEFT_BRACE ID COLON WITH
@@ -93,7 +92,7 @@ acutis: TEXT MATCH LEFT_ANGLE WITH
 acutis: TEXT MATCH LEFT_ANGLE ID COMMA WITH
 acutis: TEXT INTERFACE ID EQUALS LEFT_BRACE ID COLON ID COMMA WITH
 acutis: TEXT MATCH NULL DOT WITH
-acutis: TEXT ECHO_BEGIN ID DOT WITH
+acutis: TEXT ID DOT WITH
 
 This is not a valid field name.
 
@@ -152,28 +151,19 @@ Sequential patterns must be separated by a ','.
 # Echo errors
 ############################################################################
 
-acutis: TEXT ECHO_BEGIN WITH
-acutis: TEXT TRIPLE_ECHO_BEGIN WITH
-acutis: TEXT ECHO_BEGIN ID QUESTION WITH
-acutis: TEXT ECHO_BEGIN PERCENT CHAR_I WITH
+acutis: TEXT UNESCAPE_BEGIN WITH
+acutis: TEXT ID QUESTION WITH
+acutis: TEXT FMT_I WITH
 
 This is not a valid echo.
 
-acutis: TEXT ECHO_BEGIN ID WITH
+acutis: TEXT ID WITH
 
 Sequential echoes must be separated by a '?'.
 
-acutis: TEXT TRIPLE_ECHO_BEGIN ID ECHO_END
+acutis: TEXT UNESCAPE_BEGIN ID TILDE
 
-Expected a '}}}'.
-
-acutis: TEXT ECHO_BEGIN ID TRIPLE_ECHO_END
-
-Expected a '}}'.
-
-acutis: TEXT ECHO_BEGIN PERCENT WITH
-
-This is not a valid format specification.
+Expected a '%}}'.
 
 ############################################################################
 # Component errors
