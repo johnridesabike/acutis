@@ -7,10 +7,10 @@
 */
 
 var defaultSource =
-  'Hello {{ name ? "dear user" }},\n\
+  'Hello {% name ? "dear user" %},\n\
 \n\
 {% map objects with {name, color: !color} ~%}\n\
-  Have you noticed the {{ name }} is {{ color }} today?\n\
+  Have you noticed the {% name %} is {% color %} today?\n\
 {% match name, color\n\
    with "sky", "blue"\n\
    with "grass", "green" ~%}\n\
@@ -19,7 +19,7 @@ var defaultSource =
   That seems odd.\n\
 {% /match %}\n\
 {% with {name} ~%}\n\
-  The {{ name }}, I suppose, has no color.\n\
+  The {% name %}, I suppose, has no color.\n\
 {%~ /map %}\n\
 ';
 
