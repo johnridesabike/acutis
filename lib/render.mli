@@ -33,7 +33,7 @@ module type DECODABLE = sig
   end
 
   module Assoc : sig
-    (** A key-value container such as an association list, a string map, etc. *)
+    (** A key-value container such as an association list or a string map. *)
 
     type 'a t
 
@@ -46,15 +46,16 @@ module type DECODABLE = sig
 
   (** Decoding *)
 
-  val classify :
-    t ->
-    [ `Null
-    | `Bool of bool
-    | `Int of int
-    | `Float of float
-    | `String of string
-    | `Linear of t Linear.t
-    | `Assoc of t Assoc.t ]
+  type _ classify =
+    | Int : int classify
+    | String : string classify
+    | Float : float classify
+    | Bool : bool classify
+    | Not_null : t classify
+    | Linear : t Linear.t classify
+    | Assoc : t Assoc.t classify
+
+  val classify : 'a classify -> t -> ok:('a -> 'b) -> error:(unit -> 'b) -> 'b
 
   (** Encoding *)
 
@@ -64,7 +65,7 @@ module type DECODABLE = sig
   val of_string : string -> t
   val of_bool : bool -> t
   val of_int : int -> t
-  val of_seq : t Seq.t -> t
+  val of_array : t array -> t
   val of_assoc : (string * t) Seq.t -> t
   val to_string : t -> string
 end

@@ -419,16 +419,16 @@ let pp (module Jsmod : JSMODULE) ppf c =
           type 'a t = js
 
           let length a = a.!("length")
-          let iteri a f = for_ (length a) (fun i -> f i a.%(i))
+          let iteri f a = for_ (length a) (fun i -> f i a.%(i))
         end
 
         module Assoc = struct
           type 'a t = js
 
-          let find x k = x.%(k)
-          let mem x k = apply_n (global "Object").!("hasOwn") [ x; k ]
+          let find k x = x.%(k)
+          let mem k x = apply_n (global "Object").!("hasOwn") [ x; k ]
 
-          let iter x f =
+          let iter f x =
             for_of
               ((global "Object").!("keys") @@ x)
               (fun key -> f key x.%(key))

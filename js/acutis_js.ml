@@ -12,7 +12,12 @@ open Js_of_ocaml
 open Acutis
 
 module DataJs = struct
-  module Linear = Array
+  module Linear = struct
+    type 'a t = 'a Js.js_array Js.t
+
+    let length a = a##.length
+    let iteri f a = a##forEach (Js.wrap_callback (fun v i _ -> f i v))
+  end
 
   module Assoc = struct
     (** When we convert JavaScript objects into Acutis records, we cannot
@@ -40,21 +45,30 @@ module DataJs = struct
 
   let coerce = Js.Unsafe.coerce
 
-  let classify j =
-    match Js.to_string (Js.typeof j) with
-    | "string" -> `String (coerce j |> Js.to_string)
-    | "number" ->
+  type _ classify =
+    | Int : int classify
+    | String : string classify
+    | Float : float classify
+    | Bool : bool classify
+    | Not_null : t classify
+    | Linear : t Linear.t classify
+    | Assoc : t Assoc.t classify
+
+  let classify (type a) (c : a classify) j ~(ok : a -> 'b) ~error =
+    match (c, Js.to_string (Js.typeof j)) with
+    | String, "string" -> coerce j |> Js.to_string |> ok
+    | Int, "number" ->
         let n = coerce j |> Js.float_of_number in
-        if Float.is_integer n then `Int (Float.to_int n) else `Float n
-    | "boolean" -> `Bool (coerce j |> Js.to_bool)
-    | "undefined" -> `Null
-    | _ -> (
-        match Js.Opt.to_option (Js.some j) with
-        | None -> `Null
-        | Some j ->
-            if Js.Unsafe.global##._Array##isArray j then
-              `Linear (coerce j |> Js.to_array)
-            else `Assoc j)
+        if Float.is_integer n then ok (Float.to_int n) else error ()
+    | Float, "number" -> coerce j |> Js.float_of_number |> ok
+    | Bool, "boolean" -> coerce j |> Js.to_bool |> ok
+    | Linear, _ ->
+        if Js.Unsafe.global##._Array##isArray j then coerce j |> ok
+        else error ()
+    | Assoc, "object" -> Js.Opt.case (Js.Opt.return j) error ok
+    | Not_null, "undefined" -> error ()
+    | Not_null, _ -> Js.Opt.case (Js.Opt.return j) error ok
+    | _ -> error ()
 
   let null = Js.Unsafe.inject Js.null
   let some = Fun.id
@@ -62,7 +76,7 @@ module DataJs = struct
   let of_string x = Js.string x |> coerce
   let of_bool x = Js.bool x |> coerce
   let of_int x = Float.of_int x |> Js.number_of_float |> coerce
-  let of_seq x = Array.of_seq x |> Js.array |> coerce
+  let of_array x = Js.array x |> coerce
   let of_assoc x = Array.of_seq x |> Js.Unsafe.obj
 
   let to_string j =

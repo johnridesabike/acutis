@@ -25,9 +25,26 @@ module DataJson = struct
 
   let to_string t = Yojson.Basic.pretty_to_string t
 
-  let classify = function
-    | `List x -> `Linear x
-    | (`Null | `Bool _ | `Int _ | `Float _ | `String _ | `Assoc _) as x -> x
+  type _ classify =
+    | Int : int classify
+    | String : string classify
+    | Float : float classify
+    | Bool : bool classify
+    | Not_null : t classify
+    | Linear : t Linear.t classify
+    | Assoc : t Assoc.t classify
+
+  let classify (type a) (c : a classify) (t : t) ~(ok : a -> 'b) ~error =
+    match (c, t) with
+    | Int, `Int x -> ok x
+    | String, `String x -> ok x
+    | Float, `Float x -> ok x
+    | Bool, `Bool x -> ok x
+    | Linear, `List x -> ok x
+    | Assoc, `Assoc x -> ok x
+    | (Int | String | Float | Bool | Linear | Assoc), _ | Not_null, `Null ->
+        error ()
+    | Not_null, _ -> ok t
 
   let null = `Null
   let some = Fun.id
@@ -35,7 +52,7 @@ module DataJson = struct
   let of_string x = `String x
   let of_bool x = `Bool x
   let of_int x = `Int x
-  let of_seq x = `List (List.of_seq x)
+  let of_array x = `List (Array.to_list x)
   let of_assoc x = `Assoc (List.of_seq x)
 end
 

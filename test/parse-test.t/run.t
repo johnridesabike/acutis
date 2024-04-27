@@ -945,27 +945,27 @@ Print the runtime instructions
      (External.classify (assoc) arg/4
       (ok classified/0
        (let& missing_keys/0 = (Data.int 0))
-       (if_else (External.Assoc.mem classified/0 "a")
+       (if_else (External.Assoc.mem "a" classified/0)
         (then
-         (let$ input/0 = (External.Assoc.find classified/0 "a"))
+         (let$ input/0 = (External.Assoc.find "a" classified/0))
          (let$ stack/4 = (Data.array [(Data.string "a"), stack/3]))
          (let$ type/1 = "{b: {c: false | true}}")
          (External.classify (assoc) input/0
           (ok classified/1
            (let$ decoded/0 = (hashtbl_create))
            (let& missing_keys/1 = (Data.int 0))
-           (if_else (External.Assoc.mem classified/1 "b")
+           (if_else (External.Assoc.mem "b" classified/1)
             (then
-             (let$ input/1 = (External.Assoc.find classified/1 "b"))
+             (let$ input/1 = (External.Assoc.find "b" classified/1))
              (let$ stack/5 = (Data.array [(Data.string "b"), stack/4]))
              (let$ type/2 = "{c: false | true}")
              (External.classify (assoc) input/1
               (ok classified/2
                (let$ decoded/1 = (hashtbl_create))
                (let& missing_keys/2 = (Data.int 0))
-               (if_else (External.Assoc.mem classified/2 "c")
+               (if_else (External.Assoc.mem "c" classified/2)
                 (then
-                 (let$ input/2 = (External.Assoc.find classified/2 "c"))
+                 (let$ input/2 = (External.Assoc.find "c" classified/2))
                  (let$ stack/6 = (Data.array [(Data.string "c"), stack/5]))
                  (let$ type/3 = "false | true")
                  (External.classify (bool) input/2
@@ -998,9 +998,9 @@ Print the runtime instructions
         (else
          (missing_keys/0 :=
           (Data.array [(Data.string "a"), (deref missing_keys/0)]))))
-       (if_else (External.Assoc.mem classified/0 "a_prop")
+       (if_else (External.Assoc.mem "a_prop" classified/0)
         (then
-         (let$ input/3 = (External.Assoc.find classified/0 "a_prop"))
+         (let$ input/3 = (External.Assoc.find "a_prop" classified/0))
          (let$ stack/7 = (Data.array [(Data.string "a_prop"), stack/3]))
          (let$ type/4 = "string")
          (External.classify (string) input/3
@@ -1009,9 +1009,9 @@ Print the runtime instructions
         (else
          (missing_keys/0 :=
           (Data.array [(Data.string "a_prop"), (deref missing_keys/0)]))))
-       (if_else (External.Assoc.mem classified/0 "b_prop")
+       (if_else (External.Assoc.mem "b_prop" classified/0)
         (then
-         (let$ input/4 = (External.Assoc.find classified/0 "b_prop"))
+         (let$ input/4 = (External.Assoc.find "b_prop" classified/0))
          (let$ stack/8 = (Data.array [(Data.string "b_prop"), stack/3]))
          (let$ type/5 = "string")
          (External.classify (string) input/4
@@ -1020,9 +1020,9 @@ Print the runtime instructions
         (else
          (missing_keys/0 :=
           (Data.array [(Data.string "b_prop"), (deref missing_keys/0)]))))
-       (if_else (External.Assoc.mem classified/0 "c_prop")
+       (if_else (External.Assoc.mem "c_prop" classified/0)
         (then
-         (let$ input/5 = (External.Assoc.find classified/0 "c_prop"))
+         (let$ input/5 = (External.Assoc.find "c_prop" classified/0))
          (let$ stack/9 = (Data.array [(Data.string "c_prop"), stack/3]))
          (let$ type/6 = "string")
          (External.classify (string) input/5
@@ -1031,9 +1031,9 @@ Print the runtime instructions
         (else
          (missing_keys/0 :=
           (Data.array [(Data.string "c_prop"), (deref missing_keys/0)]))))
-       (if_else (External.Assoc.mem classified/0 "d")
+       (if_else (External.Assoc.mem "d" classified/0)
         (then
-         (let$ input/6 = (External.Assoc.find classified/0 "d"))
+         (let$ input/6 = (External.Assoc.find "d" classified/0))
          (let$ stack/10 = (Data.array [(Data.string "d"), stack/3]))
          (let$ type/7 = "string")
          (External.classify (string) input/6
@@ -1042,9 +1042,9 @@ Print the runtime instructions
         (else
          (missing_keys/0 :=
           (Data.array [(Data.string "d"), (deref missing_keys/0)]))))
-       (if_else (External.Assoc.mem classified/0 "dict")
+       (if_else (External.Assoc.mem "dict" classified/0)
         (then
-         (let$ input/7 = (External.Assoc.find classified/0 "dict"))
+         (let$ input/7 = (External.Assoc.find "dict" classified/0))
          (let$ stack/11 = (Data.array [(Data.string "dict"), stack/3]))
          (let$ type/8 = "<int>")
          (External.classify (assoc) input/7
@@ -1062,9 +1062,9 @@ Print the runtime instructions
         (else
          (missing_keys/0 :=
           (Data.array [(Data.string "dict"), (deref missing_keys/0)]))))
-       (if_else (External.Assoc.mem classified/0 "e")
+       (if_else (External.Assoc.mem "e" classified/0)
         (then
-         (let$ input/8 = (External.Assoc.find classified/0 "e"))
+         (let$ input/8 = (External.Assoc.find "e" classified/0))
          (let$ stack/13 = (Data.array [(Data.string "e"), stack/3]))
          (let$ type/10 = "string")
          (External.classify (string) input/8
@@ -1073,9 +1073,9 @@ Print the runtime instructions
         (else
          (missing_keys/0 :=
           (Data.array [(Data.string "e"), (deref missing_keys/0)]))))
-       (if_else (External.Assoc.mem classified/0 "e_prop")
+       (if_else (External.Assoc.mem "e_prop" classified/0)
         (then
-         (let$ input/9 = (External.Assoc.find classified/0 "e_prop"))
+         (let$ input/9 = (External.Assoc.find "e_prop" classified/0))
          (let$ stack/14 = (Data.array [(Data.string "e_prop"), stack/3]))
          (let$ type/11 = "string")
          (External.classify (string) input/9
@@ -1085,9 +1085,9 @@ Print the runtime instructions
         (else
          (missing_keys/0 :=
           (Data.array [(Data.string "e_prop"), (deref missing_keys/0)]))))
-       (if_else (External.Assoc.mem classified/0 "ech_a")
+       (if_else (External.Assoc.mem "ech_a" classified/0)
         (then
-         (let$ input/10 = (External.Assoc.find classified/0 "ech_a"))
+         (let$ input/10 = (External.Assoc.find "ech_a" classified/0))
          (let$ stack/15 = (Data.array [(Data.string "ech_a"), stack/3]))
          (let$ type/12 = "string")
          (External.classify (string) input/10
@@ -1096,9 +1096,9 @@ Print the runtime instructions
         (else
          (missing_keys/0 :=
           (Data.array [(Data.string "ech_a"), (deref missing_keys/0)]))))
-       (if_else (External.Assoc.mem classified/0 "ech_b")
+       (if_else (External.Assoc.mem "ech_b" classified/0)
         (then
-         (let$ input/11 = (External.Assoc.find classified/0 "ech_b"))
+         (let$ input/11 = (External.Assoc.find "ech_b" classified/0))
          (let$ stack/16 = (Data.array [(Data.string "ech_b"), stack/3]))
          (let$ type/13 = "false | true")
          (External.classify (bool) input/11
@@ -1110,9 +1110,9 @@ Print the runtime instructions
         (else
          (missing_keys/0 :=
           (Data.array [(Data.string "ech_b"), (deref missing_keys/0)]))))
-       (if_else (External.Assoc.mem classified/0 "ech_d")
+       (if_else (External.Assoc.mem "ech_d" classified/0)
         (then
-         (let$ input/12 = (External.Assoc.find classified/0 "ech_d"))
+         (let$ input/12 = (External.Assoc.find "ech_d" classified/0))
          (let$ stack/17 = (Data.array [(Data.string "ech_d"), stack/3]))
          (let$ type/14 = "?string")
          (External.classify (not_null) input/12
@@ -1127,9 +1127,9 @@ Print the runtime instructions
            (props/0.%{"ech_d"} <- (Data.array decoded/3)))
           (error (props/0.%{"ech_d"} <- (Data.int 0)))))
         (else (props/0.%{"ech_d"} <- (Data.int 0))))
-       (if_else (External.Assoc.mem classified/0 "ech_e")
+       (if_else (External.Assoc.mem "ech_e" classified/0)
         (then
-         (let$ input/13 = (External.Assoc.find classified/0 "ech_e"))
+         (let$ input/13 = (External.Assoc.find "ech_e" classified/0))
          (let$ stack/19 = (Data.array [(Data.string "ech_e"), stack/3]))
          (let$ type/16 = "?string")
          (External.classify (not_null) input/13
@@ -1144,9 +1144,9 @@ Print the runtime instructions
            (props/0.%{"ech_e"} <- (Data.array decoded/4)))
           (error (props/0.%{"ech_e"} <- (Data.int 0)))))
         (else (props/0.%{"ech_e"} <- (Data.int 0))))
-       (if_else (External.Assoc.mem classified/0 "ech_f")
+       (if_else (External.Assoc.mem "ech_f" classified/0)
         (then
-         (let$ input/14 = (External.Assoc.find classified/0 "ech_f"))
+         (let$ input/14 = (External.Assoc.find "ech_f" classified/0))
          (let$ stack/21 = (Data.array [(Data.string "ech_f"), stack/3]))
          (let$ type/18 = "float")
          (External.classify (float) input/14
@@ -1160,9 +1160,9 @@ Print the runtime instructions
         (else
          (missing_keys/0 :=
           (Data.array [(Data.string "ech_f"), (deref missing_keys/0)]))))
-       (if_else (External.Assoc.mem classified/0 "ech_i")
+       (if_else (External.Assoc.mem "ech_i" classified/0)
         (then
-         (let$ input/15 = (External.Assoc.find classified/0 "ech_i"))
+         (let$ input/15 = (External.Assoc.find "ech_i" classified/0))
          (let$ stack/22 = (Data.array [(Data.string "ech_i"), stack/3]))
          (let$ type/19 = "int")
          (External.classify (int) input/15
@@ -1171,9 +1171,9 @@ Print the runtime instructions
         (else
          (missing_keys/0 :=
           (Data.array [(Data.string "ech_i"), (deref missing_keys/0)]))))
-       (if_else (External.Assoc.mem classified/0 "enums")
+       (if_else (External.Assoc.mem "enums" classified/0)
         (then
-         (let$ input/16 = (External.Assoc.find classified/0 "enums"))
+         (let$ input/16 = (External.Assoc.find "enums" classified/0))
          (let$ stack/23 = (Data.array [(Data.string "enums"), stack/3]))
          (let$ type/20 = "(@\"a\" | ..., @1 | ..., false | true, false | true)")
          (External.classify (linear) input/16
@@ -1236,9 +1236,9 @@ Print the runtime instructions
         (else
          (missing_keys/0 :=
           (Data.array [(Data.string "enums"), (deref missing_keys/0)]))))
-       (if_else (External.Assoc.mem classified/0 "f_prop")
+       (if_else (External.Assoc.mem "f_prop" classified/0)
         (then
-         (let$ input/17 = (External.Assoc.find classified/0 "f_prop"))
+         (let$ input/17 = (External.Assoc.find "f_prop" classified/0))
          (let$ stack/25 = (Data.array [(Data.string "f_prop"), stack/3]))
          (let$ type/25 = "string")
          (External.classify (string) input/17
@@ -1248,9 +1248,9 @@ Print the runtime instructions
         (else
          (missing_keys/0 :=
           (Data.array [(Data.string "f_prop"), (deref missing_keys/0)]))))
-       (if_else (External.Assoc.mem classified/0 "list")
+       (if_else (External.Assoc.mem "list" classified/0)
         (then
-         (let$ input/18 = (External.Assoc.find classified/0 "list"))
+         (let$ input/18 = (External.Assoc.find "list" classified/0))
          (let$ stack/26 = (Data.array [(Data.string "list"), stack/3]))
          (let$ type/26 = "[?string]")
          (External.classify (linear) input/18
@@ -1283,9 +1283,9 @@ Print the runtime instructions
         (else
          (missing_keys/0 :=
           (Data.array [(Data.string "list"), (deref missing_keys/0)]))))
-       (if_else (External.Assoc.mem classified/0 "map_d")
+       (if_else (External.Assoc.mem "map_d" classified/0)
         (then
-         (let$ input/19 = (External.Assoc.find classified/0 "map_d"))
+         (let$ input/19 = (External.Assoc.find "map_d" classified/0))
          (let$ stack/29 = (Data.array [(Data.string "map_d"), stack/3]))
          (let$ type/29 = "<int>")
          (External.classify (assoc) input/19
@@ -1303,9 +1303,9 @@ Print the runtime instructions
         (else
          (missing_keys/0 :=
           (Data.array [(Data.string "map_d"), (deref missing_keys/0)]))))
-       (if_else (External.Assoc.mem classified/0 "map_l")
+       (if_else (External.Assoc.mem "map_l" classified/0)
         (then
-         (let$ input/20 = (External.Assoc.find classified/0 "map_l"))
+         (let$ input/20 = (External.Assoc.find "map_l" classified/0))
          (let$ stack/31 = (Data.array [(Data.string "map_l"), stack/3]))
          (let$ type/31 = "[int]")
          (External.classify (linear) input/20
@@ -1329,9 +1329,9 @@ Print the runtime instructions
         (else
          (missing_keys/0 :=
           (Data.array [(Data.string "map_l"), (deref missing_keys/0)]))))
-       (if_else (External.Assoc.mem classified/0 "match_a")
+       (if_else (External.Assoc.mem "match_a" classified/0)
         (then
-         (let$ input/21 = (External.Assoc.find classified/0 "match_a"))
+         (let$ input/21 = (External.Assoc.find "match_a" classified/0))
          (let$ stack/33 = (Data.array [(Data.string "match_a"), stack/3]))
          (let$ type/33 = "int")
          (External.classify (int) input/21
@@ -1340,9 +1340,9 @@ Print the runtime instructions
         (else
          (missing_keys/0 :=
           (Data.array [(Data.string "match_a"), (deref missing_keys/0)]))))
-       (if_else (External.Assoc.mem classified/0 "match_b")
+       (if_else (External.Assoc.mem "match_b" classified/0)
         (then
-         (let$ input/22 = (External.Assoc.find classified/0 "match_b"))
+         (let$ input/22 = (External.Assoc.find "match_b" classified/0))
          (let$ stack/34 = (Data.array [(Data.string "match_b"), stack/3]))
          (let$ type/34 = "string")
          (External.classify (string) input/22
@@ -1352,9 +1352,9 @@ Print the runtime instructions
         (else
          (missing_keys/0 :=
           (Data.array [(Data.string "match_b"), (deref missing_keys/0)]))))
-       (if_else (External.Assoc.mem classified/0 "numbers")
+       (if_else (External.Assoc.mem "numbers" classified/0)
         (then
-         (let$ input/23 = (External.Assoc.find classified/0 "numbers"))
+         (let$ input/23 = (External.Assoc.find "numbers" classified/0))
          (let$ stack/35 = (Data.array [(Data.string "numbers"), stack/3]))
          (let$ type/35 =
           "{\n  exp1: float,\n  exp2: float,\n  exp3: float,\n  frac: float,\n  int: int,\n  negfrac: float,\n  negint: int\n}")
@@ -1362,9 +1362,9 @@ Print the runtime instructions
           (ok classified/36
            (let$ decoded/10 = (hashtbl_create))
            (let& missing_keys/3 = (Data.int 0))
-           (if_else (External.Assoc.mem classified/36 "exp1")
+           (if_else (External.Assoc.mem "exp1" classified/36)
             (then
-             (let$ input/24 = (External.Assoc.find classified/36 "exp1"))
+             (let$ input/24 = (External.Assoc.find "exp1" classified/36))
              (let$ stack/36 = (Data.array [(Data.string "exp1"), stack/35]))
              (let$ type/36 = "float")
              (External.classify (float) input/24
@@ -1380,9 +1380,9 @@ Print the runtime instructions
             (else
              (missing_keys/3 :=
               (Data.array [(Data.string "exp1"), (deref missing_keys/3)]))))
-           (if_else (External.Assoc.mem classified/36 "exp2")
+           (if_else (External.Assoc.mem "exp2" classified/36)
             (then
-             (let$ input/25 = (External.Assoc.find classified/36 "exp2"))
+             (let$ input/25 = (External.Assoc.find "exp2" classified/36))
              (let$ stack/37 = (Data.array [(Data.string "exp2"), stack/35]))
              (let$ type/37 = "float")
              (External.classify (float) input/25
@@ -1398,9 +1398,9 @@ Print the runtime instructions
             (else
              (missing_keys/3 :=
               (Data.array [(Data.string "exp2"), (deref missing_keys/3)]))))
-           (if_else (External.Assoc.mem classified/36 "exp3")
+           (if_else (External.Assoc.mem "exp3" classified/36)
             (then
-             (let$ input/26 = (External.Assoc.find classified/36 "exp3"))
+             (let$ input/26 = (External.Assoc.find "exp3" classified/36))
              (let$ stack/38 = (Data.array [(Data.string "exp3"), stack/35]))
              (let$ type/38 = "float")
              (External.classify (float) input/26
@@ -1416,9 +1416,9 @@ Print the runtime instructions
             (else
              (missing_keys/3 :=
               (Data.array [(Data.string "exp3"), (deref missing_keys/3)]))))
-           (if_else (External.Assoc.mem classified/36 "frac")
+           (if_else (External.Assoc.mem "frac" classified/36)
             (then
-             (let$ input/27 = (External.Assoc.find classified/36 "frac"))
+             (let$ input/27 = (External.Assoc.find "frac" classified/36))
              (let$ stack/39 = (Data.array [(Data.string "frac"), stack/35]))
              (let$ type/39 = "float")
              (External.classify (float) input/27
@@ -1434,9 +1434,9 @@ Print the runtime instructions
             (else
              (missing_keys/3 :=
               (Data.array [(Data.string "frac"), (deref missing_keys/3)]))))
-           (if_else (External.Assoc.mem classified/36 "int")
+           (if_else (External.Assoc.mem "int" classified/36)
             (then
-             (let$ input/28 = (External.Assoc.find classified/36 "int"))
+             (let$ input/28 = (External.Assoc.find "int" classified/36))
              (let$ stack/40 = (Data.array [(Data.string "int"), stack/35]))
              (let$ type/40 = "int")
              (External.classify (int) input/28
@@ -1447,9 +1447,9 @@ Print the runtime instructions
             (else
              (missing_keys/3 :=
               (Data.array [(Data.string "int"), (deref missing_keys/3)]))))
-           (if_else (External.Assoc.mem classified/36 "negfrac")
+           (if_else (External.Assoc.mem "negfrac" classified/36)
             (then
-             (let$ input/29 = (External.Assoc.find classified/36 "negfrac"))
+             (let$ input/29 = (External.Assoc.find "negfrac" classified/36))
              (let$ stack/41 = (Data.array [(Data.string "negfrac"), stack/35]))
              (let$ type/41 = "float")
              (External.classify (float) input/29
@@ -1465,9 +1465,9 @@ Print the runtime instructions
             (else
              (missing_keys/3 :=
               (Data.array [(Data.string "negfrac"), (deref missing_keys/3)]))))
-           (if_else (External.Assoc.mem classified/36 "negint")
+           (if_else (External.Assoc.mem "negint" classified/36)
             (then
-             (let$ input/30 = (External.Assoc.find classified/36 "negint"))
+             (let$ input/30 = (External.Assoc.find "negint" classified/36))
              (let$ stack/42 = (Data.array [(Data.string "negint"), stack/35]))
              (let$ type/42 = "int")
              (External.classify (int) input/30
@@ -1487,18 +1487,18 @@ Print the runtime instructions
         (else
          (missing_keys/0 :=
           (Data.array [(Data.string "numbers"), (deref missing_keys/0)]))))
-       (if_else (External.Assoc.mem classified/0 "record")
+       (if_else (External.Assoc.mem "record" classified/0)
         (then
-         (let$ input/31 = (External.Assoc.find classified/0 "record"))
+         (let$ input/31 = (External.Assoc.find "record" classified/0))
          (let$ stack/43 = (Data.array [(Data.string "record"), stack/3]))
          (let$ type/43 = "{\"!#%@\": string, a: string}")
          (External.classify (assoc) input/31
           (ok classified/49
            (let$ decoded/11 = (hashtbl_create))
            (let& missing_keys/4 = (Data.int 0))
-           (if_else (External.Assoc.mem classified/49 "!#%@")
+           (if_else (External.Assoc.mem "!#%@" classified/49)
             (then
-             (let$ input/32 = (External.Assoc.find classified/49 "!#%@"))
+             (let$ input/32 = (External.Assoc.find "!#%@" classified/49))
              (let$ stack/44 = (Data.array [(Data.string "!#%@"), stack/43]))
              (let$ type/44 = "string")
              (External.classify (string) input/32
@@ -1509,9 +1509,9 @@ Print the runtime instructions
             (else
              (missing_keys/4 :=
               (Data.array [(Data.string "!#%@"), (deref missing_keys/4)]))))
-           (if_else (External.Assoc.mem classified/49 "a")
+           (if_else (External.Assoc.mem "a" classified/49)
             (then
-             (let$ input/33 = (External.Assoc.find classified/49 "a"))
+             (let$ input/33 = (External.Assoc.find "a" classified/49))
              (let$ stack/45 = (Data.array [(Data.string "a"), stack/43]))
              (let$ type/45 = "string")
              (External.classify (string) input/33
@@ -1531,26 +1531,26 @@ Print the runtime instructions
         (else
          (missing_keys/0 :=
           (Data.array [(Data.string "record"), (deref missing_keys/0)]))))
-       (if_else (External.Assoc.mem classified/0 "tagged")
+       (if_else (External.Assoc.mem "tagged" classified/0)
         (then
-         (let$ input/34 = (External.Assoc.find classified/0 "tagged"))
+         (let$ input/34 = (External.Assoc.find "tagged" classified/0))
          (let$ stack/46 = (Data.array [(Data.string "tagged"), stack/3]))
          (let$ type/46 = "{@tag: false} | {@tag: true, a: string}")
          (External.classify (assoc) input/34
           (ok classified/52
-           (if_else (External.Assoc.mem classified/52 "tag")
+           (if_else (External.Assoc.mem "tag" classified/52)
             (then
              (External.classify (bool)
-              (External.Assoc.find classified/52 "tag")
+              (External.Assoc.find "tag" classified/52)
               (ok classified/53
                (if_else classified/53
                 (then
                  (let$ decoded/13 = (hashtbl_create))
                  (decoded/13.%{"tag"} <- (Data.int 1))
                  (let& missing_keys/6 = (Data.int 0))
-                 (if_else (External.Assoc.mem classified/52 "a")
+                 (if_else (External.Assoc.mem "a" classified/52)
                   (then
-                   (let$ input/35 = (External.Assoc.find classified/52 "a"))
+                   (let$ input/35 = (External.Assoc.find "a" classified/52))
                    (let$ stack/47 = (Data.array [(Data.string "a"), stack/46]))
                    (let$ type/47 = "string")
                    (External.classify (string) input/35
@@ -1587,9 +1587,9 @@ Print the runtime instructions
         (else
          (missing_keys/0 :=
           (Data.array [(Data.string "tagged"), (deref missing_keys/0)]))))
-       (if_else (External.Assoc.mem classified/0 "trim_a")
+       (if_else (External.Assoc.mem "trim_a" classified/0)
         (then
-         (let$ input/36 = (External.Assoc.find classified/0 "trim_a"))
+         (let$ input/36 = (External.Assoc.find "trim_a" classified/0))
          (let$ stack/48 = (Data.array [(Data.string "trim_a"), stack/3]))
          (let$ type/48 = "string")
          (External.classify (string) input/36
@@ -1599,9 +1599,9 @@ Print the runtime instructions
         (else
          (missing_keys/0 :=
           (Data.array [(Data.string "trim_a"), (deref missing_keys/0)]))))
-       (if_else (External.Assoc.mem classified/0 "trim_b")
+       (if_else (External.Assoc.mem "trim_b" classified/0)
         (then
-         (let$ input/37 = (External.Assoc.find classified/0 "trim_b"))
+         (let$ input/37 = (External.Assoc.find "trim_b" classified/0))
          (let$ stack/49 = (Data.array [(Data.string "trim_b"), stack/3]))
          (let$ type/49 = "string")
          (External.classify (string) input/37
@@ -1611,9 +1611,9 @@ Print the runtime instructions
         (else
          (missing_keys/0 :=
           (Data.array [(Data.string "trim_b"), (deref missing_keys/0)]))))
-       (if_else (External.Assoc.mem classified/0 "trim_c")
+       (if_else (External.Assoc.mem "trim_c" classified/0)
         (then
-         (let$ input/38 = (External.Assoc.find classified/0 "trim_c"))
+         (let$ input/38 = (External.Assoc.find "trim_c" classified/0))
          (let$ stack/50 = (Data.array [(Data.string "trim_c"), stack/3]))
          (let$ type/50 = "string")
          (External.classify (string) input/38
@@ -1623,9 +1623,9 @@ Print the runtime instructions
         (else
          (missing_keys/0 :=
           (Data.array [(Data.string "trim_c"), (deref missing_keys/0)]))))
-       (if_else (External.Assoc.mem classified/0 "trim_d")
+       (if_else (External.Assoc.mem "trim_d" classified/0)
         (then
-         (let$ input/39 = (External.Assoc.find classified/0 "trim_d"))
+         (let$ input/39 = (External.Assoc.find "trim_d" classified/0))
          (let$ stack/51 = (Data.array [(Data.string "trim_d"), stack/3]))
          (let$ type/51 = "string")
          (External.classify (string) input/39
@@ -1635,9 +1635,9 @@ Print the runtime instructions
         (else
          (missing_keys/0 :=
           (Data.array [(Data.string "trim_d"), (deref missing_keys/0)]))))
-       (if_else (External.Assoc.mem classified/0 "trim_e")
+       (if_else (External.Assoc.mem "trim_e" classified/0)
         (then
-         (let$ input/40 = (External.Assoc.find classified/0 "trim_e"))
+         (let$ input/40 = (External.Assoc.find "trim_e" classified/0))
          (let$ stack/52 = (Data.array [(Data.string "trim_e"), stack/3]))
          (let$ type/52 = "string")
          (External.classify (string) input/40
@@ -1647,9 +1647,9 @@ Print the runtime instructions
         (else
          (missing_keys/0 :=
           (Data.array [(Data.string "trim_e"), (deref missing_keys/0)]))))
-       (if_else (External.Assoc.mem classified/0 "trim_f")
+       (if_else (External.Assoc.mem "trim_f" classified/0)
         (then
-         (let$ input/41 = (External.Assoc.find classified/0 "trim_f"))
+         (let$ input/41 = (External.Assoc.find "trim_f" classified/0))
          (let$ stack/53 = (Data.array [(Data.string "trim_f"), stack/3]))
          (let$ type/53 = "string")
          (External.classify (string) input/41
@@ -1659,9 +1659,9 @@ Print the runtime instructions
         (else
          (missing_keys/0 :=
           (Data.array [(Data.string "trim_f"), (deref missing_keys/0)]))))
-       (if_else (External.Assoc.mem classified/0 "trim_g")
+       (if_else (External.Assoc.mem "trim_g" classified/0)
         (then
-         (let$ input/42 = (External.Assoc.find classified/0 "trim_g"))
+         (let$ input/42 = (External.Assoc.find "trim_g" classified/0))
          (let$ stack/54 = (Data.array [(Data.string "trim_g"), stack/3]))
          (let$ type/54 = "string")
          (External.classify (string) input/42
@@ -1671,9 +1671,9 @@ Print the runtime instructions
         (else
          (missing_keys/0 :=
           (Data.array [(Data.string "trim_g"), (deref missing_keys/0)]))))
-       (if_else (External.Assoc.mem classified/0 "tuple")
+       (if_else (External.Assoc.mem "tuple" classified/0)
         (then
-         (let$ input/43 = (External.Assoc.find classified/0 "tuple"))
+         (let$ input/43 = (External.Assoc.find "tuple" classified/0))
          (let$ stack/55 = (Data.array [(Data.string "tuple"), stack/3]))
          (let$ type/55 = "(int, float, string)")
          (External.classify (linear) input/43

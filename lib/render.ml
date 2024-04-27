@@ -34,23 +34,23 @@ module type DECODABLE = sig
 
   type t
 
-  val classify :
-    t ->
-    [ `Null
-    | `Bool of bool
-    | `Int of int
-    | `Float of float
-    | `String of string
-    | `Linear of t Linear.t
-    | `Assoc of t Assoc.t ]
+  type _ classify =
+    | Int : int classify
+    | String : string classify
+    | Float : float classify
+    | Bool : bool classify
+    | Not_null : t classify
+    | Linear : t Linear.t classify
+    | Assoc : t Assoc.t classify
 
+  val classify : 'a classify -> t -> ok:('a -> 'b) -> error:(unit -> 'b) -> 'b
   val null : t
   val some : t -> t
   val of_float : float -> t
   val of_string : string -> t
   val of_bool : bool -> t
   val of_int : int -> t
-  val of_seq : t Seq.t -> t
+  val of_array : t array -> t
   val of_assoc : (string * t) Seq.t -> t
   val to_string : t -> string
 end
@@ -122,7 +122,7 @@ module Make (M : MONAD) (D : DECODABLE) :
     let hashtbl = Tbl.of_seq
     let hashtbl_create () = Tbl.create 16
     let ( .%{} ) = Tbl.find
-    let ( .%{}<- ) = Tbl.replace
+    let ( .%{}<- ) = Tbl.replace (* Use [replace] so serialization works. *)
     let hashtbl_mem = Tbl.mem
     let hashtbl_copy = Tbl.copy
     let hashtbl_iter x f = Tbl.iter f x
@@ -219,65 +219,20 @@ module Make (M : MONAD) (D : DECODABLE) :
     end
 
     module External = struct
-      module Linear = struct
-        type 'a t = 'a D.Linear.t
+      include D
 
-        let length = D.Linear.length
-        let iteri x f = D.Linear.iteri f x
-      end
-
-      module Assoc = struct
-        type 'a t = 'a D.Assoc.t
-
-        let find x k = D.Assoc.find k x
-        let mem x k = D.Assoc.mem k x
-        let iter f x = D.Assoc.iter x f
-      end
-
-      type t = external_data
-
-      let null = D.null
-      let some = D.some
-      let of_int = D.of_int
-      let of_string = D.of_string
-      let of_float = D.of_float
-      let of_bool = D.of_bool
-      let of_array x = D.of_seq (Array.to_seq x)
-      let of_hashtbl x = D.of_assoc (Tbl.to_seq x)
+      let of_hashtbl x = of_assoc (Tbl.to_seq x)
 
       let rec of_untyped = function
         | Data.Unknown x -> x
         | Data.Int x -> of_int x
         | Data.Float x -> of_float x
         | Data.String x -> of_string x
-        | Data.Array x -> Array.to_seq x |> Seq.map of_untyped |> D.of_seq
+        | Data.Array x -> Array.map of_untyped x |> of_array
         | Data.Hashtbl x ->
             Tbl.to_seq x
             |> Seq.map (fun (k, v) -> (k, of_untyped v))
-            |> D.of_assoc
-
-      type _ classify =
-        | Int : int classify
-        | String : string classify
-        | Float : float classify
-        | Bool : bool classify
-        | Not_null : t classify
-        | Linear : t Linear.t classify
-        | Assoc : t Assoc.t classify
-
-      let classify (type a) (c : a classify) t ~(ok : a exp -> 'b stmt) ~error =
-        match (c, D.classify t) with
-        | Int, `Int x -> ok x
-        | String, `String x -> ok x
-        | Float, `Float x -> ok x
-        | Bool, `Bool x -> ok x
-        | Linear, `Linear x -> ok x
-        | Assoc, `Assoc x -> ok x
-        | (Int | String | Float | Bool | Linear | Assoc), _ | Not_null, `Null ->
-            error ()
-        | Not_null, _ -> ok t
-
-      let to_string = D.to_string
+            |> of_assoc
     end
   end)
 end
