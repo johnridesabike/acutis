@@ -263,6 +263,9 @@ module RemoveIdsAndUnits (F : Instruct.SEM) :
     let to_string x = { x with from = F.Data.to_string x.from }
     let to_array x = { x with from = F.Data.to_array x.from }
     let to_hashtbl x = { x with from = F.Data.to_hashtbl x.from }
+
+    let to_external_untyped x =
+      { x with from = F.Data.to_external_untyped x.from }
   end
 
   module External = struct
@@ -274,7 +277,6 @@ module RemoveIdsAndUnits (F : Instruct.SEM) :
     let of_string x = { x with from = F.External.of_string x.from }
     let of_bool x = { x with from = F.External.of_bool x.from }
     let of_array x = { x with from = F.External.of_array x.from }
-    let of_untyped x = { x with from = F.External.of_untyped x.from }
   end
 end
 
@@ -316,7 +318,6 @@ let pp (module Jsmod : JSMODULE) ppf c =
     let$ buffer_add_escape = ("buffer_add_escape", buffer_add_escape) in
     let module Runtime :
       Instruct.SEM with type 'a obs = js and type import = import = struct
-      include Jsmod
       include Javascript
 
       type 'a obs = 'a stmt
@@ -394,26 +395,6 @@ let pp (module Jsmod : JSMODULE) ppf c =
       let bind p f = p.!("then") @@ f
       let error s = (global "Promise").!("reject") @@ new_ "Error" [ s ]
 
-      type external_data
-      type nonrec import = import
-
-      module Data = struct
-        type t
-
-        let int = Fun.id
-        let float = Fun.id
-        let string = Fun.id
-        let array = Fun.id
-        let hashtbl = Fun.id
-        let unknown = Fun.id
-        let to_int = Fun.id
-        let to_float = Fun.id
-        let to_string = Fun.id
-        let to_array = Fun.id
-        let to_hashtbl = Fun.id
-        let equal = equal
-      end
-
       module External = struct
         module Linear = struct
           type 'a t = js
@@ -434,7 +415,7 @@ let pp (module Jsmod : JSMODULE) ppf c =
               (fun key -> f key x.%(key))
         end
 
-        type t = external_data
+        type t
 
         let null = global "null"
         let some = Fun.id
@@ -444,7 +425,6 @@ let pp (module Jsmod : JSMODULE) ppf c =
         let of_bool = Fun.id
         let of_array = Fun.id
         let of_hashtbl x = (global "Object").!("fromEntries") @@ x
-        let of_untyped = Fun.id
 
         type _ classify =
           | Int : int classify
@@ -472,6 +452,28 @@ let pp (module Jsmod : JSMODULE) ppf c =
 
         let to_string = to_string
       end
+
+      module Data = struct
+        type t
+
+        let int = Fun.id
+        let float = Fun.id
+        let string = Fun.id
+        let array = Fun.id
+        let hashtbl = Fun.id
+        let unknown = Fun.id
+        let to_int = Fun.id
+        let to_float = Fun.id
+        let to_string = Fun.id
+        let to_array = Fun.id
+        let to_hashtbl = Fun.id
+        let to_external_untyped = Fun.id
+        let equal = equal
+      end
+
+      type nonrec import = import
+
+      include Jsmod
     end in
     let module I = Instruct.Make (RemoveIdsAndUnits (Runtime)) in
     I.eval c

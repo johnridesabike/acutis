@@ -157,11 +157,11 @@ module Make (M : MONAD) (D : DECODABLE) :
     let bind = M.bind
     let error = M.error
 
-    type external_data = D.t
-    type import = D.t -> string promise
+    module External = struct
+      include D
 
-    let import = ( |> )
-    let export = Fun.id
+      let of_hashtbl x = Tbl.to_seq x |> D.of_assoc
+    end
 
     module Data = struct
       type t =
@@ -170,7 +170,7 @@ module Make (M : MONAD) (D : DECODABLE) :
         | String of string
         | Array of t array
         | Hashtbl of t hashtbl
-        | Unknown of external_data
+        | Unknown of External.t
 
       let int x = Int x
       let float x = Float x
@@ -199,6 +199,17 @@ module Make (M : MONAD) (D : DECODABLE) :
         | Hashtbl x -> x
         | _ -> Error.internal ~__POS__ "Expected Hashtbl."
 
+      let rec to_external_untyped = function
+        | Unknown x -> x
+        | Int x -> External.of_int x
+        | Float x -> External.of_float x
+        | String x -> External.of_string x
+        | Array x -> Array.map to_external_untyped x |> External.of_array
+        | Hashtbl x ->
+            Tbl.to_seq x
+            |> Seq.map (fun (k, v) -> (k, to_external_untyped v))
+            |> External.of_assoc
+
       let rec equal a b =
         match (a, b) with
         | Int a, Int b -> Int.equal a b
@@ -218,22 +229,10 @@ module Make (M : MONAD) (D : DECODABLE) :
             false
     end
 
-    module External = struct
-      include D
+    type import = External.t -> string promise
 
-      let of_hashtbl x = of_assoc (Tbl.to_seq x)
-
-      let rec of_untyped = function
-        | Data.Unknown x -> x
-        | Data.Int x -> of_int x
-        | Data.Float x -> of_float x
-        | Data.String x -> of_string x
-        | Data.Array x -> Array.map of_untyped x |> of_array
-        | Data.Hashtbl x ->
-            Tbl.to_seq x
-            |> Seq.map (fun (k, v) -> (k, of_untyped v))
-            |> of_assoc
-    end
+    let import = ( |> )
+    let export = Fun.id
   end)
 end
 

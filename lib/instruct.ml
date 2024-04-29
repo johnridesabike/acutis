@@ -141,41 +141,10 @@ module type SEM = sig
   val bind : 'a promise exp -> ('a -> 'b promise) exp -> 'b promise exp
   val error : string exp -> 'a promise exp
 
-  (** {1 Importing and exporting.} *)
-
-  type external_data
-  (** Data from the outside world that we need to decode. *)
-
-  type import
-  (** Information to import a function from external code. *)
-
-  val import :
-    import -> ((external_data -> string promise) exp -> 'a stmt) -> 'a stmt
-
-  val export : 'a exp -> 'a stmt
-
-  module Data : sig
-    (** Runtime data. *)
-
-    type t
-    (** Either a string, an integer, a float, an array, or a hash table. *)
-
-    val int : int exp -> t exp
-    val float : float exp -> t exp
-    val string : string exp -> t exp
-    val array : t array exp -> t exp
-    val hashtbl : t hashtbl exp -> t exp
-    val unknown : external_data exp -> t exp
-    val to_int : t exp -> int exp
-    val to_float : t exp -> float exp
-    val to_string : t exp -> string exp
-    val to_array : t exp -> t array exp
-    val to_hashtbl : t exp -> t hashtbl exp
-    val equal : t exp -> t exp -> bool exp
-  end
+  (** {1 Data} *)
 
   module External : sig
-    (** Foreign data before it's parsed into [Data.t]. *)
+    (** Foreign data before it's parsed into {!Data.t}. *)
 
     module Linear : sig
       (** A linear container such as a list or array. *)
@@ -196,7 +165,8 @@ module type SEM = sig
       val iter : (string exp -> 'a exp -> unit stmt) -> 'a t exp -> unit stmt
     end
 
-    type t = external_data
+    type t
+    (** Data from the outside world that we need to decode. *)
 
     val null : t exp
     val some : t exp -> t exp
@@ -204,9 +174,8 @@ module type SEM = sig
     val of_float : float exp -> t exp
     val of_string : string exp -> t exp
     val of_bool : bool exp -> t exp
-    val of_array : external_data array exp -> t exp
-    val of_hashtbl : external_data hashtbl exp -> t exp
-    val of_untyped : Data.t exp -> t exp
+    val of_array : t array exp -> t exp
+    val of_hashtbl : t hashtbl exp -> t exp
 
     type _ classify =
       | Int : int classify
@@ -226,13 +195,44 @@ module type SEM = sig
 
     val to_string : t exp -> string exp
   end
+
+  module Data : sig
+    (** Runtime data. *)
+
+    type t
+    (** Either a string, an integer, a float, an array, or a hash table. *)
+
+    val int : int exp -> t exp
+    val float : float exp -> t exp
+    val string : string exp -> t exp
+    val array : t array exp -> t exp
+    val hashtbl : t hashtbl exp -> t exp
+    val unknown : External.t exp -> t exp
+    val to_int : t exp -> int exp
+    val to_float : t exp -> float exp
+    val to_string : t exp -> string exp
+    val to_array : t exp -> t array exp
+    val to_hashtbl : t exp -> t hashtbl exp
+    val to_external_untyped : t exp -> External.t exp
+    val equal : t exp -> t exp -> bool exp
+  end
+
+  (** {1 Importing and exporting.} *)
+
+  type import
+  (** Information to import a function from external code. *)
+
+  val import :
+    import -> ((External.t -> string promise) exp -> 'a stmt) -> 'a stmt
+
+  val export : 'a exp -> 'a stmt
 end
 
 (** Create evaluation instructions for a given language implementation. *)
 module Make (I : SEM) : sig
   open I
 
-  val eval : import Compile.t -> (external_data -> string promise) obs
+  val eval : import Compile.t -> (External.t -> string promise) obs
   (** Evaluate a template with the language implemented by {!I}. *)
 end = struct
   open I
@@ -581,7 +581,7 @@ end = struct
 
   type decode_runtime = {
     stack : Data.t exp;
-    decode_error : (Data.t -> string -> external_data -> unit) exp;
+    decode_error : (Data.t -> string -> External.t -> unit) exp;
     key_error : (Data.t -> string -> Data.t -> unit) exp;
   }
 
@@ -604,7 +604,7 @@ end = struct
     equal : 'a exp -> 'a exp -> bool exp;
     to_data : 'a exp -> Data.t exp;
     of_data : Data.t exp -> 'a exp;
-    to_extern : 'a exp -> external_data exp;
+    to_extern : 'a exp -> External.t exp;
     classify : 'a External.classify;
   }
 
@@ -883,7 +883,7 @@ end = struct
 
   let rec encode ~set props ty =
     match !ty with
-    | T.Unknown _ -> set (External.of_untyped props)
+    | T.Unknown _ -> set (Data.to_external_untyped props)
     | T.Enum_int (_, Bool) -> set (external_of_int_bool (Data.to_int props))
     | T.String | T.Enum_string _ ->
         set (External.of_string (Data.to_string props))
@@ -1162,12 +1162,12 @@ module MakeTrans
      and type 'a hashtbl = 'a F.hashtbl
      and type buffer = F.buffer
      and type 'a promise = 'a F.promise
-     and type external_data = F.external_data
-     and type import = F.import
-     and type Data.t = F.Data.t
      and type 'a External.Linear.t = 'a F.External.Linear.t
      and type 'a External.Assoc.t = 'a F.External.Assoc.t
-     and type 'a External.classify = 'a F.External.classify = struct
+     and type External.t = F.External.t
+     and type 'a External.classify = 'a F.External.classify
+     and type Data.t = F.Data.t
+     and type import = F.import = struct
   open T
   include F
 
@@ -1235,25 +1235,6 @@ module MakeTrans
   let promise x = fwde (F.promise (bwde x))
   let bind p f = fwde (F.bind (bwde p) (bwde f))
   let error s = fwde (F.error (bwde s))
-  let import i f = fwds (F.import i (fun fi -> bwds (f (fwde fi))))
-  let export x = fwds (F.export (bwde x))
-
-  module Data = struct
-    type t = F.Data.t
-
-    let int x = fwde (F.Data.int (bwde x))
-    let float x = fwde (F.Data.float (bwde x))
-    let string x = fwde (F.Data.string (bwde x))
-    let array x = fwde (F.Data.array (bwde x))
-    let hashtbl x = fwde (F.Data.hashtbl (bwde x))
-    let unknown x = fwde (F.Data.unknown (bwde x))
-    let to_int x = fwde (F.Data.to_int (bwde x))
-    let to_float x = fwde (F.Data.to_float (bwde x))
-    let to_string x = fwde (F.Data.to_string (bwde x))
-    let to_array x = fwde (F.Data.to_array (bwde x))
-    let to_hashtbl x = fwde (F.Data.to_hashtbl (bwde x))
-    let equal a b = fwde (F.Data.equal (bwde a) (bwde b))
-  end
 
   module External = struct
     include F.External
@@ -1283,8 +1264,6 @@ module MakeTrans
              (bwde t))
     end
 
-    type t = external_data
-
     let null = fwde F.External.null
     let some x = fwde (F.External.some (bwde x))
     let of_int x = fwde (F.External.of_int (bwde x))
@@ -1293,7 +1272,6 @@ module MakeTrans
     let of_bool x = fwde (F.External.of_bool (bwde x))
     let of_array x = fwde (F.External.of_array (bwde x))
     let of_hashtbl x = fwde (F.External.of_hashtbl (bwde x))
-    let of_untyped x = fwde (F.External.of_untyped (bwde x))
 
     let classify c x ~ok ~error =
       fwds
@@ -1303,6 +1281,27 @@ module MakeTrans
 
     let to_string x = fwde (F.External.to_string (bwde x))
   end
+
+  module Data = struct
+    type t = F.Data.t
+
+    let int x = fwde (F.Data.int (bwde x))
+    let float x = fwde (F.Data.float (bwde x))
+    let string x = fwde (F.Data.string (bwde x))
+    let array x = fwde (F.Data.array (bwde x))
+    let hashtbl x = fwde (F.Data.hashtbl (bwde x))
+    let unknown x = fwde (F.Data.unknown (bwde x))
+    let to_int x = fwde (F.Data.to_int (bwde x))
+    let to_float x = fwde (F.Data.to_float (bwde x))
+    let to_string x = fwde (F.Data.to_string (bwde x))
+    let to_array x = fwde (F.Data.to_array (bwde x))
+    let to_hashtbl x = fwde (F.Data.to_hashtbl (bwde x))
+    let to_external_untyped x = fwde (F.Data.to_external_untyped (bwde x))
+    let equal a b = fwde (F.Data.equal (bwde a) (bwde b))
+  end
+
+  let import i f = fwds (F.import i (fun fi -> bwds (f (fwde fi))))
+  let export x = fwds (F.export (bwde x))
 end
 
 (** Pretty-print the instructions for a compiled template. *)
@@ -1419,32 +1418,6 @@ let pp (type a) pp_import ppf c =
     let bind = F.dprintf "(@[bind@ %t@ %t@])"
     let error = F.dprintf "(@[error@ %t@])"
 
-    type external_data
-    type import = a
-
-    let import i f =
-      let name = var "import" in
-      F.dprintf "(@[import@ %t@ from@ %a@])@ %t" name pp_import i (f name)
-
-    let export = F.dprintf "(@[export@ %t@])"
-
-    module Data = struct
-      type t
-
-      let int = F.dprintf "(@[Data.int@ %t@])"
-      let float = F.dprintf "(@[Data.float@ %t@])"
-      let string = F.dprintf "(@[Data.string@ %t@])"
-      let array = F.dprintf "(@[Data.array@ %t@])"
-      let hashtbl = F.dprintf "(@[Data.hashtbl@ %t@])"
-      let unknown = F.dprintf "(@[Data.unknown@ %t@])"
-      let to_int = F.dprintf "(@[Data.to_int@ %t@])"
-      let to_float = F.dprintf "(@[Data.to_float@ %t@])"
-      let to_string = F.dprintf "(@[Data.to_string@ %t@])"
-      let to_array = F.dprintf "(@[Data.to_array@ %t@])"
-      let to_hashtbl = F.dprintf "(@[Data.to_hashtbl@ %t@])"
-      let equal = F.dprintf "(@[Data.equal@ %t@ %t@])"
-    end
-
     module External = struct
       module Linear = struct
         type 'a t = F.formatter -> unit
@@ -1471,7 +1444,7 @@ let pp (type a) pp_import ppf c =
             (f arg_k arg_v)
       end
 
-      type t = external_data
+      type t
 
       let null = F.dprintf "null"
       let some = F.dprintf "(@[External.some@ %t@])"
@@ -1481,7 +1454,6 @@ let pp (type a) pp_import ppf c =
       let of_bool = F.dprintf "(@[External.of_bool@ %t@])"
       let of_array = F.dprintf "(@[External.of_array@ %t@])"
       let of_hashtbl = F.dprintf "(@[External.of_hashtbl@ %t@])"
-      let of_untyped = F.dprintf "(@[External.of_untyped@ %t@])"
 
       type _ classify =
         | Int : int classify
@@ -1510,5 +1482,31 @@ let pp (type a) pp_import ppf c =
 
       let to_string = F.dprintf "(@[External.to_string@ %t@])"
     end
+
+    module Data = struct
+      type t
+
+      let int = F.dprintf "(@[Data.int@ %t@])"
+      let float = F.dprintf "(@[Data.float@ %t@])"
+      let string = F.dprintf "(@[Data.string@ %t@])"
+      let array = F.dprintf "(@[Data.array@ %t@])"
+      let hashtbl = F.dprintf "(@[Data.hashtbl@ %t@])"
+      let unknown = F.dprintf "(@[Data.unknown@ %t@])"
+      let to_int = F.dprintf "(@[Data.to_int@ %t@])"
+      let to_float = F.dprintf "(@[Data.to_float@ %t@])"
+      let to_string = F.dprintf "(@[Data.to_string@ %t@])"
+      let to_array = F.dprintf "(@[Data.to_array@ %t@])"
+      let to_hashtbl = F.dprintf "(@[Data.to_hashtbl@ %t@])"
+      let to_external_untyped = F.dprintf "(@[Data.to_external_untyped@ %t@])"
+      let equal = F.dprintf "(@[Data.equal@ %t@ %t@])"
+    end
+
+    type import = a
+
+    let import i f =
+      let name = var "import" in
+      F.dprintf "(@[import@ %t@ from@ %a@])@ %t" name pp_import i (f name)
+
+    let export = F.dprintf "(@[export@ %t@])"
   end) in
   F.fprintf ppf "@[<hv>%t@]" (M.eval c)
