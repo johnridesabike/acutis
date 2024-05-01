@@ -17,33 +17,19 @@ module type MONAD = sig
 end
 
 module type DECODABLE = sig
-  module Linear : sig
-    type 'a t
+  type 'a linear
 
-    val length : 'a t -> int
-    val iteri : (int -> 'a -> unit) -> 'a t -> unit
-  end
+  val length : 'a linear -> int
+  val iteri : (int -> 'a -> unit) -> 'a linear -> unit
 
-  module Assoc : sig
-    type 'a t
+  type 'a assoc
 
-    val find : string -> 'a t -> 'a
-    val mem : string -> 'a t -> bool
-    val iter : (string -> 'a -> unit) -> 'a t -> unit
-  end
+  val assoc_find : string -> 'a assoc -> 'a
+  val assoc_mem : string -> 'a assoc -> bool
+  val assoc_iter : (string -> 'a -> unit) -> 'a assoc -> unit
 
   type t
 
-  type _ classify =
-    | Int : int classify
-    | String : string classify
-    | Float : float classify
-    | Bool : bool classify
-    | Not_null : t classify
-    | Linear : t Linear.t classify
-    | Assoc : t Assoc.t classify
-
-  val classify : 'a classify -> t -> ok:('a -> 'b) -> error:(unit -> 'b) -> 'b
   val null : t
   val some : t -> t
   val of_float : float -> t
@@ -52,6 +38,13 @@ module type DECODABLE = sig
   val of_int : int -> t
   val of_array : t array -> t
   val of_assoc : (string * t) Seq.t -> t
+  val decode_int : t -> int option
+  val decode_string : t -> string option
+  val decode_float : t -> float option
+  val decode_bool : t -> bool option
+  val decode_some : t -> t option
+  val decode_linear : t -> t linear option
+  val decode_assoc : t -> t assoc option
   val to_string : t -> string
 end
 
@@ -161,6 +154,27 @@ module Make (M : MONAD) (D : DECODABLE) :
       include D
 
       let of_hashtbl x = Tbl.to_seq x |> D.of_assoc
+
+      type _ classify =
+        | Int : int classify
+        | String : string classify
+        | Float : float classify
+        | Bool : bool classify
+        | Not_null : t classify
+        | Linear : t linear classify
+        | Assoc : t assoc classify
+
+      let classify_opt : type a. a classify -> t -> a option = function
+        | Int -> decode_int
+        | String -> decode_string
+        | Float -> decode_float
+        | Bool -> decode_bool
+        | Linear -> decode_linear
+        | Assoc -> decode_assoc
+        | Not_null -> decode_some
+
+      let classify c t ~ok ~error =
+        match classify_opt c t with Some x -> ok x | None -> error ()
     end
 
     module Data = struct

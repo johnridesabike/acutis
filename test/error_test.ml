@@ -4,41 +4,19 @@
 
 open Acutis
 
-module DataJson = struct
-  module Linear = List
+module DecodeJson = struct
+  type 'a linear = 'a list
 
-  module Assoc = struct
-    type 'a t = (string * 'a) list
+  let length = List.length
+  let iteri = List.iteri
 
-    let find = List.assoc
-    let mem = List.mem_assoc
-    let iter f l = List.iter (fun (k, v) -> f k v) l
-  end
+  type 'a assoc = (string * 'a) list
+
+  let assoc_find = List.assoc
+  let assoc_mem = List.mem_assoc
+  let assoc_iter f l = List.iter (fun (k, v) -> f k v) l
 
   type t = Yojson.Basic.t
-
-  let to_string t = Yojson.Basic.pretty_to_string t
-
-  type _ classify =
-    | Int : int classify
-    | String : string classify
-    | Float : float classify
-    | Bool : bool classify
-    | Not_null : t classify
-    | Linear : t Linear.t classify
-    | Assoc : t Assoc.t classify
-
-  let classify (type a) (c : a classify) (t : t) ~(ok : a -> 'b) ~error =
-    match (c, t) with
-    | Int, `Int x -> ok x
-    | String, `String x -> ok x
-    | Float, `Float x -> ok x
-    | Bool, `Bool x -> ok x
-    | Linear, `List x -> ok x
-    | Assoc, `Assoc x -> ok x
-    | (Int | String | Float | Bool | Linear | Assoc), _ | Not_null, `Null ->
-        error ()
-    | Not_null, _ -> ok t
 
   let null = `Null
   let some = Fun.id
@@ -48,9 +26,17 @@ module DataJson = struct
   let of_int x = `Int x
   let of_array x = `List (Array.to_list x)
   let of_assoc x = `Assoc (List.of_seq x)
+  let decode_int = function `Int x -> Some x | _ -> None
+  let decode_string = function `String x -> Some x | _ -> None
+  let decode_float = function `Float x -> Some x | _ -> None
+  let decode_bool = function `Bool x -> Some x | _ -> None
+  let decode_linear = function `List x -> Some x | _ -> None
+  let decode_assoc = function `Assoc x -> Some x | _ -> None
+  let decode_some = function `Null -> None | x -> Some x
+  let to_string t = Yojson.Basic.pretty_to_string t
 end
 
-module RenderSync = Render.MakeString (DataJson)
+module RenderSync = Render.MakeString (DecodeJson)
 
 let render ?(json = "{}") ?(components = Compile.Components.empty) src () =
   let temp = Compile.(from_string ~fname:"<test>" components src) in

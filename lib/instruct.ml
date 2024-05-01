@@ -146,24 +146,20 @@ module type SEM = sig
   module External : sig
     (** Foreign data before it's parsed into {!Data.t}. *)
 
-    module Linear : sig
-      (** A linear container such as a list or array. *)
+    type 'a linear
+    (** A linear container such as a list or array. *)
 
-      type 'a t
+    val length : 'a linear exp -> int exp
+    val iteri : (int exp -> 'a exp -> unit stmt) -> 'a linear exp -> unit stmt
 
-      val length : 'a t exp -> int exp
-      val iteri : (int exp -> 'a exp -> unit stmt) -> 'a t exp -> unit stmt
-    end
+    type 'a assoc
+    (** A key-value container such as an association list or a string map. *)
 
-    module Assoc : sig
-      (** A key-value container such as an association list or a string map. *)
+    val assoc_find : string exp -> 'a assoc exp -> 'a exp
+    val assoc_mem : string exp -> 'a assoc exp -> bool exp
 
-      type 'a t
-
-      val find : string exp -> 'a t exp -> 'a exp
-      val mem : string exp -> 'a t exp -> bool exp
-      val iter : (string exp -> 'a exp -> unit stmt) -> 'a t exp -> unit stmt
-    end
+    val assoc_iter :
+      (string exp -> 'a exp -> unit stmt) -> 'a assoc exp -> unit stmt
 
     type t
     (** Data from the outside world that we need to decode. *)
@@ -183,8 +179,8 @@ module type SEM = sig
       | Float : float classify
       | Bool : bool classify
       | Not_null : t classify
-      | Linear : t Linear.t classify
-      | Assoc : t Assoc.t classify
+      | Linear : t linear classify
+      | Assoc : t assoc classify
 
     val classify :
       'a classify ->
@@ -709,7 +705,7 @@ end = struct
             let$ decoded = ("decoded", array [| nil_value; nil_value |]) in
             let& decode_dst = ("decode_dst", decoded) in
             let s =
-              External.Linear.iteri
+              External.iteri
                 (fun i input ->
                   let$ decode_dst_new =
                     ("decode_dst_new", array [| nil_value; nil_value |])
@@ -736,10 +732,10 @@ end = struct
         External.classify Linear input
           ~ok:(fun l ->
             if_else
-              (equal_int (External.Linear.length l) length)
+              (equal_int (External.length l) length)
               ~then_:(fun () ->
                 let$ decoded = ("decoded", array_make length nil_value) in
-                External.Linear.iteri
+                External.iteri
                   (fun i input ->
                     let$ stack =
                       ("stack", stack_add debug.stack (string_of_int i))
@@ -772,7 +768,7 @@ end = struct
         External.classify Assoc input
           ~ok:(fun a ->
             let$ decoded = ("decoded", hashtbl_create ()) in
-            External.Assoc.iter
+            External.assoc_iter
               (fun k input ->
                 let$ stack = ("stack", stack_add debug.stack k) in
                 let s =
@@ -799,10 +795,10 @@ end = struct
               | None -> push_error debug ty_str input
             in
             if_else
-              (External.Assoc.mem key input')
+              (External.assoc_mem key input')
               ~then_:(fun () ->
                 External.classify Bool
-                  (External.Assoc.find key input')
+                  (External.assoc_find key input')
                   ~ok:(fun b ->
                     if_else b ~then_:(aux 1 true_value)
                       ~else_:(aux 0 false_value))
@@ -824,10 +820,10 @@ end = struct
     External.classify Assoc input
       ~ok:(fun input' ->
         if_else
-          (External.Assoc.mem key' input')
+          (External.assoc_mem key' input')
           ~then_:(fun () ->
             External.classify classify
-              (External.Assoc.find key' input')
+              (External.assoc_find key' input')
               ~ok:(fun i ->
                 let rec aux seq =
                   match seq () with
@@ -863,9 +859,9 @@ end = struct
       |> Seq.map (fun (k, ty) ->
              let k' = string k in
              if_else
-               (External.Assoc.mem k' input)
+               (External.assoc_mem k' input)
                ~then_:(fun () ->
-                 let$ input = ("input", External.Assoc.find k' input) in
+                 let$ input = ("input", External.assoc_find k' input) in
                  let$ stack = ("stack", stack_add debug.stack k') in
                  decode
                    ~set:(fun data -> decoded.%{k'} <- data)
@@ -1162,8 +1158,8 @@ module MakeTrans
      and type 'a hashtbl = 'a F.hashtbl
      and type buffer = F.buffer
      and type 'a promise = 'a F.promise
-     and type 'a External.Linear.t = 'a F.External.Linear.t
-     and type 'a External.Assoc.t = 'a F.External.Assoc.t
+     and type 'a External.linear = 'a F.External.linear
+     and type 'a External.assoc = 'a F.External.assoc
      and type External.t = F.External.t
      and type 'a External.classify = 'a F.External.classify
      and type Data.t = F.Data.t
@@ -1239,30 +1235,17 @@ module MakeTrans
   module External = struct
     include F.External
 
-    module Linear = struct
-      include F.External.Linear
+    let length t = fwde (F.External.length (bwde t))
 
-      let length t = fwde (F.External.Linear.length (bwde t))
+    let iteri f t =
+      fwds (F.External.iteri (fun k v -> bwds (f (fwde k) (fwde v))) (bwde t))
 
-      let iteri f t =
-        fwds
-          (F.External.Linear.iteri
-             (fun k v -> bwds (f (fwde k) (fwde v)))
-             (bwde t))
-    end
+    let assoc_find s t = fwde (F.External.assoc_find (bwde s) (bwde t))
+    let assoc_mem s t = fwde (F.External.assoc_mem (bwde s) (bwde t))
 
-    module Assoc = struct
-      include F.External.Assoc
-
-      let find s t = fwde (F.External.Assoc.find (bwde s) (bwde t))
-      let mem s t = fwde (F.External.Assoc.mem (bwde s) (bwde t))
-
-      let iter f t =
-        fwds
-          (F.External.Assoc.iter
-             (fun k v -> bwds (f (fwde k) (fwde v)))
-             (bwde t))
-    end
+    let assoc_iter f t =
+      fwds
+        (F.External.assoc_iter (fun k v -> bwds (f (fwde k) (fwde v))) (bwde t))
 
     let null = fwde F.External.null
     let some x = fwde (F.External.some (bwde x))
@@ -1419,30 +1402,26 @@ let pp (type a) pp_import ppf c =
     let error = F.dprintf "(@[error@ %t@])"
 
     module External = struct
-      module Linear = struct
-        type 'a t = F.formatter -> unit
+      type 'a linear
 
-        let length = F.dprintf "(@[External.Linear.length@ %t@])"
+      let length = F.dprintf "(@[External.length@ %t@])"
 
-        let iteri f a =
-          let arg_k = var "key" in
-          let arg_v = var "value" in
-          F.dprintf "(@[External.Linear.iteri@ %t@ %t@ %t@ %t@])" a arg_k arg_v
-            (f arg_k arg_v)
-      end
+      let iteri f a =
+        let arg_k = var "key" in
+        let arg_v = var "value" in
+        F.dprintf "(@[External.iteri@ %t@ %t@ %t@ %t@])" a arg_k arg_v
+          (f arg_k arg_v)
 
-      module Assoc = struct
-        type 'a t = F.formatter -> unit
+      type 'a assoc
 
-        let find = F.dprintf "(@[External.Assoc.find@ %t@ %t@])"
-        let mem = F.dprintf "(@[External.Assoc.mem@ %t@ %t@])"
+      let assoc_find = F.dprintf "(@[External.assoc_find@ %t@ %t@])"
+      let assoc_mem = F.dprintf "(@[External.assoc_mem@ %t@ %t@])"
 
-        let iter f a =
-          let arg_k = var "key" in
-          let arg_v = var "value" in
-          F.dprintf "(@[External.Assoc.iter@ %t@ %t@ %t@ %t@])" a arg_k arg_v
-            (f arg_k arg_v)
-      end
+      let assoc_iter f a =
+        let arg_k = var "key" in
+        let arg_v = var "value" in
+        F.dprintf "(@[External.assoc_iter@ %t@ %t@ %t@ %t@])" a arg_k arg_v
+          (f arg_k arg_v)
 
       type t
 
@@ -1461,8 +1440,8 @@ let pp (type a) pp_import ppf c =
         | Float : float classify
         | Bool : bool classify
         | Not_null : t classify
-        | Linear : t Linear.t classify
-        | Assoc : t Assoc.t classify
+        | Linear : t linear classify
+        | Assoc : t assoc classify
 
       let classify_to_string : type a. a classify -> string = function
         | Int -> "(int)"

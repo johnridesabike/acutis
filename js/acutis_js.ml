@@ -11,65 +11,34 @@
 open Js_of_ocaml
 open Acutis
 
-module DataJs = struct
-  module Linear = struct
-    type 'a t = 'a Js.js_array Js.t
+module DecodeJs = struct
+  type 'a linear = 'a Js.js_array Js.t
 
-    let length a = a##.length
-    let iteri f a = a##forEach (Js.wrap_callback (fun v i _ -> f i v))
-  end
+  let length a = a##.length
+  let iteri f a = a##forEach (Js.wrap_callback (fun v i _ -> f i v))
 
-  module Assoc = struct
-    (** When we convert JavaScript objects into Acutis records, we cannot
-        convert every value at once, e.g. by mapping the result of
-        [Js.object_keys].
+  type 'a assoc = Js.Unsafe.any
+  (** When we convert JavaScript objects into Acutis records, we cannot convert
+      every value at once, e.g. by mapping the result of [Js.object_keys].
 
-        JavaScript objects can cause side-effects when you access values. By
-        only accessing the precise values that we need, we avoid triggering
-        unexpected behavior. *)
+      JavaScript objects can cause side-effects when you access values. By only
+      accessing the precise values that we need, we avoid triggering unexpected
+      behavior. *)
 
-    type 'a t = Js.Unsafe.any
+  let assoc_find : string -> 'a assoc -> 'a =
+   fun k m -> Js.Unsafe.get m (Js.string k)
 
-    let find : string -> 'a t -> 'a = fun k m -> Js.Unsafe.get m (Js.string k)
+  let assoc_mem : string -> 'a assoc -> bool =
+   fun k m -> Js.Unsafe.global##._Object##hasOwn m (Js.string k) |> Js.to_bool
 
-    let mem : string -> 'a t -> bool =
-     fun k m -> Js.Unsafe.global##._Object##hasOwn m (Js.string k) |> Js.to_bool
-
-    let iter : (string -> 'a -> unit) -> 'a t -> unit =
-     fun f m ->
-      (Js.object_keys m)##forEach
-        (Js.wrap_callback (fun k _ _ -> f (Js.to_string k) (Js.Unsafe.get m k)))
-  end
+  let assoc_iter : (string -> 'a -> unit) -> 'a assoc -> unit =
+   fun f m ->
+    (Js.object_keys m)##forEach
+      (Js.wrap_callback (fun k _ _ -> f (Js.to_string k) (Js.Unsafe.get m k)))
 
   type t = Js.Unsafe.any
 
   let coerce = Js.Unsafe.coerce
-
-  type _ classify =
-    | Int : int classify
-    | String : string classify
-    | Float : float classify
-    | Bool : bool classify
-    | Not_null : t classify
-    | Linear : t Linear.t classify
-    | Assoc : t Assoc.t classify
-
-  let classify (type a) (c : a classify) j ~(ok : a -> 'b) ~error =
-    match (c, Js.to_string (Js.typeof j)) with
-    | String, "string" -> coerce j |> Js.to_string |> ok
-    | Int, "number" ->
-        let n = coerce j |> Js.float_of_number in
-        if Float.is_integer n then ok (Float.to_int n) else error ()
-    | Float, "number" -> coerce j |> Js.float_of_number |> ok
-    | Bool, "boolean" -> coerce j |> Js.to_bool |> ok
-    | Linear, _ ->
-        if Js.Unsafe.global##._Array##isArray j then coerce j |> ok
-        else error ()
-    | Assoc, "object" -> Js.Opt.case (Js.Opt.return j) error ok
-    | Not_null, "undefined" -> error ()
-    | Not_null, _ -> Js.Opt.case (Js.Opt.return j) error ok
-    | _ -> error ()
-
   let null = Js.Unsafe.inject Js.null
   let some = Fun.id
   let of_float x = Js.number_of_float x |> coerce
@@ -78,6 +47,41 @@ module DataJs = struct
   let of_int x = Float.of_int x |> Js.number_of_float |> coerce
   let of_array x = Js.array x |> coerce
   let of_assoc x = Array.of_seq x |> Js.Unsafe.obj
+
+  let decode_int j =
+    match Js.to_string (Js.typeof j) with
+    | "number" ->
+        let n = coerce j |> Js.float_of_number in
+        if Float.is_integer n then Some (Float.to_int n) else None
+    | _ -> None
+
+  let decode_string j =
+    match Js.to_string (Js.typeof j) with
+    | "string" -> Some (coerce j |> Js.to_string)
+    | _ -> None
+
+  let decode_float j =
+    match Js.to_string (Js.typeof j) with
+    | "number" -> Some (coerce j |> Js.float_of_number)
+    | _ -> None
+
+  let decode_bool j =
+    match Js.to_string (Js.typeof j) with
+    | "boolean" -> Some (coerce j |> Js.to_bool)
+    | _ -> None
+
+  let decode_linear j =
+    if Js.Unsafe.global##._Array##isArray j then Some (coerce j) else None
+
+  let decode_assoc j =
+    match Js.to_string (Js.typeof j) with
+    | "object" -> Js.Opt.to_option (Js.Opt.return j)
+    | _ -> None
+
+  let decode_some j =
+    match Js.to_string (Js.typeof j) with
+    | "undefined" -> None
+    | _ -> Js.Opt.to_option (Js.Opt.return j)
 
   let to_string j =
     Js.Unsafe.fun_call Js.Unsafe.global##._String [| j |] |> Js.to_string
@@ -94,8 +98,8 @@ module Promise = struct
     Js.Unsafe.meth_call t "then" [| Js.Unsafe.inject (Js.wrap_callback f) |]
 end
 
-module RenderSync = Render.MakeString (DataJs)
-module RenderAsync = Render.Make (Promise) (DataJs)
+module RenderSync = Render.MakeString (DecodeJs)
+module RenderAsync = Render.Make (Promise) (DecodeJs)
 
 let fname_to_compname s =
   Filename.basename s |> Filename.remove_extension |> String.capitalize_ascii

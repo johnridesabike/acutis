@@ -320,7 +320,7 @@ let pp (module Jsmod : JSMODULE) ppf c =
       Instruct.SEM with type 'a obs = js and type import = import = struct
       include Javascript
 
-      type 'a obs = 'a stmt
+      type 'a obs = js
 
       let observe = Fun.id
       let deref = Fun.id
@@ -396,24 +396,18 @@ let pp (module Jsmod : JSMODULE) ppf c =
       let error s = (global "Promise").!("reject") @@ new_ "Error" [ s ]
 
       module External = struct
-        module Linear = struct
-          type 'a t = js
+        type 'a linear
 
-          let length a = a.!("length")
-          let iteri f a = for_ (length a) (fun i -> f i a.%(i))
-        end
+        let length a = a.!("length")
+        let iteri f a = for_ (length a) (fun i -> f i a.%(i))
 
-        module Assoc = struct
-          type 'a t = js
+        type 'a assoc
 
-          let find k x = x.%(k)
-          let mem k x = apply_n (global "Object").!("hasOwn") [ x; k ]
+        let assoc_find k x = x.%(k)
+        let assoc_mem k x = apply_n (global "Object").!("hasOwn") [ x; k ]
 
-          let iter f x =
-            for_of
-              ((global "Object").!("keys") @@ x)
-              (fun key -> f key x.%(key))
-        end
+        let assoc_iter f x =
+          for_of ((global "Object").!("keys") @@ x) (fun key -> f key x.%(key))
 
         type t
 
@@ -432,8 +426,8 @@ let pp (module Jsmod : JSMODULE) ppf c =
           | Float : float classify
           | Bool : bool classify
           | Not_null : t classify
-          | Linear : t Linear.t classify
-          | Assoc : t Assoc.t classify
+          | Linear : t linear classify
+          | Assoc : t assoc classify
 
         let classify (type a) (c : a classify) x ~ok ~error =
           let cond =
