@@ -132,12 +132,7 @@ let make_nodes T.{ nodes; _ } = make_nodes nodes
 module Components = struct
   type 'a source = (Ast.t, 'a) T.source
 
-  let parse_string ~fname ~name src =
-    T.Src (name, parse ~fname (Lexing.from_string src))
-
-  let parse_channel ~fname ~name src =
-    T.Src (name, parse ~fname (Lexing.from_channel src))
-
+  let from_src ~fname ~name src = T.Src (name, parse ~fname src)
   let from_fun ~name props f = T.Fun (name, props, f)
 
   type 'a t = {
@@ -224,18 +219,8 @@ let make ~fname components_src src =
   let { components; externals; _ } = get_components empty_linked nodes in
   { name = fname; types = typed.types; nodes; components; externals }
 
-let from_string ~fname components src =
-  make ~fname components (Lexing.from_string src)
-
-let from_channel ~fname components src =
-  make ~fname components (Lexing.from_channel src)
-
-let interface_from_string ~fname src =
-  parse_interface ~fname (Lexing.from_string src) |> T.make_interface_standalone
-
-let interface_from_channel ~fname src =
-  parse_interface ~fname (Lexing.from_channel src)
-  |> T.make_interface_standalone
+let make_interface ~fname src =
+  parse_interface ~fname src |> T.make_interface_standalone
 
 let rec data_to_sexp = function
   | `Null -> Sexp.symbol "null"

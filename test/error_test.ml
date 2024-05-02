@@ -39,13 +39,19 @@ end
 module RenderSync = Render.MakeString (DecodeJson)
 
 let render ?(json = "{}") ?(components = Compile.Components.empty) src () =
-  let temp = Compile.(from_string ~fname:"<test>" components src) in
+  let temp = Compile.make ~fname:"<test>" components (Lexing.from_string src) in
   let json = Yojson.Basic.from_string json in
   ignore @@ RenderSync.eval temp json
 
 let print_error title f =
   let s = try f (); "no error" with Error.Acutis_error s -> String.trim s in
   print_endline title; print_endline "---"; print_endline s; print_newline ()
+
+let component_string ~fname ~name src =
+  Compile.Components.from_src ~fname ~name (Lexing.from_string src)
+
+let compile_string ~fname comps src =
+  Compile.make ~fname comps (Lexing.from_string src)
 
 let () =
   print_error "Illegal character 1" (render "{% match*");
@@ -256,11 +262,11 @@ let () =
        {|{% match a.b.c with true %}{% with false %}{% /match %}
          {% match a.b.c with 1 %}{% with _ %}{% /match %}|});
   let comps =
-    Compile.Components.(
-      of_seq @@ Seq.return @@ parse_string ~fname:"a.acutis" ~name:"A" "{% a %}")
+    Compile.Components.of_seq @@ Seq.return
+    @@ component_string ~fname:"a.acutis" ~name:"A" "{% a %}"
   in
   print_error "Records with missing fields (Component)" (fun () ->
-      ignore @@ Compile.from_string ~fname:"<test>" comps "{% A / %}");
+      ignore @@ compile_string ~fname:"<test>" comps "{% A / %}");
 
   print_error "Closed enum <> open enum"
     (render
@@ -308,17 +314,12 @@ let () =
        "{% match a, b with 1, \"a\" %} {% with a, _ with _, a %} {% /match %}");
 
   print_error "Component names match" (render "{% A %} {% /B %}");
-  let comp =
-    Compile.Components.parse_string ~fname:"comp" ~name:"Comp" "{% a %} {% b %}"
-  in
+  let comp = component_string ~fname:"comp" ~name:"Comp" "{% a %} {% b %}" in
   print_error "Components can't take extra props"
     (render
        ~components:(Compile.Components.of_seq @@ Seq.return comp)
        "{% Comp a b c / %}");
-  let comp =
-    Compile.Components.parse_string ~fname:"comp" ~name:"Comp"
-      "{% %i children %}"
-  in
+  let comp = component_string ~fname:"comp" ~name:"Comp" "{% %i children %}" in
   print_error "Implict children is typed and reported correctly"
     (render
        ~components:(Compile.Components.of_seq @@ Seq.return comp)
@@ -469,18 +470,10 @@ let () =
   print_error "Record accessors are not allowed in destructure patterns."
     (render "{% match a with {b: x.z} %} {% /match %}");
 
-  let a =
-    Compile.Components.parse_string ~fname:"a.acutis" ~name:"A" "{% B /%}"
-  in
-  let b =
-    Compile.Components.parse_string ~fname:"b.acutis" ~name:"B" "{% C /%}"
-  in
-  let c =
-    Compile.Components.parse_string ~fname:"c.acutis" ~name:"C" "{% D /%}"
-  in
-  let d =
-    Compile.Components.parse_string ~fname:"d.acutis" ~name:"D" "{% B /%}"
-  in
+  let a = component_string ~fname:"a.acutis" ~name:"A" "{% B /%}" in
+  let b = component_string ~fname:"b.acutis" ~name:"B" "{% C /%}" in
+  let c = component_string ~fname:"c.acutis" ~name:"C" "{% D /%}" in
+  let d = component_string ~fname:"d.acutis" ~name:"D" "{% B /%}" in
   print_error "Cyclic dependencies are reported." (fun () ->
       ignore @@ Compile.Components.of_seq @@ List.to_seq [ a; b; c; d ]);
   print_error "Missing components are reported." (fun () ->

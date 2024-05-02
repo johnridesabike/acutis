@@ -109,13 +109,13 @@ let () =
     (object%js
        method string fname src =
          let fname = Js.to_string fname in
-         Compile.Components.parse_string ~fname ~name:(fname_to_compname fname)
-           (Js.to_string src)
+         Compile.Components.from_src ~fname ~name:(fname_to_compname fname)
+           (Js.to_string src |> Lexing.from_string)
 
        method uint8Array fname src =
          let fname = Js.to_string fname in
-         Compile.Components.parse_string ~fname ~name:(fname_to_compname fname)
-           (Typed_array.String.of_uint8Array src)
+         Compile.Components.from_src ~fname ~name:(fname_to_compname fname)
+           (Typed_array.String.of_uint8Array src |> Lexing.from_string)
 
        method funAsync name ty fn =
          let fn : RenderAsync.data -> RenderAsync.t =
@@ -145,12 +145,12 @@ let () =
          Js.to_array a |> Array.to_seq |> Compile.Components.of_seq
 
        method string fname components src =
-         Compile.from_string ~fname:(Js.to_string fname) components
-           (Js.to_string src)
+         Compile.make ~fname:(Js.to_string fname) components
+           (Js.to_string src |> Lexing.from_string)
 
        method uint8Array fname components src =
-         Compile.from_string ~fname:(Js.to_string fname) components
-           (Typed_array.String.of_uint8Array src)
+         Compile.make ~fname:(Js.to_string fname) components
+           (Typed_array.String.of_uint8Array src |> Lexing.from_string)
 
        method toJSString x =
          PrintJs.esm Format.str_formatter x;

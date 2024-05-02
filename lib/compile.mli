@@ -53,13 +53,7 @@ and nodes = node list
 module Components : sig
   type 'a source
 
-  val parse_string : fname:string -> name:string -> string -> _ source
-  (** Parses the input but doesn't type-check yet.
-      @param fname The filename (for error messages).
-      @param name The component name when called inside a template.
-      @raise Error.Acutis_error *)
-
-  val parse_channel : fname:string -> name:string -> in_channel -> _ source
+  val from_src : fname:string -> name:string -> Lexing.lexbuf -> _ source
   (** Parses the input but doesn't type-check yet.
       @param fname The filename (for error messages).
       @param name The component name when called inside a template.
@@ -85,8 +79,5 @@ type 'a t = {
 }
 
 val make : fname:string -> 'a Components.t -> Lexing.lexbuf -> 'a t
-val from_string : fname:string -> 'a Components.t -> string -> 'a t
-val from_channel : fname:string -> 'a Components.t -> in_channel -> 'a t
-val interface_from_string : fname:string -> string -> Typescheme.t
-val interface_from_channel : fname:string -> in_channel -> Typescheme.t
+val make_interface : fname:string -> Lexing.lexbuf -> Typescheme.t
 val to_sexp : nodes -> Sexp.t

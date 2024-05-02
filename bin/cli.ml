@@ -116,14 +116,17 @@ let args =
       " Print the template's runtime instructions and exit." );
   ]
 
+let ( let@ ) = ( @@ )
+
 let fname_to_compname s =
   Filename.basename s |> Filename.remove_extension |> String.capitalize_ascii
 
 let make_components_aux () =
   Queue.to_seq templates
-  |> Seq.map @@ fun fname ->
-     In_channel.with_open_text fname
-     @@ Compile.Components.parse_channel ~fname ~name:(fname_to_compname fname)
+  |> Seq.map (fun fname ->
+         let@ chan = In_channel.with_open_text fname in
+         Lexing.from_channel chan
+         |> Compile.Components.from_src ~fname ~name:(fname_to_compname fname))
 
 let make_components () = make_components_aux () |> Compile.Components.of_seq
 
@@ -131,11 +134,13 @@ let make_components_js () =
   let l = make_components_aux () in
   let funl =
     Queue.to_seq arg_funs
-    |> Seq.map @@ fun (module_path, function_path, interface) ->
-       let typescheme = Compile.interface_from_string ~fname:"-" interface in
-       let name = fname_to_compname function_path in
-       Compile.Components.from_fun ~name typescheme
-         (PrintJs.import ~module_path ~function_path)
+    |> Seq.map (fun (module_path, function_path, interface) ->
+           let typescheme =
+             Lexing.from_string interface |> Compile.make_interface ~fname:"-"
+           in
+           let name = fname_to_compname function_path in
+           PrintJs.import ~module_path ~function_path
+           |> Compile.Components.from_fun ~name typescheme)
   in
   Seq.append l funl |> Compile.Components.of_seq
 
@@ -152,29 +157,28 @@ let () =
     else
       let fname = Queue.take templates in
       if !arg_printast then
-        In_channel.with_open_text fname @@ fun chan ->
-        Compile.parse ~fname @@ Lexing.from_channel chan
-        |> Ast.to_sexp
+        let@ chan = In_channel.with_open_text fname in
+        Lexing.from_channel chan |> Compile.parse ~fname |> Ast.to_sexp
         |> Sexp.pp Format.std_formatter
       else if !arg_printtypes then
         let components = make_components_js () in
         let template =
-          In_channel.with_open_text fname
-          @@ Compile.from_channel ~fname components
+          let@ chan = In_channel.with_open_text fname in
+          Lexing.from_channel chan |> Compile.make ~fname components
         in
         Typescheme.pp Format.std_formatter template.types
       else if !arg_printopt then
         let components = make_components_js () in
         let template =
-          In_channel.with_open_text fname
-          @@ Compile.from_channel ~fname components
+          let@ chan = In_channel.with_open_text fname in
+          Lexing.from_channel chan |> Compile.make ~fname components
         in
         Compile.to_sexp template.nodes |> Sexp.pp Format.std_formatter
       else if !arg_printinst then
         let components = make_components_js () in
         let compiled =
-          In_channel.with_open_text fname
-          @@ Compile.from_channel ~fname components
+          let@ chan = In_channel.with_open_text fname in
+          Lexing.from_channel chan |> Compile.make ~fname components
         in
         Instruct.pp PrintJs.pp_import Format.std_formatter compiled
       else
@@ -192,14 +196,14 @@ let () =
                   @@ Yojson.Basic.from_channel ~fname
             in
             let template =
-              In_channel.with_open_text fname
-              @@ Compile.from_channel ~fname components
+              let@ chan = In_channel.with_open_text fname in
+              Lexing.from_channel chan |> Compile.make ~fname components
             in
             let result = Render.eval template data in
             match !arg_output with
             | "-" -> Out_channel.output_string stdout result
             | fname ->
-                Out_channel.with_open_text fname @@ fun chan ->
+                let@ chan = Out_channel.with_open_text fname in
                 Out_channel.output_string chan result)
         | Make_js ty -> (
             let printer =
@@ -207,13 +211,13 @@ let () =
             in
             let components = make_components_js () in
             let template =
-              In_channel.with_open_text fname
-              @@ Compile.from_channel ~fname components
+              let@ chan = In_channel.with_open_text fname in
+              Lexing.from_channel chan |> Compile.make ~fname components
             in
             match !arg_output with
             | "-" -> printer Format.std_formatter template
             | fname ->
-                Out_channel.with_open_text fname @@ fun chan ->
+                let@ chan = Out_channel.with_open_text fname in
                 printer (Format.formatter_of_out_channel chan) template)
   with
   | Error.Acutis_error e ->
