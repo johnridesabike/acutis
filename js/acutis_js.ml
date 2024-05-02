@@ -104,6 +104,17 @@ module RenderAsync = Render.Make (Promise) (DecodeJs)
 let fname_to_compname s =
   Filename.basename s |> Filename.remove_extension |> String.capitalize_ascii
 
+let input_uint8Array (arr : Typed_array.uint8Array Js.t) =
+  let length = arr##.length in
+  let offset = ref 0 in
+  fun out out_count ->
+    let out_count = min (length - !offset) out_count in
+    for i = 0 to pred out_count do
+      Bytes.set_uint8 out i (Typed_array.unsafe_get arr !offset);
+      incr offset
+    done;
+    out_count
+
 let () =
   Js.export "Component"
     (object%js
@@ -115,7 +126,7 @@ let () =
        method uint8Array fname src =
          let fname = Js.to_string fname in
          Compile.Components.from_src ~fname ~name:(fname_to_compname fname)
-           (Typed_array.String.of_uint8Array src |> Lexing.from_string)
+           (input_uint8Array src |> Lexing.from_function)
 
        method funAsync name ty fn =
          let fn : RenderAsync.data -> RenderAsync.t =
@@ -150,7 +161,7 @@ let () =
 
        method uint8Array fname components src =
          Compile.make ~fname:(Js.to_string fname) components
-           (Typed_array.String.of_uint8Array src |> Lexing.from_string)
+           (input_uint8Array src |> Lexing.from_function)
 
        method toJSString x =
          PrintJs.esm Format.str_formatter x;
