@@ -103,7 +103,7 @@ module Make (M : MONAD) (D : DECODABLE) :
     let hashtbl = Tbl.of_seq
     let hashtbl_create () = Tbl.create 16
     let ( .%{} ) = Tbl.find
-    let ( .%{}<- ) = Tbl.replace (* Use [replace] so serialization works. *)
+    let ( .%{}<- ) = Tbl.add
     let hashtbl_mem = Tbl.mem
     let hashtbl_copy = Tbl.copy
     let hashtbl_iter x f = Tbl.iter f x
