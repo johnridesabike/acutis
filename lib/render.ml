@@ -61,24 +61,19 @@ module Make (M : MONAD) (D : DECODABLE) :
   type data = D.t
 
   include Instruct.Make (struct
+    include Stdlib
+
     type 'a stmt = 'a
 
-    let ( |: ) a b = a; b
+    let ( @. ) a b = a; b
 
     type 'a exp = 'a
 
     let return = Fun.id
     let stmt = Fun.id
     let ( let$ ) (_, x) f = f x
-
-    type 'a mut = 'a ref
-
     let ( let& ) (_, x) f = f (ref x)
-    let deref = ( ! )
-    let ( := ) = ( := )
-    let incr = incr
     let lambda = Fun.id
-    let ( @@ ) = ( @@ )
     let if_ b ~then_ = if b then then_ ()
     let if_else b ~then_ ~else_ = if b then then_ () else else_ ()
 
@@ -88,17 +83,10 @@ module Make (M : MONAD) (D : DECODABLE) :
       done
 
     let unit = ()
-    let not = not
     let int = Fun.id
     let float = Fun.id
     let string = Fun.id
     let bool = Fun.id
-    let equal_int = Int.equal
-    let equal_string = String.equal
-    let string_of_int = string_of_int
-    let float_of_int = float_of_int
-    let string_of_float = string_of_float
-    let string_of_bool = string_of_bool
 
     type 'a obs = 'a
 

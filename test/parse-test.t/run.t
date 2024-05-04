@@ -863,7 +863,7 @@ Print the runtime instructions
      (buffer_add_escape buf_sync/0 (Data.to_string (arg/0.%{"i_prop"})))
      (buffer_add_string buf_sync/0 "\n")
      (return
-      (bind (deref buf_async/0)
+      (bind !buf_async/0
        (lambda arg/1
         ((buffer_add_buffer arg/1 buf_sync/0)
          (return (promise (buffer_contents arg/1))))))))))
@@ -874,7 +874,7 @@ Print the runtime instructions
      (buffer_add_escape buf_sync/1 (Data.to_string (arg/2.%{"children"})))
      (buffer_add_string buf_sync/1 "\n")
      (return
-      (bind (deref buf_async/1)
+      (bind !buf_async/1
        (lambda arg/3
         ((buffer_add_buffer arg/3 buf_sync/1)
          (return (promise (buffer_contents arg/3))))))))))
@@ -887,7 +887,7 @@ Print the runtime instructions
          (lambda arg/6
           ((return
             (lambda arg/7
-             ((if (not (equal_int (buffer_length errors/0) 0))
+             ((if (not ((buffer_length errors/0) = 0))
                (then (buffer_add_string errors/0 "\n\n")))
               (buffer_add_string errors/0 "File \"")
               (buffer_add_string errors/0 "template.acutis")
@@ -897,8 +897,8 @@ Print the runtime instructions
               (let$ tuple/0 = (Data.to_array arg/5))
               (buffer_add_string errors/0 (Data.to_string (tuple/0.%(0))))
               (let& stack/0 = (tuple/0.%(1)))
-              (while (not (Data.equal (deref stack/0) (Data.int 0)))
-               ((let$ tuple/1 = (Data.to_array (deref stack/0)))
+              (while (not (Data.equal !stack/0 (Data.int 0)))
+               ((let$ tuple/1 = (Data.to_array !stack/0))
                 (buffer_add_string errors/0 " <- ")
                 (buffer_add_string errors/0 (Data.to_string (tuple/1.%(0))))
                 (stack/0 := (tuple/1.%(1)))))
@@ -912,7 +912,7 @@ Print the runtime instructions
          (lambda arg/9
           ((return
             (lambda arg/10
-             ((if (not (equal_int (buffer_length errors/0) 0))
+             ((if (not ((buffer_length errors/0) = 0))
                (then (buffer_add_string errors/0 "\n\n")))
               (buffer_add_string errors/0 "File: ")
               (buffer_add_string errors/0 "template.acutis")
@@ -922,8 +922,8 @@ Print the runtime instructions
               (let$ tuple/2 = (Data.to_array arg/8))
               (buffer_add_string errors/0 (Data.to_string (tuple/2.%(0))))
               (let& stack/1 = (tuple/2.%(1)))
-              (while (not (Data.equal (deref stack/1) (Data.int 0)))
-               ((let$ tuple/3 = (Data.to_array (deref stack/1)))
+              (while (not (Data.equal !stack/1 (Data.int 0)))
+               ((let$ tuple/3 = (Data.to_array !stack/1))
                 (buffer_add_string errors/0 " <- ")
                 (buffer_add_string errors/0 (Data.to_string (tuple/3.%(0))))
                 (stack/1 := (tuple/3.%(1)))))
@@ -933,8 +933,8 @@ Print the runtime instructions
               (let$ tuple/4 = (Data.to_array arg/10))
               (buffer_add_string errors/0 (Data.to_string (tuple/4.%(0))))
               (let& stack/2 = (tuple/4.%(1)))
-              (while (not (Data.equal (deref stack/2) (Data.int 0)))
-               ((let$ tuple/5 = (Data.to_array (deref stack/2)))
+              (while (not (Data.equal !stack/2 (Data.int 0)))
+               ((let$ tuple/5 = (Data.to_array !stack/2))
                 (buffer_add_string errors/0 ", ")
                 (buffer_add_string errors/0 (Data.to_string (tuple/5.%(0))))
                 (stack/2 := (tuple/5.%(1))))))))))))))
@@ -977,27 +977,24 @@ Print the runtime instructions
                    (stmt (((decode_error/0 @@ stack/6) @@ type/3) @@ input/2)))))
                 (else
                  (missing_keys/2 :=
-                  (Data.array [(Data.string "c"), (deref missing_keys/2)]))))
-               (if (not (Data.equal (deref missing_keys/2) (Data.int 0)))
+                  (Data.array [(Data.string "c"), !missing_keys/2]))))
+               (if (not (Data.equal !missing_keys/2 (Data.int 0)))
                 (then
                  (stmt
-                  (((key_error/0 @@ stack/5) @@ type/2)
-                   @@ (deref missing_keys/2)))))
+                  (((key_error/0 @@ stack/5) @@ type/2) @@ !missing_keys/2))))
                (decoded/0.%{"b"} <- (Data.hashtbl decoded/1)))
               (error
                (stmt (((decode_error/0 @@ stack/5) @@ type/2) @@ input/1)))))
             (else
              (missing_keys/1 :=
-              (Data.array [(Data.string "b"), (deref missing_keys/1)]))))
-           (if (not (Data.equal (deref missing_keys/1) (Data.int 0)))
+              (Data.array [(Data.string "b"), !missing_keys/1]))))
+           (if (not (Data.equal !missing_keys/1 (Data.int 0)))
             (then
-             (stmt
-              (((key_error/0 @@ stack/4) @@ type/1) @@ (deref missing_keys/1)))))
+             (stmt (((key_error/0 @@ stack/4) @@ type/1) @@ !missing_keys/1))))
            (props/0.%{"a"} <- (Data.hashtbl decoded/0)))
           (error (stmt (((decode_error/0 @@ stack/4) @@ type/1) @@ input/0)))))
         (else
-         (missing_keys/0 :=
-          (Data.array [(Data.string "a"), (deref missing_keys/0)]))))
+         (missing_keys/0 := (Data.array [(Data.string "a"), !missing_keys/0]))))
        (if_else (External.assoc_mem "a_prop" classified/0)
         (then
          (let$ input/3 = (External.assoc_find "a_prop" classified/0))
@@ -1008,7 +1005,7 @@ Print the runtime instructions
           (error (stmt (((decode_error/0 @@ stack/7) @@ type/4) @@ input/3)))))
         (else
          (missing_keys/0 :=
-          (Data.array [(Data.string "a_prop"), (deref missing_keys/0)]))))
+          (Data.array [(Data.string "a_prop"), !missing_keys/0]))))
        (if_else (External.assoc_mem "b_prop" classified/0)
         (then
          (let$ input/4 = (External.assoc_find "b_prop" classified/0))
@@ -1019,7 +1016,7 @@ Print the runtime instructions
           (error (stmt (((decode_error/0 @@ stack/8) @@ type/5) @@ input/4)))))
         (else
          (missing_keys/0 :=
-          (Data.array [(Data.string "b_prop"), (deref missing_keys/0)]))))
+          (Data.array [(Data.string "b_prop"), !missing_keys/0]))))
        (if_else (External.assoc_mem "c_prop" classified/0)
         (then
          (let$ input/5 = (External.assoc_find "c_prop" classified/0))
@@ -1030,7 +1027,7 @@ Print the runtime instructions
           (error (stmt (((decode_error/0 @@ stack/9) @@ type/6) @@ input/5)))))
         (else
          (missing_keys/0 :=
-          (Data.array [(Data.string "c_prop"), (deref missing_keys/0)]))))
+          (Data.array [(Data.string "c_prop"), !missing_keys/0]))))
        (if_else (External.assoc_mem "d" classified/0)
         (then
          (let$ input/6 = (External.assoc_find "d" classified/0))
@@ -1040,8 +1037,7 @@ Print the runtime instructions
           (ok classified/7 (props/0.%{"d"} <- (Data.string classified/7)))
           (error (stmt (((decode_error/0 @@ stack/10) @@ type/7) @@ input/6)))))
         (else
-         (missing_keys/0 :=
-          (Data.array [(Data.string "d"), (deref missing_keys/0)]))))
+         (missing_keys/0 := (Data.array [(Data.string "d"), !missing_keys/0]))))
        (if_else (External.assoc_mem "dict" classified/0)
         (then
          (let$ input/7 = (External.assoc_find "dict" classified/0))
@@ -1061,7 +1057,7 @@ Print the runtime instructions
           (error (stmt (((decode_error/0 @@ stack/11) @@ type/8) @@ input/7)))))
         (else
          (missing_keys/0 :=
-          (Data.array [(Data.string "dict"), (deref missing_keys/0)]))))
+          (Data.array [(Data.string "dict"), !missing_keys/0]))))
        (if_else (External.assoc_mem "e" classified/0)
         (then
          (let$ input/8 = (External.assoc_find "e" classified/0))
@@ -1071,8 +1067,7 @@ Print the runtime instructions
           (ok classified/10 (props/0.%{"e"} <- (Data.string classified/10)))
           (error (stmt (((decode_error/0 @@ stack/13) @@ type/10) @@ input/8)))))
         (else
-         (missing_keys/0 :=
-          (Data.array [(Data.string "e"), (deref missing_keys/0)]))))
+         (missing_keys/0 := (Data.array [(Data.string "e"), !missing_keys/0]))))
        (if_else (External.assoc_mem "e_prop" classified/0)
         (then
          (let$ input/9 = (External.assoc_find "e_prop" classified/0))
@@ -1084,7 +1079,7 @@ Print the runtime instructions
           (error (stmt (((decode_error/0 @@ stack/14) @@ type/11) @@ input/9)))))
         (else
          (missing_keys/0 :=
-          (Data.array [(Data.string "e_prop"), (deref missing_keys/0)]))))
+          (Data.array [(Data.string "e_prop"), !missing_keys/0]))))
        (if_else (External.assoc_mem "ech_a" classified/0)
         (then
          (let$ input/10 = (External.assoc_find "ech_a" classified/0))
@@ -1095,7 +1090,7 @@ Print the runtime instructions
           (error (stmt (((decode_error/0 @@ stack/15) @@ type/12) @@ input/10)))))
         (else
          (missing_keys/0 :=
-          (Data.array [(Data.string "ech_a"), (deref missing_keys/0)]))))
+          (Data.array [(Data.string "ech_a"), !missing_keys/0]))))
        (if_else (External.assoc_mem "ech_b" classified/0)
         (then
          (let$ input/11 = (External.assoc_find "ech_b" classified/0))
@@ -1109,7 +1104,7 @@ Print the runtime instructions
           (error (stmt (((decode_error/0 @@ stack/16) @@ type/13) @@ input/11)))))
         (else
          (missing_keys/0 :=
-          (Data.array [(Data.string "ech_b"), (deref missing_keys/0)]))))
+          (Data.array [(Data.string "ech_b"), !missing_keys/0]))))
        (if_else (External.assoc_mem "ech_d" classified/0)
         (then
          (let$ input/12 = (External.assoc_find "ech_d" classified/0))
@@ -1159,7 +1154,7 @@ Print the runtime instructions
              (stmt (((decode_error/0 @@ stack/21) @@ type/18) @@ input/14)))))))
         (else
          (missing_keys/0 :=
-          (Data.array [(Data.string "ech_f"), (deref missing_keys/0)]))))
+          (Data.array [(Data.string "ech_f"), !missing_keys/0]))))
        (if_else (External.assoc_mem "ech_i" classified/0)
         (then
          (let$ input/15 = (External.assoc_find "ech_i" classified/0))
@@ -1170,7 +1165,7 @@ Print the runtime instructions
           (error (stmt (((decode_error/0 @@ stack/22) @@ type/19) @@ input/15)))))
         (else
          (missing_keys/0 :=
-          (Data.array [(Data.string "ech_i"), (deref missing_keys/0)]))))
+          (Data.array [(Data.string "ech_i"), !missing_keys/0]))))
        (if_else (External.assoc_mem "enums" classified/0)
         (then
          (let$ input/16 = (External.assoc_find "enums" classified/0))
@@ -1178,13 +1173,13 @@ Print the runtime instructions
          (let$ type/20 = "(@\"a\" | ..., @1 | ..., false | true, false | true)")
          (External.classify (linear) input/16
           (ok classified/21
-           (if_else (equal_int (External.length classified/21) 4)
+           (if_else ((External.length classified/21) = 4)
             (then
              (let$ decoded/5 = (array_make 4 (Data.int 0)))
              (External.iteri classified/21 key/1 value/1
               (let$ stack/24 =
                (Data.array [(Data.string (string_of_int key/1)), stack/23]))
-              (if_else (equal_int key/1 0)
+              (if_else (key/1 = 0)
                (then
                 (let$ type/24 = "@\"a\" | ...")
                 (External.classify (string) value/1
@@ -1193,7 +1188,7 @@ Print the runtime instructions
                  (error
                   (stmt (((decode_error/0 @@ stack/24) @@ type/24) @@ value/1)))))
                (else
-                (if_else (equal_int key/1 1)
+                (if_else (key/1 = 1)
                  (then
                   (let$ type/23 = "@1 | ...")
                   (External.classify (int) value/1
@@ -1203,7 +1198,7 @@ Print the runtime instructions
                     (stmt
                      (((decode_error/0 @@ stack/24) @@ type/23) @@ value/1)))))
                  (else
-                  (if_else (equal_int key/1 2)
+                  (if_else (key/1 = 2)
                    (then
                     (let$ type/22 = "false | true")
                     (External.classify (bool) value/1
@@ -1215,7 +1210,7 @@ Print the runtime instructions
                       (stmt
                        (((decode_error/0 @@ stack/24) @@ type/22) @@ value/1)))))
                    (else
-                    (if_else (equal_int key/1 3)
+                    (if_else (key/1 = 3)
                      (then
                       (let$ type/21 = "false | true")
                       (External.classify (bool) value/1
@@ -1235,7 +1230,7 @@ Print the runtime instructions
           (error (stmt (((decode_error/0 @@ stack/23) @@ type/20) @@ input/16)))))
         (else
          (missing_keys/0 :=
-          (Data.array [(Data.string "enums"), (deref missing_keys/0)]))))
+          (Data.array [(Data.string "enums"), !missing_keys/0]))))
        (if_else (External.assoc_mem "f_prop" classified/0)
         (then
          (let$ input/17 = (External.assoc_find "f_prop" classified/0))
@@ -1247,7 +1242,7 @@ Print the runtime instructions
           (error (stmt (((decode_error/0 @@ stack/25) @@ type/25) @@ input/17)))))
         (else
          (missing_keys/0 :=
-          (Data.array [(Data.string "f_prop"), (deref missing_keys/0)]))))
+          (Data.array [(Data.string "f_prop"), !missing_keys/0]))))
        (if_else (External.assoc_mem "list" classified/0)
         (then
          (let$ input/18 = (External.assoc_find "list" classified/0))
@@ -1276,13 +1271,13 @@ Print the runtime instructions
                  (((decode_error/0 @@ stack/28) @@ type/28) @@ classified/28))))
               (decode_dst_new/0.%(0) <- (Data.array decoded/7)))
              (error (decode_dst_new/0.%(0) <- (Data.int 0))))
-            ((deref decode_dst/0).%(1) <- (Data.array decode_dst_new/0))
+            (!decode_dst/0.%(1) <- (Data.array decode_dst_new/0))
             (decode_dst/0 := decode_dst_new/0))
            (props/0.%{"list"} <- (decoded/6.%(1))))
           (error (stmt (((decode_error/0 @@ stack/26) @@ type/26) @@ input/18)))))
         (else
          (missing_keys/0 :=
-          (Data.array [(Data.string "list"), (deref missing_keys/0)]))))
+          (Data.array [(Data.string "list"), !missing_keys/0]))))
        (if_else (External.assoc_mem "map_d" classified/0)
         (then
          (let$ input/19 = (External.assoc_find "map_d" classified/0))
@@ -1302,7 +1297,7 @@ Print the runtime instructions
           (error (stmt (((decode_error/0 @@ stack/29) @@ type/29) @@ input/19)))))
         (else
          (missing_keys/0 :=
-          (Data.array [(Data.string "map_d"), (deref missing_keys/0)]))))
+          (Data.array [(Data.string "map_d"), !missing_keys/0]))))
        (if_else (External.assoc_mem "map_l" classified/0)
         (then
          (let$ input/20 = (External.assoc_find "map_l" classified/0))
@@ -1322,13 +1317,13 @@ Print the runtime instructions
               (decode_dst_new/1.%(0) <- (Data.int classified/33)))
              (error
               (stmt (((decode_error/0 @@ stack/32) @@ type/32) @@ value/4))))
-            ((deref decode_dst/1).%(1) <- (Data.array decode_dst_new/1))
+            (!decode_dst/1.%(1) <- (Data.array decode_dst_new/1))
             (decode_dst/1 := decode_dst_new/1))
            (props/0.%{"map_l"} <- (decoded/9.%(1))))
           (error (stmt (((decode_error/0 @@ stack/31) @@ type/31) @@ input/20)))))
         (else
          (missing_keys/0 :=
-          (Data.array [(Data.string "map_l"), (deref missing_keys/0)]))))
+          (Data.array [(Data.string "map_l"), !missing_keys/0]))))
        (if_else (External.assoc_mem "match_a" classified/0)
         (then
          (let$ input/21 = (External.assoc_find "match_a" classified/0))
@@ -1339,7 +1334,7 @@ Print the runtime instructions
           (error (stmt (((decode_error/0 @@ stack/33) @@ type/33) @@ input/21)))))
         (else
          (missing_keys/0 :=
-          (Data.array [(Data.string "match_a"), (deref missing_keys/0)]))))
+          (Data.array [(Data.string "match_a"), !missing_keys/0]))))
        (if_else (External.assoc_mem "match_b" classified/0)
         (then
          (let$ input/22 = (External.assoc_find "match_b" classified/0))
@@ -1351,7 +1346,7 @@ Print the runtime instructions
           (error (stmt (((decode_error/0 @@ stack/34) @@ type/34) @@ input/22)))))
         (else
          (missing_keys/0 :=
-          (Data.array [(Data.string "match_b"), (deref missing_keys/0)]))))
+          (Data.array [(Data.string "match_b"), !missing_keys/0]))))
        (if_else (External.assoc_mem "numbers" classified/0)
         (then
          (let$ input/23 = (External.assoc_find "numbers" classified/0))
@@ -1379,7 +1374,7 @@ Print the runtime instructions
                  (stmt (((decode_error/0 @@ stack/36) @@ type/36) @@ input/24)))))))
             (else
              (missing_keys/3 :=
-              (Data.array [(Data.string "exp1"), (deref missing_keys/3)]))))
+              (Data.array [(Data.string "exp1"), !missing_keys/3]))))
            (if_else (External.assoc_mem "exp2" classified/36)
             (then
              (let$ input/25 = (External.assoc_find "exp2" classified/36))
@@ -1397,7 +1392,7 @@ Print the runtime instructions
                  (stmt (((decode_error/0 @@ stack/37) @@ type/37) @@ input/25)))))))
             (else
              (missing_keys/3 :=
-              (Data.array [(Data.string "exp2"), (deref missing_keys/3)]))))
+              (Data.array [(Data.string "exp2"), !missing_keys/3]))))
            (if_else (External.assoc_mem "exp3" classified/36)
             (then
              (let$ input/26 = (External.assoc_find "exp3" classified/36))
@@ -1415,7 +1410,7 @@ Print the runtime instructions
                  (stmt (((decode_error/0 @@ stack/38) @@ type/38) @@ input/26)))))))
             (else
              (missing_keys/3 :=
-              (Data.array [(Data.string "exp3"), (deref missing_keys/3)]))))
+              (Data.array [(Data.string "exp3"), !missing_keys/3]))))
            (if_else (External.assoc_mem "frac" classified/36)
             (then
              (let$ input/27 = (External.assoc_find "frac" classified/36))
@@ -1433,7 +1428,7 @@ Print the runtime instructions
                  (stmt (((decode_error/0 @@ stack/39) @@ type/39) @@ input/27)))))))
             (else
              (missing_keys/3 :=
-              (Data.array [(Data.string "frac"), (deref missing_keys/3)]))))
+              (Data.array [(Data.string "frac"), !missing_keys/3]))))
            (if_else (External.assoc_mem "int" classified/36)
             (then
              (let$ input/28 = (External.assoc_find "int" classified/36))
@@ -1446,7 +1441,7 @@ Print the runtime instructions
                (stmt (((decode_error/0 @@ stack/40) @@ type/40) @@ input/28)))))
             (else
              (missing_keys/3 :=
-              (Data.array [(Data.string "int"), (deref missing_keys/3)]))))
+              (Data.array [(Data.string "int"), !missing_keys/3]))))
            (if_else (External.assoc_mem "negfrac" classified/36)
             (then
              (let$ input/29 = (External.assoc_find "negfrac" classified/36))
@@ -1464,7 +1459,7 @@ Print the runtime instructions
                  (stmt (((decode_error/0 @@ stack/41) @@ type/41) @@ input/29)))))))
             (else
              (missing_keys/3 :=
-              (Data.array [(Data.string "negfrac"), (deref missing_keys/3)]))))
+              (Data.array [(Data.string "negfrac"), !missing_keys/3]))))
            (if_else (External.assoc_mem "negint" classified/36)
             (then
              (let$ input/30 = (External.assoc_find "negint" classified/36))
@@ -1477,16 +1472,15 @@ Print the runtime instructions
                (stmt (((decode_error/0 @@ stack/42) @@ type/42) @@ input/30)))))
             (else
              (missing_keys/3 :=
-              (Data.array [(Data.string "negint"), (deref missing_keys/3)]))))
-           (if (not (Data.equal (deref missing_keys/3) (Data.int 0)))
+              (Data.array [(Data.string "negint"), !missing_keys/3]))))
+           (if (not (Data.equal !missing_keys/3 (Data.int 0)))
             (then
-             (stmt
-              (((key_error/0 @@ stack/35) @@ type/35) @@ (deref missing_keys/3)))))
+             (stmt (((key_error/0 @@ stack/35) @@ type/35) @@ !missing_keys/3))))
            (props/0.%{"numbers"} <- (Data.hashtbl decoded/10)))
           (error (stmt (((decode_error/0 @@ stack/35) @@ type/35) @@ input/23)))))
         (else
          (missing_keys/0 :=
-          (Data.array [(Data.string "numbers"), (deref missing_keys/0)]))))
+          (Data.array [(Data.string "numbers"), !missing_keys/0]))))
        (if_else (External.assoc_mem "record" classified/0)
         (then
          (let$ input/31 = (External.assoc_find "record" classified/0))
@@ -1508,7 +1502,7 @@ Print the runtime instructions
                (stmt (((decode_error/0 @@ stack/44) @@ type/44) @@ input/32)))))
             (else
              (missing_keys/4 :=
-              (Data.array [(Data.string "!#%@"), (deref missing_keys/4)]))))
+              (Data.array [(Data.string "!#%@"), !missing_keys/4]))))
            (if_else (External.assoc_mem "a" classified/49)
             (then
              (let$ input/33 = (External.assoc_find "a" classified/49))
@@ -1521,16 +1515,15 @@ Print the runtime instructions
                (stmt (((decode_error/0 @@ stack/45) @@ type/45) @@ input/33)))))
             (else
              (missing_keys/4 :=
-              (Data.array [(Data.string "a"), (deref missing_keys/4)]))))
-           (if (not (Data.equal (deref missing_keys/4) (Data.int 0)))
+              (Data.array [(Data.string "a"), !missing_keys/4]))))
+           (if (not (Data.equal !missing_keys/4 (Data.int 0)))
             (then
-             (stmt
-              (((key_error/0 @@ stack/43) @@ type/43) @@ (deref missing_keys/4)))))
+             (stmt (((key_error/0 @@ stack/43) @@ type/43) @@ !missing_keys/4))))
            (props/0.%{"record"} <- (Data.hashtbl decoded/11)))
           (error (stmt (((decode_error/0 @@ stack/43) @@ type/43) @@ input/31)))))
         (else
          (missing_keys/0 :=
-          (Data.array [(Data.string "record"), (deref missing_keys/0)]))))
+          (Data.array [(Data.string "record"), !missing_keys/0]))))
        (if_else (External.assoc_mem "tagged" classified/0)
         (then
          (let$ input/34 = (External.assoc_find "tagged" classified/0))
@@ -1561,23 +1554,21 @@ Print the runtime instructions
                       (((decode_error/0 @@ stack/47) @@ type/47) @@ input/35)))))
                   (else
                    (missing_keys/6 :=
-                    (Data.array [(Data.string "a"), (deref missing_keys/6)]))))
-                 (if (not (Data.equal (deref missing_keys/6) (Data.int 0)))
+                    (Data.array [(Data.string "a"), !missing_keys/6]))))
+                 (if (not (Data.equal !missing_keys/6 (Data.int 0)))
                   (then
                    (stmt
-                    (((key_error/0 @@ stack/46) @@ type/46)
-                     @@ (deref missing_keys/6)))))
+                    (((key_error/0 @@ stack/46) @@ type/46) @@ !missing_keys/6))))
                  (props/0.%{"tagged"} <- (Data.hashtbl decoded/13)))
                 (else
                  (let$ decoded/12 = (hashtbl_create))
                  (decoded/12.%{"tag"} <- (Data.int 0))
                  (let& missing_keys/5 = (Data.int 0))
                  (unit)
-                 (if (not (Data.equal (deref missing_keys/5) (Data.int 0)))
+                 (if (not (Data.equal !missing_keys/5 (Data.int 0)))
                   (then
                    (stmt
-                    (((key_error/0 @@ stack/46) @@ type/46)
-                     @@ (deref missing_keys/5)))))
+                    (((key_error/0 @@ stack/46) @@ type/46) @@ !missing_keys/5))))
                  (props/0.%{"tagged"} <- (Data.hashtbl decoded/12)))))
               (error
                (stmt (((decode_error/0 @@ stack/46) @@ type/46) @@ input/34)))))
@@ -1586,7 +1577,7 @@ Print the runtime instructions
           (error (stmt (((decode_error/0 @@ stack/46) @@ type/46) @@ input/34)))))
         (else
          (missing_keys/0 :=
-          (Data.array [(Data.string "tagged"), (deref missing_keys/0)]))))
+          (Data.array [(Data.string "tagged"), !missing_keys/0]))))
        (if_else (External.assoc_mem "trim_a" classified/0)
         (then
          (let$ input/36 = (External.assoc_find "trim_a" classified/0))
@@ -1598,7 +1589,7 @@ Print the runtime instructions
           (error (stmt (((decode_error/0 @@ stack/48) @@ type/48) @@ input/36)))))
         (else
          (missing_keys/0 :=
-          (Data.array [(Data.string "trim_a"), (deref missing_keys/0)]))))
+          (Data.array [(Data.string "trim_a"), !missing_keys/0]))))
        (if_else (External.assoc_mem "trim_b" classified/0)
         (then
          (let$ input/37 = (External.assoc_find "trim_b" classified/0))
@@ -1610,7 +1601,7 @@ Print the runtime instructions
           (error (stmt (((decode_error/0 @@ stack/49) @@ type/49) @@ input/37)))))
         (else
          (missing_keys/0 :=
-          (Data.array [(Data.string "trim_b"), (deref missing_keys/0)]))))
+          (Data.array [(Data.string "trim_b"), !missing_keys/0]))))
        (if_else (External.assoc_mem "trim_c" classified/0)
         (then
          (let$ input/38 = (External.assoc_find "trim_c" classified/0))
@@ -1622,7 +1613,7 @@ Print the runtime instructions
           (error (stmt (((decode_error/0 @@ stack/50) @@ type/50) @@ input/38)))))
         (else
          (missing_keys/0 :=
-          (Data.array [(Data.string "trim_c"), (deref missing_keys/0)]))))
+          (Data.array [(Data.string "trim_c"), !missing_keys/0]))))
        (if_else (External.assoc_mem "trim_d" classified/0)
         (then
          (let$ input/39 = (External.assoc_find "trim_d" classified/0))
@@ -1634,7 +1625,7 @@ Print the runtime instructions
           (error (stmt (((decode_error/0 @@ stack/51) @@ type/51) @@ input/39)))))
         (else
          (missing_keys/0 :=
-          (Data.array [(Data.string "trim_d"), (deref missing_keys/0)]))))
+          (Data.array [(Data.string "trim_d"), !missing_keys/0]))))
        (if_else (External.assoc_mem "trim_e" classified/0)
         (then
          (let$ input/40 = (External.assoc_find "trim_e" classified/0))
@@ -1646,7 +1637,7 @@ Print the runtime instructions
           (error (stmt (((decode_error/0 @@ stack/52) @@ type/52) @@ input/40)))))
         (else
          (missing_keys/0 :=
-          (Data.array [(Data.string "trim_e"), (deref missing_keys/0)]))))
+          (Data.array [(Data.string "trim_e"), !missing_keys/0]))))
        (if_else (External.assoc_mem "trim_f" classified/0)
         (then
          (let$ input/41 = (External.assoc_find "trim_f" classified/0))
@@ -1658,7 +1649,7 @@ Print the runtime instructions
           (error (stmt (((decode_error/0 @@ stack/53) @@ type/53) @@ input/41)))))
         (else
          (missing_keys/0 :=
-          (Data.array [(Data.string "trim_f"), (deref missing_keys/0)]))))
+          (Data.array [(Data.string "trim_f"), !missing_keys/0]))))
        (if_else (External.assoc_mem "trim_g" classified/0)
         (then
          (let$ input/42 = (External.assoc_find "trim_g" classified/0))
@@ -1670,7 +1661,7 @@ Print the runtime instructions
           (error (stmt (((decode_error/0 @@ stack/54) @@ type/54) @@ input/42)))))
         (else
          (missing_keys/0 :=
-          (Data.array [(Data.string "trim_g"), (deref missing_keys/0)]))))
+          (Data.array [(Data.string "trim_g"), !missing_keys/0]))))
        (if_else (External.assoc_mem "tuple" classified/0)
         (then
          (let$ input/43 = (External.assoc_find "tuple" classified/0))
@@ -1678,13 +1669,13 @@ Print the runtime instructions
          (let$ type/55 = "(int, float, string)")
          (External.classify (linear) input/43
           (ok classified/62
-           (if_else (equal_int (External.length classified/62) 3)
+           (if_else ((External.length classified/62) = 3)
             (then
              (let$ decoded/14 = (array_make 3 (Data.int 0)))
              (External.iteri classified/62 key/5 value/5
               (let$ stack/56 =
                (Data.array [(Data.string (string_of_int key/5)), stack/55]))
-              (if_else (equal_int key/5 0)
+              (if_else (key/5 = 0)
                (then
                 (let$ type/58 = "int")
                 (External.classify (int) value/5
@@ -1693,7 +1684,7 @@ Print the runtime instructions
                  (error
                   (stmt (((decode_error/0 @@ stack/56) @@ type/58) @@ value/5)))))
                (else
-                (if_else (equal_int key/5 1)
+                (if_else (key/5 = 1)
                  (then
                   (let$ type/57 = "float")
                   (External.classify (float) value/5
@@ -1708,7 +1699,7 @@ Print the runtime instructions
                       (stmt
                        (((decode_error/0 @@ stack/56) @@ type/57) @@ value/5)))))))
                  (else
-                  (if_else (equal_int key/5 2)
+                  (if_else (key/5 = 2)
                    (then
                     (let$ type/56 = "string")
                     (External.classify (string) value/5
@@ -1726,12 +1717,11 @@ Print the runtime instructions
           (error (stmt (((decode_error/0 @@ stack/55) @@ type/55) @@ input/43)))))
         (else
          (missing_keys/0 :=
-          (Data.array [(Data.string "tuple"), (deref missing_keys/0)]))))
-       (if (not (Data.equal (deref missing_keys/0) (Data.int 0)))
-        (then
-         (stmt (((key_error/0 @@ stack/3) @@ type/0) @@ (deref missing_keys/0))))))
+          (Data.array [(Data.string "tuple"), !missing_keys/0]))))
+       (if (not (Data.equal !missing_keys/0 (Data.int 0)))
+        (then (stmt (((key_error/0 @@ stack/3) @@ type/0) @@ !missing_keys/0)))))
       (error (stmt (((decode_error/0 @@ stack/3) @@ type/0) @@ arg/4))))
-     (if_else (equal_int (buffer_length errors/0) 0)
+     (if_else ((buffer_length errors/0) = 0)
       (then
        (let$ buf_sync/2 = (buffer_create))
        (let& buf_async/2 = (promise (buffer_create)))
@@ -1761,7 +1751,7 @@ Print the runtime instructions
         (string_of_float (Data.to_float (props/0.%{"ech_f"}))))
        (buffer_add_string buf_sync/2 " ")
        (buffer_add_escape buf_sync/2
-        (string_of_bool (not (equal_int (Data.to_int (props/0.%{"ech_b"})) 0))))
+        (string_of_bool (not ((Data.to_int (props/0.%{"ech_b"})) = 0))))
        (buffer_add_string buf_sync/2 "\n\nNumbers\n")
        (let$ arg_match/0 = [(props/0.%{"numbers"})])
        (let$ props/1 = (hashtbl_copy props/0 ))
@@ -1797,8 +1787,8 @@ Print the runtime instructions
             (else (unit))))
           (else (unit))))
         (else (unit)))
-       (if (equal_int (deref exit/0) -1) (then (unit) (exit/0 := 1)))
-       (if_else (equal_int (deref exit/0) 0) (then (unit)) (else (unit)))
+       (if (!exit/0 = -1) (then (unit) (exit/0 := 1)))
+       (if_else (!exit/0 = 0) (then (unit)) (else (unit)))
        (buffer_add_string buf_sync/2 "\n\nTrim")
        (buffer_add_escape buf_sync/2 (Data.to_string (props/0.%{"trim_a"})))
        (buffer_add_escape buf_sync/2 (Data.to_string (props/0.%{"trim_b"})))
@@ -1825,10 +1815,10 @@ Print the runtime instructions
            (if_else (Data.equal match_arg/8 (Data.int 3))
             (then (unit) (exit/1 := 1))
             (else (unit) (exit/1 := 2)))))))
-       (if_else (equal_int (deref exit/1) 0)
+       (if_else (!exit/1 = 0)
         (then (unit))
         (else
-         (if_else (equal_int (deref exit/1) 1)
+         (if_else (!exit/1 = 1)
           (then (buffer_add_string buf_sync/2 " "))
           (else (buffer_add_string buf_sync/2 " ")))))
        (buffer_add_string buf_sync/2 "\n\nNested match\n")
@@ -1858,9 +1848,9 @@ Print the runtime instructions
        (buffer_add_string buf_sync/2 "\n\nMap list\n")
        (let& index/0 = 0)
        (let& cell/0 = (props/0.%{"map_l"}))
-       (while (not (Data.equal (deref cell/0) (Data.int 0)))
+       (while (not (Data.equal !cell/0 (Data.int 0)))
         ((let$ props/5 = (hashtbl_copy props/0 ))
-         (let$ list/0 = (Data.to_array (deref cell/0)))
+         (let$ list/0 = (Data.to_array !cell/0))
          (let$ head/0 = (list/0.%(0)))
          (let& exit/4 = -1)
          (if_else (Data.equal head/0 (Data.int 1))
@@ -1870,14 +1860,12 @@ Print the runtime instructions
             (then (unit) (exit/4 := 0))
             (else
              (if_else (Data.equal head/0 (Data.int 3))
-              (then
-               (props/5.%{"i"} <- (Data.int (deref index/0)))
-               (exit/4 := 1))
+              (then (props/5.%{"i"} <- (Data.int !index/0)) (exit/4 := 1))
               (else (unit) (exit/4 := 2)))))))
-         (if_else (equal_int (deref exit/4) 0)
+         (if_else (!exit/4 = 0)
           (then (unit))
           (else
-           (if_else (equal_int (deref exit/4) 1)
+           (if_else (!exit/4 = 1)
             (then
              (buffer_add_string buf_sync/2 " ")
              (buffer_add_escape buf_sync/2
@@ -1899,10 +1887,10 @@ Print the runtime instructions
             (if_else (Data.equal value/6 (Data.int 3))
              (then (props/6.%{"k"} <- (Data.string key/6)) (exit/5 := 1))
              (else (unit) (exit/5 := 2)))))))
-        (if_else (equal_int (deref exit/5) 0)
+        (if_else (!exit/5 = 0)
          (then (unit))
          (else
-          (if_else (equal_int (deref exit/5) 1)
+          (if_else (!exit/5 = 1)
            (then
             (buffer_add_string buf_sync/2 " ")
             (buffer_add_escape buf_sync/2 (Data.to_string (props/6.%{"k"})))
@@ -1915,12 +1903,12 @@ Print the runtime instructions
        (let$ sync_contents/1 = (buffer_contents buf_sync/2))
        (buffer_clear buf_sync/2)
        (buf_async/2 :=
-        (bind (deref buf_async/2)
+        (bind !buf_async/2
          (lambda arg/20
           ((return
             (bind
              (bind
-              (bind (deref block_buf_aync/0)
+              (bind !block_buf_aync/0
                (lambda arg/19
                 ((buffer_add_buffer arg/19 block_buf_sync/0)
                  (return (promise (buffer_contents arg/19))))))
@@ -1939,7 +1927,7 @@ Print the runtime instructions
                 (buffer_add_string block_buf_sync/1 " ")
                 (return
                  (bind
-                  (bind (deref block_buf_aync/1)
+                  (bind !block_buf_aync/1
                    (lambda arg/18
                     ((buffer_add_buffer arg/18 block_buf_sync/1)
                      (return (promise (buffer_contents arg/18))))))
@@ -1949,7 +1937,7 @@ Print the runtime instructions
                     (unit)
                     (return
                      (bind
-                      (bind (deref block_buf_aync/2)
+                      (bind !block_buf_aync/2
                        (lambda arg/17
                         ((buffer_add_buffer arg/17 block_buf_sync/2)
                          (return (promise (buffer_contents arg/17))))))
@@ -1959,7 +1947,7 @@ Print the runtime instructions
                         (let$ sync_contents/0 = (buffer_contents buf_sync/3))
                         (buffer_clear buf_sync/3)
                         (buf_async/3 :=
-                         (bind (deref buf_async/3)
+                         (bind !buf_async/3
                           (lambda arg/14
                            ((return
                              (bind
@@ -1977,7 +1965,7 @@ Print the runtime instructions
                                 (buffer_add_string arg/14 arg/15)
                                 (return (promise arg/14))))))))))
                         (return
-                         (bind (deref buf_async/3)
+                         (bind !buf_async/3
                           (lambda arg/16
                            ((buffer_add_buffer arg/16 buf_sync/3)
                             (return (promise (buffer_contents arg/16))))))))))))))))))
@@ -1992,12 +1980,12 @@ Print the runtime instructions
        (let$ sync_contents/3 = (buffer_contents buf_sync/2))
        (buffer_clear buf_sync/2)
        (buf_async/2 :=
-        (bind (deref buf_async/2)
+        (bind !buf_async/2
          (lambda arg/27
           ((return
             (bind
              (bind
-              (bind (deref block_buf_aync/3)
+              (bind !block_buf_aync/3
                (lambda arg/26
                 ((buffer_add_buffer arg/26 block_buf_sync/3)
                  (return (promise (buffer_contents arg/26))))))
@@ -2007,7 +1995,7 @@ Print the runtime instructions
                 (let$ sync_contents/2 = (buffer_contents buf_sync/4))
                 (buffer_clear buf_sync/4)
                 (buf_async/4 :=
-                 (bind (deref buf_async/4)
+                 (bind !buf_async/4
                   (lambda arg/23
                    ((return
                      (bind
@@ -2018,7 +2006,7 @@ Print the runtime instructions
                         (buffer_add_string arg/23 arg/24)
                         (return (promise arg/23))))))))))
                 (return
-                 (bind (deref buf_async/4)
+                 (bind !buf_async/4
                   (lambda arg/25
                    ((buffer_add_buffer arg/25 buf_sync/4)
                     (return (promise (buffer_contents arg/25))))))))))
@@ -2043,8 +2031,8 @@ Print the runtime instructions
             (else (unit))))
           (else (unit))))
         (else (unit)))
-       (if (equal_int (deref exit/7) -1) (then (unit) (exit/7 := 1)))
-       (if_else (equal_int (deref exit/7) 0)
+       (if (!exit/7 = -1) (then (unit) (exit/7 := 1)))
+       (if_else (!exit/7 = 0)
         (then (buffer_add_string buf_sync/2 " "))
         (else (buffer_add_string buf_sync/2 " ")))
        (buffer_add_string buf_sync/2 "\n\nList:\n")
@@ -2080,21 +2068,21 @@ Print the runtime instructions
                (let$ match_arg/26 = ((Data.to_array match_arg/24).%(1)))
                (if (Data.equal match_arg/26 (Data.int 0))
                 (then (props/9.%{"a"} <- match_arg/22) (exit/8 := 1)))))
-             (if (equal_int (deref exit/8) -1)
+             (if (!exit/8 = -1)
               (then
                (props/9.%{"_tl"} <- match_arg/24)
                (props/9.%{"_z"} <- match_arg/21)
                (exit/8 := 2)))))
-           (if (equal_int (deref exit/8) -1)
+           (if (!exit/8 = -1)
             (then
              (let$ match_arg/27 = ((Data.to_array match_arg/19).%(1)))
              (props/9.%{"_tl"} <- match_arg/27)
              (props/9.%{"_z"} <- match_arg/21)
              (exit/8 := 2)))))))
-       (if_else (equal_int (deref exit/8) 0)
+       (if_else (!exit/8 = 0)
         (then (buffer_add_string buf_sync/2 "\n"))
         (else
-         (if_else (equal_int (deref exit/8) 1)
+         (if_else (!exit/8 = 1)
           (then
            (buffer_add_string buf_sync/2 " ")
            (buffer_add_escape buf_sync/2 (Data.to_string (props/9.%{"a"})))
@@ -2110,8 +2098,8 @@ Print the runtime instructions
        (props/10.%{"a"} <- match_arg/31)
        (props/10.%{"b"} <- match_arg/30)
        (exit/9 := 0)
-       (if (equal_int (deref exit/9) -1) (then (unit) (exit/9 := 1)))
-       (if_else (equal_int (deref exit/9) 0)
+       (if (!exit/9 = -1) (then (unit) (exit/9 := 1)))
+       (if_else (!exit/9 = 0)
         (then
          (buffer_add_string buf_sync/2 " ")
          (buffer_add_escape buf_sync/2 (Data.to_string (props/10.%{"a"})))
@@ -2140,8 +2128,8 @@ Print the runtime instructions
             (else (unit))))
           (else (unit))))
         (else (unit)))
-       (if (equal_int (deref exit/10) -1) (then (unit) (exit/10 := 1)))
-       (if_else (equal_int (deref exit/10) 0)
+       (if (!exit/10 = -1) (then (unit) (exit/10 := 1)))
+       (if_else (!exit/10 = 0)
         (then (buffer_add_string buf_sync/2 " "))
         (else (buffer_add_string buf_sync/2 " ")))
        (buffer_add_string buf_sync/2 "\n\nTagged union:\n")
@@ -2159,7 +2147,7 @@ Print the runtime instructions
            (props/12.%{"a"} <- match_arg/39)
            (exit/11 := 0))
           (else (unit)))))
-       (if_else (equal_int (deref exit/11) 0)
+       (if_else (!exit/11 = 0)
         (then
          (buffer_add_string buf_sync/2 " ")
          (buffer_add_escape buf_sync/2 (Data.to_string (props/12.%{"a"})))
@@ -2182,8 +2170,8 @@ Print the runtime instructions
               (then (unit) (exit/12 := 0))
               (else (unit))))))
           (else (unit)))))
-       (if (equal_int (deref exit/12) -1) (then (unit) (exit/12 := 1)))
-       (if_else (equal_int (deref exit/12) 0)
+       (if (!exit/12 = -1) (then (unit) (exit/12 := 1)))
+       (if_else (!exit/12 = 0)
         (then (buffer_add_string buf_sync/2 " "))
         (else (buffer_add_string buf_sync/2 " ")))
        (buffer_add_string buf_sync/2 "\n\n! and . precedence works correctly\n")
@@ -2207,8 +2195,8 @@ Print the runtime instructions
            (if_else (Data.equal match_arg/47 (Data.int 0))
             (then (unit) (exit/13 := 0))
             (else (unit)))))
-         (if (equal_int (deref exit/13) -1) (then (unit) (exit/13 := 1)))))
-       (if_else (equal_int (deref exit/13) 0) (then (unit)) (else (unit)))
+         (if (!exit/13 = -1) (then (unit) (exit/13 := 1)))))
+       (if_else (!exit/13 = 0) (then (unit)) (else (unit)))
        (buffer_add_string buf_sync/2
         "\n\nOther syntax features\n\nTrailing commas parse correctly:\n")
        (let$ arg_match/12 =
@@ -2229,7 +2217,7 @@ Print the runtime instructions
        (buffer_add_escape buf_sync/2 (Data.to_string (Data.string "a\nb")))
        (buffer_add_string buf_sync/2 "\n")
        (return
-        (bind (deref buf_async/2)
+        (bind !buf_async/2
          (lambda arg/29
           ((buffer_add_buffer arg/29 buf_sync/2)
            (return (promise (buffer_contents arg/29))))))))

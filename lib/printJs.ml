@@ -71,10 +71,10 @@ let pp_string ppf s =
 module Javascript = struct
   type 'a exp = js
   type 'a stmt = js
-  type 'a mut = js
+  type 'a ref = js
 
   let stmt x ppf state = F.fprintf ppf "@[<hv 2>%a;@]" x state
-  let ( |: ) a b ppf state = F.fprintf ppf "%a@ %a" a state b state
+  let ( @. ) a b ppf state = F.fprintf ppf "%a@ %a" a state b state
 
   let ( @@ ) f e ppf state =
     F.fprintf ppf "@[<hv 2>%a(@,@[<hv 2>%a@]@;<0 -2>)@]" f state e state
@@ -83,7 +83,7 @@ module Javascript = struct
     let name = State.var name state in
     (stmt (fun ppf state ->
          F.fprintf ppf "let %a =@ @[<hv 2>%a@]" name state x state)
-    |: f name)
+    @. f name)
       ppf state
 
   let ( let& ) = ( let$ )
@@ -158,7 +158,7 @@ module Javascript = struct
   let and_ a b ppf state =
     F.fprintf ppf "@[<hv>%a &&@]@ @[<hv>%a@]" a state b state
 
-  let equal a b ppf state = F.fprintf ppf "%a ===@ %a" a state b state
+  let ( = ) a b ppf state = F.fprintf ppf "%a ===@ %a" a state b state
   let typeof expr ppf state = F.fprintf ppf "typeof %a" expr state
 end
 
@@ -175,7 +175,7 @@ module Esm : JSMODULE = struct
     (stmt (fun ppf state ->
          F.fprintf ppf "import {%a as %a} from %a" pp_string function_path
            import state pp_string module_path)
-    |: f import)
+    @. f import)
       ppf state
 
   let export x = stmt (fun ppf -> F.fprintf ppf "export default %a" x)
@@ -215,12 +215,12 @@ module RemoveIdsAndUnits (F : Instruct.SEM) :
   module M = Instruct.MakeTrans (Trans) (F)
   include M
 
-  let ( |: ) : type a. unit stmt -> a stmt -> a stmt =
+  let ( @. ) : type a. unit stmt -> a stmt -> a stmt =
    fun a b ->
     match (a, b) with
     | Unit, x -> x
     | x, Unit -> x
-    | Unk a, Unk b -> Unk F.(a |: b)
+    | Unk a, Unk b -> Unk F.(a @. b)
 
   let unit = Unit
 
@@ -247,7 +247,7 @@ module RemoveIdsAndUnits (F : Instruct.SEM) :
     fwde (F.lambda (fun x -> bwds (f { from = x; identity = true })))
 
   let float_of_int x = { x with from = F.float_of_int x.from }
-  let deref x = { from = F.deref x; identity = true }
+  let ( ! ) x = { from = F.(!x); identity = true }
 
   module Data = struct
     include M.Data
@@ -323,7 +323,7 @@ let pp (module Jsmod : JSMODULE) ppf c =
       type 'a obs = js
 
       let observe = Fun.id
-      let deref = Fun.id
+      let ( ! ) = Fun.id
 
       let ( := ) a b =
         stmt (fun ppf state ->
@@ -353,8 +353,6 @@ let pp (module Jsmod : JSMODULE) ppf c =
       let int x ppf _ = F.pp_print_int ppf x
       let float x ppf _ = F.pp_print_float ppf x
       let bool x ppf _ = F.pp_print_bool ppf x
-      let equal_int = equal
-      let equal_string = equal
       let string_of_int = to_string
       let float_of_int = Fun.id
       let string_of_float = to_string
@@ -433,14 +431,12 @@ let pp (module Jsmod : JSMODULE) ppf c =
           let cond =
             match c with
             | Int -> (global "Number").!("isInteger") @@ x
-            | String -> equal (typeof x) (string "string")
-            | Float -> equal (typeof x) (string "number")
-            | Bool -> equal (typeof x) (string "boolean")
-            | Not_null ->
-                and_ (not (equal x null)) (not (equal x (global "undefined")))
+            | String -> typeof x = string "string"
+            | Float -> typeof x = string "number"
+            | Bool -> typeof x = string "boolean"
+            | Not_null -> and_ (not (x = null)) (not (x = global "undefined"))
             | Linear -> (global "Array").!("isArray") @@ x
-            | Assoc ->
-                and_ (equal (typeof x) (string "object")) (not (equal x null))
+            | Assoc -> and_ (typeof x = string "object") (not (x = null))
           in
           if_else cond ~then_:(fun () -> ok x) ~else_:error
 
@@ -462,7 +458,7 @@ let pp (module Jsmod : JSMODULE) ppf c =
         let to_array = Fun.id
         let to_hashtbl = Fun.id
         let to_external_untyped = Fun.id
-        let equal = equal
+        let equal = ( = )
       end
 
       type nonrec import = import
