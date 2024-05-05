@@ -135,28 +135,28 @@
     if (errors$0.contents.length === 0) {
       let buf_sync$0 = {contents: ""};
       let buf_async$0 = Promise.resolve({contents: ""});
-      let block_buf_sync$0 = {contents: ""};
-      let block_buf_aync$0 = Promise.resolve({contents: ""});
-      buffer_add_string$0(block_buf_sync$0)(" text ");
+      let buf_sync$1 = {contents: ""};
+      let buf_async$1 = Promise.resolve({contents: ""});
+      buffer_add_string$0(buf_sync$1)(" text ");
       let sync_contents$0 = buf_sync$0.contents;
       buf_sync$0.contents = "";
       buf_async$0 =
         buf_async$0.then(
           (arg$1) => {
             return (
-              block_buf_aync$0.then(
+              buf_async$1.then(
                 (arg$2) => {
-                  buffer_add_buffer$0(arg$2)(block_buf_sync$0);
+                  buffer_add_buffer$0(arg$2)(buf_sync$1);
                   return (Promise.resolve(arg$2.contents));
                 }
               ).then(
                 (arg$2) => {
-                  let buf_sync$1 = {contents: ""};
-                  let buf_async$1 = Promise.resolve({contents: ""});
-                  let sync_contents$1 = buf_sync$1.contents;
-                  buf_sync$1.contents = "";
-                  buf_async$1 =
-                    buf_async$1.then(
+                  let buf_sync$2 = {contents: ""};
+                  let buf_async$2 = Promise.resolve({contents: ""});
+                  let sync_contents$1 = buf_sync$2.contents;
+                  buf_sync$2.contents = "";
+                  buf_async$2 =
+                    buf_async$2.then(
                       (arg$3) => {
                         return (
                           components$0.get("ExternalFunction")(
@@ -172,9 +172,9 @@
                       }
                     );
                   return (
-                    buf_async$1.then(
+                    buf_async$2.then(
                       (arg$3) => {
-                        buffer_add_buffer$0(arg$3)(buf_sync$1);
+                        buffer_add_buffer$0(arg$3)(buf_sync$2);
                         return (Promise.resolve(arg$3.contents));
                       }
                     )
@@ -342,28 +342,28 @@
       if (errors$0.contents.length === 0) {
         let buf_sync$0 = {contents: ""};
         let buf_async$0 = Promise.resolve({contents: ""});
-        let block_buf_sync$0 = {contents: ""};
-        let block_buf_aync$0 = Promise.resolve({contents: ""});
-        buffer_add_string$0(block_buf_sync$0)(" text ");
+        let buf_sync$1 = {contents: ""};
+        let buf_async$1 = Promise.resolve({contents: ""});
+        buffer_add_string$0(buf_sync$1)(" text ");
         let sync_contents$0 = buf_sync$0.contents;
         buf_sync$0.contents = "";
         buf_async$0 =
           buf_async$0.then(
             (arg$1) => {
               return (
-                block_buf_aync$0.then(
+                buf_async$1.then(
                   (arg$2) => {
-                    buffer_add_buffer$0(arg$2)(block_buf_sync$0);
+                    buffer_add_buffer$0(arg$2)(buf_sync$1);
                     return (Promise.resolve(arg$2.contents));
                   }
                 ).then(
                   (arg$2) => {
-                    let buf_sync$1 = {contents: ""};
-                    let buf_async$1 = Promise.resolve({contents: ""});
-                    let sync_contents$1 = buf_sync$1.contents;
-                    buf_sync$1.contents = "";
-                    buf_async$1 =
-                      buf_async$1.then(
+                    let buf_sync$2 = {contents: ""};
+                    let buf_async$2 = Promise.resolve({contents: ""});
+                    let sync_contents$1 = buf_sync$2.contents;
+                    buf_sync$2.contents = "";
+                    buf_async$2 =
+                      buf_async$2.then(
                         (arg$3) => {
                           return (
                             components$0.get("ExternalFunction")(
@@ -379,9 +379,9 @@
                         }
                       );
                     return (
-                      buf_async$1.then(
+                      buf_async$2.then(
                         (arg$3) => {
-                          buffer_add_buffer$0(arg$3)(buf_sync$1);
+                          buffer_add_buffer$0(arg$3)(buf_sync$2);
                           return (Promise.resolve(arg$3.contents));
                         }
                       )

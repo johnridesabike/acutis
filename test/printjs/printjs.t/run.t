@@ -1552,14 +1552,14 @@
       buffer_add_string$0(buf_sync$0)(
         "\n\nConstructing async blocks\n-------------------------\n\n"
       );
-      let block_buf_sync$0 = {contents: ""};
-      let block_buf_aync$0 = Promise.resolve({contents: ""});
-      buffer_add_string$0(block_buf_sync$0)(" Nested block ");
+      let buf_sync$1 = {contents: ""};
+      let buf_async$1 = Promise.resolve({contents: ""});
+      buffer_add_string$0(buf_sync$1)(" Nested block ");
       let nullable$1 = props$0.get("null_string");
       if (!(nullable$1 === 0)) {
-        buffer_add_escape$0(block_buf_sync$0)(nullable$1[0]);
+        buffer_add_escape$0(buf_sync$1)(nullable$1[0]);
       } else {
-        buffer_add_escape$0(block_buf_sync$0)("pass");
+        buffer_add_escape$0(buf_sync$1)("pass");
       }
       let sync_contents$0 = buf_sync$0.contents;
       buf_sync$0.contents = "";
@@ -1567,28 +1567,26 @@
         buf_async$0.then(
           (arg$1) => {
             return (
-              block_buf_aync$0.then(
+              buf_async$1.then(
                 (arg$2) => {
-                  buffer_add_buffer$0(arg$2)(block_buf_sync$0);
+                  buffer_add_buffer$0(arg$2)(buf_sync$1);
                   return (Promise.resolve(arg$2.contents));
                 }
               ).then(
                 (arg$2) => {
-                  let block_buf_sync$1 = {contents: ""};
-                  let block_buf_aync$1 = Promise.resolve({contents: ""});
-                  buffer_add_string$0(block_buf_sync$1)(
-                    " Another nested block"
-                  );
+                  let buf_sync$2 = {contents: ""};
+                  let buf_async$2 = Promise.resolve({contents: ""});
+                  buffer_add_string$0(buf_sync$2)(" Another nested block");
                   return (
-                    block_buf_aync$1.then(
+                    buf_async$2.then(
                       (arg$3) => {
-                        buffer_add_buffer$0(arg$3)(block_buf_sync$1);
+                        buffer_add_buffer$0(arg$3)(buf_sync$2);
                         return (Promise.resolve(arg$3.contents));
                       }
                     ).then(
                       (arg$3) => {
-                        let buf_sync$1 = {contents: ""};
-                        let buf_async$1 = Promise.resolve({contents: ""});
+                        let buf_sync$3 = {contents: ""};
+                        let buf_async$3 = Promise.resolve({contents: ""});
                         let arg_match$7 =
                           [new Map([["a", arg$2], ["b", arg$3]])];
                         let props$8 = new Map(props$0);
@@ -1599,14 +1597,14 @@
                         props$8.set("a", match_arg$13);
                         props$8.set("b", match_arg$14);
                         exit$7 = 0;
-                        buffer_add_escape$0(buf_sync$1)(props$8.get("a"));
-                        buffer_add_string$0(buf_sync$1)(" ");
-                        buffer_add_escape$0(buf_sync$1)(props$8.get("b"));
-                        buffer_add_string$0(buf_sync$1)("\n");
+                        buffer_add_escape$0(buf_sync$3)(props$8.get("a"));
+                        buffer_add_string$0(buf_sync$3)(" ");
+                        buffer_add_escape$0(buf_sync$3)(props$8.get("b"));
+                        buffer_add_string$0(buf_sync$3)("\n");
                         return (
-                          buf_async$1.then(
+                          buf_async$3.then(
                             (arg$4) => {
-                              buffer_add_buffer$0(arg$4)(buf_sync$1);
+                              buffer_add_buffer$0(arg$4)(buf_sync$3);
                               return (Promise.resolve(arg$4.contents));
                             }
                           )
@@ -1626,28 +1624,28 @@
           }
         );
       buffer_add_string$0(buf_sync$0)("Component\n---------\n\n");
-      let block_buf_sync$1 = {contents: ""};
-      let block_buf_aync$1 = Promise.resolve({contents: ""});
-      buffer_add_string$0(block_buf_sync$1)("Children prop");
+      let buf_sync$2 = {contents: ""};
+      let buf_async$2 = Promise.resolve({contents: ""});
+      buffer_add_string$0(buf_sync$2)("Children prop");
       let sync_contents$1 = buf_sync$0.contents;
       buf_sync$0.contents = "";
       buf_async$0 =
         buf_async$0.then(
           (arg$1) => {
             return (
-              block_buf_aync$1.then(
+              buf_async$2.then(
                 (arg$2) => {
-                  buffer_add_buffer$0(arg$2)(block_buf_sync$1);
+                  buffer_add_buffer$0(arg$2)(buf_sync$2);
                   return (Promise.resolve(arg$2.contents));
                 }
               ).then(
                 (arg$2) => {
-                  let buf_sync$1 = {contents: ""};
-                  let buf_async$1 = Promise.resolve({contents: ""});
-                  let sync_contents$2 = buf_sync$1.contents;
-                  buf_sync$1.contents = "";
-                  buf_async$1 =
-                    buf_async$1.then(
+                  let buf_sync$3 = {contents: ""};
+                  let buf_async$3 = Promise.resolve({contents: ""});
+                  let sync_contents$2 = buf_sync$3.contents;
+                  buf_sync$3.contents = "";
+                  buf_async$3 =
+                    buf_async$3.then(
                       (arg$3) => {
                         return (
                           components$0.get("Component")(
@@ -1669,9 +1667,9 @@
                       }
                     );
                   return (
-                    buf_async$1.then(
+                    buf_async$3.then(
                       (arg$3) => {
-                        buffer_add_buffer$0(arg$3)(buf_sync$1);
+                        buffer_add_buffer$0(arg$3)(buf_sync$3);
                         return (Promise.resolve(arg$3.contents));
                       }
                     )

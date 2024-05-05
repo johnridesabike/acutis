@@ -242,6 +242,7 @@ end = struct
   let is_nil x = Data.equal x nil_value
   let is_not_nil x = not (is_nil x)
   let int_to_bool i = not (i = int 0)
+  let ( let@ ) = Stdlib.( @@ )
 
   (** We use the [data] type as linked-list stacks. *)
 
@@ -266,7 +267,12 @@ end = struct
       writes are to a regular sync buffer. Whenever we need to use the async
       buffer, we flush the sync buffer to it. *)
 
-  let buffer_add_promise { sync; async } p =
+  let async_buffer_create () f =
+    let$ sync = ("buf_sync", buffer_create ()) in
+    let& async = ("buf_async", promise (buffer_create ())) in
+    f { sync; async }
+
+  let async_buffer_add_promise { sync; async } p =
     let$ sync_contents = ("sync_contents", buffer_contents sync) in
     let s = buffer_clear sync in
     s
@@ -282,7 +288,7 @@ end = struct
 
   (** This should always be the final use of the buffer. Writing to it
       afterwards is unsafe. *)
-  let buffer_contents_async { sync; async } =
+  let async_buffer_contents { sync; async } =
     bind !async
       (lambda (fun b ->
            let s = buffer_add_buffer b sync in
@@ -366,8 +372,6 @@ end = struct
         (hashtbl_mem arg (string key))
         ~then_:(fun () -> ( let$ ) ("match_arg", arg.%{string key}) f)
     else ( let$ ) ("match_arg", arg.%{string key}) f
-
-  let ( let@ ) = Stdlib.( @@ )
 
   let rec match_tree :
         'leaf 'key.
@@ -521,7 +525,7 @@ end = struct
                 s @. make_exits exit exits (nodes runtime props)))
     | Component (name, blocks, dict) ->
         construct_blocks runtime blocks props (fun blocks runtime ->
-            buffer_add_promise runtime.buffer
+            async_buffer_add_promise runtime.buffer
               (runtime.components.%{string name}
               @@ construct_data_hashtbl blocks props dict))
 
@@ -535,32 +539,26 @@ end = struct
         let rec aux seq =
           match seq () with
           | Seq.Cons ((i, block), seq) ->
-              let$ sync = ("block_buf_sync", buffer_create ()) in
-              let& async = ("block_buf_aync", promise (buffer_create ())) in
-              let buffer = { sync; async } in
+              let@ buffer = async_buffer_create () in
               let s = nodes { runtime with buffer } props block in
               s
               @. return
                    (bind
-                      (buffer_contents_async buffer)
+                      (async_buffer_contents buffer)
                       (lambda (fun block ->
                            blocks.(i) <- block;
                            aux seq)))
           | Seq.Nil ->
-              let$ sync = ("buf_sync", buffer_create ()) in
-              let& async = ("buf_async", promise (buffer_create ())) in
-              let buffer = { sync; async } in
+              let@ buffer = async_buffer_create () in
               let s = f blocks { runtime with buffer } in
-              s @. return (buffer_contents_async buffer)
+              s @. return (async_buffer_contents buffer)
         in
-        let$ sync = ("block_buf_sync", buffer_create ()) in
-        let& async = ("block_buf_aync", promise (buffer_create ())) in
-        let buffer = { sync; async } in
+        let@ buffer = async_buffer_create () in
         let s = nodes { runtime with buffer } props block in
         s
-        @. buffer_add_promise runtime.buffer
+        @. async_buffer_add_promise runtime.buffer
              (bind
-                (buffer_contents_async buffer)
+                (async_buffer_contents buffer)
                 (lambda (fun block ->
                      blocks.(i) <- block;
                      aux seq)))
@@ -1073,11 +1071,9 @@ end = struct
          |> Seq.map (fun (k, v) ->
                 components.%{string k} <-
                   lambda (fun props ->
-                      let$ sync = ("buf_sync", buffer_create ()) in
-                      let& async = ("buf_async", promise (buffer_create ())) in
-                      let buffer = { sync; async } in
+                      let@ buffer = async_buffer_create () in
                       let s = nodes { components; buffer } props v in
-                      s @. return (buffer_contents_async buffer)))
+                      s @. return (async_buffer_contents buffer)))
          |> join_stmts)
     in
     s
@@ -1104,13 +1100,11 @@ end = struct
               @. if_else
                    (buffer_length errors = int 0)
                    ~then_:(fun () ->
-                     let$ sync = ("buf_sync", buffer_create ()) in
-                     let& async = ("buf_async", promise (buffer_create ())) in
-                     let buffer = { sync; async } in
+                     let@ buffer = async_buffer_create () in
                      let s =
                        nodes { components; buffer } props compiled.nodes
                      in
-                     s @. return (buffer_contents_async buffer))
+                     s @. return (async_buffer_contents buffer))
                    ~else_:(fun () -> return (error (buffer_contents errors)))))
 
   let eval compiled = observe (eval compiled)

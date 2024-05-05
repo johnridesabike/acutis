@@ -1897,9 +1897,9 @@ Print the runtime instructions
             (buffer_add_string buf_sync/2 " "))
            (else (buffer_add_string buf_sync/2 "\n"))))))
        (buffer_add_string buf_sync/2 "\n\nComponent with props\n")
-       (let$ block_buf_sync/0 = (buffer_create))
-       (let& block_buf_aync/0 = (promise (buffer_create)))
-       (buffer_add_string block_buf_sync/0 " ")
+       (let$ buf_sync/3 = (buffer_create))
+       (let& buf_async/3 = (promise (buffer_create)))
+       (buffer_add_string buf_sync/3 " ")
        (let$ sync_contents/1 = (buffer_contents buf_sync/2))
        (buffer_clear buf_sync/2)
        (buf_async/2 :=
@@ -1908,46 +1908,46 @@ Print the runtime instructions
           ((return
             (bind
              (bind
-              (bind !block_buf_aync/0
+              (bind !buf_async/3
                (lambda arg/19
-                ((buffer_add_buffer arg/19 block_buf_sync/0)
+                ((buffer_add_buffer arg/19 buf_sync/3)
                  (return (promise (buffer_contents arg/19))))))
               (lambda arg/11
-               ((let$ block_buf_sync/1 = (buffer_create))
-                (let& block_buf_aync/1 = (promise (buffer_create)))
+               ((let$ buf_sync/4 = (buffer_create))
+                (let& buf_async/4 = (promise (buffer_create)))
                 (let$ arg_match/4 = [(props/0.%{"a_prop"})])
                 (let$ props/7 = (hashtbl_copy props/0 ))
                 (let& exit/6 = -1)
                 (let$ match_arg/13 = (arg_match/4.%(0)))
                 (props/7.%{"b_prop"} <- match_arg/13)
                 (exit/6 := 0)
-                (buffer_add_string block_buf_sync/1 " ")
-                (buffer_add_escape block_buf_sync/1
+                (buffer_add_string buf_sync/4 " ")
+                (buffer_add_escape buf_sync/4
                  (Data.to_string (props/7.%{"b_prop"})))
-                (buffer_add_string block_buf_sync/1 " ")
+                (buffer_add_string buf_sync/4 " ")
                 (return
                  (bind
-                  (bind !block_buf_aync/1
+                  (bind !buf_async/4
                    (lambda arg/18
-                    ((buffer_add_buffer arg/18 block_buf_sync/1)
+                    ((buffer_add_buffer arg/18 buf_sync/4)
                      (return (promise (buffer_contents arg/18))))))
                   (lambda arg/12
-                   ((let$ block_buf_sync/2 = (buffer_create))
-                    (let& block_buf_aync/2 = (promise (buffer_create)))
+                   ((let$ buf_sync/5 = (buffer_create))
+                    (let& buf_async/5 = (promise (buffer_create)))
                     (unit)
                     (return
                      (bind
-                      (bind !block_buf_aync/2
+                      (bind !buf_async/5
                        (lambda arg/17
-                        ((buffer_add_buffer arg/17 block_buf_sync/2)
+                        ((buffer_add_buffer arg/17 buf_sync/5)
                          (return (promise (buffer_contents arg/17))))))
                       (lambda arg/13
-                       ((let$ buf_sync/3 = (buffer_create))
-                        (let& buf_async/3 = (promise (buffer_create)))
-                        (let$ sync_contents/0 = (buffer_contents buf_sync/3))
-                        (buffer_clear buf_sync/3)
-                        (buf_async/3 :=
-                         (bind !buf_async/3
+                       ((let$ buf_sync/6 = (buffer_create))
+                        (let& buf_async/6 = (promise (buffer_create)))
+                        (let$ sync_contents/0 = (buffer_contents buf_sync/6))
+                        (buffer_clear buf_sync/6)
+                        (buf_async/6 :=
+                         (bind !buf_async/6
                           (lambda arg/14
                            ((return
                              (bind
@@ -1965,18 +1965,18 @@ Print the runtime instructions
                                 (buffer_add_string arg/14 arg/15)
                                 (return (promise arg/14))))))))))
                         (return
-                         (bind !buf_async/3
+                         (bind !buf_async/6
                           (lambda arg/16
-                           ((buffer_add_buffer arg/16 buf_sync/3)
+                           ((buffer_add_buffer arg/16 buf_sync/6)
                             (return (promise (buffer_contents arg/16))))))))))))))))))
              (lambda arg/21
               ((buffer_add_string arg/20 sync_contents/1)
                (buffer_add_string arg/20 arg/21)
                (return (promise arg/20))))))))))
        (buffer_add_string buf_sync/2 "\n\nComponent with implicit children\n")
-       (let$ block_buf_sync/3 = (buffer_create))
-       (let& block_buf_aync/3 = (promise (buffer_create)))
-       (buffer_add_string block_buf_sync/3 " ")
+       (let$ buf_sync/7 = (buffer_create))
+       (let& buf_async/7 = (promise (buffer_create)))
+       (buffer_add_string buf_sync/7 " ")
        (let$ sync_contents/3 = (buffer_contents buf_sync/2))
        (buffer_clear buf_sync/2)
        (buf_async/2 :=
@@ -1985,17 +1985,17 @@ Print the runtime instructions
           ((return
             (bind
              (bind
-              (bind !block_buf_aync/3
+              (bind !buf_async/7
                (lambda arg/26
-                ((buffer_add_buffer arg/26 block_buf_sync/3)
+                ((buffer_add_buffer arg/26 buf_sync/7)
                  (return (promise (buffer_contents arg/26))))))
               (lambda arg/22
-               ((let$ buf_sync/4 = (buffer_create))
-                (let& buf_async/4 = (promise (buffer_create)))
-                (let$ sync_contents/2 = (buffer_contents buf_sync/4))
-                (buffer_clear buf_sync/4)
-                (buf_async/4 :=
-                 (bind !buf_async/4
+               ((let$ buf_sync/8 = (buffer_create))
+                (let& buf_async/8 = (promise (buffer_create)))
+                (let$ sync_contents/2 = (buffer_contents buf_sync/8))
+                (buffer_clear buf_sync/8)
+                (buf_async/8 :=
+                 (bind !buf_async/8
                   (lambda arg/23
                    ((return
                      (bind
@@ -2006,9 +2006,9 @@ Print the runtime instructions
                         (buffer_add_string arg/23 arg/24)
                         (return (promise arg/23))))))))))
                 (return
-                 (bind !buf_async/4
+                 (bind !buf_async/8
                   (lambda arg/25
-                   ((buffer_add_buffer arg/25 buf_sync/4)
+                   ((buffer_add_buffer arg/25 buf_sync/8)
                     (return (promise (buffer_contents arg/25))))))))))
              (lambda arg/28
               ((buffer_add_string arg/27 sync_contents/3)
