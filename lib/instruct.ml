@@ -110,7 +110,6 @@ module type SEM = sig
   val ( .%{} ) : 'a hashtbl exp -> string exp -> 'a exp
   val ( .%{}<- ) : 'a hashtbl exp -> string exp -> 'a exp -> unit stmt
   val hashtbl_mem : 'a hashtbl exp -> string exp -> bool exp
-  val hashtbl_copy : 'a hashtbl exp -> 'a hashtbl exp
 
   val hashtbl_iter :
     'a hashtbl exp -> (string exp -> 'a exp -> unit stmt) -> unit stmt
@@ -230,6 +229,9 @@ module Make (I : SEM) : sig
   val eval : import Compile.t -> (External.t -> string promise) obs
   (** Evaluate a template with the language implemented by {!I}. *)
 end = struct
+  (* NOTE: OCaml's mutability, exceptions, and effects are not guaranteed to
+     work with [I]. This is particularly true if [I] is a pretty-printer. Do not
+     rely on those features when crossing the boundaries of [I]'s functions. *)
   open I
 
   let nil_value = Data.int (int 0)
@@ -244,7 +246,12 @@ end = struct
   let int_to_bool i = not (i = int 0)
   let ( let@ ) = Stdlib.( @@ )
 
-  (** We use the [data] type as linked-list stacks. *)
+  let stmt_join seq =
+    match seq () with
+    | Seq.Nil -> unit
+    | Seq.Cons (s, seq) -> Seq.fold_left ( @. ) s seq
+
+  (** We use the [Data.t] type as a linked-list stack. *)
 
   let buffer_add_stack buf stack sep =
     (* Assume it's nonempty. *)
@@ -261,23 +268,41 @@ end = struct
   let stack_add stack x = Data.array (array [| Data.string x; stack |])
   let stack_singleton = stack_add nil_value
 
-  type async_buffer = { sync : buffer exp; async : buffer promise ref }
-  (** Using the assumption that synchronous writes are significantly faster
-      than asynchronous writes, we use a dual-buffer strategy. Most of our
-      writes are to a regular sync buffer. Whenever we need to use the async
-      buffer, we flush the sync buffer to it. *)
+  type state = {
+    components : (Data.t hashtbl -> string promise) hashtbl exp;
+    buf_sync : buffer exp;
+    buf_async : buffer promise ref;
+        (** Using the assumption that synchronous writes are significantly
+            faster than asynchronous writes, we use a dual-buffer strategy. Most
+            of our writes are to a regular sync buffer. Whenever we need to use
+            the async buffer, we flush the sync buffer to it. *)
+    props : Data.t hashtbl exp;
+        (** We need to use a hash table as the root scope because components
+            take a hash table as input. *)
+    scope : Data.t exp Map.String.t;
+        (** As new bindings are added, they go into the scope to shadow previous
+            props & bindings. *)
+  }
 
-  let async_buffer_create () f =
-    let$ sync = ("buf_sync", buffer_create ()) in
-    let& async = ("buf_async", promise (buffer_create ())) in
-    f { sync; async }
+  let async_buffer_create_aux f =
+    let$ buf_sync = ("buf_sync", buffer_create ()) in
+    let& buf_async = ("buf_async", promise (buffer_create ())) in
+    f buf_sync buf_async
 
-  let async_buffer_add_promise { sync; async } p =
-    let$ sync_contents = ("sync_contents", buffer_contents sync) in
-    let s = buffer_clear sync in
+  let state_make components props f =
+    async_buffer_create_aux (fun buf_sync buf_async ->
+        f { components; buf_sync; buf_async; props; scope = Map.String.empty })
+
+  let async_buffer_create state f =
+    async_buffer_create_aux (fun buf_sync buf_async ->
+        f { state with buf_sync; buf_async })
+
+  let async_buffer_add_promise { buf_sync; buf_async; _ } p =
+    let$ sync_contents = ("sync_contents", buffer_contents buf_sync) in
+    let s = buffer_clear buf_sync in
     s
-    @. (async :=
-          bind !async
+    @. (buf_async :=
+          bind !buf_async
             (lambda (fun b ->
                  return
                    (bind p
@@ -288,69 +313,70 @@ end = struct
 
   (** This should always be the final use of the buffer. Writing to it
       afterwards is unsafe. *)
-  let async_buffer_contents { sync; async } =
-    bind !async
+  let async_buffer_contents { buf_sync; buf_async; _ } =
+    bind !buf_async
       (lambda (fun b ->
-           let s = buffer_add_buffer b sync in
+           let s = buffer_add_buffer b buf_sync in
            s @. return (promise (buffer_contents b))))
 
-  type runtime = {
-    components : (Data.t hashtbl -> string promise) hashtbl exp;
-    buffer : async_buffer;
-  }
+  let props_add_scope hashtbl bindings state =
+    {
+      state with
+      scope =
+        List.fold_left
+          (fun scope s -> Map.String.add s hashtbl.%{string s} scope)
+          state.scope bindings;
+    }
 
-  let join_stmts seq =
-    match seq () with
-    | Seq.Nil -> unit
-    | Seq.Cons (s, seq) -> Seq.fold_left ( @. ) s seq
+  let props_find s { props; scope; _ } =
+    try Map.String.find s scope with Not_found -> props.%{string s}
 
-  let parse_escape runtime esc x =
+  let parse_escape state esc x =
     match esc with
-    | Compile.No_escape -> buffer_add_string runtime.buffer.sync x
-    | Compile.Escape -> buffer_add_escape runtime.buffer.sync x
+    | Compile.No_escape -> buffer_add_string state.buf_sync x
+    | Compile.Escape -> buffer_add_escape state.buf_sync x
 
-  let fmt runtime esc x = function
-    | Compile.Fmt_string -> parse_escape runtime esc (Data.to_string x)
-    | Compile.Fmt_int ->
-        parse_escape runtime esc (string_of_int (Data.to_int x))
+  let fmt state esc x = function
+    | Compile.Fmt_string -> parse_escape state esc (Data.to_string x)
+    | Compile.Fmt_int -> parse_escape state esc (string_of_int (Data.to_int x))
     | Compile.Fmt_float ->
-        parse_escape runtime esc (string_of_float (Data.to_float x))
+        parse_escape state esc (string_of_float (Data.to_float x))
     | Compile.Fmt_bool ->
-        parse_escape runtime esc (string_of_bool (int_to_bool (Data.to_int x)))
+        parse_escape state esc (string_of_bool (int_to_bool (Data.to_int x)))
 
-  let rec echo props (ech : Compile.echo) =
+  let rec echo state (ech : Compile.echo) =
     match ech with
-    | `Var s -> props.%{string s}
+    | `Var s -> props_find s state
     | `String s -> Data.string (string s)
-    | `Field (e, s) -> (echo props e |> Data.to_hashtbl).%{string s}
+    | `Field (e, s) -> (echo state e |> Data.to_hashtbl).%{string s}
 
-  let rec echoes runtime props esc default default_fmt = function
-    | [] -> fmt runtime esc (echo props default) default_fmt
+  let rec echoes state esc default default_fmt = function
+    | [] -> fmt state esc (echo state default) default_fmt
     | (f, e) :: tl ->
-        let$ nullable = ("nullable", echo props e) in
+        let$ nullable = ("nullable", echo state e) in
         if_else (is_not_nil nullable)
-          ~then_:(fun () -> fmt runtime esc (get_nullable nullable) f)
-          ~else_:(fun () -> echoes runtime props esc default default_fmt tl)
+          ~then_:(fun () -> fmt state esc (get_nullable nullable) f)
+          ~else_:(fun () -> echoes state esc default default_fmt tl)
 
-  let rec construct_data blocks props (data : Compile.data) =
+  let rec construct_data blocks state (data : Compile.data) =
     match data with
     | `Null -> nil_value
     | `Int i -> Data.int (int i)
     | `String s -> Data.string (string s)
     | `Float f -> Data.float (float f)
-    | `Var s -> props.%{string s}
-    | `Array a -> construct_data_array blocks props a |> Data.array
-    | `Assoc d -> construct_data_hashtbl blocks props d |> Data.hashtbl
+    | `Var s -> props_find s state
+    | `Array a -> construct_data_array blocks state a |> Data.array
+    | `Assoc d -> construct_data_hashtbl blocks state d |> Data.hashtbl
     | `Block i -> blocks.(i) |> Data.string
     | `Field (d, s) ->
-        (construct_data blocks props d |> Data.to_hashtbl).%{string s}
+        (construct_data blocks state d |> Data.to_hashtbl).%{string s}
 
-  and construct_data_array blocks props a =
-    array (Array.map (construct_data blocks props) a)
+  and construct_data_array blocks state a =
+    array (Array.map (construct_data blocks state) a)
 
-  and construct_data_hashtbl blocks props d =
+  and construct_data_hashtbl blocks state d =
     Map.String.to_seq d
-    |> Seq.map (fun (k, v) -> (string k, construct_data blocks props v))
+    |> Seq.map (fun (k, v) -> (string k, construct_data blocks state v))
     |> hashtbl
 
   let add_vars ids arg vars =
@@ -459,112 +485,122 @@ end = struct
     let s =
       Map.String.to_seq names
       |> Seq.map (fun (key, id) -> props.%{string key} <- Map.Int.find id vars)
-      |> join_stmts
+      |> stmt_join
     in
-    s @. (exitvar := int (Matching.Exit.key_to_int exit))
+    s @. (exitvar := int (Matching.Exits.key_to_int exit))
 
-  let make_exits exit exits f =
-    match Matching.Exit.to_seqi exits () with
-    | Seq.Nil -> Error.internal ~__POS__ "No exits."
-    | Seq.Cons (hd, tl) ->
-        let rec aux (i, v) seq =
-          match seq () with
-          | Seq.Nil -> f v
-          | Seq.Cons (hd, tl) ->
-              if_else
-                (!exit = int (Matching.Exit.key_to_int i))
-                ~then_:(fun () -> f v)
-                ~else_:(fun () -> aux hd tl)
-        in
-        aux hd tl
+  let dummy_props = hashtbl_create ()
 
-  let rec node runtime props = function
-    | Compile.Text s -> buffer_add_string runtime.buffer.sync (string s)
+  let make_match_props exits f =
+    if Matching.Exits.binding_exists exits then
+      ( let$ ) ("match_props", hashtbl_create ()) f
+    else f dummy_props
+
+  let rec node state = function
+    | Compile.Text s -> buffer_add_string state.buf_sync (string s)
     | Compile.Echo (echs, fmt, default, esc) ->
-        echoes runtime props esc default fmt echs
+        echoes state esc default fmt echs
     | Compile.Match (blocks, data, { tree; exits }) ->
-        construct_blocks runtime blocks props (fun blocks runtime ->
+        construct_blocks state blocks (fun state blocks ->
             let$ arg_match =
-              ("arg_match", construct_data_array blocks props data)
+              ("arg_match", construct_data_array blocks state data)
             in
-            let$ props = ("props", hashtbl_copy props) in
+            let@ new_props = make_match_props exits in
             let& exit = ("exit", unset_exit) in
             let s =
-              match_tree ~exit ~leafstmt:(match_leaf exit props)
+              match_tree ~exit
+                ~leafstmt:(match_leaf exit new_props)
                 ~get_arg:(arg_int arg_match) ~vars:Map.Int.empty tree
             in
-            s @. make_exits exit exits (nodes runtime props))
+            s @. make_exits exit exits state new_props)
     | Compile.Map_list (blocks, data, { tree; exits }) ->
-        construct_blocks runtime blocks props (fun blocks runtime ->
+        construct_blocks state blocks (fun state blocks ->
             let& index = ("index", int 0) in
-            let& cell = ("cell", construct_data blocks props data) in
+            let& cell = ("cell", construct_data blocks state data) in
             while_ is_not_nil cell (fun () ->
-                let$ props = ("props", hashtbl_copy props) in
+                let@ new_props = make_match_props exits in
                 let$ list = ("list", Data.to_array !cell) in
                 let$ head = ("head", list_hd list) in
                 let& exit = ("exit", unset_exit) in
                 let s =
-                  match_tree ~exit ~leafstmt:(match_leaf exit props)
+                  match_tree ~exit
+                    ~leafstmt:(match_leaf exit new_props)
                     ~get_arg:(arg_indexed head (Data.int !index))
                     ~vars:Map.Int.empty tree
                 in
-                let s = s @. make_exits exit exits (nodes runtime props) in
+                let s = s @. make_exits exit exits state new_props in
                 let s = s @. incr index in
                 s @. (cell := list_tl list)))
     | Compile.Map_dict (blocks, data, { tree; exits }) ->
-        construct_blocks runtime blocks props (fun blocks runtime ->
-            let$ match_arg = ("match_arg", construct_data blocks props data) in
+        construct_blocks state blocks (fun state blocks ->
+            let$ match_arg = ("match_arg", construct_data blocks state data) in
             hashtbl_iter (Data.to_hashtbl match_arg) (fun k v ->
-                let$ props = ("props", hashtbl_copy props) in
+                let@ new_props = make_match_props exits in
                 let& exit = ("exit", unset_exit) in
                 let s =
-                  match_tree ~exit ~leafstmt:(match_leaf exit props)
+                  match_tree ~exit
+                    ~leafstmt:(match_leaf exit new_props)
                     ~get_arg:(arg_indexed v (Data.string k))
                     ~vars:Map.Int.empty tree
                 in
-                s @. make_exits exit exits (nodes runtime props)))
+                s @. make_exits exit exits state new_props))
     | Component (name, blocks, dict) ->
-        construct_blocks runtime blocks props (fun blocks runtime ->
-            async_buffer_add_promise runtime.buffer
-              (runtime.components.%{string name}
-              @@ construct_data_hashtbl blocks props dict))
+        construct_blocks state blocks (fun state blocks ->
+            async_buffer_add_promise state
+              (state.components.%{string name}
+              @@ construct_data_hashtbl blocks state dict))
 
-  and construct_blocks runtime raw_blocks props f =
-    match Array.to_seqi raw_blocks () with
+  and construct_blocks state blocks f =
+    match Array.to_seqi blocks () with
     (* With no blocks, just continue evaluating with a dummy value. *)
-    | Seq.Nil -> f [||] runtime
+    | Seq.Nil -> f state [||]
     (* From the first block, we construct a chain of binded promises. *)
     | Seq.Cons ((i, block), seq) ->
-        let blocks = Array.make (Array.length raw_blocks) (string "") in
+        let blocks = Array.make (Array.length blocks) (string "") in
         let rec aux seq =
           match seq () with
           | Seq.Cons ((i, block), seq) ->
-              let@ buffer = async_buffer_create () in
-              let s = nodes { runtime with buffer } props block in
+              let@ state_block = async_buffer_create state in
+              let s = nodes state_block block in
               s
               @. return
                    (bind
-                      (async_buffer_contents buffer)
+                      (async_buffer_contents state_block)
                       (lambda (fun block ->
                            blocks.(i) <- block;
                            aux seq)))
           | Seq.Nil ->
-              let@ buffer = async_buffer_create () in
-              let s = f blocks { runtime with buffer } in
-              s @. return (async_buffer_contents buffer)
+              let@ state_block = async_buffer_create state in
+              let s = f state_block blocks in
+              s @. return (async_buffer_contents state_block)
         in
-        let@ buffer = async_buffer_create () in
-        let s = nodes { runtime with buffer } props block in
+        let@ state_block = async_buffer_create state in
+        let s = nodes state_block block in
         s
-        @. async_buffer_add_promise runtime.buffer
+        @. async_buffer_add_promise state
              (bind
-                (async_buffer_contents buffer)
+                (async_buffer_contents state_block)
                 (lambda (fun block ->
                      blocks.(i) <- block;
                      aux seq)))
 
-  and nodes runtime props l =
-    List.to_seq l |> Seq.map (node runtime props) |> join_stmts
+  and make_exits exit exits state new_props =
+    match Matching.Exits.to_seq exits () with
+    | Seq.Nil -> Error.internal ~__POS__ "No exits."
+    | Seq.Cons (hd, tl) ->
+        let rec aux (i, bindings, v) seq =
+          match seq () with
+          | Seq.Nil -> nodes (props_add_scope new_props bindings state) v
+          | Seq.Cons (hd, tl) ->
+              if_else
+                (!exit = int (Matching.Exits.key_to_int i))
+                ~then_:(fun () ->
+                  nodes (props_add_scope new_props bindings state) v)
+                ~else_:(fun () -> aux hd tl)
+        in
+        aux hd tl
+
+  and nodes state l = List.to_seq l |> Seq.map (node state) |> stmt_join
 
   module T = Typechecker.Type
 
@@ -863,7 +899,7 @@ end = struct
                  match ty.contents with
                  | Nullable _ | Unknown _ -> decoded.%{k'} <- nil_value
                  | _ -> missing_keys := stack_add !missing_keys k'))
-      |> join_stmts
+      |> stmt_join
     in
     s
     @. if_ (is_not_nil !missing_keys) ~then_:(fun () ->
@@ -918,7 +954,7 @@ end = struct
                  let i = int i in
                  let$ props = ("props", props.%(i)) in
                  encode ~set:(fun x -> encoded.%(i) <- x) props ty)
-          |> join_stmts
+          |> stmt_join
         in
         s @. set (External.of_array encoded)
     | T.Record tys ->
@@ -979,7 +1015,7 @@ end = struct
            let k = string k in
            let$ props = ("props", props.%{k}) in
            encode ~set:(fun x -> encoded.%{k} <- x) props ty)
-    |> join_stmts
+    |> stmt_join
 
   let decode_error buf name =
     lambda (fun stack ->
@@ -1063,7 +1099,7 @@ end = struct
                        let$ encoded = ("encoded", hashtbl_create ()) in
                        let s = encode_record_aux encoded props tys in
                        s @. return (import @@ External.of_hashtbl encoded))))
-      |> join_stmts
+      |> stmt_join
     in
     let s =
       s
@@ -1071,10 +1107,10 @@ end = struct
          |> Seq.map (fun (k, v) ->
                 components.%{string k} <-
                   lambda (fun props ->
-                      let@ buffer = async_buffer_create () in
-                      let s = nodes { components; buffer } props v in
-                      s @. return (async_buffer_contents buffer)))
-         |> join_stmts)
+                      let@ state = state_make components props in
+                      let s = nodes state v in
+                      s @. return (async_buffer_contents state)))
+         |> stmt_join)
     in
     s
     @. export
@@ -1100,11 +1136,9 @@ end = struct
               @. if_else
                    (buffer_length errors = int 0)
                    ~then_:(fun () ->
-                     let@ buffer = async_buffer_create () in
-                     let s =
-                       nodes { components; buffer } props compiled.nodes
-                     in
-                     s @. return (async_buffer_contents buffer))
+                     let@ state = state_make components props in
+                     let s = nodes state compiled.nodes in
+                     s @. return (async_buffer_contents state))
                    ~else_:(fun () -> return (error (buffer_contents errors)))))
 
   let eval compiled = observe (eval compiled)
@@ -1203,7 +1237,6 @@ module MakeTrans
   let ( .%{} ) h k = fwde F.((bwde h).%{bwde k})
   let ( .%{}<- ) h k x = fwds F.((bwde h).%{bwde k} <- bwde x)
   let hashtbl_mem h k = fwde (F.hashtbl_mem (bwde h) (bwde k))
-  let hashtbl_copy h = fwde (F.hashtbl_copy (bwde h))
 
   let hashtbl_iter h f =
     fwds (F.hashtbl_iter (bwde h) (fun k v -> bwds (f (fwde k) (fwde v))))
@@ -1361,7 +1394,6 @@ let pp (type a) pp_import ppf c =
     let ( .%{} ) t k = bindop_get t '{' k '}'
     let ( .%{}<- ) t k v = bindop_set t '{' k '}' v
     let hashtbl_mem = F.dprintf "(@[hashtbl_mem@ %t@ %t@])"
-    let hashtbl_copy = F.dprintf "(@[hashtbl_copy@ %t @])"
 
     let hashtbl_iter t f =
       let arg_k = var "key" in

@@ -63,21 +63,43 @@ and ('leaf, 'key) switchcase = {
   next : ('leaf, 'key) switchcase option;
 }
 
-module Exit = struct
+module Exits = struct
   type key = int
 
   let equal_key = Int.equal
-
-  type 'a t = 'a array
-
-  let map = Array.map
   let key_to_int = Fun.id
-  let to_seq = Array.to_seq
-  let to_seqi = Array.to_seqi
+
+  type 'a exit = { bindings : string list; nodes : 'a }
+  type 'a t = 'a exit array
+
+  let make len = Array.make len { bindings = []; nodes = [] }
+  let set a i bindings nodes = a.(i) <- { bindings; nodes }
+
+  let map f a =
+    Array.map (fun { bindings; nodes } -> { bindings; nodes = f nodes }) a
+
+  let binding_exists a =
+    Array.exists (function { bindings = _ :: _; _ } -> true | _ -> false) a
+
+  let nodes a = Array.to_seq a |> Seq.map (fun exit -> exit.nodes)
+
+  let to_seq a =
+    Array.to_seqi a
+    |> Seq.map (fun (i, { bindings; nodes }) -> (i, bindings, nodes))
+
+  let exit_to_sexp f (i, { bindings; nodes }) =
+    Sexp.make "exit"
+      [
+        Sexp.int i;
+        Sexp.make "bindings" [ Sexp.of_seq Sexp.string (List.to_seq bindings) ];
+        Sexp.make "nodes" [ f nodes ];
+      ]
+
+  let to_sexp f a = Array.to_seqi a |> Sexp.of_seq (exit_to_sexp f)
 end
 
-type leaf = { names : int Map.String.t; exit : Exit.key }
-type 'a t = { tree : (leaf, int) tree; exits : 'a Exit.t }
+type leaf = { names : int Map.String.t; exit : Exits.key }
+type 'a t = { tree : (leaf, int) tree; exits : 'a Exits.t }
 
 (* Don't check equality for IDs. A merge failure may still modify IDs, creating
    a false-negative equality.
@@ -125,7 +147,7 @@ and equal_switchcase equal_leaf a { data; if_match; next } =
   && Option.equal (equal_switchcase equal_leaf) a.next next
 
 let equal_leaf a { names; exit } =
-  Map.String.equal Int.equal a.names names && Exit.equal_key a.exit exit
+  Map.String.equal Int.equal a.names names && Exits.equal_key a.exit exit
 
 (** One challenge when merging the trees is that we need to keep track of where
     we are in the tree. This natural-number GADT tracks that for us on the type
@@ -686,8 +708,8 @@ let rec make_case ~exit next_id tree = function
       if equal_tree equal_leaf tree tree' then Error.unused_case loc
       else make_case ~exit next_id tree' l
 
-let make Nonempty.(Typechecker.{ pats; nodes } :: tl_cases) =
-  let exits = Array.make (1 + List.length tl_cases) [] in
+let make Nonempty.(Typechecker.{ pats; nodes; bindings } :: tl_cases) =
+  let exits = Exits.make (succ (List.length tl_cases)) in
   (* IDs must be unique across all branches of the tree. *)
   let next_id = ref 0 in
   let next_id () =
@@ -696,14 +718,14 @@ let make Nonempty.(Typechecker.{ pats; nodes } :: tl_cases) =
   in
   let hd_tree =
     let ((_, hd_pats) :: tl_pats) = pats in
-    exits.(0) <- nodes;
+    Exits.set exits 0 bindings nodes;
     let hd_tree = of_nonempty ~exit:0 next_id hd_pats in
     make_case ~exit:0 next_id hd_tree tl_pats
   in
   let rec aux tree exit = function
     | [] -> { tree; exits }
-    | Typechecker.{ pats = (loc, hd_pats) :: tl_pats; nodes } :: l ->
-        exits.(exit) <- nodes;
+    | Typechecker.{ pats = (loc, hd_pats) :: tl_pats; nodes; bindings } :: l ->
+        Exits.set exits exit bindings nodes;
         let hd_tree = of_nonempty ~exit next_id hd_pats in
         let tree' = merge tree hd_tree in
         if equal_tree equal_leaf tree tree' then Error.unused_case loc
@@ -1024,6 +1046,5 @@ let to_sexp f { tree; exits } =
   Sexp.make "matching"
     [
       Sexp.make "tree" [ tree_to_sexp leaf_to_sexp Sexp.int tree ];
-      Sexp.make "exits"
-        [ Sexp.of_seq (Sexp.pair Sexp.int f) (Array.to_seqi exits) ];
+      Sexp.make "exits" [ Exits.to_sexp f exits ];
     ]

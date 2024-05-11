@@ -321,7 +321,7 @@ The data supplied does not match this template's interface.\n\
     let index$0 = 0;
     let cell$0 = props$0.get("blogPosts");
     while (!(cell$0 === 0)) {
-      let props$1 = new Map(props$0);
+      let match_props$0 = new Map();
       let head$0 = cell$0[0];
       let exit$0 = -1;
       let match_arg$0 = head$0.get("author");
@@ -330,17 +330,17 @@ The data supplied does not match this template's interface.\n\
       let match_arg$3 = head$0.get("date");
       let match_arg$4 = head$0.get("image");
       let match_arg$5 = head$0.get("title");
-      props$1.set("content", match_arg$2);
-      props$1.set("date", match_arg$3);
-      props$1.set("image", match_arg$4);
-      props$1.set("name", match_arg$1);
-      props$1.set("title", match_arg$5);
+      match_props$0.set("content", match_arg$2);
+      match_props$0.set("date", match_arg$3);
+      match_props$0.set("image", match_arg$4);
+      match_props$0.set("name", match_arg$1);
+      match_props$0.set("title", match_arg$5);
       exit$0 = 0;
       buffer_add_string$0(buf_sync$0)(
         "\n  <article class=\"h-entry\">\n    <header>\n      "
       );
-      let arg_match$0 = [props$1.get("image")];
-      let props$2 = new Map(props$1);
+      let arg_match$0 = [match_props$0.get("image")];
+      let match_props$1 = new Map();
       let exit$1 = -1;
       let match_arg$6 = arg_match$0[0];
       if (match_arg$6 === 0) {
@@ -350,23 +350,23 @@ The data supplied does not match this template's interface.\n\
         let match_arg$8 = match_arg$7[0];
         let match_arg$9 = match_arg$8.get("alt");
         let match_arg$10 = match_arg$8.get("src");
-        props$2.set("alt", match_arg$9);
-        props$2.set("src", match_arg$10);
+        match_props$1.set("alt", match_arg$9);
+        match_props$1.set("src", match_arg$10);
         exit$1 = 1;
       }
       if (!(exit$1 === 0)) {
         buffer_add_string$0(buf_sync$0)("<img src=\"");
-        buffer_add_escape$0(buf_sync$0)(props$2.get("src"));
+        buffer_add_escape$0(buf_sync$0)(match_props$1.get("src"));
         buffer_add_string$0(buf_sync$0)("\" alt=\"");
-        buffer_add_escape$0(buf_sync$0)(props$2.get("alt"));
+        buffer_add_escape$0(buf_sync$0)(match_props$1.get("alt"));
         buffer_add_string$0(buf_sync$0)("\">\n      ");
       }
       buffer_add_string$0(buf_sync$0)("<h2 class=\"p-name\"> ");
-      buffer_add_escape$0(buf_sync$0)(props$1.get("title"));
+      buffer_add_escape$0(buf_sync$0)(match_props$0.get("title"));
       buffer_add_string$0(buf_sync$0)(
         " </h2>\n      <span class=\"p-author\"> By "
       );
-      let nullable$0 = props$1.get("name");
+      let nullable$0 = match_props$0.get("name");
       if (!(nullable$0 === 0)) {
         buffer_add_escape$0(buf_sync$0)(nullable$0[0]);
       } else {
@@ -375,11 +375,11 @@ The data supplied does not match this template's interface.\n\
       buffer_add_string$0(buf_sync$0)(
         " </span>\n      <span class=\"dt-published\"> Posted on "
       );
-      buffer_add_escape$0(buf_sync$0)(props$1.get("date"));
+      buffer_add_escape$0(buf_sync$0)(match_props$0.get("date"));
       buffer_add_string$0(buf_sync$0)(
         " </span>\n    </header>\n    <div class=\"e-content\"> "
       );
-      buffer_add_string$0(buf_sync$0)(props$1.get("content"));
+      buffer_add_string$0(buf_sync$0)(match_props$0.get("content"));
       buffer_add_string$0(buf_sync$0)(" </div>\n  </article>\n");
       index$0++;
       cell$0 = cell$0[1];

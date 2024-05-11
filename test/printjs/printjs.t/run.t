@@ -278,12 +278,12 @@
       let index$0 = 0;
       let cell$0 = arg$0.get("list");
       while (!(cell$0 === 0)) {
-        let props$0 = new Map(arg$0);
+        let match_props$0 = new Map();
         let head$0 = cell$0[0];
         let exit$0 = -1;
-        props$0.set("i", head$0);
+        match_props$0.set("i", head$0);
         exit$0 = 0;
-        buffer_add_escape$0(buf_sync$0)(String(props$0.get("i")));
+        buffer_add_escape$0(buf_sync$0)(String(match_props$0.get("i")));
         index$0++;
         cell$0 = cell$0[1];
       }
@@ -1206,7 +1206,6 @@
       }
       buffer_add_string$0(buf_sync$0)("\n\nMatching\n--------\n\n");
       let arg_match$0 = [props$0.get("record").get("int_enum")];
-      let props$1 = new Map(props$0);
       let exit$0 = -1;
       let match_arg$0 = arg_match$0[0];
       if (match_arg$0 === 8) {
@@ -1220,7 +1219,6 @@
         buffer_add_string$0(buf_sync$0)("40\n");
       }
       let arg_match$1 = [props$0.get("record")];
-      let props$2 = new Map(props$0);
       let exit$1 = -1;
       let match_arg$1 = arg_match$1[0];
       let match_arg$2 = match_arg$1.get("string_enum");
@@ -1235,30 +1233,30 @@
         buffer_add_string$0(buf_sync$0)("no\n");
       }
       let arg_match$2 = [props$0.get("tagged_record_bool")];
-      let props$3 = new Map(props$0);
+      let match_props$0 = new Map();
       let exit$2 = -1;
       let match_arg$3 = arg_match$2[0];
       let match_arg$4 = match_arg$3.get("tag");
       if (match_arg$4 === 0) {
         let match_arg$5 = match_arg$3.get("a");
-        props$3.set("a", match_arg$5);
+        match_props$0.set("a", match_arg$5);
         exit$2 = 0;
       } else {
         if (match_arg$4 === 1) {
           let match_arg$5 = match_arg$3.get("b");
-          props$3.set("b", match_arg$5);
+          match_props$0.set("b", match_arg$5);
           exit$2 = 1;
         }
       }
       if (exit$2 === 0) {
-        buffer_add_escape$0(buf_sync$0)(props$3.get("a"));
+        buffer_add_escape$0(buf_sync$0)(match_props$0.get("a"));
         buffer_add_string$0(buf_sync$0)("\n");
       } else {
-        buffer_add_escape$0(buf_sync$0)(String(props$3.get("b")));
+        buffer_add_escape$0(buf_sync$0)(String(match_props$0.get("b")));
         buffer_add_string$0(buf_sync$0)("\n");
       }
       let arg_match$3 = [props$0.get("tagged_record_int")];
-      let props$4 = new Map(props$0);
+      let match_props$1 = new Map();
       let exit$3 = -1;
       let match_arg$5 = arg_match$3[0];
       let match_arg$6 = match_arg$5.get("tag");
@@ -1270,36 +1268,38 @@
           let match_arg$8 = match_arg$7[0];
           let match_arg$9 = match_arg$7[1];
           let match_arg$10 = match_arg$7[2];
-          props$4.set("a", match_arg$8);
-          props$4.set("b", match_arg$9);
-          props$4.set("c", match_arg$10);
+          match_props$1.set("a", match_arg$8);
+          match_props$1.set("b", match_arg$9);
+          match_props$1.set("c", match_arg$10);
           exit$3 = 1;
         }
       }
       if (exit$3 === 0) {
         buffer_add_string$0(buf_sync$0)("Fail\n");
       } else {
-        buffer_add_escape$0(buf_sync$0)(String(props$4.get("a")));
+        buffer_add_escape$0(buf_sync$0)(String(match_props$1.get("a")));
         buffer_add_string$0(buf_sync$0)(" ");
-        buffer_add_escape$0(buf_sync$0)(props$4.get("b"));
+        buffer_add_escape$0(buf_sync$0)(match_props$1.get("b"));
         buffer_add_string$0(buf_sync$0)(" ");
-        buffer_add_escape$0(buf_sync$0)(String(!(props$4.get("c") === 0)));
+        buffer_add_escape$0(buf_sync$0)(
+          String(!(match_props$1.get("c") === 0))
+        );
         buffer_add_string$0(buf_sync$0)("\n");
       }
       let arg_match$4 = [props$0.get("tagged_record_open")];
-      let props$5 = new Map(props$0);
+      let match_props$2 = new Map();
       let exit$4 = -1;
       let match_arg$7 = arg_match$4[0];
       let match_arg$8 = match_arg$7.get("tag");
       if (match_arg$8 === 200) {
         let match_arg$9 = match_arg$7.get("b");
-        props$5.set("b", match_arg$9);
+        match_props$2.set("b", match_arg$9);
         exit$4 = 0;
       }
       if (exit$4 === -1) { exit$4 = 1; }
       if (exit$4 === 0) {
         buffer_add_string$0(buf_sync$0)(" ");
-        buffer_add_escape$0(buf_sync$0)(props$5.get("b"));
+        buffer_add_escape$0(buf_sync$0)(match_props$2.get("b"));
         buffer_add_string$0(buf_sync$0)("\n");
       } else {
         buffer_add_string$0(buf_sync$0)("Another tag!\n");
@@ -1307,36 +1307,36 @@
       buffer_add_string$0(buf_sync$0)("\n\nMapping\n-------\n\n");
       let match_arg$9 = props$0.get("null_string_dict");
       for (let x$0 of match_arg$9) {
-        let props$6 = new Map(props$0);
+        let match_props$3 = new Map();
         let exit$5 = -1;
         if (x$0[1] === 0) {
-          props$6.set("key", x$0[0]);
+          match_props$3.set("key", x$0[0]);
           exit$5 = 0;
         } else {
           let match_arg$10 = x$0[1][0];
-          props$6.set("key", x$0[0]);
-          props$6.set("str", match_arg$10);
+          match_props$3.set("key", x$0[0]);
+          match_props$3.set("str", match_arg$10);
           exit$5 = 1;
         }
         if (exit$5 === 0) {
-          buffer_add_escape$0(buf_sync$0)(props$6.get("key"));
+          buffer_add_escape$0(buf_sync$0)(match_props$3.get("key"));
           buffer_add_string$0(buf_sync$0)(" is null.\n");
         } else {
-          buffer_add_escape$0(buf_sync$0)(props$6.get("key"));
+          buffer_add_escape$0(buf_sync$0)(match_props$3.get("key"));
           buffer_add_string$0(buf_sync$0)(" is ");
-          buffer_add_escape$0(buf_sync$0)(props$6.get("str"));
+          buffer_add_escape$0(buf_sync$0)(match_props$3.get("str"));
           buffer_add_string$0(buf_sync$0)("\n");
         }
       }
       let index$0 = 0;
       let cell$0 = props$0.get("int_list");
       while (!(cell$0 === 0)) {
-        let props$6 = new Map(props$0);
+        let match_props$3 = new Map();
         let head$0 = cell$0[0];
         let exit$5 = -1;
-        props$6.set("i", head$0);
+        match_props$3.set("i", head$0);
         exit$5 = 0;
-        buffer_add_escape$0(buf_sync$0)(String(props$6.get("i")));
+        buffer_add_escape$0(buf_sync$0)(String(match_props$3.get("i")));
         buffer_add_string$0(buf_sync$0)("\n");
         index$0++;
         cell$0 = cell$0[1];
@@ -1344,15 +1344,15 @@
       let index$1 = 0;
       let cell$1 = props$0.get("int_list");
       while (!(cell$1 === 0)) {
-        let props$6 = new Map(props$0);
+        let match_props$3 = new Map();
         let head$0 = cell$1[0];
         let exit$5 = -1;
-        props$6.set("i", head$0);
-        props$6.set("key", index$1);
+        match_props$3.set("i", head$0);
+        match_props$3.set("key", index$1);
         exit$5 = 0;
-        buffer_add_escape$0(buf_sync$0)(String(props$6.get("key")));
+        buffer_add_escape$0(buf_sync$0)(String(match_props$3.get("key")));
         buffer_add_string$0(buf_sync$0)(" : ");
-        buffer_add_escape$0(buf_sync$0)(String(props$6.get("i")));
+        buffer_add_escape$0(buf_sync$0)(String(match_props$3.get("i")));
         buffer_add_string$0(buf_sync$0)("\n");
         index$1++;
         cell$1 = cell$1[1];
@@ -1360,28 +1360,28 @@
       let index$2 = 0;
       let cell$2 = props$0.get("nested_list");
       while (!(cell$2 === 0)) {
-        let props$6 = new Map(props$0);
+        let match_props$3 = new Map();
         let head$0 = cell$2[0];
         let exit$5 = -1;
-        props$6.set("l", head$0);
+        match_props$3.set("l", head$0);
         exit$5 = 0;
         let index$3 = 0;
-        let cell$3 = props$6.get("l");
+        let cell$3 = match_props$3.get("l");
         while (!(cell$3 === 0)) {
-          let props$7 = new Map(props$6);
+          let match_props$4 = new Map();
           let head$1 = cell$3[0];
           let exit$6 = -1;
-          props$7.set("l2", head$1);
+          match_props$4.set("l2", head$1);
           exit$6 = 0;
           let index$4 = 0;
-          let cell$4 = props$7.get("l2");
+          let cell$4 = match_props$4.get("l2");
           while (!(cell$4 === 0)) {
-            let props$8 = new Map(props$7);
+            let match_props$5 = new Map();
             let head$2 = cell$4[0];
             let exit$7 = -1;
-            props$8.set("i", head$2);
+            match_props$5.set("i", head$2);
             exit$7 = 0;
-            buffer_add_escape$0(buf_sync$0)(String(props$8.get("i")));
+            buffer_add_escape$0(buf_sync$0)(String(match_props$5.get("i")));
             buffer_add_string$0(buf_sync$0)(" ");
             index$4++;
             cell$4 = cell$4[1];
@@ -1396,7 +1396,7 @@
       let index$3 = 0;
       let cell$3 = props$0.get("nested_nullable_list");
       while (!(cell$3 === 0)) {
-        let props$6 = new Map(props$0);
+        let match_props$3 = new Map();
         let head$0 = cell$3[0];
         let exit$5 = -1;
         if (head$0 === 0) {
@@ -1408,7 +1408,7 @@
           } else {
             let match_arg$11 = head$0[0];
             let match_arg$12 = match_arg$11[0];
-            props$6.set("b", match_arg$12);
+            match_props$3.set("b", match_arg$12);
             exit$5 = 2;
           }
         }
@@ -1421,7 +1421,9 @@
             );
           } else {
             buffer_add_string$0(buf_sync$0)("Level 3 ");
-            buffer_add_escape$0(buf_sync$0)(String(!(props$6.get("b") === 0)));
+            buffer_add_escape$0(buf_sync$0)(
+              String(!(match_props$3.get("b") === 0))
+            );
             buffer_add_string$0(buf_sync$0)("\n");
           }
         }
@@ -1437,7 +1439,7 @@
   "
       );
       let arg_match$5 = [props$0.get("null_string_dict")];
-      let props$6 = new Map(props$0);
+      let match_props$3 = new Map();
       let exit$5 = -1;
       let match_arg$10 = arg_match$5[0];
       if (match_arg$10.has("a")) {
@@ -1459,8 +1461,8 @@
               } else {
                 let match_arg$15 = match_arg$10.get("does_not_exist");
                 let match_arg$16 = match_arg$15[0];
-                props$6.set("a", match_arg$13);
-                props$6.set("b", match_arg$16);
+                match_props$3.set("a", match_arg$13);
+                match_props$3.set("b", match_arg$16);
                 exit$5 = 0;
                 if (exit$5 === -1) { exit$5 = 2; }
               }
@@ -1472,8 +1474,8 @@
               if (!(match_arg$14 === 0)) {
                 let match_arg$15 = match_arg$10.get("does_not_exist");
                 let match_arg$16 = match_arg$15[0];
-                props$6.set("a", match_arg$13);
-                props$6.set("b", match_arg$16);
+                match_props$3.set("a", match_arg$13);
+                match_props$3.set("b", match_arg$16);
                 exit$5 = 0;
               }
             }
@@ -1483,9 +1485,9 @@
       if (exit$5 === -1) { exit$5 = 3; }
       if (exit$5 === 0) {
         buffer_add_string$0(buf_sync$0)(" ");
-        buffer_add_escape$0(buf_sync$0)(props$6.get("a"));
+        buffer_add_escape$0(buf_sync$0)(match_props$3.get("a"));
         buffer_add_string$0(buf_sync$0)(" ");
-        buffer_add_escape$0(buf_sync$0)(props$6.get("b"));
+        buffer_add_escape$0(buf_sync$0)(match_props$3.get("b"));
         buffer_add_string$0(buf_sync$0)("\n");
       } else {
         if (exit$5 === 1) {
@@ -1499,7 +1501,7 @@
         }
       }
       let arg_match$6 = [new Map([["a", "a"]])];
-      let props$7 = new Map(props$0);
+      let match_props$4 = new Map();
       let exit$6 = -1;
       let match_arg$11 = arg_match$6[0];
       if (match_arg$11.has("a")) {
@@ -1507,8 +1509,8 @@
         if (match_arg$12 === "") {
           if (match_arg$11.has("does_not_exist")) {
             let match_arg$13 = match_arg$11.get("does_not_exist");
-            props$7.set("a", match_arg$12);
-            props$7.set("b", match_arg$13);
+            match_props$4.set("a", match_arg$12);
+            match_props$4.set("b", match_arg$13);
             exit$6 = 0;
           }
           if (exit$6 === -1) { exit$6 = 1; }
@@ -1516,16 +1518,16 @@
           if (match_arg$12 === "a") {
             if (match_arg$11.has("does_not_exist")) {
               let match_arg$13 = match_arg$11.get("does_not_exist");
-              props$7.set("a", match_arg$12);
-              props$7.set("b", match_arg$13);
+              match_props$4.set("a", match_arg$12);
+              match_props$4.set("b", match_arg$13);
               exit$6 = 0;
             }
             if (exit$6 === -1) { exit$6 = 2; }
           } else {
             if (match_arg$11.has("does_not_exist")) {
               let match_arg$13 = match_arg$11.get("does_not_exist");
-              props$7.set("a", match_arg$12);
-              props$7.set("b", match_arg$13);
+              match_props$4.set("a", match_arg$12);
+              match_props$4.set("b", match_arg$13);
               exit$6 = 0;
             }
           }
@@ -1534,9 +1536,9 @@
       if (exit$6 === -1) { exit$6 = 3; }
       if (exit$6 === 0) {
         buffer_add_string$0(buf_sync$0)(" Fail. ");
-        buffer_add_escape$0(buf_sync$0)(props$7.get("a"));
+        buffer_add_escape$0(buf_sync$0)(match_props$4.get("a"));
         buffer_add_string$0(buf_sync$0)(" ");
-        buffer_add_escape$0(buf_sync$0)(props$7.get("b"));
+        buffer_add_escape$0(buf_sync$0)(match_props$4.get("b"));
         buffer_add_string$0(buf_sync$0)("\n");
       } else {
         if (exit$6 === 1) {
@@ -1589,17 +1591,17 @@
                         let buf_async$3 = Promise.resolve({contents: ""});
                         let arg_match$7 =
                           [new Map([["a", arg$2], ["b", arg$3]])];
-                        let props$8 = new Map(props$0);
+                        let match_props$5 = new Map();
                         let exit$7 = -1;
                         let match_arg$12 = arg_match$7[0];
                         let match_arg$13 = match_arg$12.get("a");
                         let match_arg$14 = match_arg$12.get("b");
-                        props$8.set("a", match_arg$13);
-                        props$8.set("b", match_arg$14);
+                        match_props$5.set("a", match_arg$13);
+                        match_props$5.set("b", match_arg$14);
                         exit$7 = 0;
-                        buffer_add_escape$0(buf_sync$3)(props$8.get("a"));
+                        buffer_add_escape$0(buf_sync$3)(match_props$5.get("a"));
                         buffer_add_string$0(buf_sync$3)(" ");
-                        buffer_add_escape$0(buf_sync$3)(props$8.get("b"));
+                        buffer_add_escape$0(buf_sync$3)(match_props$5.get("b"));
                         buffer_add_string$0(buf_sync$3)("\n");
                         return (
                           buf_async$3.then(
@@ -1711,7 +1713,7 @@
   "
       );
       let arg_match$7 = [1, 0, 3];
-      let props$8 = new Map(props$0);
+      let match_props$5 = new Map();
       let exit$7 = -1;
       let match_arg$12 = arg_match$7[0];
       if (match_arg$12 === 1) {
@@ -1721,7 +1723,7 @@
           if (match_arg$14 === 0) {
             exit$7 = 0;
           } else {
-            props$8.set("y", match_arg$14);
+            match_props$5.set("y", match_arg$14);
             exit$7 = 2;
           }
         } else {
@@ -1744,7 +1746,7 @@
         let match_arg$13 = arg_match$7[1];
         if (match_arg$13 === 0) {
           let match_arg$14 = arg_match$7[2];
-          props$8.set("y", match_arg$14);
+          match_props$5.set("y", match_arg$14);
           exit$7 = 2;
         } else {
           let match_arg$14 = arg_match$7[1];
@@ -1752,7 +1754,7 @@
           if (match_arg$15 === 1) {
             let match_arg$16 = arg_match$7[2];
             if (match_arg$16 === 0) {
-              props$8.set("x", match_arg$12);
+              match_props$5.set("x", match_arg$12);
               exit$7 = 1;
             } else {
               exit$7 = 4;
@@ -1766,12 +1768,12 @@
       } else {
         if (exit$7 === 1) {
           buffer_add_string$0(buf_sync$0)(" 1 ");
-          buffer_add_escape$0(buf_sync$0)(String(props$8.get("x")));
+          buffer_add_escape$0(buf_sync$0)(String(match_props$5.get("x")));
           buffer_add_string$0(buf_sync$0)("\n");
         } else {
           if (exit$7 === 2) {
             buffer_add_string$0(buf_sync$0)(" 2 ");
-            buffer_add_escape$0(buf_sync$0)(String(props$8.get("y")));
+            buffer_add_escape$0(buf_sync$0)(String(match_props$5.get("y")));
             buffer_add_string$0(buf_sync$0)("\n");
           } else {
             if (exit$7 === 3) {
@@ -1783,7 +1785,7 @@
         }
       }
       let arg_match$8 = [[[10, 20], 30], 40];
-      let props$9 = new Map(props$0);
+      let match_props$6 = new Map();
       let exit$8 = -1;
       let match_arg$13 = arg_match$8[0];
       let match_arg$14 = match_arg$13[0];
@@ -1798,11 +1800,11 @@
               exit$8 = 1;
             } else {
               if (match_arg$18 === 41) {
-                props$9.set("_x", match_arg$13);
+                match_props$6.set("_x", match_arg$13);
                 exit$8 = 0;
               } else {
-                props$9.set("_y", match_arg$13);
-                props$9.set("z", match_arg$18);
+                match_props$6.set("_y", match_arg$13);
+                match_props$6.set("z", match_arg$18);
                 exit$8 = 2;
               }
             }
@@ -1812,11 +1814,11 @@
       if (exit$8 === -1) {
         let match_arg$16 = arg_match$8[1];
         if (match_arg$16 === 41) {
-          props$9.set("_x", match_arg$13);
+          match_props$6.set("_x", match_arg$13);
           exit$8 = 0;
         } else {
-          props$9.set("_y", match_arg$13);
-          props$9.set("z", match_arg$16);
+          match_props$6.set("_y", match_arg$13);
+          match_props$6.set("z", match_arg$16);
           exit$8 = 2;
         }
       }
@@ -1827,12 +1829,12 @@
           buffer_add_string$0(buf_sync$0)(" Pass\n");
         } else {
           buffer_add_string$0(buf_sync$0)(" ");
-          buffer_add_escape$0(buf_sync$0)(String(props$9.get("z")));
+          buffer_add_escape$0(buf_sync$0)(String(match_props$6.get("z")));
           buffer_add_string$0(buf_sync$0)("\n");
         }
       }
       let arg_match$9 = [[[10, 20], 99], 40];
-      let props$10 = new Map(props$0);
+      let match_props$7 = new Map();
       let exit$9 = -1;
       let match_arg$16 = arg_match$9[0];
       let match_arg$17 = match_arg$16[0];
@@ -1847,11 +1849,11 @@
               exit$9 = 1;
             } else {
               if (match_arg$21 === 41) {
-                props$10.set("_x", match_arg$16);
+                match_props$7.set("_x", match_arg$16);
                 exit$9 = 0;
               } else {
-                props$10.set("_y", match_arg$16);
-                props$10.set("z", match_arg$21);
+                match_props$7.set("_y", match_arg$16);
+                match_props$7.set("z", match_arg$21);
                 exit$9 = 2;
               }
             }
@@ -1861,11 +1863,11 @@
       if (exit$9 === -1) {
         let match_arg$19 = arg_match$9[1];
         if (match_arg$19 === 41) {
-          props$10.set("_x", match_arg$16);
+          match_props$7.set("_x", match_arg$16);
           exit$9 = 0;
         } else {
-          props$10.set("_y", match_arg$16);
-          props$10.set("z", match_arg$19);
+          match_props$7.set("_y", match_arg$16);
+          match_props$7.set("z", match_arg$19);
           exit$9 = 2;
         }
       }
@@ -1876,7 +1878,7 @@
           buffer_add_string$0(buf_sync$0)(" Fail\n");
         } else {
           buffer_add_string$0(buf_sync$0)(" ");
-          buffer_add_escape$0(buf_sync$0)(String(props$10.get("z")));
+          buffer_add_escape$0(buf_sync$0)(String(match_props$7.get("z")));
           buffer_add_string$0(buf_sync$0)("\n");
         }
       }

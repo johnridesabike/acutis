@@ -462,6 +462,7 @@ and node =
 
 and case = {
   pats : (Loc.t * destruct pat Nonempty.t) Nonempty.t;
+  bindings : string list;
   nodes : nodes;
 }
 
@@ -531,7 +532,7 @@ module Context = struct
       |> List.rev
     in
     match var_matrix with
-    | [] -> ctx
+    | [] -> ([], ctx)
     | hd :: vars ->
         (* Merge the maps into one map. Unify the types and check that both maps
            have identical keys. *)
@@ -549,17 +550,24 @@ module Context = struct
                   | None, None -> None)
                 acc m)
             hd vars
-          (* Add them to the scope, replacing (shadowing) the old variables. *)
-          |> Map.String.merge
-               (fun _k oldvar newvar ->
-                 match newvar with
-                 | Some newvar ->
-                     Queue.add newvar ctx.all_bindings;
-                     Some newvar
-                 | None -> oldvar)
-               ctx.scope
         in
-        { ctx with scope }
+        let bindings =
+          Map.String.to_seq scope
+          |> Seq.map (fun (_k, b) -> b.name)
+          |> List.of_seq
+        in
+        (* Add them to the scope, replacing (shadowing) the old variables. *)
+        let scope =
+          Map.String.merge
+            (fun _k oldvar newvar ->
+              match newvar with
+              | Some newvar ->
+                  Queue.add newvar ctx.all_bindings;
+                  Some newvar
+              | None -> oldvar)
+            ctx.scope scope
+        in
+        (bindings, { ctx with scope })
 end
 
 let map_add_unique loc k v m =
@@ -1005,11 +1013,11 @@ and make_cases ctx cases =
               with Invalid_argument _ -> Error.pat_num_mismatch loc)
             pats
         in
-        let ctx = Context.add_scope var_matrix ctx in
-        (pats, nodes, ctx))
+        let bindings, ctx = Context.add_scope var_matrix ctx in
+        (pats, nodes, bindings, ctx))
       cases
-    |> Nonempty.map (fun (pats, nodes, ctx) ->
-           { pats; nodes = make_nodes ctx nodes })
+    |> Nonempty.map (fun (pats, nodes, bindings, ctx) ->
+           { pats; bindings; nodes = make_nodes ctx nodes })
   in
   (tys, cases)
 

@@ -105,7 +105,6 @@ module Make (M : MONAD) (D : DECODABLE) :
     let ( .%{} ) = Tbl.find
     let ( .%{}<- ) = Tbl.add
     let hashtbl_mem = Tbl.mem
-    let hashtbl_copy = Tbl.copy
     let hashtbl_iter x f = Tbl.iter f x
 
     type buffer = Buffer.t

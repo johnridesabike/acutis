@@ -234,24 +234,27 @@ and ('leaf, 'key) switchcase = {
     matches a value, then we follow its associated tree. If not, we try the next
     case. *)
 
-module Exit : sig
-  (** Each "exit" is given an integer key which we can use to look up the AST
-      nodes to follow after the tree. We use integers because exits can be
-      copied when trees merge, and we don't want to duplicate entire ASTs. *)
+module Exits : sig
+  (** Each "exit" is given a key which we can use to look up the AST nodes to
+      follow after the tree. We use keys because exits can be copied when trees
+      merge, and we don't want to duplicate entire trees. *)
 
   type key
-  (** Internally: [int] *)
+
+  val key_to_int : key -> int
 
   type 'a t
 
   val map : ('a -> 'b) -> 'a t -> 'b t
-  val key_to_int : key -> int
-  val to_seq : 'a t -> 'a Seq.t
-  val to_seqi : 'a t -> (key * 'a) Seq.t
+  val binding_exists : _ t -> bool
+  val nodes : 'a t -> 'a Seq.t
+
+  val to_seq : 'a t -> (key * string list * 'a) Seq.t
+  (** This returns each exit's key, list of binding names, and nodes. *)
 end
 
-type leaf = { names : int Map.String.t; exit : Exit.key }
-type 'a t = { tree : (leaf, int) tree; exits : 'a Exit.t }
+type leaf = { names : int Map.String.t; exit : Exits.key }
+type 'a t = { tree : (leaf, int) tree; exits : 'a Exits.t }
 
 (** {1 Functions.} *)
 

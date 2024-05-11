@@ -372,7 +372,6 @@ let pp (module Jsmod : JSMODULE) ppf c =
       let ( .%{} ) x k = x.!("get") @@ k
       let ( .%{}<- ) x k v = stmt (apply_n x.!("set") [ k; v ])
       let hashtbl_mem x k = x.!("has") @@ k
-      let hashtbl_copy x = new_ "Map" [ x ]
 
       let hashtbl_iter x f =
         for_of x (fun entry -> f entry.%(int 0) entry.%(int 1))

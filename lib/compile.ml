@@ -124,7 +124,7 @@ and make_nodes l =
 and make_match loc tys cases =
   let Matching.{ tree; exits } = Matching.make cases in
   Matching.partial_match_check loc (Nonempty.to_list tys) tree;
-  let exits = Matching.Exit.map make_nodes exits in
+  let exits = Matching.Exits.map make_nodes exits in
   { tree; exits }
 
 let make_nodes T.{ nodes; _ } = make_nodes nodes
@@ -186,20 +186,20 @@ let make ~fname components_src src =
   let nodes = parse ~fname src in
   let typed = T.make ~root:fname components_src.Components.typed nodes in
   let nodes = make_nodes typed in
-  (* Only retrieve the  components that need to be linked. *)
+  (* Only retrieve the components that need to be linked. *)
   let rec get_components linked nodes =
     List.fold_left
       (fun linked -> function
         | Text _ | Echo _ -> linked
         | Match (blocks, _, m) ->
             let linked = Array.fold_left get_components linked blocks in
-            Matching.Exit.to_seq m.exits |> Seq.fold_left get_components linked
+            Matching.Exits.nodes m.exits |> Seq.fold_left get_components linked
         | Map_list (blocks, _, m) ->
             let linked = Array.fold_left get_components linked blocks in
-            Matching.Exit.to_seq m.exits |> Seq.fold_left get_components linked
+            Matching.Exits.nodes m.exits |> Seq.fold_left get_components linked
         | Map_dict (blocks, _, m) ->
             let linked = Array.fold_left get_components linked blocks in
-            Matching.Exit.to_seq m.exits |> Seq.fold_left get_components linked
+            Matching.Exits.nodes m.exits |> Seq.fold_left get_components linked
         | Component (name, blocks, _) -> (
             let linked = Array.fold_left get_components linked blocks in
             match Map.String.find_opt name components_src.optimized with
