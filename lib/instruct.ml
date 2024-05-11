@@ -1373,9 +1373,7 @@ let pp (type a) pp_import ppf c =
     let string_of_bool = F.dprintf "(@[string_of_bool@ %t@])"
 
     let array a =
-      F.dprintf "[@[<hv>%a@]]"
-        (F.pp_print_seq ~pp_sep:Pp.comma ( |> ))
-        (Array.to_seq a)
+      F.dprintf "[@[<hv>%a@]]" (F.pp_print_array ~pp_sep:Pp.comma ( |> )) a
 
     let array_make = F.dprintf "(@[array_make@ %t@ %t@])"
     let bindop_get = F.dprintf "(@[%t@,.%%%c@[@,%t@,@]%c@])"

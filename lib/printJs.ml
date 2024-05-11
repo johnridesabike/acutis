@@ -131,9 +131,9 @@ module Javascript = struct
     F.fprintf ppf "@ @[<hv 2>default:@ %a@]" default state;
     F.fprintf ppf "@;<1 -2>}@]"
 
-  let seq s ppf state =
+  let array_of_iter iter s ppf state =
     F.fprintf ppf "[@,%a%t]"
-      (F.pp_print_seq ~pp_sep:Pp.comma (fun ppf x ->
+      (F.pp_print_iter ~pp_sep:Pp.comma iter (fun ppf x ->
            F.fprintf ppf "@[<hv 2>%a@]" x state))
       s trailing_comma
 
@@ -357,7 +357,7 @@ let pp (module Jsmod : JSMODULE) ppf c =
       let float_of_int = Fun.id
       let string_of_float = to_string
       let string_of_bool = to_string
-      let array a = seq (Array.to_seq a)
+      let array = array_of_iter Array.iter
 
       let array_make i x =
         apply_n
@@ -366,8 +366,8 @@ let pp (module Jsmod : JSMODULE) ppf c =
 
       type 'a hashtbl
 
-      let pair (a, b) = seq Seq.(fun () -> Cons (a, fun () -> Cons (b, empty)))
-      let hashtbl s = new_ "Map" [ seq (Seq.map pair s) ]
+      let pair = array_of_iter (fun f (a, b) -> f a; f b)
+      let hashtbl s = new_ "Map" [ array_of_iter Seq.iter (Seq.map pair s) ]
       let hashtbl_create () = new_ "Map" [ unit ]
       let ( .%{} ) x k = x.!("get") @@ k
       let ( .%{}<- ) x k v = stmt (apply_n x.!("set") [ k; v ])
