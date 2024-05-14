@@ -29,13 +29,13 @@ compile them to self-contained JavaScript files.
 ")
  (depends
   (ocaml
-   (>= 5.0))
+   (>= 5.2))
   menhir
   yojson
   dune-build-info
   (ocamlformat
    (and
-    (= 0.26.1)
+    (= 0.26.2)
     :with-test))))
 
 (package
