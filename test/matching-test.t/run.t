@@ -294,17 +294,7 @@ Nests merge correctly
                  (wildcard (end (leaf (names ()) (exit 3))))
                  (check_cases none))))))
             (check_cases none))))
-         (wildcard
-          (switch
-           (key 2)
-           (ids ())
-           (cases
-            (case
-             (data 12)
-             (if_match (end (leaf (names ()) (exit 0))))
-             (next none)))
-           (wildcard none)
-           (check_cases none)))))))
+         (wildcard none)))))
      (exits
       ((exit 0 (bindings ()) (nodes ((text "\n"))))
        (exit 1 (bindings ()) (nodes ((text "\n"))))

@@ -122,8 +122,7 @@ and make_nodes l =
     l
 
 and make_match loc tys cases =
-  let Matching.{ tree; exits } = Matching.make cases in
-  Matching.partial_match_check loc (Nonempty.to_list tys) tree;
+  let Matching.{ tree; exits } = Matching.make loc tys cases in
   let exits = Matching.Exits.map make_nodes exits in
   { tree; exits }
 

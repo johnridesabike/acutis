@@ -458,6 +458,9 @@ let () =
     {%  with _, _ %}
     {% /match %}|});
 
+  print_error "Unused cases are caught after an exhaustive nest."
+    (render "{% match a with (_, _) %} {% with _ %} {% /match %}");
+
   print_error "Dict patterns match a subset of the input."
     (render
        "{% match a with <a: 1> %} {% with <a: 1, b: 2> %} {% with _ %}\n\
@@ -481,12 +484,6 @@ let () =
   print_error "Missing components are reported (by root)." (render "{% A /%}");
   print_error "Duplicate names are reported." (fun () ->
       ignore @@ Compile.Components.of_seq @@ List.to_seq [ a; b; a ]);
-
-  print_error
-    "This error is incorrect. The compiler fails to detect the first unused\n\
-     wildcard case. I'm not fixing this error yet, but I'm keeping this test\n\
-     to track when it changes."
-    (render "{% match a with (_, _) %} {% with _ %} {% with _ %} {% /match %}");
 
   print_error "Basic type mismatch."
     (render "{% match a with {b} %} {% b %} {% /match %}"

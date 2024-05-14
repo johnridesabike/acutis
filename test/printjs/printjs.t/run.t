@@ -1464,7 +1464,6 @@
                 match_props$3.set("a", match_arg$13);
                 match_props$3.set("b", match_arg$16);
                 exit$5 = 0;
-                if (exit$5 === -1) { exit$5 = 2; }
               }
             }
             if (exit$5 === -1) { exit$5 = 2; }

@@ -258,11 +258,12 @@ type 'a t = { tree : (leaf, int) tree; exits : 'a Exits.t }
 
 (** {1 Functions.} *)
 
-val make : Typechecker.case Nonempty.t -> Typechecker.nodes t
-
-val partial_match_check :
-  Loc.t -> Typechecker.Type.t list -> (leaf, int) tree -> unit
-(** Searches the tree for a counterexample to prove it does not cover
-    a case. Raises {!Error.Acutis_error} if it finds one. *)
+val make :
+  Loc.t ->
+  Typechecker.Type.t Nonempty.t ->
+  Typechecker.case Nonempty.t ->
+  Typechecker.nodes t
+(** Raises {!Error.Acutis_error} if the cases are non-exhaustive or if there is
+    an unused case. *)
 
 val to_sexp : ('a -> Sexp.t) -> 'a t -> Sexp.t

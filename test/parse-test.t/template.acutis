@@ -67,7 +67,7 @@ List:
 {% /match %}
 
 Record:
-{% match record with {a, "!#%@": b} %} {% a %} {% b %} {% with _ %} {% /match %}
+{% match record with {a, "!#%@": b} %} {% a %} {% b %} {% /match %}
 
 Enum:
 {% match enums with (@"a", @1, true, false) %} {% with _ %} {% /match %}
