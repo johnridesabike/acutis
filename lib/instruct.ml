@@ -551,12 +551,12 @@ end = struct
               @@ construct_data_hashtbl blocks state dict))
 
   and construct_blocks state blocks f =
-    match Array.to_seqi blocks () with
+    match Compile.blocks_to_seq blocks () with
     (* With no blocks, just continue evaluating with a dummy value. *)
     | Seq.Nil -> f state [||]
     (* From the first block, we construct a chain of binded promises. *)
     | Seq.Cons ((i, block), seq) ->
-        let blocks = Array.make (Array.length blocks) (string "") in
+        let blocks = Array.make (Compile.blocks_length blocks) (string "") in
         let rec aux seq =
           match seq () with
           | Seq.Cons ((i, block), seq) ->
@@ -570,9 +570,9 @@ end = struct
                            blocks.(i) <- block;
                            aux seq)))
           | Seq.Nil ->
-              let@ state_block = async_buffer_create state in
-              let s = f state_block blocks in
-              s @. return (async_buffer_contents state_block)
+              let@ state' = async_buffer_create state in
+              let s = f state' blocks in
+              s @. return (async_buffer_contents state')
         in
         let@ state_block = async_buffer_create state in
         let s = nodes state_block block in

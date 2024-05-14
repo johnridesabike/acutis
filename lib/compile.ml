@@ -65,30 +65,32 @@ type node =
   | Match of blocks * data array * nodes Matching.t
   | Map_list of blocks * data * nodes Matching.t
   | Map_dict of blocks * data * nodes Matching.t
-  | Component of string * nodes array * data Map.String.t
+  | Component of string * blocks * data Map.String.t
 
-and blocks = nodes array
+and blocks = nodes Queue.t
 and nodes = node list
 
+let blocks_length = Queue.length
+let blocks_to_seq q = Seq.zip (Seq.ints 0) (Queue.to_seq q)
 let text = function "" -> None | s -> Some (Text s)
 
-let rec make_data block_queue = function
+let rec make_data blocks = function
   | T.Scalar (x, _) -> (x :> data)
   | T.Var x -> `Var x
   | T.Block x ->
-      let i = Queue.length block_queue in
-      Queue.push (make_nodes x) block_queue;
+      let i = Queue.length blocks in
+      Queue.push (make_nodes x) blocks;
       `Block i
   | T.Nil -> `Null
-  | T.Cons x -> make_data block_queue x
-  | T.Tuple l -> `Array (Array.of_list l |> Array.map (make_data block_queue))
+  | T.Cons x -> make_data blocks x
+  | T.Tuple l -> `Array (Array.of_list l |> Array.map (make_data blocks))
   | T.Record (Union_tag_int (k, v, _), x, _) ->
-      `Assoc Map.String.(map (make_data block_queue) x |> add k (`Int v))
+      `Assoc Map.String.(map (make_data blocks) x |> add k (`Int v))
   | T.Record (Union_tag_string (k, v, _), x, _) ->
-      `Assoc Map.String.(map (make_data block_queue) x |> add k (`String v))
+      `Assoc Map.String.(map (make_data blocks) x |> add k (`String v))
   | T.Record (Union_tag_none, x, _) | Dict (x, _) ->
-      `Assoc (Map.String.map (make_data block_queue) x)
-  | T.Field (node, field) -> `Field (make_data block_queue node, field)
+      `Assoc (Map.String.map (make_data blocks) x)
+  | T.Field (node, field) -> `Field (make_data blocks node, field)
 
 and make_nodes l =
   List.filter_map
@@ -100,24 +102,20 @@ and make_nodes l =
       | T.Echo (nullables, fmt, default, esc) ->
           Some (Echo (nullables, fmt, default, esc))
       | T.Match (loc, hd :: tl, tys, cases) ->
-          let q = Queue.create () in
-          let pats = Array.of_list (hd :: tl) |> Array.map (make_data q) in
-          let blocks = Queue.to_seq q |> Array.of_seq in
+          let blocks = Queue.create () in
+          let pats = Array.of_list (hd :: tl) |> Array.map (make_data blocks) in
           Some (Match (blocks, pats, make_match loc tys cases))
       | T.Map_list (loc, pat, tys, cases) ->
-          let q = Queue.create () in
-          let pat = make_data q pat in
-          let blocks = Queue.to_seq q |> Array.of_seq in
+          let blocks = Queue.create () in
+          let pat = make_data blocks pat in
           Some (Map_list (blocks, pat, make_match loc tys cases))
       | T.Map_dict (loc, pat, tys, cases) ->
-          let q = Queue.create () in
-          let pat = make_data q pat in
-          let blocks = Queue.to_seq q |> Array.of_seq in
+          let blocks = Queue.create () in
+          let pat = make_data blocks pat in
           Some (Map_dict (blocks, pat, make_match loc tys cases))
       | T.Component (name, props) ->
-          let q = Queue.create () in
-          let props = Map.String.map (make_data q) props in
-          let blocks = Queue.to_seq q |> Array.of_seq in
+          let blocks = Queue.create () in
+          let props = Map.String.map (make_data blocks) props in
           Some (Component (name, blocks, props)))
     l
 
@@ -125,8 +123,6 @@ and make_match loc tys cases =
   let Matching.{ tree; exits } = Matching.make loc tys cases in
   let exits = Matching.Exits.map make_nodes exits in
   { tree; exits }
-
-let make_nodes T.{ nodes; _ } = make_nodes nodes
 
 module Components = struct
   type 'a source = (Ast.t, 'a) T.source
@@ -157,7 +153,7 @@ module Components = struct
     let optimized =
       Map.String.map
         (function
-          | T.Src (name, src) -> T.Src (name, make_nodes src)
+          | T.Src (name, src) -> T.Src (name, make_nodes src.T.nodes)
           | T.Fun (name, p, f) -> T.Fun (name, p, f))
         typed
     in
@@ -184,23 +180,23 @@ let empty_linked =
 let make ~fname components_src src =
   let nodes = parse ~fname src in
   let typed = T.make ~root:fname components_src.Components.typed nodes in
-  let nodes = make_nodes typed in
+  let nodes = make_nodes typed.nodes in
   (* Only retrieve the components that need to be linked. *)
   let rec get_components linked nodes =
     List.fold_left
       (fun linked -> function
         | Text _ | Echo _ -> linked
         | Match (blocks, _, m) ->
-            let linked = Array.fold_left get_components linked blocks in
+            let linked = Queue.fold get_components linked blocks in
             Matching.Exits.nodes m.exits |> Seq.fold_left get_components linked
         | Map_list (blocks, _, m) ->
-            let linked = Array.fold_left get_components linked blocks in
+            let linked = Queue.fold get_components linked blocks in
             Matching.Exits.nodes m.exits |> Seq.fold_left get_components linked
         | Map_dict (blocks, _, m) ->
-            let linked = Array.fold_left get_components linked blocks in
+            let linked = Queue.fold get_components linked blocks in
             Matching.Exits.nodes m.exits |> Seq.fold_left get_components linked
         | Component (name, blocks, _) -> (
-            let linked = Array.fold_left get_components linked blocks in
+            let linked = Queue.fold get_components linked blocks in
             match Map.String.find_opt name components_src.optimized with
             | None -> raise @@ Error.missing_component linked.stack name
             | Some (Src (_, nodes)) ->
@@ -249,28 +245,28 @@ let rec node_to_sexp = function
   | Match (blocks, data, matching) ->
       Sexp.make "match"
         [
-          Sexp.of_seq (Sexp.pair Sexp.int to_sexp) (Array.to_seqi blocks);
+          Sexp.of_seq (Sexp.pair Sexp.int to_sexp) (blocks_to_seq blocks);
           Sexp.of_seq data_to_sexp (Array.to_seq data);
           Matching.to_sexp to_sexp matching;
         ]
   | Map_list (blocks, data, matching) ->
       Sexp.make "map_list"
         [
-          Sexp.of_seq (Sexp.pair Sexp.int to_sexp) (Array.to_seqi blocks);
+          Sexp.of_seq (Sexp.pair Sexp.int to_sexp) (blocks_to_seq blocks);
           data_to_sexp data;
           Matching.to_sexp to_sexp matching;
         ]
   | Map_dict (blocks, data, matching) ->
       Sexp.make "map_dict"
         [
-          Sexp.of_seq (Sexp.pair Sexp.int to_sexp) (Array.to_seqi blocks);
+          Sexp.of_seq (Sexp.pair Sexp.int to_sexp) (blocks_to_seq blocks);
           data_to_sexp data;
           Matching.to_sexp to_sexp matching;
         ]
   | Component (name, blocks, props) ->
       Sexp.make "component"
         [
-          Sexp.of_seq (Sexp.pair Sexp.int to_sexp) (Array.to_seqi blocks);
+          Sexp.of_seq (Sexp.pair Sexp.int to_sexp) (blocks_to_seq blocks);
           Sexp.string name;
           assoc_to_sexp props;
         ]

@@ -35,9 +35,12 @@ type data =
   | `Field of data * string
   | `Block of int
     (** To separate the data from the rest of the tree, we take any template
-        blocks and place them into an array. At runtime, the [`Block]
-        constructors will get their rendered content by their indices. *)
+        blocks and place them into a {!blocks}. At runtime, the [`Block]
+        constructors will get their rendered content based on their indices. *)
   ]
+
+type blocks
+(** A sequence of {!nodes}, indexed by integers. *)
 
 type node =
   | Text of string
@@ -45,10 +48,12 @@ type node =
   | Match of blocks * data array * nodes Matching.t
   | Map_list of blocks * data * nodes Matching.t
   | Map_dict of blocks * data * nodes Matching.t
-  | Component of string * nodes array * data Map.String.t
+  | Component of string * blocks * data Map.String.t
 
-and blocks = nodes array
 and nodes = node list
+
+val blocks_length : blocks -> int
+val blocks_to_seq : blocks -> (int * nodes) Seq.t
 
 module Components : sig
   type 'a source
