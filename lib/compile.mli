@@ -40,7 +40,7 @@ type data =
   ]
 
 type blocks
-(** A sequence of {!nodes}, indexed by integers. *)
+(** A sequence of {!type-nodes}, indexed by integers. *)
 
 type node =
   | Text of string
