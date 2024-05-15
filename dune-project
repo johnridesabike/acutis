@@ -47,6 +47,7 @@ compile them to self-contained JavaScript files.
    (>= 5.0))
   (acutis
    (= :version))
-  js_of_ocaml
+  (js_of_ocaml
+   (>= 5.8.1))
   js_of_ocaml-compiler
   js_of_ocaml-ppx))

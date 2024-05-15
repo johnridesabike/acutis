@@ -104,16 +104,15 @@ module RenderAsync = Render.Make (Promise) (DecodeJs)
 let fname_to_compname s =
   Filename.basename s |> Filename.remove_extension |> String.capitalize_ascii
 
-let input_uint8Array (arr : Typed_array.uint8Array Js.t) =
-  let length = arr##.length in
+let input_uint8Array arr =
+  let src = Typed_array.Bytes.of_uint8Array arr in
+  let length = Bytes.length src in
   let offset = ref 0 in
-  fun out out_count ->
-    let out_count = min (length - !offset) out_count in
-    for i = 0 to pred out_count do
-      Bytes.set_uint8 out i (Typed_array.unsafe_get arr !offset);
-      incr offset
-    done;
-    out_count
+  fun dst out_len ->
+    let out_len = min (length - !offset) out_len in
+    Bytes.blit src !offset dst 0 out_len;
+    offset := !offset + out_len;
+    out_len
 
 let () =
   Js.export "Component"

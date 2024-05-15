@@ -12,7 +12,7 @@ depends: [
   "dune" {>= "3.13"}
   "ocaml" {>= "5.0"}
   "acutis" {= version}
-  "js_of_ocaml"
+  "js_of_ocaml" {>= "5.8.1"}
   "js_of_ocaml-compiler"
   "js_of_ocaml-ppx"
   "odoc" {with-doc}
