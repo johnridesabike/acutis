@@ -280,42 +280,32 @@ module RemoveIdsAndUnits (F : Instruct.SEM) :
   end
 end
 
-let buffer_add_string =
-  lambda (fun b ->
-      return (lambda (fun s -> set b.!("contents") (b.!("contents") + s))))
-
-let buffer_add_buffer =
-  lambda (fun b ->
-      return
-        (lambda (fun s ->
-             set b.!("contents") (b.!("contents") + s.!("contents")))))
-
-let buffer_add_escape =
-  lambda (fun b ->
-      return
-        (lambda (fun s ->
-             let buffer_add s = set b.!("contents") (b.!("contents") + s) in
-             for_ s.!("length") (fun i ->
-                 let$ c = ("c", s.%(i)) in
-                 switch c
-                   [
-                     (string "&", buffer_add (string "&amp;"));
-                     (string "\"", buffer_add (string "&quot;"));
-                     (string "'", buffer_add (string "&apos;"));
-                     (string ">", buffer_add (string "&gt;"));
-                     (string "<", buffer_add (string "&lt;"));
-                     (string "/", buffer_add (string "&#x2F;"));
-                     (string "`", buffer_add (string "&#x60;"));
-                     (string "=", buffer_add (string "&#x3D;"));
-                   ]
-                   (buffer_add c)))))
-
 let pp (module Jsmod : JSMODULE) ppf c =
   let state = State.make () in
   let instructions =
-    let$ buffer_add_string = ("buffer_add_string", buffer_add_string) in
-    let$ buffer_add_buffer = ("buffer_add_buffer", buffer_add_buffer) in
-    let$ buffer_add_escape = ("buffer_add_escape", buffer_add_escape) in
+    let$ buffer_add_escape =
+      ( "buffer_add_escape",
+        lambda (fun b ->
+            return
+              (lambda (fun s ->
+                   let buffer_add s =
+                     set b.!("contents") (b.!("contents") + s)
+                   in
+                   for_ s.!("length") (fun i ->
+                       let$ c = ("c", s.%(i)) in
+                       switch c
+                         [
+                           (string "&", buffer_add (string "&amp;"));
+                           (string "\"", buffer_add (string "&quot;"));
+                           (string "'", buffer_add (string "&apos;"));
+                           (string ">", buffer_add (string "&gt;"));
+                           (string "<", buffer_add (string "&lt;"));
+                           (string "/", buffer_add (string "&#x2F;"));
+                           (string "`", buffer_add (string "&#x60;"));
+                           (string "=", buffer_add (string "&#x3D;"));
+                         ]
+                         (buffer_add c))))) )
+    in
     let module Runtime :
       Instruct.SEM with type 'a obs = js and type import = import = struct
       include Javascript
@@ -380,8 +370,8 @@ let pp (module Jsmod : JSMODULE) ppf c =
 
       let buffer_create () = obj [ ("contents", string "") ]
       let buffer_add_escape b s = stmt ((buffer_add_escape @@ b) @@ s)
-      let buffer_add_string b s = stmt ((buffer_add_string @@ b) @@ s)
-      let buffer_add_buffer b s = stmt ((buffer_add_buffer @@ b) @@ s)
+      let buffer_add_string b s = set b.!("contents") (b.!("contents") + s)
+      let buffer_add_buffer b1 b2 = buffer_add_string b1 b2.!("contents")
       let buffer_contents b = b.!("contents")
       let buffer_clear b = set b.!("contents") (string "")
       let buffer_length b = b.!("contents").!("length")
