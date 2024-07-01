@@ -1,5 +1,0 @@
-(executable
- (name cli)
- (public_name acutis)
- (package acutis)
- (libraries unix acutis yojson dune-build-info))

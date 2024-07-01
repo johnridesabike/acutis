@@ -1,5 +1,24 @@
 (executable
- (name package_json))
+ (name acutis_cli)
+ (public_name acutis)
+ (modules acutis_cli)
+ (package acutis)
+ (libraries unix acutis yojson dune-build-info))
+
+(executable
+ (name acutis_js)
+ (modules acutis_js)
+ (modes js)
+ (libraries acutis)
+ (js_of_ocaml
+  (flags
+   (--enable effects)))
+ (preprocess
+  (pps js_of_ocaml-ppx)))
+
+(executable
+ (name package_json)
+ (modules package_json))
 
 (rule
  (target package.json)
@@ -12,7 +31,7 @@
     --version
     %{version:acutis}
     --main
-    %{dep:js/acutis_js.bc.js}
+    %{dep:acutis_js.bc.js}
     --files
     %{dep:eleventy.js}))))
 
