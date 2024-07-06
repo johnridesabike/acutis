@@ -1,12 +1,12 @@
 {% match <exists: "success">, 1
-    with <exists: a, does_not_exist: b>, 1 %} {{ a }} {{ b }}
-{%  with <exists: a>, 2 %} fail {{ a }}
-{%  with <exists: a>, _ ~%} {{ a }}
+    with <exists: a, does_not_exist: b>, 1 %} {% a %} {% b %}
+{%  with <exists: a>, 2 %} fail {% a %}
+{%  with <exists: a>, _ ~%} {% a %}
 {%  with _, _ %} fail
 {% /match %}
 
 {%~ match <a: !"empty dicts always match">
-    with <b: !b> %} fail {{ b }}
+    with <b: !b> %} fail {% b %}
 {%  with <a: null> %} fail
 {%  with <> ~%} success
 {% /match %}

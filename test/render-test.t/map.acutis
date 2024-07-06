@@ -1,22 +1,22 @@
 Mapping list variables works:
-{% map people_list with {name} %} {{~ name }} {% /map %}
+{% map people_list with {name} %} {%~ name %} {% /map %}
 
 Mapping list literals works:
 {% map [{"name": "John"}, {"name": "Carlo"}] with {name} %}
-  {{~ name }} {% /map %}
+  {%~ name %} {% /map %}
 
 Mapping list variables appended with literals works
-{% map [{"name": "Paul"}, ...people_list] with {name} %} {{~ name }} {% /map %}
+{% map [{"name": "Paul"}, ...people_list] with {name} %} {%~ name %} {% /map %}
 
 Mapping lists with the index works:
 {% map people_list
-    with {name}, 0 %} {{~ name ~}}
-{%  with {name}    %} {{ name ~}} {% /map %}
+    with {name}, 0 %} {%~ name ~%}
+{%  with {name}    %} {% name ~%} {% /map %}
 
 Mapping dictionary variables works:
 {% map_dict people_dict
-    with {job}, key ~%} {{ key }}: {{ job }}. {% /map_dict %}
+    with {job}, key ~%} {% key %}: {% job %}. {% /map_dict %}
 
 Mapping dictionary literals works:
 {% map_dict <"Tommy": {"job": "banking"}, "Lisa": {"job": "computers"}>
-    with {job}, key ~%} {{ key }}: {{ job }}. {% /map_dict %}
+    with {job}, key ~%} {% key %}: {% job %}. {% /map_dict %}

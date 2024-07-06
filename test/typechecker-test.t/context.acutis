@@ -1,7 +1,7 @@
 {%~ match collections with {frontPage} ~%}
   {%~ match frontPage with [{data: {isoDate}}] ~%}
     <updated>
-      {{ isoDate }}
+      {% isoDate %}
     </updated>
   {%~ with _ %} {* Nothing! *}
   {%~ /match ~%}
@@ -12,12 +12,12 @@
       }
     ~%}
     <entry>
-      <title>{{ title }}</title>
-      <link href="{{ absoluteUrl }}" />
-      <updated>{{ isoDate }}</updated>
-      <id>{{ absoluteUrl }}</id>
-      <summary type="html">{{ excerpt }}</summary>
-      <content type="html">{{ templateContent }}</content>
+      <title>{% title %}</title>
+      <link href="{% absoluteUrl %}" />
+      <updated>{% isoDate %}</updated>
+      <id>{% absoluteUrl %}</id>
+      <summary type="html">{% excerpt %}</summary>
+      <content type="html">{% templateContent %}</content>
     </entry>
   {% with {data: {pub: {@pub: false}} } %} {* Nothing! *}
   {%~ /map %}

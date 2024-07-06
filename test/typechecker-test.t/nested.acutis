@@ -1,5 +1,5 @@
 {% match a with {b: {c}, d } %}
-   {% match c with !1 %} {{ d }} {% with null %} {% with !_ %} {% /match %}
+   {% match c with !1 %} {% d %} {% with null %} {% with !_ %} {% /match %}
 {% /match %}
 
 {% match e with [{f: 1}, _g, {h: "h"}] %} {% with _ %} {% /match %}

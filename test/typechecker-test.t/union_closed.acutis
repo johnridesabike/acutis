@@ -31,6 +31,6 @@ Destructuring the same union variant multiple times with different fields works
 {% match g
   with {@tag: 0, w: 1} %} {%
   with {@tag: 1, x: 1} %} {%
-  with {@tag: 0, y} %} {{ y }} {%
-  with {@tag: 1, z} %} {{ z }} {%
+  with {@tag: 0, y} %} {% y %} {%
+  with {@tag: 1, z} %} {% z %} {%
 /match %}

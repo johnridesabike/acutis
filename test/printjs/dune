@@ -11,7 +11,7 @@
    (run %{bin:acutis} --mode js %{dep:printjs_example.acutis}))))
 
 (rule ; Diff the compiled JS.
- (alias runtest)
+ (aliases runtest printjs-example)
  (action
   (diff
    %{dep:printjs_example.compiled.mjs}

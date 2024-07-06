@@ -13,7 +13,7 @@ module B = Buffer
 module L = Lexing
 open Parser
 
-type mode = Text | Expr | Echo | Format of mode | Queue of token * mode
+type mode = Text | Expr | Queue of token * mode
 
 type state = mode ref
 
@@ -33,20 +33,18 @@ let frac = '.' digit+
 let exp = ['e' 'E'] ['-' '+']? digit+
 let float = '-'? digit+ frac? exp?
 
-(* We reverse tokens for variants of {{~ because it's easier to parse tokens
-   like TEXT TILDE ECHO_BEGIN instead of TEXT ECHO_BEGIN TILDE. *)
+(* We reverse tokens for {%~ and ~%} because it's easier to parse tokens like
+   TEXT TILDE UNESCAPE_BEGIN instead of TEXT UNESCAPE_BEGIN TILDE. *)
+
+(* Because comments can nest, we include the delimiters in their text. *)
 
 rule text state buf = parse
-  | "{{"          { state := Queue (ECHO_BEGIN, Echo); TEXT (B.contents buf) }
-  | "{{~"         { state := Queue (TILDE_RIGHT, Queue (ECHO_BEGIN, Echo));
-                    TEXT (B.contents buf) }
-  | "{{{"         { state := Queue (TRIPLE_ECHO_BEGIN, Echo);
-                    TEXT (B.contents buf) }
-  | "{{{~"        { state :=
-                      Queue (TILDE_RIGHT, Queue (TRIPLE_ECHO_BEGIN, Echo));
-                    TEXT (B.contents buf) }
   | "{%"          { state := Expr; TEXT (B.contents buf) }
-  | "{%~"         { state := Queue (TILDE_RIGHT, Expr); TEXT (B.contents buf) }
+  | "{%~"         { state := Queue (TILDE, Expr); TEXT (B.contents buf) }
+  | "{{%"         { state := Queue (UNESCAPE_BEGIN, Expr);
+                    TEXT (B.contents buf) }
+  | "{{%~"        { state := Queue (TILDE, Queue (UNESCAPE_BEGIN, Expr));
+                    TEXT (B.contents buf) }
   | "{*" as s     { let cbuf = B.create 256 in
                     B.add_string cbuf s;
                     comment lexbuf.lex_start_p cbuf lexbuf;
@@ -70,43 +68,11 @@ and comment pos buf = parse
                     Error.lex_unterminated_comment lexbuf }
   | _ as c        { B.add_char buf c; comment pos buf lexbuf }
 
-(** The strings %} ~%} }} }}} ~}} and ~}}} need special treatment. They can
-    either mark the end of an expression or they can be part of a pattern, such
-    as }} which could end a nested record. We need to compare them to the
-    state's current mode to determine which token(s) to return. *)
-
 and expr state = parse
-  | "%}"          { match !state with
-                    | Expr -> state := Text; text state (B.create 256) lexbuf
-                    | mode -> state := Queue (RIGHT_BRACE, mode); PERCENT }
-  | "~%}"         { match !state with
-                    | Expr -> state := Text; TILDE_LEFT
-                    | mode ->
-                        state := Queue (PERCENT, Queue (RIGHT_BRACE, mode));
-                        TILDE_LEFT }
-  | "}}"          { match !state with
-                    | Echo -> state := Text; ECHO_END
-                    | mode ->
-                        state := Queue (RIGHT_BRACE, mode);
-                        RIGHT_BRACE }
-  | "~}}"         { match !state with
-                    | Echo -> state := Queue (TILDE_LEFT, Text); ECHO_END
-                    | mode ->
-                        state := Queue (RIGHT_BRACE, Queue (RIGHT_BRACE, mode));
-                        TILDE_LEFT }
-  | "}}}"         { match !state with
-                    | Echo -> state := Text; TRIPLE_ECHO_END
-                    | mode ->
-                        state := Queue (RIGHT_BRACE, Queue (RIGHT_BRACE, mode));
-                        RIGHT_BRACE }
-  | "~}}}"        { match !state with
-                    | Echo -> state := Queue (TILDE_LEFT, Text); TRIPLE_ECHO_END
-                    | mode ->
-                        state :=
-                          Queue (RIGHT_BRACE,
-                            Queue (RIGHT_BRACE,
-                              Queue (RIGHT_BRACE, mode)));
-                        TILDE_LEFT }
+  | "%}"          { state := Text; text state (B.create 256) lexbuf }
+  | "~%}"         { state := Text; TILDE }
+  | "%}}"         { state := Text; UNESCAPE_END }
+  | "~%}}"        { state := Queue (TILDE, Text); UNESCAPE_END }
   | "match"       { MATCH }
   | "with"        { WITH }
   | "map"         { MAP }
@@ -142,16 +108,10 @@ and expr state = parse
   | '?'           { QUESTION }
   | '.'           { DOT }
   | "..."         { ELLIPSIS }
-  | '%'           { state := Format !state; PERCENT }
+  | "%b"          { FMT_B }
+  | "%f"          { FMT_F }
+  | "%i"          { FMT_I }
   | eof           { EOF }
-  | _ as c        { Error.lex_unexpected lexbuf c }
-
-and echo_format prev_state state = parse
-  | 'i'           { CHAR_I }
-  | 'f'           { CHAR_F }
-  | 'b'           { CHAR_B }
-  | newline       { L.new_line lexbuf; state := prev_state; expr state lexbuf }
-  | white         { state := prev_state; expr state lexbuf }
   | _ as c        { Error.lex_unexpected lexbuf c }
 
 and string pos buf = parse
@@ -176,7 +136,6 @@ and string pos buf = parse
 let acutis state lexbuf =
   match !state with
   | Text -> text state (B.create 256) lexbuf
-  | Expr | Echo -> expr state lexbuf
-  | Format prev_state -> echo_format prev_state state lexbuf
+  | Expr -> expr state lexbuf
   | Queue (tok , state') -> state := state'; tok
 }

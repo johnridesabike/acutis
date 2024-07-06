@@ -10,12 +10,13 @@
 
 (** Format compiled templates as self-contained JavaScript modules. *)
 
-type jsfun
+type import
 (** Information about how to import an external function. *)
 
-val jsfun : module_path:string -> function_path:string -> jsfun
+val import : module_path:string -> function_path:string -> import
+val pp_import : Format.formatter -> import -> unit
 
-type t = jsfun Compile.t
+type t = import Compile.t
 
 val cjs : Format.formatter -> t -> unit
 (** Produce a CommonJS module. *)

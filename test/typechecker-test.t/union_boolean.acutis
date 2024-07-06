@@ -1,5 +1,5 @@
-{% match a with {@tag: true, b} %} {{ b }} {% /match %}
-{% match b with {@tag: false, b} %} {{ b }} {% /match %}
-{% match c with {@tag: true, b} %} {{ b }}
-        {% with {@tag: false, c} %} {{ c }} {% /match %}
-{% match d with {@tag: true, b} %} {{ b }} {% with _ %} {% /match %}
+{% match a with {@tag: true, b} %} {% b %} {% /match %}
+{% match b with {@tag: false, b} %} {% b %} {% /match %}
+{% match c with {@tag: true, b} %} {% b %}
+        {% with {@tag: false, c} %} {% c %} {% /match %}
+{% match d with {@tag: true, b} %} {% b %} {% with _ %} {% /match %}

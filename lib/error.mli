@@ -69,42 +69,11 @@ val parmatch : Loc.t -> (Format.formatter -> 'a -> unit) -> 'a -> _
 (** {1 Other compile errors.} *)
 
 val duplicate_name : string -> _
-val cycle : string list -> _
-val missing_component : string list -> string -> _
-
-(** {1 Decode errors.} *)
-
-module DecodePath : sig
-  type t
-
-  val make : string -> t
-  val nullable : t -> t
-  val index : int -> t -> t
-  val key : string -> t -> t
-end
-
-val decode :
-  (Format.formatter -> 'ty -> unit) ->
-  (Format.formatter -> 'data -> unit) ->
-  DecodePath.t ->
-  'ty ->
-  'data ->
-  _
-
-val missing_key :
-  DecodePath.t -> (Format.formatter -> 'ty -> unit) -> 'ty -> string -> _
-
-val bad_enum :
-  (Format.formatter -> 'ty -> unit) ->
-  (Format.formatter -> 'data -> unit) ->
-  DecodePath.t ->
-  'ty ->
-  'data ->
-  _
+val cycle : string list -> exn
+val missing_component : string list -> string -> exn
 
 (** {1 Internal errors.} *)
 
-val internal : string * int * int * int -> string -> _
+val internal : __POS__:string * int * int * int -> string -> _
 (** Use this instead of [assert false] when an internal invariant breaks. It
-    indicates a bug in the compiler. The first argument is the type for
-    [__POS__]. *)
+    indicates a bug in the compiler. *)

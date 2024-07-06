@@ -1,13 +1,13 @@
 {% match bool with false %} {% /match %}
 {% match int_enum with @1 %} {% with @2 %} {% /match %}
 {% match string_enum with @"a" %} {% with @"b" %} {% /match %}
-{% match tuple with (a, b) %} {{ a }} {{ b }} {% /match %}
-{% match nested with {level_1: [_, level2]} %} {{ level2 }}
+{% match tuple with (a, b) %} {% a %} {% b %} {% /match %}
+{% match nested with {level_1: [_, level2]} %} {% level2 %}
   {% with _ %}
 {% /match %}
 {% match long_type
     with {@tag: false} %}
 {%  with {@tag: true, looong_field, another_loooong_field, yet_another_field} %}
-  {{ looong_field }} {{ another_loooong_field }} {{ yet_another_field }}
+  {% looong_field %} {% another_loooong_field %} {% yet_another_field %}
 {% /match %}
-{% map list with {a} %} {{ a }} {% /map %}
+{% map list with {a} %} {% a %} {% /map %}

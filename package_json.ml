@@ -25,67 +25,60 @@ let () =
     ]
     invalid_arg "Generate the package.json."
 
-type t = O of (string * t) list | A of t list | S of string | B of bool
+let comma ppf () = Format.fprintf ppf ",@ "
+let s = Format.dprintf "%S"
+let b = Format.dprintf "%B"
+let member ppf (k, v) = Format.fprintf ppf "@[<hv 2>%S:@ %t@]" k v
 
-open Format
+let o =
+  Format.dprintf "@[<hv 2>{@;<1 0>%a@;<1 -2>}@]"
+    (Format.pp_print_list ~pp_sep:comma member)
 
-let comma ppf () = fprintf ppf ",@ "
-
-let rec pp ppf = function
-  | O l ->
-      fprintf ppf "@[<hv 2>{@;<1 0>";
-      pp_print_list ~pp_sep:comma pp_field ppf l;
-      fprintf ppf "@;<1 -2>}@]"
-  | A l ->
-      fprintf ppf "@[<hv 2>[@;<1 0>";
-      pp_print_list ~pp_sep:comma pp ppf l;
-      fprintf ppf "@;<1 -2>]@]"
-  | S s -> fprintf ppf "%S" s
-  | B b -> pp_print_bool ppf b
-
-and pp_field ppf (k, v) = fprintf ppf "@[<hv 2>%S:@ %a@]" k pp v
+let a =
+  Format.dprintf "@[<hv 2>[@;<1 0>%a@;<1 -2>]@]"
+    (Format.pp_print_list ~pp_sep:comma ( |> ))
 
 let json =
-  O
+  o
     [
-      ("name", S "acutis-lang");
-      ("version", S !version);
-      ("private", B false);
-      ("description", S "A simple and type-safe template language");
+      ("name", s "acutis-lang");
+      ("version", s !version);
+      ("private", b false);
+      ("description", s "A simple and type-safe template language");
       ( "keywords",
-        A
+        a
           [
-            S "template";
-            S "language";
-            S "parser";
-            S "interpreter";
-            S "eleventy-plugin";
-            S "eleventy";
-            S "ocaml";
+            s "template";
+            s "language";
+            s "parser";
+            s "interpreter";
+            s "eleventy-plugin";
+            s "eleventy";
+            s "ocaml";
           ] );
-      ("homepage", S "https://johnridesa.bike/acutis/");
+      ("homepage", s "https://johnridesa.bike/acutis/");
       ( "bugs",
-        O
+        o
           [
-            ("url", S "https://github.com/johnridesabike/acutis/issues");
-            ("email", S "jbpjackson+acutis@icloud.com");
+            ("url", s "https://github.com/johnridesabike/acutis/issues");
+            ("email", s "jbpjackson+acutis@icloud.com");
           ] );
       ( "repository",
-        O
+        o
           [
-            ("type", S "git");
-            ("url", S "https://github.com/johnridesabike/acutis.git");
+            ("type", s "git");
+            ("url", s "https://github.com/johnridesabike/acutis.git");
           ] );
-      ("license", S "MPL-2.0");
+      ("license", s "MPL-2.0");
       ( "author",
-        O
+        o
           [
-            ("name", S "John Jackson");
-            ("url", S "https://johnridesa.bike/");
-            ("email", S "jbpjackson+acutis@icloud.com");
+            ("name", s "John Jackson");
+            ("url", s "https://johnridesa.bike/");
+            ("email", s "jbpjackson+acutis@icloud.com");
           ] );
-      ("main", S !main);
-      ("files", A (List.map (fun s -> S s) !files));
+      ("main", s !main);
+      ("files", a (List.map s !files));
     ]
 
-let () = pp std_formatter json
+let () = json Format.std_formatter

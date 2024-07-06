@@ -3,5 +3,5 @@
   children = string
   list = [int]
 ~%}
-{{ %i optional ? children }}
-{% map list with i ~%} {{ %i i }} {%~ /map ~%}
+{% %i optional ? children %}
+{% map list with i ~%} {% %i i %} {%~ /map ~%}

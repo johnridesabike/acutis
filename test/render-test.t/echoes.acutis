@@ -1,5 +1,5 @@
 Echoes work:
-{{ a }} {{ b }}! {{ c }} {{{ c }}} {{ "<" }} {{{ "<" }}} {{ "d" }}
+{% a %} {% b %}! {% c %} {{% c %}} {% "<" %} {{% "<" %}} {% "d" %}
 
 Echo formats work:
-%i: {{ %i num }} %f: {{ %f frac }} %b: {{ %b binaryf }} {{ %b binaryt }}
+%i: {% %i num %} %f: {% %f frac %} %b: {% %b binaryf %} {% %b binaryt %}

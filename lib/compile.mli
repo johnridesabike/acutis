@@ -35,31 +35,30 @@ type data =
   | `Field of data * string
   | `Block of int
     (** To separate the data from the rest of the tree, we take any template
-        blocks and place them into an array. At runtime, the [`Block]
-        constructors will get their rendered content by their indices. *)
+        blocks and place them into a {!blocks}. At runtime, the [`Block]
+        constructors will get their rendered content based on their indices. *)
   ]
 
-type 'a node =
+type blocks
+(** A sequence of {!type-nodes}, indexed by integers. *)
+
+type node =
   | Text of string
   | Echo of (echo_format * echo) list * echo_format * echo * escape
-  | Match of 'a blocks * data array * 'a nodes Matching.t
-  | Map_list of 'a blocks * data * 'a nodes Matching.t
-  | Map_dict of 'a blocks * data * 'a nodes Matching.t
-  | Component of string * 'a * 'a nodes array * data Map.String.t
+  | Match of blocks * data array * nodes Matching.t
+  | Map_list of blocks * data * nodes Matching.t
+  | Map_dict of blocks * data * nodes Matching.t
+  | Component of string * blocks * data Map.String.t
 
-and 'a blocks = 'a nodes array
-and 'a nodes = 'a node list
+and nodes = node list
+
+val blocks_length : blocks -> int
+val blocks_to_seq : blocks -> (int * nodes) Seq.t
 
 module Components : sig
   type 'a source
 
-  val parse_string : fname:string -> name:string -> string -> _ source
-  (** Parses the input but doesn't type-check yet.
-      @param fname The filename (for error messages).
-      @param name The component name when called inside a template.
-      @raise Error.Acutis_error *)
-
-  val parse_channel : fname:string -> name:string -> in_channel -> _ source
+  val from_src : fname:string -> name:string -> Lexing.lexbuf -> _ source
   (** Parses the input but doesn't type-check yet.
       @param fname The filename (for error messages).
       @param name The component name when called inside a template.
@@ -76,18 +75,14 @@ module Components : sig
       @raise Error.Acutis_error *)
 end
 
-type 'a template = Src of 'a template nodes | Fun of Typescheme.t * 'a
-
 type 'a t = {
   name : string;
   types : Typescheme.t;
-  nodes : 'a template nodes;
-  components : 'a template Map.String.t;
+  nodes : nodes;
+  components : nodes Map.String.t;
+  externals : (Typescheme.t * 'a) Map.String.t;
 }
 
 val make : fname:string -> 'a Components.t -> Lexing.lexbuf -> 'a t
-val from_string : fname:string -> 'a Components.t -> string -> 'a t
-val from_channel : fname:string -> 'a Components.t -> in_channel -> 'a t
-val interface_from_string : fname:string -> string -> Typescheme.t
-val interface_from_channel : fname:string -> in_channel -> Typescheme.t
-val to_sexp : _ nodes -> Sexp.t
+val make_interface : fname:string -> Lexing.lexbuf -> Typescheme.t
+val to_sexp : nodes -> Sexp.t

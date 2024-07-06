@@ -1,7 +1,7 @@
-{{ a_prop }}
-{{ c_prop }}
-{{ d_prop }}
-{{ f_prop }}
-{{ g_prop }}
-{{ h_prop }}
-{{ i_prop }}
+{% a_prop %}
+{% c_prop %}
+{% d_prop %}
+{% f_prop %}
+{% g_prop %}
+{% h_prop %}
+{% i_prop %}

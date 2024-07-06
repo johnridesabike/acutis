@@ -107,6 +107,8 @@ and node =
 
 and case = {
   pats : (Loc.t * destruct pat Nonempty.t) Nonempty.t;
+  bindings : string list;
+      (** The binding list is needed to help produce runtime instructions. *)
   nodes : nodes;
 }
 

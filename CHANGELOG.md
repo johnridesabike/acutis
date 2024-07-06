@@ -2,6 +2,22 @@
 
 Most changes are breaking changes.
 
+## 0.25.0
+
+- Echo syntax is now the same as other expressions, `{%` and `%}`. Unescaped
+  echoes use `{{%` and `%}}`.
+- All decode errors are reported instead of only the first one.
+- Decode errors are implemented in a promise type instead of raising an
+  exception.
+
+## 0.24.0
+
+- Add the debug command `--printinst` to the CLI. This prints the new runtime
+  instructions used by both the renderer and the JavaScript printer.
+- Both the interpreted and compiled-to-JavaScript implementations use the same
+  internal semantics now. This should not be a breaking change but may affect
+  some edge cases or how errors are handled.
+
 ## 0.23.0
 
 - Add JavaScript compilation. Templates can now compile to self-contained

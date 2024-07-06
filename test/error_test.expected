@@ -32,19 +32,19 @@ Illegal name: echo null
 ---
 File "<test>", 1:4-1:8
 Parse error.
-This is not a valid echo.
+This is not a valid expression.
 
 Illegal name: echo false
 ---
 File "<test>", 1:4-1:9
 Parse error.
-This is not a valid echo.
+This is not a valid expression.
 
 Illegal name: echo true
 ---
 File "<test>", 1:4-1:8
 Parse error.
-This is not a valid echo.
+This is not a valid expression.
 
 Illegal name: _
 ---
@@ -90,35 +90,23 @@ Expected a component name.
 
 Unclosed components (this one is confusing.)
 ---
-File "<test>", 1:16-1:16
+File "<test>", 1:7-1:8
 Parse error.
-Unclosed component.
+Expected a '%}'.
+
+Empty expressions
+---
+File "<test>", 1:6-1:9
+Parse error.
+This is not a valid expression.
 
 Unexpected tokens (1)
 ---
-File "<test>", 1:4-1:5
-Parse error.
-Expected a '%}', 'match', 'map', 'map_dict', or a component name.
-
-Unexpected tokens (2)
----
-File "<test>", 1:5-1:6
-Parse error.
-Expected a '%}', 'match', 'map', 'map_dict', or a component name.
-
-Unexpected tokens (3)
----
 File "<test>", 1:5-1:9
 Parse error.
-Expected a '%}', 'match', 'map', 'map_dict', or a component name.
+This is not a valid expression.
 
-Unexpected tokens (4)
----
-File "<test>", 1:10-1:11
-Parse error.
-Expected a '%}', 'match', 'map', 'map_dict', or a component name.
-
-Unexpected tokens (5)
+Unexpected tokens (3)
 ---
 File "<test>", 1:40-1:41
 Parse error.
@@ -126,9 +114,9 @@ Expected a '%}'.
 
 Unexpected tokens (inside # blocks)
 ---
-File "<test>", 1:20-1:24
+File "<test>", 1:20-1:21
 Parse error.
-Expected a '%}', '#', 'match', 'map', 'map_dict', or a component name.
+This is not a valid expression, or maybe a '#' is missing.
 
 Bad pattern (1)
 ---
@@ -236,49 +224,73 @@ Bad echo (1)
 ---
 File "<test>", 1:4-1:8
 Parse error.
-This is not a valid echo.
+This is not a valid expression.
 
 Bad echo (2)
 ---
 File "<test>", 1:5-1:9
 Parse error.
-This is not a valid echo.
+This is not a valid expression.
 
 Bad echo (3)
 ---
-File "<test>", 1:8-1:12
+File "<test>", 1:5-1:9
 Parse error.
 This is not a valid echo.
 
 Bad echo (4)
 ---
-File "<test>", 1:7-1:11
+File "<test>", 1:8-1:12
 Parse error.
 This is not a valid echo.
 
 Bad echo (5)
 ---
-File "<test>", 1:7-1:9
+File "<test>", 1:7-1:11
 Parse error.
-Expected a '}}}'.
+This is not a valid echo.
 
 Bad echo (6)
 ---
+File "<test>", 1:9-1:9
+Parse error.
+Expected a '%}}'.
+
+Bad echo (7)
+---
 File "<test>", 1:6-1:9
 Parse error.
-Expected a '}}'.
+Expected a '%}'.
+
+Bad echo (8)
+---
+File "<test>", 1:4-1:5
+Parse error.
+This is not a valid expression.
+
+Bad echo (9)
+---
+File "<test>", 1:8-1:17
+Parse error.
+This is not a valid echo.
 
 Bad echo format (1)
 ---
-File "<test>", 1:6-1:7
-Parse error.
-This is missing a format specification.
+File "<test>", 1:4-1:5
+Syntax error.
+Unexpected character: '%'
 
 Bad echo format (2)
 ---
-File "<test>", 1:5-1:6
+File "<test>", 1:4-1:5
 Syntax error.
-Unexpected character: 'z'
+Unexpected character: '%'
+
+Bad echo format (3)
+---
+File "<test>", 1:4-1:5
+Syntax error.
+Unexpected character: '%'
 
 Bad prop (1)
 ---
@@ -1084,6 +1096,12 @@ File "<test>", 6:9-6:19
 Matching error.
 This match case is unused.
 
+Unused cases are caught after an exhaustive nest.
+---
+File "<test>", 1:30-1:36
+Matching error.
+This match case is unused.
+
 Dict patterns match a subset of the input.
 ---
 File "<test>", 1:30-1:47
@@ -1135,25 +1153,17 @@ Duplicate names are reported.
 Compile error.
 There are multiple components with the name 'A'.
 
-This error is incorrect. The compiler fails to detect the first unused
-wildcard case. I'm not fixing this error yet, but I'm keeping this test
-to track when it changes.
----
-File "<test>", 1:43-1:49
-Matching error.
-This match case is unused.
-
 Basic type mismatch.
 ---
 File "<test>"
 Render error.
 The data supplied does not match this template's interface.
 Path:
-  input -> "a" -> "b".
+b <- a <- <input>
 Expected type:
-  string
+string
 Received value:
-  []
+[]
 
 Map type mismatch (1).
 ---
@@ -1161,11 +1171,11 @@ File "<test>"
 Render error.
 The data supplied does not match this template's interface.
 Path:
-  input -> "a".
+a <- <input>
 Expected type:
-  [{a: string}]
+[{a: string}]
 Received value:
-  "a"
+"a"
 
 Map type mismatch (2).
 ---
@@ -1173,23 +1183,35 @@ File "<test>"
 Render error.
 The data supplied does not match this template's interface.
 Path:
-  input -> "a".
+a <- <input>
 Expected type:
-  [int]
+[int]
 Received value:
-  "a"
+"a"
 
 Missing bindings are reported
 ---
-File "<test>"
+File: <test>
 Render error.
 The data supplied does not match this template's interface.
 Path:
-  input.
+<input>
 Expected type:
-  {z: string}
-Input is missing key:
-  z
+{z: string}
+Input is missing keys:
+z
+
+Missing bindings are reported (with nested record)
+---
+File: <test>
+Render error.
+The data supplied does not match this template's interface.
+Path:
+<input>
+Expected type:
+{aa: string, d: {e: int}}
+Input is missing keys:
+aa
 
 Bad enums are reported: boolean.
 ---
@@ -1197,11 +1219,11 @@ File "<test>"
 Render error.
 The data supplied does not match this template's interface.
 Path:
-  input -> "b".
+b <- <input>
 Expected type:
-  false
-This type does not allow the given value:
-  true
+false
+Received value:
+true
 
 Bad enums are reported: int.
 ---
@@ -1209,11 +1231,11 @@ File "<test>"
 Render error.
 The data supplied does not match this template's interface.
 Path:
-  input -> "a".
+a <- <input>
 Expected type:
-  @1 | @2
-This type does not allow the given value:
-  3
+@1 | @2
+Received value:
+3
 
 Bad enums are reported: int.
 ---
@@ -1221,11 +1243,11 @@ File "<test>"
 Render error.
 The data supplied does not match this template's interface.
 Path:
-  input -> "a".
+a <- <input>
 Expected type:
-  @"a" | @"b"
-This type does not allow the given value:
-  "c"
+@"a" | @"b"
+Received value:
+"c"
 
 Tuple size mismatch.
 ---
@@ -1233,11 +1255,11 @@ File "<test>"
 Render error.
 The data supplied does not match this template's interface.
 Path:
-  input -> "a".
+a <- <input>
 Expected type:
-  (string, string)
+(string, string)
 Received value:
-  [ "a" ]
+[ "a" ]
 
 Bad unions are reported (1).
 ---
@@ -1245,11 +1267,11 @@ File "<test>"
 Render error.
 The data supplied does not match this template's interface.
 Path:
-  input -> "a".
+a <- <input>
 Expected type:
-  {@tag: 1, a: string}
+{@tag: 1, a: string}
 Received value:
-  { "tag": "a", "a": "a" }
+{ "tag": "a", "a": "a" }
 
 Bad unions are reported (2).
 ---
@@ -1257,24 +1279,43 @@ File "<test>"
 Render error.
 The data supplied does not match this template's interface.
 Path:
-  input -> "a".
+a <- <input>
 Expected type:
-  {@tag: 1, a: string}
+{@tag: 1, a: string}
 Received value:
-  { "tag": 2, "a": "a" }
+{ "tag": 2, "a": "a" }
 
-Looong paths format correctly.
+Multiple decode errors are reported.
 ---
 File "<test>"
 Render error.
 The data supplied does not match this template's interface.
 Path:
-  input -> "abc" -> "def" -> "ghi" -> "jkl" -> "mno" -> "pqr" -> "stu"
-  -> "vwx" -> "yz".
+b <- a <- <input>
 Expected type:
-  int
+string
 Received value:
-  "a"
+[]
+
+File "<test>"
+Render error.
+The data supplied does not match this template's interface.
+Path:
+c <- <input>
+Expected type:
+string
+Received value:
+0
+
+File: <test>
+Render error.
+The data supplied does not match this template's interface.
+Path:
+d <- <input>
+Expected type:
+{e: string}
+Input is missing keys:
+e
 
 Invalid field names.
 ---

@@ -1,10 +1,10 @@
-(lang dune 3.3)
+(lang dune 3.13)
 
-(using menhir 2.1)
+(using menhir 3.0)
 
 (name acutis)
 
-(version 0.23.0)
+(version 0.25.0)
 
 (generate_opam_files true)
 
@@ -22,17 +22,20 @@
 (package
  (name acutis)
  (synopsis "A simple and type-safe template language")
- (description
-  "Acutis is a template language that features static typing, pattern matching, and asynchronous template components. You can execute your templates like scripts or compile them to self-contained JavaScript files.")
+ (description "
+Acutis is a template language that features static typing, pattern matching, and
+asynchronous template components. You can execute your templates like scripts or
+compile them to self-contained JavaScript files.
+")
  (depends
   (ocaml
-   (>= 4.14))
+   (>= 5.2))
   menhir
   yojson
   dune-build-info
   (ocamlformat
    (and
-    (= 0.26.1)
+    (= 0.26.2)
     :with-test))))
 
 (package
@@ -41,10 +44,10 @@
  (allow_empty)
  (depends
   (ocaml
-   (>= 4.14))
+   (>= 5.0))
   (acutis
    (= :version))
-  promise_jsoo
-  js_of_ocaml
+  (js_of_ocaml
+   (>= 5.8.1))
   js_of_ocaml-compiler
   js_of_ocaml-ppx))

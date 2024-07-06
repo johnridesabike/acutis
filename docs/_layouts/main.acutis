@@ -27,6 +27,6 @@
    with {@tag: true, page}
 ~%}
   {% Layout title description showTitle site page next ~%}
-    {{{ content }}}
+    {{% content %}}
   {%~ /Layout %}
 {% /match %}

@@ -38,6 +38,7 @@ Display the help.
     --printast    Print the template's untyped AST form and exit.
     --printtypes  Print the template's type interface and exit.
     --printopt    Print the template's optimized form and exit.
+    --printinst   Print the template's runtime instructions and exit.
     -help         Display this list of options
     --help        Display this list of options
 
@@ -61,6 +62,7 @@ Errors
     --printast    Print the template's untyped AST form and exit.
     --printtypes  Print the template's type interface and exit.
     --printopt    Print the template's optimized form and exit.
+    --printinst   Print the template's runtime instructions and exit.
     -help         Display this list of options
     --help        Display this list of options
   [1]
@@ -87,6 +89,7 @@ Errors
     --printast    Print the template's untyped AST form and exit.
     --printtypes  Print the template's type interface and exit.
     --printopt    Print the template's optimized form and exit.
+    --printinst   Print the template's runtime instructions and exit.
     -help         Display this list of options
     --help        Display this list of options
   [2]

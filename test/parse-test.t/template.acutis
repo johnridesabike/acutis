@@ -1,6 +1,6 @@
 Echoes
-{{ ech_a }} {{ "b" }} {{{ ech_d ? ech_e ? "f\"g" }}}
-{{ %i ech_i }} {{ %f ech_f }} {{ %b ech_b }}
+{% ech_a %} {% "b" %} {{% ech_d ? ech_e ? "f\"g" %}}
+{% %i ech_i %} {% %f ech_f %} {% %b ech_b %}
 
 Numbers
 {% match numbers
@@ -17,8 +17,8 @@ Numbers
 %}{% with _ %}{% /match %}
 
 Trim
-{{~ trim_a }} {{~ trim_b }} {{ trim_c ~}} {{~ trim_d ~}} {{{~ trim_e }}}
-{{{ trim_f ~}}} {{{~ trim_g ~}}}
+{%~ trim_a %} {%~ trim_b %} {% trim_c ~%} {%~ trim_d ~%} {{%~ trim_e %}}
+{{% trim_f ~%}} {{%~ trim_g ~%}}
 
 Comments
 a {* {* *} *}b{*
@@ -29,15 +29,15 @@ Flat match
 
 Nested match
 {% match match_b with c %}
-  {% match d, e with f, g %} {{ c }} {{ f }} {{ g }} {% /match %}
+  {% match d, e with f, g %} {% c %} {% f %} {% g %} {% /match %}
 {% /match %}
 
 Map list
-{% map map_l with 1 with 2 %}{% with 3, i %} {{ %i i }} {% with _ %} {% /map %}
+{% map map_l with 1 with 2 %}{% with 3, i %} {% %i i %} {% with _ %} {% /map %}
 
 Map dict
 {% map_dict map_d
-    with 1 with 2 %}{% with 3, k %} {{ k }} {% with _ %}
+    with 1 with 2 %}{% with 3, k %} {% k %} {% with _ %}
 {% /map_dict %}
 
 Component with props
@@ -47,7 +47,7 @@ Component with props
   d_prop=e_prop
   f_prop
   g_prop=#%} {%#
-  h_prop=#%}{% match a_prop with b_prop %} {{ b_prop }} {% /match %}{%#
+  h_prop=#%}{% match a_prop with b_prop %} {% b_prop %} {% /match %}{%#
   i_prop=##
 /%}
 
@@ -62,18 +62,18 @@ Tuple:
 List:
 {% match list
     with [] %}
-{%  with [!a, null] %} {{ a }}
+{%  with [!a, null] %} {% a %}
 {%  with [_z, ..._tl] %}
 {% /match %}
 
 Record:
-{% match record with {a, "!#%@": b} %} {{ a }} {{ b }} {% with _ %} {% /match %}
+{% match record with {a, "!#%@": b} %} {% a %} {% b %} {% /match %}
 
 Enum:
 {% match enums with (@"a", @1, true, false) %} {% with _ %} {% /match %}
 
 Tagged union:
-{% match tagged with {@tag: true, a} %} {{ a }} {% with {@tag: false} %}
+{% match tagged with {@tag: true, a} %} {% a %} {% with {@tag: false} %}
 {% /match %}
 
 Dictionary:
@@ -84,12 +84,9 @@ Dictionary:
 
 Other syntax features
 
-Patterns with }} parse correctly:
-{% match a with {a: {b}} %} {{ b }} {% /match %}
-
 Trailing commas parse correctly:
 {% match {a: [1, 2,], b: (3, 4,), c: <k: 5,>,} with _ %} {% /match %}
 
 Strings may contain line breaks:
-{{ "a
-b" }}
+{% "a
+b" %}
