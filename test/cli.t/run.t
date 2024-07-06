@@ -71,25 +71,3 @@ Errors
   System error:
   notfound.acutis: No such file or directory
   [1]
-
-  $ acutis --mode z0r
-  acutis: wrong argument 'z0r'; option '--mode' expects one of: render js cjs.
-  Usage:
-    acutis [OPTIONS...] [TEMPLATE] [COMPONENTS...]
-  
-  Compile and render Acutis language templates.
-  
-  Options:
-    --mode {render|js|cjs}
-                  Either render the template, compile it to a JavaScript module, or compile it to a CommonJS module. Default: render.
-    --output      The path to write the output. Default: stdout.
-    --data        The path to a JSON file to be used with --mode=render. Default: stdin.
-    --fun         Add an external JavaScript function as a component. This takes three arguments: file path, function name, and type interface.
-    --version     Print the version number and exit.
-    --printast    Print the template's untyped AST form and exit.
-    --printtypes  Print the template's type interface and exit.
-    --printopt    Print the template's optimized form and exit.
-    --printinst   Print the template's runtime instructions and exit.
-    -help         Display this list of options
-    --help        Display this list of options
-  [2]
