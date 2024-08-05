@@ -8,6 +8,8 @@
 (*                                                                        *)
 (**************************************************************************)
 
+module MapString = Map.Make (String)
+
 type t =
   | Symbol of string
   | Int of int
@@ -38,7 +40,7 @@ let triple f g h (a, b, c) =
     (fun () ->
       Cons (f a, fun () -> Cons (g b, fun () -> Cons (h c, Seq.empty))))
 
-let map_string f m = of_seq (pair string f) (Map.String.to_seq m)
+let map_string f m = of_seq (pair string f) (MapString.to_seq m)
 
 let rec pp ppf = function
   | Symbol s -> Format.pp_print_string ppf s

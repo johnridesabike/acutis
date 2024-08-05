@@ -29,17 +29,17 @@ module Type : sig
     | List of t
     | Tuple of t list
     | Record of record
-    | Dict of t * Set.String.t ref
+    | Dict of t * Set.Make(String).t ref
         (** The set tracks which keys have been used so they can build
             pattern-matching decision trees. *)
-    | Enum_int of Set.Int.t sum * int_bool
-    | Enum_string of Set.String.t sum
+    | Enum_int of Set.Make(Int).t sum * int_bool
+    | Enum_string of Set.Make(String).t sum
     | Union_int of string * sum_union_int * int_bool
     | Union_string of string * sum_union_string
 
-  and sum_union_int = record Map.Int.t sum
-  and sum_union_string = record Map.String.t sum
-  and record = t Map.String.t ref
+  and sum_union_int = record Map.Make(Int).t sum
+  and sum_union_string = record Map.Make(String).t sum
+  and record = t Map.Make(String).t ref
   and t = ty ref
 
   val unknown : unit -> t
@@ -52,8 +52,8 @@ module Type : sig
   val record : record -> t
   val dict : t -> t
   val sum : 'a -> row -> 'a sum
-  val enum_int : Set.Int.t sum -> t
-  val enum_string : Set.String.t sum -> t
+  val enum_int : Set.Make(Int).t sum -> t
+  val enum_string : Set.Make(String).t sum -> t
   val enum_false_and_true : unit -> t
   val enum_false_only : unit -> t
   val enum_true_only : unit -> t
@@ -70,8 +70,8 @@ type scalar = [ `Int of int | `Float of float | `String of string ]
 
 type scalar_sum =
   | Scalar_sum_none
-  | Scalar_sum_int of Set.Int.t Type.sum
-  | Scalar_sum_string of Set.String.t Type.sum
+  | Scalar_sum_int of Set.Make(Int).t Type.sum
+  | Scalar_sum_string of Set.Make(String).t Type.sum
 
 type union_tag =
   | Union_tag_none
@@ -88,8 +88,8 @@ type _ pat =
   | Nil : 'a pat
   | Cons : 'a pat -> 'a pat  (** This always contains a {!Tuple}. *)
   | Tuple : 'a pat list -> 'a pat
-  | Record : union_tag * 'a pat Map.String.t * Type.record -> 'a pat
-  | Dict : 'a pat Map.String.t * Set.String.t ref -> 'a pat
+  | Record : union_tag * 'a pat Map.Make(String).t * Type.record -> 'a pat
+  | Dict : 'a pat Map.Make(String).t * Set.Make(String).t ref -> 'a pat
       (** The set is part of a {!Type.Dict}. *)
   | Var : string -> 'a pat
   | Block : nodes -> construct pat
@@ -103,7 +103,7 @@ and node =
       Loc.t * construct pat Nonempty.t * Type.t Nonempty.t * case Nonempty.t
   | Map_list of Loc.t * construct pat * Type.t Nonempty.t * case Nonempty.t
   | Map_dict of Loc.t * construct pat * Type.t Nonempty.t * case Nonempty.t
-  | Component of string * construct pat Map.String.t
+  | Component of string * construct pat Map.Make(String).t
 
 and case = {
   pats : (Loc.t * destruct pat Nonempty.t) Nonempty.t;
@@ -114,14 +114,14 @@ and case = {
 
 and nodes = node list
 
-type t = { nodes : nodes; types : Type.t Map.String.t }
+type t = { nodes : nodes; types : Type.t Map.Make(String).t }
 
 type ('a, 'b) source =
   | Src of string * 'a
-  | Fun of string * Type.t Map.String.t * 'b
+  | Fun of string * Type.t Map.Make(String).t * 'b
 
 val make_components :
-  (Ast.t, 'a) source Map.String.t -> (t, 'a) source Map.String.t
+  (Ast.t, 'a) source Map.Make(String).t -> (t, 'a) source Map.Make(String).t
 
-val make : root:string -> (t, 'a) source Map.String.t -> Ast.t -> t
-val make_interface_standalone : Ast.interface -> Type.t Map.String.t
+val make : root:string -> (t, 'a) source Map.Make(String).t -> Ast.t -> t
+val make_interface_standalone : Ast.interface -> Type.t Map.Make(String).t

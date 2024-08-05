@@ -30,7 +30,7 @@ type data =
   | `Float of float
   | `String of string
   | `Array of data array
-  | `Assoc of data Map.String.t
+  | `Assoc of data Map.Make(String).t
   | `Var of string
   | `Field of data * string
   | `Block of int
@@ -48,7 +48,7 @@ type node =
   | Match of blocks * data array * nodes Matching.t
   | Map_list of blocks * data * nodes Matching.t
   | Map_dict of blocks * data * nodes Matching.t
-  | Component of string * blocks * data Map.String.t
+  | Component of string * blocks * data Map.Make(String).t
 
 and nodes = node list
 
@@ -79,8 +79,8 @@ type 'a t = {
   name : string;
   types : Typescheme.t;
   nodes : nodes;
-  components : nodes Map.String.t;
-  externals : (Typescheme.t * 'a) Map.String.t;
+  components : nodes Map.Make(String).t;
+  externals : (Typescheme.t * 'a) Map.Make(String).t;
 }
 
 val make : fname:string -> 'a Components.t -> Lexing.lexbuf -> 'a t

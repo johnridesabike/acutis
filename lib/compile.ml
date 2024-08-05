@@ -8,6 +8,7 @@
 (*                                                                        *)
 (**************************************************************************)
 
+module MapString = Map.Make (String)
 module T = Typechecker
 
 let parse ~fname lexbuf =
@@ -54,7 +55,7 @@ type data =
   | `Float of float
   | `String of string
   | `Array of data array
-  | `Assoc of data Map.String.t
+  | `Assoc of data MapString.t
   | `Var of string
   | `Field of data * string
   | `Block of int ]
@@ -65,7 +66,7 @@ type node =
   | Match of blocks * data array * nodes Matching.t
   | Map_list of blocks * data * nodes Matching.t
   | Map_dict of blocks * data * nodes Matching.t
-  | Component of string * blocks * data Map.String.t
+  | Component of string * blocks * data MapString.t
 
 and blocks = nodes Queue.t
 and nodes = node list
@@ -85,11 +86,11 @@ let rec make_data blocks = function
   | T.Cons x -> make_data blocks x
   | T.Tuple l -> `Array (Array.of_list l |> Array.map (make_data blocks))
   | T.Record (Union_tag_int (k, v, _), x, _) ->
-      `Assoc Map.String.(map (make_data blocks) x |> add k (`Int v))
+      `Assoc MapString.(map (make_data blocks) x |> add k (`Int v))
   | T.Record (Union_tag_string (k, v, _), x, _) ->
-      `Assoc Map.String.(map (make_data blocks) x |> add k (`String v))
+      `Assoc MapString.(map (make_data blocks) x |> add k (`String v))
   | T.Record (Union_tag_none, x, _) | Dict (x, _) ->
-      `Assoc (Map.String.map (make_data blocks) x)
+      `Assoc (MapString.map (make_data blocks) x)
   | T.Field (node, field) -> `Field (make_data blocks node, field)
 
 and make_nodes l =
@@ -115,7 +116,7 @@ and make_nodes l =
           Some (Map_dict (blocks, pat, make_match loc tys cases))
       | T.Component (name, props) ->
           let blocks = Queue.create () in
-          let props = Map.String.map (make_data blocks) props in
+          let props = MapString.map (make_data blocks) props in
           Some (Component (name, blocks, props)))
     l
 
@@ -131,27 +132,27 @@ module Components = struct
   let from_fun ~name props f = T.Fun (name, props, f)
 
   type 'a t = {
-    typed : (T.t, 'a) T.source Map.String.t;
-    optimized : (nodes, 'a) T.source Map.String.t;
+    typed : (T.t, 'a) T.source MapString.t;
+    optimized : (nodes, 'a) T.source MapString.t;
   }
 
-  let empty = { typed = Map.String.empty; optimized = Map.String.empty }
+  let empty = { typed = MapString.empty; optimized = MapString.empty }
 
   let of_seq l =
     let untyped =
       Seq.fold_left
         (fun acc -> function
           | T.Src (name, src) ->
-              if Map.String.mem name acc then Error.duplicate_name name;
-              Map.String.add name (T.Src (name, src)) acc
+              if MapString.mem name acc then Error.duplicate_name name;
+              MapString.add name (T.Src (name, src)) acc
           | T.Fun (name, p, f) ->
-              if Map.String.mem name acc then Error.duplicate_name name;
-              Map.String.add name (T.Fun (name, p, f)) acc)
-        Map.String.empty l
+              if MapString.mem name acc then Error.duplicate_name name;
+              MapString.add name (T.Fun (name, p, f)) acc)
+        MapString.empty l
     in
     let typed = T.make_components untyped in
     let optimized =
-      Map.String.map
+      MapString.map
         (function
           | T.Src (name, src) -> T.Src (name, make_nodes src.T.nodes)
           | T.Fun (name, p, f) -> T.Fun (name, p, f))
@@ -164,18 +165,18 @@ type 'a t = {
   name : string;
   types : Typescheme.t;
   nodes : nodes;
-  components : nodes Map.String.t;
-  externals : (Typescheme.t * 'a) Map.String.t;
+  components : nodes MapString.t;
+  externals : (Typescheme.t * 'a) MapString.t;
 }
 
 type 'a linked_components = {
-  components : nodes Map.String.t;
-  externals : (Typescheme.t * 'a) Map.String.t;
+  components : nodes MapString.t;
+  externals : (Typescheme.t * 'a) MapString.t;
   stack : string list;
 }
 
 let empty_linked =
-  { components = Map.String.empty; externals = Map.String.empty; stack = [] }
+  { components = MapString.empty; externals = MapString.empty; stack = [] }
 
 let make ~fname components_src src =
   let nodes = parse ~fname src in
@@ -197,16 +198,16 @@ let make ~fname components_src src =
             Matching.Exits.nodes m.exits |> Seq.fold_left get_components linked
         | Component (name, blocks, _) -> (
             let linked = Queue.fold get_components linked blocks in
-            match Map.String.find_opt name components_src.optimized with
+            match MapString.find_opt name components_src.optimized with
             | None -> raise @@ Error.missing_component linked.stack name
             | Some (Src (_, nodes)) ->
-                let components = Map.String.add name nodes linked.components in
+                let components = MapString.add name nodes linked.components in
                 get_components
                   { linked with components; stack = name :: linked.stack }
                   nodes
             | Some (Fun (_, props, f)) ->
                 let externals =
-                  Map.String.add name (props, f) linked.externals
+                  MapString.add name (props, f) linked.externals
                 in
                 { linked with externals }))
       linked nodes

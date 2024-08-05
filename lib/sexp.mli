@@ -32,4 +32,4 @@ val pp : Format.formatter -> t -> unit
 
 val pair : ('a -> t) -> ('b -> t) -> 'a * 'b -> t
 val triple : ('a -> t) -> ('b -> t) -> ('c -> t) -> 'a * 'b * 'c -> t
-val map_string : ('a -> t) -> 'a Map.String.t -> t
+val map_string : ('a -> t) -> 'a Map.Make(String).t -> t

@@ -12,7 +12,7 @@
 
 type row = [ `Open | `Closed ]
 type ty = Typechecker.Type.t
-type t = ty Map.String.t
+type t = ty Map.Make(String).t
 
 val unknown : unit -> ty
 val int : unit -> ty

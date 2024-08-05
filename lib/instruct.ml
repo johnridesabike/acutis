@@ -232,6 +232,10 @@ end = struct
   (* NOTE: OCaml's mutability, exceptions, and effects are not guaranteed to
      work with [I]. This is particularly true if [I] is a pretty-printer. Do not
      rely on those features when crossing the boundaries of [I]'s functions. *)
+  module MapInt = Map.Make (Int)
+  module MapString = Map.Make (String)
+  module SetInt = Set.Make (Int)
+  module SetString = Set.Make (String)
   open I
 
   let nil_value = Data.int (int 0)
@@ -279,7 +283,7 @@ end = struct
     props : Data.t hashtbl exp;
         (** We need to use a hash table as the root scope because components
             take a hash table as input. *)
-    scope : Data.t exp Map.String.t;
+    scope : Data.t exp MapString.t;
         (** As new bindings are added, they go into the scope to shadow previous
             props & bindings. *)
   }
@@ -291,7 +295,7 @@ end = struct
 
   let state_make components props f =
     async_buffer_create_aux (fun buf_sync buf_async ->
-        f { components; buf_sync; buf_async; props; scope = Map.String.empty })
+        f { components; buf_sync; buf_async; props; scope = MapString.empty })
 
   let async_buffer_create state f =
     async_buffer_create_aux (fun buf_sync buf_async ->
@@ -324,12 +328,12 @@ end = struct
       state with
       scope =
         List.fold_left
-          (fun scope s -> Map.String.add s hashtbl.%{string s} scope)
+          (fun scope s -> MapString.add s hashtbl.%{string s} scope)
           state.scope bindings;
     }
 
   let props_find s { props; scope; _ } =
-    try Map.String.find s scope with Not_found -> props.%{string s}
+    try MapString.find s scope with Not_found -> props.%{string s}
 
   let parse_escape state esc x =
     match esc with
@@ -375,12 +379,12 @@ end = struct
     array (Array.map (construct_data blocks state) a)
 
   and construct_data_hashtbl blocks state d =
-    Map.String.to_seq d
+    MapString.to_seq d
     |> Seq.map (fun (k, v) -> (string k, construct_data blocks state v))
     |> hashtbl
 
   let add_vars ids arg vars =
-    Set.Int.fold (fun id vars -> Map.Int.add id arg vars) ids vars
+    SetInt.fold (fun id vars -> MapInt.add id arg vars) ids vars
 
   let of_scalar = function
     | `String s -> Data.string (string s)
@@ -402,10 +406,10 @@ end = struct
   let rec match_tree :
         'leaf 'key.
         exit:int ref ->
-        leafstmt:(vars:Data.t exp Map.Int.t -> 'leaf -> unit stmt) ->
+        leafstmt:(vars:Data.t exp MapInt.t -> 'leaf -> unit stmt) ->
         get_arg:
           (optional:bool -> 'key -> (Data.t exp -> unit stmt) -> unit stmt) ->
-        vars:Data.t exp Map.Int.t ->
+        vars:Data.t exp MapInt.t ->
         ?optional:bool ->
         ('leaf, 'key) Matching.tree ->
         unit stmt =
@@ -483,8 +487,8 @@ end = struct
 
   let match_leaf exitvar props ~vars Matching.{ names; exit } =
     let s =
-      Map.String.to_seq names
-      |> Seq.map (fun (key, id) -> props.%{string key} <- Map.Int.find id vars)
+      MapString.to_seq names
+      |> Seq.map (fun (key, id) -> props.%{string key} <- MapInt.find id vars)
       |> stmt_join
     in
     s @. (exitvar := int (Matching.Exits.key_to_int exit))
@@ -510,7 +514,7 @@ end = struct
             let s =
               match_tree ~exit
                 ~leafstmt:(match_leaf exit new_props)
-                ~get_arg:(arg_int arg_match) ~vars:Map.Int.empty tree
+                ~get_arg:(arg_int arg_match) ~vars:MapInt.empty tree
             in
             s @. make_exits exit exits state new_props)
     | Compile.Map_list (blocks, data, { tree; exits }) ->
@@ -526,7 +530,7 @@ end = struct
                   match_tree ~exit
                     ~leafstmt:(match_leaf exit new_props)
                     ~get_arg:(arg_indexed head (Data.int !index))
-                    ~vars:Map.Int.empty tree
+                    ~vars:MapInt.empty tree
                 in
                 let s = s @. make_exits exit exits state new_props in
                 let s = s @. incr index in
@@ -541,7 +545,7 @@ end = struct
                   match_tree ~exit
                     ~leafstmt:(match_leaf exit new_props)
                     ~get_arg:(arg_indexed v (Data.string k))
-                    ~vars:Map.Int.empty tree
+                    ~vars:MapInt.empty tree
                 in
                 s @. make_exits exit exits state new_props))
     | Component (name, blocks, dict) ->
@@ -662,10 +666,10 @@ end = struct
           ~ok:(fun b ->
             if_else b
               ~then_:(fun () ->
-                if Set.Int.mem 1 cases then set (Data.int (int 1))
+                if SetInt.mem 1 cases then set (Data.int (int 1))
                 else push_error debug ty_str input)
               ~else_:(fun () ->
-                if Set.Int.mem 0 cases then set (Data.int (int 0))
+                if SetInt.mem 0 cases then set (Data.int (int 0))
                 else push_error debug ty_str input))
           ~error:(fun () -> push_error debug ty_str input)
     | T.String | T.Enum_string { row = `Open; _ } ->
@@ -684,7 +688,7 @@ end = struct
                     ~then_:(fun () -> set (Data.string s))
                     ~else_:(fun () -> aux seq)
             in
-            aux (Set.String.to_seq cases))
+            aux (SetString.to_seq cases))
           ~error:(fun () -> push_error debug ty_str input)
     | T.Int | T.Enum_int ({ row = `Open; _ }, _) ->
         External.classify Int input
@@ -702,7 +706,7 @@ end = struct
                     ~then_:(fun () -> set (Data.int s))
                     ~else_:(fun () -> aux seq)
             in
-            aux (Set.Int.to_seq cases))
+            aux (SetInt.to_seq cases))
           ~error:(fun () -> push_error debug ty_str input)
     | T.Float ->
         External.classify Float input
@@ -811,7 +815,7 @@ end = struct
         External.classify Assoc input
           ~ok:(fun input' ->
             let aux i v () =
-              match Map.Int.find_opt i cases with
+              match MapInt.find_opt i cases with
               | Some tys ->
                   let$ decoded = ("decoded", hashtbl_create ()) in
                   let s = decoded.%{key} <- v in
@@ -836,11 +840,11 @@ end = struct
           ~error:(fun () -> push_error debug ty_str input)
     | T.Union_int (key, { cases; row }, Not_bool) ->
         decode_union union_helper_int
-          (Map.Int.to_seq cases |> Seq.map (fun (k, v) -> (int k, v)))
+          (MapInt.to_seq cases |> Seq.map (fun (k, v) -> (int k, v)))
           ~set ~debug key input row ty_str
     | T.Union_string (key, { cases; row }) ->
         decode_union union_helper_string
-          (Map.String.to_seq cases |> Seq.map (fun (k, v) -> (string k, v)))
+          (MapString.to_seq cases |> Seq.map (fun (k, v) -> (string k, v)))
           ~set ~debug key input row ty_str
 
   and decode_union : 'a. 'a union_helper -> ('a exp * T.record) Seq.t -> _ =
@@ -884,7 +888,7 @@ end = struct
   and decode_record_aux ~debug decoded input tys ty_str =
     let& missing_keys = ("missing_keys", nil_value) in
     let s =
-      Map.String.to_seq tys
+      MapString.to_seq tys
       |> Seq.map (fun (k, ty) ->
              let k' = string k in
              if_else
@@ -972,15 +976,15 @@ end = struct
         s @. set (External.of_hashtbl encoded)
     | T.Union_int (key, { cases; row }, Bool) ->
         encode_union union_helper_bool
-          (Map.Int.to_seq cases |> Seq.map (fun (k, v) -> (int k, v)))
+          (MapInt.to_seq cases |> Seq.map (fun (k, v) -> (int k, v)))
           row ~set key props
     | T.Union_int (key, { cases; row }, Not_bool) ->
         encode_union union_helper_int
-          (Map.Int.to_seq cases |> Seq.map (fun (k, v) -> (int k, v)))
+          (MapInt.to_seq cases |> Seq.map (fun (k, v) -> (int k, v)))
           row ~set key props
     | T.Union_string (key, { cases; row }) ->
         encode_union union_helper_string
-          (Map.String.to_seq cases |> Seq.map (fun (k, v) -> (string k, v)))
+          (MapString.to_seq cases |> Seq.map (fun (k, v) -> (string k, v)))
           row ~set key props
 
   and encode_union : 'a. 'a union_helper -> ('a exp * T.record) Seq.t -> _ =
@@ -1010,7 +1014,7 @@ end = struct
     match cases () with Seq.Nil -> unit | Seq.Cons (hd, seq) -> aux hd seq
 
   and encode_record_aux encoded props tys =
-    Map.String.to_seq tys
+    MapString.to_seq tys
     |> Seq.map (fun (k, ty) ->
            let k = string k in
            let$ props = ("props", props.%{k}) in
@@ -1091,7 +1095,7 @@ end = struct
   let eval compiled =
     let$ components = ("components", hashtbl_create ()) in
     let s =
-      Map.String.to_seq compiled.Compile.externals
+      MapString.to_seq compiled.Compile.externals
       |> Seq.map (fun (k, (tys, v)) ->
              import v (fun import ->
                  components.%{string k} <-
@@ -1103,7 +1107,7 @@ end = struct
     in
     let s =
       s
-      @. (Map.String.to_seq compiled.components
+      @. (MapString.to_seq compiled.components
          |> Seq.map (fun (k, v) ->
                 components.%{string k} <-
                   lambda (fun props ->

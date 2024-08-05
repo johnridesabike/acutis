@@ -186,7 +186,7 @@ type internal_check_cases
 type ('leaf, 'key) tree =
   | Switch of {
       key : 'key;
-      ids : Set.Int.t;
+      ids : Set.Make(Int).t;
       cases : ('leaf, 'key) switchcase;
       wildcard : ('leaf, 'key) tree option;
       check_cases : internal_check_cases;
@@ -196,23 +196,26 @@ type ('leaf, 'key) tree =
           is used. *)
   | Nest of {
       key : 'key;
-      ids : Set.Int.t;
+      ids : Set.Make(Int).t;
       child : ('leaf, 'key) nest;
       wildcard : ('leaf, 'key) tree option;
     }  (** A Nest represents a structure such as tuple or a record. *)
-  | Nil of { key : 'key; ids : Set.Int.t; child : ('leaf, 'key) tree }
+  | Nil of { key : 'key; ids : Set.Make(Int).t; child : ('leaf, 'key) tree }
       (** A [null] or [[]]. The [child] points to the next node in the tree. *)
-  | Cons of { key : 'key; ids : Set.Int.t; child : ('leaf, 'key) tree }
+  | Cons of { key : 'key; ids : Set.Make(Int).t; child : ('leaf, 'key) tree }
       (** A not-null value or a non-empty list. The [child] points to a node
           representing the "current" data, either a {!Wildcard} or a {!Nest}. *)
   | Nil_or_cons of {
       key : 'key;
-      ids : Set.Int.t;
+      ids : Set.Make(Int).t;
       nil : ('leaf, 'key) tree;
       cons : ('leaf, 'key) tree;
     }  (** An exhaustive combination of {!Nil} and {!Cons}. *)
-  | Wildcard of { key : 'key; ids : Set.Int.t; child : ('leaf, 'key) tree }
-      (** Wildcards simply point to the next node in the tree.*)
+  | Wildcard of {
+      key : 'key;
+      ids : Set.Make(Int).t;
+      child : ('leaf, 'key) tree;
+    }  (** Wildcards simply point to the next node in the tree.*)
   | Optional of { child : ('leaf, 'key) tree; next : ('leaf, 'key) tree option }
       (** Optionals are only used, and always used, inside of dictionary nests.
           They denote that the item in [child] does not need to be present
@@ -253,7 +256,7 @@ module Exits : sig
   (** This returns each exit's key, list of binding names, and nodes. *)
 end
 
-type leaf = { names : int Map.String.t; exit : Exits.key }
+type leaf = { names : int Map.Make(String).t; exit : Exits.key }
 type 'a t = { tree : (leaf, int) tree; exits : 'a Exits.t }
 
 (** {1 Functions.} *)

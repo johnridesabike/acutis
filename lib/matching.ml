@@ -8,6 +8,10 @@
 (*                                                                        *)
 (**************************************************************************)
 
+module MapInt = Map.Make (Int)
+module MapString = Map.Make (String)
+module SetInt = Set.Make (Int)
+module SetString = Set.Make (String)
 module T = Typechecker
 
 type scalar = [ `Int of int | `Float of float | `String of string ]
@@ -30,28 +34,28 @@ type internal_check_cases = scalar Seq.t option
 type ('leaf, 'key) tree =
   | Switch of {
       key : 'key;
-      ids : Set.Int.t;
+      ids : SetInt.t;
       cases : ('leaf, 'key) switchcase;
       wildcard : ('leaf, 'key) tree option;
       check_cases : internal_check_cases;
     }
   | Nest of {
       key : 'key;
-      ids : Set.Int.t;
+      ids : SetInt.t;
       child : ('leaf, 'key) nest;
       wildcard : ('leaf, 'key) tree option;
           (** A nest should only contain a wildcard if its child is not
               exhaustive. This requires some extra computation, seen below. *)
     }
-  | Nil of { key : 'key; ids : Set.Int.t; child : ('leaf, 'key) tree }
-  | Cons of { key : 'key; ids : Set.Int.t; child : ('leaf, 'key) tree }
+  | Nil of { key : 'key; ids : SetInt.t; child : ('leaf, 'key) tree }
+  | Cons of { key : 'key; ids : SetInt.t; child : ('leaf, 'key) tree }
   | Nil_or_cons of {
       key : 'key;
-      ids : Set.Int.t;
+      ids : SetInt.t;
       nil : ('leaf, 'key) tree;
       cons : ('leaf, 'key) tree;
     }
-  | Wildcard of { key : 'key; ids : Set.Int.t; child : ('leaf, 'key) tree }
+  | Wildcard of { key : 'key; ids : SetInt.t; child : ('leaf, 'key) tree }
   | Optional of { child : ('leaf, 'key) tree; next : ('leaf, 'key) tree option }
   | End of 'leaf
 
@@ -100,7 +104,7 @@ module Exits = struct
   let to_sexp f a = Array.to_seqi a |> Sexp.of_seq (exit_to_sexp f)
 end
 
-type leaf = { names : int Map.String.t; exit : Exits.key }
+type leaf = { names : int MapString.t; exit : Exits.key }
 type 'a t = { tree : (leaf, int) tree; exits : 'a Exits.t }
 
 (* Don't check equality for IDs. A merge failure may still modify IDs, creating
@@ -149,7 +153,7 @@ and equal_switchcase equal_leaf a { data; if_match; next } =
   && Option.equal (equal_switchcase equal_leaf) a.next next
 
 let equal_leaf a { names; exit } =
-  Map.String.equal Int.equal a.names names && Exits.equal_key a.exit exit
+  MapString.equal Int.equal a.names names && Exits.equal_key a.exit exit
 
 (** One challenge when merging the trees is that we need to keep track of where
     we are in the tree. This natural-number GADT tracks that for us on the type
@@ -191,19 +195,19 @@ module ParMatch = struct
   let rec ty_to_pat ty =
     match !ty with
     | T.Type.Enum_int ({ cases; row = `Closed }, Bool) ->
-        Ast.Bool (l, Set.Int.min_elt cases)
+        Ast.Bool (l, SetInt.min_elt cases)
     | Enum_int ({ cases; row = `Closed }, Not_bool) ->
-        Ast.Enum_int (l, Set.Int.min_elt cases)
+        Ast.Enum_int (l, SetInt.min_elt cases)
     | Enum_string { cases; row = `Closed } ->
-        Ast.Enum_string (l, Set.String.min_elt cases)
+        Ast.Enum_string (l, SetString.min_elt cases)
     | Union_int (k, { cases; row = `Closed }, Bool) ->
-        let tag, tys = Map.Int.min_binding cases in
+        let tag, tys = MapInt.min_binding cases in
         Ast.Record (l, (l, k, Tag (Tag_bool (l, tag))) :: ty_map_to_pats tys)
     | Union_int (k, { cases; row = `Closed }, Not_bool) ->
-        let tag, tys = Map.Int.min_binding cases in
+        let tag, tys = MapInt.min_binding cases in
         Ast.Record (l, (l, k, Tag (Tag_int (l, tag))) :: ty_map_to_pats tys)
     | Union_string (k, { cases; row = `Closed }) ->
-        let tag, tys = Map.String.min_binding cases in
+        let tag, tys = MapString.min_binding cases in
         Ast.Record (l, (l, k, Tag (Tag_string (l, tag))) :: ty_map_to_pats tys)
     | Int | String | Float | Tuple _ | Unknown _ | Nullable _ | List _
     | Record _ | Dict _ | Enum_int _ | Enum_string _ | Union_int _
@@ -211,7 +215,7 @@ module ParMatch = struct
         Ast.dummy_var
 
   and ty_map_to_pats tys =
-    Map.String.to_seq !tys
+    MapString.to_seq !tys
     |> Seq.map (fun (k, v) -> (l, k, Ast.Value (ty_to_pat v)))
     |> List.of_seq
 
@@ -229,7 +233,7 @@ module ParMatch = struct
     | Nullable _, Any -> Ast.Nullable (l, Some Ast.dummy_var)
     | Nullable _, Nil -> Ast.Nullable (l, None)
     | Record tys, Nest path -> (
-        let s = Map.String.to_seq !tys in
+        let s = MapString.to_seq !tys in
         match to_assoc s path with
         | [] -> Ast.dummy_var
         | hd :: tl -> Ast.Record (l, hd :: tl))
@@ -239,18 +243,18 @@ module ParMatch = struct
           | Bool -> Ast.Tag_bool (l, i)
           | Not_bool -> Ast.Tag_int (l, i)
         in
-        let tys = Map.Int.find i cases in
+        let tys = MapInt.find i cases in
         let assoc =
           match div with
-          | Same -> to_assoc (Map.String.to_seq !tys) path
+          | Same -> to_assoc (MapString.to_seq !tys) path
           | Diverge -> ty_map_to_pats tys
         in
         Ast.Record (l, (l, k, Tag tag) :: assoc)
     | Union_string (k, { cases; _ }), Nest (Scalar (`String s, div) :: path) ->
-        let tys = Map.String.find s cases in
+        let tys = MapString.find s cases in
         let assoc =
           match div with
-          | Same -> to_assoc (Map.String.to_seq !tys) path
+          | Same -> to_assoc (MapString.to_seq !tys) path
           | Diverge -> ty_map_to_pats tys
         in
         Ast.Record (l, (l, k, Tag (Tag_string (l, s))) :: assoc)
@@ -665,10 +669,10 @@ and merge :
   match (a, b) with
   | End a, End b -> ( match n with Z -> End a | S n -> End (merge n a b))
   | Wildcard a, Wildcard b ->
-      let ids = Set.Int.union a.ids b.ids in
+      let ids = SetInt.union a.ids b.ids in
       Wildcard { a with ids; child = merge n a.child b.child }
   | Wildcard a, Nest b -> (
-      let ids = Set.Int.union a.ids b.ids in
+      let ids = SetInt.union a.ids b.ids in
       let wildcard =
         match b.wildcard with
         | None -> Some a.child
@@ -685,13 +689,13 @@ and merge :
           | Some c ->
               safe_nest n ~key:b.key ~ids ~child:(String_keys c) ~wildcard))
   | (Wildcard { ids; key; child } as a), Nil b ->
-      let ids = Set.Int.union ids b.ids in
+      let ids = SetInt.union ids b.ids in
       Nil_or_cons { ids; key; nil = merge n child b.child; cons = a }
   | (Wildcard { ids; key; child } as a), Cons b ->
-      let ids = Set.Int.union ids b.ids in
+      let ids = SetInt.union ids b.ids in
       Nil_or_cons { ids; key; nil = child; cons = merge n a b.child }
   | (Wildcard { ids; child; _ } as a), Nil_or_cons b ->
-      let ids = Set.Int.union ids b.ids in
+      let ids = SetInt.union ids b.ids in
       (* At least one merge must succeed. *)
       let nil = merge n child b.nil in
       let cons = merge n a b.cons in
@@ -706,10 +710,10 @@ and merge :
             | None -> a.child
             | Some b -> merge n a.child b
           in
-          let ids = Set.Int.union a.ids b.ids in
+          let ids = SetInt.union a.ids b.ids in
           Switch { b with ids; cases; wildcard = Some wildcard })
   | Nest a, Nest b ->
-      let ids = Set.Int.union a.ids b.ids in
+      let ids = SetInt.union a.ids b.ids in
       let wildcard =
         match (a.wildcard, b.wildcard) with
         | None, None -> None
@@ -746,48 +750,48 @@ and merge :
       let wildcard =
         match a.wildcard with None -> b.child | Some a -> merge n a b.child
       in
-      let ids = Set.Int.union a.ids b.ids in
+      let ids = SetInt.union a.ids b.ids in
       safe_nest n ~key:a.key ~ids ~child ~wildcard:(Some wildcard)
   | Nil a, (Wildcard { ids; key; child } as b) ->
-      let ids = Set.Int.union a.ids ids in
+      let ids = SetInt.union a.ids ids in
       Nil_or_cons { ids; key; nil = merge n a.child child; cons = b }
   | Cons a, (Wildcard { ids; key; child } as b) ->
-      let ids = Set.Int.union a.ids ids in
+      let ids = SetInt.union a.ids ids in
       Nil_or_cons { ids; key; nil = child; cons = merge n a.child b }
   | Nil_or_cons a, (Wildcard { ids; child; _ } as b) ->
-      let ids = Set.Int.union a.ids ids in
+      let ids = SetInt.union a.ids ids in
       Nil_or_cons
         { a with ids; nil = merge n a.nil child; cons = merge n a.cons b }
   | Nil a, Nil b ->
-      let ids = Set.Int.union a.ids b.ids in
+      let ids = SetInt.union a.ids b.ids in
       Nil { a with ids; child = merge n a.child b.child }
   | Cons a, Cons b ->
-      let ids = Set.Int.union a.ids b.ids in
+      let ids = SetInt.union a.ids b.ids in
       Cons { a with ids; child = merge n a.child b.child }
   | Nil nil, Cons cons | Cons cons, Nil nil ->
-      let ids = Set.Int.union nil.ids cons.ids in
+      let ids = SetInt.union nil.ids cons.ids in
       Nil_or_cons { ids; key = nil.key; nil = nil.child; cons = cons.child }
   | Nil a, Nil_or_cons b ->
-      let ids = Set.Int.union a.ids b.ids in
+      let ids = SetInt.union a.ids b.ids in
       Nil_or_cons { b with ids; nil = merge n a.child b.nil }
   | Cons a, Nil_or_cons b ->
-      let ids = Set.Int.union a.ids b.ids in
+      let ids = SetInt.union a.ids b.ids in
       Nil_or_cons { b with ids; cons = merge n a.child b.cons }
   | Nil_or_cons a, Nil b ->
-      let ids = Set.Int.union a.ids b.ids in
+      let ids = SetInt.union a.ids b.ids in
       Nil_or_cons { a with ids; nil = merge n a.nil b.child }
   | Nil_or_cons a, Cons b ->
-      let ids = Set.Int.union a.ids b.ids in
+      let ids = SetInt.union a.ids b.ids in
       Nil_or_cons { a with ids; cons = merge n a.cons b.child }
   | Nil_or_cons a, Nil_or_cons b ->
-      let ids = Set.Int.union a.ids b.ids in
+      let ids = SetInt.union a.ids b.ids in
       Nil_or_cons
         { a with ids; nil = merge n a.nil b.nil; cons = merge n a.cons b.cons }
   | Switch a, Wildcard b ->
       Switch
         {
           a with
-          ids = Set.Int.union a.ids b.ids;
+          ids = SetInt.union a.ids b.ids;
           cases = expand_wildcard_into_testcases n a.cases b.child;
           wildcard =
             (match a.wildcard with
@@ -815,7 +819,7 @@ and merge :
         | None -> cases
         | Some wildcard -> expand_wildcard_into_testcases n cases wildcard
       in
-      let ids = Set.Int.union a.ids b.ids in
+      let ids = SetInt.union a.ids b.ids in
       Switch { a with ids; cases; wildcard }
   | Optional { child; next }, Optional b ->
       Optional
@@ -839,9 +843,9 @@ let merge = merge Z
 (** To turn a typed pattern into a tree (albeit a single-branched tree), we use
     CPS as an easy way deal with the nested tree type. *)
 
-type bindings = { next_id : unit -> int; names : int Map.String.t }
+type bindings = { next_id : unit -> int; names : int MapString.t }
 
-let ids = Set.Int.empty
+let ids = SetInt.empty
 
 let of_scalar key data if_match check_cases =
   let cases = { data; if_match; next = None } in
@@ -858,17 +862,16 @@ let rec of_tpat :
   | Any -> Wildcard { ids; key; child = k b }
   | Var x ->
       let id = b.next_id () in
-      let b = { b with names = Map.String.add x id b.names } in
-      Wildcard { ids = Set.Int.singleton id; key; child = k b }
+      let b = { b with names = MapString.add x id b.names } in
+      Wildcard { ids = SetInt.singleton id; key; child = k b }
   | Scalar (data, Scalar_sum_none)
   | Scalar (data, Scalar_sum_int { row = `Open; _ })
   | Scalar (data, Scalar_sum_string { row = `Open; _ }) ->
       of_scalar key data (k b) None
   | Scalar (data, Scalar_sum_int { row = `Closed; cases }) ->
-      of_scalar key data (k b) (Some (Set.Int.to_seq cases |> Seq.map int))
+      of_scalar key data (k b) (Some (SetInt.to_seq cases |> Seq.map int))
   | Scalar (data, Scalar_sum_string { row = `Closed; cases }) ->
-      of_scalar key data (k b)
-        (Some (Set.String.to_seq cases |> Seq.map string))
+      of_scalar key data (k b) (Some (SetString.to_seq cases |> Seq.map string))
   | Nil -> Nil { key; ids; child = k b }
   | Cons cons -> Cons { key; ids; child = of_tpat ~key b k cons }
   | Tuple l ->
@@ -877,10 +880,10 @@ let rec of_tpat :
   | Record (tag, m, tys) ->
       (* We need to expand the map to include all of its type's keys. *)
       let child =
-        Map.String.merge
+        MapString.merge
           (fun _k _ty p -> match p with None -> Some T.Any | Some _ as p -> p)
           !tys m
-        |> Map.String.to_seq
+        |> MapString.to_seq
         |> of_keyvalues b (fun b -> End (k b))
       in
       let child =
@@ -892,23 +895,23 @@ let rec of_tpat :
             of_scalar k (`String v) child None
         | Union_tag_int (k, v, { row = `Closed; cases }) ->
             of_scalar k (`Int v) child
-              (Some (Map.Int.to_seq cases |> Seq.map fst |> Seq.map int))
+              (Some (MapInt.to_seq cases |> Seq.map fst |> Seq.map int))
         | Union_tag_string (k, v, { row = `Closed; cases }) ->
             of_scalar k (`String v) child
-              (Some (Map.String.to_seq cases |> Seq.map fst |> Seq.map string))
+              (Some (MapString.to_seq cases |> Seq.map fst |> Seq.map string))
       in
       Nest { key; ids; child = String_keys child; wildcard = None }
   | Dict (m, kys) ->
       (* We need to expand the map to include all of its type's keys. *)
       let child =
-        Map.String.map Option.some m
-        |> Set.String.fold
+        MapString.map Option.some m
+        |> SetString.fold
              (fun key map ->
-               Map.String.update key
+               MapString.update key
                  (function None -> Some None | Some p -> Some p)
                  map)
              !kys
-        |> Map.String.to_seq
+        |> MapString.to_seq
         |> of_keyvalues_dict b (fun b -> End (k b))
       in
       Nest { key; ids; child = String_keys child; wildcard = None }
@@ -942,7 +945,7 @@ and of_keyvalues_dict b k s =
 let of_nonempty ~exit next_id Nonempty.(hd :: tl) =
   let k { names; _ } = End { names; exit } in
   let k b = of_list ~key:1 b k tl in
-  of_tpat ~key:0 { next_id; names = Map.String.empty } k hd
+  of_tpat ~key:0 { next_id; names = MapString.empty } k hd
 
 let rec make_case ~exit next_id tree = function
   | [] -> tree
@@ -982,7 +985,7 @@ let make loc tys Nonempty.(Typechecker.{ pats; nodes; bindings } :: tl_cases) =
   in
   aux hd_tree 1 tl_cases
 
-let set_to_sexp s = Sexp.of_seq Sexp.int (Set.Int.to_seq s)
+let set_to_sexp s = Sexp.of_seq Sexp.int (SetInt.to_seq s)
 
 let scalar_to_sexp = function
   | `Int i -> Sexp.int i
