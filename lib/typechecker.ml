@@ -441,9 +441,6 @@ type union_tag =
   | Union_tag_int of string * int * Type.sum_union_int
   | Union_tag_string of string * string * Type.sum_union_string
 
-type construct = private Construct_tag
-type destruct = private Destruct_tag
-
 type _ pat =
   | Scalar : scalar * scalar_sum -> 'a pat
   | Nil : 'a pat
@@ -452,21 +449,24 @@ type _ pat =
   | Record : union_tag * 'a pat MapString.t * Type.record -> 'a pat
   | Dict : 'a pat MapString.t * SetString.t ref -> 'a pat
   | Var : string -> 'a pat
-  | Block : nodes -> construct pat
-  | Field : construct pat * string -> construct pat
-  | Any : destruct pat
+  | Block : nodes -> [ `Construct ] pat
+  | Field : [ `Construct ] pat * string -> [ `Construct ] pat
+  | Any : [ `Destruct ] pat
 
 and node =
   | Text of string * Ast.trim * Ast.trim
   | Echo of (Ast.echo_format * echo) list * Ast.echo_format * echo * Ast.escape
   | Match of
-      Loc.t * construct pat Nonempty.t * Type.t Nonempty.t * case Nonempty.t
-  | Map_list of Loc.t * construct pat * Type.t Nonempty.t * case Nonempty.t
-  | Map_dict of Loc.t * construct pat * Type.t Nonempty.t * case Nonempty.t
-  | Component of string * construct pat MapString.t
+      Loc.t
+      * [ `Construct ] pat Nonempty.t
+      * Type.t Nonempty.t
+      * case Nonempty.t
+  | Map_list of Loc.t * [ `Construct ] pat * Type.t Nonempty.t * case Nonempty.t
+  | Map_dict of Loc.t * [ `Construct ] pat * Type.t Nonempty.t * case Nonempty.t
+  | Component of string * [ `Construct ] pat MapString.t
 
 and case = {
-  pats : (Loc.t * destruct pat Nonempty.t) Nonempty.t;
+  pats : (Loc.t * [ `Destruct ] pat Nonempty.t) Nonempty.t;
   bindings : string list;
   nodes : nodes;
 }
@@ -771,9 +771,9 @@ let make_row = function
 type (_, _) var_action =
   | Destruct_add_vars :
       (Loc.t * string * Type.t) Queue.t
-      -> (destruct, 'b) var_action
+      -> ([ `Destruct ], 'b) var_action
       (** When we destructure a pattern, we add all new variables to a queue. *)
-  | Construct_update_vars : 'b Context.t -> (construct, 'b) var_action
+  | Construct_update_vars : 'b Context.t -> ([ `Construct ], 'b) var_action
       (** When we construct a pattern, we update the context for each new
           variable. *)
 

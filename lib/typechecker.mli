@@ -78,9 +78,6 @@ type union_tag =
   | Union_tag_int of string * int * Type.sum_union_int
   | Union_tag_string of string * string * Type.sum_union_string
 
-type construct = private Construct_tag
-type destruct = private Destruct_tag
-
 (** We use a GADT to prove that certain patterns may only appear when
     constructing and certain patterns may only appear when destructuring. *)
 type _ pat =
@@ -92,21 +89,24 @@ type _ pat =
   | Dict : 'a pat Map.Make(String).t * Set.Make(String).t ref -> 'a pat
       (** The set is part of a {!Type.Dict}. *)
   | Var : string -> 'a pat
-  | Block : nodes -> construct pat
-  | Field : construct pat * string -> construct pat
-  | Any : destruct pat
+  | Block : nodes -> [ `Construct ] pat
+  | Field : [ `Construct ] pat * string -> [ `Construct ] pat
+  | Any : [ `Destruct ] pat
 
 and node =
   | Text of string * Ast.trim * Ast.trim
   | Echo of (Ast.echo_format * echo) list * Ast.echo_format * echo * Ast.escape
   | Match of
-      Loc.t * construct pat Nonempty.t * Type.t Nonempty.t * case Nonempty.t
-  | Map_list of Loc.t * construct pat * Type.t Nonempty.t * case Nonempty.t
-  | Map_dict of Loc.t * construct pat * Type.t Nonempty.t * case Nonempty.t
-  | Component of string * construct pat Map.Make(String).t
+      Loc.t
+      * [ `Construct ] pat Nonempty.t
+      * Type.t Nonempty.t
+      * case Nonempty.t
+  | Map_list of Loc.t * [ `Construct ] pat * Type.t Nonempty.t * case Nonempty.t
+  | Map_dict of Loc.t * [ `Construct ] pat * Type.t Nonempty.t * case Nonempty.t
+  | Component of string * [ `Construct ] pat Map.Make(String).t
 
 and case = {
-  pats : (Loc.t * destruct pat Nonempty.t) Nonempty.t;
+  pats : (Loc.t * [ `Destruct ] pat Nonempty.t) Nonempty.t;
   bindings : string list;
       (** The binding list is needed to help produce runtime instructions. *)
   nodes : nodes;

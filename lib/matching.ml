@@ -856,7 +856,7 @@ let rec of_tpat :
       key:'k ->
       bindings ->
       (bindings -> ('a, 'k) tree) ->
-      T.destruct T.pat ->
+      [ `Destruct ] T.pat ->
       ('a, 'k) tree =
  fun ~key b k -> function
   | Any -> Wildcard { ids; key; child = k b }
@@ -921,7 +921,7 @@ and of_list :
       key:int ->
       bindings ->
       (bindings -> ('a, int) tree) ->
-      T.destruct T.pat list ->
+      [ `Destruct ] T.pat list ->
       ('a, int) tree =
  fun ~key b k -> function
   | [] -> k b
