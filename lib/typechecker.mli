@@ -42,6 +42,8 @@ module Type : sig
   and record = t Map.Make(String).t ref
   and t = ty ref
 
+  type scheme = t Map.Make(String).t
+
   val unknown : unit -> t
   val int : unit -> t
   val float : unit -> t
@@ -114,14 +116,11 @@ and case = {
 
 and nodes = node list
 
-type t = { nodes : nodes; types : Type.t Map.Make(String).t }
-
-type ('a, 'b) source =
-  | Src of string * 'a
-  | Fun of string * Type.t Map.Make(String).t * 'b
+type t = { nodes : nodes; types : Type.scheme }
+type ('a, 'b) source = Src of string * 'a | Fun of string * Type.scheme * 'b
 
 val make_components :
   (Ast.t, 'a) source Map.Make(String).t -> (t, 'a) source Map.Make(String).t
 
 val make : root:string -> (t, 'a) source Map.Make(String).t -> Ast.t -> t
-val make_interface_standalone : Ast.interface -> Type.t Map.Make(String).t
+val make_interface_standalone : Ast.interface -> Type.scheme

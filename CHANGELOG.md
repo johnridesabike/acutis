@@ -2,6 +2,11 @@
 
 Most changes are breaking changes.
 
+## Latest
+
+- Move the bulk of the compiler to the `acutis.internals` library and make the
+  `acutis` library a simple wrapper around it.
+
 ## 0.25.0
 
 - Echo syntax is now the same as other expressions, `{%` and `%}`. Unescaped

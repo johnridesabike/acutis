@@ -1171,8 +1171,7 @@ end
 
     The module this creates won't do any transformations by itself, and its
     values are defined as identity functions. You need to override specific
-    functions to apply transformations. This is used in {!PrintJs} to optimize
-    its output. *)
+    functions to apply transformations. *)
 module MakeTrans
     (T : TRANS)
     (F : SEM with type 'a exp = 'a T.from_exp and type 'a stmt = 'a T.from_stmt) :

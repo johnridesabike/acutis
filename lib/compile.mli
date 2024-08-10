@@ -59,30 +59,22 @@ module Components : sig
   type 'a source
 
   val from_src : fname:string -> name:string -> Lexing.lexbuf -> _ source
-  (** Parses the input but doesn't type-check yet.
-      @param fname The filename (for error messages).
-      @param name The component name when called inside a template.
-      @raise Error.Acutis_error *)
-
-  val from_fun : name:string -> Typescheme.t -> 'a -> 'a source
+  val from_fun : name:string -> Typechecker.Type.scheme -> 'a -> 'a source
 
   type 'a t
 
   val empty : _ t
-
   val of_seq : 'a source Seq.t -> 'a t
-  (** Type-checks and optimizes the components.
-      @raise Error.Acutis_error *)
 end
 
 type 'a t = {
   name : string;
-  types : Typescheme.t;
+  types : Typechecker.Type.scheme;
   nodes : nodes;
   components : nodes Map.Make(String).t;
-  externals : (Typescheme.t * 'a) Map.Make(String).t;
+  externals : (Typechecker.Type.scheme * 'a) Map.Make(String).t;
 }
 
-val make : fname:string -> 'a Components.t -> Lexing.lexbuf -> 'a t
-val make_interface : fname:string -> Lexing.lexbuf -> Typescheme.t
+val make : fname:string -> 'a Components.t -> Ast.t -> 'a t
+val make_interface : fname:string -> Lexing.lexbuf -> Typechecker.Type.scheme
 val to_sexp : nodes -> Sexp.t

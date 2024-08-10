@@ -2,8 +2,6 @@
     number of test cases, running it as a single executable rather than a cram
     test is easier to maintain and faster to execute. *)
 
-open Acutis
-
 module DecodeJson = struct
   type 'a linear = 'a list
 
@@ -36,22 +34,25 @@ module DecodeJson = struct
   let to_string t = Yojson.Basic.pretty_to_string t
 end
 
-module RenderSync = Render.MakeString (DecodeJson)
+module RenderSync = Acutis.RenderString (DecodeJson)
 
-let render ?(json = "{}") ?(components = Compile.Components.empty) src () =
-  let temp = Compile.make ~fname:"<test>" components (Lexing.from_string src) in
+let render ?(json = "{}") ?(components = Acutis.comps_empty) src () =
+  let temp =
+    Acutis.parse ~fname:"<test>" (Lexing.from_string src)
+    |> Acutis.compile components
+  in
   let json = Yojson.Basic.from_string json in
-  ignore @@ RenderSync.eval temp json
+  ignore @@ RenderSync.apply temp json
 
 let print_error title f =
-  let s = try f (); "no error" with Error.Acutis_error s -> String.trim s in
+  let s = try f (); "no error" with Acutis.Acutis_error s -> String.trim s in
   print_endline title; print_endline "---"; print_endline s; print_newline ()
 
 let component_string ~fname ~name src =
-  Compile.Components.from_src ~fname ~name (Lexing.from_string src)
+  Acutis.comp_parse ~fname ~name (Lexing.from_string src)
 
 let compile_string ~fname comps src =
-  Compile.make ~fname comps (Lexing.from_string src)
+  Acutis.parse ~fname (Lexing.from_string src) |> Acutis.compile comps
 
 let () =
   print_error "Illegal character 1" (render "{% match*");
@@ -262,7 +263,7 @@ let () =
        {|{% match a.b.c with true %}{% with false %}{% /match %}
          {% match a.b.c with 1 %}{% with _ %}{% /match %}|});
   let comps =
-    Compile.Components.of_seq @@ Seq.return
+    Acutis.comps_compile @@ Seq.return
     @@ component_string ~fname:"a.acutis" ~name:"A" "{% a %}"
   in
   print_error "Records with missing fields (Component)" (fun () ->
@@ -317,12 +318,12 @@ let () =
   let comp = component_string ~fname:"comp" ~name:"Comp" "{% a %} {% b %}" in
   print_error "Components can't take extra props"
     (render
-       ~components:(Compile.Components.of_seq @@ Seq.return comp)
+       ~components:(Acutis.comps_compile @@ Seq.return comp)
        "{% Comp a b c / %}");
   let comp = component_string ~fname:"comp" ~name:"Comp" "{% %i children %}" in
   print_error "Implict children is typed and reported correctly"
     (render
-       ~components:(Compile.Components.of_seq @@ Seq.return comp)
+       ~components:(Acutis.comps_compile @@ Seq.return comp)
        "{% Comp %} {% /Comp %}");
 
   print_error "Basic unused bindings are reported."
@@ -478,12 +479,12 @@ let () =
   let c = component_string ~fname:"c.acutis" ~name:"C" "{% D /%}" in
   let d = component_string ~fname:"d.acutis" ~name:"D" "{% B /%}" in
   print_error "Cyclic dependencies are reported." (fun () ->
-      ignore @@ Compile.Components.of_seq @@ List.to_seq [ a; b; c; d ]);
+      ignore @@ Acutis.comps_compile @@ List.to_seq [ a; b; c; d ]);
   print_error "Missing components are reported." (fun () ->
-      ignore @@ Compile.Components.of_seq @@ List.to_seq [ a; b; c ]);
+      ignore @@ Acutis.comps_compile @@ List.to_seq [ a; b; c ]);
   print_error "Missing components are reported (by root)." (render "{% A /%}");
   print_error "Duplicate names are reported." (fun () ->
-      ignore @@ Compile.Components.of_seq @@ List.to_seq [ a; b; a ]);
+      ignore @@ Acutis.comps_compile @@ List.to_seq [ a; b; a ]);
 
   print_error "Basic type mismatch."
     (render "{% match a with {b} %} {% b %} {% /match %}"

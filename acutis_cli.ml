@@ -8,8 +8,6 @@
 (*                                                                        *)
 (**************************************************************************)
 
-open Acutis
-
 module DecodeJson = struct
   type 'a linear = 'a list
 
@@ -42,7 +40,7 @@ module DecodeJson = struct
   let to_string t = Yojson.Basic.pretty_to_string t
 end
 
-module Render = Render.MakeString (DecodeJson)
+module Render = Acutis.RenderString (DecodeJson)
 
 let usage_msg =
   {|Usage:
@@ -126,9 +124,9 @@ let make_components_aux () =
   |> Seq.map (fun fname ->
          let@ chan = In_channel.with_open_text fname in
          Lexing.from_channel chan
-         |> Compile.Components.from_src ~fname ~name:(fname_to_compname fname))
+         |> Acutis.comp_parse ~fname ~name:(fname_to_compname fname))
 
-let make_components () = make_components_aux () |> Compile.Components.of_seq
+let make_components () = make_components_aux () |> Acutis.comps_compile
 
 let make_components_js () =
   let l = make_components_aux () in
@@ -136,13 +134,13 @@ let make_components_js () =
     Queue.to_seq arg_funs
     |> Seq.map (fun (module_path, function_path, interface) ->
            let typescheme =
-             Lexing.from_string interface |> Compile.make_interface ~fname:"-"
+             Lexing.from_string interface |> Acutis.compile_interface ~fname:"-"
            in
            let name = fname_to_compname function_path in
-           PrintJs.import ~module_path ~function_path
-           |> Compile.Components.from_fun ~name typescheme)
+           Acutis.js_import ~module_path ~function_path
+           |> Acutis.comp_fun ~name typescheme)
   in
-  Seq.append l funl |> Compile.Components.of_seq
+  Seq.append l funl |> Acutis.comps_compile
 
 let () =
   try
@@ -158,29 +156,33 @@ let () =
       let fname = Queue.take templates in
       if !arg_printast then
         let@ chan = In_channel.with_open_text fname in
-        Lexing.from_channel chan |> Compile.parse ~fname |> Ast.to_sexp
-        |> Sexp.pp Format.std_formatter
+        Lexing.from_channel chan |> Acutis.parse ~fname
+        |> Acutis.pp_ast Format.std_formatter
       else if !arg_printtypes then
         let components = make_components_js () in
         let template =
           let@ chan = In_channel.with_open_text fname in
-          Lexing.from_channel chan |> Compile.make ~fname components
+          Lexing.from_channel chan |> Acutis.parse ~fname
+          |> Acutis.compile components
         in
-        Typescheme.pp Format.std_formatter template.types
+        Acutis.get_typescheme template
+        |> Acutis.pp_typescheme Format.std_formatter
       else if !arg_printopt then
         let components = make_components_js () in
         let template =
           let@ chan = In_channel.with_open_text fname in
-          Lexing.from_channel chan |> Compile.make ~fname components
+          Lexing.from_channel chan |> Acutis.parse ~fname
+          |> Acutis.compile components
         in
-        Compile.to_sexp template.nodes |> Sexp.pp Format.std_formatter
+        Acutis.pp_compiled Format.std_formatter template
       else if !arg_printinst then
         let components = make_components_js () in
         let compiled =
           let@ chan = In_channel.with_open_text fname in
-          Lexing.from_channel chan |> Compile.make ~fname components
+          Lexing.from_channel chan |> Acutis.parse ~fname
+          |> Acutis.compile components
         in
-        Instruct.pp PrintJs.pp_import Format.std_formatter compiled
+        Acutis.pp_instructions Acutis.pp_js_import Format.std_formatter compiled
       else
         match !arg_mode with
         | Render -> (
@@ -197,9 +199,10 @@ let () =
             in
             let template =
               let@ chan = In_channel.with_open_text fname in
-              Lexing.from_channel chan |> Compile.make ~fname components
+              Lexing.from_channel chan |> Acutis.parse ~fname
+              |> Acutis.compile components
             in
-            let result = Render.eval template data in
+            let result = Render.apply template data in
             match !arg_output with
             | "-" -> Out_channel.output_string stdout result
             | fname ->
@@ -207,12 +210,13 @@ let () =
                 Out_channel.output_string chan result)
         | Make_js ty -> (
             let printer =
-              match ty with CommonJs -> PrintJs.cjs | ESModule -> PrintJs.esm
+              match ty with CommonJs -> Acutis.cjs | ESModule -> Acutis.esm
             in
             let components = make_components_js () in
             let template =
               let@ chan = In_channel.with_open_text fname in
-              Lexing.from_channel chan |> Compile.make ~fname components
+              Lexing.from_channel chan |> Acutis.parse ~fname
+              |> Acutis.compile components
             in
             match !arg_output with
             | "-" -> printer Format.std_formatter template
@@ -220,7 +224,7 @@ let () =
                 let@ chan = Out_channel.with_open_text fname in
                 printer (Format.formatter_of_out_channel chan) template)
   with
-  | Error.Acutis_error e ->
+  | Acutis.Acutis_error e ->
       Out_channel.output_string stderr e;
       exit 1
   | Yojson.Json_error s ->

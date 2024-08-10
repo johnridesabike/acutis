@@ -40,6 +40,8 @@ module Type = struct
   and record = t MapString.t ref
   and t = ty ref
 
+  type scheme = t MapString.t
+
   let unknown _ = ref (Unknown (ref `Closed))
   let int () = ref Int
   let float () = ref Float
@@ -473,7 +475,7 @@ and case = {
 
 and nodes = node list
 
-type t = { nodes : nodes; types : Type.t MapString.t }
+type t = { nodes : nodes; types : Type.scheme }
 
 module Context = struct
   type used = Unused | Used
@@ -486,7 +488,7 @@ module Context = struct
   }
 
   type 'a t = {
-    global : Type.t MapString.t ref;
+    global : Type.scheme ref;
     scope : binding MapString.t;
     all_bindings : binding Queue.t;
         (** This is for checking for unused variables. A queue preserves the
@@ -777,7 +779,7 @@ type (_, _) var_action =
       (** When we construct a pattern, we update the context for each new
           variable. *)
 
-type _ Effect.t += Get_component_types : string -> Type.t MapString.t Effect.t
+type _ Effect.t += Get_component_types : string -> Type.scheme Effect.t
 
 (** When we type-check a pattern, we create a temporary type and unify it
     with the input type. Information retained in the resulting typed-pattern
@@ -943,7 +945,7 @@ and make_record :
     (a, 'b) var_action ->
     Loc.t ->
     Type.unify_mode ->
-    Type.t MapString.t ->
+    Type.scheme ->
     Ast.pat MapString.t ->
     a pat MapString.t =
  fun var_action loc mode tyvars m ->
@@ -1098,9 +1100,7 @@ let make ast =
     handler, and without needing to manually thread the state or callbacks
     through the rest of the typechecker. *)
 
-type ('a, 'b) source =
-  | Src of string * 'a
-  | Fun of string * Type.t MapString.t * 'b
+type ('a, 'b) source = Src of string * 'a | Fun of string * Type.scheme * 'b
 
 type 'a graph = {
   not_linked : (Ast.t, 'a) source MapString.t;

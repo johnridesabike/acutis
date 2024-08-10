@@ -11,6 +11,4 @@
 (** Turn Menhir errors into human-readable messages. *)
 
 val message : int -> string
-(** Map a Menhir error code to its message from the [parser.messages] file.
-
-    @raise Not_found *)
+(** Map a Menhir error code to its message from the [parser.messages] file. *)

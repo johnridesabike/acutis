@@ -163,23 +163,22 @@ end
 
 type 'a t = {
   name : string;
-  types : Typescheme.t;
+  types : Typechecker.Type.scheme;
   nodes : nodes;
   components : nodes MapString.t;
-  externals : (Typescheme.t * 'a) MapString.t;
+  externals : (Typechecker.Type.scheme * 'a) MapString.t;
 }
 
 type 'a linked_components = {
   components : nodes MapString.t;
-  externals : (Typescheme.t * 'a) MapString.t;
+  externals : (Typechecker.Type.scheme * 'a) MapString.t;
   stack : string list;
 }
 
 let empty_linked =
   { components = MapString.empty; externals = MapString.empty; stack = [] }
 
-let make ~fname components_src src =
-  let nodes = parse ~fname src in
+let make ~fname components_src nodes =
   let typed = T.make ~root:fname components_src.Components.typed nodes in
   let nodes = make_nodes typed.nodes in
   (* Only retrieve the components that need to be linked. *)

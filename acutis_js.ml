@@ -9,7 +9,6 @@
 (**************************************************************************)
 
 open Js_of_ocaml
-open Acutis
 
 module DecodeJs = struct
   type 'a linear = 'a Js.js_array Js.t
@@ -98,8 +97,8 @@ module Promise = struct
     Js.Unsafe.meth_call t "then" [| Js.Unsafe.inject (Js.wrap_callback f) |]
 end
 
-module RenderSync = Render.MakeString (DecodeJs)
-module RenderAsync = Render.Make (Promise) (DecodeJs)
+module RenderSync = Acutis.RenderString (DecodeJs)
+module RenderAsync = Acutis.Render (Promise) (DecodeJs)
 
 let fname_to_compname s =
   Filename.basename s |> Filename.remove_extension |> String.capitalize_ascii
@@ -119,55 +118,57 @@ let () =
     (object%js
        method string fname src =
          let fname = Js.to_string fname in
-         Compile.Components.from_src ~fname ~name:(fname_to_compname fname)
+         Acutis.comp_parse ~fname ~name:(fname_to_compname fname)
            (Js.to_string src |> Lexing.from_string)
 
        method uint8Array fname src =
          let fname = Js.to_string fname in
-         Compile.Components.from_src ~fname ~name:(fname_to_compname fname)
+         Acutis.comp_parse ~fname ~name:(fname_to_compname fname)
            (input_uint8Array src |> Lexing.from_function)
 
        method funAsync name ty fn =
-         let fn : RenderAsync.data -> RenderAsync.t =
+         let fn : RenderAsync.data -> RenderAsync.output =
           fun data ->
            Promise.bind (Js.Unsafe.fun_call fn [| data |]) @@ fun s ->
            Promise.return (Js.to_string s)
          in
-         Compile.Components.from_fun ~name:(Js.to_string name) ty fn
+         Acutis.comp_fun ~name:(Js.to_string name) ty fn
 
        method funSync name ty fn =
-         let fn : RenderSync.data -> RenderSync.t =
+         let fn : RenderSync.data -> RenderSync.output =
           fun data -> Js.Unsafe.fun_call fn [| data |] |> Js.to_string
          in
-         Compile.Components.from_fun ~name:(Js.to_string name) ty fn
+         Acutis.comp_fun ~name:(Js.to_string name) ty fn
 
        method funPath module_path name ty =
          let function_path = Js.to_string name in
          let module_path = Js.to_string module_path in
-         Compile.Components.from_fun ~name:function_path ty
-           (PrintJs.import ~module_path ~function_path)
+         Acutis.comp_fun ~name:function_path ty
+           (Acutis.js_import ~module_path ~function_path)
     end)
 
 let () =
   Js.export "Compile"
     (object%js
        method components a =
-         Js.to_array a |> Array.to_seq |> Compile.Components.of_seq
+         Js.to_array a |> Array.to_seq |> Acutis.comps_compile
 
        method string fname components src =
-         Compile.make ~fname:(Js.to_string fname) components
+         Acutis.parse ~fname:(Js.to_string fname)
            (Js.to_string src |> Lexing.from_string)
+         |> Acutis.compile components
 
        method uint8Array fname components src =
-         Compile.make ~fname:(Js.to_string fname) components
+         Acutis.parse ~fname:(Js.to_string fname)
            (input_uint8Array src |> Lexing.from_function)
+         |> Acutis.compile components
 
        method toJSString x =
-         PrintJs.esm Format.str_formatter x;
+         Acutis.esm Format.str_formatter x;
          Format.flush_str_formatter () |> Js.string
 
        method toCJSString x =
-         PrintJs.cjs Format.str_formatter x;
+         Acutis.cjs Format.str_formatter x;
          Format.flush_str_formatter () |> Js.string
     end)
 
@@ -175,14 +176,13 @@ let () =
   Js.export "Render"
     (object%js
        method async template js =
-         Promise.bind (RenderAsync.eval template js) @@ fun s ->
+         Promise.bind (RenderAsync.apply template js) @@ fun s ->
          Promise.return (Js.string s)
 
-       method sync template js = RenderSync.eval template js |> Js.string
+       method sync template js = RenderSync.apply template js |> Js.string
     end)
 
 let () =
-  let open Typescheme in
   let array_to_2tuple a =
     let a = Js.to_array a in
     (a.(0), Obj.magic a.(1))
@@ -193,79 +193,80 @@ let () =
            let k, v = array_to_2tuple a in
            let k = Js.to_string k in
            (k, v))
-    |> Array.to_list
+    |> Array.to_seq
   in
   let int_of_number x = Js.float_of_number x |> int_of_float in
   Js.export "Typescheme"
     (object%js
        val variantOpen = `Open
        val variantClosed = `Closed
-       val empty = empty
-       method make a = key_values a |> make
-       method unknown = unknown ()
-       method int = int ()
-       method float = float ()
-       method string = string ()
-       method nullable t = nullable t
-       method list t = list t
-       method tuple a = Js.to_array a |> Array.to_list |> tuple
+       val empty = Acutis.typescheme_empty
+       method make a = key_values a |> Acutis.typescheme
+       method unknown = Acutis.unknown ()
+       method int = Acutis.int ()
+       method float = Acutis.float ()
+       method string = Acutis.string ()
+       method nullable t = Acutis.nullable t
+       method list t = Acutis.list t
+       method tuple a = Js.to_array a |> Array.to_list |> Acutis.tuple
 
        method record a =
          Js.to_array a
          |> Array.map (fun a ->
                 let k, v = array_to_2tuple a in
                 (Js.to_string k, v))
-         |> Array.to_list |> record
+         |> Array.to_seq |> Acutis.record
 
-       method dict t = dict t
+       method dict t = Acutis.dict t
 
        method enumInt r a =
-         Js.to_array a |> Array.map int_of_number |> Array.to_list |> enum_int r
+         Js.to_array a |> Array.map int_of_number |> Array.to_seq
+         |> Acutis.enum_int r
 
        method enumString r a =
-         Js.to_array a |> Array.map Js.to_string |> Array.to_list
-         |> enum_string r
+         Js.to_array a |> Array.map Js.to_string |> Array.to_seq
+         |> Acutis.enum_string r
 
-       method boolean = boolean ()
-       method falseOnly = false_only ()
-       method trueOnly = true_only ()
+       method boolean = Acutis.boolean ()
+       method falseOnly = Acutis.false_only ()
+       method trueOnly = Acutis.true_only ()
 
        method unionInt r k a =
          Js.to_array a
          |> Array.map (fun a ->
                 let i, v = array_to_2tuple a in
                 (int_of_number i, key_values v))
-         |> Array.to_list
-         |> union_int r (Js.to_string k)
+         |> Array.to_seq
+         |> Acutis.union_int r (Js.to_string k)
 
        method unionString r k a =
          Js.to_array a
          |> Array.map (fun a ->
                 let s, v = array_to_2tuple a in
                 (Js.to_string s, key_values v))
-         |> Array.to_list
-         |> union_string r (Js.to_string k)
+         |> Array.to_seq
+         |> Acutis.union_string r (Js.to_string k)
 
        method unionBoolean k f t =
          let f = key_values f in
          let t = key_values t in
-         union_boolean (Js.to_string k) ~f ~t
+         Acutis.union_boolean (Js.to_string k) ~f ~t
 
        method unionTrueOnly k t =
-         union_true_only (Js.to_string k) (key_values t)
+         Acutis.union_true_only (Js.to_string k) (key_values t)
 
        method unionFalseOnly k f =
-         union_false_only (Js.to_string k) (key_values f)
+         Acutis.union_false_only (Js.to_string k) (key_values f)
     end)
 
 let () =
   Js.export "Utils"
     (object%js
        method isError e =
-         match e with Error.Acutis_error _ -> true | _ -> false
+         match e with Acutis.Acutis_error _ -> true | _ -> false
 
        method getError e =
          match e with
-         | Error.Acutis_error s -> Js.Opt.return (Js.string s)
+         | Acutis.Acutis_error s -> Js.Opt.return (Js.string s)
          | _ -> Js.Opt.empty
     end)
