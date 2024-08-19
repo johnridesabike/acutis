@@ -208,7 +208,7 @@ let () =
        method string = Acutis.string ()
        method nullable t = Acutis.nullable t
        method list t = Acutis.list t
-       method tuple a = Js.to_array a |> Array.to_list |> Acutis.tuple
+       method tuple a = Js.to_array a |> Array.to_seq |> Acutis.tuple
 
        method record a =
          Js.to_array a

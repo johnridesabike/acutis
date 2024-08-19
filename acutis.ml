@@ -21,6 +21,8 @@ module T = A.Typechecker.Type
 type ty = T.t
 type typescheme = T.scheme
 
+let typescheme = MapString.of_seq
+let typescheme_empty = MapString.empty
 let unknown = T.unknown
 let int = T.int
 let float = T.float
@@ -28,7 +30,7 @@ let string = T.string
 let nullable = T.nullable
 let list = T.list
 let dict = T.dict
-let tuple = T.tuple
+let tuple l = T.tuple (List.of_seq l)
 let record l = T.record (ref (MapString.of_seq l))
 let enum_int row l = T.enum_int (T.sum (SetInt.of_seq l) row)
 let enum_string row l = T.enum_string (T.sum (SetString.of_seq l) row)
@@ -52,8 +54,6 @@ let union_boolean k ~f ~t =
 
 let union_false_only k l = T.union_false_only k (ref (MapString.of_seq l))
 let union_true_only k l = T.union_true_only k (ref (MapString.of_seq l))
-let typescheme = MapString.of_seq
-let typescheme_empty = MapString.empty
 
 type 'a comp = 'a A.Compile.Components.source
 

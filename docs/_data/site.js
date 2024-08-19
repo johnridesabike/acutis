@@ -20,7 +20,7 @@ module.exports = {
     { path: "/", name: "Home" },
     { path: "/introduction/", name: "Getting started" },
     { path: "/manual/", name: "Language manual" },
-    { path: "/api/", name: "OCaml API" },
+    { path: "/api/acutis/Acutis/index.html", name: "OCaml API" },
     { path: "/playground/", name: "Playground" },
     { path: "/credits/", name: "Credits" },
   ],
