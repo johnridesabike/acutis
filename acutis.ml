@@ -131,13 +131,11 @@ module Render (M : MONAD) (D : DECODABLE) :
     include Stdlib
 
     type 'a stmt = 'a
-
-    let ( @. ) a b = a; b
-
     type 'a exp = 'a
 
     let return = Fun.id
     let stmt = Fun.id
+    let ( let| ) a f = a; f ()
     let ( let$ ) (_, x) f = f x
     let ( let& ) (_, x) f = f (ref x)
     let lambda = Fun.id
@@ -377,16 +375,19 @@ module PrintJs = struct
     type 'a ref = t
 
     let stmt x ppf state = F.fprintf ppf "@[<hv 2>%a;@]" x state
-    let ( @. ) a b ppf state = F.fprintf ppf "%a@ %a" a state b state
 
     let ( @@ ) f e ppf state =
       F.fprintf ppf "@[<hv 2>%a(@,@[<hv 2>%a@]@;<0 -2>)@]" f state e state
 
+    let ( let| ) a f ppf state = F.fprintf ppf "%a@ %a" a state (f ()) state
+
     let ( let$ ) (name, x) f ppf state =
       let name = State.var name state in
-      (stmt (fun ppf state ->
-           F.fprintf ppf "let %a =@ @[<hv 2>%a@]" name state x state)
-      @. f name)
+      (let| () =
+         stmt (fun ppf state ->
+             F.fprintf ppf "let %a =@ @[<hv 2>%a@]" name state x state)
+       in
+       f name)
         ppf state
 
     let ( let& ) = ( let$ )
@@ -475,10 +476,12 @@ module PrintJs = struct
   module Esm : JSMODULE = struct
     let import { module_path; function_path } f ppf state =
       let import = State.var "import" state in
-      (stmt (fun ppf state ->
-           F.fprintf ppf "import {%a as %a} from %a" pp_string function_path
-             import state pp_string module_path)
-      @. f import)
+      (let| () =
+         stmt (fun ppf state ->
+             F.fprintf ppf "import {%a as %a} from %a" pp_string function_path
+               import state pp_string module_path)
+       in
+       f import)
         ppf state
 
     let export x = stmt (fun ppf -> F.fprintf ppf "export default %a" x)
@@ -519,12 +522,12 @@ module PrintJs = struct
     module M = A.Instruct.MakeTrans (Trans) (F)
     include M
 
-    let ( @. ) : type a. unit stmt -> a stmt -> a stmt =
-     fun a b ->
-      match (a, b) with
+    let ( let| ) : type a. unit stmt -> (unit -> a stmt) -> a stmt =
+     fun a f ->
+      match (a, f ()) with
       | Unit, x -> x
       | x, Unit -> x
-      | Unk a, Unk b -> Unk F.(a @. b)
+      | Unk a, Unk b -> Unk F.(( let| ) a (fun () -> b))
 
     let unit = Unit
 

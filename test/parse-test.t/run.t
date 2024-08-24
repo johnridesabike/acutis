@@ -871,7 +871,6 @@ Print the optimized form
 Print the runtime instructions
   $ acutis template.acutis component.acutis component2.acutis --printinst
   (let$ components/0 = (hashtbl_create))
-  (unit)
   (components/0.%{"Component"} <-
    (lambda arg/0
     ((let$ buf_sync/0 = (buffer_create))

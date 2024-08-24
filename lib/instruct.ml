@@ -38,11 +38,6 @@ module type SEM = sig
   val observe : 'a stmt -> 'a obs
   (** Observe the evaluation result after all transformations have applied. *)
 
-  val ( @. ) : unit stmt -> 'a stmt -> 'a stmt
-  (** Sequence statements. {b Evaluation order is unspecified in OCaml}. To
-      guarantee that statements are evaluated in your intended order, you must
-      let-bind each one before applying them to [@.]. *)
-
   type 'a exp
   (** An expression. *)
 
@@ -51,11 +46,14 @@ module type SEM = sig
 
   val stmt : 'a exp -> 'a stmt
 
-  val ( let$ ) : string * 'a exp -> ('a exp -> 'b stmt) -> 'b stmt
-  (** Define a new immutable binding. The string is used for pretty-printing. *)
-
   type 'a ref
   (** A mutable reference variable. *)
+
+  val ( let| ) : unit stmt -> (unit -> 'a stmt) -> 'a stmt
+  (** Sequence statements.*)
+
+  val ( let$ ) : string * 'a exp -> ('a exp -> 'b stmt) -> 'b stmt
+  (** Define a new immutable binding. The string is used for pretty-printing. *)
 
   val ( let& ) : string * 'a exp -> ('a ref -> 'b stmt) -> 'b stmt
   (** Define a new reference variable. The string is used for pretty-printing. *)
@@ -250,24 +248,29 @@ end = struct
   let int_to_bool i = not (i = int 0)
   let ( let@ ) = Stdlib.( @@ )
 
-  let stmt_join seq =
-    match seq () with
-    | Seq.Nil -> unit
-    | Seq.Cons (s, seq) -> Seq.fold_left ( @. ) s seq
+  let stmt_join =
+    let rec aux s1 seq =
+      match seq () with
+      | Seq.Nil -> s1
+      | Seq.Cons (s2, seq) ->
+          let| () = s1 in
+          aux s2 seq
+    in
+    fun seq ->
+      match seq () with Seq.Nil -> unit | Seq.Cons (s1, seq) -> aux s1 seq
 
   (** We use the [Data.t] type as a linked-list stack. *)
 
   let buffer_add_stack buf stack sep =
     (* Assume it's nonempty. *)
     let$ tuple = ("tuple", Data.to_array stack) in
-    let s = buffer_add_string buf (Data.to_string tuple.%(int 0)) in
-    s
-    @. let& stack = ("stack", tuple.%(int 1)) in
-       while_ is_not_nil stack (fun () ->
-           let$ tuple = ("tuple", Data.to_array !stack) in
-           let s = buffer_add_string buf sep in
-           let s = s @. buffer_add_string buf (Data.to_string tuple.%(int 0)) in
-           s @. (stack := tuple.%(int 1)))
+    let| () = buffer_add_string buf (Data.to_string tuple.%(int 0)) in
+    let& stack = ("stack", tuple.%(int 1)) in
+    while_ is_not_nil stack (fun () ->
+        let$ tuple = ("tuple", Data.to_array !stack) in
+        let| () = buffer_add_string buf sep in
+        let| () = buffer_add_string buf (Data.to_string tuple.%(int 0)) in
+        stack := tuple.%(int 1))
 
   let stack_add stack x = Data.array (array [| Data.string x; stack |])
   let stack_singleton = stack_add nil_value
@@ -303,25 +306,24 @@ end = struct
 
   let async_buffer_add_promise { buf_sync; buf_async; _ } p =
     let$ sync_contents = ("sync_contents", buffer_contents buf_sync) in
-    let s = buffer_clear buf_sync in
-    s
-    @. (buf_async :=
-          bind !buf_async
-            (lambda (fun b ->
-                 return
-                   (bind p
-                      (lambda (fun promise_str ->
-                           let s = buffer_add_string b sync_contents in
-                           let s = s @. buffer_add_string b promise_str in
-                           s @. return (promise b)))))))
+    let| () = buffer_clear buf_sync in
+    buf_async :=
+      bind !buf_async
+        (lambda (fun b ->
+             return
+               (bind p
+                  (lambda (fun promise_str ->
+                       let| () = buffer_add_string b sync_contents in
+                       let| () = buffer_add_string b promise_str in
+                       return (promise b))))))
 
   (** This should always be the final use of the buffer. Writing to it
       afterwards is unsafe. *)
   let async_buffer_contents { buf_sync; buf_async; _ } =
     bind !buf_async
       (lambda (fun b ->
-           let s = buffer_add_buffer b buf_sync in
-           s @. return (promise (buffer_contents b))))
+           let| () = buffer_add_buffer b buf_sync in
+           return (promise (buffer_contents b))))
 
   let props_add_scope hashtbl bindings state =
     {
@@ -440,9 +442,9 @@ end = struct
         match wildcard with
         | None -> s
         | Some tree ->
-            s
-            @. if_ (!exit = unset_exit) ~then_:(fun () ->
-                   match_tree ~exit ~leafstmt ~get_arg ~vars tree))
+            let| () = s in
+            if_ (!exit = unset_exit) ~then_:(fun () ->
+                match_tree ~exit ~leafstmt ~get_arg ~vars tree))
     | Matching.Nil { key; ids; child } ->
         let@ arg = get_arg ~optional key in
         let vars = add_vars ids arg vars in
@@ -466,9 +468,9 @@ end = struct
         match next with
         | None -> s
         | Some next ->
-            s
-            @. if_ (!exit = unset_exit) ~then_:(fun () ->
-                   match_tree ~exit ~leafstmt ~get_arg ~vars next))
+            let| () = s in
+            if_ (!exit = unset_exit) ~then_:(fun () ->
+                match_tree ~exit ~leafstmt ~get_arg ~vars next))
     | Matching.End leaf -> leafstmt ~vars leaf
 
   and switchcase ~exit ~leafstmt ~get_arg ~vars ~arg ~wildcard
@@ -486,12 +488,12 @@ end = struct
             | None -> fun () -> unit))
 
   let match_leaf exitvar props ~vars Matching.{ names; exit } =
-    let s =
+    let| () =
       MapString.to_seq names
       |> Seq.map (fun (key, id) -> props.%{string key} <- MapInt.find id vars)
       |> stmt_join
     in
-    s @. (exitvar := int (Matching.Exits.key_to_int exit))
+    exitvar := int (Matching.Exits.key_to_int exit)
 
   let dummy_props = hashtbl_create ()
 
@@ -511,12 +513,12 @@ end = struct
             in
             let@ new_props = make_match_props exits in
             let& exit = ("exit", unset_exit) in
-            let s =
+            let| () =
               match_tree ~exit
                 ~leafstmt:(match_leaf exit new_props)
                 ~get_arg:(arg_int arg_match) ~vars:MapInt.empty tree
             in
-            s @. make_exits exit exits state new_props)
+            make_exits exit exits state new_props)
     | Compile.Map_list (blocks, data, { tree; exits }) ->
         construct_blocks state blocks (fun state blocks ->
             let& index = ("index", int 0) in
@@ -526,28 +528,28 @@ end = struct
                 let$ list = ("list", Data.to_array !cell) in
                 let$ head = ("head", list_hd list) in
                 let& exit = ("exit", unset_exit) in
-                let s =
+                let| () =
                   match_tree ~exit
                     ~leafstmt:(match_leaf exit new_props)
                     ~get_arg:(arg_indexed head (Data.int !index))
                     ~vars:MapInt.empty tree
                 in
-                let s = s @. make_exits exit exits state new_props in
-                let s = s @. incr index in
-                s @. (cell := list_tl list)))
+                let| () = make_exits exit exits state new_props in
+                let| () = incr index in
+                cell := list_tl list))
     | Compile.Map_dict (blocks, data, { tree; exits }) ->
         construct_blocks state blocks (fun state blocks ->
             let$ match_arg = ("match_arg", construct_data blocks state data) in
             hashtbl_iter (Data.to_hashtbl match_arg) (fun k v ->
                 let@ new_props = make_match_props exits in
                 let& exit = ("exit", unset_exit) in
-                let s =
+                let| () =
                   match_tree ~exit
                     ~leafstmt:(match_leaf exit new_props)
                     ~get_arg:(arg_indexed v (Data.string k))
                     ~vars:MapInt.empty tree
                 in
-                s @. make_exits exit exits state new_props))
+                make_exits exit exits state new_props))
     | Component (name, blocks, dict) ->
         construct_blocks state blocks (fun state blocks ->
             async_buffer_add_promise state
@@ -565,28 +567,26 @@ end = struct
           match seq () with
           | Seq.Cons ((i, block), seq) ->
               let@ state_block = async_buffer_create state in
-              let s = nodes state_block block in
-              s
-              @. return
-                   (bind
-                      (async_buffer_contents state_block)
-                      (lambda (fun block ->
-                           blocks.(i) <- block;
-                           aux seq)))
+              let| () = nodes state_block block in
+              return
+                (bind
+                   (async_buffer_contents state_block)
+                   (lambda (fun block ->
+                        blocks.(i) <- block;
+                        aux seq)))
           | Seq.Nil ->
               let@ state' = async_buffer_create state in
-              let s = f state' blocks in
-              s @. return (async_buffer_contents state')
+              let| () = f state' blocks in
+              return (async_buffer_contents state')
         in
         let@ state_block = async_buffer_create state in
-        let s = nodes state_block block in
-        s
-        @. async_buffer_add_promise state
-             (bind
-                (async_buffer_contents state_block)
-                (lambda (fun block ->
-                     blocks.(i) <- block;
-                     aux seq)))
+        let| () = nodes state_block block in
+        async_buffer_add_promise state
+          (bind
+             (async_buffer_contents state_block)
+             (lambda (fun block ->
+                  blocks.(i) <- block;
+                  aux seq)))
 
   and make_exits exit exits state new_props =
     match Matching.Exits.to_seq exits () with
@@ -722,19 +722,19 @@ end = struct
             let$ stack =
               ("stack", stack_add debug.stack (string "<nullable>"))
             in
-            let s =
+            let| () =
               decode
                 ~set:(fun data -> decoded.%(int 0) <- data)
                 ~debug:{ debug with stack } input ty
             in
-            s @. set (Data.array decoded))
+            set (Data.array decoded))
           ~error:(fun () -> set nil_value)
     | T.List ty ->
         External.classify Linear input
           ~ok:(fun l ->
             let$ decoded = ("decoded", array [| nil_value; nil_value |]) in
             let& decode_dst = ("decode_dst", decoded) in
-            let s =
+            let| () =
               External.iteri
                 (fun i input ->
                   let$ decode_dst_new =
@@ -743,18 +743,16 @@ end = struct
                   let$ stack =
                     ("stack", stack_add debug.stack (string_of_int i))
                   in
-                  let s =
+                  let| () =
                     decode
                       ~set:(fun data -> decode_dst_new.%(int 0) <- data)
                       ~debug:{ debug with stack } input ty
                   in
-                  let s =
-                    s @. (!decode_dst.%(int 1) <- Data.array decode_dst_new)
-                  in
-                  s @. (decode_dst := decode_dst_new))
+                  let| () = !decode_dst.%(int 1) <- Data.array decode_dst_new in
+                  decode_dst := decode_dst_new)
                 l
             in
-            s @. set (list_tl decoded))
+            set (list_tl decoded))
           ~error:(fun () -> push_error debug ty_str input)
     | T.Tuple tys ->
         let length = int (List.length tys) in
@@ -781,8 +779,8 @@ end = struct
                                 ~debug input ty)
                             ~else_:(fun () -> aux (succ i') tl)
                     in
-                    let s = aux 0 tys in
-                    s @. set (Data.array decoded))
+                    let| () = aux 0 tys in
+                    set (Data.array decoded))
                   l)
               ~else_:(fun () -> push_error debug ty_str input))
           ~error:(fun () -> push_error debug ty_str input)
@@ -790,10 +788,10 @@ end = struct
         External.classify Assoc input
           ~ok:(fun input' ->
             let$ decoded = ("decoded", hashtbl_create ()) in
-            let s =
+            let| () =
               decode_record_aux ~debug decoded input' tys.contents ty_str
             in
-            s @. set (Data.hashtbl decoded))
+            set (Data.hashtbl decoded))
           ~error:(fun () -> push_error debug ty_str input)
     | T.Dict (ty, _) ->
         External.classify Assoc input
@@ -802,12 +800,12 @@ end = struct
             External.assoc_iter
               (fun k input ->
                 let$ stack = ("stack", stack_add debug.stack k) in
-                let s =
+                let| () =
                   decode
                     ~set:(fun data -> decoded.%{k} <- data)
                     ~debug:{ debug with stack } input ty
                 in
-                s @. set (Data.hashtbl decoded))
+                set (Data.hashtbl decoded))
               a)
           ~error:(fun () -> push_error debug ty_str input)
     | T.Union_int (key, { cases; row = _ }, Bool) ->
@@ -818,13 +816,11 @@ end = struct
               match MapInt.find_opt i cases with
               | Some tys ->
                   let$ decoded = ("decoded", hashtbl_create ()) in
-                  let s = decoded.%{key} <- v in
-                  let s =
-                    s
-                    @. decode_record_aux ~debug decoded input' tys.contents
-                         ty_str
+                  let| () = decoded.%{key} <- v in
+                  let| () =
+                    decode_record_aux ~debug decoded input' tys.contents ty_str
                   in
-                  s @. set (Data.hashtbl decoded)
+                  set (Data.hashtbl decoded)
               | None -> push_error debug ty_str input
             in
             if_else
@@ -864,20 +860,19 @@ end = struct
                       match row with
                       | `Open ->
                           let$ decoded = ("decoded", hashtbl_create ()) in
-                          let s = decoded.%{key'} <- to_data i in
-                          s @. set (Data.hashtbl decoded)
+                          let| () = decoded.%{key'} <- to_data i in
+                          set (Data.hashtbl decoded)
                       | `Closed -> push_error debug ty_str input)
                   | Seq.Cons ((ty_i, tys), seq) ->
                       if_else (i = ty_i)
                         ~then_:(fun () ->
                           let$ decoded = ("decoded", hashtbl_create ()) in
-                          let s = decoded.%{key'} <- to_data i in
-                          let s =
-                            s
-                            @. decode_record_aux ~debug decoded input'
-                                 tys.contents ty_str
+                          let| () = decoded.%{key'} <- to_data i in
+                          let| () =
+                            decode_record_aux ~debug decoded input' tys.contents
+                              ty_str
                           in
-                          s @. set (Data.hashtbl decoded))
+                          set (Data.hashtbl decoded))
                         ~else_:(fun () -> aux seq)
                 in
                 aux seq)
@@ -887,7 +882,7 @@ end = struct
 
   and decode_record_aux ~debug decoded input tys ty_str =
     let& missing_keys = ("missing_keys", nil_value) in
-    let s =
+    let| () =
       MapString.to_seq tys
       |> Seq.map (fun (k, ty) ->
              let k' = string k in
@@ -905,9 +900,8 @@ end = struct
                  | _ -> missing_keys := stack_add !missing_keys k'))
       |> stmt_join
     in
-    s
-    @. if_ (is_not_nil !missing_keys) ~then_:(fun () ->
-           push_key_error debug ty_str missing_keys)
+    if_ (is_not_nil !missing_keys) ~then_:(fun () ->
+        push_key_error debug ty_str missing_keys)
 
   let rec encode ~set props ty =
     match ty.contents with
@@ -926,33 +920,30 @@ end = struct
     | T.List ty ->
         let& index = ("index", int 0) in
         let& cell = ("cell", props) in
-        let s =
+        let| () =
           while_ is_not_nil cell (fun () ->
-              let s = incr index in
-              s @. (cell := list_tl (Data.to_array !cell)))
+              let| () = incr index in
+              cell := list_tl (Data.to_array !cell))
         in
-        s
-        @.
         let$ encoded = ("encoded", array_make !index External.null) in
-        let s = cell := props in
-        let s = s @. (index := int 0) in
-        let s =
-          s
-          @. while_ is_not_nil cell (fun () ->
-                 let$ props = ("props", Data.to_array !cell |> list_hd) in
-                 let s =
-                   encode ~set:(fun x -> encoded.%(!index) <- x) props ty
-                 in
-                 let s = s @. incr index in
-                 s @. (cell := list_tl (Data.to_array !cell)))
+        let| () = cell := props in
+        let| () = index := int 0 in
+        let| () =
+          while_ is_not_nil cell (fun () ->
+              let$ props = ("props", Data.to_array !cell |> list_hd) in
+              let| () =
+                encode ~set:(fun x -> encoded.%(!index) <- x) props ty
+              in
+              let| () = incr index in
+              cell := list_tl (Data.to_array !cell))
         in
-        s @. set (External.of_array encoded)
+        set (External.of_array encoded)
     | T.Tuple tys ->
         let$ props = ("props", Data.to_array props) in
         let$ encoded =
           ("encoded", array_make (int (List.length tys)) External.null)
         in
-        let s =
+        let| () =
           List.to_seq tys
           |> Seq.mapi (fun i ty ->
                  let i = int i in
@@ -960,20 +951,20 @@ end = struct
                  encode ~set:(fun x -> encoded.%(i) <- x) props ty)
           |> stmt_join
         in
-        s @. set (External.of_array encoded)
+        set (External.of_array encoded)
     | T.Record tys ->
         let$ encoded = ("encoded", hashtbl_create ()) in
-        let s =
+        let| () =
           encode_record_aux encoded (Data.to_hashtbl props) tys.contents
         in
-        s @. set (External.of_hashtbl encoded)
+        set (External.of_hashtbl encoded)
     | T.Dict (ty, _) ->
         let$ encoded = ("encoded", hashtbl_create ()) in
-        let s =
+        let| () =
           hashtbl_iter (Data.to_hashtbl props) (fun k props ->
               encode ~set:(fun x -> encoded.%{k} <- x) props ty)
         in
-        s @. set (External.of_hashtbl encoded)
+        set (External.of_hashtbl encoded)
     | T.Union_int (key, { cases; row }, Bool) ->
         encode_union union_helper_bool
           (MapInt.to_seq cases |> Seq.map (fun (k, v) -> (int k, v)))
@@ -996,9 +987,9 @@ end = struct
       if_else (tag = tag')
         ~then_:(fun () ->
           let$ encoded = ("encoded", hashtbl_create ()) in
-          let s = encoded.%{key} <- to_extern tag in
-          let s = s @. encode_record_aux encoded props tys.contents in
-          s @. set (External.of_hashtbl encoded))
+          let| () = encoded.%{key} <- to_extern tag in
+          let| () = encode_record_aux encoded props tys.contents in
+          set (External.of_hashtbl encoded))
         ~else_:
           (match seq () with
           | Seq.Cons (hd, seq) -> fun () -> aux hd seq
@@ -1008,8 +999,8 @@ end = struct
               | `Open ->
                   fun () ->
                     let$ encoded = ("encoded", hashtbl_create ()) in
-                    let s = encoded.%{key} <- to_extern tag in
-                    s @. set (External.of_hashtbl encoded)))
+                    let| () = encoded.%{key} <- to_extern tag in
+                    set (External.of_hashtbl encoded)))
     in
     match cases () with Seq.Nil -> unit | Seq.Cons (hd, seq) -> aux hd seq
 
@@ -1027,34 +1018,32 @@ end = struct
           (lambda (fun ty ->
                return
                  (lambda (fun input ->
-                      let s =
+                      let| () =
                         if_
                           (not (buffer_length buf = int 0))
                           ~then_:(fun () ->
                             buffer_add_string buf (string "\n\n"))
                       in
-                      let s = s @. buffer_add_string buf (string "File \"") in
-                      let s = s @. buffer_add_string buf (string name) in
-                      let s =
-                        s
-                        @. buffer_add_string buf
-                             (string
-                                "\"\n\
-                                 Render error.\n\
-                                 The data supplied does not match this \
-                                 template's interface.\n")
+                      let| () = buffer_add_string buf (string "File \"") in
+                      let| () = buffer_add_string buf (string name) in
+                      let| () =
+                        buffer_add_string buf
+                          (string
+                             "\"\n\
+                              Render error.\n\
+                              The data supplied does not match this template's \
+                              interface.\n")
                       in
-                      let s = s @. buffer_add_string buf (string "Path:\n") in
-                      let s = s @. buffer_add_stack buf stack (string " <- ") in
-                      let s =
-                        s @. buffer_add_string buf (string "\nExpected type:\n")
+                      let| () = buffer_add_string buf (string "Path:\n") in
+                      let| () = buffer_add_stack buf stack (string " <- ") in
+                      let| () =
+                        buffer_add_string buf (string "\nExpected type:\n")
                       in
-                      let s = s @. buffer_add_string buf ty in
-                      let s =
-                        s
-                        @. buffer_add_string buf (string "\nReceived value:\n")
+                      let| () = buffer_add_string buf ty in
+                      let| () =
+                        buffer_add_string buf (string "\nReceived value:\n")
                       in
-                      s @. buffer_add_string buf (External.to_string input))))))
+                      buffer_add_string buf (External.to_string input))))))
 
   let key_error buf name =
     lambda (fun stack ->
@@ -1062,88 +1051,79 @@ end = struct
           (lambda (fun ty ->
                return
                  (lambda (fun keys ->
-                      let s =
+                      let| () =
                         if_
                           (not (buffer_length buf = int 0))
                           ~then_:(fun () ->
                             buffer_add_string buf (string "\n\n"))
                       in
-                      let s = s @. buffer_add_string buf (string "File: ") in
-                      let s = s @. buffer_add_string buf (string name) in
-                      let s =
-                        s
-                        @. buffer_add_string buf
-                             (string
-                                "\n\
-                                 Render error.\n\
-                                 The data supplied does not match this \
-                                 template's interface.\n")
+                      let| () = buffer_add_string buf (string "File: ") in
+                      let| () = buffer_add_string buf (string name) in
+                      let| () =
+                        buffer_add_string buf
+                          (string
+                             "\n\
+                              Render error.\n\
+                              The data supplied does not match this template's \
+                              interface.\n")
                       in
-                      let s = s @. buffer_add_string buf (string "Path:\n") in
-                      let s = s @. buffer_add_stack buf stack (string " <- ") in
-                      let s =
-                        s @. buffer_add_string buf (string "\nExpected type:\n")
+                      let| () = buffer_add_string buf (string "Path:\n") in
+                      let| () = buffer_add_stack buf stack (string " <- ") in
+                      let| () =
+                        buffer_add_string buf (string "\nExpected type:\n")
                       in
-                      let s = s @. buffer_add_string buf ty in
-                      let s =
-                        s
-                        @. buffer_add_string buf
-                             (string "\nInput is missing keys:\n")
+                      let| () = buffer_add_string buf ty in
+                      let| () =
+                        buffer_add_string buf
+                          (string "\nInput is missing keys:\n")
                       in
-                      s @. buffer_add_stack buf keys (string ", "))))))
+                      buffer_add_stack buf keys (string ", "))))))
 
   let eval compiled =
     let$ components = ("components", hashtbl_create ()) in
-    let s =
-      MapString.to_seq compiled.Compile.externals
-      |> Seq.map (fun (k, (tys, v)) ->
-             import v (fun import ->
-                 components.%{string k} <-
-                   lambda (fun props ->
-                       let$ encoded = ("encoded", hashtbl_create ()) in
-                       let s = encode_record_aux encoded props tys in
-                       s @. return (import @@ External.of_hashtbl encoded))))
+    let| () =
+      Seq.append
+        (MapString.to_seq compiled.Compile.externals
+        |> Seq.map (fun (k, (tys, v)) ->
+               import v (fun import ->
+                   components.%{string k} <-
+                     lambda (fun props ->
+                         let$ encoded = ("encoded", hashtbl_create ()) in
+                         let| () = encode_record_aux encoded props tys in
+                         return (import @@ External.of_hashtbl encoded)))))
+        (MapString.to_seq compiled.components
+        |> Seq.map (fun (k, v) ->
+               components.%{string k} <-
+                 lambda (fun props ->
+                     let@ state = state_make components props in
+                     let| () = nodes state v in
+                     return (async_buffer_contents state))))
       |> stmt_join
     in
-    let s =
-      s
-      @. (MapString.to_seq compiled.components
-         |> Seq.map (fun (k, v) ->
-                components.%{string k} <-
-                  lambda (fun props ->
-                      let@ state = state_make components props in
-                      let s = nodes state v in
-                      s @. return (async_buffer_contents state)))
-         |> stmt_join)
-    in
-    s
-    @. export
-         (lambda (fun input ->
-              let$ errors = ("errors", buffer_create ()) in
-              let$ decode_error =
-                ("decode_error", decode_error errors compiled.name)
-              in
-              let$ key_error = ("key_error", key_error errors compiled.name) in
-              let$ props = ("props", hashtbl_create ()) in
-              let$ stack = ("stack", stack_singleton (string "<input>")) in
-              let debug = { stack; decode_error; key_error } in
-              let$ ty_str =
-                ("type", show_type (T.record (ref compiled.types)))
-              in
-              let s =
-                External.classify Assoc input
-                  ~ok:(fun input ->
-                    decode_record_aux ~debug props input compiled.types ty_str)
-                  ~error:(fun () -> push_error debug ty_str input)
-              in
-              s
-              @. if_else
-                   (buffer_length errors = int 0)
-                   ~then_:(fun () ->
-                     let@ state = state_make components props in
-                     let s = nodes state compiled.nodes in
-                     s @. return (async_buffer_contents state))
-                   ~else_:(fun () -> return (error (buffer_contents errors)))))
+    export
+      (lambda (fun input ->
+           let$ errors = ("errors", buffer_create ()) in
+           let$ decode_error =
+             ("decode_error", decode_error errors compiled.name)
+           in
+           let$ key_error = ("key_error", key_error errors compiled.name) in
+           let$ props = ("props", hashtbl_create ()) in
+           let$ stack = ("stack", stack_singleton (string "<input>")) in
+           let debug = { stack; decode_error; key_error } in
+           let$ ty_str = ("type", show_type (T.record (ref compiled.types))) in
+           let| () =
+             External.classify Assoc input
+               ~ok:(fun input ->
+                 decode_record_aux ~debug props input compiled.types ty_str)
+               ~error:(fun () -> push_error debug ty_str input)
+           in
+           if_else
+             (buffer_length errors = int 0)
+             ~then_:(fun () ->
+               let@ state = state_make components props in
+               let| () = nodes state compiled.nodes in
+               return (async_buffer_contents state))
+             ~else_:(fun () -> return (error (buffer_contents errors)))))
 
   let eval compiled = observe (eval compiled)
 end
@@ -1196,7 +1176,7 @@ module MakeTrans
   type 'a stmt = 'a T.stmt
 
   let observe x = F.observe (bwds x)
-  let ( @. ) a b = fwds F.(bwds a @. bwds b)
+  let ( let| ) a f = fwds (F.( let| ) (bwds a) (fun () -> bwds (f ())))
   let return x = fwds (F.return (bwde x))
   let stmt x = fwds (F.stmt (bwde x))
 
@@ -1327,7 +1307,7 @@ let pp (type a) pp_import ppf c =
     type 'a obs = F.formatter -> unit
 
     let observe = Fun.id
-    let ( @. ) = F.dprintf "%t@ %t"
+    let ( let| ) s f = F.dprintf "%t@ %t" s (f ())
 
     type 'a exp = F.formatter -> unit
 
