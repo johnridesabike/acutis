@@ -168,6 +168,8 @@ v}
 (** {1 Type definitions.} *)
 
 type internal_check_cases
+type 'a map_string := 'a Map.Make(String).t
+type set_int := Set.Make(Int).t
 
 (** This is a polymorphic "nested data type." Each tree can use itself as its
     own type variable, i.e. [(('a, 'key) tree, 'key) tree]. This allows the
@@ -186,7 +188,7 @@ type internal_check_cases
 type ('leaf, 'key) tree =
   | Switch of {
       key : 'key;
-      ids : Set.Make(Int).t;
+      ids : set_int;
       cases : ('leaf, 'key) switchcase;
       wildcard : ('leaf, 'key) tree option;
       check_cases : internal_check_cases;
@@ -196,26 +198,23 @@ type ('leaf, 'key) tree =
           is used. *)
   | Nest of {
       key : 'key;
-      ids : Set.Make(Int).t;
+      ids : set_int;
       child : ('leaf, 'key) nest;
       wildcard : ('leaf, 'key) tree option;
     }  (** A Nest represents a structure such as tuple or a record. *)
-  | Nil of { key : 'key; ids : Set.Make(Int).t; child : ('leaf, 'key) tree }
+  | Nil of { key : 'key; ids : set_int; child : ('leaf, 'key) tree }
       (** A [null] or [[]]. The [child] points to the next node in the tree. *)
-  | Cons of { key : 'key; ids : Set.Make(Int).t; child : ('leaf, 'key) tree }
+  | Cons of { key : 'key; ids : set_int; child : ('leaf, 'key) tree }
       (** A not-null value or a non-empty list. The [child] points to a node
           representing the "current" data, either a {!Wildcard} or a {!Nest}. *)
   | Nil_or_cons of {
       key : 'key;
-      ids : Set.Make(Int).t;
+      ids : set_int;
       nil : ('leaf, 'key) tree;
       cons : ('leaf, 'key) tree;
     }  (** An exhaustive combination of {!Nil} and {!Cons}. *)
-  | Wildcard of {
-      key : 'key;
-      ids : Set.Make(Int).t;
-      child : ('leaf, 'key) tree;
-    }  (** Wildcards simply point to the next node in the tree.*)
+  | Wildcard of { key : 'key; ids : set_int; child : ('leaf, 'key) tree }
+      (** Wildcards simply point to the next node in the tree.*)
   | Optional of { child : ('leaf, 'key) tree; next : ('leaf, 'key) tree option }
       (** Optionals are only used, and always used, inside of dictionary nests.
           They denote that the item in [child] does not need to be present
@@ -256,7 +255,7 @@ module Exits : sig
   (** This returns each exit's key, list of binding names, and nodes. *)
 end
 
-type leaf = { names : int Map.Make(String).t; exit : Exits.key }
+type leaf = { names : int map_string; exit : Exits.key }
 type 'a t = { tree : (leaf, int) tree; exits : 'a Exits.t }
 
 (** {1 Functions.} *)

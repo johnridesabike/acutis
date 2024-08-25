@@ -11,6 +11,8 @@
 (** Orchestrate the {!Lexer}, {!Parser}, {!Typechecker}, and {!Matching}
     to produce the final template. *)
 
+type 'a map_string := 'a Map.Make(String).t
+
 val parse : fname:string -> Lexing.lexbuf -> Ast.t
 (** @raise Error.Acutis_error *)
 
@@ -30,7 +32,7 @@ type data =
   | `Float of float
   | `String of string
   | `Array of data array
-  | `Assoc of data Map.Make(String).t
+  | `Assoc of data map_string
   | `Var of string
   | `Field of data * string
   | `Block of int
@@ -48,7 +50,7 @@ type node =
   | Match of blocks * data array * nodes Matching.t
   | Map_list of blocks * data * nodes Matching.t
   | Map_dict of blocks * data * nodes Matching.t
-  | Component of string * blocks * data Map.Make(String).t
+  | Component of string * blocks * data map_string
 
 and nodes = node list
 
@@ -71,8 +73,8 @@ type 'a t = {
   name : string;
   types : Typechecker.Type.scheme;
   nodes : nodes;
-  components : nodes Map.Make(String).t;
-  externals : (Typechecker.Type.scheme * 'a) Map.Make(String).t;
+  components : nodes map_string;
+  externals : (Typechecker.Type.scheme * 'a) map_string;
 }
 
 val make : fname:string -> 'a Components.t -> Ast.t -> 'a t
