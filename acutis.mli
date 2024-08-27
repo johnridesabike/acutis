@@ -211,26 +211,20 @@ module type DECODABLE = sig
   val to_string : t -> string
 end
 
-module type RENDER = sig
-  type data
-  type output
-
-  val apply : (data -> output) compiled -> data -> output
-  (** Apply data to a template and return the rendered output. *)
-end
-
 (** A functor that builds a render implementation for a given monad interface
     and a given decodable input type.
 
     We need to use a functor because parameterized types, such as in {!MONAD},
     are not supported in first-class modules. *)
-module Render (M : MONAD) (D : DECODABLE) :
-  RENDER with type data = D.t and type output = string M.t
+module Render (Monad : MONAD) (Data : DECODABLE) : sig
+  val apply : (Data.t -> string Monad.t) compiled -> Data.t -> string Monad.t
+  (** Apply data to a template and return the rendered output. *)
+end
 
+val render_string :
+  (module DECODABLE with type t = 'a) -> ('a -> string) compiled -> 'a -> string
 (** A simpler version of {!Render} that only requires a decodable module and
     outputs a string. *)
-module RenderString (D : DECODABLE) :
-  RENDER with type data = D.t and type output = string
 
 (** {1 Printing templates as JavaScript modules.} *)
 

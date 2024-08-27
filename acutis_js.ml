@@ -97,9 +97,6 @@ module Promise = struct
     Js.Unsafe.meth_call t "then" [| Js.Unsafe.inject (Js.wrap_callback f) |]
 end
 
-module RenderSync = Acutis.RenderString (DecodeJs)
-module RenderAsync = Acutis.Render (Promise) (DecodeJs)
-
 let fname_to_compname s =
   Filename.basename s |> Filename.remove_extension |> String.capitalize_ascii
 
@@ -127,7 +124,7 @@ let () =
            (input_uint8Array src |> Lexing.from_function)
 
        method funAsync name ty fn =
-         let fn : RenderAsync.data -> RenderAsync.output =
+         let fn : DecodeJs.t -> string Promise.t =
           fun data ->
            Promise.bind (Js.Unsafe.fun_call fn [| data |]) @@ fun s ->
            Promise.return (Js.to_string s)
@@ -135,7 +132,7 @@ let () =
          Acutis.comp_fun ~name:(Js.to_string name) ty fn
 
        method funSync name ty fn =
-         let fn : RenderSync.data -> RenderSync.output =
+         let fn : DecodeJs.t -> string =
           fun data -> Js.Unsafe.fun_call fn [| data |] |> Js.to_string
          in
          Acutis.comp_fun ~name:(Js.to_string name) ty fn
@@ -172,14 +169,20 @@ let () =
          Format.flush_str_formatter () |> Js.string
     end)
 
+let render_sync = Acutis.render_string (module DecodeJs)
+
+let render_async =
+  let module M = Acutis.Render (Promise) (DecodeJs) in
+  M.apply
+
 let () =
   Js.export "Render"
     (object%js
        method async template js =
-         Promise.bind (RenderAsync.apply template js) @@ fun s ->
+         Promise.bind (render_async template js) @@ fun s ->
          Promise.return (Js.string s)
 
-       method sync template js = RenderSync.apply template js |> Js.string
+       method sync template js = render_sync template js |> Js.string
     end)
 
 let () =

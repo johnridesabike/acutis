@@ -34,7 +34,7 @@ module DecodeJson = struct
   let to_string t = Yojson.Basic.pretty_to_string t
 end
 
-module RenderSync = Acutis.RenderString (DecodeJson)
+let render = Acutis.render_string (module DecodeJson)
 
 let render ?(json = "{}") ?(components = Acutis.comps_empty) src () =
   let temp =
@@ -42,7 +42,7 @@ let render ?(json = "{}") ?(components = Acutis.comps_empty) src () =
     |> Acutis.compile components
   in
   let json = Yojson.Basic.from_string json in
-  ignore @@ RenderSync.apply temp json
+  ignore @@ render temp json
 
 let print_error title f =
   let s = try f (); "no error" with Acutis.Acutis_error s -> String.trim s in

@@ -115,18 +115,9 @@ module type DECODABLE = sig
   val to_string : t -> string
 end
 
-module type RENDER = sig
-  type data
-  type output
-
-  val apply : (data -> output) compiled -> data -> output
-end
-
-module Render (M : MONAD) (D : DECODABLE) :
-  RENDER with type data = D.t and type output = string M.t = struct
-  type data = D.t
-  type output = string M.t
-
+module Render (M : MONAD) (D : DECODABLE) : sig
+  val apply : (D.t -> string M.t) compiled -> D.t -> string M.t
+end = struct
   module I = A.Instruct.Make (struct
     include Stdlib
 
@@ -304,13 +295,17 @@ module Render (M : MONAD) (D : DECODABLE) :
   let apply = I.eval
 end
 
-module RenderString = Render (struct
+module Id = struct
   type 'a t = 'a
 
   let return = Fun.id
   let bind = ( |> )
   let error s = raise (Acutis_error s)
-end)
+end
+
+let render_string (type a) (module D : DECODABLE with type t = a) =
+  let module R = Render (Id) (D) in
+  R.apply
 
 module PrintJs = struct
   module F = Format

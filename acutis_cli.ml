@@ -8,7 +8,7 @@
 (*                                                                        *)
 (**************************************************************************)
 
-module DecodeJson = struct
+module Json = struct
   type 'a linear = 'a list
 
   let length = List.length
@@ -39,8 +39,6 @@ module DecodeJson = struct
   let decode_some = function `Null -> None | x -> Some x
   let to_string t = Yojson.Basic.pretty_to_string t
 end
-
-module Render = Acutis.RenderString (DecodeJson)
 
 let usage_msg =
   {|Usage:
@@ -202,7 +200,7 @@ let () =
               Lexing.from_channel chan |> Acutis.parse ~fname
               |> Acutis.compile components
             in
-            let result = Render.apply template data in
+            let result = Acutis.render_string (module Json) template data in
             match !arg_output with
             | "-" -> Out_channel.output_string stdout result
             | fname ->
