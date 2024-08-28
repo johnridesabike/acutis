@@ -191,12 +191,11 @@ let () =
     (a.(0), Obj.magic a.(1))
   in
   let key_values v =
-    Js.to_array v
-    |> Array.map (fun a ->
+    Js.to_array v |> Array.to_seq
+    |> Seq.map (fun a ->
            let k, v = array_to_2tuple a in
            let k = Js.to_string k in
            (k, v))
-    |> Array.to_seq
   in
   let int_of_number x = Js.float_of_number x |> int_of_float in
   Js.export "Typescheme"
@@ -214,20 +213,20 @@ let () =
        method tuple a = Js.to_array a |> Array.to_seq |> Acutis.tuple
 
        method record a =
-         Js.to_array a
-         |> Array.map (fun a ->
+         Js.to_array a |> Array.to_seq
+         |> Seq.map (fun a ->
                 let k, v = array_to_2tuple a in
                 (Js.to_string k, v))
-         |> Array.to_seq |> Acutis.record
+         |> Acutis.record
 
        method dict t = Acutis.dict t
 
        method enumInt r a =
-         Js.to_array a |> Array.map int_of_number |> Array.to_seq
+         Js.to_array a |> Array.to_seq |> Seq.map int_of_number
          |> Acutis.enum_int r
 
        method enumString r a =
-         Js.to_array a |> Array.map Js.to_string |> Array.to_seq
+         Js.to_array a |> Array.to_seq |> Seq.map Js.to_string
          |> Acutis.enum_string r
 
        method boolean = Acutis.boolean ()
@@ -235,19 +234,17 @@ let () =
        method trueOnly = Acutis.true_only ()
 
        method unionInt r k a =
-         Js.to_array a
-         |> Array.map (fun a ->
+         Js.to_array a |> Array.to_seq
+         |> Seq.map (fun a ->
                 let i, v = array_to_2tuple a in
                 (int_of_number i, key_values v))
-         |> Array.to_seq
          |> Acutis.union_int r (Js.to_string k)
 
        method unionString r k a =
-         Js.to_array a
-         |> Array.map (fun a ->
+         Js.to_array a |> Array.to_seq
+         |> Seq.map (fun a ->
                 let s, v = array_to_2tuple a in
                 (Js.to_string s, key_values v))
-         |> Array.to_seq
          |> Acutis.union_string r (Js.to_string k)
 
        method unionBoolean k f t =
