@@ -222,16 +222,15 @@ let () =
                 let@ chan = Out_channel.with_open_text fname in
                 printer (Format.formatter_of_out_channel chan) template)
   with
-  | Acutis.Acutis_error e ->
-      Out_channel.output_string stderr e;
+  | Acutis.Acutis_error msg ->
+      Format.eprintf "%a" Acutis.pp_error msg;
       exit 1
   | Yojson.Json_error s ->
       Format.eprintf "@[<v>Error decoding JSON input.@,%s@,@]" s;
       exit 1
   | Queue.Empty ->
-      Out_channel.output_string stderr "You need to provide a template.\n\n";
-      Out_channel.output_string stderr
-      @@ Arg.usage_string (Arg.align args) usage_msg;
+      Format.eprintf "@[<v>You need to provide a template.@;@;%s@]"
+        (Arg.usage_string (Arg.align args) usage_msg);
       exit 1
   | Sys_error s ->
       Format.eprintf "@[<v>System error:@,%s@,@]" s;

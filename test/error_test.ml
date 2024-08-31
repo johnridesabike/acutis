@@ -2,7 +2,7 @@
     number of test cases, running it as a single executable rather than a cram
     test is easier to maintain and faster to execute. *)
 
-module DecodeJson = struct
+module Json = struct
   type 'a linear = 'a list
 
   let length = List.length
@@ -34,7 +34,7 @@ module DecodeJson = struct
   let to_string t = Yojson.Basic.pretty_to_string t
 end
 
-let render = Acutis.render_string (module DecodeJson)
+let render = Acutis.render_string (module Json)
 
 let render ?(json = "{}") ?(components = Acutis.comps_empty) src () =
   let temp =
@@ -45,8 +45,11 @@ let render ?(json = "{}") ?(components = Acutis.comps_empty) src () =
   ignore @@ render temp json
 
 let print_error title f =
-  let s = try f (); "no error" with Acutis.Acutis_error s -> String.trim s in
-  print_endline title; print_endline "---"; print_endline s; print_newline ()
+  try
+    f ();
+    Format.printf "no error@;@;"
+  with Acutis.Acutis_error msg ->
+    Format.printf "%s@;---@;%a@;@;" title Acutis.pp_error msg
 
 let component_string ~fname ~name src =
   Acutis.comp_parse ~fname ~name (Lexing.from_string src)
@@ -55,6 +58,7 @@ let compile_string ~fname comps src =
   Acutis.parse ~fname (Lexing.from_string src) |> Acutis.compile comps
 
 let () =
+  Format.printf "@[<v>";
   print_error "Illegal character 1" (render "{% match*");
   print_error "Illegal character 2" (render "{% +a %}");
   print_error "Illegal character 3" (render "{% match a &%}");
@@ -618,4 +622,4 @@ let () =
   print_error "Unknown is not equal to any other type."
     (render "{% interface x = _ %} {% x %}");
 
-  ()
+  Format.printf "@]"

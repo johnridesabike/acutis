@@ -11,8 +11,11 @@
 (** This is the main API wrapper around the compiler internals
     ({!Acutis_internals}). *)
 
-exception Acutis_error of string [@warn_on_literal_pattern]
-(** This is raised with a message if any part of the process fails. *)
+type error = private Acutis_internals.Error.t
+(** An error message. *)
+
+exception Acutis_error of error
+(** This is raised if any part of the process fails. *)
 
 (** {1 Declaring type schemes.} *)
 
@@ -239,7 +242,10 @@ val cjs : Format.formatter -> js_import compiled -> unit
 val esm : Format.formatter -> js_import compiled -> unit
 (** Print a template as an ECMAScript module. *)
 
-(** {1 Printing debug information.} *)
+(** {1 Printing debugging information.} *)
+
+val pp_error : Format.formatter -> error -> unit
+(** Pretty-print an error message. *)
 
 val pp_typescheme : Format.formatter -> typescheme -> unit
 (** Pretty-print a type scheme in Acutis syntax. *)

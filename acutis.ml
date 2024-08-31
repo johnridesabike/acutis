@@ -14,6 +14,8 @@ module MapString = Map.Make (String)
 module SetInt = Set.Make (Int)
 module SetString = Set.Make (String)
 
+type error = A.Error.t
+
 exception Acutis_error = A.Error.Acutis_error
 
 module T = A.Typechecker.Type
@@ -300,7 +302,7 @@ module Id = struct
 
   let return = Fun.id
   let bind = ( |> )
-  let error s = raise (Acutis_error s)
+  let error = A.Error.raise_string
 end
 
 let render_string (type a) (module D : DECODABLE with type t = a) =
@@ -774,6 +776,7 @@ type js_import = PrintJs.import
 let js_import = PrintJs.import
 let esm = PrintJs.pp (module PrintJs.Esm)
 let cjs = PrintJs.pp (module PrintJs.Cjs)
+let pp_error = A.Error.pp
 
 let pp_typescheme ppf x =
   Format.fprintf ppf "@[<v>%a@]"

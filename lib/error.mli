@@ -10,8 +10,15 @@
 
 (** All of the error messages. *)
 
-exception Acutis_error of string
-(** Every function in this module raises this exception. *)
+type t
+(** A message. *)
+
+val pp : Format.formatter -> t -> unit
+
+exception Acutis_error of t
+(** All of the following functions raise or return this exception. *)
+
+val raise_string : string -> _
 
 (** {1 Lexing and Parsing errors.} *)
 

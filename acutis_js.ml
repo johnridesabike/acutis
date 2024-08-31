@@ -267,6 +267,7 @@ let () =
 
        method getError e =
          match e with
-         | Acutis.Acutis_error s -> Js.Opt.return (Js.string s)
+         | Acutis.Acutis_error e ->
+             Js.Opt.return (Js.string (Format.asprintf "%a" Acutis.pp_error e))
          | _ -> Js.Opt.empty
     end)
