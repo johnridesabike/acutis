@@ -14,8 +14,10 @@ let cons a (hd :: tl) = a :: hd :: tl
 let hd (hd :: _) = hd
 
 let rev =
-  let rec aux l1 l2 = match l1 with [] -> l2 | a :: l -> aux l (cons a l2) in
-  fun (hd :: tl) -> aux tl [ hd ]
+  let rec aux h l1 l2 =
+    match l1 with [] -> h :: l2 | h' :: l1 -> aux h' l1 List.(h :: l2)
+  in
+  fun (hd :: tl) -> aux hd tl []
 
 let map f (hd :: tl) =
   (* Preserve evaluation order. *)
