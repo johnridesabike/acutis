@@ -21,8 +21,8 @@ Basic tree
             (child (end (end (leaf (names (("_a" 0))) (exit 0))))))))
          (wildcard none)))))
      (exits
-      ((exit 0 (bindings ("_a")) (nodes ((text " "))))
-       (exit 1 (bindings ()) (nodes ((text " "))))))))
+      ((exit (id 0) (bindings ("_a")) (nodes ((text " "))))
+       (exit (id 1) (bindings ()) (nodes ((text " "))))))))
    (text "\n"))
 
 Cases are sorted correctly
@@ -59,9 +59,9 @@ Cases are sorted correctly
        (wildcard (end (leaf (names ()) (exit 2))))
        (check_cases none)))
      (exits
-      ((exit 0 (bindings ()) (nodes ((text " "))))
-       (exit 1 (bindings ()) (nodes ((text " "))))
-       (exit 2 (bindings ()) (nodes ((text "\n"))))))))
+      ((exit (id 0) (bindings ()) (nodes ((text " "))))
+       (exit (id 1) (bindings ()) (nodes ((text " "))))
+       (exit (id 2) (bindings ()) (nodes ((text "\n"))))))))
    (text "\n"))
 
 A basic decision tree works
@@ -206,11 +206,11 @@ A basic decision tree works
          (check_cases none)))
        (check_cases none)))
      (exits
-      ((exit 0 (bindings ()) (nodes ((text "\n"))))
-       (exit 1 (bindings ("_x")) (nodes ((text "\n"))))
-       (exit 2 (bindings ()) (nodes ((text "\n"))))
-       (exit 3 (bindings ("_y")) (nodes ((text "\n"))))
-       (exit 4 (bindings ("_a" "_b" "_c")) (nodes ((text "\n"))))))))
+      ((exit (id 0) (bindings ()) (nodes ((text "\n"))))
+       (exit (id 1) (bindings ("_x")) (nodes ((text "\n"))))
+       (exit (id 2) (bindings ()) (nodes ((text "\n"))))
+       (exit (id 3) (bindings ("_y")) (nodes ((text "\n"))))
+       (exit (id 4) (bindings ("_a" "_b" "_c")) (nodes ((text "\n"))))))))
    (text "\n"))
 
 Nests merge correctly
@@ -296,10 +296,10 @@ Nests merge correctly
             (check_cases none))))
          (wildcard none)))))
      (exits
-      ((exit 0 (bindings ()) (nodes ((text "\n"))))
-       (exit 1 (bindings ()) (nodes ((text "\n"))))
-       (exit 2 (bindings ()) (nodes ((text "\n"))))
-       (exit 3 (bindings ()) (nodes ((text "\n"))))))))
+      ((exit (id 0) (bindings ()) (nodes ((text "\n"))))
+       (exit (id 1) (bindings ()) (nodes ((text "\n"))))
+       (exit (id 2) (bindings ()) (nodes ((text "\n"))))
+       (exit (id 3) (bindings ()) (nodes ((text "\n"))))))))
    (text "\n"))
 
 Wildcards merge after nests correctly
@@ -380,9 +380,9 @@ Wildcards merge after nests correctly
          (wildcard (end (leaf (names (("_y" 1) ("_z" 2))) (exit 2))))
          (check_cases none)))))
      (exits
-      ((exit 0 (bindings ("_x")) (nodes ((text "\n"))))
-       (exit 1 (bindings ()) (nodes ((text "\n"))))
-       (exit 2 (bindings ("_y" "_z")) (nodes ((text "\n"))))))))
+      ((exit (id 0) (bindings ("_x")) (nodes ((text "\n"))))
+       (exit (id 1) (bindings ()) (nodes ((text "\n"))))
+       (exit (id 2) (bindings ("_y" "_z")) (nodes ((text "\n"))))))))
    (text "\n"))
 
 Different-sized lists merge correctly
@@ -417,9 +417,9 @@ Different-sized lists merge correctly
                 (child (end (end (leaf (names (("_x" 1) ("_y" 2))) (exit 2))))))))))))
          (wildcard none)))))
      (exits
-      ((exit 0 (bindings ()) (nodes ((text "\n"))))
-       (exit 1 (bindings ("_x")) (nodes ((text "\n"))))
-       (exit 2 (bindings ("_x" "_y")) (nodes ((text "\n"))))))))
+      ((exit (id 0) (bindings ()) (nodes ((text "\n"))))
+       (exit (id 1) (bindings ("_x")) (nodes ((text "\n"))))
+       (exit (id 2) (bindings ("_x" "_y")) (nodes ((text "\n"))))))))
    (text "\n"))
 
 A big list pattern works
@@ -563,11 +563,11 @@ A big list pattern works
            (wildcard (end (leaf (names ()) (exit 4))))
            (check_cases none)))))))
      (exits
-      ((exit 0 (bindings ()) (nodes ((text "\n"))))
-       (exit 1 (bindings ("_x")) (nodes ((text "\n"))))
-       (exit 2 (bindings ()) (nodes ((text "\n"))))
-       (exit 3 (bindings ("_y")) (nodes ((text "\n"))))
-       (exit 4 (bindings ()) (nodes ((text "\n"))))))))
+      ((exit (id 0) (bindings ()) (nodes ((text "\n"))))
+       (exit (id 1) (bindings ("_x")) (nodes ((text "\n"))))
+       (exit (id 2) (bindings ()) (nodes ((text "\n"))))
+       (exit (id 3) (bindings ("_y")) (nodes ((text "\n"))))
+       (exit (id 4) (bindings ()) (nodes ((text "\n"))))))))
    (text "\n"))
 
 Record fields sort correctly
@@ -641,9 +641,9 @@ Record fields sort correctly
        (wildcard
         (wildcard (key 1) (ids ()) (child (end (leaf (names ()) (exit 2))))))))
      (exits
-      ((exit 0 (bindings ()) (nodes ((text "\n"))))
-       (exit 1 (bindings ()) (nodes ((text "\n"))))
-       (exit 2 (bindings ()) (nodes ((text "\n"))))))))
+      ((exit (id 0) (bindings ()) (nodes ((text "\n"))))
+       (exit (id 1) (bindings ()) (nodes ((text "\n"))))
+       (exit (id 2) (bindings ()) (nodes ((text "\n"))))))))
    (text "\n"))
 
 New fields expand existing rows
@@ -712,10 +712,10 @@ New fields expand existing rows
           (check_cases none))))
        (wildcard (end (leaf (names (("_x" 0))) (exit 3))))))
      (exits
-      ((exit 0 (bindings ()) (nodes ((text "\n"))))
-       (exit 1 (bindings ()) (nodes ((text "\n"))))
-       (exit 2 (bindings ()) (nodes ((text "\n"))))
-       (exit 3 (bindings ("_x")) (nodes ((text "\n"))))))))
+      ((exit (id 0) (bindings ()) (nodes ((text "\n"))))
+       (exit (id 1) (bindings ()) (nodes ((text "\n"))))
+       (exit (id 2) (bindings ()) (nodes ((text "\n"))))
+       (exit (id 3) (bindings ("_x")) (nodes ((text "\n"))))))))
    (text "\n"))
 
 Dictionaries merge correctly
@@ -812,11 +812,11 @@ Dictionaries merge correctly
        (wildcard (end (leaf (names ()) (exit 2))))))
      (exits
       ((exit
-        0
+        (id 0)
         (bindings ("b"))
         (nodes ((text " ") (echo () fmt_int (var "b") escape) (text "\n"))))
-       (exit 1 (bindings ()) (nodes ((text " bc\n"))))
-       (exit 2 (bindings ()) (nodes ((text " _\n"))))))))
+       (exit (id 1) (bindings ()) (nodes ((text " bc\n"))))
+       (exit (id 2) (bindings ()) (nodes ((text " _\n"))))))))
    (match
     ()
     ((assoc (("a" "empty dicts always match"))))
@@ -851,8 +851,8 @@ Dictionaries merge correctly
        (wildcard none)))
      (exits
       ((exit
-        0
+        (id 0)
         (bindings ("b"))
         (nodes ((text " ") (echo () fmt_string (var "b") escape) (text "\n"))))
-       (exit 1 (bindings ()) (nodes ((text "empty\n"))))))))
+       (exit (id 1) (bindings ()) (nodes ((text "empty\n"))))))))
    (text "\n"))

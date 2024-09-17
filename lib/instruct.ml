@@ -493,7 +493,7 @@ end = struct
       |> Seq.map (fun (key, id) -> props.%{string key} <- MapInt.find id vars)
       |> stmt_join
     in
-    exitvar := int (Matching.Exits.key_to_int exit)
+    exitvar := int exit
 
   let dummy_props = hashtbl_create ()
 
@@ -589,20 +589,17 @@ end = struct
                   aux seq)))
 
   and make_exits exit exits state new_props =
-    match Matching.Exits.to_seq exits () with
-    | Seq.Nil -> Error.internal ~__POS__ "No exits."
-    | Seq.Cons (hd, tl) ->
-        let rec aux (i, bindings, v) seq =
-          match seq () with
-          | Seq.Nil -> nodes (props_add_scope new_props bindings state) v
-          | Seq.Cons (hd, tl) ->
-              if_else
-                (!exit = int (Matching.Exits.key_to_int i))
-                ~then_:(fun () ->
-                  nodes (props_add_scope new_props bindings state) v)
-                ~else_:(fun () -> aux hd tl)
-        in
-        aux hd tl
+    let Nonempty.(next :: tl) = Matching.Exits.to_nonempty exits in
+    let rec aux Matching.Exits.{ id; bindings; nodes = n } = function
+      | [] -> nodes (props_add_scope new_props bindings state) n
+      | next :: tl ->
+          if_else
+            (!exit = int id)
+            ~then_:(fun () ->
+              nodes (props_add_scope new_props bindings state) n)
+            ~else_:(fun () -> aux next tl)
+    in
+    aux next tl
 
   and nodes state l = List.to_seq l |> Seq.map (node state) |> stmt_join
 

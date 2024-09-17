@@ -346,7 +346,8 @@ Print the optimized form
           (check_cases none))))
        (wildcard (end (leaf (names ()) (exit 1))))))
      (exits
-      ((exit 0 (bindings ()) (nodes ())) (exit 1 (bindings ()) (nodes ()))))))
+      ((exit (id 0) (bindings ()) (nodes ()))
+       (exit (id 1) (bindings ()) (nodes ()))))))
    (text "\n\nTrim")
    (echo () fmt_string (var "trim_a") escape)
    (echo () fmt_string (var "trim_b") escape)
@@ -384,9 +385,9 @@ Print the optimized form
        (wildcard (end (leaf (names ()) (exit 2))))
        (check_cases none)))
      (exits
-      ((exit 0 (bindings ()) (nodes ()))
-       (exit 1 (bindings ()) (nodes ((text " "))))
-       (exit 2 (bindings ()) (nodes ((text " "))))))))
+      ((exit (id 0) (bindings ()) (nodes ()))
+       (exit (id 1) (bindings ()) (nodes ((text " "))))
+       (exit (id 2) (bindings ()) (nodes ((text " "))))))))
    (text "\n\nNested match\n")
    (match
     ()
@@ -399,7 +400,7 @@ Print the optimized form
        (child (end (leaf (names (("c" 0))) (exit 0))))))
      (exits
       ((exit
-        0
+        (id 0)
         (bindings ("c"))
         (nodes
          ((text "\n  ")
@@ -418,7 +419,7 @@ Print the optimized form
                 (child (end (leaf (names (("f" 0) ("g" 1))) (exit 0))))))))
             (exits
              ((exit
-               0
+               (id 0)
                (bindings ("f" "g"))
                (nodes
                 ((text " ")
@@ -464,12 +465,12 @@ Print the optimized form
         (wildcard (key 1) (ids ()) (child (end (leaf (names ()) (exit 2))))))
        (check_cases none)))
      (exits
-      ((exit 0 (bindings ()) (nodes ()))
+      ((exit (id 0) (bindings ()) (nodes ()))
        (exit
-        1
+        (id 1)
         (bindings ("i"))
         (nodes ((text " ") (echo () fmt_int (var "i") escape) (text " "))))
-       (exit 2 (bindings ()) (nodes ((text " "))))))))
+       (exit (id 2) (bindings ()) (nodes ((text " "))))))))
    (text "\n\nMap dict\n")
    (map_dict
     ()
@@ -505,12 +506,12 @@ Print the optimized form
         (wildcard (key 1) (ids ()) (child (end (leaf (names ()) (exit 2))))))
        (check_cases none)))
      (exits
-      ((exit 0 (bindings ()) (nodes ()))
+      ((exit (id 0) (bindings ()) (nodes ()))
        (exit
-        1
+        (id 1)
         (bindings ("k"))
         (nodes ((text " ") (echo () fmt_string (var "k") escape) (text " "))))
-       (exit 2 (bindings ()) (nodes ((text "\n"))))))))
+       (exit (id 2) (bindings ()) (nodes ((text "\n"))))))))
    (text "\n\nComponent with props\n")
    (component
     ((0 ((text " ")))
@@ -526,7 +527,7 @@ Print the optimized form
            (child (end (leaf (names (("b_prop" 0))) (exit 0))))))
          (exits
           ((exit
-            0
+            (id 0)
             (bindings ("b_prop"))
             (nodes
              ((text " ") (echo () fmt_string (var "b_prop") escape) (text " "))))))))))
@@ -584,8 +585,8 @@ Print the optimized form
           (check_cases none))))
        (wildcard (end (leaf (names ()) (exit 1))))))
      (exits
-      ((exit 0 (bindings ()) (nodes ((text " "))))
-       (exit 1 (bindings ()) (nodes ((text " "))))))))
+      ((exit (id 0) (bindings ()) (nodes ((text " "))))
+       (exit (id 1) (bindings ()) (nodes ((text " "))))))))
    (text "\n\nList:\n")
    (match
     ()
@@ -646,12 +647,12 @@ Print the optimized form
               (wildcard none))))))
          (wildcard none)))))
      (exits
-      ((exit 0 (bindings ()) (nodes ((text "\n"))))
+      ((exit (id 0) (bindings ()) (nodes ((text "\n"))))
        (exit
-        1
+        (id 1)
         (bindings ("a"))
         (nodes ((text " ") (echo () fmt_string (var "a") escape) (text "\n"))))
-       (exit 2 (bindings ("_tl" "_z")) (nodes ((text "\n"))))))))
+       (exit (id 2) (bindings ("_tl" "_z")) (nodes ((text "\n"))))))))
    (text "\n\nRecord:\n")
    (match
     ()
@@ -674,7 +675,7 @@ Print the optimized form
        (wildcard none)))
      (exits
       ((exit
-        0
+        (id 0)
         (bindings ("a" "b"))
         (nodes
          ((text " ")
@@ -735,8 +736,8 @@ Print the optimized form
           (check_cases none))))
        (wildcard (end (leaf (names ()) (exit 1))))))
      (exits
-      ((exit 0 (bindings ()) (nodes ((text " "))))
-       (exit 1 (bindings ()) (nodes ((text " "))))))))
+      ((exit (id 0) (bindings ()) (nodes ((text " "))))
+       (exit (id 1) (bindings ()) (nodes ((text " "))))))))
    (text "\n\nTagged union:\n")
    (match
     ()
@@ -769,10 +770,10 @@ Print the optimized form
        (wildcard none)))
      (exits
       ((exit
-        0
+        (id 0)
         (bindings ("a"))
         (nodes ((text " ") (echo () fmt_string (var "a") escape) (text " "))))
-       (exit 1 (bindings ()) (nodes ((text "\n"))))))))
+       (exit (id 1) (bindings ()) (nodes ((text "\n"))))))))
    (text "\n\nDictionary:\n")
    (match
     ()
@@ -812,8 +813,8 @@ Print the optimized form
           (next none))))
        (wildcard (end (leaf (names ()) (exit 1))))))
      (exits
-      ((exit 0 (bindings ()) (nodes ((text " "))))
-       (exit 1 (bindings ()) (nodes ((text " "))))))))
+      ((exit (id 0) (bindings ()) (nodes ((text " "))))
+       (exit (id 1) (bindings ()) (nodes ((text " "))))))))
    (text "\n\n! and . precedence works correctly\n")
    (match
     ()
@@ -852,7 +853,8 @@ Print the optimized form
               (wildcard none))))))
          (wildcard (end (leaf (names ()) (exit 1))))))))
      (exits
-      ((exit 0 (bindings ()) (nodes ())) (exit 1 (bindings ()) (nodes ()))))))
+      ((exit (id 0) (bindings ()) (nodes ()))
+       (exit (id 1) (bindings ()) (nodes ()))))))
    (text "\n\nOther syntax features\n\nTrailing commas parse correctly:\n")
    (match
     ()
@@ -863,7 +865,7 @@ Print the optimized form
     (matching
      (tree
       (wildcard (key 0) (ids ()) (child (end (leaf (names ()) (exit 0))))))
-     (exits ((exit 0 (bindings ()) (nodes ((text " "))))))))
+     (exits ((exit (id 0) (bindings ()) (nodes ((text " "))))))))
    (text "\n\nStrings may contain line breaks:\n")
    (echo () fmt_string "a\nb" escape)
    (text "\n"))

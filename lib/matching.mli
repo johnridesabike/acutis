@@ -241,18 +241,16 @@ module Exits : sig
       follow after the tree. We use keys because exits can be copied when trees
       merge, and we don't want to duplicate entire trees. *)
 
-  type key
-
-  val key_to_int : key -> int
+  type key = int
+  type 'a exit = { id : key; bindings : string list; nodes : 'a }
 
   type 'a t
+  (** A sequence of exits. *)
 
   val map : ('a -> 'b) -> 'a t -> 'b t
   val binding_exists : _ t -> bool
   val nodes : 'a t -> 'a Seq.t
-
-  val to_seq : 'a t -> (key * string list * 'a) Seq.t
-  (** This returns each exit's key, list of binding names, and nodes. *)
+  val to_nonempty : 'a t -> 'a exit Nonempty.t
 end
 
 type leaf = { names : int map_string; exit : Exits.key }

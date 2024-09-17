@@ -73,35 +73,38 @@ module Exits = struct
   type key = int
 
   let equal_key = Int.equal
-  let key_to_int = Fun.id
 
-  type 'a exit = { bindings : string list; nodes : 'a }
-  type 'a t = 'a exit array
+  type 'a exit = { id : key; bindings : string list; nodes : 'a }
 
-  let make len = Array.make len { bindings = []; nodes = [] }
-  let set a i bindings nodes = a.(i) <- { bindings; nodes }
+  let map_exit f x = { x with nodes = f x.nodes }
 
-  let map f a =
-    Array.map (fun { bindings; nodes } -> { bindings; nodes = f nodes }) a
+  type 'a t = 'a exit Nonempty.t
 
-  let binding_exists a =
-    Array.exists (function { bindings = _ :: _; _ } -> true | _ -> false) a
+  let make bindings nodes = Nonempty.[ { id = 0; bindings; nodes } ]
 
-  let nodes a = Array.to_seq a |> Seq.map (fun exit -> exit.nodes)
+  let add bindings nodes Nonempty.(h :: t) =
+    let id = succ h.id in
+    (Nonempty.({ id; bindings; nodes } :: h :: t), id)
 
-  let to_seq a =
-    Array.to_seqi a
-    |> Seq.map (fun (i, { bindings; nodes }) -> (i, bindings, nodes))
+  let map f x = Nonempty.map (map_exit f) x
 
-  let exit_to_sexp f (i, { bindings; nodes }) =
+  let binding_exists =
+    let aux = function { bindings = _ :: _; _ } -> true | _ -> false in
+    fun Nonempty.(hd :: tl) -> aux hd || List.exists aux tl
+
+  let nodes x = Nonempty.to_seq x |> Seq.map (fun x -> x.nodes)
+  let to_nonempty = Nonempty.rev (* Reverse before exposing to outside code. *)
+
+  let exit_to_sexp f { id; bindings; nodes } =
     Sexp.make "exit"
       [
-        Sexp.int i;
+        Sexp.make "id" [ Sexp.int id ];
         Sexp.make "bindings" [ Sexp.of_seq Sexp.string (List.to_seq bindings) ];
         Sexp.make "nodes" [ f nodes ];
       ]
 
-  let to_sexp f a = Array.to_seqi a |> Sexp.of_seq (exit_to_sexp f)
+  let to_sexp f x =
+    Nonempty.rev x |> Nonempty.to_seq |> Sexp.of_seq (exit_to_sexp f)
 end
 
 type leaf = { names : int MapString.t; exit : Exits.key }
@@ -956,34 +959,33 @@ let rec make_case ~exit next_id tree = function
       else make_case ~exit next_id tree' l
 
 let make loc tys Nonempty.(Typechecker.{ pats; nodes; bindings } :: tl_cases) =
-  let exits = Exits.make (succ (List.length tl_cases)) in
   (* IDs must be unique across all branches of the tree. *)
   let next_id = ref 0 in
   let next_id () =
     let id = !next_id in
     incr next_id; id
   in
-  let hd_tree =
+  let hd_tree, exits =
     let ((_, hd_pats) :: tl_pats) = pats in
-    Exits.set exits 0 bindings nodes;
+    let exits = Exits.make bindings nodes in
     let hd_tree = of_nonempty ~exit:0 next_id hd_pats in
-    make_case ~exit:0 next_id hd_tree tl_pats
+    (make_case ~exit:0 next_id hd_tree tl_pats, exits)
   in
-  let rec aux tree exit = function
+  let rec aux tree exits = function
     | [] -> (
         match ParMatch.get_path tree with
         | None -> { tree; exits }
         | Some path -> Error.parmatch loc (ParMatch.pp tys) path)
     | Typechecker.{ pats = (loc, hd_pats) :: tl_pats; nodes; bindings } :: l ->
-        Exits.set exits exit bindings nodes;
-        let hd_tree = of_nonempty ~exit next_id hd_pats in
+        let exits, exit_id = Exits.add bindings nodes exits in
+        let hd_tree = of_nonempty ~exit:exit_id next_id hd_pats in
         let tree' = merge tree hd_tree in
         if equal_tree equal_leaf tree tree' then Error.unused_case loc
         else
-          let tree = make_case ~exit next_id tree' tl_pats in
-          aux tree (succ exit) l
+          let tree = make_case ~exit:exit_id next_id tree' tl_pats in
+          aux tree exits l
   in
-  aux hd_tree 1 tl_cases
+  aux hd_tree exits tl_cases
 
 let set_to_sexp s = Sexp.of_seq Sexp.int (SetInt.to_seq s)
 
