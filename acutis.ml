@@ -77,6 +77,18 @@ let compile components { fname; ast } = A.Compile.make ~fname components ast
 let compile_interface = A.Compile.make_interface
 let get_typescheme x = x.A.Compile.types
 
+let escape_list =
+  [
+    ('&', "&amp;");
+    ('"', "&quot;");
+    ('\'', "&apos;");
+    ('>', "&gt;");
+    ('<', "&lt;");
+    ('/', "&#x2F;");
+    ('`', "&#x60;");
+    ('=', "&#x3D;");
+  ]
+
 module type MONAD = sig
   type 'a t
 
@@ -172,18 +184,13 @@ end = struct
     let buffer_add_buffer = Buffer.add_buffer
 
     let buffer_add_escape b s =
-      String.iter
-        (function
-          | '&' -> Buffer.add_string b "&amp;"
-          | '"' -> Buffer.add_string b "&quot;"
-          | '\'' -> Buffer.add_string b "&apos;"
-          | '>' -> Buffer.add_string b "&gt;"
-          | '<' -> Buffer.add_string b "&lt;"
-          | '/' -> Buffer.add_string b "&#x2F;"
-          | '`' -> Buffer.add_string b "&#x60;"
-          | '=' -> Buffer.add_string b "&#x3D;"
-          | c -> Buffer.add_char b c)
-        s
+      let rec aux escape_list c =
+        match escape_list with
+        | (c', s) :: l ->
+            if Char.equal c c' then Buffer.add_string b s else aux l c
+        | [] -> Buffer.add_char b c
+      in
+      String.iter (aux escape_list) s
 
     let buffer_contents = Buffer.contents
     let buffer_clear = Buffer.clear
@@ -343,26 +350,28 @@ module PrintJs = struct
     F.pp_print_custom_break ~fits:("", 0, "") ~breaks:(",", -2, "")
 
   (** See https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String#escape_sequences *)
+  let pp_char_aux ~newline ppf = function
+    | '\n' -> F.fprintf ppf "\\n%a" newline ()
+    | '\b' -> F.pp_print_string ppf "\\b"
+    | '\t' -> F.pp_print_string ppf "\\t"
+    | '\012' -> F.pp_print_string ppf "\\f"
+    | '\r' -> F.pp_print_string ppf "\\r"
+    | '\\' -> F.pp_print_string ppf "\\\\"
+    | '"' -> F.pp_print_string ppf "\\\""
+    | c -> F.pp_print_char ppf c
+
   let pp_string ppf s =
-    let l = String.length s in
     let newline =
-      if l < 60 then fun () -> F.pp_print_string ppf "\\n"
-      else fun () -> F.fprintf ppf "\\n\\\n"
+      if String.length s < 60 then F.pp_print_nothing
+      else fun ppf () -> F.pp_print_string ppf "\\\n"
     in
-    F.pp_print_char ppf '"';
-    for i = 0 to l - 1 do
-      let c = s.[i] in
-      match c with
-      | '\n' -> newline ()
-      | '\b' -> F.pp_print_string ppf "\\b"
-      | '\t' -> F.pp_print_string ppf "\\t"
-      | '\012' -> F.pp_print_string ppf "\\f"
-      | '\r' -> F.pp_print_string ppf "\\r"
-      | '\\' -> F.pp_print_string ppf "\\\\"
-      | '"' -> F.pp_print_string ppf "\\\""
-      | c -> F.pp_print_char ppf c
-    done;
-    F.pp_print_char ppf '"'
+    F.fprintf ppf "\"%a\""
+      (F.pp_print_iter ~pp_sep:F.pp_print_nothing String.iter
+         (pp_char_aux ~newline))
+      s
+
+  let pp_char ppf c =
+    F.fprintf ppf "\"%a\"" (pp_char_aux ~newline:F.pp_print_nothing) c
 
   (** Define common functions in this submodule so it can be easily included in
     a functor argument. *)
@@ -398,6 +407,7 @@ module PrintJs = struct
     let ( .!() ) a b ppf state = F.fprintf ppf "%a.%s" a state b
     let ( .!()<- ) a i b = set a.!(i) b
     let string x ppf _ = pp_string ppf x
+    let char x ppf _ = pp_char ppf x
     let global x ppf _ = F.pp_print_string ppf x
     let comment ppf str = F.fprintf ppf "/* %s */@," str
     let to_string x = global "String" @@ x
@@ -600,16 +610,10 @@ module PrintJs = struct
                      for_ s.!("length") (fun i ->
                          let$ c = ("c", s.%(i)) in
                          switch c
-                           [
-                             (string "&", buffer_add (string "&amp;"));
-                             (string "\"", buffer_add (string "&quot;"));
-                             (string "'", buffer_add (string "&apos;"));
-                             (string ">", buffer_add (string "&gt;"));
-                             (string "<", buffer_add (string "&lt;"));
-                             (string "/", buffer_add (string "&#x2F;"));
-                             (string "`", buffer_add (string "&#x60;"));
-                             (string "=", buffer_add (string "&#x3D;"));
-                           ]
+                           (List.map
+                              (fun (symbol, esc_symbol) ->
+                                (char symbol, buffer_add (string esc_symbol)))
+                              escape_list)
                            (buffer_add c))))) )
       in
       let module Runtime :
