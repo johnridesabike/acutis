@@ -91,6 +91,14 @@ module type SEM = sig
   val string_of_float : float exp -> string exp
   val string_of_bool : bool exp -> string exp
 
+  (** {1 Strings and characters.} *)
+
+  val string_iter : string exp -> (char exp -> unit stmt) -> unit stmt
+
+  val match_char : char exp -> (char -> 'a stmt) -> 'a stmt
+  (** The given function applies to the following characters and it ignores all
+      others: [ '&' '"' '\'' '>' '<' '/' '`' '=' ]. *)
+
   (** {1 Arrays.} *)
 
   val array : 'a exp array -> 'a array exp
@@ -120,10 +128,7 @@ module type SEM = sig
   val buffer_create : unit -> buffer exp
   val buffer_add_string : buffer exp -> string exp -> unit stmt
   val buffer_add_buffer : buffer exp -> buffer exp -> unit stmt
-
-  val buffer_add_escape : buffer exp -> string exp -> unit stmt
-  (** E.g. sanitize HTML syntax. *)
-
+  val buffer_add_char : buffer exp -> char exp -> unit stmt
   val buffer_contents : buffer exp -> string exp
   val buffer_length : buffer exp -> int exp
   val buffer_clear : buffer exp -> unit stmt
@@ -283,6 +288,7 @@ end = struct
             faster than asynchronous writes, we use a dual-buffer strategy. Most
             of our writes are to a regular sync buffer. Whenever we need to use
             the async buffer, we flush the sync buffer to it. *)
+    escape : (buffer -> string -> unit) exp;
     props : Data.t hashtbl exp;
         (** We need to use a hash table as the root scope because components
             take a hash table as input. *)
@@ -296,9 +302,10 @@ end = struct
     let& buf_async = ("buf_async", promise (buffer_create ())) in
     f buf_sync buf_async
 
-  let state_make components props f =
+  let state_make components ~props ~escape f =
     async_buffer_create_aux (fun buf_sync buf_async ->
-        f { components; buf_sync; buf_async; props; scope = MapString.empty })
+        let scope = MapString.empty in
+        f { components; buf_sync; buf_async; escape; props; scope })
 
   let async_buffer_create state f =
     async_buffer_create_aux (fun buf_sync buf_async ->
@@ -340,7 +347,7 @@ end = struct
   let parse_escape state esc x =
     match esc with
     | Compile.No_escape -> buffer_add_string state.buf_sync x
-    | Compile.Escape -> buffer_add_escape state.buf_sync x
+    | Compile.Escape -> stmt ((state.escape @@ state.buf_sync) @@ x)
 
   let fmt state esc x = function
     | Compile.Fmt_string -> parse_escape state esc (Data.to_string x)
@@ -1076,7 +1083,24 @@ end = struct
                       in
                       buffer_add_stack buf keys (string ", "))))))
 
+  let buffer_add_escape =
+    lambda (fun buf ->
+        return
+          (lambda (fun str ->
+               string_iter str (fun c ->
+                   match_char c (function
+                     | '&' -> buffer_add_string buf (string "&amp;")
+                     | '"' -> buffer_add_string buf (string "&quot;")
+                     | '\'' -> buffer_add_string buf (string "&apos;")
+                     | '>' -> buffer_add_string buf (string "&gt;")
+                     | '<' -> buffer_add_string buf (string "&lt;")
+                     | '/' -> buffer_add_string buf (string "&sol;")
+                     | '`' -> buffer_add_string buf (string "&grave;")
+                     | '=' -> buffer_add_string buf (string "&equals;")
+                     | _ -> buffer_add_char buf c)))))
+
   let eval compiled =
+    let$ escape = ("buffer_add_escape", buffer_add_escape) in
     let$ components = ("components", hashtbl_create ()) in
     let| () =
       Seq.append
@@ -1092,7 +1116,7 @@ end = struct
         |> Seq.map (fun (k, v) ->
                components.%{string k} <-
                  lambda (fun props ->
-                     let@ state = state_make components props in
+                     let@ state = state_make components ~props ~escape in
                      let| () = nodes state v in
                      return (async_buffer_contents state))))
       |> stmt_join
@@ -1117,7 +1141,7 @@ end = struct
            if_else
              (buffer_length errors = int 0)
              ~then_:(fun () ->
-               let@ state = state_make components props in
+               let@ state = state_make components ~props ~escape in
                let| () = nodes state compiled.nodes in
                return (async_buffer_contents state))
              ~else_:(fun () -> return (error (buffer_contents errors)))))
@@ -1208,6 +1232,13 @@ module MakeTrans
   let float_of_int x = fwde (F.float_of_int (bwde x))
   let string_of_float x = fwde (F.string_of_float (bwde x))
   let string_of_bool x = fwde (F.string_of_bool (bwde x))
+
+  let string_iter s f =
+    fwds (F.string_iter (bwde s) (fun c -> bwds (f (fwde c))))
+
+  let match_char c f =
+    fwds (F.match_char (bwde c) (fun shape -> bwds (f shape)))
+
   let array x = fwde (F.array (Array.map bwde x))
   let array_make i x = fwde (F.array_make (bwde i) (bwde x))
   let ( .%() ) a i = fwde F.((bwde a).%(bwde i))
@@ -1224,7 +1255,7 @@ module MakeTrans
   let buffer_create () = fwde (F.buffer_create ())
   let buffer_add_string b s = fwds (F.buffer_add_string (bwde b) (bwde s))
   let buffer_add_buffer b s = fwds (F.buffer_add_buffer (bwde b) (bwde s))
-  let buffer_add_escape b s = fwds (F.buffer_add_escape (bwde b) (bwde s))
+  let buffer_add_char b c = fwds (F.buffer_add_char (bwde b) (bwde c))
   let buffer_contents b = fwde (F.buffer_contents (bwde b))
   let buffer_clear b = fwds (F.buffer_clear (bwde b))
   let buffer_length b = fwde (F.buffer_length (bwde b))
@@ -1352,6 +1383,17 @@ let pp (type a) pp_import ppf c =
     let string_of_float = F.dprintf "(@[string_of_float@ %t@])"
     let string_of_bool = F.dprintf "(@[string_of_bool@ %t@])"
 
+    let string_iter s f =
+      let arg = var "char" in
+      F.dprintf "(@[string_iter@ %t@ %t@])" s (f arg)
+
+    let match_char c f =
+      F.dprintf "(@[match_char@ %t@ (@[%a@ (@[_@ (@[%t@])@])@])@])" c
+        (F.pp_print_list ~pp_sep:F.pp_print_space (fun ppf c ->
+             F.fprintf ppf "(@[%C@ (@[%t@])@])" c (f c)))
+        [ '&'; '"'; '\''; '>'; '<'; '/'; '`'; '=' ]
+        (f '\x00')
+
     let array a =
       F.dprintf "[@[<hv>%a@]]" (F.pp_print_array ~pp_sep:Pp.comma ( |> )) a
 
@@ -1384,7 +1426,7 @@ let pp (type a) pp_import ppf c =
     let buffer_create () = F.dprintf "(buffer_create)"
     let buffer_add_string = F.dprintf "(@[buffer_add_string@ %t@ %t@])"
     let buffer_add_buffer = F.dprintf "(@[buffer_add_buffer@ %t@ %t@])"
-    let buffer_add_escape = F.dprintf "(@[buffer_add_escape@ %t@ %t@])"
+    let buffer_add_char = F.dprintf "(@[buffer_add_char@ %t@ %t@])"
     let buffer_contents = F.dprintf "(@[buffer_contents@ %t@])"
     let buffer_clear = F.dprintf "(@[buffer_clear@ %t@])"
     let buffer_length = F.dprintf "(@[buffer_length@ %t@])"

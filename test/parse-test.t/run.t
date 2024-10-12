@@ -872,50 +872,81 @@ Print the optimized form
 
 Print the runtime instructions
   $ acutis template.acutis component.acutis component2.acutis --printinst
+  (let$ buffer_add_escape/0 =
+   (lambda arg/0
+    ((return
+      (lambda arg/1
+       ((string_iter arg/1
+         (match_char char/0
+          (('&' ((buffer_add_string arg/0 "&amp;")))
+           ('"' ((buffer_add_string arg/0 "&quot;")))
+           ('\'' ((buffer_add_string arg/0 "&apos;")))
+           ('>' ((buffer_add_string arg/0 "&gt;")))
+           ('<' ((buffer_add_string arg/0 "&lt;")))
+           ('/' ((buffer_add_string arg/0 "&sol;")))
+           ('`' ((buffer_add_string arg/0 "&grave;")))
+           ('=' ((buffer_add_string arg/0 "&equals;")))
+           (_ ((buffer_add_char arg/0 char/0))))))))))))
   (let$ components/0 = (hashtbl_create))
   (components/0.%{"Component"} <-
-   (lambda arg/0
+   (lambda arg/2
     ((let$ buf_sync/0 = (buffer_create))
      (let& buf_async/0 = (promise (buffer_create)))
-     (buffer_add_escape buf_sync/0 (Data.to_string (arg/0.%{"a_prop"})))
+     (stmt
+      ((buffer_add_escape/0 @@ buf_sync/0)
+       @@ (Data.to_string (arg/2.%{"a_prop"}))))
      (buffer_add_string buf_sync/0 "\n")
-     (buffer_add_escape buf_sync/0 (Data.to_string (arg/0.%{"c_prop"})))
+     (stmt
+      ((buffer_add_escape/0 @@ buf_sync/0)
+       @@ (Data.to_string (arg/2.%{"c_prop"}))))
      (buffer_add_string buf_sync/0 "\n")
-     (buffer_add_escape buf_sync/0 (Data.to_string (arg/0.%{"d_prop"})))
+     (stmt
+      ((buffer_add_escape/0 @@ buf_sync/0)
+       @@ (Data.to_string (arg/2.%{"d_prop"}))))
      (buffer_add_string buf_sync/0 "\n")
-     (buffer_add_escape buf_sync/0 (Data.to_string (arg/0.%{"f_prop"})))
+     (stmt
+      ((buffer_add_escape/0 @@ buf_sync/0)
+       @@ (Data.to_string (arg/2.%{"f_prop"}))))
      (buffer_add_string buf_sync/0 "\n")
-     (buffer_add_escape buf_sync/0 (Data.to_string (arg/0.%{"g_prop"})))
+     (stmt
+      ((buffer_add_escape/0 @@ buf_sync/0)
+       @@ (Data.to_string (arg/2.%{"g_prop"}))))
      (buffer_add_string buf_sync/0 "\n")
-     (buffer_add_escape buf_sync/0 (Data.to_string (arg/0.%{"h_prop"})))
+     (stmt
+      ((buffer_add_escape/0 @@ buf_sync/0)
+       @@ (Data.to_string (arg/2.%{"h_prop"}))))
      (buffer_add_string buf_sync/0 "\n")
-     (buffer_add_escape buf_sync/0 (Data.to_string (arg/0.%{"i_prop"})))
+     (stmt
+      ((buffer_add_escape/0 @@ buf_sync/0)
+       @@ (Data.to_string (arg/2.%{"i_prop"}))))
      (buffer_add_string buf_sync/0 "\n")
      (return
       (bind !buf_async/0
-       (lambda arg/1
-        ((buffer_add_buffer arg/1 buf_sync/0)
-         (return (promise (buffer_contents arg/1))))))))))
+       (lambda arg/3
+        ((buffer_add_buffer arg/3 buf_sync/0)
+         (return (promise (buffer_contents arg/3))))))))))
   (components/0.%{"Component2"} <-
-   (lambda arg/2
+   (lambda arg/4
     ((let$ buf_sync/1 = (buffer_create))
      (let& buf_async/1 = (promise (buffer_create)))
-     (buffer_add_escape buf_sync/1 (Data.to_string (arg/2.%{"children"})))
+     (stmt
+      ((buffer_add_escape/0 @@ buf_sync/1)
+       @@ (Data.to_string (arg/4.%{"children"}))))
      (buffer_add_string buf_sync/1 "\n")
      (return
       (bind !buf_async/1
-       (lambda arg/3
-        ((buffer_add_buffer arg/3 buf_sync/1)
-         (return (promise (buffer_contents arg/3))))))))))
+       (lambda arg/5
+        ((buffer_add_buffer arg/5 buf_sync/1)
+         (return (promise (buffer_contents arg/5))))))))))
   (export
-   (lambda arg/4
+   (lambda arg/6
     ((let$ errors/0 = (buffer_create))
      (let$ decode_error/0 =
-      (lambda arg/5
+      (lambda arg/7
        ((return
-         (lambda arg/6
+         (lambda arg/8
           ((return
-            (lambda arg/7
+            (lambda arg/9
              ((if (not ((buffer_length errors/0) = 0))
                (then (buffer_add_string errors/0 "\n\n")))
               (buffer_add_string errors/0 "File \"")
@@ -923,7 +954,7 @@ Print the runtime instructions
               (buffer_add_string errors/0
                "\"\nRender error.\nThe data supplied does not match this template's interface.\n")
               (buffer_add_string errors/0 "Path:\n")
-              (let$ tuple/0 = (Data.to_array arg/5))
+              (let$ tuple/0 = (Data.to_array arg/7))
               (buffer_add_string errors/0 (Data.to_string (tuple/0.%(0))))
               (let& stack/0 = (tuple/0.%(1)))
               (while (not (Data.equal !stack/0 (Data.int 0)))
@@ -932,15 +963,15 @@ Print the runtime instructions
                 (buffer_add_string errors/0 (Data.to_string (tuple/1.%(0))))
                 (stack/0 := (tuple/1.%(1)))))
               (buffer_add_string errors/0 "\nExpected type:\n")
-              (buffer_add_string errors/0 arg/6)
+              (buffer_add_string errors/0 arg/8)
               (buffer_add_string errors/0 "\nReceived value:\n")
-              (buffer_add_string errors/0 (External.to_string arg/7)))))))))))
+              (buffer_add_string errors/0 (External.to_string arg/9)))))))))))
      (let$ key_error/0 =
-      (lambda arg/8
+      (lambda arg/10
        ((return
-         (lambda arg/9
+         (lambda arg/11
           ((return
-            (lambda arg/10
+            (lambda arg/12
              ((if (not ((buffer_length errors/0) = 0))
                (then (buffer_add_string errors/0 "\n\n")))
               (buffer_add_string errors/0 "File: ")
@@ -948,7 +979,7 @@ Print the runtime instructions
               (buffer_add_string errors/0
                "\nRender error.\nThe data supplied does not match this template's interface.\n")
               (buffer_add_string errors/0 "Path:\n")
-              (let$ tuple/2 = (Data.to_array arg/8))
+              (let$ tuple/2 = (Data.to_array arg/10))
               (buffer_add_string errors/0 (Data.to_string (tuple/2.%(0))))
               (let& stack/1 = (tuple/2.%(1)))
               (while (not (Data.equal !stack/1 (Data.int 0)))
@@ -957,9 +988,9 @@ Print the runtime instructions
                 (buffer_add_string errors/0 (Data.to_string (tuple/3.%(0))))
                 (stack/1 := (tuple/3.%(1)))))
               (buffer_add_string errors/0 "\nExpected type:\n")
-              (buffer_add_string errors/0 arg/9)
+              (buffer_add_string errors/0 arg/11)
               (buffer_add_string errors/0 "\nInput is missing keys:\n")
-              (let$ tuple/4 = (Data.to_array arg/10))
+              (let$ tuple/4 = (Data.to_array arg/12))
               (buffer_add_string errors/0 (Data.to_string (tuple/4.%(0))))
               (let& stack/2 = (tuple/4.%(1)))
               (while (not (Data.equal !stack/2 (Data.int 0)))
@@ -971,7 +1002,7 @@ Print the runtime instructions
      (let$ stack/3 = (Data.array [(Data.string "<input>"), (Data.int 0)]))
      (let$ type/0 =
       "{\n  a: {b: {c: false | true}},\n  a_prop: string,\n  b_prop: string,\n  c_prop: string,\n  d: string,\n  dict: <int>,\n  e: string,\n  e_prop: string,\n  ech_a: string,\n  ech_b: false | true,\n  ech_d: ?string,\n  ech_e: ?string,\n  ech_f: float,\n  ech_i: int,\n  enums: (@\"a\" | ..., @1 | ..., false | true, false | true),\n  f_prop: string,\n  list: [?string],\n  map_d: <int>,\n  map_l: [int],\n  match_a: int,\n  match_b: string,\n  numbers:\n    {\n      exp1: float,\n      exp2: float,\n      exp3: float,\n      frac: float,\n      int: int,\n      negfrac: float,\n      negint: int\n    },\n  record: {\"!#%@\": string, a: string},\n  tagged: {@tag: false} | {@tag: true, a: string},\n  trim_a: string,\n  trim_b: string,\n  trim_c: string,\n  trim_d: string,\n  trim_e: string,\n  trim_f: string,\n  trim_g: string,\n  tuple: (int, float, string)\n}")
-     (External.classify (assoc) arg/4
+     (External.classify (assoc) arg/6
       (ok classified/0
        (let& missing_keys/0 = (Data.int 0))
        (if_else (External.assoc_mem "a" classified/0)
@@ -1749,15 +1780,19 @@ Print the runtime instructions
           (Data.array [(Data.string "tuple"), !missing_keys/0]))))
        (if (not (Data.equal !missing_keys/0 (Data.int 0)))
         (then (stmt (((key_error/0 @@ stack/3) @@ type/0) @@ !missing_keys/0)))))
-      (error (stmt (((decode_error/0 @@ stack/3) @@ type/0) @@ arg/4))))
+      (error (stmt (((decode_error/0 @@ stack/3) @@ type/0) @@ arg/6))))
      (if_else ((buffer_length errors/0) = 0)
       (then
        (let$ buf_sync/2 = (buffer_create))
        (let& buf_async/2 = (promise (buffer_create)))
        (buffer_add_string buf_sync/2 "Echoes\n")
-       (buffer_add_escape buf_sync/2 (Data.to_string (props/0.%{"ech_a"})))
+       (stmt
+        ((buffer_add_escape/0 @@ buf_sync/2)
+         @@ (Data.to_string (props/0.%{"ech_a"}))))
        (buffer_add_string buf_sync/2 " ")
-       (buffer_add_escape buf_sync/2 (Data.to_string (Data.string "b")))
+       (stmt
+        ((buffer_add_escape/0 @@ buf_sync/2)
+         @@ (Data.to_string (Data.string "b"))))
        (buffer_add_string buf_sync/2 " ")
        (let$ nullable/0 = (props/0.%{"ech_d"}))
        (if_else (not (Data.equal nullable/0 (Data.int 0)))
@@ -1773,14 +1808,17 @@ Print the runtime instructions
           (else
            (buffer_add_string buf_sync/2 (Data.to_string (Data.string "f\"g")))))))
        (buffer_add_string buf_sync/2 "\n")
-       (buffer_add_escape buf_sync/2
-        (string_of_int (Data.to_int (props/0.%{"ech_i"}))))
+       (stmt
+        ((buffer_add_escape/0 @@ buf_sync/2)
+         @@ (string_of_int (Data.to_int (props/0.%{"ech_i"})))))
        (buffer_add_string buf_sync/2 " ")
-       (buffer_add_escape buf_sync/2
-        (string_of_float (Data.to_float (props/0.%{"ech_f"}))))
+       (stmt
+        ((buffer_add_escape/0 @@ buf_sync/2)
+         @@ (string_of_float (Data.to_float (props/0.%{"ech_f"})))))
        (buffer_add_string buf_sync/2 " ")
-       (buffer_add_escape buf_sync/2
-        (string_of_bool (not ((Data.to_int (props/0.%{"ech_b"})) = 0))))
+       (stmt
+        ((buffer_add_escape/0 @@ buf_sync/2)
+         @@ (string_of_bool (not ((Data.to_int (props/0.%{"ech_b"})) = 0)))))
        (buffer_add_string buf_sync/2 "\n\nNumbers\n")
        (let$ arg_match/0 = [(props/0.%{"numbers"})])
        (let& exit/0 = -1)
@@ -1818,11 +1856,19 @@ Print the runtime instructions
        (if (!exit/0 = -1) (then (unit) (exit/0 := 1)))
        (if_else (!exit/0 = 0) (then (unit)) (else (unit)))
        (buffer_add_string buf_sync/2 "\n\nTrim")
-       (buffer_add_escape buf_sync/2 (Data.to_string (props/0.%{"trim_a"})))
-       (buffer_add_escape buf_sync/2 (Data.to_string (props/0.%{"trim_b"})))
+       (stmt
+        ((buffer_add_escape/0 @@ buf_sync/2)
+         @@ (Data.to_string (props/0.%{"trim_a"}))))
+       (stmt
+        ((buffer_add_escape/0 @@ buf_sync/2)
+         @@ (Data.to_string (props/0.%{"trim_b"}))))
        (buffer_add_string buf_sync/2 " ")
-       (buffer_add_escape buf_sync/2 (Data.to_string (props/0.%{"trim_c"})))
-       (buffer_add_escape buf_sync/2 (Data.to_string (props/0.%{"trim_d"})))
+       (stmt
+        ((buffer_add_escape/0 @@ buf_sync/2)
+         @@ (Data.to_string (props/0.%{"trim_c"}))))
+       (stmt
+        ((buffer_add_escape/0 @@ buf_sync/2)
+         @@ (Data.to_string (props/0.%{"trim_d"}))))
        (buffer_add_string buf_sync/2 (Data.to_string (props/0.%{"trim_e"})))
        (buffer_add_string buf_sync/2 "\n")
        (buffer_add_string buf_sync/2 (Data.to_string (props/0.%{"trim_f"})))
@@ -1865,11 +1911,17 @@ Print the runtime instructions
        (match_props/1.%{"g"} <- match_arg/11)
        (exit/3 := 0)
        (buffer_add_string buf_sync/2 " ")
-       (buffer_add_escape buf_sync/2 (Data.to_string (match_props/0.%{"c"})))
+       (stmt
+        ((buffer_add_escape/0 @@ buf_sync/2)
+         @@ (Data.to_string (match_props/0.%{"c"}))))
        (buffer_add_string buf_sync/2 " ")
-       (buffer_add_escape buf_sync/2 (Data.to_string (match_props/1.%{"f"})))
+       (stmt
+        ((buffer_add_escape/0 @@ buf_sync/2)
+         @@ (Data.to_string (match_props/1.%{"f"}))))
        (buffer_add_string buf_sync/2 " ")
-       (buffer_add_escape buf_sync/2 (Data.to_string (match_props/1.%{"g"})))
+       (stmt
+        ((buffer_add_escape/0 @@ buf_sync/2)
+         @@ (Data.to_string (match_props/1.%{"g"}))))
        (buffer_add_string buf_sync/2 " ")
        (buffer_add_string buf_sync/2 "\n")
        (buffer_add_string buf_sync/2 "\n\nMap list\n")
@@ -1895,8 +1947,9 @@ Print the runtime instructions
            (if_else (!exit/4 = 1)
             (then
              (buffer_add_string buf_sync/2 " ")
-             (buffer_add_escape buf_sync/2
-              (string_of_int (Data.to_int (match_props/2.%{"i"}))))
+             (stmt
+              ((buffer_add_escape/0 @@ buf_sync/2)
+               @@ (string_of_int (Data.to_int (match_props/2.%{"i"})))))
              (buffer_add_string buf_sync/2 " "))
             (else (buffer_add_string buf_sync/2 " ")))))
          (incr index/0)
@@ -1920,8 +1973,9 @@ Print the runtime instructions
           (if_else (!exit/5 = 1)
            (then
             (buffer_add_string buf_sync/2 " ")
-            (buffer_add_escape buf_sync/2
-             (Data.to_string (match_props/3.%{"k"})))
+            (stmt
+             ((buffer_add_escape/0 @@ buf_sync/2)
+              @@ (Data.to_string (match_props/3.%{"k"}))))
             (buffer_add_string buf_sync/2 " "))
            (else (buffer_add_string buf_sync/2 "\n"))))))
        (buffer_add_string buf_sync/2 "\n\nComponent with props\n")
@@ -1932,15 +1986,15 @@ Print the runtime instructions
        (buffer_clear buf_sync/2)
        (buf_async/2 :=
         (bind !buf_async/2
-         (lambda arg/20
+         (lambda arg/22
           ((return
             (bind
              (bind
               (bind !buf_async/3
-               (lambda arg/19
-                ((buffer_add_buffer arg/19 buf_sync/3)
-                 (return (promise (buffer_contents arg/19))))))
-              (lambda arg/11
+               (lambda arg/21
+                ((buffer_add_buffer arg/21 buf_sync/3)
+                 (return (promise (buffer_contents arg/21))))))
+              (lambda arg/13
                ((let$ buf_sync/4 = (buffer_create))
                 (let& buf_async/4 = (promise (buffer_create)))
                 (let$ arg_match/4 = [(props/0.%{"a_prop"})])
@@ -1950,33 +2004,34 @@ Print the runtime instructions
                 (match_props/4.%{"b_prop"} <- match_arg/13)
                 (exit/6 := 0)
                 (buffer_add_string buf_sync/4 " ")
-                (buffer_add_escape buf_sync/4
-                 (Data.to_string (match_props/4.%{"b_prop"})))
+                (stmt
+                 ((buffer_add_escape/0 @@ buf_sync/4)
+                  @@ (Data.to_string (match_props/4.%{"b_prop"}))))
                 (buffer_add_string buf_sync/4 " ")
                 (return
                  (bind
                   (bind !buf_async/4
-                   (lambda arg/18
-                    ((buffer_add_buffer arg/18 buf_sync/4)
-                     (return (promise (buffer_contents arg/18))))))
-                  (lambda arg/12
+                   (lambda arg/20
+                    ((buffer_add_buffer arg/20 buf_sync/4)
+                     (return (promise (buffer_contents arg/20))))))
+                  (lambda arg/14
                    ((let$ buf_sync/5 = (buffer_create))
                     (let& buf_async/5 = (promise (buffer_create)))
                     (unit)
                     (return
                      (bind
                       (bind !buf_async/5
-                       (lambda arg/17
-                        ((buffer_add_buffer arg/17 buf_sync/5)
-                         (return (promise (buffer_contents arg/17))))))
-                      (lambda arg/13
+                       (lambda arg/19
+                        ((buffer_add_buffer arg/19 buf_sync/5)
+                         (return (promise (buffer_contents arg/19))))))
+                      (lambda arg/15
                        ((let$ buf_sync/6 = (buffer_create))
                         (let& buf_async/6 = (promise (buffer_create)))
                         (let$ sync_contents/0 = (buffer_contents buf_sync/6))
                         (buffer_clear buf_sync/6)
                         (buf_async/6 :=
                          (bind !buf_async/6
-                          (lambda arg/14
+                          (lambda arg/16
                            ((return
                              (bind
                               ((components/0.%{"Component"})
@@ -1985,22 +2040,22 @@ Print the runtime instructions
                                     ("c_prop", (props/0.%{"c_prop"})),
                                     ("d_prop", (props/0.%{"e_prop"})),
                                     ("f_prop", (props/0.%{"f_prop"})),
-                                    ("g_prop", (Data.string arg/11)),
-                                    ("h_prop", (Data.string arg/12)),
-                                    ("i_prop", (Data.string arg/13))]))
-                              (lambda arg/15
-                               ((buffer_add_string arg/14 sync_contents/0)
-                                (buffer_add_string arg/14 arg/15)
-                                (return (promise arg/14))))))))))
+                                    ("g_prop", (Data.string arg/13)),
+                                    ("h_prop", (Data.string arg/14)),
+                                    ("i_prop", (Data.string arg/15))]))
+                              (lambda arg/17
+                               ((buffer_add_string arg/16 sync_contents/0)
+                                (buffer_add_string arg/16 arg/17)
+                                (return (promise arg/16))))))))))
                         (return
                          (bind !buf_async/6
-                          (lambda arg/16
-                           ((buffer_add_buffer arg/16 buf_sync/6)
-                            (return (promise (buffer_contents arg/16))))))))))))))))))
-             (lambda arg/21
-              ((buffer_add_string arg/20 sync_contents/1)
-               (buffer_add_string arg/20 arg/21)
-               (return (promise arg/20))))))))))
+                          (lambda arg/18
+                           ((buffer_add_buffer arg/18 buf_sync/6)
+                            (return (promise (buffer_contents arg/18))))))))))))))))))
+             (lambda arg/23
+              ((buffer_add_string arg/22 sync_contents/1)
+               (buffer_add_string arg/22 arg/23)
+               (return (promise arg/22))))))))))
        (buffer_add_string buf_sync/2 "\n\nComponent with implicit children\n")
        (let$ buf_sync/7 = (buffer_create))
        (let& buf_async/7 = (promise (buffer_create)))
@@ -2009,39 +2064,39 @@ Print the runtime instructions
        (buffer_clear buf_sync/2)
        (buf_async/2 :=
         (bind !buf_async/2
-         (lambda arg/27
+         (lambda arg/29
           ((return
             (bind
              (bind
               (bind !buf_async/7
-               (lambda arg/26
-                ((buffer_add_buffer arg/26 buf_sync/7)
-                 (return (promise (buffer_contents arg/26))))))
-              (lambda arg/22
+               (lambda arg/28
+                ((buffer_add_buffer arg/28 buf_sync/7)
+                 (return (promise (buffer_contents arg/28))))))
+              (lambda arg/24
                ((let$ buf_sync/8 = (buffer_create))
                 (let& buf_async/8 = (promise (buffer_create)))
                 (let$ sync_contents/2 = (buffer_contents buf_sync/8))
                 (buffer_clear buf_sync/8)
                 (buf_async/8 :=
                  (bind !buf_async/8
-                  (lambda arg/23
+                  (lambda arg/25
                    ((return
                      (bind
                       ((components/0.%{"Component2"})
-                       @@ (hashtbl [("children", (Data.string arg/22))]))
-                      (lambda arg/24
-                       ((buffer_add_string arg/23 sync_contents/2)
-                        (buffer_add_string arg/23 arg/24)
-                        (return (promise arg/23))))))))))
+                       @@ (hashtbl [("children", (Data.string arg/24))]))
+                      (lambda arg/26
+                       ((buffer_add_string arg/25 sync_contents/2)
+                        (buffer_add_string arg/25 arg/26)
+                        (return (promise arg/25))))))))))
                 (return
                  (bind !buf_async/8
-                  (lambda arg/25
-                   ((buffer_add_buffer arg/25 buf_sync/8)
-                    (return (promise (buffer_contents arg/25))))))))))
-             (lambda arg/28
-              ((buffer_add_string arg/27 sync_contents/3)
-               (buffer_add_string arg/27 arg/28)
-               (return (promise arg/27))))))))))
+                  (lambda arg/27
+                   ((buffer_add_buffer arg/27 buf_sync/8)
+                    (return (promise (buffer_contents arg/27))))))))))
+             (lambda arg/30
+              ((buffer_add_string arg/29 sync_contents/3)
+               (buffer_add_string arg/29 arg/30)
+               (return (promise arg/29))))))))))
        (buffer_add_string buf_sync/2 "\n\nPatterns\n\nTuple:\n")
        (let$ arg_match/5 = [(props/0.%{"tuple"})])
        (let& exit/7 = -1)
@@ -2106,8 +2161,9 @@ Print the runtime instructions
          (if_else (!exit/8 = 1)
           (then
            (buffer_add_string buf_sync/2 " ")
-           (buffer_add_escape buf_sync/2
-            (Data.to_string (match_props/5.%{"a"})))
+           (stmt
+            ((buffer_add_escape/0 @@ buf_sync/2)
+             @@ (Data.to_string (match_props/5.%{"a"}))))
            (buffer_add_string buf_sync/2 "\n"))
           (else (buffer_add_string buf_sync/2 "\n")))))
        (buffer_add_string buf_sync/2 "\n\nRecord:\n")
@@ -2121,9 +2177,13 @@ Print the runtime instructions
        (match_props/6.%{"b"} <- match_arg/29)
        (exit/9 := 0)
        (buffer_add_string buf_sync/2 " ")
-       (buffer_add_escape buf_sync/2 (Data.to_string (match_props/6.%{"a"})))
+       (stmt
+        ((buffer_add_escape/0 @@ buf_sync/2)
+         @@ (Data.to_string (match_props/6.%{"a"}))))
        (buffer_add_string buf_sync/2 " ")
-       (buffer_add_escape buf_sync/2 (Data.to_string (match_props/6.%{"b"})))
+       (stmt
+        ((buffer_add_escape/0 @@ buf_sync/2)
+         @@ (Data.to_string (match_props/6.%{"b"}))))
        (buffer_add_string buf_sync/2 " ")
        (buffer_add_string buf_sync/2 "\n\nEnum:\n")
        (let$ arg_match/8 = [(props/0.%{"enums"})])
@@ -2167,7 +2227,9 @@ Print the runtime instructions
        (if_else (!exit/11 = 0)
         (then
          (buffer_add_string buf_sync/2 " ")
-         (buffer_add_escape buf_sync/2 (Data.to_string (match_props/7.%{"a"})))
+         (stmt
+          ((buffer_add_escape/0 @@ buf_sync/2)
+           @@ (Data.to_string (match_props/7.%{"a"}))))
          (buffer_add_string buf_sync/2 " "))
         (else (buffer_add_string buf_sync/2 "\n")))
        (buffer_add_string buf_sync/2 "\n\nDictionary:\n")
@@ -2228,11 +2290,13 @@ Print the runtime instructions
        (exit/14 := 0)
        (buffer_add_string buf_sync/2 " ")
        (buffer_add_string buf_sync/2 "\n\nStrings may contain line breaks:\n")
-       (buffer_add_escape buf_sync/2 (Data.to_string (Data.string "a\nb")))
+       (stmt
+        ((buffer_add_escape/0 @@ buf_sync/2)
+         @@ (Data.to_string (Data.string "a\nb"))))
        (buffer_add_string buf_sync/2 "\n")
        (return
         (bind !buf_async/2
-         (lambda arg/29
-          ((buffer_add_buffer arg/29 buf_sync/2)
-           (return (promise (buffer_contents arg/29))))))))
+         (lambda arg/31
+          ((buffer_add_buffer arg/31 buf_sync/2)
+           (return (promise (buffer_contents arg/31))))))))
       (else (return (error (buffer_contents errors/0))))))))

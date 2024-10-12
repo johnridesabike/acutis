@@ -15,17 +15,18 @@
       return (
         (arg$1) => {
           for (let i$0 = 0; i$0 < arg$1.length; i$0++) {
-            let c$0 = arg$1[i$0];
+            let c$0 = arg$1.charCodeAt(i$0);
             switch (c$0) {
-              case "&": arg$0.contents = arg$0.contents + "&amp;"; break;
-              case "\"": arg$0.contents = arg$0.contents + "&quot;"; break;
-              case "'": arg$0.contents = arg$0.contents + "&apos;"; break;
-              case ">": arg$0.contents = arg$0.contents + "&gt;"; break;
-              case "<": arg$0.contents = arg$0.contents + "&lt;"; break;
-              case "/": arg$0.contents = arg$0.contents + "&#x2F;"; break;
-              case "`": arg$0.contents = arg$0.contents + "&#x60;"; break;
-              case "=": arg$0.contents = arg$0.contents + "&#x3D;"; break;
-              default: arg$0.contents = arg$0.contents + c$0;
+              case 38: arg$0.contents = arg$0.contents + "&amp;"; break;
+              case 34: arg$0.contents = arg$0.contents + "&quot;"; break;
+              case 39: arg$0.contents = arg$0.contents + "&apos;"; break;
+              case 62: arg$0.contents = arg$0.contents + "&gt;"; break;
+              case 60: arg$0.contents = arg$0.contents + "&lt;"; break;
+              case 47: arg$0.contents = arg$0.contents + "&sol;"; break;
+              case 96: arg$0.contents = arg$0.contents + "&grave;"; break;
+              case 61: arg$0.contents = arg$0.contents + "&equals;"; break;
+              default:
+                arg$0.contents = arg$0.contents + String.fromCharCode(c$0);
             }
           }
         }
@@ -1995,7 +1996,7 @@
   Escaping
   --------
   
-  Escaped     &amp;&quot;&apos;&gt;&lt;&#x2F;&#x60;&#x3D;
+  Escaped     &amp;&quot;&apos;&gt;&lt;&sol;&grave;&equals;
   Not escaped &"'></`=
   
   Nullable echo chaining
