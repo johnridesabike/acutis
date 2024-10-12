@@ -474,7 +474,6 @@ module PrintJs = struct
     let float_of_int = Fun.id
     let string_of_float = to_string
     let string_of_bool = to_string
-    let ( + ) a b ppf state = F.fprintf ppf "@[%a +@ %a@]" a state b state
 
     let for_ expr stmts ppf state =
       let state' = State.add_block state in
@@ -561,8 +560,12 @@ module PrintJs = struct
 
     type buffer
 
+    let ( += ) a b =
+      stmt (fun ppf state ->
+          F.fprintf ppf "%a +=@ @[<hv 2>%a@]" a state b state)
+
     let buffer_create () = obj [ ("contents", string "") ]
-    let buffer_add_string b s = set b.!("contents") (b.!("contents") + s)
+    let buffer_add_string b s = b.!("contents") += s
     let buffer_add_buffer b1 b2 = buffer_add_string b1 b2.!("contents")
 
     let buffer_add_char b c =

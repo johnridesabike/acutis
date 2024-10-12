@@ -17,16 +17,15 @@
           for (let i$0 = 0; i$0 < arg$1.length; i$0++) {
             let c$0 = arg$1.charCodeAt(i$0);
             switch (c$0) {
-              case 38: arg$0.contents = arg$0.contents + "&amp;"; break;
-              case 34: arg$0.contents = arg$0.contents + "&quot;"; break;
-              case 39: arg$0.contents = arg$0.contents + "&apos;"; break;
-              case 62: arg$0.contents = arg$0.contents + "&gt;"; break;
-              case 60: arg$0.contents = arg$0.contents + "&lt;"; break;
-              case 47: arg$0.contents = arg$0.contents + "&sol;"; break;
-              case 96: arg$0.contents = arg$0.contents + "&grave;"; break;
-              case 61: arg$0.contents = arg$0.contents + "&equals;"; break;
-              default:
-                arg$0.contents = arg$0.contents + String.fromCharCode(c$0);
+              case 38: arg$0.contents += "&amp;"; break;
+              case 34: arg$0.contents += "&quot;"; break;
+              case 39: arg$0.contents += "&apos;"; break;
+              case 62: arg$0.contents += "&gt;"; break;
+              case 60: arg$0.contents += "&lt;"; break;
+              case 47: arg$0.contents += "&sol;"; break;
+              case 96: arg$0.contents += "&grave;"; break;
+              case 61: arg$0.contents += "&equals;"; break;
+              default: arg$0.contents += String.fromCharCode(c$0);
             }
           }
         }
@@ -265,7 +264,7 @@
       } else {
         buffer_add_escape$0(buf_sync$0)(arg$0.get("children"));
       }
-      buf_sync$0.contents = buf_sync$0.contents + "\n";
+      buf_sync$0.contents += "\n";
       let index$0 = 0;
       let cell$0 = arg$0.get("list");
       while (!(cell$0 === 0)) {
@@ -281,7 +280,7 @@
       return (
         buf_async$0.then(
           (arg$1) => {
-            arg$1.contents = arg$1.contents + buf_sync$0.contents;
+            arg$1.contents += buf_sync$0.contents;
             return (Promise.resolve(arg$1.contents));
           }
         )
@@ -297,28 +296,27 @@
             return (
               (arg$3) => {
                 if (!(errors$0.contents.length === 0)) {
-                  errors$0.contents = errors$0.contents + "\n\n";
+                  errors$0.contents += "\n\n";
                 }
-                errors$0.contents = errors$0.contents + "File \"";
-                errors$0.contents = errors$0.contents + "template.acutis";
-                errors$0.contents =
-                  errors$0.contents +
+                errors$0.contents += "File \"";
+                errors$0.contents += "template.acutis";
+                errors$0.contents +=
                   "\"\n\
   Render error.\n\
   The data supplied does not match this template's interface.\n\
   ";
-                errors$0.contents = errors$0.contents + "Path:\n";
-                errors$0.contents = errors$0.contents + arg$1[0];
+                errors$0.contents += "Path:\n";
+                errors$0.contents += arg$1[0];
                 let stack$0 = arg$1[1];
                 while (!(stack$0 === 0)) {
-                  errors$0.contents = errors$0.contents + " <- ";
-                  errors$0.contents = errors$0.contents + stack$0[0];
+                  errors$0.contents += " <- ";
+                  errors$0.contents += stack$0[0];
                   stack$0 = stack$0[1];
                 }
-                errors$0.contents = errors$0.contents + "\nExpected type:\n";
-                errors$0.contents = errors$0.contents + arg$2;
-                errors$0.contents = errors$0.contents + "\nReceived value:\n";
-                errors$0.contents = errors$0.contents + String(arg$3);
+                errors$0.contents += "\nExpected type:\n";
+                errors$0.contents += arg$2;
+                errors$0.contents += "\nReceived value:\n";
+                errors$0.contents += String(arg$3);
               }
             );
           }
@@ -331,33 +329,31 @@
             return (
               (arg$3) => {
                 if (!(errors$0.contents.length === 0)) {
-                  errors$0.contents = errors$0.contents + "\n\n";
+                  errors$0.contents += "\n\n";
                 }
-                errors$0.contents = errors$0.contents + "File: ";
-                errors$0.contents = errors$0.contents + "template.acutis";
-                errors$0.contents =
-                  errors$0.contents +
+                errors$0.contents += "File: ";
+                errors$0.contents += "template.acutis";
+                errors$0.contents +=
                   "\n\
   Render error.\n\
   The data supplied does not match this template's interface.\n\
   ";
-                errors$0.contents = errors$0.contents + "Path:\n";
-                errors$0.contents = errors$0.contents + arg$1[0];
+                errors$0.contents += "Path:\n";
+                errors$0.contents += arg$1[0];
                 let stack$0 = arg$1[1];
                 while (!(stack$0 === 0)) {
-                  errors$0.contents = errors$0.contents + " <- ";
-                  errors$0.contents = errors$0.contents + stack$0[0];
+                  errors$0.contents += " <- ";
+                  errors$0.contents += stack$0[0];
                   stack$0 = stack$0[1];
                 }
-                errors$0.contents = errors$0.contents + "\nExpected type:\n";
-                errors$0.contents = errors$0.contents + arg$2;
-                errors$0.contents =
-                  errors$0.contents + "\nInput is missing keys:\n";
-                errors$0.contents = errors$0.contents + arg$3[0];
+                errors$0.contents += "\nExpected type:\n";
+                errors$0.contents += arg$2;
+                errors$0.contents += "\nInput is missing keys:\n";
+                errors$0.contents += arg$3[0];
                 let stack$1 = arg$3[1];
                 while (!(stack$1 === 0)) {
-                  errors$0.contents = errors$0.contents + ", ";
-                  errors$0.contents = errors$0.contents + stack$1[0];
+                  errors$0.contents += ", ";
+                  errors$0.contents += stack$1[0];
                   stack$1 = stack$1[1];
                 }
               }
@@ -1160,22 +1156,19 @@
     if (errors$0.contents.length === 0) {
       let buf_sync$0 = {contents: ""};
       let buf_async$0 = Promise.resolve({contents: ""});
-      buf_sync$0.contents =
-        buf_sync$0.contents + "Formatters\n----------\n\n%i    ";
+      buf_sync$0.contents += "Formatters\n----------\n\n%i    ";
       buffer_add_escape$0(buf_sync$0)(String(props$0.get("big_int")));
-      buf_sync$0.contents = buf_sync$0.contents + "\n%f    ";
+      buf_sync$0.contents += "\n%f    ";
       buffer_add_escape$0(buf_sync$0)(String(props$0.get("big_float")));
-      buf_sync$0.contents = buf_sync$0.contents + "\n%b    ";
+      buf_sync$0.contents += "\n%b    ";
       buffer_add_escape$0(buf_sync$0)(String(!(props$0.get("bool1") === 0)));
-      buf_sync$0.contents = buf_sync$0.contents + "\n%b    ";
+      buf_sync$0.contents += "\n%b    ";
       buffer_add_escape$0(buf_sync$0)(String(!(props$0.get("bool2") === 0)));
-      buf_sync$0.contents =
-        buf_sync$0.contents + "\n\nEscaping\n--------\n\nEscaped     ";
+      buf_sync$0.contents += "\n\nEscaping\n--------\n\nEscaped     ";
       buffer_add_escape$0(buf_sync$0)(props$0.get("dangerous"));
-      buf_sync$0.contents = buf_sync$0.contents + "\nNot escaped ";
-      buf_sync$0.contents = buf_sync$0.contents + props$0.get("dangerous");
-      buf_sync$0.contents =
-        buf_sync$0.contents +
+      buf_sync$0.contents += "\nNot escaped ";
+      buf_sync$0.contents += props$0.get("dangerous");
+      buf_sync$0.contents +=
         "\n\nNullable echo chaining\n----------------------\n\n";
       let nullable$0 = props$0.get("null_int");
       if (!(nullable$0 === 0)) {
@@ -1198,7 +1191,7 @@
           }
         }
       }
-      buf_sync$0.contents = buf_sync$0.contents + "\n\nMatching\n--------\n\n";
+      buf_sync$0.contents += "\n\nMatching\n--------\n\n";
       let arg_match$0 = [props$0.get("record").get("int_enum")];
       let exit$0 = -1;
       let match_arg$0 = arg_match$0[0];
@@ -1208,9 +1201,9 @@
         if (match_arg$0 === 40) { exit$0 = 1; }
       }
       if (exit$0 === 0) {
-        buf_sync$0.contents = buf_sync$0.contents + "8\n";
+        buf_sync$0.contents += "8\n";
       } else {
-        buf_sync$0.contents = buf_sync$0.contents + "40\n";
+        buf_sync$0.contents += "40\n";
       }
       let arg_match$1 = [props$0.get("record")];
       let exit$1 = -1;
@@ -1222,9 +1215,9 @@
         if (match_arg$2 === "yes") { exit$1 = 0; }
       }
       if (exit$1 === 0) {
-        buf_sync$0.contents = buf_sync$0.contents + "yes\n";
+        buf_sync$0.contents += "yes\n";
       } else {
-        buf_sync$0.contents = buf_sync$0.contents + "no\n";
+        buf_sync$0.contents += "no\n";
       }
       let arg_match$2 = [props$0.get("tagged_record_bool")];
       let match_props$0 = new Map();
@@ -1244,10 +1237,10 @@
       }
       if (exit$2 === 0) {
         buffer_add_escape$0(buf_sync$0)(match_props$0.get("a"));
-        buf_sync$0.contents = buf_sync$0.contents + "\n";
+        buf_sync$0.contents += "\n";
       } else {
         buffer_add_escape$0(buf_sync$0)(String(match_props$0.get("b")));
-        buf_sync$0.contents = buf_sync$0.contents + "\n";
+        buf_sync$0.contents += "\n";
       }
       let arg_match$3 = [props$0.get("tagged_record_int")];
       let match_props$1 = new Map();
@@ -1269,16 +1262,16 @@
         }
       }
       if (exit$3 === 0) {
-        buf_sync$0.contents = buf_sync$0.contents + "Fail\n";
+        buf_sync$0.contents += "Fail\n";
       } else {
         buffer_add_escape$0(buf_sync$0)(String(match_props$1.get("a")));
-        buf_sync$0.contents = buf_sync$0.contents + " ";
+        buf_sync$0.contents += " ";
         buffer_add_escape$0(buf_sync$0)(match_props$1.get("b"));
-        buf_sync$0.contents = buf_sync$0.contents + " ";
+        buf_sync$0.contents += " ";
         buffer_add_escape$0(buf_sync$0)(
           String(!(match_props$1.get("c") === 0))
         );
-        buf_sync$0.contents = buf_sync$0.contents + "\n";
+        buf_sync$0.contents += "\n";
       }
       let arg_match$4 = [props$0.get("tagged_record_open")];
       let match_props$2 = new Map();
@@ -1292,13 +1285,13 @@
       }
       if (exit$4 === -1) { exit$4 = 1; }
       if (exit$4 === 0) {
-        buf_sync$0.contents = buf_sync$0.contents + " ";
+        buf_sync$0.contents += " ";
         buffer_add_escape$0(buf_sync$0)(match_props$2.get("b"));
-        buf_sync$0.contents = buf_sync$0.contents + "\n";
+        buf_sync$0.contents += "\n";
       } else {
-        buf_sync$0.contents = buf_sync$0.contents + "Another tag!\n";
+        buf_sync$0.contents += "Another tag!\n";
       }
-      buf_sync$0.contents = buf_sync$0.contents + "\n\nMapping\n-------\n\n";
+      buf_sync$0.contents += "\n\nMapping\n-------\n\n";
       let match_arg$9 = props$0.get("null_string_dict");
       for (let x$0 of match_arg$9) {
         let match_props$3 = new Map();
@@ -1314,12 +1307,12 @@
         }
         if (exit$5 === 0) {
           buffer_add_escape$0(buf_sync$0)(match_props$3.get("key"));
-          buf_sync$0.contents = buf_sync$0.contents + " is null.\n";
+          buf_sync$0.contents += " is null.\n";
         } else {
           buffer_add_escape$0(buf_sync$0)(match_props$3.get("key"));
-          buf_sync$0.contents = buf_sync$0.contents + " is ";
+          buf_sync$0.contents += " is ";
           buffer_add_escape$0(buf_sync$0)(match_props$3.get("str"));
-          buf_sync$0.contents = buf_sync$0.contents + "\n";
+          buf_sync$0.contents += "\n";
         }
       }
       let index$0 = 0;
@@ -1331,7 +1324,7 @@
         match_props$3.set("i", head$0);
         exit$5 = 0;
         buffer_add_escape$0(buf_sync$0)(String(match_props$3.get("i")));
-        buf_sync$0.contents = buf_sync$0.contents + "\n";
+        buf_sync$0.contents += "\n";
         index$0++;
         cell$0 = cell$0[1];
       }
@@ -1345,9 +1338,9 @@
         match_props$3.set("key", index$1);
         exit$5 = 0;
         buffer_add_escape$0(buf_sync$0)(String(match_props$3.get("key")));
-        buf_sync$0.contents = buf_sync$0.contents + " : ";
+        buf_sync$0.contents += " : ";
         buffer_add_escape$0(buf_sync$0)(String(match_props$3.get("i")));
-        buf_sync$0.contents = buf_sync$0.contents + "\n";
+        buf_sync$0.contents += "\n";
         index$1++;
         cell$1 = cell$1[1];
       }
@@ -1376,7 +1369,7 @@
             match_props$5.set("i", head$2);
             exit$7 = 0;
             buffer_add_escape$0(buf_sync$0)(String(match_props$5.get("i")));
-            buf_sync$0.contents = buf_sync$0.contents + " ";
+            buf_sync$0.contents += " ";
             index$4++;
             cell$4 = cell$4[1];
           }
@@ -1386,7 +1379,7 @@
         index$2++;
         cell$2 = cell$2[1];
       }
-      buf_sync$0.contents = buf_sync$0.contents + "\n\n";
+      buf_sync$0.contents += "\n\n";
       let index$3 = 0;
       let cell$3 = props$0.get("nested_nullable_list");
       while (!(cell$3 === 0)) {
@@ -1407,24 +1400,22 @@
           }
         }
         if (exit$5 === 0) {
-          buf_sync$0.contents = buf_sync$0.contents + "Level 1 null\n";
+          buf_sync$0.contents += "Level 1 null\n";
         } else {
           if (exit$5 === 1) {
-            buf_sync$0.contents =
-              buf_sync$0.contents + "Level 2 null (This shouldn't render.)\n";
+            buf_sync$0.contents += "Level 2 null (This shouldn't render.)\n";
           } else {
-            buf_sync$0.contents = buf_sync$0.contents + "Level 3 ";
+            buf_sync$0.contents += "Level 3 ";
             buffer_add_escape$0(buf_sync$0)(
               String(!(match_props$3.get("b") === 0))
             );
-            buf_sync$0.contents = buf_sync$0.contents + "\n";
+            buf_sync$0.contents += "\n";
           }
         }
         index$3++;
         cell$3 = cell$3[1];
       }
-      buf_sync$0.contents =
-        buf_sync$0.contents +
+      buf_sync$0.contents +=
         "\n\
   \n\
   Dictionaries match correctly\n\
@@ -1476,19 +1467,19 @@
       }
       if (exit$5 === -1) { exit$5 = 3; }
       if (exit$5 === 0) {
-        buf_sync$0.contents = buf_sync$0.contents + " ";
+        buf_sync$0.contents += " ";
         buffer_add_escape$0(buf_sync$0)(match_props$3.get("a"));
-        buf_sync$0.contents = buf_sync$0.contents + " ";
+        buf_sync$0.contents += " ";
         buffer_add_escape$0(buf_sync$0)(match_props$3.get("b"));
-        buf_sync$0.contents = buf_sync$0.contents + "\n";
+        buf_sync$0.contents += "\n";
       } else {
         if (exit$5 === 1) {
-          buf_sync$0.contents = buf_sync$0.contents + " Fail.\n";
+          buf_sync$0.contents += " Fail.\n";
         } else {
           if (exit$5 === 2) {
-            buf_sync$0.contents = buf_sync$0.contents + " Pass.\n";
+            buf_sync$0.contents += " Pass.\n";
           } else {
-            buf_sync$0.contents = buf_sync$0.contents + " Fail.\n";
+            buf_sync$0.contents += " Fail.\n";
           }
         }
       }
@@ -1527,28 +1518,27 @@
       }
       if (exit$6 === -1) { exit$6 = 3; }
       if (exit$6 === 0) {
-        buf_sync$0.contents = buf_sync$0.contents + " Fail. ";
+        buf_sync$0.contents += " Fail. ";
         buffer_add_escape$0(buf_sync$0)(match_props$4.get("a"));
-        buf_sync$0.contents = buf_sync$0.contents + " ";
+        buf_sync$0.contents += " ";
         buffer_add_escape$0(buf_sync$0)(match_props$4.get("b"));
-        buf_sync$0.contents = buf_sync$0.contents + "\n";
+        buf_sync$0.contents += "\n";
       } else {
         if (exit$6 === 1) {
-          buf_sync$0.contents = buf_sync$0.contents + " Fail.\n";
+          buf_sync$0.contents += " Fail.\n";
         } else {
           if (exit$6 === 2) {
-            buf_sync$0.contents = buf_sync$0.contents + " Pass.\n";
+            buf_sync$0.contents += " Pass.\n";
           } else {
-            buf_sync$0.contents = buf_sync$0.contents + " Fail.\n";
+            buf_sync$0.contents += " Fail.\n";
           }
         }
       }
-      buf_sync$0.contents =
-        buf_sync$0.contents +
+      buf_sync$0.contents +=
         "\n\nConstructing async blocks\n-------------------------\n\n";
       let buf_sync$1 = {contents: ""};
       let buf_async$1 = Promise.resolve({contents: ""});
-      buf_sync$1.contents = buf_sync$1.contents + " Nested block ";
+      buf_sync$1.contents += " Nested block ";
       let nullable$1 = props$0.get("null_string");
       if (!(nullable$1 === 0)) {
         buffer_add_escape$0(buf_sync$1)(nullable$1[0]);
@@ -1563,19 +1553,18 @@
             return (
               buf_async$1.then(
                 (arg$2) => {
-                  arg$2.contents = arg$2.contents + buf_sync$1.contents;
+                  arg$2.contents += buf_sync$1.contents;
                   return (Promise.resolve(arg$2.contents));
                 }
               ).then(
                 (arg$2) => {
                   let buf_sync$2 = {contents: ""};
                   let buf_async$2 = Promise.resolve({contents: ""});
-                  buf_sync$2.contents =
-                    buf_sync$2.contents + " Another nested block";
+                  buf_sync$2.contents += " Another nested block";
                   return (
                     buf_async$2.then(
                       (arg$3) => {
-                        arg$3.contents = arg$3.contents + buf_sync$2.contents;
+                        arg$3.contents += buf_sync$2.contents;
                         return (Promise.resolve(arg$3.contents));
                       }
                     ).then(
@@ -1593,14 +1582,13 @@
                         match_props$5.set("b", match_arg$14);
                         exit$7 = 0;
                         buffer_add_escape$0(buf_sync$3)(match_props$5.get("a"));
-                        buf_sync$3.contents = buf_sync$3.contents + " ";
+                        buf_sync$3.contents += " ";
                         buffer_add_escape$0(buf_sync$3)(match_props$5.get("b"));
-                        buf_sync$3.contents = buf_sync$3.contents + "\n";
+                        buf_sync$3.contents += "\n";
                         return (
                           buf_async$3.then(
                             (arg$4) => {
-                              arg$4.contents =
-                                arg$4.contents + buf_sync$3.contents;
+                              arg$4.contents += buf_sync$3.contents;
                               return (Promise.resolve(arg$4.contents));
                             }
                           )
@@ -1611,18 +1599,18 @@
                 }
               ).then(
                 (arg$2) => {
-                  arg$1.contents = arg$1.contents + sync_contents$0;
-                  arg$1.contents = arg$1.contents + arg$2;
+                  arg$1.contents += sync_contents$0;
+                  arg$1.contents += arg$2;
                   return (Promise.resolve(arg$1));
                 }
               )
             );
           }
         );
-      buf_sync$0.contents = buf_sync$0.contents + "Component\n---------\n\n";
+      buf_sync$0.contents += "Component\n---------\n\n";
       let buf_sync$2 = {contents: ""};
       let buf_async$2 = Promise.resolve({contents: ""});
-      buf_sync$2.contents = buf_sync$2.contents + "Children prop";
+      buf_sync$2.contents += "Children prop";
       let sync_contents$1 = buf_sync$0.contents;
       buf_sync$0.contents = "";
       buf_async$0 =
@@ -1631,7 +1619,7 @@
             return (
               buf_async$2.then(
                 (arg$2) => {
-                  arg$2.contents = arg$2.contents + buf_sync$2.contents;
+                  arg$2.contents += buf_sync$2.contents;
                   return (Promise.resolve(arg$2.contents));
                 }
               ).then(
@@ -1654,9 +1642,8 @@
                             )
                           ).then(
                             (arg$4) => {
-                              arg$3.contents =
-                                arg$3.contents + sync_contents$2;
-                              arg$3.contents = arg$3.contents + arg$4;
+                              arg$3.contents += sync_contents$2;
+                              arg$3.contents += arg$4;
                               return (Promise.resolve(arg$3));
                             }
                           )
@@ -1666,7 +1653,7 @@
                   return (
                     buf_async$3.then(
                       (arg$3) => {
-                        arg$3.contents = arg$3.contents + buf_sync$3.contents;
+                        arg$3.contents += buf_sync$3.contents;
                         return (Promise.resolve(arg$3.contents));
                       }
                     )
@@ -1674,15 +1661,15 @@
                 }
               ).then(
                 (arg$2) => {
-                  arg$1.contents = arg$1.contents + sync_contents$1;
-                  arg$1.contents = arg$1.contents + arg$2;
+                  arg$1.contents += sync_contents$1;
+                  arg$1.contents += arg$2;
                   return (Promise.resolve(arg$1));
                 }
               )
             );
           }
         );
-      buf_sync$0.contents = buf_sync$0.contents + "\n\n";
+      buf_sync$0.contents += "\n\n";
       let sync_contents$2 = buf_sync$0.contents;
       buf_sync$0.contents = "";
       buf_async$0 =
@@ -1691,16 +1678,15 @@
             return (
               components$0.get("Another_function")(new Map([])).then(
                 (arg$2) => {
-                  arg$1.contents = arg$1.contents + sync_contents$2;
-                  arg$1.contents = arg$1.contents + arg$2;
+                  arg$1.contents += sync_contents$2;
+                  arg$1.contents += arg$2;
                   return (Promise.resolve(arg$1));
                 }
               )
             );
           }
         );
-      buf_sync$0.contents =
-        buf_sync$0.contents +
+      buf_sync$0.contents +=
         "\n\
   \n\
   Complicated pattern matching\n\
@@ -1759,22 +1745,22 @@
         }
       }
       if (exit$7 === 0) {
-        buf_sync$0.contents = buf_sync$0.contents + " 0\n";
+        buf_sync$0.contents += " 0\n";
       } else {
         if (exit$7 === 1) {
-          buf_sync$0.contents = buf_sync$0.contents + " 1 ";
+          buf_sync$0.contents += " 1 ";
           buffer_add_escape$0(buf_sync$0)(String(match_props$5.get("x")));
-          buf_sync$0.contents = buf_sync$0.contents + "\n";
+          buf_sync$0.contents += "\n";
         } else {
           if (exit$7 === 2) {
-            buf_sync$0.contents = buf_sync$0.contents + " 2 ";
+            buf_sync$0.contents += " 2 ";
             buffer_add_escape$0(buf_sync$0)(String(match_props$5.get("y")));
-            buf_sync$0.contents = buf_sync$0.contents + "\n";
+            buf_sync$0.contents += "\n";
           } else {
             if (exit$7 === 3) {
-              buf_sync$0.contents = buf_sync$0.contents + " 3\n";
+              buf_sync$0.contents += " 3\n";
             } else {
-              buf_sync$0.contents = buf_sync$0.contents + " 4\n";
+              buf_sync$0.contents += " 4\n";
             }
           }
         }
@@ -1818,14 +1804,14 @@
         }
       }
       if (exit$8 === 0) {
-        buf_sync$0.contents = buf_sync$0.contents + "\n";
+        buf_sync$0.contents += "\n";
       } else {
         if (exit$8 === 1) {
-          buf_sync$0.contents = buf_sync$0.contents + " Pass\n";
+          buf_sync$0.contents += " Pass\n";
         } else {
-          buf_sync$0.contents = buf_sync$0.contents + " ";
+          buf_sync$0.contents += " ";
           buffer_add_escape$0(buf_sync$0)(String(match_props$6.get("z")));
-          buf_sync$0.contents = buf_sync$0.contents + "\n";
+          buf_sync$0.contents += "\n";
         }
       }
       let arg_match$9 = [[[10, 20], 99], 40];
@@ -1867,18 +1853,17 @@
         }
       }
       if (exit$9 === 0) {
-        buf_sync$0.contents = buf_sync$0.contents + "\n";
+        buf_sync$0.contents += "\n";
       } else {
         if (exit$9 === 1) {
-          buf_sync$0.contents = buf_sync$0.contents + " Fail\n";
+          buf_sync$0.contents += " Fail\n";
         } else {
-          buf_sync$0.contents = buf_sync$0.contents + " ";
+          buf_sync$0.contents += " ";
           buffer_add_escape$0(buf_sync$0)(String(match_props$7.get("z")));
-          buf_sync$0.contents = buf_sync$0.contents + "\n";
+          buf_sync$0.contents += "\n";
         }
       }
-      buf_sync$0.contents =
-        buf_sync$0.contents +
+      buf_sync$0.contents +=
         "String encoding\n\
   ---------------\n\
   \n\
@@ -1887,8 +1872,7 @@
   \n\
   ";
       buffer_add_escape$0(buf_sync$0)(props$0.get("unicode_string"));
-      buf_sync$0.contents =
-        buf_sync$0.contents +
+      buf_sync$0.contents +=
         "\n\
   \n\
   External JavaScript template component: stringify arbitrary data\n\
@@ -1923,19 +1907,19 @@
                 )
               ).then(
                 (arg$2) => {
-                  arg$1.contents = arg$1.contents + sync_contents$3;
-                  arg$1.contents = arg$1.contents + arg$2;
+                  arg$1.contents += sync_contents$3;
+                  arg$1.contents += arg$2;
                   return (Promise.resolve(arg$1));
                 }
               )
             );
           }
         );
-      buf_sync$0.contents = buf_sync$0.contents + "\n";
+      buf_sync$0.contents += "\n";
       return (
         buf_async$0.then(
           (arg$1) => {
-            arg$1.contents = arg$1.contents + buf_sync$0.contents;
+            arg$1.contents += buf_sync$0.contents;
             return (Promise.resolve(arg$1.contents));
           }
         )

@@ -10,16 +10,15 @@
           for (let i$0 = 0; i$0 < arg$1.length; i$0++) {
             let c$0 = arg$1.charCodeAt(i$0);
             switch (c$0) {
-              case 38: arg$0.contents = arg$0.contents + "&amp;"; break;
-              case 34: arg$0.contents = arg$0.contents + "&quot;"; break;
-              case 39: arg$0.contents = arg$0.contents + "&apos;"; break;
-              case 62: arg$0.contents = arg$0.contents + "&gt;"; break;
-              case 60: arg$0.contents = arg$0.contents + "&lt;"; break;
-              case 47: arg$0.contents = arg$0.contents + "&sol;"; break;
-              case 96: arg$0.contents = arg$0.contents + "&grave;"; break;
-              case 61: arg$0.contents = arg$0.contents + "&equals;"; break;
-              default:
-                arg$0.contents = arg$0.contents + String.fromCharCode(c$0);
+              case 38: arg$0.contents += "&amp;"; break;
+              case 34: arg$0.contents += "&quot;"; break;
+              case 39: arg$0.contents += "&apos;"; break;
+              case 62: arg$0.contents += "&gt;"; break;
+              case 60: arg$0.contents += "&lt;"; break;
+              case 47: arg$0.contents += "&sol;"; break;
+              case 96: arg$0.contents += "&grave;"; break;
+              case 61: arg$0.contents += "&equals;"; break;
+              default: arg$0.contents += String.fromCharCode(c$0);
             }
           }
         }
@@ -45,28 +44,27 @@
             return (
               (arg$3) => {
                 if (!(errors$0.contents.length === 0)) {
-                  errors$0.contents = errors$0.contents + "\n\n";
+                  errors$0.contents += "\n\n";
                 }
-                errors$0.contents = errors$0.contents + "File \"";
-                errors$0.contents = errors$0.contents + "template.acutis";
-                errors$0.contents =
-                  errors$0.contents +
+                errors$0.contents += "File \"";
+                errors$0.contents += "template.acutis";
+                errors$0.contents +=
                   "\"\n\
   Render error.\n\
   The data supplied does not match this template's interface.\n\
   ";
-                errors$0.contents = errors$0.contents + "Path:\n";
-                errors$0.contents = errors$0.contents + arg$1[0];
+                errors$0.contents += "Path:\n";
+                errors$0.contents += arg$1[0];
                 let stack$0 = arg$1[1];
                 while (!(stack$0 === 0)) {
-                  errors$0.contents = errors$0.contents + " <- ";
-                  errors$0.contents = errors$0.contents + stack$0[0];
+                  errors$0.contents += " <- ";
+                  errors$0.contents += stack$0[0];
                   stack$0 = stack$0[1];
                 }
-                errors$0.contents = errors$0.contents + "\nExpected type:\n";
-                errors$0.contents = errors$0.contents + arg$2;
-                errors$0.contents = errors$0.contents + "\nReceived value:\n";
-                errors$0.contents = errors$0.contents + String(arg$3);
+                errors$0.contents += "\nExpected type:\n";
+                errors$0.contents += arg$2;
+                errors$0.contents += "\nReceived value:\n";
+                errors$0.contents += String(arg$3);
               }
             );
           }
@@ -79,33 +77,31 @@
             return (
               (arg$3) => {
                 if (!(errors$0.contents.length === 0)) {
-                  errors$0.contents = errors$0.contents + "\n\n";
+                  errors$0.contents += "\n\n";
                 }
-                errors$0.contents = errors$0.contents + "File: ";
-                errors$0.contents = errors$0.contents + "template.acutis";
-                errors$0.contents =
-                  errors$0.contents +
+                errors$0.contents += "File: ";
+                errors$0.contents += "template.acutis";
+                errors$0.contents +=
                   "\n\
   Render error.\n\
   The data supplied does not match this template's interface.\n\
   ";
-                errors$0.contents = errors$0.contents + "Path:\n";
-                errors$0.contents = errors$0.contents + arg$1[0];
+                errors$0.contents += "Path:\n";
+                errors$0.contents += arg$1[0];
                 let stack$0 = arg$1[1];
                 while (!(stack$0 === 0)) {
-                  errors$0.contents = errors$0.contents + " <- ";
-                  errors$0.contents = errors$0.contents + stack$0[0];
+                  errors$0.contents += " <- ";
+                  errors$0.contents += stack$0[0];
                   stack$0 = stack$0[1];
                 }
-                errors$0.contents = errors$0.contents + "\nExpected type:\n";
-                errors$0.contents = errors$0.contents + arg$2;
-                errors$0.contents =
-                  errors$0.contents + "\nInput is missing keys:\n";
-                errors$0.contents = errors$0.contents + arg$3[0];
+                errors$0.contents += "\nExpected type:\n";
+                errors$0.contents += arg$2;
+                errors$0.contents += "\nInput is missing keys:\n";
+                errors$0.contents += arg$3[0];
                 let stack$1 = arg$3[1];
                 while (!(stack$1 === 0)) {
-                  errors$0.contents = errors$0.contents + ", ";
-                  errors$0.contents = errors$0.contents + stack$1[0];
+                  errors$0.contents += ", ";
+                  errors$0.contents += stack$1[0];
                   stack$1 = stack$1[1];
                 }
               }
@@ -129,7 +125,7 @@
       let buf_async$0 = Promise.resolve({contents: ""});
       let buf_sync$1 = {contents: ""};
       let buf_async$1 = Promise.resolve({contents: ""});
-      buf_sync$1.contents = buf_sync$1.contents + " text ";
+      buf_sync$1.contents += " text ";
       let sync_contents$0 = buf_sync$0.contents;
       buf_sync$0.contents = "";
       buf_async$0 =
@@ -138,7 +134,7 @@
             return (
               buf_async$1.then(
                 (arg$2) => {
-                  arg$2.contents = arg$2.contents + buf_sync$1.contents;
+                  arg$2.contents += buf_sync$1.contents;
                   return (Promise.resolve(arg$2.contents));
                 }
               ).then(
@@ -155,9 +151,8 @@
                             new Map([["children", arg$2]])
                           ).then(
                             (arg$4) => {
-                              arg$3.contents =
-                                arg$3.contents + sync_contents$1;
-                              arg$3.contents = arg$3.contents + arg$4;
+                              arg$3.contents += sync_contents$1;
+                              arg$3.contents += arg$4;
                               return (Promise.resolve(arg$3));
                             }
                           )
@@ -167,7 +162,7 @@
                   return (
                     buf_async$2.then(
                       (arg$3) => {
-                        arg$3.contents = arg$3.contents + buf_sync$2.contents;
+                        arg$3.contents += buf_sync$2.contents;
                         return (Promise.resolve(arg$3.contents));
                       }
                     )
@@ -175,19 +170,19 @@
                 }
               ).then(
                 (arg$2) => {
-                  arg$1.contents = arg$1.contents + sync_contents$0;
-                  arg$1.contents = arg$1.contents + arg$2;
+                  arg$1.contents += sync_contents$0;
+                  arg$1.contents += arg$2;
                   return (Promise.resolve(arg$1));
                 }
               )
             );
           }
         );
-      buf_sync$0.contents = buf_sync$0.contents + "\n";
+      buf_sync$0.contents += "\n";
       return (
         buf_async$0.then(
           (arg$1) => {
-            arg$1.contents = arg$1.contents + buf_sync$0.contents;
+            arg$1.contents += buf_sync$0.contents;
             return (Promise.resolve(arg$1.contents));
           }
         )
@@ -209,16 +204,15 @@
           for (let i$0 = 0; i$0 < arg$1.length; i$0++) {
             let c$0 = arg$1.charCodeAt(i$0);
             switch (c$0) {
-              case 38: arg$0.contents = arg$0.contents + "&amp;"; break;
-              case 34: arg$0.contents = arg$0.contents + "&quot;"; break;
-              case 39: arg$0.contents = arg$0.contents + "&apos;"; break;
-              case 62: arg$0.contents = arg$0.contents + "&gt;"; break;
-              case 60: arg$0.contents = arg$0.contents + "&lt;"; break;
-              case 47: arg$0.contents = arg$0.contents + "&sol;"; break;
-              case 96: arg$0.contents = arg$0.contents + "&grave;"; break;
-              case 61: arg$0.contents = arg$0.contents + "&equals;"; break;
-              default:
-                arg$0.contents = arg$0.contents + String.fromCharCode(c$0);
+              case 38: arg$0.contents += "&amp;"; break;
+              case 34: arg$0.contents += "&quot;"; break;
+              case 39: arg$0.contents += "&apos;"; break;
+              case 62: arg$0.contents += "&gt;"; break;
+              case 60: arg$0.contents += "&lt;"; break;
+              case 47: arg$0.contents += "&sol;"; break;
+              case 96: arg$0.contents += "&grave;"; break;
+              case 61: arg$0.contents += "&equals;"; break;
+              default: arg$0.contents += String.fromCharCode(c$0);
             }
           }
         }
@@ -245,29 +239,27 @@
               return (
                 (arg$3) => {
                   if (!(errors$0.contents.length === 0)) {
-                    errors$0.contents = errors$0.contents + "\n\n";
+                    errors$0.contents += "\n\n";
                   }
-                  errors$0.contents = errors$0.contents + "File \"";
-                  errors$0.contents = errors$0.contents + "template.acutis";
-                  errors$0.contents =
-                    errors$0.contents +
+                  errors$0.contents += "File \"";
+                  errors$0.contents += "template.acutis";
+                  errors$0.contents +=
                     "\"\n\
   Render error.\n\
   The data supplied does not match this template's interface.\n\
   ";
-                  errors$0.contents = errors$0.contents + "Path:\n";
-                  errors$0.contents = errors$0.contents + arg$1[0];
+                  errors$0.contents += "Path:\n";
+                  errors$0.contents += arg$1[0];
                   let stack$0 = arg$1[1];
                   while (!(stack$0 === 0)) {
-                    errors$0.contents = errors$0.contents + " <- ";
-                    errors$0.contents = errors$0.contents + stack$0[0];
+                    errors$0.contents += " <- ";
+                    errors$0.contents += stack$0[0];
                     stack$0 = stack$0[1];
                   }
-                  errors$0.contents = errors$0.contents + "\nExpected type:\n";
-                  errors$0.contents = errors$0.contents + arg$2;
-                  errors$0.contents =
-                    errors$0.contents + "\nReceived value:\n";
-                  errors$0.contents = errors$0.contents + String(arg$3);
+                  errors$0.contents += "\nExpected type:\n";
+                  errors$0.contents += arg$2;
+                  errors$0.contents += "\nReceived value:\n";
+                  errors$0.contents += String(arg$3);
                 }
               );
             }
@@ -280,33 +272,31 @@
               return (
                 (arg$3) => {
                   if (!(errors$0.contents.length === 0)) {
-                    errors$0.contents = errors$0.contents + "\n\n";
+                    errors$0.contents += "\n\n";
                   }
-                  errors$0.contents = errors$0.contents + "File: ";
-                  errors$0.contents = errors$0.contents + "template.acutis";
-                  errors$0.contents =
-                    errors$0.contents +
+                  errors$0.contents += "File: ";
+                  errors$0.contents += "template.acutis";
+                  errors$0.contents +=
                     "\n\
   Render error.\n\
   The data supplied does not match this template's interface.\n\
   ";
-                  errors$0.contents = errors$0.contents + "Path:\n";
-                  errors$0.contents = errors$0.contents + arg$1[0];
+                  errors$0.contents += "Path:\n";
+                  errors$0.contents += arg$1[0];
                   let stack$0 = arg$1[1];
                   while (!(stack$0 === 0)) {
-                    errors$0.contents = errors$0.contents + " <- ";
-                    errors$0.contents = errors$0.contents + stack$0[0];
+                    errors$0.contents += " <- ";
+                    errors$0.contents += stack$0[0];
                     stack$0 = stack$0[1];
                   }
-                  errors$0.contents = errors$0.contents + "\nExpected type:\n";
-                  errors$0.contents = errors$0.contents + arg$2;
-                  errors$0.contents =
-                    errors$0.contents + "\nInput is missing keys:\n";
-                  errors$0.contents = errors$0.contents + arg$3[0];
+                  errors$0.contents += "\nExpected type:\n";
+                  errors$0.contents += arg$2;
+                  errors$0.contents += "\nInput is missing keys:\n";
+                  errors$0.contents += arg$3[0];
                   let stack$1 = arg$3[1];
                   while (!(stack$1 === 0)) {
-                    errors$0.contents = errors$0.contents + ", ";
-                    errors$0.contents = errors$0.contents + stack$1[0];
+                    errors$0.contents += ", ";
+                    errors$0.contents += stack$1[0];
                     stack$1 = stack$1[1];
                   }
                 }
@@ -330,7 +320,7 @@
         let buf_async$0 = Promise.resolve({contents: ""});
         let buf_sync$1 = {contents: ""};
         let buf_async$1 = Promise.resolve({contents: ""});
-        buf_sync$1.contents = buf_sync$1.contents + " text ";
+        buf_sync$1.contents += " text ";
         let sync_contents$0 = buf_sync$0.contents;
         buf_sync$0.contents = "";
         buf_async$0 =
@@ -339,7 +329,7 @@
               return (
                 buf_async$1.then(
                   (arg$2) => {
-                    arg$2.contents = arg$2.contents + buf_sync$1.contents;
+                    arg$2.contents += buf_sync$1.contents;
                     return (Promise.resolve(arg$2.contents));
                   }
                 ).then(
@@ -356,9 +346,8 @@
                               new Map([["children", arg$2]])
                             ).then(
                               (arg$4) => {
-                                arg$3.contents =
-                                  arg$3.contents + sync_contents$1;
-                                arg$3.contents = arg$3.contents + arg$4;
+                                arg$3.contents += sync_contents$1;
+                                arg$3.contents += arg$4;
                                 return (Promise.resolve(arg$3));
                               }
                             )
@@ -368,8 +357,7 @@
                     return (
                       buf_async$2.then(
                         (arg$3) => {
-                          arg$3.contents =
-                            arg$3.contents + buf_sync$2.contents;
+                          arg$3.contents += buf_sync$2.contents;
                           return (Promise.resolve(arg$3.contents));
                         }
                       )
@@ -377,19 +365,19 @@
                   }
                 ).then(
                   (arg$2) => {
-                    arg$1.contents = arg$1.contents + sync_contents$0;
-                    arg$1.contents = arg$1.contents + arg$2;
+                    arg$1.contents += sync_contents$0;
+                    arg$1.contents += arg$2;
                     return (Promise.resolve(arg$1));
                   }
                 )
               );
             }
           );
-        buf_sync$0.contents = buf_sync$0.contents + "\n";
+        buf_sync$0.contents += "\n";
         return (
           buf_async$0.then(
             (arg$1) => {
-              arg$1.contents = arg$1.contents + buf_sync$0.contents;
+              arg$1.contents += buf_sync$0.contents;
               return (Promise.resolve(arg$1.contents));
             }
           )

@@ -6,16 +6,15 @@ let buffer_add_escape$0 =
         for (let i$0 = 0; i$0 < arg$1.length; i$0++) {
           let c$0 = arg$1.charCodeAt(i$0);
           switch (c$0) {
-            case 38: arg$0.contents = arg$0.contents + "&amp;"; break;
-            case 34: arg$0.contents = arg$0.contents + "&quot;"; break;
-            case 39: arg$0.contents = arg$0.contents + "&apos;"; break;
-            case 62: arg$0.contents = arg$0.contents + "&gt;"; break;
-            case 60: arg$0.contents = arg$0.contents + "&lt;"; break;
-            case 47: arg$0.contents = arg$0.contents + "&sol;"; break;
-            case 96: arg$0.contents = arg$0.contents + "&grave;"; break;
-            case 61: arg$0.contents = arg$0.contents + "&equals;"; break;
-            default:
-              arg$0.contents = arg$0.contents + String.fromCharCode(c$0);
+            case 38: arg$0.contents += "&amp;"; break;
+            case 34: arg$0.contents += "&quot;"; break;
+            case 39: arg$0.contents += "&apos;"; break;
+            case 62: arg$0.contents += "&gt;"; break;
+            case 60: arg$0.contents += "&lt;"; break;
+            case 47: arg$0.contents += "&sol;"; break;
+            case 96: arg$0.contents += "&grave;"; break;
+            case 61: arg$0.contents += "&equals;"; break;
+            default: arg$0.contents += String.fromCharCode(c$0);
           }
         }
       }
@@ -31,29 +30,27 @@ export default (arg$0) => {
           return (
             (arg$3) => {
               if (!(errors$0.contents.length === 0)) {
-                errors$0.contents = errors$0.contents + "\n\n";
+                errors$0.contents += "\n\n";
               }
-              errors$0.contents = errors$0.contents + "File \"";
-              errors$0.contents =
-                errors$0.contents + "printjs_example.acutis";
-              errors$0.contents =
-                errors$0.contents +
+              errors$0.contents += "File \"";
+              errors$0.contents += "printjs_example.acutis";
+              errors$0.contents +=
                 "\"\n\
 Render error.\n\
 The data supplied does not match this template's interface.\n\
 ";
-              errors$0.contents = errors$0.contents + "Path:\n";
-              errors$0.contents = errors$0.contents + arg$1[0];
+              errors$0.contents += "Path:\n";
+              errors$0.contents += arg$1[0];
               let stack$0 = arg$1[1];
               while (!(stack$0 === 0)) {
-                errors$0.contents = errors$0.contents + " <- ";
-                errors$0.contents = errors$0.contents + stack$0[0];
+                errors$0.contents += " <- ";
+                errors$0.contents += stack$0[0];
                 stack$0 = stack$0[1];
               }
-              errors$0.contents = errors$0.contents + "\nExpected type:\n";
-              errors$0.contents = errors$0.contents + arg$2;
-              errors$0.contents = errors$0.contents + "\nReceived value:\n";
-              errors$0.contents = errors$0.contents + String(arg$3);
+              errors$0.contents += "\nExpected type:\n";
+              errors$0.contents += arg$2;
+              errors$0.contents += "\nReceived value:\n";
+              errors$0.contents += String(arg$3);
             }
           );
         }
@@ -66,34 +63,31 @@ The data supplied does not match this template's interface.\n\
           return (
             (arg$3) => {
               if (!(errors$0.contents.length === 0)) {
-                errors$0.contents = errors$0.contents + "\n\n";
+                errors$0.contents += "\n\n";
               }
-              errors$0.contents = errors$0.contents + "File: ";
-              errors$0.contents =
-                errors$0.contents + "printjs_example.acutis";
-              errors$0.contents =
-                errors$0.contents +
+              errors$0.contents += "File: ";
+              errors$0.contents += "printjs_example.acutis";
+              errors$0.contents +=
                 "\n\
 Render error.\n\
 The data supplied does not match this template's interface.\n\
 ";
-              errors$0.contents = errors$0.contents + "Path:\n";
-              errors$0.contents = errors$0.contents + arg$1[0];
+              errors$0.contents += "Path:\n";
+              errors$0.contents += arg$1[0];
               let stack$0 = arg$1[1];
               while (!(stack$0 === 0)) {
-                errors$0.contents = errors$0.contents + " <- ";
-                errors$0.contents = errors$0.contents + stack$0[0];
+                errors$0.contents += " <- ";
+                errors$0.contents += stack$0[0];
                 stack$0 = stack$0[1];
               }
-              errors$0.contents = errors$0.contents + "\nExpected type:\n";
-              errors$0.contents = errors$0.contents + arg$2;
-              errors$0.contents =
-                errors$0.contents + "\nInput is missing keys:\n";
-              errors$0.contents = errors$0.contents + arg$3[0];
+              errors$0.contents += "\nExpected type:\n";
+              errors$0.contents += arg$2;
+              errors$0.contents += "\nInput is missing keys:\n";
+              errors$0.contents += arg$3[0];
               let stack$1 = arg$3[1];
               while (!(stack$1 === 0)) {
-                errors$0.contents = errors$0.contents + ", ";
-                errors$0.contents = errors$0.contents + stack$1[0];
+                errors$0.contents += ", ";
+                errors$0.contents += stack$1[0];
                 stack$1 = stack$1[1];
               }
             }
@@ -309,9 +303,9 @@ The data supplied does not match this template's interface.\n\
   if (errors$0.contents.length === 0) {
     let buf_sync$0 = {contents: ""};
     let buf_async$0 = Promise.resolve({contents: ""});
-    buf_sync$0.contents = buf_sync$0.contents + "<h1> Blog posts for ";
+    buf_sync$0.contents += "<h1> Blog posts for ";
     buffer_add_escape$0(buf_sync$0)(props$0.get("siteTitle"));
-    buf_sync$0.contents = buf_sync$0.contents + " </h1>";
+    buf_sync$0.contents += " </h1>";
     let index$0 = 0;
     let cell$0 = props$0.get("blogPosts");
     while (!(cell$0 === 0)) {
@@ -330,8 +324,7 @@ The data supplied does not match this template's interface.\n\
       match_props$0.set("name", match_arg$1);
       match_props$0.set("title", match_arg$5);
       exit$0 = 0;
-      buf_sync$0.contents =
-        buf_sync$0.contents +
+      buf_sync$0.contents +=
         "\n  <article class=\"h-entry\">\n    <header>\n      ";
       let arg_match$0 = [match_props$0.get("image")];
       let match_props$1 = new Map();
@@ -349,40 +342,36 @@ The data supplied does not match this template's interface.\n\
         exit$1 = 1;
       }
       if (!(exit$1 === 0)) {
-        buf_sync$0.contents = buf_sync$0.contents + "<img src=\"";
+        buf_sync$0.contents += "<img src=\"";
         buffer_add_escape$0(buf_sync$0)(match_props$1.get("src"));
-        buf_sync$0.contents = buf_sync$0.contents + "\" alt=\"";
+        buf_sync$0.contents += "\" alt=\"";
         buffer_add_escape$0(buf_sync$0)(match_props$1.get("alt"));
-        buf_sync$0.contents = buf_sync$0.contents + "\">\n      ";
+        buf_sync$0.contents += "\">\n      ";
       }
-      buf_sync$0.contents = buf_sync$0.contents + "<h2 class=\"p-name\"> ";
+      buf_sync$0.contents += "<h2 class=\"p-name\"> ";
       buffer_add_escape$0(buf_sync$0)(match_props$0.get("title"));
-      buf_sync$0.contents =
-        buf_sync$0.contents + " </h2>\n      <span class=\"p-author\"> By ";
+      buf_sync$0.contents += " </h2>\n      <span class=\"p-author\"> By ";
       let nullable$0 = match_props$0.get("name");
       if (!(nullable$0 === 0)) {
         buffer_add_escape$0(buf_sync$0)(nullable$0[0]);
       } else {
         buffer_add_escape$0(buf_sync$0)("Anonymous");
       }
-      buf_sync$0.contents =
-        buf_sync$0.contents +
+      buf_sync$0.contents +=
         " </span>\n      <span class=\"dt-published\"> Posted on ";
       buffer_add_escape$0(buf_sync$0)(match_props$0.get("date"));
-      buf_sync$0.contents =
-        buf_sync$0.contents +
+      buf_sync$0.contents +=
         " </span>\n    </header>\n    <div class=\"e-content\"> ";
-      buf_sync$0.contents =
-        buf_sync$0.contents + match_props$0.get("content");
-      buf_sync$0.contents = buf_sync$0.contents + " </div>\n  </article>\n";
+      buf_sync$0.contents += match_props$0.get("content");
+      buf_sync$0.contents += " </div>\n  </article>\n";
       index$0++;
       cell$0 = cell$0[1];
     }
-    buf_sync$0.contents = buf_sync$0.contents + "\n";
+    buf_sync$0.contents += "\n";
     return (
       buf_async$0.then(
         (arg$1) => {
-          arg$1.contents = arg$1.contents + buf_sync$0.contents;
+          arg$1.contents += buf_sync$0.contents;
           return (Promise.resolve(arg$1.contents));
         }
       )
