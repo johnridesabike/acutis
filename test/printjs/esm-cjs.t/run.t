@@ -35,7 +35,7 @@
       return (import$0(Object.fromEntries(encoded$0)));
     }
   );
-  export default (arg$0) => {
+  export default async (arg$0) => {
     let errors$0 = {contents: ""};
     let decode_error$0 =
       (arg$1) => {
@@ -121,72 +121,16 @@
       decode_error$0(stack$0)(type$0)(arg$0);
     }
     if (errors$0.contents.length === 0) {
-      let buf_sync$0 = {contents: ""};
-      let buf_async$0 = Promise.resolve({contents: ""});
-      let buf_sync$1 = {contents: ""};
-      let buf_async$1 = Promise.resolve({contents: ""});
-      buf_sync$1.contents += " text ";
-      let sync_contents$0 = buf_sync$0.contents;
-      buf_sync$0.contents = "";
-      buf_async$0 =
-        buf_async$0.then(
-          (arg$1) => {
-            return (
-              buf_async$1.then(
-                (arg$2) => {
-                  arg$2.contents += buf_sync$1.contents;
-                  return (Promise.resolve(arg$2.contents));
-                }
-              ).then(
-                (arg$2) => {
-                  let buf_sync$2 = {contents: ""};
-                  let buf_async$2 = Promise.resolve({contents: ""});
-                  let sync_contents$1 = buf_sync$2.contents;
-                  buf_sync$2.contents = "";
-                  buf_async$2 =
-                    buf_async$2.then(
-                      (arg$3) => {
-                        return (
-                          components$0.get("ExternalFunction")(
-                            new Map([["children", arg$2]])
-                          ).then(
-                            (arg$4) => {
-                              arg$3.contents += sync_contents$1;
-                              arg$3.contents += arg$4;
-                              return (Promise.resolve(arg$3));
-                            }
-                          )
-                        );
-                      }
-                    );
-                  return (
-                    buf_async$2.then(
-                      (arg$3) => {
-                        arg$3.contents += buf_sync$2.contents;
-                        return (Promise.resolve(arg$3.contents));
-                      }
-                    )
-                  );
-                }
-              ).then(
-                (arg$2) => {
-                  arg$1.contents += sync_contents$0;
-                  arg$1.contents += arg$2;
-                  return (Promise.resolve(arg$1));
-                }
-              )
-            );
-          }
-        );
-      buf_sync$0.contents += "\n";
-      return (
-        buf_async$0.then(
-          (arg$1) => {
-            arg$1.contents += buf_sync$0.contents;
-            return (Promise.resolve(arg$1.contents));
-          }
-        )
-      );
+      let buf$0 = {contents: ""};
+      let buf$1 = {contents: ""};
+      buf$1.contents += " text ";
+      buf$0.contents +=
+        await
+          components$0.get("ExternalFunction")(
+            new Map([["children", buf$1.contents]])
+          );
+      buf$0.contents += "\n";
+      return (Promise.resolve(buf$0.contents));
     } else {
       return (Promise.reject(new Error(errors$0.contents)));
     }
@@ -230,7 +174,7 @@
     }
   );
   module.exports =
-    (arg$0) => {
+    async (arg$0) => {
       let errors$0 = {contents: ""};
       let decode_error$0 =
         (arg$1) => {
@@ -316,72 +260,16 @@
         decode_error$0(stack$0)(type$0)(arg$0);
       }
       if (errors$0.contents.length === 0) {
-        let buf_sync$0 = {contents: ""};
-        let buf_async$0 = Promise.resolve({contents: ""});
-        let buf_sync$1 = {contents: ""};
-        let buf_async$1 = Promise.resolve({contents: ""});
-        buf_sync$1.contents += " text ";
-        let sync_contents$0 = buf_sync$0.contents;
-        buf_sync$0.contents = "";
-        buf_async$0 =
-          buf_async$0.then(
-            (arg$1) => {
-              return (
-                buf_async$1.then(
-                  (arg$2) => {
-                    arg$2.contents += buf_sync$1.contents;
-                    return (Promise.resolve(arg$2.contents));
-                  }
-                ).then(
-                  (arg$2) => {
-                    let buf_sync$2 = {contents: ""};
-                    let buf_async$2 = Promise.resolve({contents: ""});
-                    let sync_contents$1 = buf_sync$2.contents;
-                    buf_sync$2.contents = "";
-                    buf_async$2 =
-                      buf_async$2.then(
-                        (arg$3) => {
-                          return (
-                            components$0.get("ExternalFunction")(
-                              new Map([["children", arg$2]])
-                            ).then(
-                              (arg$4) => {
-                                arg$3.contents += sync_contents$1;
-                                arg$3.contents += arg$4;
-                                return (Promise.resolve(arg$3));
-                              }
-                            )
-                          );
-                        }
-                      );
-                    return (
-                      buf_async$2.then(
-                        (arg$3) => {
-                          arg$3.contents += buf_sync$2.contents;
-                          return (Promise.resolve(arg$3.contents));
-                        }
-                      )
-                    );
-                  }
-                ).then(
-                  (arg$2) => {
-                    arg$1.contents += sync_contents$0;
-                    arg$1.contents += arg$2;
-                    return (Promise.resolve(arg$1));
-                  }
-                )
-              );
-            }
-          );
-        buf_sync$0.contents += "\n";
-        return (
-          buf_async$0.then(
-            (arg$1) => {
-              arg$1.contents += buf_sync$0.contents;
-              return (Promise.resolve(arg$1.contents));
-            }
-          )
-        );
+        let buf$0 = {contents: ""};
+        let buf$1 = {contents: ""};
+        buf$1.contents += " text ";
+        buf$0.contents +=
+          await
+            components$0.get("ExternalFunction")(
+              new Map([["children", buf$1.contents]])
+            );
+        buf$0.contents += "\n";
+        return (Promise.resolve(buf$0.contents));
       } else {
         return (Promise.reject(new Error(errors$0.contents)));
       }

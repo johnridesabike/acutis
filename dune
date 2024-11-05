@@ -17,7 +17,12 @@
  (libraries acutis)
  (js_of_ocaml
   (flags
-   (--enable effects)))
+   (--enable effects)
+   (--disable excwrap))
+  ; excwrap breaks the Eleventy plugin.
+  ; Dune's dev profile needs this flag in build_runtime_flags.
+  (build_runtime_flags
+   (--disable excwrap)))
  (preprocess
   (pps js_of_ocaml-ppx)))
 

@@ -90,11 +90,29 @@ module Promise = struct
   type 'a t
 
   let return : 'a -> 'a t = fun x -> Js.Unsafe.global##._Promise##resolve x
-  let error : 'e -> 'a t = fun x -> Js.Unsafe.global##._Promise##reject x
+  let error : exn -> 'a t = fun x -> Js.Unsafe.global##._Promise##reject x
 
-  let bind : 'a t -> ('a -> 'b t) -> 'b t =
-   fun t f ->
-    Js.Unsafe.meth_call t "then" [| Js.Unsafe.inject (Js.wrap_callback f) |]
+  let then_ : 'a t -> ('a -> 'b t) -> (exn -> 'b t) -> 'b t =
+   fun t resolve reject ->
+    Js.Unsafe.meth_call t "then"
+      [|
+        Js.Unsafe.inject (Js.wrap_callback resolve);
+        Js.Unsafe.inject (Js.wrap_callback reject);
+      |]
+
+  module E = Effect
+  module ED = Effect.Deep
+
+  type _ E.t += Await : 'a t -> 'a E.t
+
+  let await p = E.perform (Await p)
+
+  let effc : type a. a E.t -> ((a, 'b t) ED.continuation -> 'b t) option =
+    function
+    | Await p -> Some (fun k -> then_ p (ED.continue k) (ED.discontinue k))
+    | _ -> None
+
+  let handle_await f = ED.try_with f () { effc }
 end
 
 let fname_to_compname s =
@@ -126,8 +144,8 @@ let () =
        method funAsync name ty fn =
          let fn : DecodeJs.t -> string Promise.t =
           fun data ->
-           Promise.bind (Js.Unsafe.fun_call fn [| data |]) @@ fun s ->
-           Promise.return (Js.to_string s)
+           Js.Unsafe.fun_call fn [| data |]
+           |> Promise.await |> Js.to_string |> Promise.return
          in
          Acutis.comp_fun ~name:(Js.to_string name) ty fn
 
@@ -179,8 +197,9 @@ let () =
   Js.export "Render"
     (object%js
        method async template js =
-         Promise.bind (render_async template js) @@ fun s ->
-         Promise.return (Js.string s)
+         Promise.handle_await @@ fun () ->
+         render_async template js |> Promise.await |> Js.string
+         |> Promise.return
 
        method sync template js = render_sync template js |> Js.string
     end)

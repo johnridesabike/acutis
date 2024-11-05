@@ -139,8 +139,11 @@ module type SEM = sig
   (** An asynchronous monad. *)
 
   val promise : 'a exp -> 'a promise exp
-  val bind : 'a promise exp -> ('a -> 'b promise) exp -> 'b promise exp
+  val await : 'a promise exp -> 'a exp
   val error : string exp -> 'a promise exp
+
+  val async_lambda : ('a exp -> 'b promise stmt) -> ('a -> 'b promise) exp
+  (** This is necessary for JavaScript async/await syntax compatibility. *)
 
   (** {1 Data} *)
 
@@ -282,12 +285,7 @@ end = struct
 
   type state = {
     components : (Data.t hashtbl -> string promise) hashtbl exp;
-    buf_sync : buffer exp;
-    buf_async : buffer promise ref;
-        (** Using the assumption that synchronous writes are significantly
-            faster than asynchronous writes, we use a dual-buffer strategy. Most
-            of our writes are to a regular sync buffer. Whenever we need to use
-            the async buffer, we flush the sync buffer to it. *)
+    buf : buffer exp;
     escape : (buffer -> string -> unit) exp;
     props : Data.t hashtbl exp;
         (** We need to use a hash table as the root scope because components
@@ -297,57 +295,29 @@ end = struct
             props & bindings. *)
   }
 
-  let async_buffer_create_aux f =
-    let$ buf_sync = ("buf_sync", buffer_create ()) in
-    let& buf_async = ("buf_async", promise (buffer_create ())) in
-    f buf_sync buf_async
-
   let state_make components ~props ~escape f =
-    async_buffer_create_aux (fun buf_sync buf_async ->
-        let scope = MapString.empty in
-        f { components; buf_sync; buf_async; escape; props; scope })
+    let$ buf = ("buf", buffer_create ()) in
+    f { components; buf; escape; props; scope = MapString.empty }
 
-  let async_buffer_create state f =
-    async_buffer_create_aux (fun buf_sync buf_async ->
-        f { state with buf_sync; buf_async })
-
-  let async_buffer_add_promise { buf_sync; buf_async; _ } p =
-    let$ sync_contents = ("sync_contents", buffer_contents buf_sync) in
-    let| () = buffer_clear buf_sync in
-    buf_async :=
-      bind !buf_async
-        (lambda (fun b ->
-             return
-               (bind p
-                  (lambda (fun promise_str ->
-                       let| () = buffer_add_string b sync_contents in
-                       let| () = buffer_add_string b promise_str in
-                       return (promise b))))))
-
-  (** This should always be the final use of the buffer. Writing to it
-      afterwards is unsafe. *)
-  let async_buffer_contents { buf_sync; buf_async; _ } =
-    bind !buf_async
-      (lambda (fun b ->
-           let| () = buffer_add_buffer b buf_sync in
-           return (promise (buffer_contents b))))
+  let state_create_buffer state f =
+    let$ buf = ("buf", buffer_create ()) in
+    f { state with buf }
 
   let props_add_scope hashtbl bindings state =
-    {
-      state with
-      scope =
-        List.fold_left
-          (fun scope s -> MapString.add s hashtbl.%{string s} scope)
-          state.scope bindings;
-    }
+    let scope =
+      List.fold_left
+        (fun scope s -> MapString.add s hashtbl.%{string s} scope)
+        state.scope bindings
+    in
+    { state with scope }
 
   let props_find s { props; scope; _ } =
     try MapString.find s scope with Not_found -> props.%{string s}
 
   let parse_escape state esc x =
     match esc with
-    | Compile.No_escape -> buffer_add_string state.buf_sync x
-    | Compile.Escape -> stmt ((state.escape @@ state.buf_sync) @@ x)
+    | Compile.No_escape -> buffer_add_string state.buf x
+    | Compile.Escape -> stmt ((state.escape @@ state.buf) @@ x)
 
   let fmt state esc x = function
     | Compile.Fmt_string -> parse_escape state esc (Data.to_string x)
@@ -510,90 +480,72 @@ end = struct
     else f dummy_props
 
   let rec node state = function
-    | Compile.Text s -> buffer_add_string state.buf_sync (string s)
+    | Compile.Text s -> buffer_add_string state.buf (string s)
     | Compile.Echo (echs, fmt, default, esc) ->
         echoes state esc default fmt echs
     | Compile.Match (blocks, data, { tree; exits }) ->
-        construct_blocks state blocks (fun state blocks ->
-            let$ arg_match =
-              ("arg_match", construct_data_array blocks state data)
+        let@ blocks = construct_blocks state blocks in
+        let$ arg_match =
+          ("arg_match", construct_data_array blocks state data)
+        in
+        let@ new_props = make_match_props exits in
+        let& exit = ("exit", unset_exit) in
+        let| () =
+          match_tree ~exit
+            ~leafstmt:(match_leaf exit new_props)
+            ~get_arg:(arg_int arg_match) ~vars:MapInt.empty tree
+        in
+        make_exits exit exits state new_props
+    | Compile.Map_list (blocks, data, { tree; exits }) ->
+        let@ blocks = construct_blocks state blocks in
+        let& index = ("index", int 0) in
+        let& cell = ("cell", construct_data blocks state data) in
+        while_ is_not_nil cell (fun () ->
+            let@ new_props = make_match_props exits in
+            let$ list = ("list", Data.to_array !cell) in
+            let$ head = ("head", list_hd list) in
+            let& exit = ("exit", unset_exit) in
+            let| () =
+              match_tree ~exit
+                ~leafstmt:(match_leaf exit new_props)
+                ~get_arg:(arg_indexed head (Data.int !index))
+                ~vars:MapInt.empty tree
             in
+            let| () = make_exits exit exits state new_props in
+            let| () = incr index in
+            cell := list_tl list)
+    | Compile.Map_dict (blocks, data, { tree; exits }) ->
+        let@ blocks = construct_blocks state blocks in
+        let$ match_arg = ("match_arg", construct_data blocks state data) in
+        hashtbl_iter (Data.to_hashtbl match_arg) (fun k v ->
             let@ new_props = make_match_props exits in
             let& exit = ("exit", unset_exit) in
             let| () =
               match_tree ~exit
                 ~leafstmt:(match_leaf exit new_props)
-                ~get_arg:(arg_int arg_match) ~vars:MapInt.empty tree
+                ~get_arg:(arg_indexed v (Data.string k))
+                ~vars:MapInt.empty tree
             in
             make_exits exit exits state new_props)
-    | Compile.Map_list (blocks, data, { tree; exits }) ->
-        construct_blocks state blocks (fun state blocks ->
-            let& index = ("index", int 0) in
-            let& cell = ("cell", construct_data blocks state data) in
-            while_ is_not_nil cell (fun () ->
-                let@ new_props = make_match_props exits in
-                let$ list = ("list", Data.to_array !cell) in
-                let$ head = ("head", list_hd list) in
-                let& exit = ("exit", unset_exit) in
-                let| () =
-                  match_tree ~exit
-                    ~leafstmt:(match_leaf exit new_props)
-                    ~get_arg:(arg_indexed head (Data.int !index))
-                    ~vars:MapInt.empty tree
-                in
-                let| () = make_exits exit exits state new_props in
-                let| () = incr index in
-                cell := list_tl list))
-    | Compile.Map_dict (blocks, data, { tree; exits }) ->
-        construct_blocks state blocks (fun state blocks ->
-            let$ match_arg = ("match_arg", construct_data blocks state data) in
-            hashtbl_iter (Data.to_hashtbl match_arg) (fun k v ->
-                let@ new_props = make_match_props exits in
-                let& exit = ("exit", unset_exit) in
-                let| () =
-                  match_tree ~exit
-                    ~leafstmt:(match_leaf exit new_props)
-                    ~get_arg:(arg_indexed v (Data.string k))
-                    ~vars:MapInt.empty tree
-                in
-                make_exits exit exits state new_props))
     | Component (name, blocks, dict) ->
-        construct_blocks state blocks (fun state blocks ->
-            async_buffer_add_promise state
-              (state.components.%{string name}
-              @@ construct_data_hashtbl blocks state dict))
+        let@ blocks = construct_blocks state blocks in
+        buffer_add_string state.buf
+          (await
+             (state.components.%{string name}
+             @@ construct_data_hashtbl blocks state dict))
 
   and construct_blocks state blocks f =
-    match Compile.blocks_to_seq blocks () with
-    (* With no blocks, just continue evaluating with a dummy value. *)
-    | Seq.Nil -> f state [||]
-    (* From the first block, we construct a chain of binded promises. *)
-    | Seq.Cons ((i, block), seq) ->
-        let blocks = Array.make (Compile.blocks_length blocks) (string "") in
-        let rec aux seq =
-          match seq () with
-          | Seq.Cons ((i, block), seq) ->
-              let@ state_block = async_buffer_create state in
-              let| () = nodes state_block block in
-              return
-                (bind
-                   (async_buffer_contents state_block)
-                   (lambda (fun block ->
-                        blocks.(i) <- block;
-                        aux seq)))
-          | Seq.Nil ->
-              let@ state' = async_buffer_create state in
-              let| () = f state' blocks in
-              return (async_buffer_contents state')
-        in
-        let@ state_block = async_buffer_create state in
-        let| () = nodes state_block block in
-        async_buffer_add_promise state
-          (bind
-             (async_buffer_contents state_block)
-             (lambda (fun block ->
-                  blocks.(i) <- block;
-                  aux seq)))
+    let blocks_arr = Array.make (Compile.blocks_length blocks) (string "") in
+    let rec aux seq =
+      match seq () with
+      | Seq.Cons ((i, block), seq) ->
+          let@ state_block = state_create_buffer state in
+          let| () = nodes state_block block in
+          blocks_arr.(i) <- buffer_contents state_block.buf;
+          aux seq
+      | Seq.Nil -> f blocks_arr
+    in
+    aux (Compile.blocks_to_seq blocks)
 
   and make_exits exit exits state new_props =
     let Nonempty.(next :: tl) = Matching.Exits.to_nonempty exits in
@@ -1115,14 +1067,14 @@ end = struct
         (MapString.to_seq compiled.components
         |> Seq.map (fun (k, v) ->
                components.%{string k} <-
-                 lambda (fun props ->
+                 async_lambda (fun props ->
                      let@ state = state_make components ~props ~escape in
                      let| () = nodes state v in
-                     return (async_buffer_contents state))))
+                     return (promise (buffer_contents state.buf)))))
       |> stmt_join
     in
     export
-      (lambda (fun input ->
+      (async_lambda (fun input ->
            let$ errors = ("errors", buffer_create ()) in
            let$ decode_error =
              ("decode_error", decode_error errors compiled.name)
@@ -1143,7 +1095,7 @@ end = struct
              ~then_:(fun () ->
                let@ state = state_make components ~props ~escape in
                let| () = nodes state compiled.nodes in
-               return (async_buffer_contents state))
+               return (promise (buffer_contents state.buf)))
              ~else_:(fun () -> return (error (buffer_contents errors)))))
 
   let eval compiled = observe (eval compiled)
@@ -1260,8 +1212,9 @@ module MakeTrans
   let buffer_clear b = fwds (F.buffer_clear (bwde b))
   let buffer_length b = fwde (F.buffer_length (bwde b))
   let promise x = fwde (F.promise (bwde x))
-  let bind p f = fwde (F.bind (bwde p) (bwde f))
+  let await p = fwde (F.await (bwde p))
   let error s = fwde (F.error (bwde s))
+  let async_lambda f = fwde (F.async_lambda (fun x -> bwds (f (fwde x))))
 
   module External = struct
     include F.External
@@ -1356,10 +1309,11 @@ let pp (type a) pp_import ppf c =
     let ( := ) = F.dprintf "(@[%t@ :=@ %t@])"
     let incr = F.dprintf "(@[incr@ %t@])"
 
-    let lambda f =
+    let lambda_aux s f =
       let arg = var "arg" in
-      F.dprintf "(@[lambda@ %t@ (@[<hv>%t@])@])" arg (f arg)
+      F.dprintf "(@[%slambda@ %t@ (@[<hv>%t@])@])" s arg (f arg)
 
+    let lambda = lambda_aux ""
     let ( @@ ) = F.dprintf "(@[%t@ %@%@ %t@])"
 
     let if_ b ~then_ =
@@ -1434,8 +1388,9 @@ let pp (type a) pp_import ppf c =
     type 'a promise
 
     let promise = F.dprintf "(@[promise@ %t@])"
-    let bind = F.dprintf "(@[bind@ %t@ %t@])"
+    let await = F.dprintf "(@[await@ %t@])"
     let error = F.dprintf "(@[error@ %t@])"
+    let async_lambda = lambda_aux "async_"
 
     module External = struct
       type 'a linear

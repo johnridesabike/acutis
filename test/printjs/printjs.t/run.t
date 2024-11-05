@@ -255,16 +255,15 @@
   );
   components$0.set(
     "Component",
-    (arg$0) => {
-      let buf_sync$0 = {contents: ""};
-      let buf_async$0 = Promise.resolve({contents: ""});
+    async (arg$0) => {
+      let buf$0 = {contents: ""};
       let nullable$0 = arg$0.get("optional");
       if (!(nullable$0 === 0)) {
-        buffer_add_escape$0(buf_sync$0)(String(nullable$0[0]));
+        buffer_add_escape$0(buf$0)(String(nullable$0[0]));
       } else {
-        buffer_add_escape$0(buf_sync$0)(arg$0.get("children"));
+        buffer_add_escape$0(buf$0)(arg$0.get("children"));
       }
-      buf_sync$0.contents += "\n";
+      buf$0.contents += "\n";
       let index$0 = 0;
       let cell$0 = arg$0.get("list");
       while (!(cell$0 === 0)) {
@@ -273,21 +272,14 @@
         let exit$0 = -1;
         match_props$0.set("i", head$0);
         exit$0 = 0;
-        buffer_add_escape$0(buf_sync$0)(String(match_props$0.get("i")));
+        buffer_add_escape$0(buf$0)(String(match_props$0.get("i")));
         index$0++;
         cell$0 = cell$0[1];
       }
-      return (
-        buf_async$0.then(
-          (arg$1) => {
-            arg$1.contents += buf_sync$0.contents;
-            return (Promise.resolve(arg$1.contents));
-          }
-        )
-      );
+      return (Promise.resolve(buf$0.contents));
     }
   );
-  export default (arg$0) => {
+  export default async (arg$0) => {
     let errors$0 = {contents: ""};
     let decode_error$0 =
       (arg$1) => {
@@ -1154,44 +1146,43 @@
       decode_error$0(stack$0)(type$0)(arg$0);
     }
     if (errors$0.contents.length === 0) {
-      let buf_sync$0 = {contents: ""};
-      let buf_async$0 = Promise.resolve({contents: ""});
-      buf_sync$0.contents += "Formatters\n----------\n\n%i    ";
-      buffer_add_escape$0(buf_sync$0)(String(props$0.get("big_int")));
-      buf_sync$0.contents += "\n%f    ";
-      buffer_add_escape$0(buf_sync$0)(String(props$0.get("big_float")));
-      buf_sync$0.contents += "\n%b    ";
-      buffer_add_escape$0(buf_sync$0)(String(!(props$0.get("bool1") === 0)));
-      buf_sync$0.contents += "\n%b    ";
-      buffer_add_escape$0(buf_sync$0)(String(!(props$0.get("bool2") === 0)));
-      buf_sync$0.contents += "\n\nEscaping\n--------\n\nEscaped     ";
-      buffer_add_escape$0(buf_sync$0)(props$0.get("dangerous"));
-      buf_sync$0.contents += "\nNot escaped ";
-      buf_sync$0.contents += props$0.get("dangerous");
-      buf_sync$0.contents +=
+      let buf$0 = {contents: ""};
+      buf$0.contents += "Formatters\n----------\n\n%i    ";
+      buffer_add_escape$0(buf$0)(String(props$0.get("big_int")));
+      buf$0.contents += "\n%f    ";
+      buffer_add_escape$0(buf$0)(String(props$0.get("big_float")));
+      buf$0.contents += "\n%b    ";
+      buffer_add_escape$0(buf$0)(String(!(props$0.get("bool1") === 0)));
+      buf$0.contents += "\n%b    ";
+      buffer_add_escape$0(buf$0)(String(!(props$0.get("bool2") === 0)));
+      buf$0.contents += "\n\nEscaping\n--------\n\nEscaped     ";
+      buffer_add_escape$0(buf$0)(props$0.get("dangerous"));
+      buf$0.contents += "\nNot escaped ";
+      buf$0.contents += props$0.get("dangerous");
+      buf$0.contents +=
         "\n\nNullable echo chaining\n----------------------\n\n";
       let nullable$0 = props$0.get("null_int");
       if (!(nullable$0 === 0)) {
-        buffer_add_escape$0(buf_sync$0)(String(nullable$0[0]));
+        buffer_add_escape$0(buf$0)(String(nullable$0[0]));
       } else {
         let nullable$1 = props$0.get("null_float");
         if (!(nullable$1 === 0)) {
-          buffer_add_escape$0(buf_sync$0)(String(nullable$1[0]));
+          buffer_add_escape$0(buf$0)(String(nullable$1[0]));
         } else {
           let nullable$2 = props$0.get("null_bool");
           if (!(nullable$2 === 0)) {
-            buffer_add_escape$0(buf_sync$0)(String(!(nullable$2[0] === 0)));
+            buffer_add_escape$0(buf$0)(String(!(nullable$2[0] === 0)));
           } else {
             let nullable$3 = props$0.get("null_string");
             if (!(nullable$3 === 0)) {
-              buffer_add_escape$0(buf_sync$0)(nullable$3[0]);
+              buffer_add_escape$0(buf$0)(nullable$3[0]);
             } else {
-              buffer_add_escape$0(buf_sync$0)("pass");
+              buffer_add_escape$0(buf$0)("pass");
             }
           }
         }
       }
-      buf_sync$0.contents += "\n\nMatching\n--------\n\n";
+      buf$0.contents += "\n\nMatching\n--------\n\n";
       let arg_match$0 = [props$0.get("record").get("int_enum")];
       let exit$0 = -1;
       let match_arg$0 = arg_match$0[0];
@@ -1201,9 +1192,9 @@
         if (match_arg$0 === 40) { exit$0 = 1; }
       }
       if (exit$0 === 0) {
-        buf_sync$0.contents += "8\n";
+        buf$0.contents += "8\n";
       } else {
-        buf_sync$0.contents += "40\n";
+        buf$0.contents += "40\n";
       }
       let arg_match$1 = [props$0.get("record")];
       let exit$1 = -1;
@@ -1215,9 +1206,9 @@
         if (match_arg$2 === "yes") { exit$1 = 0; }
       }
       if (exit$1 === 0) {
-        buf_sync$0.contents += "yes\n";
+        buf$0.contents += "yes\n";
       } else {
-        buf_sync$0.contents += "no\n";
+        buf$0.contents += "no\n";
       }
       let arg_match$2 = [props$0.get("tagged_record_bool")];
       let match_props$0 = new Map();
@@ -1236,11 +1227,11 @@
         }
       }
       if (exit$2 === 0) {
-        buffer_add_escape$0(buf_sync$0)(match_props$0.get("a"));
-        buf_sync$0.contents += "\n";
+        buffer_add_escape$0(buf$0)(match_props$0.get("a"));
+        buf$0.contents += "\n";
       } else {
-        buffer_add_escape$0(buf_sync$0)(String(match_props$0.get("b")));
-        buf_sync$0.contents += "\n";
+        buffer_add_escape$0(buf$0)(String(match_props$0.get("b")));
+        buf$0.contents += "\n";
       }
       let arg_match$3 = [props$0.get("tagged_record_int")];
       let match_props$1 = new Map();
@@ -1262,16 +1253,14 @@
         }
       }
       if (exit$3 === 0) {
-        buf_sync$0.contents += "Fail\n";
+        buf$0.contents += "Fail\n";
       } else {
-        buffer_add_escape$0(buf_sync$0)(String(match_props$1.get("a")));
-        buf_sync$0.contents += " ";
-        buffer_add_escape$0(buf_sync$0)(match_props$1.get("b"));
-        buf_sync$0.contents += " ";
-        buffer_add_escape$0(buf_sync$0)(
-          String(!(match_props$1.get("c") === 0))
-        );
-        buf_sync$0.contents += "\n";
+        buffer_add_escape$0(buf$0)(String(match_props$1.get("a")));
+        buf$0.contents += " ";
+        buffer_add_escape$0(buf$0)(match_props$1.get("b"));
+        buf$0.contents += " ";
+        buffer_add_escape$0(buf$0)(String(!(match_props$1.get("c") === 0)));
+        buf$0.contents += "\n";
       }
       let arg_match$4 = [props$0.get("tagged_record_open")];
       let match_props$2 = new Map();
@@ -1285,13 +1274,13 @@
       }
       if (exit$4 === -1) { exit$4 = 1; }
       if (exit$4 === 0) {
-        buf_sync$0.contents += " ";
-        buffer_add_escape$0(buf_sync$0)(match_props$2.get("b"));
-        buf_sync$0.contents += "\n";
+        buf$0.contents += " ";
+        buffer_add_escape$0(buf$0)(match_props$2.get("b"));
+        buf$0.contents += "\n";
       } else {
-        buf_sync$0.contents += "Another tag!\n";
+        buf$0.contents += "Another tag!\n";
       }
-      buf_sync$0.contents += "\n\nMapping\n-------\n\n";
+      buf$0.contents += "\n\nMapping\n-------\n\n";
       let match_arg$9 = props$0.get("null_string_dict");
       for (let x$0 of match_arg$9) {
         let match_props$3 = new Map();
@@ -1306,13 +1295,13 @@
           exit$5 = 1;
         }
         if (exit$5 === 0) {
-          buffer_add_escape$0(buf_sync$0)(match_props$3.get("key"));
-          buf_sync$0.contents += " is null.\n";
+          buffer_add_escape$0(buf$0)(match_props$3.get("key"));
+          buf$0.contents += " is null.\n";
         } else {
-          buffer_add_escape$0(buf_sync$0)(match_props$3.get("key"));
-          buf_sync$0.contents += " is ";
-          buffer_add_escape$0(buf_sync$0)(match_props$3.get("str"));
-          buf_sync$0.contents += "\n";
+          buffer_add_escape$0(buf$0)(match_props$3.get("key"));
+          buf$0.contents += " is ";
+          buffer_add_escape$0(buf$0)(match_props$3.get("str"));
+          buf$0.contents += "\n";
         }
       }
       let index$0 = 0;
@@ -1323,8 +1312,8 @@
         let exit$5 = -1;
         match_props$3.set("i", head$0);
         exit$5 = 0;
-        buffer_add_escape$0(buf_sync$0)(String(match_props$3.get("i")));
-        buf_sync$0.contents += "\n";
+        buffer_add_escape$0(buf$0)(String(match_props$3.get("i")));
+        buf$0.contents += "\n";
         index$0++;
         cell$0 = cell$0[1];
       }
@@ -1337,10 +1326,10 @@
         match_props$3.set("i", head$0);
         match_props$3.set("key", index$1);
         exit$5 = 0;
-        buffer_add_escape$0(buf_sync$0)(String(match_props$3.get("key")));
-        buf_sync$0.contents += " : ";
-        buffer_add_escape$0(buf_sync$0)(String(match_props$3.get("i")));
-        buf_sync$0.contents += "\n";
+        buffer_add_escape$0(buf$0)(String(match_props$3.get("key")));
+        buf$0.contents += " : ";
+        buffer_add_escape$0(buf$0)(String(match_props$3.get("i")));
+        buf$0.contents += "\n";
         index$1++;
         cell$1 = cell$1[1];
       }
@@ -1368,8 +1357,8 @@
             let exit$7 = -1;
             match_props$5.set("i", head$2);
             exit$7 = 0;
-            buffer_add_escape$0(buf_sync$0)(String(match_props$5.get("i")));
-            buf_sync$0.contents += " ";
+            buffer_add_escape$0(buf$0)(String(match_props$5.get("i")));
+            buf$0.contents += " ";
             index$4++;
             cell$4 = cell$4[1];
           }
@@ -1379,7 +1368,7 @@
         index$2++;
         cell$2 = cell$2[1];
       }
-      buf_sync$0.contents += "\n\n";
+      buf$0.contents += "\n\n";
       let index$3 = 0;
       let cell$3 = props$0.get("nested_nullable_list");
       while (!(cell$3 === 0)) {
@@ -1400,22 +1389,20 @@
           }
         }
         if (exit$5 === 0) {
-          buf_sync$0.contents += "Level 1 null\n";
+          buf$0.contents += "Level 1 null\n";
         } else {
           if (exit$5 === 1) {
-            buf_sync$0.contents += "Level 2 null (This shouldn't render.)\n";
+            buf$0.contents += "Level 2 null (This shouldn't render.)\n";
           } else {
-            buf_sync$0.contents += "Level 3 ";
-            buffer_add_escape$0(buf_sync$0)(
-              String(!(match_props$3.get("b") === 0))
-            );
-            buf_sync$0.contents += "\n";
+            buf$0.contents += "Level 3 ";
+            buffer_add_escape$0(buf$0)(String(!(match_props$3.get("b") === 0)));
+            buf$0.contents += "\n";
           }
         }
         index$3++;
         cell$3 = cell$3[1];
       }
-      buf_sync$0.contents +=
+      buf$0.contents +=
         "\n\
   \n\
   Dictionaries match correctly\n\
@@ -1467,19 +1454,19 @@
       }
       if (exit$5 === -1) { exit$5 = 3; }
       if (exit$5 === 0) {
-        buf_sync$0.contents += " ";
-        buffer_add_escape$0(buf_sync$0)(match_props$3.get("a"));
-        buf_sync$0.contents += " ";
-        buffer_add_escape$0(buf_sync$0)(match_props$3.get("b"));
-        buf_sync$0.contents += "\n";
+        buf$0.contents += " ";
+        buffer_add_escape$0(buf$0)(match_props$3.get("a"));
+        buf$0.contents += " ";
+        buffer_add_escape$0(buf$0)(match_props$3.get("b"));
+        buf$0.contents += "\n";
       } else {
         if (exit$5 === 1) {
-          buf_sync$0.contents += " Fail.\n";
+          buf$0.contents += " Fail.\n";
         } else {
           if (exit$5 === 2) {
-            buf_sync$0.contents += " Pass.\n";
+            buf$0.contents += " Pass.\n";
           } else {
-            buf_sync$0.contents += " Fail.\n";
+            buf$0.contents += " Fail.\n";
           }
         }
       }
@@ -1518,303 +1505,145 @@
       }
       if (exit$6 === -1) { exit$6 = 3; }
       if (exit$6 === 0) {
-        buf_sync$0.contents += " Fail. ";
-        buffer_add_escape$0(buf_sync$0)(match_props$4.get("a"));
-        buf_sync$0.contents += " ";
-        buffer_add_escape$0(buf_sync$0)(match_props$4.get("b"));
-        buf_sync$0.contents += "\n";
+        buf$0.contents += " Fail. ";
+        buffer_add_escape$0(buf$0)(match_props$4.get("a"));
+        buf$0.contents += " ";
+        buffer_add_escape$0(buf$0)(match_props$4.get("b"));
+        buf$0.contents += "\n";
       } else {
         if (exit$6 === 1) {
-          buf_sync$0.contents += " Fail.\n";
+          buf$0.contents += " Fail.\n";
         } else {
           if (exit$6 === 2) {
-            buf_sync$0.contents += " Pass.\n";
+            buf$0.contents += " Pass.\n";
           } else {
-            buf_sync$0.contents += " Fail.\n";
+            buf$0.contents += " Fail.\n";
           }
         }
       }
-      buf_sync$0.contents +=
+      buf$0.contents +=
         "\n\nConstructing async blocks\n-------------------------\n\n";
-      let buf_sync$1 = {contents: ""};
-      let buf_async$1 = Promise.resolve({contents: ""});
-      buf_sync$1.contents += " Nested block ";
+      let buf$1 = {contents: ""};
+      buf$1.contents += " Nested block ";
       let nullable$1 = props$0.get("null_string");
       if (!(nullable$1 === 0)) {
-        buffer_add_escape$0(buf_sync$1)(nullable$1[0]);
+        buffer_add_escape$0(buf$1)(nullable$1[0]);
       } else {
-        buffer_add_escape$0(buf_sync$1)("pass");
+        buffer_add_escape$0(buf$1)("pass");
       }
-      let sync_contents$0 = buf_sync$0.contents;
-      buf_sync$0.contents = "";
-      buf_async$0 =
-        buf_async$0.then(
-          (arg$1) => {
-            return (
-              buf_async$1.then(
-                (arg$2) => {
-                  arg$2.contents += buf_sync$1.contents;
-                  return (Promise.resolve(arg$2.contents));
-                }
-              ).then(
-                (arg$2) => {
-                  let buf_sync$2 = {contents: ""};
-                  let buf_async$2 = Promise.resolve({contents: ""});
-                  buf_sync$2.contents += " Another nested block";
-                  return (
-                    buf_async$2.then(
-                      (arg$3) => {
-                        arg$3.contents += buf_sync$2.contents;
-                        return (Promise.resolve(arg$3.contents));
-                      }
-                    ).then(
-                      (arg$3) => {
-                        let buf_sync$3 = {contents: ""};
-                        let buf_async$3 = Promise.resolve({contents: ""});
-                        let arg_match$7 =
-                          [new Map([["a", arg$2], ["b", arg$3]])];
-                        let match_props$5 = new Map();
-                        let exit$7 = -1;
-                        let match_arg$12 = arg_match$7[0];
-                        let match_arg$13 = match_arg$12.get("a");
-                        let match_arg$14 = match_arg$12.get("b");
-                        match_props$5.set("a", match_arg$13);
-                        match_props$5.set("b", match_arg$14);
-                        exit$7 = 0;
-                        buffer_add_escape$0(buf_sync$3)(match_props$5.get("a"));
-                        buf_sync$3.contents += " ";
-                        buffer_add_escape$0(buf_sync$3)(match_props$5.get("b"));
-                        buf_sync$3.contents += "\n";
-                        return (
-                          buf_async$3.then(
-                            (arg$4) => {
-                              arg$4.contents += buf_sync$3.contents;
-                              return (Promise.resolve(arg$4.contents));
-                            }
-                          )
-                        );
-                      }
-                    )
-                  );
-                }
-              ).then(
-                (arg$2) => {
-                  arg$1.contents += sync_contents$0;
-                  arg$1.contents += arg$2;
-                  return (Promise.resolve(arg$1));
-                }
-              )
-            );
-          }
-        );
-      buf_sync$0.contents += "Component\n---------\n\n";
-      let buf_sync$2 = {contents: ""};
-      let buf_async$2 = Promise.resolve({contents: ""});
-      buf_sync$2.contents += "Children prop";
-      let sync_contents$1 = buf_sync$0.contents;
-      buf_sync$0.contents = "";
-      buf_async$0 =
-        buf_async$0.then(
-          (arg$1) => {
-            return (
-              buf_async$2.then(
-                (arg$2) => {
-                  arg$2.contents += buf_sync$2.contents;
-                  return (Promise.resolve(arg$2.contents));
-                }
-              ).then(
-                (arg$2) => {
-                  let buf_sync$3 = {contents: ""};
-                  let buf_async$3 = Promise.resolve({contents: ""});
-                  let sync_contents$2 = buf_sync$3.contents;
-                  buf_sync$3.contents = "";
-                  buf_async$3 =
-                    buf_async$3.then(
-                      (arg$3) => {
-                        return (
-                          components$0.get("Component")(
-                            new Map(
-                              [
-                                ["children", arg$2],
-                                ["list", [1, [2, [3, 0]]]],
-                                ["optional", 0],
-                              ]
-                            )
-                          ).then(
-                            (arg$4) => {
-                              arg$3.contents += sync_contents$2;
-                              arg$3.contents += arg$4;
-                              return (Promise.resolve(arg$3));
-                            }
-                          )
-                        );
-                      }
-                    );
-                  return (
-                    buf_async$3.then(
-                      (arg$3) => {
-                        arg$3.contents += buf_sync$3.contents;
-                        return (Promise.resolve(arg$3.contents));
-                      }
-                    )
-                  );
-                }
-              ).then(
-                (arg$2) => {
-                  arg$1.contents += sync_contents$1;
-                  arg$1.contents += arg$2;
-                  return (Promise.resolve(arg$1));
-                }
-              )
-            );
-          }
-        );
-      buf_sync$0.contents += "\n\n";
-      let sync_contents$2 = buf_sync$0.contents;
-      buf_sync$0.contents = "";
-      buf_async$0 =
-        buf_async$0.then(
-          (arg$1) => {
-            return (
-              components$0.get("Another_function")(new Map([])).then(
-                (arg$2) => {
-                  arg$1.contents += sync_contents$2;
-                  arg$1.contents += arg$2;
-                  return (Promise.resolve(arg$1));
-                }
-              )
-            );
-          }
-        );
-      buf_sync$0.contents +=
+      let buf$2 = {contents: ""};
+      buf$2.contents += " Another nested block";
+      let arg_match$7 =
+        [new Map([["a", buf$1.contents], ["b", buf$2.contents]])];
+      let match_props$5 = new Map();
+      let exit$7 = -1;
+      let match_arg$12 = arg_match$7[0];
+      let match_arg$13 = match_arg$12.get("a");
+      let match_arg$14 = match_arg$12.get("b");
+      match_props$5.set("a", match_arg$13);
+      match_props$5.set("b", match_arg$14);
+      exit$7 = 0;
+      buffer_add_escape$0(buf$0)(match_props$5.get("a"));
+      buf$0.contents += " ";
+      buffer_add_escape$0(buf$0)(match_props$5.get("b"));
+      buf$0.contents += "\n";
+      buf$0.contents += "Component\n---------\n\n";
+      let buf$3 = {contents: ""};
+      buf$3.contents += "Children prop";
+      buf$0.contents +=
+        await
+          components$0.get("Component")(
+            new Map(
+              [
+                ["children", buf$3.contents],
+                ["list", [1, [2, [3, 0]]]],
+                ["optional", 0],
+              ]
+            )
+          );
+      buf$0.contents += "\n\n";
+      buf$0.contents +=
+        await components$0.get("Another_function")(new Map([]));
+      buf$0.contents +=
         "\n\
   \n\
   Complicated pattern matching\n\
   ----------------------------\n\
   \n\
   ";
-      let arg_match$7 = [1, 0, 3];
-      let match_props$5 = new Map();
-      let exit$7 = -1;
-      let match_arg$12 = arg_match$7[0];
-      if (match_arg$12 === 1) {
-        let match_arg$13 = arg_match$7[1];
-        if (match_arg$13 === 0) {
-          let match_arg$14 = arg_match$7[2];
-          if (match_arg$14 === 0) {
-            exit$7 = 0;
-          } else {
-            match_props$5.set("y", match_arg$14);
-            exit$7 = 2;
-          }
-        } else {
-          let match_arg$14 = arg_match$7[1];
-          let match_arg$15 = match_arg$14[0];
-          if (match_arg$15 === 1) {
-            let match_arg$16 = arg_match$7[2];
-            if (match_arg$16 === 0) {
-              exit$7 = 0;
-            } else {
-              if (match_arg$16 === 1) { exit$7 = 3; } else { exit$7 = 4; }
-            }
-          }
-          if (exit$7 === -1) {
-            let match_arg$16 = arg_match$7[2];
-            if (match_arg$16 === 0) { exit$7 = 0; } else { exit$7 = 4; }
-          }
-        }
-      } else {
-        let match_arg$13 = arg_match$7[1];
-        if (match_arg$13 === 0) {
-          let match_arg$14 = arg_match$7[2];
-          match_props$5.set("y", match_arg$14);
-          exit$7 = 2;
-        } else {
-          let match_arg$14 = arg_match$7[1];
-          let match_arg$15 = match_arg$14[0];
-          if (match_arg$15 === 1) {
-            let match_arg$16 = arg_match$7[2];
-            if (match_arg$16 === 0) {
-              match_props$5.set("x", match_arg$12);
-              exit$7 = 1;
-            } else {
-              exit$7 = 4;
-            }
-          }
-          if (exit$7 === -1) { let match_arg$16 = arg_match$7[2]; exit$7 = 4; }
-        }
-      }
-      if (exit$7 === 0) {
-        buf_sync$0.contents += " 0\n";
-      } else {
-        if (exit$7 === 1) {
-          buf_sync$0.contents += " 1 ";
-          buffer_add_escape$0(buf_sync$0)(String(match_props$5.get("x")));
-          buf_sync$0.contents += "\n";
-        } else {
-          if (exit$7 === 2) {
-            buf_sync$0.contents += " 2 ";
-            buffer_add_escape$0(buf_sync$0)(String(match_props$5.get("y")));
-            buf_sync$0.contents += "\n";
-          } else {
-            if (exit$7 === 3) {
-              buf_sync$0.contents += " 3\n";
-            } else {
-              buf_sync$0.contents += " 4\n";
-            }
-          }
-        }
-      }
-      let arg_match$8 = [[[10, 20], 30], 40];
+      let arg_match$8 = [1, 0, 3];
       let match_props$6 = new Map();
       let exit$8 = -1;
-      let match_arg$13 = arg_match$8[0];
-      let match_arg$14 = match_arg$13[0];
-      let match_arg$15 = match_arg$14[0];
-      if (match_arg$15 === 10) {
-        let match_arg$16 = match_arg$14[1];
-        if (match_arg$16 === 20) {
-          let match_arg$17 = match_arg$13[1];
-          if (match_arg$17 === 30) {
-            let match_arg$18 = arg_match$8[1];
-            if (match_arg$18 === 40) {
-              exit$8 = 1;
+      let match_arg$15 = arg_match$8[0];
+      if (match_arg$15 === 1) {
+        let match_arg$16 = arg_match$8[1];
+        if (match_arg$16 === 0) {
+          let match_arg$17 = arg_match$8[2];
+          if (match_arg$17 === 0) {
+            exit$8 = 0;
+          } else {
+            match_props$6.set("y", match_arg$17);
+            exit$8 = 2;
+          }
+        } else {
+          let match_arg$17 = arg_match$8[1];
+          let match_arg$18 = match_arg$17[0];
+          if (match_arg$18 === 1) {
+            let match_arg$19 = arg_match$8[2];
+            if (match_arg$19 === 0) {
+              exit$8 = 0;
             } else {
-              if (match_arg$18 === 41) {
-                match_props$6.set("_x", match_arg$13);
-                exit$8 = 0;
-              } else {
-                match_props$6.set("_y", match_arg$13);
-                match_props$6.set("z", match_arg$18);
-                exit$8 = 2;
-              }
+              if (match_arg$19 === 1) { exit$8 = 3; } else { exit$8 = 4; }
             }
           }
+          if (exit$8 === -1) {
+            let match_arg$19 = arg_match$8[2];
+            if (match_arg$19 === 0) { exit$8 = 0; } else { exit$8 = 4; }
+          }
         }
-      }
-      if (exit$8 === -1) {
+      } else {
         let match_arg$16 = arg_match$8[1];
-        if (match_arg$16 === 41) {
-          match_props$6.set("_x", match_arg$13);
-          exit$8 = 0;
-        } else {
-          match_props$6.set("_y", match_arg$13);
-          match_props$6.set("z", match_arg$16);
+        if (match_arg$16 === 0) {
+          let match_arg$17 = arg_match$8[2];
+          match_props$6.set("y", match_arg$17);
           exit$8 = 2;
+        } else {
+          let match_arg$17 = arg_match$8[1];
+          let match_arg$18 = match_arg$17[0];
+          if (match_arg$18 === 1) {
+            let match_arg$19 = arg_match$8[2];
+            if (match_arg$19 === 0) {
+              match_props$6.set("x", match_arg$15);
+              exit$8 = 1;
+            } else {
+              exit$8 = 4;
+            }
+          }
+          if (exit$8 === -1) { let match_arg$19 = arg_match$8[2]; exit$8 = 4; }
         }
       }
       if (exit$8 === 0) {
-        buf_sync$0.contents += "\n";
+        buf$0.contents += " 0\n";
       } else {
         if (exit$8 === 1) {
-          buf_sync$0.contents += " Pass\n";
+          buf$0.contents += " 1 ";
+          buffer_add_escape$0(buf$0)(String(match_props$6.get("x")));
+          buf$0.contents += "\n";
         } else {
-          buf_sync$0.contents += " ";
-          buffer_add_escape$0(buf_sync$0)(String(match_props$6.get("z")));
-          buf_sync$0.contents += "\n";
+          if (exit$8 === 2) {
+            buf$0.contents += " 2 ";
+            buffer_add_escape$0(buf$0)(String(match_props$6.get("y")));
+            buf$0.contents += "\n";
+          } else {
+            if (exit$8 === 3) {
+              buf$0.contents += " 3\n";
+            } else {
+              buf$0.contents += " 4\n";
+            }
+          }
         }
       }
-      let arg_match$9 = [[[10, 20], 99], 40];
+      let arg_match$9 = [[[10, 20], 30], 40];
       let match_props$7 = new Map();
       let exit$9 = -1;
       let match_arg$16 = arg_match$9[0];
@@ -1853,17 +1682,66 @@
         }
       }
       if (exit$9 === 0) {
-        buf_sync$0.contents += "\n";
+        buf$0.contents += "\n";
       } else {
         if (exit$9 === 1) {
-          buf_sync$0.contents += " Fail\n";
+          buf$0.contents += " Pass\n";
         } else {
-          buf_sync$0.contents += " ";
-          buffer_add_escape$0(buf_sync$0)(String(match_props$7.get("z")));
-          buf_sync$0.contents += "\n";
+          buf$0.contents += " ";
+          buffer_add_escape$0(buf$0)(String(match_props$7.get("z")));
+          buf$0.contents += "\n";
         }
       }
-      buf_sync$0.contents +=
+      let arg_match$10 = [[[10, 20], 99], 40];
+      let match_props$8 = new Map();
+      let exit$10 = -1;
+      let match_arg$19 = arg_match$10[0];
+      let match_arg$20 = match_arg$19[0];
+      let match_arg$21 = match_arg$20[0];
+      if (match_arg$21 === 10) {
+        let match_arg$22 = match_arg$20[1];
+        if (match_arg$22 === 20) {
+          let match_arg$23 = match_arg$19[1];
+          if (match_arg$23 === 30) {
+            let match_arg$24 = arg_match$10[1];
+            if (match_arg$24 === 40) {
+              exit$10 = 1;
+            } else {
+              if (match_arg$24 === 41) {
+                match_props$8.set("_x", match_arg$19);
+                exit$10 = 0;
+              } else {
+                match_props$8.set("_y", match_arg$19);
+                match_props$8.set("z", match_arg$24);
+                exit$10 = 2;
+              }
+            }
+          }
+        }
+      }
+      if (exit$10 === -1) {
+        let match_arg$22 = arg_match$10[1];
+        if (match_arg$22 === 41) {
+          match_props$8.set("_x", match_arg$19);
+          exit$10 = 0;
+        } else {
+          match_props$8.set("_y", match_arg$19);
+          match_props$8.set("z", match_arg$22);
+          exit$10 = 2;
+        }
+      }
+      if (exit$10 === 0) {
+        buf$0.contents += "\n";
+      } else {
+        if (exit$10 === 1) {
+          buf$0.contents += " Fail\n";
+        } else {
+          buf$0.contents += " ";
+          buffer_add_escape$0(buf$0)(String(match_props$8.get("z")));
+          buf$0.contents += "\n";
+        }
+      }
+      buf$0.contents +=
         "String encoding\n\
   ---------------\n\
   \n\
@@ -1871,59 +1749,33 @@
   \\\" \\ \\ \\\"\n\
   \n\
   ";
-      buffer_add_escape$0(buf_sync$0)(props$0.get("unicode_string"));
-      buf_sync$0.contents +=
+      buffer_add_escape$0(buf$0)(props$0.get("unicode_string"));
+      buf$0.contents +=
         "\n\
   \n\
   External JavaScript template component: stringify arbitrary data\n\
   \n\
   ";
-      let sync_contents$3 = buf_sync$0.contents;
-      buf_sync$0.contents = "";
-      buf_async$0 =
-        buf_async$0.then(
-          (arg$1) => {
-            return (
-              components$0.get("Stringify")(
-                new Map(
-                  [
-                    ["int_list", props$0.get("int_list")],
-                    ["nested_list", props$0.get("nested_list")],
-                    [
-                      "nested_nullable_list",
-                      props$0.get("nested_nullable_list"),
-                    ],
-                    ["null_string_dict", props$0.get("null_string_dict")],
-                    ["record", props$0.get("record")],
-                    ["tagged_record_bool", props$0.get("tagged_record_bool")],
-                    ["tagged_record_int", props$0.get("tagged_record_int")],
-                    ["tagged_record_open", props$0.get("tagged_record_open")],
-                    [
-                      "tagged_record_string",
-                      props$0.get("tagged_record_string"),
-                    ],
-                    ["unknown", props$0.get("unknown")],
-                  ]
-                )
-              ).then(
-                (arg$2) => {
-                  arg$1.contents += sync_contents$3;
-                  arg$1.contents += arg$2;
-                  return (Promise.resolve(arg$1));
-                }
-              )
-            );
-          }
-        );
-      buf_sync$0.contents += "\n";
-      return (
-        buf_async$0.then(
-          (arg$1) => {
-            arg$1.contents += buf_sync$0.contents;
-            return (Promise.resolve(arg$1.contents));
-          }
-        )
-      );
+      buf$0.contents +=
+        await
+          components$0.get("Stringify")(
+            new Map(
+              [
+                ["int_list", props$0.get("int_list")],
+                ["nested_list", props$0.get("nested_list")],
+                ["nested_nullable_list", props$0.get("nested_nullable_list")],
+                ["null_string_dict", props$0.get("null_string_dict")],
+                ["record", props$0.get("record")],
+                ["tagged_record_bool", props$0.get("tagged_record_bool")],
+                ["tagged_record_int", props$0.get("tagged_record_int")],
+                ["tagged_record_open", props$0.get("tagged_record_open")],
+                ["tagged_record_string", props$0.get("tagged_record_string")],
+                ["unknown", props$0.get("unknown")],
+              ]
+            )
+          );
+      buf$0.contents += "\n";
+      return (Promise.resolve(buf$0.contents));
     } else {
       return (Promise.reject(new Error(errors$0.contents)));
     }

@@ -77,12 +77,12 @@ let compile components { fname; ast } = A.Compile.make ~fname components ast
 let compile_interface = A.Compile.make_interface
 let get_typescheme x = x.A.Compile.types
 
-module type MONAD = sig
+module type PROMISE = sig
   type 'a t
 
   val return : 'a -> 'a t
-  val bind : 'a t -> ('a -> 'b t) -> 'b t
-  val error : string -> 'a t
+  val error : exn -> 'a t
+  val await : 'a t -> 'a
 end
 
 module type DECODABLE = sig
@@ -117,8 +117,8 @@ module type DECODABLE = sig
   val to_string : t -> string
 end
 
-module Render (M : MONAD) (D : DECODABLE) : sig
-  val apply : (D.t -> string M.t) compiled -> D.t -> string M.t
+module Render (P : PROMISE) (D : DECODABLE) : sig
+  val apply : (D.t -> string P.t) compiled -> D.t -> string P.t
 end = struct
   module I = A.Instruct.Make (struct
     include Stdlib
@@ -177,11 +177,12 @@ end = struct
     let buffer_clear = Buffer.clear
     let buffer_length = Buffer.length
 
-    type 'a promise = 'a M.t
+    type 'a promise = 'a P.t
 
-    let promise = M.return
-    let bind = M.bind
-    let error = M.error
+    let promise = P.return
+    let await = P.await
+    let error s = P.error (Acutis_error (A.Error.of_string s))
+    let async_lambda = Fun.id
 
     module External = struct
       include D
@@ -289,8 +290,8 @@ module Id = struct
   type 'a t = 'a
 
   let return = Fun.id
-  let bind = ( |> )
-  let error = A.Error.raise_string
+  let await = Fun.id
+  let error = raise
 end
 
 let render_string (type a) (module D : DECODABLE with type t = a) =
@@ -440,10 +441,13 @@ module PrintJs = struct
     let ( := ) a b =
       stmt (fun ppf state -> F.fprintf ppf "%a =@ @[<hv 2>%a@]" a state b state)
 
-    let lambda f ppf state =
+    let lambda_aux async f ppf state =
       let state = State.add_block state in
       let arg = State.var "arg" state in
-      F.fprintf ppf "(%a) => {@ %a@;<1 -2>}" arg state (f arg) state
+      let async = match async with `Async -> "async " | `Sync -> "" in
+      F.fprintf ppf "%s(%a) => {@ %a@;<1 -2>}" async arg state (f arg) state
+
+    let lambda = lambda_aux `Sync
 
     let if_ b ~then_ ppf state =
       let state' = State.add_block state in
@@ -578,8 +582,9 @@ module PrintJs = struct
     type 'a promise
 
     let promise x = (global "Promise").!("resolve") @@ x
-    let bind p f = p.!("then") @@ f
+    let await p ppf state = F.fprintf ppf "@[<hv 2>await@ %a@]" p state
     let error s = (global "Promise").!("reject") @@ new_ "Error" [ s ]
+    let async_lambda = lambda_aux `Async
 
     let and_ a b ppf state =
       F.fprintf ppf "@[<hv>%a &&@]@ @[<hv>%a@]" a state b state

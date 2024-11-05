@@ -13,11 +13,11 @@ module F = Format
 type t = F.formatter -> unit
 
 let pp = ( |> )
+let of_string s ppf = F.pp_print_string ppf s
 
 exception Acutis_error of t
 
 let raise x = raise @@ Acutis_error x
-let raise_string s = raise @@ F.dprintf "%s" s
 
 let msg ~kind loc t =
   F.dprintf "@[<v>File \"%s\", %a@;%s.@;%t@]" (Loc.fname loc) Loc.pp loc kind t

@@ -14,11 +14,10 @@ type t
 (** A message. *)
 
 val pp : Format.formatter -> t -> unit
+val of_string : string -> t
 
 exception Acutis_error of t
 (** All of the following functions raise or return this exception. *)
-
-val raise_string : string -> _
 
 (** {1 Lexing and Parsing errors.} *)
 

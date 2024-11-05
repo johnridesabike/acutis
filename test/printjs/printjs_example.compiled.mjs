@@ -21,7 +21,7 @@ let buffer_add_escape$0 =
     );
   };
 let components$0 = new Map();
-export default (arg$0) => {
+export default async (arg$0) => {
   let errors$0 = {contents: ""};
   let decode_error$0 =
     (arg$1) => {
@@ -301,11 +301,10 @@ The data supplied does not match this template's interface.\n\
     decode_error$0(stack$0)(type$0)(arg$0);
   }
   if (errors$0.contents.length === 0) {
-    let buf_sync$0 = {contents: ""};
-    let buf_async$0 = Promise.resolve({contents: ""});
-    buf_sync$0.contents += "<h1> Blog posts for ";
-    buffer_add_escape$0(buf_sync$0)(props$0.get("siteTitle"));
-    buf_sync$0.contents += " </h1>";
+    let buf$0 = {contents: ""};
+    buf$0.contents += "<h1> Blog posts for ";
+    buffer_add_escape$0(buf$0)(props$0.get("siteTitle"));
+    buf$0.contents += " </h1>";
     let index$0 = 0;
     let cell$0 = props$0.get("blogPosts");
     while (!(cell$0 === 0)) {
@@ -324,7 +323,7 @@ The data supplied does not match this template's interface.\n\
       match_props$0.set("name", match_arg$1);
       match_props$0.set("title", match_arg$5);
       exit$0 = 0;
-      buf_sync$0.contents +=
+      buf$0.contents +=
         "\n  <article class=\"h-entry\">\n    <header>\n      ";
       let arg_match$0 = [match_props$0.get("image")];
       let match_props$1 = new Map();
@@ -342,40 +341,33 @@ The data supplied does not match this template's interface.\n\
         exit$1 = 1;
       }
       if (!(exit$1 === 0)) {
-        buf_sync$0.contents += "<img src=\"";
-        buffer_add_escape$0(buf_sync$0)(match_props$1.get("src"));
-        buf_sync$0.contents += "\" alt=\"";
-        buffer_add_escape$0(buf_sync$0)(match_props$1.get("alt"));
-        buf_sync$0.contents += "\">\n      ";
+        buf$0.contents += "<img src=\"";
+        buffer_add_escape$0(buf$0)(match_props$1.get("src"));
+        buf$0.contents += "\" alt=\"";
+        buffer_add_escape$0(buf$0)(match_props$1.get("alt"));
+        buf$0.contents += "\">\n      ";
       }
-      buf_sync$0.contents += "<h2 class=\"p-name\"> ";
-      buffer_add_escape$0(buf_sync$0)(match_props$0.get("title"));
-      buf_sync$0.contents += " </h2>\n      <span class=\"p-author\"> By ";
+      buf$0.contents += "<h2 class=\"p-name\"> ";
+      buffer_add_escape$0(buf$0)(match_props$0.get("title"));
+      buf$0.contents += " </h2>\n      <span class=\"p-author\"> By ";
       let nullable$0 = match_props$0.get("name");
       if (!(nullable$0 === 0)) {
-        buffer_add_escape$0(buf_sync$0)(nullable$0[0]);
+        buffer_add_escape$0(buf$0)(nullable$0[0]);
       } else {
-        buffer_add_escape$0(buf_sync$0)("Anonymous");
+        buffer_add_escape$0(buf$0)("Anonymous");
       }
-      buf_sync$0.contents +=
+      buf$0.contents +=
         " </span>\n      <span class=\"dt-published\"> Posted on ";
-      buffer_add_escape$0(buf_sync$0)(match_props$0.get("date"));
-      buf_sync$0.contents +=
+      buffer_add_escape$0(buf$0)(match_props$0.get("date"));
+      buf$0.contents +=
         " </span>\n    </header>\n    <div class=\"e-content\"> ";
-      buf_sync$0.contents += match_props$0.get("content");
-      buf_sync$0.contents += " </div>\n  </article>\n";
+      buf$0.contents += match_props$0.get("content");
+      buf$0.contents += " </div>\n  </article>\n";
       index$0++;
       cell$0 = cell$0[1];
     }
-    buf_sync$0.contents += "\n";
-    return (
-      buf_async$0.then(
-        (arg$1) => {
-          arg$1.contents += buf_sync$0.contents;
-          return (Promise.resolve(arg$1.contents));
-        }
-      )
-    );
+    buf$0.contents += "\n";
+    return (Promise.resolve(buf$0.contents));
   } else {
     return (Promise.reject(new Error(errors$0.contents)));
   }

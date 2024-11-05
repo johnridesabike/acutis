@@ -158,14 +158,14 @@ val get_typescheme : 'a compiled -> typescheme
 
 (** {1 Rendering templates with OCaml.} *)
 
-module type MONAD = sig
-  (** A monad interface for async operations. *)
+module type PROMISE = sig
+  (** A promise interface for async operations. *)
 
   type 'a t
 
   val return : 'a -> 'a t
-  val bind : 'a t -> ('a -> 'b t) -> 'b t
-  val error : string -> 'a t
+  val error : exn -> 'a t
+  val await : 'a t -> 'a
 end
 
 module type DECODABLE = sig
@@ -214,13 +214,14 @@ module type DECODABLE = sig
   val to_string : t -> string
 end
 
-(** A functor that builds a render implementation for a given monad interface
+(** A functor that builds a render implementation for a given promise interface
     and a given decodable input type.
 
-    We need to use a functor because parameterized types, such as in {!MONAD},
+    We need to use a functor because parameterized types, such as in {!PROMISE},
     are not supported in first-class modules. *)
-module Render (Monad : MONAD) (Data : DECODABLE) : sig
-  val apply : (Data.t -> string Monad.t) compiled -> Data.t -> string Monad.t
+module Render (Promise : PROMISE) (Data : DECODABLE) : sig
+  val apply :
+    (Data.t -> string Promise.t) compiled -> Data.t -> string Promise.t
   (** Apply data to a template and return the rendered output. *)
 end
 
