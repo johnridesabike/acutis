@@ -6,19 +6,19 @@
   file, You can obtain one at http://mozilla.org/MPL/2.0/.
 */
 
-module.exports = {
+export default {
   /* Wrap page data in a tagged union so we can safely handle unpublished
    * pages. */
   published: (data) => {
     if (data.page.url) {
       return {
         tag: true,
-        page: data.page
-      }
+        page: data.page,
+      };
     } else {
       return {
-        tag: false
-      }
+        tag: false,
+      };
     }
-  }
-}
+  },
+};

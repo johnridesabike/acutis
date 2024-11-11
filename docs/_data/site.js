@@ -6,9 +6,11 @@
   file, You can obtain one at http://mozilla.org/MPL/2.0/.
 */
 
+import module from "node:module";
+let require = module.createRequire(import.meta.url);
 let acutisPkg = require("acutis-lang/package.json");
 
-module.exports = {
+export default {
   title: "Acutis",
   subtitle: acutisPkg.description,
   pathPrefix: "/acutis/",

@@ -1,11 +1,11 @@
-const fs = require("fs/promises");
-const { Compile, Component, Render, Typescheme } = require("../../");
-const data = require("./data.json");
+import fs from "node:fs/promises";
+import acutis from "#main";
+let { Compile, Component, Render, Typescheme } = acutis;
 
-const filepath = process.argv[2];
-const Ty = Typescheme;
+let filepath = process.argv[2];
+let Ty = Typescheme;
 
-const components = Compile.components([
+let components = Compile.components([
   Component.funSync(
     "Comp",
     Ty.make([
@@ -23,7 +23,7 @@ const components = Compile.components([
       ["t", Ty.boolean()],
       ["f", Ty.boolean()],
     ]),
-    (props) => JSON.stringify(props, null, 2)
+    (props) => JSON.stringify(props, null, 2),
   ),
   Component.funSync(
     "UnknownComp",
@@ -36,14 +36,15 @@ const components = Compile.components([
       ["t", Ty.unknown()],
       ["f", Ty.unknown()],
     ]),
-    (props) => JSON.stringify(props, null, 2)
+    (props) => JSON.stringify(props, null, 2),
   ),
 ]);
 
-fs.readFile(filepath)
-  .then((src) => {
-    const template = Compile.uint8Array(filepath, components, src);
-    const result = Render.sync(template, data);
+Promise.all([fs.readFile("data.json"), fs.readFile(filepath)])
+  .then(([dataSrc, src]) => {
+    let data = JSON.parse(dataSrc);
+    let template = Compile.uint8Array(filepath, components, src);
+    let result = Render.sync(template, data);
     process.stdout.write(result);
   })
   .catch(console.error);

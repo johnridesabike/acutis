@@ -13,4 +13,4 @@
   (diff error_test.expected error_test.output)))
 
 (cram
- (deps %{bin:acutis} ../package.json ../acutis_js.bc.js))
+ (deps %{bin:acutis} ../package.json ../main.cjs))

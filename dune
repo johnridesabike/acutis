@@ -26,24 +26,34 @@
  (preprocess
   (pps js_of_ocaml-ppx)))
 
+(rule
+ (copy %{dep:acutis_js.bc.js} main.cjs))
+
 (executable
  (name package_json)
  (modules package_json))
 
+; We pass all of the file names as arguments so Dune can track dependencies and
+; so other source files don't need to hard-code them.
+
 (rule
- (target package.json)
  (deps README.md LICENSE)
  (action
   (with-stdout-to
-   %{target}
+   package.json
    (run
     %{dep:package_json.exe}
     --version
     %{version:acutis}
-    --main
-    %{dep:acutis_js.bc.js}
-    --files
-    %{dep:eleventy.js}))))
+    --export
+    "./eleventy"
+    ./%{dep:eleventy.js}
+    --export
+    "."
+    ./%{dep:main.cjs}
+    --import
+    "#main"
+    ./%{dep:main.cjs}))))
 
 ; Our docs folder contains symlinks to our Dune build folder, but otherwise uses
 ; a completely different build system. It's easier to just manage it separately.

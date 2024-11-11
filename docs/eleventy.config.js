@@ -6,16 +6,18 @@
   file, You can obtain one at http://mozilla.org/MPL/2.0/.
 */
 
-const path = require("path");
-const syntaxHighlight = require("@11ty/eleventy-plugin-syntaxhighlight");
-const markdownItAnchor = require("markdown-it-anchor");
-const markdownItToc = require("markdown-it-table-of-contents");
-const acutisEleventy = require("acutis-lang/eleventy");
-const { pathPrefix } = require("./_data/site");
+import path from "node:path";
+import module from "node:module";
+import syntaxHighlight from "@11ty/eleventy-plugin-syntaxhighlight";
+import markdownItAnchor from "markdown-it-anchor";
+import markdownItToc from "markdown-it-table-of-contents";
+import * as acutisEleventy from "acutis-lang/eleventy";
+import siteData from "./_data/site.js";
+import * as eleventyComponents from "./_includes/eleventyComponents.js";
 
-function acutisSyntax(Prism) {
+async function acutisSyntax({ Prism }) {
   // Make sure markup-templating is loaded.
-  require("prismjs/components/prism-markup-templating");
+  await import("prismjs/components/prism-markup-templating.js");
 
   Prism.languages.acutis = {
     comment: /^{\*[\s\S]*?\*}$/,
@@ -47,30 +49,26 @@ function acutisSyntax(Prism) {
     punctuation: /[{}[\],.:/=()<>|]/,
   };
 
-  var pattern = /{({?)%[\s\S]*?%(}?)}|{\*[\s\S]*?\*}/g;
-  var markupTemplating = Prism.languages["markup-templating"];
+  let pattern = /{({?)%[\s\S]*?%(}?)}|{\*[\s\S]*?\*}/g;
+  let markupTemplating = Prism.languages["markup-templating"];
 
   Prism.hooks.add("before-tokenize", (env) =>
-    markupTemplating.buildPlaceholders(env, "acutis", pattern)
+    markupTemplating.buildPlaceholders(env, "acutis", pattern),
   );
   Prism.hooks.add("after-tokenize", (env) =>
-    markupTemplating.tokenizePlaceholders(env, "acutis")
+    markupTemplating.tokenizePlaceholders(env, "acutis"),
   );
 }
 
-const acutisPath = require.resolve("acutis-lang");
-const acutisDirPath = path.dirname(require.resolve("acutis-lang/package.json"));
+let require = module.createRequire(import.meta.url);
+let acutisPath = require.resolve("acutis-lang");
+let acutisDirPath = path.dirname(acutisPath);
 
-module.exports = (eleventyConfig) => {
-  eleventyConfig.addPlugin(syntaxHighlight, {
-    init: ({ Prism }) => acutisSyntax(Prism),
-  });
-  // eleventyConfig.addPlugin(acutisEleventy, {
-  //   components: require("./_includes/eleventyComponents"),
-  // });
-  eleventyConfig.addPlugin(acutisEleventy.printJs, {
-    components: require("./_includes/eleventyComponents"),
-    componentsPath: "./_includes/eleventyComponents",
+export default (eleventyConfig) => {
+  eleventyConfig.addPlugin(syntaxHighlight, { init: acutisSyntax });
+  eleventyConfig.addPlugin(acutisEleventy.printESM, {
+    components: eleventyComponents,
+    componentsPath: "./_includes/eleventyComponents.js",
   });
   // We gitignore generated files, but we don't want 11ty to ignore them.
   eleventyConfig.setUseGitIgnore(false);
@@ -94,12 +92,12 @@ module.exports = (eleventyConfig) => {
         containerFooterHtml: `</details>`,
         listType: "ol",
         includeLevel: [1, 2, 3],
-      })
+      }),
   );
   eleventyConfig.addWatchTarget("style.css");
   return {
     markdownTemplateEngine: false,
-    pathPrefix,
+    pathPrefix: siteData.pathPrefix,
     dir: {
       layouts: "_layouts",
     },

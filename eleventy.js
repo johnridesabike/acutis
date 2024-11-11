@@ -6,9 +6,20 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-let path = require("path");
-let fs = require("fs/promises");
-let { Compile, Component, Render, Utils } = require(".");
+/**
+ * This exports three implementations of the plugin: one that runs templates
+ * purely in memory, one that prints templates into CommonJS modules, and one
+ * that prints templates into ECMAScript modules. After Eleventy finishes
+ * building, all versions should produce the same output with the same input.
+ * However, they each interact with Eleventy's build system differently.
+ *
+ * This API is unstable and not rigorously tested.
+ */
+
+import path from "node:path";
+import fs from "node:fs/promises";
+import acutis from "#main";
+let { Compile, Component, Render, Utils } = acutis;
 
 function FileWalker(root) {
   this.ignores = new Set();
@@ -76,11 +87,11 @@ function getFuncs(obj) {
 }
 
 /**
- * 1. The interpreted implementation.
+ * Build pages using the pure render implementation. This evaluates source files
+ * in memory.
  */
-
-module.exports = function (eleventyConfig, config) {
-  eleventyConfig.versionCheck(">= 1.0");
+export function plugin(eleventyConfig, config) {
+  eleventyConfig.versionCheck(">= 3.0");
   let components = Compile.components([]);
   // Caching templates makes projects that heavily use "layout" templates
   // measurably faster.
@@ -141,11 +152,7 @@ module.exports = function (eleventyConfig, config) {
       }
     },
   });
-};
-
-/**
- * 2. The compile-to-JS implementation.
- */
+}
 
 // When building to JS files, we have to bypass Eleventy's own build system and
 // so we need to use our own. This is a very rudimentary script but it should
@@ -211,8 +218,9 @@ let oracle = new RebuildOracle();
 // Before each Eleventy build, we need to rebuild any .acutis files which
 // changed.
 
-module.exports.printJs = function (eleventyConfig, config) {
-  eleventyConfig.versionCheck(">= 2.0");
+function printJs(printer, eleventyConfig, config) {
+  eleventyConfig.versionCheck(">= 3.0");
+  let extension = config && "extension" in config ? config.extension : ".js";
   eleventyConfig.on("eleventy.before", ({ dir }) => {
     oracle.addConfig(config);
     let compPath =
@@ -246,8 +254,8 @@ module.exports.printJs = function (eleventyConfig, config) {
                   .concat(compSrc),
               );
               let template = Compile.uint8Array(filePath, components, src);
-              let js = Compile.toCJSString(template);
-              return fs.writeFile(filePath + ".js", js);
+              let js = printer(template);
+              return fs.writeFile(filePath + extension, js);
             } else {
               return Promise.resolve();
             }
@@ -256,6 +264,24 @@ module.exports.printJs = function (eleventyConfig, config) {
       .then(() => oracle.reset())
       .catch(acutisErrorToJsError);
   });
-  eleventyConfig.addExtension("acutis.js", { key: "11ty.js" });
+  eleventyConfig.addExtension("acutis" + extension, { key: "11ty.js" });
+  eleventyConfig.addTemplateFormats("acutis" + extension);
   eleventyConfig.addWatchTarget("**/*.acutis");
-};
+}
+
+/**
+ * Build pages with the compile-to-JavaScript implementation. This prints source
+ * files into JavaScript files using ECMAScript module format. Eleventy then
+ * evaluates them to render the final pages. The compiled filenames end in
+ * `.acutis.js` but Eleventy treats them like `.11ty.js` templates.
+ */
+export function printESM(eleventyConfig, config) {
+  return printJs(Compile.toESMString, eleventyConfig, config);
+}
+
+/**
+ * This is the same as `printESM` except it prints using CommonJS module format.
+ */
+export function printCJS(eleventyConfig, config) {
+  return printJs(Compile.toCJSString, eleventyConfig, config);
+}

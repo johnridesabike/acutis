@@ -12,19 +12,6 @@
     version number. You can then execute npm commands (link, publish, etc.) in
     the build context directory. *)
 
-let version = ref ""
-let main = ref ""
-let files = ref []
-
-let () =
-  Arg.parse
-    [
-      ("--main", Set_string main, "main JS file");
-      ("--version", Set_string version, "version");
-      ("--files", Rest_all (fun l -> files := l), "other files");
-    ]
-    invalid_arg "Generate the package.json."
-
 let comma ppf () = Format.fprintf ppf ",@ "
 let s = Format.dprintf "%S"
 let b = Format.dprintf "%B"
@@ -38,7 +25,42 @@ let a =
   Format.dprintf "@[<hv 2>[@;<1 0>%a@;<1 -2>]@]"
     (Format.pp_print_list ~pp_sep:comma ( |> ))
 
-let json =
+module SetString = Set.Make (String)
+
+let version = ref ""
+let path = ref ""
+let exports = ref [ ("./package.json", s "./package.json") ]
+let imports = ref []
+let files = ref SetString.empty
+
+let () =
+  Arg.parse
+    [
+      ("--version", Set_string version, "Version");
+      ( "--export",
+        Tuple
+          [
+            Set_string path;
+            String
+              (fun file ->
+                files := SetString.add file !files;
+                exports := (!path, s file) :: !exports);
+          ],
+        "Subpath export" );
+      ( "--import",
+        Tuple
+          [
+            Set_string path;
+            String
+              (fun file ->
+                files := SetString.add file !files;
+                imports := (!path, s file) :: !imports);
+          ],
+        "Internal subpath import" );
+    ]
+    invalid_arg "Generate the package.json."
+
+let () =
   o
     [
       ("name", s "acutis-lang");
@@ -77,8 +99,9 @@ let json =
             ("url", s "https://johnridesa.bike/");
             ("email", s "jbpjackson+acutis@icloud.com");
           ] );
-      ("main", s !main);
-      ("files", a (List.map s !files));
+      ("type", s "module");
+      ("exports", o !exports);
+      ("imports", o !imports);
+      ("files", a (SetString.to_seq !files |> Seq.map s |> List.of_seq));
     ]
-
-let () = json Format.std_formatter
+    Format.std_formatter

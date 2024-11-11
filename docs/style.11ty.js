@@ -6,34 +6,32 @@
   file, You can obtain one at http://mozilla.org/MPL/2.0/.
 */
 
-const fs = require("fs");
-const path = require("path");
-const util = require("util");
-const postcss = require("postcss");
+import fs from "node:fs/promises";
+import path from "node:path";
+import url from "node:url";
+import postcss from "postcss";
+import postCssImport from "postcss-import";
+import postCssCustomProperties from "postcss-custom-properties";
 
-const readFile = util.promisify(fs.readFile);
+let postcssWithOptions = postcss([postCssImport, postCssCustomProperties()]);
 
-const postcssWithOptions = postcss([
-  require("postcss-import"),
-  require("postcss-custom-properties")(),
-]);
+let cssPath = "style.css";
+let cssFile = fs.readFile(
+  path.join(path.dirname(url.fileURLToPath(import.meta.url)), cssPath),
+);
 
-const cssPath = "style.css";
+export default function Template() {}
 
-module.exports = class {
-  data() {
-    return readFile(path.join(__dirname, cssPath)).then((css) => {
-      return {
-        permalink: cssPath,
-        cssPath,
-        css: css,
-      };
-    });
-  }
+Template.prototype.data = async function data() {
+  let css = await cssFile;
+  return {
+    permalink: cssPath,
+    cssPath,
+    css: css,
+  };
+};
 
-  render({ css, cssPath }) {
-    return postcssWithOptions
-      .process(css, { from: cssPath })
-      .then((result) => result.css);
-  }
+Template.prototype.render = async function render({ css, cssPath }) {
+  let result = await postcssWithOptions.process(css, { from: cssPath });
+  return result.css;
 };

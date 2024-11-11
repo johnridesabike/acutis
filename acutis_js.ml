@@ -178,7 +178,7 @@ let () =
            (input_uint8Array src |> Lexing.from_function)
          |> Acutis.compile components
 
-       method toJSString x =
+       method toESMString x =
          Acutis.esm Format.str_formatter x;
          Format.flush_str_formatter () |> Js.string
 
