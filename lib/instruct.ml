@@ -267,22 +267,6 @@ end = struct
     fun seq ->
       match seq () with Seq.Nil -> unit | Seq.Cons (s1, seq) -> aux s1 seq
 
-  (** We use the [Data.t] type as a linked-list stack. *)
-
-  let buffer_add_stack buf stack sep =
-    (* Assume it's nonempty. *)
-    let$ tuple = ("tuple", Data.to_array stack) in
-    let| () = buffer_add_string buf (Data.to_string tuple.%(int 0)) in
-    let& stack = ("stack", tuple.%(int 1)) in
-    while_ is_not_nil stack (fun () ->
-        let$ tuple = ("tuple", Data.to_array !stack) in
-        let| () = buffer_add_string buf sep in
-        let| () = buffer_add_string buf (Data.to_string tuple.%(int 0)) in
-        stack := tuple.%(int 1))
-
-  let stack_add stack x = Data.array (array [| Data.string x; stack |])
-  let stack_singleton = stack_add nil_value
-
   type state = {
     components : (Data.t hashtbl -> string promise) hashtbl exp;
     buf : buffer exp;
@@ -564,10 +548,12 @@ end = struct
 
   module T = Typechecker.Type
 
-  type decode_runtime = {
-    stack : Data.t exp;
-    decode_error : (Data.t -> string -> External.t -> unit) exp;
-    key_error : (Data.t -> string -> Data.t -> unit) exp;
+  type 'stack decode_runtime = {
+    stack : 'stack exp;
+    stack_add : (string -> 'stack -> 'stack) exp;
+    buffer_add_sep : (buffer -> string -> string -> unit) exp;
+    decode_error : (External.t -> 'stack -> string -> unit) exp;
+    key_error : (buffer -> 'stack -> string -> unit) exp;
   }
 
   let show_type =
@@ -580,10 +566,12 @@ end = struct
       Buffer.clear b; string s
 
   let push_error debug ty_str input =
-    stmt (((debug.decode_error @@ debug.stack) @@ ty_str) @@ input)
+    stmt (((debug.decode_error @@ input) @@ debug.stack) @@ ty_str)
 
   let push_key_error debug ty_str missing_keys =
-    stmt (((debug.key_error @@ debug.stack) @@ ty_str) @@ !missing_keys)
+    stmt (((debug.key_error @@ missing_keys) @@ debug.stack) @@ ty_str)
+
+  let stack_add debug x = (debug.stack_add @@ x) @@ debug.stack
 
   type 'a union_helper = {
     to_data : 'a exp -> Data.t exp;
@@ -675,9 +663,7 @@ end = struct
         External.classify Not_null input
           ~ok:(fun input ->
             let$ decoded = ("decoded", array [| nil_value |]) in
-            let$ stack =
-              ("stack", stack_add debug.stack (string "<nullable>"))
-            in
+            let$ stack = ("stack", stack_add debug (string "<nullable>")) in
             let| () =
               decode
                 ~set:(fun data -> decoded.%(int 0) <- data)
@@ -696,9 +682,7 @@ end = struct
                   let$ decode_dst_new =
                     ("decode_dst_new", array [| nil_value; nil_value |])
                   in
-                  let$ stack =
-                    ("stack", stack_add debug.stack (string_of_int i))
-                  in
+                  let$ stack = ("stack", stack_add debug (string_of_int i)) in
                   let| () =
                     decode
                       ~set:(fun data -> decode_dst_new.%(int 0) <- data)
@@ -720,9 +704,7 @@ end = struct
                 let$ decoded = ("decoded", array_make length nil_value) in
                 External.iteri
                   (fun i input ->
-                    let$ stack =
-                      ("stack", stack_add debug.stack (string_of_int i))
-                    in
+                    let$ stack = ("stack", stack_add debug (string_of_int i)) in
                     let debug = { debug with stack } in
                     let rec aux i' = function
                       | [] -> push_error debug ty_str input
@@ -755,7 +737,7 @@ end = struct
             let$ decoded = ("decoded", hashtbl_create ()) in
             External.assoc_iter
               (fun k input ->
-                let$ stack = ("stack", stack_add debug.stack k) in
+                let$ stack = ("stack", stack_add debug k) in
                 let| () =
                   decode
                     ~set:(fun data -> decoded.%{k} <- data)
@@ -837,7 +819,7 @@ end = struct
       ~error:(fun () -> push_error debug ty_str input)
 
   and decode_record_aux ~debug decoded input tys ty_str =
-    let& missing_keys = ("missing_keys", nil_value) in
+    let$ missing_keys = ("missing_keys", buffer_create ()) in
     let| () =
       MapString.to_seq tys
       |> Seq.map (fun (k, ty) ->
@@ -846,18 +828,22 @@ end = struct
                (External.assoc_mem k' input)
                ~then_:(fun () ->
                  let$ input = ("input", External.assoc_find k' input) in
-                 let$ stack = ("stack", stack_add debug.stack k') in
+                 let$ stack = ("stack", stack_add debug k') in
                  decode
                    ~set:(fun data -> decoded.%{k'} <- data)
                    ~debug:{ debug with stack } input ty)
                ~else_:(fun () ->
                  match ty.contents with
                  | Nullable _ | Unknown _ -> decoded.%{k'} <- nil_value
-                 | _ -> missing_keys := stack_add !missing_keys k'))
+                 | _ ->
+                     stmt
+                       (((debug.buffer_add_sep @@ missing_keys) @@ string ", ")
+                       @@ k')))
       |> stmt_join
     in
-    if_ (is_not_nil !missing_keys) ~then_:(fun () ->
-        push_key_error debug ty_str missing_keys)
+    if_
+      (not (buffer_length missing_keys = int 0))
+      ~then_:(fun () -> push_key_error debug ty_str missing_keys)
 
   let rec encode ~set props ty =
     match ty.contents with
@@ -968,91 +954,45 @@ end = struct
            encode ~set:(fun x -> encoded.%{k} <- x) props ty)
     |> stmt_join
 
-  let decode_error buf name =
-    lambda (fun stack ->
-        return
-          (lambda (fun ty ->
-               return
-                 (lambda (fun input ->
-                      let| () =
-                        if_
-                          (not (buffer_length buf = int 0))
-                          ~then_:(fun () ->
-                            buffer_add_string buf (string "\n\n"))
-                      in
-                      let| () = buffer_add_string buf (string "File \"") in
-                      let| () = buffer_add_string buf (string name) in
-                      let| () =
-                        buffer_add_string buf
-                          (string
-                             "\"\n\
-                              Render error.\n\
-                              The data supplied does not match this template's \
-                              interface.\n")
-                      in
-                      let| () = buffer_add_string buf (string "Path:\n") in
-                      let| () = buffer_add_stack buf stack (string " <- ") in
-                      let| () =
-                        buffer_add_string buf (string "\nExpected type:\n")
-                      in
-                      let| () = buffer_add_string buf ty in
-                      let| () =
-                        buffer_add_string buf (string "\nReceived value:\n")
-                      in
-                      buffer_add_string buf (External.to_string input))))))
-
-  let key_error buf name =
-    lambda (fun stack ->
-        return
-          (lambda (fun ty ->
-               return
-                 (lambda (fun keys ->
-                      let| () =
-                        if_
-                          (not (buffer_length buf = int 0))
-                          ~then_:(fun () ->
-                            buffer_add_string buf (string "\n\n"))
-                      in
-                      let| () = buffer_add_string buf (string "File: ") in
-                      let| () = buffer_add_string buf (string name) in
-                      let| () =
-                        buffer_add_string buf
-                          (string
-                             "\n\
-                              Render error.\n\
-                              The data supplied does not match this template's \
-                              interface.\n")
-                      in
-                      let| () = buffer_add_string buf (string "Path:\n") in
-                      let| () = buffer_add_stack buf stack (string " <- ") in
-                      let| () =
-                        buffer_add_string buf (string "\nExpected type:\n")
-                      in
-                      let| () = buffer_add_string buf ty in
-                      let| () =
-                        buffer_add_string buf
-                          (string "\nInput is missing keys:\n")
-                      in
-                      buffer_add_stack buf keys (string ", "))))))
-
-  let buffer_add_escape =
-    lambda (fun buf ->
-        return
-          (lambda (fun str ->
-               string_iter str (fun c ->
-                   match_char c (function
-                     | '&' -> buffer_add_string buf (string "&amp;")
-                     | '"' -> buffer_add_string buf (string "&quot;")
-                     | '\'' -> buffer_add_string buf (string "&apos;")
-                     | '>' -> buffer_add_string buf (string "&gt;")
-                     | '<' -> buffer_add_string buf (string "&lt;")
-                     | '/' -> buffer_add_string buf (string "&sol;")
-                     | '`' -> buffer_add_string buf (string "&grave;")
-                     | '=' -> buffer_add_string buf (string "&equals;")
-                     | _ -> buffer_add_char buf c)))))
+  let lambdak k f = lambda (fun a -> return (k (f a)))
+  let lambda2 f = lambdak lambda f
+  let lambda3 f = lambdak lambda2 f
+  let lambda4 f = lambdak lambda3 f
 
   let eval compiled =
-    let$ escape = ("buffer_add_escape", buffer_add_escape) in
+    let$ escape =
+      ( "buffer_add_escape",
+        lambda2 (fun buf str ->
+            string_iter str (fun c ->
+                match_char c (function
+                  | '&' -> buffer_add_string buf (string "&amp;")
+                  | '"' -> buffer_add_string buf (string "&quot;")
+                  | '\'' -> buffer_add_string buf (string "&apos;")
+                  | '>' -> buffer_add_string buf (string "&gt;")
+                  | '<' -> buffer_add_string buf (string "&lt;")
+                  | '/' -> buffer_add_string buf (string "&sol;")
+                  | '`' -> buffer_add_string buf (string "&grave;")
+                  | '=' -> buffer_add_string buf (string "&equals;")
+                  | _ -> buffer_add_char buf c))) )
+    in
+    let$ buffer_add_sep =
+      ( "buffer_add_sep",
+        lambda3 (fun buf sep str ->
+            let| () =
+              if_
+                (not (buffer_length buf = int 0))
+                ~then_:(fun () -> buffer_add_string buf sep)
+            in
+            buffer_add_string buf str) )
+    in
+    (* Use a functional continuation stack to track decode progress. *)
+    let$ stack_empty = ("stack_empty", lambda (fun _ -> unit)) in
+    let$ stack_add =
+      ( "stack_add",
+        lambda3 (fun x stack f ->
+            let| () = stmt (stack @@ f) (* Use FIFO evaluation. *) in
+            return (f @@ x)) )
+    in
     let$ components = ("components", hashtbl_create ()) in
     let| () =
       Seq.append
@@ -1076,13 +1016,57 @@ end = struct
     export
       (async_lambda (fun input ->
            let$ errors = ("errors", buffer_create ()) in
-           let$ decode_error =
-             ("decode_error", decode_error errors compiled.name)
+           let$ error_aux =
+             ( "error_aux",
+               lambda4 (fun msg1 msg2 stack ty ->
+                   let| () =
+                     if_
+                       (not (buffer_length errors = int 0))
+                       ~then_:(fun () ->
+                         buffer_add_string errors (string "\n\n"))
+                   in
+                   let| () = buffer_add_string errors (string "File \"") in
+                   let| () = buffer_add_string errors (string compiled.name) in
+                   let| () =
+                     buffer_add_string errors
+                       (string
+                          "\"\n\
+                           Render error.\n\
+                           The data supplied does not match this template's \
+                           interface.\n")
+                   in
+                   let| () =
+                     buffer_add_string errors (string "Path:\n<input>")
+                   in
+                   let| () =
+                     stmt (stack @@ (buffer_add_sep @@ errors) @@ string " -> ")
+                   in
+                   let| () =
+                     buffer_add_string errors (string "\nExpected type:\n")
+                   in
+                   let| () = buffer_add_string errors ty in
+                   let| () = buffer_add_string errors msg1 in
+                   buffer_add_string errors msg2) )
            in
-           let$ key_error = ("key_error", key_error errors compiled.name) in
+           let$ decode_error =
+             ( "decode_error",
+               lambda (fun input ->
+                   return
+                     ((error_aux @@ string "\nReceived value:\n")
+                     @@ External.to_string input)) )
+           in
+           let$ key_error =
+             ( "key_error",
+               lambda (fun keys ->
+                   return
+                     ((error_aux @@ string "\nInput is missing keys:\n")
+                     @@ buffer_contents keys)) )
+           in
            let$ props = ("props", hashtbl_create ()) in
-           let$ stack = ("stack", stack_singleton (string "<input>")) in
-           let debug = { stack; decode_error; key_error } in
+           let stack = stack_empty in
+           let debug =
+             { stack; stack_add; decode_error; key_error; buffer_add_sep }
+           in
            let$ ty_str = ("type", show_type (T.record (ref compiled.types))) in
            let| () =
              External.classify Assoc input

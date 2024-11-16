@@ -19,7 +19,7 @@
   Render error.
   The data supplied does not match this template's interface.
   Path:
-  bool <- <input>
+  <input> -> bool
   Expected type:
   false
   Received value:
@@ -44,7 +44,7 @@
   Render error.
   The data supplied does not match this template's interface.
   Path:
-  int_enum <- <input>
+  <input> -> int_enum
   Expected type:
   @1 | @2
   Received value:
@@ -69,7 +69,7 @@
   Render error.
   The data supplied does not match this template's interface.
   Path:
-  string_enum <- <input>
+  <input> -> string_enum
   Expected type:
   @"a" | @"b"
   Received value:
@@ -94,7 +94,7 @@
   Render error.
   The data supplied does not match this template's interface.
   Path:
-  tuple <- <input>
+  <input> -> tuple
   Expected type:
   (string, string)
   Received value:
@@ -119,7 +119,7 @@
   Render error.
   The data supplied does not match this template's interface.
   Path:
-  1 <- level_1 <- nested <- <input>
+  <input> -> nested -> level_1 -> 1
   Expected type:
   string
   Received value:
@@ -140,11 +140,11 @@
   >   .catch((e) => console.error(e.message));
   > EOF
   $ node run.mjs
-  File: template.acutis
+  File "template.acutis"
   Render error.
   The data supplied does not match this template's interface.
   Path:
-  long_type <- <input>
+  <input> -> long_type
   Expected type:
   {@tag: false} |
   {
@@ -154,7 +154,7 @@
     yet_another_field: string
   }
   Input is missing keys:
-  yet_another_field, looong_field, another_loooong_field
+  another_loooong_field, looong_field, yet_another_field
 
 
   $ cat > run.mjs << EOF
@@ -176,7 +176,7 @@
   Render error.
   The data supplied does not match this template's interface.
   Path:
-  long_type <- <input>
+  <input> -> long_type
   Expected type:
   {@tag: false} |
   {
@@ -207,17 +207,17 @@
   Render error.
   The data supplied does not match this template's interface.
   Path:
-  list <- <input>
+  <input> -> list
   Expected type:
   [{a: string}]
   Received value:
   fail
   
-  File: template.acutis
+  File "template.acutis"
   Render error.
   The data supplied does not match this template's interface.
   Path:
-  long_type <- <input>
+  <input> -> long_type
   Expected type:
   {@tag: false} |
   {
@@ -227,13 +227,13 @@
     yet_another_field: string
   }
   Input is missing keys:
-  yet_another_field, looong_field, another_loooong_field
+  another_loooong_field, looong_field, yet_another_field
   
   File "template.acutis"
   Render error.
   The data supplied does not match this template's interface.
   Path:
-  1 <- level_1 <- nested <- <input>
+  <input> -> nested -> level_1 -> 1
   Expected type:
   string
   Received value:
@@ -243,7 +243,7 @@
   Render error.
   The data supplied does not match this template's interface.
   Path:
-  tuple <- <input>
+  <input> -> tuple
   Expected type:
   (string, string)
   Received value:
@@ -257,7 +257,7 @@
   >   .catch((e) => console.error(e.message));
   > EOF
   $ node run.mjs
-  File: template.acutis
+  File "template.acutis"
   Render error.
   The data supplied does not match this template's interface.
   Path:
@@ -280,4 +280,4 @@
     tuple: (string, string)
   }
   Input is missing keys:
-  tuple, string_enum, nested, long_type, list, int_enum, bool
+  bool, int_enum, list, long_type, nested, string_enum, tuple

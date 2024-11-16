@@ -24,6 +24,28 @@
         }
       );
     };
+  let buffer_add_sep$0 =
+    (arg$0) => {
+      return (
+        (arg$1) => {
+          return (
+            (arg$2) => {
+              if (!(arg$0.contents.length === 0)) { arg$0.contents += arg$1; }
+              arg$0.contents += arg$2;
+            }
+          );
+        }
+      );
+    };
+  let stack_empty$0 = (arg$0) => {  };
+  let stack_add$0 =
+    (arg$0) => {
+      return (
+        (arg$1) => {
+          return ((arg$2) => { arg$1(arg$2); return (arg$2(arg$0)); });
+        }
+      );
+    };
   let components$0 = new Map();
   import {"externalFunction" as import$0} from "./jsfile.mjs";
   components$0.set(
@@ -37,88 +59,54 @@
   );
   export default async (arg$0) => {
     let errors$0 = {contents: ""};
-    let decode_error$0 =
+    let error_aux$0 =
       (arg$1) => {
         return (
           (arg$2) => {
             return (
               (arg$3) => {
-                if (!(errors$0.contents.length === 0)) {
-                  errors$0.contents += "\n\n";
-                }
-                errors$0.contents += "File \"";
-                errors$0.contents += "template.acutis";
-                errors$0.contents +=
-                  "\"\n\
+                return (
+                  (arg$4) => {
+                    if (!(errors$0.contents.length === 0)) {
+                      errors$0.contents += "\n\n";
+                    }
+                    errors$0.contents += "File \"";
+                    errors$0.contents += "template.acutis";
+                    errors$0.contents +=
+                      "\"\n\
   Render error.\n\
   The data supplied does not match this template's interface.\n\
   ";
-                errors$0.contents += "Path:\n";
-                errors$0.contents += arg$1[0];
-                let stack$0 = arg$1[1];
-                while (!(stack$0 === 0)) {
-                  errors$0.contents += " <- ";
-                  errors$0.contents += stack$0[0];
-                  stack$0 = stack$0[1];
-                }
-                errors$0.contents += "\nExpected type:\n";
-                errors$0.contents += arg$2;
-                errors$0.contents += "\nReceived value:\n";
-                errors$0.contents += String(arg$3);
+                    errors$0.contents += "Path:\n<input>";
+                    arg$3(buffer_add_sep$0(errors$0)(" -> "));
+                    errors$0.contents += "\nExpected type:\n";
+                    errors$0.contents += arg$4;
+                    errors$0.contents += arg$1;
+                    errors$0.contents += arg$2;
+                  }
+                );
               }
             );
           }
         );
+      };
+    let decode_error$0 =
+      (arg$1) => {
+        return (error_aux$0("\nReceived value:\n")(String(arg$1)));
       };
     let key_error$0 =
       (arg$1) => {
-        return (
-          (arg$2) => {
-            return (
-              (arg$3) => {
-                if (!(errors$0.contents.length === 0)) {
-                  errors$0.contents += "\n\n";
-                }
-                errors$0.contents += "File: ";
-                errors$0.contents += "template.acutis";
-                errors$0.contents +=
-                  "\n\
-  Render error.\n\
-  The data supplied does not match this template's interface.\n\
-  ";
-                errors$0.contents += "Path:\n";
-                errors$0.contents += arg$1[0];
-                let stack$0 = arg$1[1];
-                while (!(stack$0 === 0)) {
-                  errors$0.contents += " <- ";
-                  errors$0.contents += stack$0[0];
-                  stack$0 = stack$0[1];
-                }
-                errors$0.contents += "\nExpected type:\n";
-                errors$0.contents += arg$2;
-                errors$0.contents += "\nInput is missing keys:\n";
-                errors$0.contents += arg$3[0];
-                let stack$1 = arg$3[1];
-                while (!(stack$1 === 0)) {
-                  errors$0.contents += ", ";
-                  errors$0.contents += stack$1[0];
-                  stack$1 = stack$1[1];
-                }
-              }
-            );
-          }
-        );
+        return (error_aux$0("\nInput is missing keys:\n")(arg$1.contents));
       };
     let props$0 = new Map();
-    let stack$0 = ["<input>", 0];
     let type$0 = "{}";
     if (typeof arg$0 === "object" && !(arg$0 === null)) {
-      let missing_keys$0 = 0;
-      if (!(missing_keys$0 === 0)) {
-        key_error$0(stack$0)(type$0)(missing_keys$0);
+      let missing_keys$0 = {contents: ""};
+      if (!(missing_keys$0.contents.length === 0)) {
+        key_error$0(missing_keys$0)(stack_empty$0)(type$0);
       }
     } else {
-      decode_error$0(stack$0)(type$0)(arg$0);
+      decode_error$0(arg$0)(stack_empty$0)(type$0);
     }
     if (errors$0.contents.length === 0) {
       let buf$0 = {contents: ""};
@@ -162,6 +150,28 @@
         }
       );
     };
+  let buffer_add_sep$0 =
+    (arg$0) => {
+      return (
+        (arg$1) => {
+          return (
+            (arg$2) => {
+              if (!(arg$0.contents.length === 0)) { arg$0.contents += arg$1; }
+              arg$0.contents += arg$2;
+            }
+          );
+        }
+      );
+    };
+  let stack_empty$0 = (arg$0) => {  };
+  let stack_add$0 =
+    (arg$0) => {
+      return (
+        (arg$1) => {
+          return ((arg$2) => { arg$1(arg$2); return (arg$2(arg$0)); });
+        }
+      );
+    };
   let components$0 = new Map();
   let import$0 = require("./jsfile.cjs");
   components$0.set(
@@ -176,88 +186,54 @@
   module.exports =
     async (arg$0) => {
       let errors$0 = {contents: ""};
-      let decode_error$0 =
+      let error_aux$0 =
         (arg$1) => {
           return (
             (arg$2) => {
               return (
                 (arg$3) => {
-                  if (!(errors$0.contents.length === 0)) {
-                    errors$0.contents += "\n\n";
-                  }
-                  errors$0.contents += "File \"";
-                  errors$0.contents += "template.acutis";
-                  errors$0.contents +=
-                    "\"\n\
+                  return (
+                    (arg$4) => {
+                      if (!(errors$0.contents.length === 0)) {
+                        errors$0.contents += "\n\n";
+                      }
+                      errors$0.contents += "File \"";
+                      errors$0.contents += "template.acutis";
+                      errors$0.contents +=
+                        "\"\n\
   Render error.\n\
   The data supplied does not match this template's interface.\n\
   ";
-                  errors$0.contents += "Path:\n";
-                  errors$0.contents += arg$1[0];
-                  let stack$0 = arg$1[1];
-                  while (!(stack$0 === 0)) {
-                    errors$0.contents += " <- ";
-                    errors$0.contents += stack$0[0];
-                    stack$0 = stack$0[1];
-                  }
-                  errors$0.contents += "\nExpected type:\n";
-                  errors$0.contents += arg$2;
-                  errors$0.contents += "\nReceived value:\n";
-                  errors$0.contents += String(arg$3);
+                      errors$0.contents += "Path:\n<input>";
+                      arg$3(buffer_add_sep$0(errors$0)(" -> "));
+                      errors$0.contents += "\nExpected type:\n";
+                      errors$0.contents += arg$4;
+                      errors$0.contents += arg$1;
+                      errors$0.contents += arg$2;
+                    }
+                  );
                 }
               );
             }
           );
+        };
+      let decode_error$0 =
+        (arg$1) => {
+          return (error_aux$0("\nReceived value:\n")(String(arg$1)));
         };
       let key_error$0 =
         (arg$1) => {
-          return (
-            (arg$2) => {
-              return (
-                (arg$3) => {
-                  if (!(errors$0.contents.length === 0)) {
-                    errors$0.contents += "\n\n";
-                  }
-                  errors$0.contents += "File: ";
-                  errors$0.contents += "template.acutis";
-                  errors$0.contents +=
-                    "\n\
-  Render error.\n\
-  The data supplied does not match this template's interface.\n\
-  ";
-                  errors$0.contents += "Path:\n";
-                  errors$0.contents += arg$1[0];
-                  let stack$0 = arg$1[1];
-                  while (!(stack$0 === 0)) {
-                    errors$0.contents += " <- ";
-                    errors$0.contents += stack$0[0];
-                    stack$0 = stack$0[1];
-                  }
-                  errors$0.contents += "\nExpected type:\n";
-                  errors$0.contents += arg$2;
-                  errors$0.contents += "\nInput is missing keys:\n";
-                  errors$0.contents += arg$3[0];
-                  let stack$1 = arg$3[1];
-                  while (!(stack$1 === 0)) {
-                    errors$0.contents += ", ";
-                    errors$0.contents += stack$1[0];
-                    stack$1 = stack$1[1];
-                  }
-                }
-              );
-            }
-          );
+          return (error_aux$0("\nInput is missing keys:\n")(arg$1.contents));
         };
       let props$0 = new Map();
-      let stack$0 = ["<input>", 0];
       let type$0 = "{}";
       if (typeof arg$0 === "object" && !(arg$0 === null)) {
-        let missing_keys$0 = 0;
-        if (!(missing_keys$0 === 0)) {
-          key_error$0(stack$0)(type$0)(missing_keys$0);
+        let missing_keys$0 = {contents: ""};
+        if (!(missing_keys$0.contents.length === 0)) {
+          key_error$0(missing_keys$0)(stack_empty$0)(type$0);
         }
       } else {
-        decode_error$0(stack$0)(type$0)(arg$0);
+        decode_error$0(arg$0)(stack_empty$0)(type$0);
       }
       if (errors$0.contents.length === 0) {
         let buf$0 = {contents: ""};

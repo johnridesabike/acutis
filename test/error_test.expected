@@ -1159,7 +1159,7 @@ File "<test>"
 Render error.
 The data supplied does not match this template's interface.
 Path:
-b <- a <- <input>
+<input> -> a -> b
 Expected type:
 string
 Received value:
@@ -1171,7 +1171,7 @@ File "<test>"
 Render error.
 The data supplied does not match this template's interface.
 Path:
-a <- <input>
+<input> -> a
 Expected type:
 [{a: string}]
 Received value:
@@ -1183,7 +1183,7 @@ File "<test>"
 Render error.
 The data supplied does not match this template's interface.
 Path:
-a <- <input>
+<input> -> a
 Expected type:
 [int]
 Received value:
@@ -1191,7 +1191,7 @@ Received value:
 
 Missing bindings are reported
 ---
-File: <test>
+File "<test>"
 Render error.
 The data supplied does not match this template's interface.
 Path:
@@ -1203,7 +1203,7 @@ z
 
 Missing bindings are reported (with nested record)
 ---
-File: <test>
+File "<test>"
 Render error.
 The data supplied does not match this template's interface.
 Path:
@@ -1219,7 +1219,7 @@ File "<test>"
 Render error.
 The data supplied does not match this template's interface.
 Path:
-b <- <input>
+<input> -> b
 Expected type:
 false
 Received value:
@@ -1231,7 +1231,7 @@ File "<test>"
 Render error.
 The data supplied does not match this template's interface.
 Path:
-a <- <input>
+<input> -> a
 Expected type:
 @1 | @2
 Received value:
@@ -1243,7 +1243,7 @@ File "<test>"
 Render error.
 The data supplied does not match this template's interface.
 Path:
-a <- <input>
+<input> -> a
 Expected type:
 @"a" | @"b"
 Received value:
@@ -1255,7 +1255,7 @@ File "<test>"
 Render error.
 The data supplied does not match this template's interface.
 Path:
-a <- <input>
+<input> -> a
 Expected type:
 (string, string)
 Received value:
@@ -1267,7 +1267,7 @@ File "<test>"
 Render error.
 The data supplied does not match this template's interface.
 Path:
-a <- <input>
+<input> -> a
 Expected type:
 {@tag: 1, a: string}
 Received value:
@@ -1279,7 +1279,7 @@ File "<test>"
 Render error.
 The data supplied does not match this template's interface.
 Path:
-a <- <input>
+<input> -> a
 Expected type:
 {@tag: 1, a: string}
 Received value:
@@ -1291,7 +1291,7 @@ File "<test>"
 Render error.
 The data supplied does not match this template's interface.
 Path:
-b <- a <- <input>
+<input> -> a -> b
 Expected type:
 string
 Received value:
@@ -1301,17 +1301,17 @@ File "<test>"
 Render error.
 The data supplied does not match this template's interface.
 Path:
-c <- <input>
+<input> -> c
 Expected type:
 string
 Received value:
 0
 
-File: <test>
+File "<test>"
 Render error.
 The data supplied does not match this template's interface.
 Path:
-d <- <input>
+<input> -> d
 Expected type:
 {e: string}
 Input is missing keys:

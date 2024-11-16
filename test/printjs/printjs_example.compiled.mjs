@@ -20,83 +20,71 @@ let buffer_add_escape$0 =
       }
     );
   };
+let buffer_add_sep$0 =
+  (arg$0) => {
+    return (
+      (arg$1) => {
+        return (
+          (arg$2) => {
+            if (!(arg$0.contents.length === 0)) { arg$0.contents += arg$1; }
+            arg$0.contents += arg$2;
+          }
+        );
+      }
+    );
+  };
+let stack_empty$0 = (arg$0) => {  };
+let stack_add$0 =
+  (arg$0) => {
+    return (
+      (arg$1) => {
+        return ((arg$2) => { arg$1(arg$2); return (arg$2(arg$0)); });
+      }
+    );
+  };
 let components$0 = new Map();
 export default async (arg$0) => {
   let errors$0 = {contents: ""};
-  let decode_error$0 =
+  let error_aux$0 =
     (arg$1) => {
       return (
         (arg$2) => {
           return (
             (arg$3) => {
-              if (!(errors$0.contents.length === 0)) {
-                errors$0.contents += "\n\n";
-              }
-              errors$0.contents += "File \"";
-              errors$0.contents += "printjs_example.acutis";
-              errors$0.contents +=
-                "\"\n\
+              return (
+                (arg$4) => {
+                  if (!(errors$0.contents.length === 0)) {
+                    errors$0.contents += "\n\n";
+                  }
+                  errors$0.contents += "File \"";
+                  errors$0.contents += "printjs_example.acutis";
+                  errors$0.contents +=
+                    "\"\n\
 Render error.\n\
 The data supplied does not match this template's interface.\n\
 ";
-              errors$0.contents += "Path:\n";
-              errors$0.contents += arg$1[0];
-              let stack$0 = arg$1[1];
-              while (!(stack$0 === 0)) {
-                errors$0.contents += " <- ";
-                errors$0.contents += stack$0[0];
-                stack$0 = stack$0[1];
-              }
-              errors$0.contents += "\nExpected type:\n";
-              errors$0.contents += arg$2;
-              errors$0.contents += "\nReceived value:\n";
-              errors$0.contents += String(arg$3);
+                  errors$0.contents += "Path:\n<input>";
+                  arg$3(buffer_add_sep$0(errors$0)(" -> "));
+                  errors$0.contents += "\nExpected type:\n";
+                  errors$0.contents += arg$4;
+                  errors$0.contents += arg$1;
+                  errors$0.contents += arg$2;
+                }
+              );
             }
           );
         }
       );
+    };
+  let decode_error$0 =
+    (arg$1) => {
+      return (error_aux$0("\nReceived value:\n")(String(arg$1)));
     };
   let key_error$0 =
     (arg$1) => {
-      return (
-        (arg$2) => {
-          return (
-            (arg$3) => {
-              if (!(errors$0.contents.length === 0)) {
-                errors$0.contents += "\n\n";
-              }
-              errors$0.contents += "File: ";
-              errors$0.contents += "printjs_example.acutis";
-              errors$0.contents +=
-                "\n\
-Render error.\n\
-The data supplied does not match this template's interface.\n\
-";
-              errors$0.contents += "Path:\n";
-              errors$0.contents += arg$1[0];
-              let stack$0 = arg$1[1];
-              while (!(stack$0 === 0)) {
-                errors$0.contents += " <- ";
-                errors$0.contents += stack$0[0];
-                stack$0 = stack$0[1];
-              }
-              errors$0.contents += "\nExpected type:\n";
-              errors$0.contents += arg$2;
-              errors$0.contents += "\nInput is missing keys:\n";
-              errors$0.contents += arg$3[0];
-              let stack$1 = arg$3[1];
-              while (!(stack$1 === 0)) {
-                errors$0.contents += ", ";
-                errors$0.contents += stack$1[0];
-                stack$1 = stack$1[1];
-              }
-            }
-          );
-        }
-      );
+      return (error_aux$0("\nInput is missing keys:\n")(arg$1.contents));
     };
   let props$0 = new Map();
-  let stack$0 = ["<input>", 0];
   let type$0 =
     "{\n\
   blogPosts:\n\
@@ -112,10 +100,10 @@ The data supplied does not match this template's interface.\n\
   siteTitle: string\n\
 }";
   if (typeof arg$0 === "object" && !(arg$0 === null)) {
-    let missing_keys$0 = 0;
+    let missing_keys$0 = {contents: ""};
     if (Object.hasOwn(arg$0, "blogPosts")) {
       let input$0 = arg$0["blogPosts"];
-      let stack$1 = ["blogPosts", stack$0];
+      let stack$0 = stack_add$0("blogPosts")(stack_empty$0);
       let type$1 =
         "[\n\
   {\n\
@@ -131,7 +119,7 @@ The data supplied does not match this template's interface.\n\
         let decode_dst$0 = decoded$0;
         for (let i$0 = 0; i$0 < input$0.length; i$0++) {
           let decode_dst_new$0 = [0, 0];
-          let stack$2 = [String(i$0), stack$1];
+          let stack$1 = stack_add$0(String(i$0))(stack$0);
           let type$2 =
             "{\n\
   author: {name: ?string},\n\
@@ -142,26 +130,26 @@ The data supplied does not match this template's interface.\n\
 }";
           if (typeof input$0[i$0] === "object" && !(input$0[i$0] === null)) {
             let decoded$1 = new Map();
-            let missing_keys$1 = 0;
+            let missing_keys$1 = {contents: ""};
             if (Object.hasOwn(input$0[i$0], "author")) {
               let input$1 = input$0[i$0]["author"];
-              let stack$3 = ["author", stack$2];
+              let stack$2 = stack_add$0("author")(stack$1);
               let type$3 = "{name: ?string}";
               if (typeof input$1 === "object" && !(input$1 === null)) {
                 let decoded$2 = new Map();
-                let missing_keys$2 = 0;
+                let missing_keys$2 = {contents: ""};
                 if (Object.hasOwn(input$1, "name")) {
                   let input$2 = input$1["name"];
-                  let stack$4 = ["name", stack$3];
+                  let stack$3 = stack_add$0("name")(stack$2);
                   let type$4 = "?string";
                   if (!(input$2 === null) && !(input$2 === undefined)) {
                     let decoded$3 = [0];
-                    let stack$5 = ["<nullable>", stack$4];
+                    let stack$4 = stack_add$0("<nullable>")(stack$3);
                     let type$5 = "string";
                     if (typeof input$2 === "string") {
                       decoded$3[0] = input$2;
                     } else {
-                      decode_error$0(stack$5)(type$5)(input$2);
+                      decode_error$0(input$2)(stack$4)(type$5);
                     }
                     decoded$2.set("name", decoded$3);
                   } else {
@@ -170,81 +158,81 @@ The data supplied does not match this template's interface.\n\
                 } else {
                   decoded$2.set("name", 0);
                 }
-                if (!(missing_keys$2 === 0)) {
-                  key_error$0(stack$3)(type$3)(missing_keys$2);
+                if (!(missing_keys$2.contents.length === 0)) {
+                  key_error$0(missing_keys$2)(stack$2)(type$3);
                 }
                 decoded$1.set("author", decoded$2);
               } else {
-                decode_error$0(stack$3)(type$3)(input$1);
+                decode_error$0(input$1)(stack$2)(type$3);
               }
             } else {
-              missing_keys$1 = ["author", missing_keys$1];
+              buffer_add_sep$0(missing_keys$1)(", ")("author");
             }
             if (Object.hasOwn(input$0[i$0], "content")) {
               let input$1 = input$0[i$0]["content"];
-              let stack$3 = ["content", stack$2];
+              let stack$2 = stack_add$0("content")(stack$1);
               let type$3 = "string";
               if (typeof input$1 === "string") {
                 decoded$1.set("content", input$1);
               } else {
-                decode_error$0(stack$3)(type$3)(input$1);
+                decode_error$0(input$1)(stack$2)(type$3);
               }
             } else {
-              missing_keys$1 = ["content", missing_keys$1];
+              buffer_add_sep$0(missing_keys$1)(", ")("content");
             }
             if (Object.hasOwn(input$0[i$0], "date")) {
               let input$1 = input$0[i$0]["date"];
-              let stack$3 = ["date", stack$2];
+              let stack$2 = stack_add$0("date")(stack$1);
               let type$3 = "string";
               if (typeof input$1 === "string") {
                 decoded$1.set("date", input$1);
               } else {
-                decode_error$0(stack$3)(type$3)(input$1);
+                decode_error$0(input$1)(stack$2)(type$3);
               }
             } else {
-              missing_keys$1 = ["date", missing_keys$1];
+              buffer_add_sep$0(missing_keys$1)(", ")("date");
             }
             if (Object.hasOwn(input$0[i$0], "image")) {
               let input$1 = input$0[i$0]["image"];
-              let stack$3 = ["image", stack$2];
+              let stack$2 = stack_add$0("image")(stack$1);
               let type$3 = "?{alt: string, src: string}";
               if (!(input$1 === null) && !(input$1 === undefined)) {
                 let decoded$2 = [0];
-                let stack$4 = ["<nullable>", stack$3];
+                let stack$3 = stack_add$0("<nullable>")(stack$2);
                 let type$4 = "{alt: string, src: string}";
                 if (typeof input$1 === "object" && !(input$1 === null)) {
                   let decoded$3 = new Map();
-                  let missing_keys$2 = 0;
+                  let missing_keys$2 = {contents: ""};
                   if (Object.hasOwn(input$1, "alt")) {
                     let input$2 = input$1["alt"];
-                    let stack$5 = ["alt", stack$4];
+                    let stack$4 = stack_add$0("alt")(stack$3);
                     let type$5 = "string";
                     if (typeof input$2 === "string") {
                       decoded$3.set("alt", input$2);
                     } else {
-                      decode_error$0(stack$5)(type$5)(input$2);
+                      decode_error$0(input$2)(stack$4)(type$5);
                     }
                   } else {
-                    missing_keys$2 = ["alt", missing_keys$2];
+                    buffer_add_sep$0(missing_keys$2)(", ")("alt");
                   }
                   if (Object.hasOwn(input$1, "src")) {
                     let input$2 = input$1["src"];
-                    let stack$5 = ["src", stack$4];
+                    let stack$4 = stack_add$0("src")(stack$3);
                     let type$5 = "string";
                     if (typeof input$2 === "string") {
                       decoded$3.set("src", input$2);
                     } else {
-                      decode_error$0(stack$5)(type$5)(input$2);
+                      decode_error$0(input$2)(stack$4)(type$5);
                     }
                   } else {
-                    missing_keys$2 = ["src", missing_keys$2];
+                    buffer_add_sep$0(missing_keys$2)(", ")("src");
                   }
-                  if (!(missing_keys$2 === 0)) {
-                    key_error$0(stack$4)(type$4)(missing_keys$2);
+                  if (!(missing_keys$2.contents.length === 0)) {
+                    key_error$0(missing_keys$2)(stack$3)(type$4);
                   }
                   decoded$2[0] = decoded$3;
                 } else {
-                  decode_error$0(stack$4)(type$4)(input$1);
+                  decode_error$0(input$1)(stack$3)(type$4);
                 }
                 decoded$1.set("image", decoded$2);
               } else {
@@ -255,50 +243,50 @@ The data supplied does not match this template's interface.\n\
             }
             if (Object.hasOwn(input$0[i$0], "title")) {
               let input$1 = input$0[i$0]["title"];
-              let stack$3 = ["title", stack$2];
+              let stack$2 = stack_add$0("title")(stack$1);
               let type$3 = "string";
               if (typeof input$1 === "string") {
                 decoded$1.set("title", input$1);
               } else {
-                decode_error$0(stack$3)(type$3)(input$1);
+                decode_error$0(input$1)(stack$2)(type$3);
               }
             } else {
-              missing_keys$1 = ["title", missing_keys$1];
+              buffer_add_sep$0(missing_keys$1)(", ")("title");
             }
-            if (!(missing_keys$1 === 0)) {
-              key_error$0(stack$2)(type$2)(missing_keys$1);
+            if (!(missing_keys$1.contents.length === 0)) {
+              key_error$0(missing_keys$1)(stack$1)(type$2);
             }
             decode_dst_new$0[0] = decoded$1;
           } else {
-            decode_error$0(stack$2)(type$2)(input$0[i$0]);
+            decode_error$0(input$0[i$0])(stack$1)(type$2);
           }
           decode_dst$0[1] = decode_dst_new$0;
           decode_dst$0 = decode_dst_new$0;
         }
         props$0.set("blogPosts", decoded$0[1]);
       } else {
-        decode_error$0(stack$1)(type$1)(input$0);
+        decode_error$0(input$0)(stack$0)(type$1);
       }
     } else {
-      missing_keys$0 = ["blogPosts", missing_keys$0];
+      buffer_add_sep$0(missing_keys$0)(", ")("blogPosts");
     }
     if (Object.hasOwn(arg$0, "siteTitle")) {
       let input$0 = arg$0["siteTitle"];
-      let stack$1 = ["siteTitle", stack$0];
+      let stack$0 = stack_add$0("siteTitle")(stack_empty$0);
       let type$1 = "string";
       if (typeof input$0 === "string") {
         props$0.set("siteTitle", input$0);
       } else {
-        decode_error$0(stack$1)(type$1)(input$0);
+        decode_error$0(input$0)(stack$0)(type$1);
       }
     } else {
-      missing_keys$0 = ["siteTitle", missing_keys$0];
+      buffer_add_sep$0(missing_keys$0)(", ")("siteTitle");
     }
-    if (!(missing_keys$0 === 0)) {
-      key_error$0(stack$0)(type$0)(missing_keys$0);
+    if (!(missing_keys$0.contents.length === 0)) {
+      key_error$0(missing_keys$0)(stack_empty$0)(type$0);
     }
   } else {
-    decode_error$0(stack$0)(type$0)(arg$0);
+    decode_error$0(arg$0)(stack_empty$0)(type$0);
   }
   if (errors$0.contents.length === 0) {
     let buf$0 = {contents: ""};
