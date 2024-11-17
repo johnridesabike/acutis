@@ -115,7 +115,7 @@ window.onload = function playground(_event) {
         componentsEmpty,
         sourceTextElt.value
       );
-      compileJSResult = Compile.toJSString(compiled);
+      compileJSResult = Compile.toESMString(compiled);
     } catch (e) {
       if (Utils.isError(e)) {
         compileJSResult = Utils.getError(e);

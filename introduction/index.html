@@ -72,7 +72,8 @@ document it if it ever becomes stable.)</p>
 template language plugin.</p>
 <p>After installing the npm package, you can import the compiler and the plugin
 into your JavaScript project.</p>
-<pre class="language-javascript"><code class="language-javascript"><span class="token keyword">const</span> acutis <span class="token operator">=</span> <span class="token function">require</span><span class="token punctuation">(</span><span class="token string">"acutis-lang"</span><span class="token punctuation">)</span><span class="token punctuation">;</span> <span class="token comment">// The compiler and runtime.</span><br><span class="token keyword">const</span> acutisEleventy <span class="token operator">=</span> <span class="token function">require</span><span class="token punctuation">(</span><span class="token string">"acutis-lang/eleventy"</span><span class="token punctuation">)</span><span class="token punctuation">;</span> <span class="token comment">// The plugin.</span></code></pre>
+<pre class="language-javascript"><code class="language-javascript"><span class="token keyword">const</span> acutis <span class="token operator">=</span> <span class="token function">require</span><span class="token punctuation">(</span><span class="token string">"acutis-lang"</span><span class="token punctuation">)</span><span class="token punctuation">;</span> <span class="token comment">// The compiler and runtime.</span>
+<span class="token keyword">const</span> acutisEleventy <span class="token operator">=</span> <span class="token function">require</span><span class="token punctuation">(</span><span class="token string">"acutis-lang/eleventy"</span><span class="token punctuation">)</span><span class="token punctuation">;</span> <span class="token comment">// The plugin.</span></code></pre>
 <p>Inside your Eleventy configuration, you can enable the plugin with Eleventy’s
 <code>addPlugin</code> function.</p>
 <pre class="language-javascript"><code class="language-javascript">eleventyConfig<span class="token punctuation">.</span><span class="token function">addPlugin</span><span class="token punctuation">(</span>acutisEleventy<span class="token punctuation">)</span><span class="token punctuation">;</span></code></pre>
@@ -105,7 +106,23 @@ prints the rendered output.</p>
 <p>Example:</p>
 <pre class="language-shell"><code class="language-shell">acutis index.acutis src/**/*.acutis <span class="token operator">&lt;</span> data.json <span class="token operator">></span> dist/index.html</code></pre>
 <p>Full options:</p>
-<pre class="language-txt"><code class="language-txt">Usage:<br>  acutis [OPTIONS...] [TEMPLATE] [COMPONENTS...]<br><br>Compile and render Acutis language templates.<br><br>Options:<br>  --mode {render|js|cjs}<br>                Either render the template, compile it to a JavaScript module, or compile it to a CommonJS module. Default: render.<br>  --output      The path to write the output. Default: stdout.<br>  --data        The path to a JSON file to be used with --mode=render. Default: stdin.<br>  --fun         Add an external JavaScript function as a component. This takes three arguments: file path, function name, and type interface.<br>  --version     Print the version number and exit.<br>  --printast    Print the template's untyped AST form and exit.<br>  --printtypes  Print the template's type interface and exit.<br>  --printopt    Print the template's optimized form and exit.<br>  -help         Display this list of options<br>  --help        Display this list of options</code></pre>
+<pre class="language-txt"><code class="language-txt">Usage:
+  acutis [OPTIONS...] [TEMPLATE] [COMPONENTS...]
+
+Compile and render Acutis language templates.
+
+Options:
+  --mode {render|js|cjs}
+                Either render the template, compile it to a JavaScript module, or compile it to a CommonJS module. Default: render.
+  --output      The path to write the output. Default: stdout.
+  --data        The path to a JSON file to be used with --mode=render. Default: stdin.
+  --fun         Add an external JavaScript function as a component. This takes three arguments: file path, function name, and type interface.
+  --version     Print the version number and exit.
+  --printast    Print the template's untyped AST form and exit.
+  --printtypes  Print the template's type interface and exit.
+  --printopt    Print the template's optimized form and exit.
+  -help         Display this list of options
+  --help        Display this list of options</code></pre>
 <nav class="next">
             <h2 class="next__header">Next:</h2>
             <a href="https:&sol;&sol;johnridesa.bike&sol;acutis&sol;manual&sol;" class="next__url">Read the language manual 👉</a>
