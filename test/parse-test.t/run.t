@@ -1530,40 +1530,43 @@ Print the runtime instructions
              (External.classify (bool)
               (External.assoc_find "tag" classified/52)
               (ok classified/53
-               (if_else classified/53
+               (let$ decoded/12 = (hashtbl_create))
+               (if_else (not classified/53)
                 (then
-                 (let$ decoded/13 = (hashtbl_create))
-                 (decoded/13.%{"tag"} <- (Data.int 1))
+                 (decoded/12.%{"tag"} <- (Data.int 0))
                  (let$ missing_keys/6 = (buffer_create))
-                 (if_else (External.assoc_mem "a" classified/52)
-                  (then
-                   (let$ input/35 = (External.assoc_find "a" classified/52))
-                   (let$ stack/43 = ((stack_add/0 @@ "a") @@ stack/42))
-                   (let$ type/47 = "string")
-                   (External.classify (string) input/35
-                    (ok classified/54
-                     (decoded/13.%{"a"} <- (Data.string classified/54)))
-                    (error
-                     (stmt
-                      (((decode_error/0 @@ input/35) @@ stack/43) @@ type/47)))))
-                  (else
-                   (stmt
-                    (((buffer_add_sep/0 @@ missing_keys/6) @@ ", ") @@ "a"))))
+                 (unit)
                  (if (not ((buffer_length missing_keys/6) = 0))
                   (then
                    (stmt
-                    (((key_error/0 @@ missing_keys/6) @@ stack/42) @@ type/46))))
-                 (props/0.%{"tagged"} <- (Data.hashtbl decoded/13)))
+                    (((key_error/0 @@ missing_keys/6) @@ stack/42) @@ type/46)))))
                 (else
-                 (let$ decoded/12 = (hashtbl_create))
-                 (decoded/12.%{"tag"} <- (Data.int 0))
-                 (let$ missing_keys/5 = (buffer_create))
-                 (unit)
-                 (if (not ((buffer_length missing_keys/5) = 0))
+                 (if_else classified/53
                   (then
+                   (decoded/12.%{"tag"} <- (Data.int 1))
+                   (let$ missing_keys/5 = (buffer_create))
+                   (if_else (External.assoc_mem "a" classified/52)
+                    (then
+                     (let$ input/35 = (External.assoc_find "a" classified/52))
+                     (let$ stack/43 = ((stack_add/0 @@ "a") @@ stack/42))
+                     (let$ type/47 = "string")
+                     (External.classify (string) input/35
+                      (ok classified/54
+                       (decoded/12.%{"a"} <- (Data.string classified/54)))
+                      (error
+                       (stmt
+                        (((decode_error/0 @@ input/35) @@ stack/43) @@ type/47)))))
+                    (else
+                     (stmt
+                      (((buffer_add_sep/0 @@ missing_keys/5) @@ ", ") @@ "a"))))
+                   (if (not ((buffer_length missing_keys/5) = 0))
+                    (then
+                     (stmt
+                      (((key_error/0 @@ missing_keys/5) @@ stack/42) @@ type/46)))))
+                  (else
                    (stmt
-                    (((key_error/0 @@ missing_keys/5) @@ stack/42) @@ type/46))))
-                 (props/0.%{"tagged"} <- (Data.hashtbl decoded/12)))))
+                    (((decode_error/0 @@ input/34) @@ stack/42) @@ type/46))))))
+               (props/0.%{"tagged"} <- (Data.hashtbl decoded/12)))
               (error
                (stmt (((decode_error/0 @@ input/34) @@ stack/42) @@ type/46)))))
             (else
@@ -1657,7 +1660,7 @@ Print the runtime instructions
           (ok classified/62
            (if_else ((External.length classified/62) = 3)
             (then
-             (let$ decoded/14 = (array_make 3 (Data.int 0)))
+             (let$ decoded/13 = (array_make 3 (Data.int 0)))
              (External.iteri classified/62 key/5 value/5
               (let$ stack/52 =
                ((stack_add/0 @@ (string_of_int key/5)) @@ stack/51))
@@ -1666,7 +1669,7 @@ Print the runtime instructions
                 (let$ type/58 = "int")
                 (External.classify (int) value/5
                  (ok classified/66
-                  (decoded/14.%(key/5) <- (Data.int classified/66)))
+                  (decoded/13.%(key/5) <- (Data.int classified/66)))
                  (error
                   (stmt (((decode_error/0 @@ value/5) @@ stack/52) @@ type/58)))))
                (else
@@ -1675,11 +1678,11 @@ Print the runtime instructions
                   (let$ type/57 = "float")
                   (External.classify (float) value/5
                    (ok classified/64
-                    (decoded/14.%(key/5) <- (Data.float classified/64)))
+                    (decoded/13.%(key/5) <- (Data.float classified/64)))
                    (error
                     (External.classify (int) value/5
                      (ok classified/65
-                      (decoded/14.%(key/5) <-
+                      (decoded/13.%(key/5) <-
                        (Data.float (float_of_int classified/65))))
                      (error
                       (stmt
@@ -1690,14 +1693,14 @@ Print the runtime instructions
                     (let$ type/56 = "string")
                     (External.classify (string) value/5
                      (ok classified/63
-                      (decoded/14.%(key/5) <- (Data.string classified/63)))
+                      (decoded/13.%(key/5) <- (Data.string classified/63)))
                      (error
                       (stmt
                        (((decode_error/0 @@ value/5) @@ stack/52) @@ type/56)))))
                    (else
                     (stmt
                      (((decode_error/0 @@ value/5) @@ stack/52) @@ type/55))))))))
-              (props/0.%{"tuple"} <- (Data.array decoded/14))))
+              (props/0.%{"tuple"} <- (Data.array decoded/13))))
             (else
              (stmt (((decode_error/0 @@ input/43) @@ stack/51) @@ type/55)))))
           (error (stmt (((decode_error/0 @@ input/43) @@ stack/51) @@ type/55)))))

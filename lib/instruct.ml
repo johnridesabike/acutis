@@ -549,6 +549,7 @@ end = struct
   module T = Typechecker.Type
 
   type 'stack decode_runtime = {
+    ty_str : string exp;
     stack : 'stack exp;
     stack_add : (string -> 'stack -> 'stack) exp;
     buffer_add_sep : (buffer -> string -> string -> unit) exp;
@@ -565,44 +566,17 @@ end = struct
       let s = Buffer.contents b in
       Buffer.clear b; string s
 
-  let push_error debug ty_str input =
-    stmt (((debug.decode_error @@ input) @@ debug.stack) @@ ty_str)
+  let push_error debug input =
+    stmt (((debug.decode_error @@ input) @@ debug.stack) @@ debug.ty_str)
 
-  let push_key_error debug ty_str missing_keys =
-    stmt (((debug.key_error @@ missing_keys) @@ debug.stack) @@ ty_str)
+  let push_key_error debug missing_keys =
+    stmt (((debug.key_error @@ missing_keys) @@ debug.stack) @@ debug.ty_str)
 
   let stack_add debug x = (debug.stack_add @@ x) @@ debug.stack
 
-  type 'a union_helper = {
-    to_data : 'a exp -> Data.t exp;
-    of_data : Data.t exp -> 'a exp;
-    to_extern : 'a exp -> External.t exp;
-    classify : 'a External.classify;
-  }
-
-  let union_helper_string =
-    {
-      to_data = Data.string;
-      of_data = Data.to_string;
-      to_extern = External.of_string;
-      classify = String;
-    }
-
-  let union_helper_int =
-    {
-      to_data = Data.int;
-      of_data = Data.to_int;
-      to_extern = External.of_int;
-      classify = Int;
-    }
-
-  let external_of_int_bool i = External.of_bool (int_to_bool i)
-
-  let union_helper_bool =
-    { union_helper_int with to_extern = external_of_int_bool }
-
   let rec decode ~set ~debug input ty =
     let$ ty_str = ("type", show_type ty) in
+    let debug = { debug with ty_str } in
     match ty.contents with
     | T.Unknown _ -> set (Data.unknown input)
     | T.Enum_int ({ cases; _ }, Bool) ->
@@ -611,21 +585,21 @@ end = struct
             if_else b
               ~then_:(fun () ->
                 if SetInt.mem 1 cases then set (Data.int (int 1))
-                else push_error debug ty_str input)
+                else push_error debug input)
               ~else_:(fun () ->
                 if SetInt.mem 0 cases then set (Data.int (int 0))
-                else push_error debug ty_str input))
-          ~error:(fun () -> push_error debug ty_str input)
+                else push_error debug input))
+          ~error:(fun () -> push_error debug input)
     | T.String | T.Enum_string { row = `Open; _ } ->
         External.classify String input
           ~ok:(fun s -> set (Data.string s))
-          ~error:(fun () -> push_error debug ty_str input)
+          ~error:(fun () -> push_error debug input)
     | T.Enum_string { row = `Closed; cases } ->
         External.classify String input
           ~ok:(fun s ->
             let rec aux seq =
               match seq () with
-              | Seq.Nil -> push_error debug ty_str input
+              | Seq.Nil -> push_error debug input
               | Seq.Cons (case, seq) ->
                   if_else
                     (s = string case)
@@ -633,17 +607,17 @@ end = struct
                     ~else_:(fun () -> aux seq)
             in
             aux (SetString.to_seq cases))
-          ~error:(fun () -> push_error debug ty_str input)
+          ~error:(fun () -> push_error debug input)
     | T.Int | T.Enum_int ({ row = `Open; _ }, _) ->
         External.classify Int input
           ~ok:(fun i -> set (Data.int i))
-          ~error:(fun () -> push_error debug ty_str input)
+          ~error:(fun () -> push_error debug input)
     | T.Enum_int ({ row = `Closed; cases }, _) ->
         External.classify Int input
           ~ok:(fun s ->
             let rec aux seq =
               match seq () with
-              | Seq.Nil -> push_error debug ty_str input
+              | Seq.Nil -> push_error debug input
               | Seq.Cons (case, seq) ->
                   if_else
                     (s = int case)
@@ -651,14 +625,14 @@ end = struct
                     ~else_:(fun () -> aux seq)
             in
             aux (SetInt.to_seq cases))
-          ~error:(fun () -> push_error debug ty_str input)
+          ~error:(fun () -> push_error debug input)
     | T.Float ->
         External.classify Float input
           ~ok:(fun f -> set (Data.float f))
           ~error:(fun () ->
             External.classify Int input
               ~ok:(fun i -> set (Data.float (float_of_int i)))
-              ~error:(fun () -> push_error debug ty_str input))
+              ~error:(fun () -> push_error debug input))
     | T.Nullable ty ->
         External.classify Not_null input
           ~ok:(fun input ->
@@ -693,7 +667,7 @@ end = struct
                 l
             in
             set (list_tl decoded))
-          ~error:(fun () -> push_error debug ty_str input)
+          ~error:(fun () -> push_error debug input)
     | T.Tuple tys ->
         let length = int (List.length tys) in
         External.classify Linear input
@@ -707,7 +681,7 @@ end = struct
                     let$ stack = ("stack", stack_add debug (string_of_int i)) in
                     let debug = { debug with stack } in
                     let rec aux i' = function
-                      | [] -> push_error debug ty_str input
+                      | [] -> push_error debug input
                       | ty :: tl ->
                           if_else
                             (i = int i')
@@ -720,17 +694,15 @@ end = struct
                     let| () = aux 0 tys in
                     set (Data.array decoded))
                   l)
-              ~else_:(fun () -> push_error debug ty_str input))
-          ~error:(fun () -> push_error debug ty_str input)
+              ~else_:(fun () -> push_error debug input))
+          ~error:(fun () -> push_error debug input)
     | T.Record tys ->
         External.classify Assoc input
           ~ok:(fun input' ->
             let$ decoded = ("decoded", hashtbl_create ()) in
-            let| () =
-              decode_record_aux ~debug decoded input' tys.contents ty_str
-            in
+            let| () = decode_record_aux ~debug decoded input' tys.contents in
             set (Data.hashtbl decoded))
-          ~error:(fun () -> push_error debug ty_str input)
+          ~error:(fun () -> push_error debug input)
     | T.Dict (ty, _) ->
         External.classify Assoc input
           ~ok:(fun a ->
@@ -745,80 +717,78 @@ end = struct
                 in
                 set (Data.hashtbl decoded))
               a)
-          ~error:(fun () -> push_error debug ty_str input)
-    | T.Union_int (key, { cases; row = _ }, Bool) ->
-        let key = string key in
-        External.classify Assoc input
-          ~ok:(fun input' ->
-            let aux i v () =
-              match MapInt.find_opt i cases with
-              | Some tys ->
-                  let$ decoded = ("decoded", hashtbl_create ()) in
-                  let| () = decoded.%{key} <- v in
-                  let| () =
-                    decode_record_aux ~debug decoded input' tys.contents ty_str
-                  in
-                  set (Data.hashtbl decoded)
-              | None -> push_error debug ty_str input
-            in
-            if_else
-              (External.assoc_mem key input')
-              ~then_:(fun () ->
-                External.classify Bool
-                  (External.assoc_find key input')
-                  ~ok:(fun b ->
-                    if_else b ~then_:(aux 1 true_value)
-                      ~else_:(aux 0 false_value))
-                  ~error:(fun () -> push_error debug ty_str input))
-              ~else_:(fun () -> push_error debug ty_str input))
-          ~error:(fun () -> push_error debug ty_str input)
+          ~error:(fun () -> push_error debug input)
+    | T.Union_int (key, { cases; row }, Bool) ->
+        decode_union Bool
+          ~if_equal:(fun extern ty ~then_ ~else_ ->
+            match ty with
+            | 0 ->
+                if_else (not extern) ~then_:(fun () -> then_ false_value) ~else_
+            | _ -> if_else extern ~then_:(fun () -> then_ true_value) ~else_)
+          ~if_open:(fun x f ->
+            if_else x
+              ~then_:(fun () -> f true_value)
+              ~else_:(fun () -> f false_value))
+          (MapInt.to_seq cases) (string key) row ~set ~debug input
     | T.Union_int (key, { cases; row }, Not_bool) ->
-        decode_union union_helper_int
-          (MapInt.to_seq cases |> Seq.map (fun (k, v) -> (int k, v)))
-          ~set ~debug key input row ty_str
+        decode_union Int
+          ~if_equal:(fun extern ty ~then_ ~else_ ->
+            let ty = int ty in
+            if_else (extern = ty) ~then_:(fun () -> then_ (Data.int ty)) ~else_)
+          ~if_open:(fun x f -> f (Data.int x))
+          (MapInt.to_seq cases) (string key) row ~set ~debug input
     | T.Union_string (key, { cases; row }) ->
-        decode_union union_helper_string
-          (MapString.to_seq cases |> Seq.map (fun (k, v) -> (string k, v)))
-          ~set ~debug key input row ty_str
+        decode_union String
+          ~if_equal:(fun extern ty ~then_ ~else_ ->
+            let ty = string ty in
+            if_else (extern = ty)
+              ~then_:(fun () -> then_ (Data.string ty))
+              ~else_)
+          ~if_open:(fun x f -> f (Data.string x))
+          (MapString.to_seq cases) (string key) row ~set ~debug input
 
-  and decode_union : 'a. 'a union_helper -> ('a exp * T.record) Seq.t -> _ =
-   fun { to_data; classify; _ } seq ~set ~debug key input row ty_str ->
-    let key' = string key in
+  and decode_union :
+      type ty extern.
+      extern External.classify ->
+      if_equal:
+        (extern exp ->
+        ty ->
+        then_:(Data.t exp -> unit stmt) ->
+        else_:(unit -> unit stmt) ->
+        unit stmt) ->
+      if_open:(extern exp -> (Data.t exp -> unit stmt) -> unit stmt) ->
+      (ty * T.record) Seq.t ->
+      _ =
+   fun classify ~if_equal ~if_open seq key row ~set ~debug input ->
     External.classify Assoc input
       ~ok:(fun input' ->
         if_else
-          (External.assoc_mem key' input')
+          (External.assoc_mem key input')
           ~then_:(fun () ->
             External.classify classify
-              (External.assoc_find key' input')
-              ~ok:(fun i ->
+              (External.assoc_find key input')
+              ~ok:(fun x ->
+                let$ decoded = ("decoded", hashtbl_create ()) in
                 let rec aux seq =
                   match seq () with
                   | Seq.Nil -> (
                       match row with
-                      | `Open ->
-                          let$ decoded = ("decoded", hashtbl_create ()) in
-                          let| () = decoded.%{key'} <- to_data i in
-                          set (Data.hashtbl decoded)
-                      | `Closed -> push_error debug ty_str input)
-                  | Seq.Cons ((ty_i, tys), seq) ->
-                      if_else (i = ty_i)
-                        ~then_:(fun () ->
-                          let$ decoded = ("decoded", hashtbl_create ()) in
-                          let| () = decoded.%{key'} <- to_data i in
-                          let| () =
-                            decode_record_aux ~debug decoded input' tys.contents
-                              ty_str
-                          in
-                          set (Data.hashtbl decoded))
+                      | `Open -> if_open x (fun x -> decoded.%{key} <- x)
+                      | `Closed -> push_error debug input)
+                  | Seq.Cons ((ty_x, tys), seq) ->
+                      if_equal x ty_x
+                        ~then_:(fun x ->
+                          let| () = decoded.%{key} <- x in
+                          decode_record_aux ~debug decoded input' tys.contents)
                         ~else_:(fun () -> aux seq)
                 in
-                aux seq)
-              ~error:(fun () -> push_error debug ty_str input))
-          ~else_:(fun () -> push_error debug ty_str input))
-      ~error:(fun () -> push_error debug ty_str input)
+                let| () = aux seq in
+                set (Data.hashtbl decoded))
+              ~error:(fun () -> push_error debug input))
+          ~else_:(fun () -> push_error debug input))
+      ~error:(fun () -> push_error debug input)
 
-  and decode_record_aux ~debug decoded input tys ty_str =
+  and decode_record_aux ~debug decoded input tys =
     let$ missing_keys = ("missing_keys", buffer_create ()) in
     let| () =
       MapString.to_seq tys
@@ -843,7 +813,9 @@ end = struct
     in
     if_
       (not (buffer_length missing_keys = int 0))
-      ~then_:(fun () -> push_key_error debug ty_str missing_keys)
+      ~then_:(fun () -> push_key_error debug missing_keys)
+
+  let external_of_int_bool i = External.of_bool (int_to_bool i)
 
   let rec encode ~set props ty =
     match ty.contents with
@@ -908,43 +880,48 @@ end = struct
         in
         set (External.of_hashtbl encoded)
     | T.Union_int (key, { cases; row }, Bool) ->
-        encode_union union_helper_bool
+        encode_union ~of_data:Data.to_int ~to_extern:external_of_int_bool
           (MapInt.to_seq cases |> Seq.map (fun (k, v) -> (int k, v)))
-          row ~set key props
+          row (string key) ~set props
     | T.Union_int (key, { cases; row }, Not_bool) ->
-        encode_union union_helper_int
+        encode_union ~of_data:Data.to_int ~to_extern:External.of_int
           (MapInt.to_seq cases |> Seq.map (fun (k, v) -> (int k, v)))
-          row ~set key props
+          row (string key) ~set props
     | T.Union_string (key, { cases; row }) ->
-        encode_union union_helper_string
+        encode_union ~of_data:Data.to_string ~to_extern:External.of_string
           (MapString.to_seq cases |> Seq.map (fun (k, v) -> (string k, v)))
-          row ~set key props
+          row (string key) ~set props
 
-  and encode_union : 'a. 'a union_helper -> ('a exp * T.record) Seq.t -> _ =
-   fun { of_data; to_extern; _ } cases row ~set key props ->
-    let key = string key in
+  and encode_union :
+      type a.
+      of_data:(Data.t exp -> a exp) ->
+      to_extern:(a exp -> External.t exp) ->
+      (a exp * T.record) Seq.t ->
+      _ =
+   fun ~of_data ~to_extern cases row key ~set props ->
     let$ props = ("props", Data.to_hashtbl props) in
     let$ tag = ("tag", props.%{key} |> of_data) in
-    let rec aux (tag', tys) seq =
-      if_else (tag = tag')
-        ~then_:(fun () ->
-          let$ encoded = ("encoded", hashtbl_create ()) in
-          let| () = encoded.%{key} <- to_extern tag in
-          let| () = encode_record_aux encoded props tys.contents in
-          set (External.of_hashtbl encoded))
-        ~else_:
-          (match seq () with
-          | Seq.Cons (hd, seq) -> fun () -> aux hd seq
-          | Seq.Nil -> (
-              match row with
-              | `Closed -> fun () -> unit
-              | `Open ->
-                  fun () ->
-                    let$ encoded = ("encoded", hashtbl_create ()) in
-                    let| () = encoded.%{key} <- to_extern tag in
-                    set (External.of_hashtbl encoded)))
+    let$ encoded = ("encoded", hashtbl_create ()) in
+    let| () =
+      match cases () with
+      | Seq.Nil -> unit
+      | Seq.Cons (hd, seq) ->
+          let rec aux (tag', tys) seq =
+            if_else (tag = tag')
+              ~then_:(fun () ->
+                let| () = encoded.%{key} <- to_extern tag in
+                encode_record_aux encoded props tys.contents)
+              ~else_:(fun () ->
+                match seq () with
+                | Seq.Nil -> (
+                    match row with
+                    | `Closed -> unit
+                    | `Open -> encoded.%{key} <- to_extern tag)
+                | Seq.Cons (hd, seq) -> aux hd seq)
+          in
+          aux hd seq
     in
-    match cases () with Seq.Nil -> unit | Seq.Cons (hd, seq) -> aux hd seq
+    set (External.of_hashtbl encoded)
 
   and encode_record_aux encoded props tys =
     MapString.to_seq tys
@@ -1064,15 +1041,22 @@ end = struct
            in
            let$ props = ("props", hashtbl_create ()) in
            let stack = stack_empty in
-           let debug =
-             { stack; stack_add; decode_error; key_error; buffer_add_sep }
-           in
            let$ ty_str = ("type", show_type (T.record (ref compiled.types))) in
+           let debug =
+             {
+               ty_str;
+               stack;
+               stack_add;
+               decode_error;
+               key_error;
+               buffer_add_sep;
+             }
+           in
            let| () =
              External.classify Assoc input
                ~ok:(fun input ->
-                 decode_record_aux ~debug props input compiled.types ty_str)
-               ~error:(fun () -> push_error debug ty_str input)
+                 decode_record_aux ~debug props input compiled.types)
+               ~error:(fun () -> push_error debug input)
            in
            if_else
              (buffer_length errors = int 0)

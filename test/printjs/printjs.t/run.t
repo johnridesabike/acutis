@@ -168,108 +168,96 @@
       encoded$0.set("record", Object.fromEntries(encoded$5));
       let props$7 = arg$0.get("tagged_record_bool");
       let tag$0 = props$7.get("tag");
+      let encoded$6 = new Map();
       if (tag$0 === 0) {
-        let encoded$6 = new Map();
         encoded$6.set("tag", !(tag$0 === 0));
         let props$8 = props$7.get("a");
         encoded$6.set("a", props$8);
-        encoded$0.set("tagged_record_bool", Object.fromEntries(encoded$6));
       } else {
         if (tag$0 === 1) {
-          let encoded$6 = new Map();
           encoded$6.set("tag", !(tag$0 === 0));
           let props$8 = props$7.get("b");
           encoded$6.set("b", props$8);
-          encoded$0.set("tagged_record_bool", Object.fromEntries(encoded$6));
         }
       }
+      encoded$0.set("tagged_record_bool", Object.fromEntries(encoded$6));
       let props$8 = arg$0.get("tagged_record_int");
       let tag$1 = props$8.get("tag");
+      let encoded$7 = new Map();
       if (tag$1 === 0) {
-        let encoded$6 = new Map();
-        encoded$6.set("tag", tag$1);
-        encoded$0.set("tagged_record_int", Object.fromEntries(encoded$6));
+        encoded$7.set("tag", tag$1);
       } else {
         if (tag$1 === 1) {
-          let encoded$6 = new Map();
-          encoded$6.set("tag", tag$1);
+          encoded$7.set("tag", tag$1);
           let props$9 = props$8.get("tuple");
-          let encoded$7 =
+          let encoded$8 =
             Array.from({length: 3}, (arg$1) => { return (null); });
           let props$10 = props$9[0];
-          encoded$7[0] = props$10;
+          encoded$8[0] = props$10;
           let props$11 = props$9[1];
-          encoded$7[1] = props$11;
+          encoded$8[1] = props$11;
           let props$12 = props$9[2];
-          encoded$7[2] = !(props$12 === 0);
-          encoded$6.set("tuple", encoded$7);
-          encoded$0.set("tagged_record_int", Object.fromEntries(encoded$6));
+          encoded$8[2] = !(props$12 === 0);
+          encoded$7.set("tuple", encoded$8);
         }
       }
+      encoded$0.set("tagged_record_int", Object.fromEntries(encoded$7));
       let props$9 = arg$0.get("tagged_record_open");
       let tag$2 = props$9.get("tag");
+      let encoded$8 = new Map();
       if (tag$2 === 100) {
-        let encoded$6 = new Map();
-        encoded$6.set("tag", tag$2);
+        encoded$8.set("tag", tag$2);
         let props$10 = props$9.get("a");
-        encoded$6.set("a", props$10);
-        encoded$0.set("tagged_record_open", Object.fromEntries(encoded$6));
+        encoded$8.set("a", props$10);
       } else {
         if (tag$2 === 200) {
-          let encoded$6 = new Map();
-          encoded$6.set("tag", tag$2);
+          encoded$8.set("tag", tag$2);
           let props$10 = props$9.get("b");
-          encoded$6.set("b", props$10);
-          encoded$0.set("tagged_record_open", Object.fromEntries(encoded$6));
+          encoded$8.set("b", props$10);
         } else {
           if (tag$2 === 300) {
-            let encoded$6 = new Map();
-            encoded$6.set("tag", tag$2);
+            encoded$8.set("tag", tag$2);
             let props$10 = props$9.get("c");
-            encoded$6.set("c", props$10);
-            encoded$0.set("tagged_record_open", Object.fromEntries(encoded$6));
+            encoded$8.set("c", props$10);
           } else {
-            let encoded$6 = new Map();
-            encoded$6.set("tag", tag$2);
-            encoded$0.set("tagged_record_open", Object.fromEntries(encoded$6));
+            encoded$8.set("tag", tag$2);
           }
         }
       }
+      encoded$0.set("tagged_record_open", Object.fromEntries(encoded$8));
       let props$10 = arg$0.get("tagged_record_string");
       let tag$3 = props$10.get("tag");
+      let encoded$9 = new Map();
       if (tag$3 === "a") {
-        let encoded$6 = new Map();
-        encoded$6.set("tag", tag$3);
+        encoded$9.set("tag", tag$3);
         let props$11 = props$10.get("record_list");
         let index$3 = 0;
         let cell$3 = props$11;
         while (!(cell$3 === 0)) { index$3++; cell$3 = cell$3[1]; }
-        let encoded$7 =
+        let encoded$10 =
           Array.from({length: index$3}, (arg$1) => { return (null); });
         cell$3 = props$11;
         index$3 = 0;
         while (!(cell$3 === 0)) {
           let props$12 = cell$3[0];
-          let encoded$8 = new Map();
+          let encoded$11 = new Map();
           let props$13 = props$12.get("job");
-          encoded$8.set("job", props$13);
+          encoded$11.set("job", props$13);
           let props$14 = props$12.get("name");
-          encoded$8.set("name", props$14);
-          encoded$7[index$3] = Object.fromEntries(encoded$8);
+          encoded$11.set("name", props$14);
+          encoded$10[index$3] = Object.fromEntries(encoded$11);
           index$3++;
           cell$3 = cell$3[1];
         }
-        encoded$6.set("record_list", encoded$7);
-        encoded$0.set("tagged_record_string", Object.fromEntries(encoded$6));
+        encoded$9.set("record_list", encoded$10);
       } else {
         if (tag$3 === "b") {
-          let encoded$6 = new Map();
-          encoded$6.set("tag", tag$3);
+          encoded$9.set("tag", tag$3);
           let props$11 = props$10.get("open_enum");
-          encoded$6.set("open_enum", props$11);
-          encoded$0.set("tagged_record_string", Object.fromEntries(encoded$6));
+          encoded$9.set("open_enum", props$11);
         }
       }
+      encoded$0.set("tagged_record_string", Object.fromEntries(encoded$9));
       let props$11 = arg$0.get("unknown");
       encoded$0.set("unknown", props$11);
       return (import$1(Object.fromEntries(encoded$0)));
@@ -751,28 +739,8 @@
         if (typeof input$0 === "object" && !(input$0 === null)) {
           if (Object.hasOwn(input$0, "tag")) {
             if (typeof input$0["tag"] === "boolean") {
-              if (input$0["tag"]) {
-                let decoded$0 = new Map();
-                decoded$0.set("tag", 1);
-                let missing_keys$1 = {contents: ""};
-                if (Object.hasOwn(input$0, "b")) {
-                  let input$1 = input$0["b"];
-                  let stack$1 = stack_add$0("b")(stack$0);
-                  let type$2 = "int";
-                  if (Number.isInteger(input$1)) {
-                    decoded$0.set("b", input$1);
-                  } else {
-                    decode_error$0(input$1)(stack$1)(type$2);
-                  }
-                } else {
-                  buffer_add_sep$0(missing_keys$1)(", ")("b");
-                }
-                if (!(missing_keys$1.contents.length === 0)) {
-                  key_error$0(missing_keys$1)(stack$0)(type$1);
-                }
-                props$0.set("tagged_record_bool", decoded$0);
-              } else {
-                let decoded$0 = new Map();
+              let decoded$0 = new Map();
+              if (!(input$0["tag"])) {
                 decoded$0.set("tag", 0);
                 let missing_keys$1 = {contents: ""};
                 if (Object.hasOwn(input$0, "a")) {
@@ -790,8 +758,30 @@
                 if (!(missing_keys$1.contents.length === 0)) {
                   key_error$0(missing_keys$1)(stack$0)(type$1);
                 }
-                props$0.set("tagged_record_bool", decoded$0);
+              } else {
+                if (input$0["tag"]) {
+                  decoded$0.set("tag", 1);
+                  let missing_keys$1 = {contents: ""};
+                  if (Object.hasOwn(input$0, "b")) {
+                    let input$1 = input$0["b"];
+                    let stack$1 = stack_add$0("b")(stack$0);
+                    let type$2 = "int";
+                    if (Number.isInteger(input$1)) {
+                      decoded$0.set("b", input$1);
+                    } else {
+                      decode_error$0(input$1)(stack$1)(type$2);
+                    }
+                  } else {
+                    buffer_add_sep$0(missing_keys$1)(", ")("b");
+                  }
+                  if (!(missing_keys$1.contents.length === 0)) {
+                    key_error$0(missing_keys$1)(stack$0)(type$1);
+                  }
+                } else {
+                  decode_error$0(input$0)(stack$0)(type$1);
+                }
               }
+              props$0.set("tagged_record_bool", decoded$0);
             } else {
               decode_error$0(input$0)(stack$0)(type$1);
             }
@@ -812,18 +802,16 @@
         if (typeof input$0 === "object" && !(input$0 === null)) {
           if (Object.hasOwn(input$0, "tag")) {
             if (Number.isInteger(input$0["tag"])) {
+              let decoded$0 = new Map();
               if (input$0["tag"] === 0) {
-                let decoded$0 = new Map();
-                decoded$0.set("tag", input$0["tag"]);
+                decoded$0.set("tag", 0);
                 let missing_keys$1 = {contents: ""};
                 if (!(missing_keys$1.contents.length === 0)) {
                   key_error$0(missing_keys$1)(stack$0)(type$1);
                 }
-                props$0.set("tagged_record_int", decoded$0);
               } else {
                 if (input$0["tag"] === 1) {
-                  let decoded$0 = new Map();
-                  decoded$0.set("tag", input$0["tag"]);
+                  decoded$0.set("tag", 1);
                   let missing_keys$1 = {contents: ""};
                   if (Object.hasOwn(input$0, "tuple")) {
                     let input$1 = input$0["tuple"];
@@ -885,11 +873,11 @@
                   if (!(missing_keys$1.contents.length === 0)) {
                     key_error$0(missing_keys$1)(stack$0)(type$1);
                   }
-                  props$0.set("tagged_record_int", decoded$0);
                 } else {
                   decode_error$0(input$0)(stack$0)(type$1);
                 }
               }
+              props$0.set("tagged_record_int", decoded$0);
             } else {
               decode_error$0(input$0)(stack$0)(type$1);
             }
@@ -910,9 +898,9 @@
         if (typeof input$0 === "object" && !(input$0 === null)) {
           if (Object.hasOwn(input$0, "tag")) {
             if (Number.isInteger(input$0["tag"])) {
+              let decoded$0 = new Map();
               if (input$0["tag"] === 100) {
-                let decoded$0 = new Map();
-                decoded$0.set("tag", input$0["tag"]);
+                decoded$0.set("tag", 100);
                 let missing_keys$1 = {contents: ""};
                 if (Object.hasOwn(input$0, "a")) {
                   let input$1 = input$0["a"];
@@ -929,11 +917,9 @@
                 if (!(missing_keys$1.contents.length === 0)) {
                   key_error$0(missing_keys$1)(stack$0)(type$1);
                 }
-                props$0.set("tagged_record_open", decoded$0);
               } else {
                 if (input$0["tag"] === 200) {
-                  let decoded$0 = new Map();
-                  decoded$0.set("tag", input$0["tag"]);
+                  decoded$0.set("tag", 200);
                   let missing_keys$1 = {contents: ""};
                   if (Object.hasOwn(input$0, "b")) {
                     let input$1 = input$0["b"];
@@ -950,11 +936,9 @@
                   if (!(missing_keys$1.contents.length === 0)) {
                     key_error$0(missing_keys$1)(stack$0)(type$1);
                   }
-                  props$0.set("tagged_record_open", decoded$0);
                 } else {
                   if (input$0["tag"] === 300) {
-                    let decoded$0 = new Map();
-                    decoded$0.set("tag", input$0["tag"]);
+                    decoded$0.set("tag", 300);
                     let missing_keys$1 = {contents: ""};
                     if (Object.hasOwn(input$0, "c")) {
                       let input$1 = input$0["c"];
@@ -975,14 +959,12 @@
                     if (!(missing_keys$1.contents.length === 0)) {
                       key_error$0(missing_keys$1)(stack$0)(type$1);
                     }
-                    props$0.set("tagged_record_open", decoded$0);
                   } else {
-                    let decoded$0 = new Map();
                     decoded$0.set("tag", input$0["tag"]);
-                    props$0.set("tagged_record_open", decoded$0);
                   }
                 }
               }
+              props$0.set("tagged_record_open", decoded$0);
             } else {
               decode_error$0(input$0)(stack$0)(type$1);
             }
@@ -1004,9 +986,9 @@
         if (typeof input$0 === "object" && !(input$0 === null)) {
           if (Object.hasOwn(input$0, "tag")) {
             if (typeof input$0["tag"] === "string") {
+              let decoded$0 = new Map();
               if (input$0["tag"] === "a") {
-                let decoded$0 = new Map();
-                decoded$0.set("tag", input$0["tag"]);
+                decoded$0.set("tag", "a");
                 let missing_keys$1 = {contents: ""};
                 if (Object.hasOwn(input$0, "record_list")) {
                   let input$1 = input$0["record_list"];
@@ -1069,11 +1051,9 @@
                 if (!(missing_keys$1.contents.length === 0)) {
                   key_error$0(missing_keys$1)(stack$0)(type$1);
                 }
-                props$0.set("tagged_record_string", decoded$0);
               } else {
                 if (input$0["tag"] === "b") {
-                  let decoded$0 = new Map();
-                  decoded$0.set("tag", input$0["tag"]);
+                  decoded$0.set("tag", "b");
                   let missing_keys$1 = {contents: ""};
                   if (Object.hasOwn(input$0, "open_enum")) {
                     let input$1 = input$0["open_enum"];
@@ -1090,11 +1070,11 @@
                   if (!(missing_keys$1.contents.length === 0)) {
                     key_error$0(missing_keys$1)(stack$0)(type$1);
                   }
-                  props$0.set("tagged_record_string", decoded$0);
                 } else {
                   decode_error$0(input$0)(stack$0)(type$1);
                 }
               }
+              props$0.set("tagged_record_string", decoded$0);
             } else {
               decode_error$0(input$0)(stack$0)(type$1);
             }
