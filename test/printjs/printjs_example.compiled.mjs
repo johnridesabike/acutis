@@ -3,18 +3,17 @@ let buffer_add_escape$0 =
   (arg$0) => {
     return (
       (arg$1) => {
-        for (let i$0 = 0; i$0 < arg$1.length; i$0++) {
-          let c$0 = arg$1.charCodeAt(i$0);
-          switch (c$0) {
-            case 38: arg$0.contents += "&amp;"; break;
-            case 34: arg$0.contents += "&quot;"; break;
-            case 39: arg$0.contents += "&apos;"; break;
-            case 62: arg$0.contents += "&gt;"; break;
-            case 60: arg$0.contents += "&lt;"; break;
-            case 47: arg$0.contents += "&sol;"; break;
-            case 96: arg$0.contents += "&grave;"; break;
-            case 61: arg$0.contents += "&equals;"; break;
-            default: arg$0.contents += String.fromCharCode(c$0);
+        for (let item$0 of arg$1[Symbol.iterator]()) {
+          switch (item$0) {
+            case "&": arg$0.contents += "&amp;"; break;
+            case "\"": arg$0.contents += "&quot;"; break;
+            case "'": arg$0.contents += "&apos;"; break;
+            case ">": arg$0.contents += "&gt;"; break;
+            case "<": arg$0.contents += "&lt;"; break;
+            case "/": arg$0.contents += "&sol;"; break;
+            case "`": arg$0.contents += "&grave;"; break;
+            case "=": arg$0.contents += "&equals;"; break;
+            default: arg$0.contents += item$0;
           }
         }
       }
@@ -115,11 +114,13 @@ The data supplied does not match this template's interface.\n\
   }\n\
 ]";
       if (Array.isArray(input$0)) {
+        let seq$0 = input$0.values();
+        let index$0 = 0;
         let decoded$0 = [0, 0];
         let decode_dst$0 = decoded$0;
-        for (let i$0 = 0; i$0 < input$0.length; i$0++) {
+        for (let item$0 of seq$0) {
           let decode_dst_new$0 = [0, 0];
-          let stack$1 = stack_add$0(String(i$0))(stack$0);
+          let stack$1 = stack_add$0(String(index$0))(stack$0);
           let type$2 =
             "{\n\
   author: {name: ?string},\n\
@@ -128,11 +129,11 @@ The data supplied does not match this template's interface.\n\
   image: ?{alt: string, src: string},\n\
   title: string\n\
 }";
-          if (typeof input$0[i$0] === "object" && !(input$0[i$0] === null)) {
+          if (typeof item$0 === "object" && !(item$0 === null)) {
             let decoded$1 = new Map();
             let missing_keys$1 = {contents: ""};
-            if (Object.hasOwn(input$0[i$0], "author")) {
-              let input$1 = input$0[i$0]["author"];
+            if (Object.hasOwn(item$0, "author")) {
+              let input$1 = item$0["author"];
               let stack$2 = stack_add$0("author")(stack$1);
               let type$3 = "{name: ?string}";
               if (typeof input$1 === "object" && !(input$1 === null)) {
@@ -168,8 +169,8 @@ The data supplied does not match this template's interface.\n\
             } else {
               buffer_add_sep$0(missing_keys$1)(", ")("author");
             }
-            if (Object.hasOwn(input$0[i$0], "content")) {
-              let input$1 = input$0[i$0]["content"];
+            if (Object.hasOwn(item$0, "content")) {
+              let input$1 = item$0["content"];
               let stack$2 = stack_add$0("content")(stack$1);
               let type$3 = "string";
               if (typeof input$1 === "string") {
@@ -180,8 +181,8 @@ The data supplied does not match this template's interface.\n\
             } else {
               buffer_add_sep$0(missing_keys$1)(", ")("content");
             }
-            if (Object.hasOwn(input$0[i$0], "date")) {
-              let input$1 = input$0[i$0]["date"];
+            if (Object.hasOwn(item$0, "date")) {
+              let input$1 = item$0["date"];
               let stack$2 = stack_add$0("date")(stack$1);
               let type$3 = "string";
               if (typeof input$1 === "string") {
@@ -192,8 +193,8 @@ The data supplied does not match this template's interface.\n\
             } else {
               buffer_add_sep$0(missing_keys$1)(", ")("date");
             }
-            if (Object.hasOwn(input$0[i$0], "image")) {
-              let input$1 = input$0[i$0]["image"];
+            if (Object.hasOwn(item$0, "image")) {
+              let input$1 = item$0["image"];
               let stack$2 = stack_add$0("image")(stack$1);
               let type$3 = "?{alt: string, src: string}";
               if (!(input$1 === null) && !(input$1 === undefined)) {
@@ -241,8 +242,8 @@ The data supplied does not match this template's interface.\n\
             } else {
               decoded$1.set("image", 0);
             }
-            if (Object.hasOwn(input$0[i$0], "title")) {
-              let input$1 = input$0[i$0]["title"];
+            if (Object.hasOwn(item$0, "title")) {
+              let input$1 = item$0["title"];
               let stack$2 = stack_add$0("title")(stack$1);
               let type$3 = "string";
               if (typeof input$1 === "string") {
@@ -258,9 +259,10 @@ The data supplied does not match this template's interface.\n\
             }
             decode_dst_new$0[0] = decoded$1;
           } else {
-            decode_error$0(input$0[i$0])(stack$1)(type$2);
+            decode_error$0(item$0)(stack$1)(type$2);
           }
           decode_dst$0[1] = decode_dst_new$0;
+          index$0++;
           decode_dst$0 = decode_dst_new$0;
         }
         props$0.set("blogPosts", decoded$0[1]);

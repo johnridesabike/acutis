@@ -171,22 +171,23 @@ end
 module type DECODABLE = sig
   (** Decode and encode input data. *)
 
-  (** {1 Container types.} *)
-
-  type 'a linear
-  (** A linear container such as a list or array. *)
-
-  val length : 'a linear -> int
-  val iteri : (int -> 'a -> unit) -> 'a linear -> unit
+  type t
 
   type 'a assoc
   (** A key-value container such as an association list or a string map. *)
 
+  (** {1 Decoding} *)
+
+  val get_int : t -> int option
+  val get_string : t -> string option
+  val get_float : t -> float option
+  val get_bool : t -> bool option
+  val get_some : t -> t option
+  val get_seq : t -> t Seq.t option
+  val get_assoc : t -> t assoc option
   val assoc_find : string -> 'a assoc -> 'a
   val assoc_mem : string -> 'a assoc -> bool
-  val assoc_iter : (string -> 'a -> unit) -> 'a assoc -> unit
-
-  type t
+  val assoc_to_seq : 'a assoc -> (string * 'a) Seq.t
 
   (** {1 Encoding} *)
 
@@ -196,18 +197,8 @@ module type DECODABLE = sig
   val of_string : string -> t
   val of_bool : bool -> t
   val of_int : int -> t
-  val of_array : t array -> t
-  val of_assoc : (string * t) Seq.t -> t
-
-  (** {1 Decoding} *)
-
-  val decode_int : t -> int option
-  val decode_string : t -> string option
-  val decode_float : t -> float option
-  val decode_bool : t -> bool option
-  val decode_some : t -> t option
-  val decode_linear : t -> t linear option
-  val decode_assoc : t -> t assoc option
+  val of_seq : t Seq.t -> t
+  val of_seq_assoc : (string * t) Seq.t -> t
 
   (** {1 Debugging} *)
 

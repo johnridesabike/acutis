@@ -3,34 +3,32 @@
     test is easier to maintain and faster to execute. *)
 
 module Json = struct
-  type 'a linear = 'a list
-
-  let length = List.length
-  let iteri = List.iteri
-
+  type t = Yojson.Basic.t
   type 'a assoc = (string * 'a) list
 
+  let get_int = function `Int x -> Some x | _ -> None
+  let get_string = function `String x -> Some x | _ -> None
+
+  let get_float = function
+    | `Float x -> Some x
+    | `Int x -> Some (Float.of_int x)
+    | _ -> None
+
+  let get_bool = function `Bool x -> Some x | _ -> None
+  let get_some = function `Null -> None | x -> Some x
+  let get_seq = function `List x -> Some (List.to_seq x) | _ -> None
+  let get_assoc = function `Assoc x -> Some x | _ -> None
   let assoc_find = List.assoc
   let assoc_mem = List.mem_assoc
-  let assoc_iter f l = List.iter (fun (k, v) -> f k v) l
-
-  type t = Yojson.Basic.t
-
+  let assoc_to_seq = List.to_seq
   let null = `Null
   let some = Fun.id
   let of_float x = `Float x
   let of_string x = `String x
   let of_bool x = `Bool x
   let of_int x = `Int x
-  let of_array x = `List (Array.to_list x)
-  let of_assoc x = `Assoc (List.of_seq x)
-  let decode_int = function `Int x -> Some x | _ -> None
-  let decode_string = function `String x -> Some x | _ -> None
-  let decode_float = function `Float x -> Some x | _ -> None
-  let decode_bool = function `Bool x -> Some x | _ -> None
-  let decode_linear = function `List x -> Some x | _ -> None
-  let decode_assoc = function `Assoc x -> Some x | _ -> None
-  let decode_some = function `Null -> None | x -> Some x
+  let of_seq x = `List (List.of_seq x)
+  let of_seq_assoc x = `Assoc (List.of_seq x)
   let to_string t = Yojson.Basic.pretty_to_string t
 end
 

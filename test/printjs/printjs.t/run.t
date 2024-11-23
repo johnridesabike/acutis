@@ -14,18 +14,17 @@
     (arg$0) => {
       return (
         (arg$1) => {
-          for (let i$0 = 0; i$0 < arg$1.length; i$0++) {
-            let c$0 = arg$1.charCodeAt(i$0);
-            switch (c$0) {
-              case 38: arg$0.contents += "&amp;"; break;
-              case 34: arg$0.contents += "&quot;"; break;
-              case 39: arg$0.contents += "&apos;"; break;
-              case 62: arg$0.contents += "&gt;"; break;
-              case 60: arg$0.contents += "&lt;"; break;
-              case 47: arg$0.contents += "&sol;"; break;
-              case 96: arg$0.contents += "&grave;"; break;
-              case 61: arg$0.contents += "&equals;"; break;
-              default: arg$0.contents += String.fromCharCode(c$0);
+          for (let item$0 of arg$1[Symbol.iterator]()) {
+            switch (item$0) {
+              case "&": arg$0.contents += "&amp;"; break;
+              case "\"": arg$0.contents += "&quot;"; break;
+              case "'": arg$0.contents += "&apos;"; break;
+              case ">": arg$0.contents += "&gt;"; break;
+              case "<": arg$0.contents += "&lt;"; break;
+              case "/": arg$0.contents += "&sol;"; break;
+              case "`": arg$0.contents += "&grave;"; break;
+              case "=": arg$0.contents += "&equals;"; break;
+              default: arg$0.contents += item$0;
             }
           }
         }
@@ -58,209 +57,209 @@
   components$0.set(
     "Another_function",
     (arg$0) => {
-      let encoded$0 = new Map();
-      return (import$0(Object.fromEntries(encoded$0)));
+      let seq$0 = (function* () {  })();
+      return (import$0(Object.fromEntries(seq$0)));
     }
   );
   import {"stringify" as import$1} from "./jscomponents.mjs";
   components$0.set(
     "Stringify",
     (arg$0) => {
-      let encoded$0 = new Map();
-      let props$0 = arg$0.get("int_list");
-      let index$0 = 0;
-      let cell$0 = props$0;
-      while (!(cell$0 === 0)) { index$0++; cell$0 = cell$0[1]; }
-      let encoded$1 =
-        Array.from({length: index$0}, (arg$1) => { return (null); });
-      cell$0 = props$0;
-      index$0 = 0;
-      while (!(cell$0 === 0)) {
-        let props$1 = cell$0[0];
-        encoded$1[index$0] = props$1;
-        index$0++;
-        cell$0 = cell$0[1];
-      }
-      encoded$0.set("int_list", encoded$1);
-      let props$1 = arg$0.get("nested_list");
-      let index$1 = 0;
-      let cell$1 = props$1;
-      while (!(cell$1 === 0)) { index$1++; cell$1 = cell$1[1]; }
-      let encoded$2 =
-        Array.from({length: index$1}, (arg$1) => { return (null); });
-      cell$1 = props$1;
-      index$1 = 0;
-      while (!(cell$1 === 0)) {
-        let props$2 = cell$1[0];
-        let index$2 = 0;
-        let cell$2 = props$2;
-        while (!(cell$2 === 0)) { index$2++; cell$2 = cell$2[1]; }
-        let encoded$3 =
-          Array.from({length: index$2}, (arg$1) => { return (null); });
-        cell$2 = props$2;
-        index$2 = 0;
-        while (!(cell$2 === 0)) {
-          let props$3 = cell$2[0];
-          let index$3 = 0;
-          let cell$3 = props$3;
-          while (!(cell$3 === 0)) { index$3++; cell$3 = cell$3[1]; }
-          let encoded$4 =
-            Array.from({length: index$3}, (arg$1) => { return (null); });
-          cell$3 = props$3;
-          index$3 = 0;
-          while (!(cell$3 === 0)) {
-            let props$4 = cell$3[0];
-            encoded$4[index$3] = props$4;
-            index$3++;
-            cell$3 = cell$3[1];
-          }
-          encoded$3[index$2] = encoded$4;
-          index$2++;
-          cell$2 = cell$2[1];
-        }
-        encoded$2[index$1] = encoded$3;
-        index$1++;
-        cell$1 = cell$1[1];
-      }
-      encoded$0.set("nested_list", encoded$2);
-      let props$2 = arg$0.get("nested_nullable_list");
-      let index$2 = 0;
-      let cell$2 = props$2;
-      while (!(cell$2 === 0)) { index$2++; cell$2 = cell$2[1]; }
-      let encoded$3 =
-        Array.from({length: index$2}, (arg$1) => { return (null); });
-      cell$2 = props$2;
-      index$2 = 0;
-      while (!(cell$2 === 0)) {
-        let props$3 = cell$2[0];
-        if (props$3 === 0) {
-          encoded$3[index$2] = null;
-        } else {
-          let props$4 = props$3[0];
-          if (props$4 === 0) {
-            encoded$3[index$2] = null;
+      let seq$0 =
+        (function* () {
+          let seq$1 =
+            (function* () {
+              let cell$0 = arg$0.get("int_list");
+              while (!(cell$0 === 0)) {
+                let props$0 = cell$0[0];
+                cell$0 = cell$0[1];
+                yield (props$0);
+              }
+            })();
+          yield (["int_list", Array.from(seq$1)]);
+          let seq$2 =
+            (function* () {
+              let cell$0 = arg$0.get("nested_list");
+              while (!(cell$0 === 0)) {
+                let props$0 = cell$0[0];
+                cell$0 = cell$0[1];
+                let seq$3 =
+                  (function* () {
+                    let cell$1 = props$0;
+                    while (!(cell$1 === 0)) {
+                      let props$1 = cell$1[0];
+                      cell$1 = cell$1[1];
+                      let seq$4 =
+                        (function* () {
+                          let cell$2 = props$1;
+                          while (!(cell$2 === 0)) {
+                            let props$2 = cell$2[0];
+                            cell$2 = cell$2[1];
+                            yield (props$2);
+                          }
+                        })();
+                      yield (Array.from(seq$4));
+                    }
+                  })();
+                yield (Array.from(seq$3));
+              }
+            })();
+          yield (["nested_list", Array.from(seq$2)]);
+          let seq$3 =
+            (function* () {
+              let cell$0 = arg$0.get("nested_nullable_list");
+              while (!(cell$0 === 0)) {
+                let props$0 = cell$0[0];
+                cell$0 = cell$0[1];
+                if (props$0 === 0) {
+                  yield (null);
+                } else {
+                  let props$1 = props$0[0];
+                  if (props$1 === 0) {
+                    yield (null);
+                  } else {
+                    let props$2 = props$1[0];
+                    yield (!(props$2 === 0));
+                  }
+                }
+              }
+            })();
+          yield (["nested_nullable_list", Array.from(seq$3)]);
+          let seq$4 =
+            (function* () {
+              for (let item$0 of arg$0.get("null_string_dict").entries()) {
+                if (item$0[1] === 0) {
+                  yield ([item$0[0], null]);
+                } else {
+                  let props$0 = item$0[1][0];
+                  yield ([item$0[0], props$0]);
+                }
+              }
+            })();
+          yield (["null_string_dict", Object.fromEntries(seq$4)]);
+          let seq$5 =
+            (function* () {
+              yield (["int_enum", arg$0.get("record").get("int_enum")]);
+              yield (["string_enum", arg$0.get("record").get("string_enum")]);
+            })();
+          yield (["record", Object.fromEntries(seq$5)]);
+          let props$0 = arg$0.get("tagged_record_bool");
+          let tag$0 = props$0.get("tag");
+          if (tag$0 === 0) {
+            let seq$6 =
+              (function* () {
+                yield (["tag", !(tag$0 === 0)]);
+                yield (["a", props$0.get("a")]);
+              })();
+            yield (["tagged_record_bool", Object.fromEntries(seq$6)]);
           } else {
-            let props$5 = props$4[0];
-            encoded$3[index$2] = !(props$5 === 0);
+            if (tag$0 === 1) {
+              let seq$6 =
+                (function* () {
+                  yield (["tag", !(tag$0 === 0)]);
+                  yield (["b", props$0.get("b")]);
+                })();
+              yield (["tagged_record_bool", Object.fromEntries(seq$6)]);
+            } else {
+              let seq$6 = (function* () {  })();
+              yield (["tagged_record_bool", Object.fromEntries(seq$6)]);
+            }
           }
-        }
-        index$2++;
-        cell$2 = cell$2[1];
-      }
-      encoded$0.set("nested_nullable_list", encoded$3);
-      let props$3 = arg$0.get("null_string_dict");
-      let encoded$4 = new Map();
-      for (let x$0 of props$3) {
-        if (x$0[1] === 0) {
-          encoded$4.set(x$0[0], null);
-        } else {
-          let props$4 = x$0[1][0];
-          encoded$4.set(x$0[0], props$4);
-        }
-      }
-      encoded$0.set("null_string_dict", Object.fromEntries(encoded$4));
-      let props$4 = arg$0.get("record");
-      let encoded$5 = new Map();
-      let props$5 = props$4.get("int_enum");
-      encoded$5.set("int_enum", props$5);
-      let props$6 = props$4.get("string_enum");
-      encoded$5.set("string_enum", props$6);
-      encoded$0.set("record", Object.fromEntries(encoded$5));
-      let props$7 = arg$0.get("tagged_record_bool");
-      let tag$0 = props$7.get("tag");
-      let encoded$6 = new Map();
-      if (tag$0 === 0) {
-        encoded$6.set("tag", !(tag$0 === 0));
-        let props$8 = props$7.get("a");
-        encoded$6.set("a", props$8);
-      } else {
-        if (tag$0 === 1) {
-          encoded$6.set("tag", !(tag$0 === 0));
-          let props$8 = props$7.get("b");
-          encoded$6.set("b", props$8);
-        }
-      }
-      encoded$0.set("tagged_record_bool", Object.fromEntries(encoded$6));
-      let props$8 = arg$0.get("tagged_record_int");
-      let tag$1 = props$8.get("tag");
-      let encoded$7 = new Map();
-      if (tag$1 === 0) {
-        encoded$7.set("tag", tag$1);
-      } else {
-        if (tag$1 === 1) {
-          encoded$7.set("tag", tag$1);
-          let props$9 = props$8.get("tuple");
-          let encoded$8 =
-            Array.from({length: 3}, (arg$1) => { return (null); });
-          let props$10 = props$9[0];
-          encoded$8[0] = props$10;
-          let props$11 = props$9[1];
-          encoded$8[1] = props$11;
-          let props$12 = props$9[2];
-          encoded$8[2] = !(props$12 === 0);
-          encoded$7.set("tuple", encoded$8);
-        }
-      }
-      encoded$0.set("tagged_record_int", Object.fromEntries(encoded$7));
-      let props$9 = arg$0.get("tagged_record_open");
-      let tag$2 = props$9.get("tag");
-      let encoded$8 = new Map();
-      if (tag$2 === 100) {
-        encoded$8.set("tag", tag$2);
-        let props$10 = props$9.get("a");
-        encoded$8.set("a", props$10);
-      } else {
-        if (tag$2 === 200) {
-          encoded$8.set("tag", tag$2);
-          let props$10 = props$9.get("b");
-          encoded$8.set("b", props$10);
-        } else {
-          if (tag$2 === 300) {
-            encoded$8.set("tag", tag$2);
-            let props$10 = props$9.get("c");
-            encoded$8.set("c", props$10);
+          let props$1 = arg$0.get("tagged_record_int");
+          let tag$1 = props$1.get("tag");
+          if (tag$1 === 0) {
+            let seq$6 = (function* () { yield (["tag", tag$1]); })();
+            yield (["tagged_record_int", Object.fromEntries(seq$6)]);
           } else {
-            encoded$8.set("tag", tag$2);
+            if (tag$1 === 1) {
+              let seq$6 =
+                (function* () {
+                  yield (["tag", tag$1]);
+                  let props$2 = props$1.get("tuple");
+                  let seq$7 =
+                    (function* () {
+                      yield (props$2[0]);
+                      yield (props$2[1]);
+                      yield (!(props$2[2] === 0));
+                    })();
+                  yield (["tuple", Array.from(seq$7)]);
+                })();
+              yield (["tagged_record_int", Object.fromEntries(seq$6)]);
+            } else {
+              let seq$6 = (function* () {  })();
+              yield (["tagged_record_int", Object.fromEntries(seq$6)]);
+            }
           }
-        }
-      }
-      encoded$0.set("tagged_record_open", Object.fromEntries(encoded$8));
-      let props$10 = arg$0.get("tagged_record_string");
-      let tag$3 = props$10.get("tag");
-      let encoded$9 = new Map();
-      if (tag$3 === "a") {
-        encoded$9.set("tag", tag$3);
-        let props$11 = props$10.get("record_list");
-        let index$3 = 0;
-        let cell$3 = props$11;
-        while (!(cell$3 === 0)) { index$3++; cell$3 = cell$3[1]; }
-        let encoded$10 =
-          Array.from({length: index$3}, (arg$1) => { return (null); });
-        cell$3 = props$11;
-        index$3 = 0;
-        while (!(cell$3 === 0)) {
-          let props$12 = cell$3[0];
-          let encoded$11 = new Map();
-          let props$13 = props$12.get("job");
-          encoded$11.set("job", props$13);
-          let props$14 = props$12.get("name");
-          encoded$11.set("name", props$14);
-          encoded$10[index$3] = Object.fromEntries(encoded$11);
-          index$3++;
-          cell$3 = cell$3[1];
-        }
-        encoded$9.set("record_list", encoded$10);
-      } else {
-        if (tag$3 === "b") {
-          encoded$9.set("tag", tag$3);
-          let props$11 = props$10.get("open_enum");
-          encoded$9.set("open_enum", props$11);
-        }
-      }
-      encoded$0.set("tagged_record_string", Object.fromEntries(encoded$9));
-      let props$11 = arg$0.get("unknown");
-      encoded$0.set("unknown", props$11);
-      return (import$1(Object.fromEntries(encoded$0)));
+          let props$2 = arg$0.get("tagged_record_open");
+          let tag$2 = props$2.get("tag");
+          if (tag$2 === 100) {
+            let seq$6 =
+              (function* () {
+                yield (["tag", tag$2]);
+                yield (["a", props$2.get("a")]);
+              })();
+            yield (["tagged_record_open", Object.fromEntries(seq$6)]);
+          } else {
+            if (tag$2 === 200) {
+              let seq$6 =
+                (function* () {
+                  yield (["tag", tag$2]);
+                  yield (["b", props$2.get("b")]);
+                })();
+              yield (["tagged_record_open", Object.fromEntries(seq$6)]);
+            } else {
+              if (tag$2 === 300) {
+                let seq$6 =
+                  (function* () {
+                    yield (["tag", tag$2]);
+                    yield (["c", props$2.get("c")]);
+                  })();
+                yield (["tagged_record_open", Object.fromEntries(seq$6)]);
+              } else {
+                let seq$6 = (function* () { yield (["tag", tag$2]); })();
+                yield (["tagged_record_open", Object.fromEntries(seq$6)]);
+              }
+            }
+          }
+          let props$3 = arg$0.get("tagged_record_string");
+          let tag$3 = props$3.get("tag");
+          if (tag$3 === "a") {
+            let seq$6 =
+              (function* () {
+                yield (["tag", tag$3]);
+                let seq$7 =
+                  (function* () {
+                    let cell$0 = props$3.get("record_list");
+                    while (!(cell$0 === 0)) {
+                      let props$4 = cell$0[0];
+                      cell$0 = cell$0[1];
+                      let seq$8 =
+                        (function* () {
+                          yield (["job", props$4.get("job")]);
+                          yield (["name", props$4.get("name")]);
+                        })();
+                      yield (Object.fromEntries(seq$8));
+                    }
+                  })();
+                yield (["record_list", Array.from(seq$7)]);
+              })();
+            yield (["tagged_record_string", Object.fromEntries(seq$6)]);
+          } else {
+            if (tag$3 === "b") {
+              let seq$6 =
+                (function* () {
+                  yield (["tag", tag$3]);
+                  yield (["open_enum", props$3.get("open_enum")]);
+                })();
+              yield (["tagged_record_string", Object.fromEntries(seq$6)]);
+            } else {
+              let seq$6 = (function* () {  })();
+              yield (["tagged_record_string", Object.fromEntries(seq$6)]);
+            }
+          }
+          yield (["unknown", arg$0.get("unknown")]);
+        })();
+      return (import$1(Object.fromEntries(seq$0)));
     }
   );
   components$0.set(
@@ -370,11 +369,7 @@
         if (typeof input$0 === "number") {
           props$0.set("big_float", input$0);
         } else {
-          if (Number.isInteger(input$0)) {
-            props$0.set("big_float", input$0);
-          } else {
-            decode_error$0(input$0)(stack$0)(type$1);
-          }
+          decode_error$0(input$0)(stack$0)(type$1);
         }
       } else {
         buffer_add_sep$0(missing_keys$0)(", ")("big_float");
@@ -440,18 +435,21 @@
         let stack$0 = stack_add$0("int_list")(stack_empty$0);
         let type$1 = "[int]";
         if (Array.isArray(input$0)) {
+          let seq$0 = input$0.values();
+          let index$0 = 0;
           let decoded$0 = [0, 0];
           let decode_dst$0 = decoded$0;
-          for (let i$0 = 0; i$0 < input$0.length; i$0++) {
+          for (let item$0 of seq$0) {
             let decode_dst_new$0 = [0, 0];
-            let stack$1 = stack_add$0(String(i$0))(stack$0);
+            let stack$1 = stack_add$0(String(index$0))(stack$0);
             let type$2 = "int";
-            if (Number.isInteger(input$0[i$0])) {
-              decode_dst_new$0[0] = input$0[i$0];
+            if (Number.isInteger(item$0)) {
+              decode_dst_new$0[0] = item$0;
             } else {
-              decode_error$0(input$0[i$0])(stack$1)(type$2);
+              decode_error$0(item$0)(stack$1)(type$2);
             }
             decode_dst$0[1] = decode_dst_new$0;
+            index$0++;
             decode_dst$0 = decode_dst_new$0;
           }
           props$0.set("int_list", decoded$0[1]);
@@ -466,46 +464,55 @@
         let stack$0 = stack_add$0("nested_list")(stack_empty$0);
         let type$1 = "[[[int]]]";
         if (Array.isArray(input$0)) {
+          let seq$0 = input$0.values();
+          let index$0 = 0;
           let decoded$0 = [0, 0];
           let decode_dst$0 = decoded$0;
-          for (let i$0 = 0; i$0 < input$0.length; i$0++) {
+          for (let item$0 of seq$0) {
             let decode_dst_new$0 = [0, 0];
-            let stack$1 = stack_add$0(String(i$0))(stack$0);
+            let stack$1 = stack_add$0(String(index$0))(stack$0);
             let type$2 = "[[int]]";
-            if (Array.isArray(input$0[i$0])) {
+            if (Array.isArray(item$0)) {
+              let seq$1 = item$0.values();
+              let index$1 = 0;
               let decoded$1 = [0, 0];
               let decode_dst$1 = decoded$1;
-              for (let i$1 = 0; i$1 < input$0[i$0].length; i$1++) {
+              for (let item$1 of seq$1) {
                 let decode_dst_new$1 = [0, 0];
-                let stack$2 = stack_add$0(String(i$1))(stack$1);
+                let stack$2 = stack_add$0(String(index$1))(stack$1);
                 let type$3 = "[int]";
-                if (Array.isArray(input$0[i$0][i$1])) {
+                if (Array.isArray(item$1)) {
+                  let seq$2 = item$1.values();
+                  let index$2 = 0;
                   let decoded$2 = [0, 0];
                   let decode_dst$2 = decoded$2;
-                  for (let i$2 = 0; i$2 < input$0[i$0][i$1].length; i$2++) {
+                  for (let item$2 of seq$2) {
                     let decode_dst_new$2 = [0, 0];
-                    let stack$3 = stack_add$0(String(i$2))(stack$2);
+                    let stack$3 = stack_add$0(String(index$2))(stack$2);
                     let type$4 = "int";
-                    if (Number.isInteger(input$0[i$0][i$1][i$2])) {
-                      decode_dst_new$2[0] = input$0[i$0][i$1][i$2];
+                    if (Number.isInteger(item$2)) {
+                      decode_dst_new$2[0] = item$2;
                     } else {
-                      decode_error$0(input$0[i$0][i$1][i$2])(stack$3)(type$4);
+                      decode_error$0(item$2)(stack$3)(type$4);
                     }
                     decode_dst$2[1] = decode_dst_new$2;
+                    index$2++;
                     decode_dst$2 = decode_dst_new$2;
                   }
                   decode_dst_new$1[0] = decoded$2[1];
                 } else {
-                  decode_error$0(input$0[i$0][i$1])(stack$2)(type$3);
+                  decode_error$0(item$1)(stack$2)(type$3);
                 }
                 decode_dst$1[1] = decode_dst_new$1;
+                index$1++;
                 decode_dst$1 = decode_dst_new$1;
               }
               decode_dst_new$0[0] = decoded$1[1];
             } else {
-              decode_error$0(input$0[i$0])(stack$1)(type$2);
+              decode_error$0(item$0)(stack$1)(type$2);
             }
             decode_dst$0[1] = decode_dst_new$0;
+            index$0++;
             decode_dst$0 = decode_dst_new$0;
           }
           props$0.set("nested_list", decoded$0[1]);
@@ -520,28 +527,26 @@
         let stack$0 = stack_add$0("nested_nullable_list")(stack_empty$0);
         let type$1 = "[??false | true]";
         if (Array.isArray(input$0)) {
+          let seq$0 = input$0.values();
+          let index$0 = 0;
           let decoded$0 = [0, 0];
           let decode_dst$0 = decoded$0;
-          for (let i$0 = 0; i$0 < input$0.length; i$0++) {
+          for (let item$0 of seq$0) {
             let decode_dst_new$0 = [0, 0];
-            let stack$1 = stack_add$0(String(i$0))(stack$0);
+            let stack$1 = stack_add$0(String(index$0))(stack$0);
             let type$2 = "??false | true";
-            if (!(input$0[i$0] === null) && !(input$0[i$0] === undefined)) {
+            if (!(item$0 === null) && !(item$0 === undefined)) {
               let decoded$1 = [0];
               let stack$2 = stack_add$0("<nullable>")(stack$1);
               let type$3 = "?false | true";
-              if (!(input$0[i$0] === null) && !(input$0[i$0] === undefined)) {
+              if (!(item$0 === null) && !(item$0 === undefined)) {
                 let decoded$2 = [0];
                 let stack$3 = stack_add$0("<nullable>")(stack$2);
                 let type$4 = "false | true";
-                if (typeof input$0[i$0] === "boolean") {
-                  if (input$0[i$0]) {
-                    decoded$2[0] = 1;
-                  } else {
-                    decoded$2[0] = 0;
-                  }
+                if (typeof item$0 === "boolean") {
+                  if (item$0) { decoded$2[0] = 1; } else { decoded$2[0] = 0; }
                 } else {
-                  decode_error$0(input$0[i$0])(stack$3)(type$4);
+                  decode_error$0(item$0)(stack$3)(type$4);
                 }
                 decoded$1[0] = decoded$2;
               } else {
@@ -552,6 +557,7 @@
               decode_dst_new$0[0] = 0;
             }
             decode_dst$0[1] = decode_dst_new$0;
+            index$0++;
             decode_dst$0 = decode_dst_new$0;
           }
           props$0.set("nested_nullable_list", decoded$0[1]);
@@ -592,11 +598,7 @@
           if (typeof input$0 === "number") {
             decoded$0[0] = input$0;
           } else {
-            if (Number.isInteger(input$0)) {
-              decoded$0[0] = input$0;
-            } else {
-              decode_error$0(input$0)(stack$1)(type$2);
-            }
+            decode_error$0(input$0)(stack$1)(type$2);
           }
           props$0.set("null_float", decoded$0);
         } else {
@@ -651,21 +653,21 @@
         let type$1 = "<?string>";
         if (typeof input$0 === "object" && !(input$0 === null)) {
           let decoded$0 = new Map();
-          for (let x$0 of Object.keys(input$0)) {
-            let stack$1 = stack_add$0(x$0)(stack$0);
+          for (let item$0 of Object.entries(input$0).values()) {
+            let stack$1 = stack_add$0(item$0[0])(stack$0);
             let type$2 = "?string";
-            if (!(input$0[x$0] === null) && !(input$0[x$0] === undefined)) {
+            if (!(item$0[1] === null) && !(item$0[1] === undefined)) {
               let decoded$1 = [0];
               let stack$2 = stack_add$0("<nullable>")(stack$1);
               let type$3 = "string";
-              if (typeof input$0[x$0] === "string") {
-                decoded$1[0] = input$0[x$0];
+              if (typeof item$0[1] === "string") {
+                decoded$1[0] = item$0[1];
               } else {
-                decode_error$0(input$0[x$0])(stack$2)(type$3);
+                decode_error$0(item$0[1])(stack$2)(type$3);
               }
-              decoded$0.set(x$0, decoded$1);
+              decoded$0.set(item$0[0], decoded$1);
             } else {
-              decoded$0.set(x$0, 0);
+              decoded$0.set(item$0[0], 0);
             }
             props$0.set("null_string_dict", decoded$0);
           }
@@ -818,52 +820,49 @@
                     let stack$1 = stack_add$0("tuple")(stack$0);
                     let type$2 = "(float, string, false | true)";
                     if (Array.isArray(input$1)) {
-                      if (input$1.length === 3) {
-                        let decoded$1 =
-                          Array.from({length: 3}, (arg$1) => { return (0); });
-                        for (let i$0 = 0; i$0 < input$1.length; i$0++) {
-                          let stack$2 = stack_add$0(String(i$0))(stack$1);
-                          if (i$0 === 0) {
-                            let type$3 = "float";
-                            if (typeof input$1[i$0] === "number") {
-                              decoded$1[i$0] = input$1[i$0];
-                            } else {
-                              if (Number.isInteger(input$1[i$0])) {
-                                decoded$1[i$0] = input$1[i$0];
-                              } else {
-                                decode_error$0(input$1[i$0])(stack$2)(type$3);
-                              }
-                            }
+                      let seq$0 = input$1.values();
+                      let decoded$1 = [0, 0, 0];
+                      let next$0 = seq$0.next();
+                      if (next$0.done) {
+                        decode_error$0(input$1)(stack$1)(type$2);
+                      } else {
+                        let stack$2 = stack_add$0(String(0))(stack$1);
+                        let type$3 = "float";
+                        if (typeof next$0.value === "number") {
+                          decoded$1[0] = next$0.value;
+                        } else {
+                          decode_error$0(next$0.value)(stack$2)(type$3);
+                        }
+                        let next$1 = seq$0.next();
+                        if (next$1.done) {
+                          decode_error$0(input$1)(stack$1)(type$2);
+                        } else {
+                          let stack$3 = stack_add$0(String(1))(stack$1);
+                          let type$4 = "string";
+                          if (typeof next$1.value === "string") {
+                            decoded$1[1] = next$1.value;
                           } else {
-                            if (i$0 === 1) {
-                              let type$3 = "string";
-                              if (typeof input$1[i$0] === "string") {
-                                decoded$1[i$0] = input$1[i$0];
+                            decode_error$0(next$1.value)(stack$3)(type$4);
+                          }
+                          let next$2 = seq$0.next();
+                          if (next$2.done) {
+                            decode_error$0(input$1)(stack$1)(type$2);
+                          } else {
+                            let stack$4 = stack_add$0(String(2))(stack$1);
+                            let type$5 = "false | true";
+                            if (typeof next$2.value === "boolean") {
+                              if (next$2.value) {
+                                decoded$1[2] = 1;
                               } else {
-                                decode_error$0(input$1[i$0])(stack$2)(type$3);
+                                decoded$1[2] = 0;
                               }
                             } else {
-                              if (i$0 === 2) {
-                                let type$3 = "false | true";
-                                if (typeof input$1[i$0] === "boolean") {
-                                  if (input$1[i$0]) {
-                                    decoded$1[i$0] = 1;
-                                  } else {
-                                    decoded$1[i$0] = 0;
-                                  }
-                                } else {
-                                  decode_error$0(input$1[i$0])(stack$2)(type$3);
-                                }
-                              } else {
-                                decode_error$0(input$1[i$0])(stack$2)(type$2);
-                              }
+                              decode_error$0(next$2.value)(stack$4)(type$5);
                             }
                           }
-                          decoded$0.set("tuple", decoded$1);
                         }
-                      } else {
-                        decode_error$0(input$1)(stack$1)(type$2);
                       }
+                      decoded$0.set("tuple", decoded$1);
                     } else {
                       decode_error$0(input$1)(stack$1)(type$2);
                     }
@@ -947,11 +946,7 @@
                       if (typeof input$1 === "number") {
                         decoded$0.set("c", input$1);
                       } else {
-                        if (Number.isInteger(input$1)) {
-                          decoded$0.set("c", input$1);
-                        } else {
-                          decode_error$0(input$1)(stack$1)(type$2);
-                        }
+                        decode_error$0(input$1)(stack$1)(type$2);
                       }
                     } else {
                       buffer_add_sep$0(missing_keys$1)(", ")("c");
@@ -995,20 +990,19 @@
                   let stack$1 = stack_add$0("record_list")(stack$0);
                   let type$2 = "[{job: string, name: string}]";
                   if (Array.isArray(input$1)) {
+                    let seq$0 = input$1.values();
+                    let index$0 = 0;
                     let decoded$1 = [0, 0];
                     let decode_dst$0 = decoded$1;
-                    for (let i$0 = 0; i$0 < input$1.length; i$0++) {
+                    for (let item$0 of seq$0) {
                       let decode_dst_new$0 = [0, 0];
-                      let stack$2 = stack_add$0(String(i$0))(stack$1);
+                      let stack$2 = stack_add$0(String(index$0))(stack$1);
                       let type$3 = "{job: string, name: string}";
-                      if (
-                        typeof input$1[i$0] === "object" &&
-                        !(input$1[i$0] === null)
-                      ) {
+                      if (typeof item$0 === "object" && !(item$0 === null)) {
                         let decoded$2 = new Map();
                         let missing_keys$2 = {contents: ""};
-                        if (Object.hasOwn(input$1[i$0], "job")) {
-                          let input$2 = input$1[i$0]["job"];
+                        if (Object.hasOwn(item$0, "job")) {
+                          let input$2 = item$0["job"];
                           let stack$3 = stack_add$0("job")(stack$2);
                           let type$4 = "string";
                           if (typeof input$2 === "string") {
@@ -1019,8 +1013,8 @@
                         } else {
                           buffer_add_sep$0(missing_keys$2)(", ")("job");
                         }
-                        if (Object.hasOwn(input$1[i$0], "name")) {
-                          let input$2 = input$1[i$0]["name"];
+                        if (Object.hasOwn(item$0, "name")) {
+                          let input$2 = item$0["name"];
                           let stack$3 = stack_add$0("name")(stack$2);
                           let type$4 = "string";
                           if (typeof input$2 === "string") {
@@ -1036,9 +1030,10 @@
                         }
                         decode_dst_new$0[0] = decoded$2;
                       } else {
-                        decode_error$0(input$1[i$0])(stack$2)(type$3);
+                        decode_error$0(item$0)(stack$2)(type$3);
                       }
                       decode_dst$0[1] = decode_dst_new$0;
+                      index$0++;
                       decode_dst$0 = decode_dst_new$0;
                     }
                     decoded$0.set("record_list", decoded$1[1]);
@@ -1250,15 +1245,15 @@
       }
       buf$0.contents += "\n\nMapping\n-------\n\n";
       let match_arg$9 = props$0.get("null_string_dict");
-      for (let x$0 of match_arg$9) {
+      for (let item$0 of match_arg$9.entries()) {
         let match_props$3 = new Map();
         let exit$5 = -1;
-        if (x$0[1] === 0) {
-          match_props$3.set("key", x$0[0]);
+        if (item$0[1] === 0) {
+          match_props$3.set("key", item$0[0]);
           exit$5 = 0;
         } else {
-          let match_arg$10 = x$0[1][0];
-          match_props$3.set("key", x$0[0]);
+          let match_arg$10 = item$0[1][0];
+          match_props$3.set("key", item$0[0]);
           match_props$3.set("str", match_arg$10);
           exit$5 = 1;
         }

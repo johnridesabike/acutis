@@ -7,18 +7,17 @@
     (arg$0) => {
       return (
         (arg$1) => {
-          for (let i$0 = 0; i$0 < arg$1.length; i$0++) {
-            let c$0 = arg$1.charCodeAt(i$0);
-            switch (c$0) {
-              case 38: arg$0.contents += "&amp;"; break;
-              case 34: arg$0.contents += "&quot;"; break;
-              case 39: arg$0.contents += "&apos;"; break;
-              case 62: arg$0.contents += "&gt;"; break;
-              case 60: arg$0.contents += "&lt;"; break;
-              case 47: arg$0.contents += "&sol;"; break;
-              case 96: arg$0.contents += "&grave;"; break;
-              case 61: arg$0.contents += "&equals;"; break;
-              default: arg$0.contents += String.fromCharCode(c$0);
+          for (let item$0 of arg$1[Symbol.iterator]()) {
+            switch (item$0) {
+              case "&": arg$0.contents += "&amp;"; break;
+              case "\"": arg$0.contents += "&quot;"; break;
+              case "'": arg$0.contents += "&apos;"; break;
+              case ">": arg$0.contents += "&gt;"; break;
+              case "<": arg$0.contents += "&lt;"; break;
+              case "/": arg$0.contents += "&sol;"; break;
+              case "`": arg$0.contents += "&grave;"; break;
+              case "=": arg$0.contents += "&equals;"; break;
+              default: arg$0.contents += item$0;
             }
           }
         }
@@ -51,10 +50,9 @@
   components$0.set(
     "ExternalFunction",
     (arg$0) => {
-      let encoded$0 = new Map();
-      let props$0 = arg$0.get("children");
-      encoded$0.set("children", props$0);
-      return (import$0(Object.fromEntries(encoded$0)));
+      let seq$0 =
+        (function* () { yield (["children", arg$0.get("children")]); })();
+      return (import$0(Object.fromEntries(seq$0)));
     }
   );
   export default async (arg$0) => {
@@ -133,18 +131,17 @@
     (arg$0) => {
       return (
         (arg$1) => {
-          for (let i$0 = 0; i$0 < arg$1.length; i$0++) {
-            let c$0 = arg$1.charCodeAt(i$0);
-            switch (c$0) {
-              case 38: arg$0.contents += "&amp;"; break;
-              case 34: arg$0.contents += "&quot;"; break;
-              case 39: arg$0.contents += "&apos;"; break;
-              case 62: arg$0.contents += "&gt;"; break;
-              case 60: arg$0.contents += "&lt;"; break;
-              case 47: arg$0.contents += "&sol;"; break;
-              case 96: arg$0.contents += "&grave;"; break;
-              case 61: arg$0.contents += "&equals;"; break;
-              default: arg$0.contents += String.fromCharCode(c$0);
+          for (let item$0 of arg$1[Symbol.iterator]()) {
+            switch (item$0) {
+              case "&": arg$0.contents += "&amp;"; break;
+              case "\"": arg$0.contents += "&quot;"; break;
+              case "'": arg$0.contents += "&apos;"; break;
+              case ">": arg$0.contents += "&gt;"; break;
+              case "<": arg$0.contents += "&lt;"; break;
+              case "/": arg$0.contents += "&sol;"; break;
+              case "`": arg$0.contents += "&grave;"; break;
+              case "=": arg$0.contents += "&equals;"; break;
+              default: arg$0.contents += item$0;
             }
           }
         }
@@ -177,10 +174,9 @@
   components$0.set(
     "ExternalFunction",
     (arg$0) => {
-      let encoded$0 = new Map();
-      let props$0 = arg$0.get("children");
-      encoded$0.set("children", props$0);
-      return (import$0["externalFunction"](Object.fromEntries(encoded$0)));
+      let seq$0 =
+        (function* () { yield (["children", arg$0.get("children")]); })();
+      return (import$0["externalFunction"](Object.fromEntries(seq$0)));
     }
   );
   module.exports =

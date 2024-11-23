@@ -11,10 +11,7 @@
 open Js_of_ocaml
 
 module DecodeJs = struct
-  type 'a linear = 'a Js.js_array Js.t
-
-  let length a = a##.length
-  let iteri f a = a##forEach (Js.wrap_callback (fun v i _ -> f i v))
+  type t = Js.Unsafe.any
 
   type 'a assoc = Js.Unsafe.any
   (** When we convert JavaScript objects into Acutis records, we cannot convert
@@ -24,63 +21,74 @@ module DecodeJs = struct
       accessing the precise values that we need, we avoid triggering unexpected
       behavior. *)
 
-  let assoc_find : string -> 'a assoc -> 'a =
-   fun k m -> Js.Unsafe.get m (Js.string k)
-
-  let assoc_mem : string -> 'a assoc -> bool =
-   fun k m -> Js.Unsafe.global##._Object##hasOwn m (Js.string k) |> Js.to_bool
-
-  let assoc_iter : (string -> 'a -> unit) -> 'a assoc -> unit =
-   fun f m ->
-    (Js.object_keys m)##forEach
-      (Js.wrap_callback (fun k _ _ -> f (Js.to_string k) (Js.Unsafe.get m k)))
-
-  type t = Js.Unsafe.any
-
   let coerce = Js.Unsafe.coerce
-  let null = Js.Unsafe.inject Js.null
-  let some = Fun.id
-  let of_float x = Js.number_of_float x |> coerce
-  let of_string x = Js.string x |> coerce
-  let of_bool x = Js.bool x |> coerce
-  let of_int x = Float.of_int x |> Js.number_of_float |> coerce
-  let of_array x = Js.array x |> coerce
-  let of_assoc x = Array.of_seq x |> Js.Unsafe.obj
 
-  let decode_int j =
+  let get_int j =
     match Js.to_string (Js.typeof j) with
     | "number" ->
         let n = coerce j |> Js.float_of_number in
         if Float.is_integer n then Some (Float.to_int n) else None
     | _ -> None
 
-  let decode_string j =
+  let get_string j =
     match Js.to_string (Js.typeof j) with
     | "string" -> Some (coerce j |> Js.to_string)
     | _ -> None
 
-  let decode_float j =
+  let get_float j =
     match Js.to_string (Js.typeof j) with
     | "number" -> Some (coerce j |> Js.float_of_number)
     | _ -> None
 
-  let decode_bool j =
+  let get_bool j =
     match Js.to_string (Js.typeof j) with
     | "boolean" -> Some (coerce j |> Js.to_bool)
     | _ -> None
 
-  let decode_linear j =
-    if Js.Unsafe.global##._Array##isArray j then Some (coerce j) else None
+  let get_some j =
+    match Js.to_string (Js.typeof j) with
+    | "undefined" -> None
+    | _ -> Js.Opt.to_option (Js.Opt.return j)
 
-  let decode_assoc j =
+  let get_seq j =
+    if Js.Unsafe.global##._Array##isArray j then
+      let a = coerce j in
+      let rec aux i () =
+        Js.Optdef.case (Js.array_get a i)
+          (fun () -> Seq.Nil)
+          (fun x -> Seq.Cons (x, aux (succ i)))
+      in
+      Some (aux 0)
+    else None
+
+  let get_assoc j =
     match Js.to_string (Js.typeof j) with
     | "object" -> Js.Opt.to_option (Js.Opt.return j)
     | _ -> None
 
-  let decode_some j =
-    match Js.to_string (Js.typeof j) with
-    | "undefined" -> None
-    | _ -> Js.Opt.to_option (Js.Opt.return j)
+  let assoc_find : string -> 'a assoc -> 'a =
+   fun k m -> Js.Unsafe.get m (Js.string k)
+
+  let assoc_mem : string -> 'a assoc -> bool =
+   fun k m -> Js.Unsafe.global##._Object##hasOwn m (Js.string k) |> Js.to_bool
+
+  let assoc_to_seq m =
+    let keys = Js.object_keys m in
+    let rec aux i () =
+      Js.Optdef.case (Js.array_get keys i)
+        (fun () -> Seq.Nil)
+        (fun k -> Seq.Cons ((Js.to_string k, Js.Unsafe.get m k), aux (succ i)))
+    in
+    aux 0
+
+  let null = Js.Unsafe.inject Js.null
+  let some = Fun.id
+  let of_float x = Js.number_of_float x |> coerce
+  let of_string x = Js.string x |> coerce
+  let of_bool x = Js.bool x |> coerce
+  let of_int x = Float.of_int x |> Js.number_of_float |> coerce
+  let of_seq x = Array.of_seq x |> Js.array |> coerce
+  let of_seq_assoc x = Array.of_seq x |> Js.Unsafe.obj
 
   let to_string j =
     Js.Unsafe.fun_call Js.Unsafe.global##._String [| j |] |> Js.to_string

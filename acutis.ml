@@ -86,34 +86,27 @@ module type PROMISE = sig
 end
 
 module type DECODABLE = sig
-  type 'a linear
-
-  val length : 'a linear -> int
-  val iteri : (int -> 'a -> unit) -> 'a linear -> unit
-
+  type t
   type 'a assoc
 
+  val get_int : t -> int option
+  val get_string : t -> string option
+  val get_float : t -> float option
+  val get_bool : t -> bool option
+  val get_some : t -> t option
+  val get_seq : t -> t Seq.t option
+  val get_assoc : t -> t assoc option
   val assoc_find : string -> 'a assoc -> 'a
   val assoc_mem : string -> 'a assoc -> bool
-  val assoc_iter : (string -> 'a -> unit) -> 'a assoc -> unit
-
-  type t
-
+  val assoc_to_seq : 'a assoc -> (string * 'a) Seq.t
   val null : t
   val some : t -> t
   val of_float : float -> t
   val of_string : string -> t
   val of_bool : bool -> t
   val of_int : int -> t
-  val of_array : t array -> t
-  val of_assoc : (string * t) Seq.t -> t
-  val decode_int : t -> int option
-  val decode_string : t -> string option
-  val decode_float : t -> float option
-  val decode_bool : t -> bool option
-  val decode_some : t -> t option
-  val decode_linear : t -> t linear option
-  val decode_assoc : t -> t assoc option
+  val of_seq : t Seq.t -> t
+  val of_seq_assoc : (string * t) Seq.t -> t
   val to_string : t -> string
 end
 
@@ -145,36 +138,51 @@ end = struct
     let float = Fun.id
     let string = Fun.id
     let bool = Fun.id
+    let pair = Fun.id
+    let unpair = Fun.id
 
     type 'a obs = 'a
 
     let observe = Fun.id
-    let string_iter s f = String.iter f s
+
+    let uncons seq ~nil ~cons =
+      match seq () with Seq.Nil -> nil () | Seq.Cons (x, s) -> cons x s
+
+    let generator : type a. ((a -> unit) -> unit) -> a Seq.t =
+     fun f ->
+      let module M = struct
+        type _ Effect.t += Yield : a -> unit Effect.t
+      end in
+      let yield v = Effect.perform (M.Yield v) in
+      let retc () = Seq.Nil in
+      let effc :
+          type b. b Effect.t -> ((b, _) Effect.Deep.continuation -> _) option =
+        function
+        | M.Yield v -> Some (fun k -> Seq.Cons (v, Effect.Deep.continue k))
+        | _ -> None
+      in
+      fun () -> Effect.Deep.match_with f yield { retc; exnc = raise; effc }
+
+    let iter s f = Seq.iter f s
+    let string_to_seq = String.to_seq
     let match_char = ( |> )
     let array = Fun.id
     let array_make = Array.make
     let ( .%() ) = Array.get
     let ( .%()<- ) = Array.set
 
-    module Tbl = Hashtbl.Make (String)
-
-    type 'a hashtbl = 'a Tbl.t
+    module Tbl = Hashtbl.MakeSeeded (String)
 
     let hashtbl = Tbl.of_seq
     let hashtbl_create () = Tbl.create 16
     let ( .%{} ) = Tbl.find
     let ( .%{}<- ) = Tbl.add
     let hashtbl_mem = Tbl.mem
-    let hashtbl_iter x f = Tbl.iter f x
-
-    type buffer = Buffer.t
-
+    let hashtbl_to_seq = Tbl.to_seq
     let buffer_create () = Buffer.create 1024
     let buffer_add_string = Buffer.add_string
-    let buffer_add_buffer = Buffer.add_buffer
     let buffer_add_char = Buffer.add_char
     let buffer_contents = Buffer.contents
-    let buffer_clear = Buffer.clear
     let buffer_length = Buffer.length
 
     type 'a promise = 'a P.t
@@ -187,28 +195,10 @@ end = struct
     module External = struct
       include D
 
-      let of_hashtbl x = Tbl.to_seq x |> D.of_assoc
+      type 'a decoder = t -> 'a option
 
-      type _ classify =
-        | Int : int classify
-        | String : string classify
-        | Float : float classify
-        | Bool : bool classify
-        | Not_null : t classify
-        | Linear : t linear classify
-        | Assoc : t assoc classify
-
-      let classify_opt : type a. a classify -> t -> a option = function
-        | Int -> decode_int
-        | String -> decode_string
-        | Float -> decode_float
-        | Bool -> decode_bool
-        | Linear -> decode_linear
-        | Assoc -> decode_assoc
-        | Not_null -> decode_some
-
-      let classify c t ~ok ~error =
-        match classify_opt c t with Some x -> ok x | None -> error ()
+      let decode f t ~ok ~error =
+        match f t with Some x -> ok x | None -> error ()
     end
 
     module Data = struct
@@ -217,7 +207,7 @@ end = struct
         | Float of float
         | String of string
         | Array of t array
-        | Hashtbl of t hashtbl
+        | Hashtbl of t Tbl.t
         | Unknown of External.t
 
       let int x = Int x
@@ -252,11 +242,12 @@ end = struct
         | Int x -> External.of_int x
         | Float x -> External.of_float x
         | String x -> External.of_string x
-        | Array x -> Array.map to_external_untyped x |> External.of_array
+        | Array x ->
+            Array.to_seq x |> Seq.map to_external_untyped |> External.of_seq
         | Hashtbl x ->
             Tbl.to_seq x
             |> Seq.map (fun (k, v) -> (k, to_external_untyped v))
-            |> External.of_assoc
+            |> External.of_seq_assoc
 
       let rec equal a b =
         match (a, b) with
@@ -332,23 +323,28 @@ module PrintJs = struct
     F.pp_print_custom_break ~fits:("", 0, "") ~breaks:(",", -2, "")
 
   (** See https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String#escape_sequences *)
+  let pp_char_aux ~newline ppf = function
+    | '\n' -> F.fprintf ppf "\\n%a" newline ()
+    | '\b' -> F.pp_print_string ppf "\\b"
+    | '\t' -> F.pp_print_string ppf "\\t"
+    | '\012' -> F.pp_print_string ppf "\\f"
+    | '\r' -> F.pp_print_string ppf "\\r"
+    | '\\' -> F.pp_print_string ppf "\\\\"
+    | '"' -> F.pp_print_string ppf "\\\""
+    | c -> F.pp_print_char ppf c
+
   let pp_string ppf s =
     let newline =
       if String.length s < 60 then F.pp_print_nothing
       else fun ppf () -> F.pp_print_string ppf "\\\n"
     in
-    let pp_char ppf = function
-      | '\n' -> F.fprintf ppf "\\n%a" newline ()
-      | '\b' -> F.pp_print_string ppf "\\b"
-      | '\t' -> F.pp_print_string ppf "\\t"
-      | '\012' -> F.pp_print_string ppf "\\f"
-      | '\r' -> F.pp_print_string ppf "\\r"
-      | '\\' -> F.pp_print_string ppf "\\\\"
-      | '"' -> F.pp_print_string ppf "\\\""
-      | c -> F.pp_print_char ppf c
-    in
     let pp_sep = F.pp_print_nothing in
-    F.fprintf ppf "\"%a\"" (F.pp_print_iter ~pp_sep String.iter pp_char) s
+    F.fprintf ppf "\"%a\""
+      (F.pp_print_iter ~pp_sep String.iter (pp_char_aux ~newline))
+      s
+
+  let pp_char ppf c =
+    F.fprintf ppf "\"%a\"" (pp_char_aux ~newline:F.pp_print_nothing) c
 
   (** Common functions used amongst the different modules. *)
   module JavascriptShared = struct
@@ -364,9 +360,13 @@ module PrintJs = struct
        f name)
         ppf state
 
-    let ( @@ ) f e ppf state =
-      F.fprintf ppf "@[<hv 2>%a(@,@[<hv 2>%a@]@;<0 -2>)@]" f state e state
+    let apply_n f args ppf state =
+      F.fprintf ppf "@[<hv 2>%a(@,%a@;<0 -2>)@]" f state
+        (F.pp_print_list ~pp_sep:A.Pp.comma (fun ppf x ->
+             F.fprintf ppf "@[<hv 2>%a@]" x state))
+        args
 
+    let ( @@ ) f e = apply_n f [ e ]
     let string x ppf _ = pp_string ppf x
 
     let set a b =
@@ -466,27 +466,52 @@ module PrintJs = struct
       let state = State.add_block state in
       F.fprintf ppf "{@ %a@;<1 -2>}@]" (stmts ()) state
 
+    let array_of_seq seq ppf state =
+      F.fprintf ppf "[@,%a%t]"
+        (F.pp_print_seq ~pp_sep:A.Pp.comma (fun ppf x ->
+             F.fprintf ppf "@[<hv 2>%a@]" x state))
+        seq trailing_comma
+
     let unit _ _ = ()
     let not x ppf state = F.fprintf ppf "@[<hv 2>!(%a)@]" x state
     let int x ppf _ = F.pp_print_int ppf x
     let float x ppf _ = F.pp_print_float ppf x
-    let char x ppf _ = F.pp_print_int ppf (Char.code x)
+    let char x ppf _ = pp_char ppf x
     let bool x ppf _ = F.pp_print_bool ppf x
     let ( = ) a b ppf state = F.fprintf ppf "%a ===@ %a" a state b state
+    let pair (a, b) = array_of_seq (Seq.cons a (Seq.cons b Seq.empty))
+    let unpair x = (x.%(int 0), x.%(int 1))
     let to_string x = global "String" @@ x
     let string_of_int = to_string
-    let float_of_int = Fun.id
     let string_of_float = to_string
     let string_of_bool = to_string
 
-    let for_ expr stmts ppf state =
-      let state' = State.add_block state in
-      let i = State.var "i" state' in
-      F.fprintf ppf "@[<hv 2>for (let %a = 0; %a < %a; %a++) {@ %a@;<0 -2>}@]" i
-        state' i state' expr state i state' (stmts i) state'
+    let obj l ppf state =
+      F.fprintf ppf "@[<hv 2>{@,%a@;<0 -2>}@]"
+        (F.pp_print_list ~pp_sep:A.Pp.comma (fun ppf (k, v) ->
+             F.fprintf ppf "@[<hv 2>%s:@ %a@]" k v state))
+        l
 
-    let string_iter s f =
-      for_ s.!("length") (fun i -> ( let$ ) ("c", s.!("charCodeAt") @@ i) f)
+    (** Sequences use the JS iterator protocol. **)
+    let uncons seq ~nil ~cons =
+      let$ next = ("next", apply_n seq.!("next") []) in
+      if_else next.!("done") ~then_:nil ~else_:(fun () ->
+          cons next.!("value") seq)
+
+    let yield x =
+      stmt (fun ppf -> F.fprintf ppf "yield (@,@[<hv 2>%a@]@;<0 -2>)" x)
+
+    let generator f ppf state =
+      let state = State.add_block state in
+      F.fprintf ppf "(function* () {@ %a@;<1 -2>})()" (f yield) state
+
+    let iter seq f ppf state =
+      let state' = State.add_block state in
+      let item = State.var "item" state' in
+      F.fprintf ppf "@[<hv 2>for (let %a of %a) {@ %a@;<0 -2>}@]" item state'
+        seq state (f item) state'
+
+    let string_to_seq x = apply_n x.%((global "Symbol").!("iterator")) []
 
     let switch exp cases default ppf state =
       F.fprintf ppf "@[<v 2>@[<hv 2>switch (%a)@] {@ " exp state;
@@ -512,34 +537,8 @@ module PrintJs = struct
         ]
         (f '\x00')
 
-    let array_of_iter iter s ppf state =
-      F.fprintf ppf "[@,%a%t]"
-        (F.pp_print_iter ~pp_sep:A.Pp.comma iter (fun ppf x ->
-             F.fprintf ppf "@[<hv 2>%a@]" x state))
-        s trailing_comma
-
-    let array = array_of_iter Array.iter
-
-    let apply_n f args ppf state =
-      F.fprintf ppf "@[<hv 2>%a(@,%a@;<0 -2>)@]" f state
-        (F.pp_print_list ~pp_sep:A.Pp.comma (fun ppf x ->
-             F.fprintf ppf "@[<hv 2>%a@]" x state))
-        args
-
-    let obj l ppf state =
-      F.fprintf ppf "@[<hv 2>{@,%a@;<0 -2>}@]"
-        (F.pp_print_list ~pp_sep:A.Pp.comma (fun ppf (k, v) ->
-             F.fprintf ppf "@[<hv 2>%s:@ %a@]" k v state))
-        l
-
-    let array_make i x =
-      apply_n
-        (global "Array").!("from")
-        [ obj [ ("length", i) ]; lambda (fun _ -> return x) ]
-
-    type 'a hashtbl
-
-    let pair = array_of_iter (fun f (a, b) -> f a; f b)
+    let array a = array_of_seq (Array.to_seq a)
+    let array_make i x = array_of_seq (Seq.init i (Fun.const x))
 
     let new_ name args ppf state =
       F.fprintf ppf "@[<hv 2>new %s(@,@[<hv 2>%a@]@;<0 -2>)@]" name
@@ -547,22 +546,12 @@ module PrintJs = struct
              F.fprintf ppf "@[<hv 2>%a@]" x state))
         args
 
-    let hashtbl s = new_ "Map" [ array_of_iter Seq.iter (Seq.map pair s) ]
+    let hashtbl s = new_ "Map" [ array_of_seq (Seq.map pair s) ]
     let hashtbl_create () = new_ "Map" [ unit ]
     let ( .%{} ) x k = x.!("get") @@ k
     let ( .%{}<- ) x k v = stmt (apply_n x.!("set") [ k; v ])
     let hashtbl_mem x k = x.!("has") @@ k
-
-    let for_of expr stmts ppf state =
-      let state' = State.add_block state in
-      let x = State.var "x" state' in
-      F.fprintf ppf "@[<hv 2>for (let %a of %a) {@ %a@;<0 -2>}@]" x state' expr
-        state (stmts x) state'
-
-    let hashtbl_iter x f =
-      for_of x (fun entry -> f entry.%(int 0) entry.%(int 1))
-
-    type buffer
+    let hashtbl_to_seq x = apply_n x.!("entries") []
 
     let ( += ) a b =
       stmt (fun ppf state ->
@@ -570,13 +559,8 @@ module PrintJs = struct
 
     let buffer_create () = obj [ ("contents", string "") ]
     let buffer_add_string b s = b.!("contents") += s
-    let buffer_add_buffer b1 b2 = buffer_add_string b1 b2.!("contents")
-
-    let buffer_add_char b c =
-      buffer_add_string b ((global "String").!("fromCharCode") @@ c)
-
+    let buffer_add_char = buffer_add_string
     let buffer_contents b = b.!("contents")
-    let buffer_clear b = set b.!("contents") (string "")
     let buffer_length b = b.!("contents").!("length")
 
     type 'a promise
@@ -592,19 +576,6 @@ module PrintJs = struct
     let typeof expr ppf state = F.fprintf ppf "typeof %a" expr state
 
     module External = struct
-      type 'a linear
-
-      let length a = a.!("length")
-      let iteri f a = for_ (length a) (fun i -> f i a.%(i))
-
-      type 'a assoc
-
-      let assoc_find k x = x.%(k)
-      let assoc_mem k x = apply_n (global "Object").!("hasOwn") [ x; k ]
-
-      let assoc_iter f x =
-        for_of ((global "Object").!("keys") @@ x) (fun key -> f key x.%(key))
-
       type t
 
       let null = global "null"
@@ -613,30 +584,56 @@ module PrintJs = struct
       let of_float = Fun.id
       let of_string = Fun.id
       let of_bool = Fun.id
-      let of_array = Fun.id
-      let of_hashtbl x = (global "Object").!("fromEntries") @@ x
+      let of_seq x = (global "Array").!("from") @@ x
+      let of_seq_assoc x = (global "Object").!("fromEntries") @@ x
 
-      type _ classify =
-        | Int : int classify
-        | String : string classify
-        | Float : float classify
-        | Bool : bool classify
-        | Not_null : t classify
-        | Linear : t linear classify
-        | Assoc : t assoc classify
+      type 'a assoc
 
-      let classify (type a) (c : a classify) x ~ok ~error =
-        let cond =
-          match c with
-          | Int -> (global "Number").!("isInteger") @@ x
-          | String -> typeof x = string "string"
-          | Float -> typeof x = string "number"
-          | Bool -> typeof x = string "boolean"
-          | Not_null -> and_ (not (x = null)) (not (x = global "undefined"))
-          | Linear -> (global "Array").!("isArray") @@ x
-          | Assoc -> and_ (typeof x = string "object") (not (x = null))
-        in
-        if_else cond ~then_:(fun () -> ok x) ~else_:error
+      let assoc_find k x = x.%(k)
+      let assoc_mem k x = apply_n (global "Object").!("hasOwn") [ x; k ]
+      let array_values a = apply_n a.!("values") []
+      let assoc_to_seq x = array_values ((global "Object").!("entries") @@ x)
+
+      type 'a decoder = {
+        test : t exp -> bool exp;
+        convert : 'b. t exp -> ('a exp -> 'b stmt) -> 'b stmt;
+      }
+
+      let get_int =
+        {
+          test = (fun x -> (global "Number").!("isInteger") @@ x);
+          convert = ( |> );
+        }
+
+      let get_string =
+        { test = (fun x -> typeof x = string "string"); convert = ( |> ) }
+
+      let get_float =
+        { test = (fun x -> typeof x = string "number"); convert = ( |> ) }
+
+      let get_bool =
+        { test = (fun x -> typeof x = string "boolean"); convert = ( |> ) }
+
+      let get_some =
+        {
+          test = (fun x -> and_ (not (x = null)) (not (x = global "undefined")));
+          convert = ( |> );
+        }
+
+      let get_seq =
+        {
+          test = (fun x -> (global "Array").!("isArray") @@ x);
+          convert = (fun x f -> ( let$ ) ("seq", array_values x) f);
+        }
+
+      let get_assoc =
+        {
+          test = (fun x -> and_ (typeof x = string "object") (not (x = null)));
+          convert = ( |> );
+        }
+
+      let decode { test; convert } x ~ok ~error =
+        if_else (test x) ~then_:(fun () -> convert x ok) ~else_:error
 
       let to_string = to_string
     end
@@ -720,7 +717,6 @@ module PrintJs = struct
     let lambda f =
       fwde (F.lambda (fun x -> bwds (f { from = x; identity = true })))
 
-    let float_of_int x = { x with from = F.float_of_int x.from }
     let ( ! ) x = { from = F.(!x); identity = true }
 
     module Data = struct
@@ -750,7 +746,6 @@ module PrintJs = struct
       let of_float x = { x with from = F.External.of_float x.from }
       let of_string x = { x with from = F.External.of_string x.from }
       let of_bool x = { x with from = F.External.of_bool x.from }
-      let of_array x = { x with from = F.External.of_array x.from }
     end
   end
 

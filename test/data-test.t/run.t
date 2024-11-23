@@ -48,25 +48,22 @@ the value given keeps its internal representation intact.
   $ node run.js encode.acutis
   Encoding:
   {
-    "none": null,
-    "f": false,
-    "t": true,
     "arr": [
       "x",
       "y"
     ],
+    "arrEmpty": [],
     "dict": {
       "a": 0,
       "b": "b"
     },
+    "f": false,
+    "none": null,
     "some": "some",
-    "arrEmpty": []
+    "t": true
   }
   Encoding unknowns:
   {
-    "none": 0,
-    "f": 0,
-    "t": 1,
     "arr": [
       "x",
       [
@@ -74,12 +71,15 @@ the value given keeps its internal representation intact.
         0
       ]
     ],
+    "arrEmpty": 0,
     "dict": {
       "a": 0,
       "b": "b"
     },
+    "f": 0,
+    "none": 0,
     "some": [
       "some"
     ],
-    "arrEmpty": 0
+    "t": 1
   }

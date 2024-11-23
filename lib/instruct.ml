@@ -47,10 +47,10 @@ module type SEM = sig
   val stmt : 'a exp -> 'a stmt
 
   type 'a ref
-  (** A mutable reference variable. *)
+  (** A mutable reference variable. This is not compatible with expressions. *)
 
   val ( let| ) : unit stmt -> (unit -> 'a stmt) -> 'a stmt
-  (** Sequence statements.*)
+  (** Evaluate a unit statement.*)
 
   val ( let$ ) : string * 'a exp -> ('a exp -> 'b stmt) -> 'b stmt
   (** Define a new immutable binding. The string is used for pretty-printing. *)
@@ -86,14 +86,26 @@ module type SEM = sig
   val string : string -> string exp
   val bool : bool -> bool exp
   val ( = ) : 'a exp -> 'a exp -> bool exp
+  val pair : 'a exp * 'b exp -> ('a * 'b) exp
+  val unpair : ('a * 'b) exp -> 'a exp * 'b exp
   val string_of_int : int exp -> string exp
-  val float_of_int : int exp -> float exp
   val string_of_float : float exp -> string exp
   val string_of_bool : bool exp -> string exp
 
+  (** {1 Sequences.} *)
+
+  val uncons :
+    'a Seq.t exp ->
+    nil:(unit -> 'b stmt) ->
+    cons:('a exp -> 'a Seq.t exp -> 'b stmt) ->
+    'b stmt
+
+  val generator : (('a exp -> unit stmt) -> unit stmt) -> 'a Seq.t exp
+  val iter : 'a Seq.t exp -> ('a exp -> unit stmt) -> unit stmt
+
   (** {1 Strings and characters.} *)
 
-  val string_iter : string exp -> (char exp -> unit stmt) -> unit stmt
+  val string_to_seq : string exp -> char Seq.t exp
 
   val match_char : char exp -> (char -> 'a stmt) -> 'a stmt
   (** The given function applies to the following characters and it ignores all
@@ -102,36 +114,28 @@ module type SEM = sig
   (** {1 Arrays.} *)
 
   val array : 'a exp array -> 'a array exp
-  val array_make : int exp -> 'a exp -> 'a array exp
+  val array_make : int -> 'a exp -> 'a array exp
   val ( .%() ) : 'a array exp -> int exp -> 'a exp
   val ( .%()<- ) : 'a array exp -> int exp -> 'a exp -> unit stmt
 
   (** {1 Hash tables.} *)
 
-  type 'a hashtbl
-  (** A mutable map of string keys to ['a] values. *)
+  type 'a hashtbl := 'a Hashtbl.MakeSeeded(String).t
 
   val hashtbl : (string exp * 'a exp) Seq.t -> 'a hashtbl exp
   val hashtbl_create : unit -> 'a hashtbl exp
   val ( .%{} ) : 'a hashtbl exp -> string exp -> 'a exp
   val ( .%{}<- ) : 'a hashtbl exp -> string exp -> 'a exp -> unit stmt
   val hashtbl_mem : 'a hashtbl exp -> string exp -> bool exp
+  val hashtbl_to_seq : 'a hashtbl exp -> (string * 'a) Seq.t exp
 
-  val hashtbl_iter :
-    'a hashtbl exp -> (string exp -> 'a exp -> unit stmt) -> unit stmt
+  (** {1 Mutable string buffers.} *)
 
-  (** {1 Buffers.} *)
-
-  type buffer
-  (** A mutable string buffer. *)
-
-  val buffer_create : unit -> buffer exp
-  val buffer_add_string : buffer exp -> string exp -> unit stmt
-  val buffer_add_buffer : buffer exp -> buffer exp -> unit stmt
-  val buffer_add_char : buffer exp -> char exp -> unit stmt
-  val buffer_contents : buffer exp -> string exp
-  val buffer_length : buffer exp -> int exp
-  val buffer_clear : buffer exp -> unit stmt
+  val buffer_create : unit -> Buffer.t exp
+  val buffer_add_string : Buffer.t exp -> string exp -> unit stmt
+  val buffer_add_char : Buffer.t exp -> char exp -> unit stmt
+  val buffer_contents : Buffer.t exp -> string exp
+  val buffer_length : Buffer.t exp -> int exp
 
   (** {1 Promises.} *)
 
@@ -148,25 +152,9 @@ module type SEM = sig
   (** {1 Data} *)
 
   module External : sig
-    (** Foreign data before it's parsed into {!Data.t}. *)
-
-    type 'a linear
-    (** A linear container such as a list or array. *)
-
-    val length : 'a linear exp -> int exp
-    val iteri : (int exp -> 'a exp -> unit stmt) -> 'a linear exp -> unit stmt
-
-    type 'a assoc
-    (** A key-value container such as an association list or a string map. *)
-
-    val assoc_find : string exp -> 'a assoc exp -> 'a exp
-    val assoc_mem : string exp -> 'a assoc exp -> bool exp
-
-    val assoc_iter :
-      (string exp -> 'a exp -> unit stmt) -> 'a assoc exp -> unit stmt
+    (** Data from the outside world that we need to decode. *)
 
     type t
-    (** Data from the outside world that we need to decode. *)
 
     val null : t exp
     val some : t exp -> t exp
@@ -174,20 +162,28 @@ module type SEM = sig
     val of_float : float exp -> t exp
     val of_string : string exp -> t exp
     val of_bool : bool exp -> t exp
-    val of_array : t array exp -> t exp
-    val of_hashtbl : t hashtbl exp -> t exp
+    val of_seq : t Seq.t exp -> t exp
+    val of_seq_assoc : (string * t) Seq.t exp -> t exp
 
-    type _ classify =
-      | Int : int classify
-      | String : string classify
-      | Float : float classify
-      | Bool : bool classify
-      | Not_null : t classify
-      | Linear : t linear classify
-      | Assoc : t assoc classify
+    type 'a assoc
+    (** A key-value container such as an association list or a string map. *)
 
-    val classify :
-      'a classify ->
+    val assoc_find : string exp -> 'a assoc exp -> 'a exp
+    val assoc_mem : string exp -> 'a assoc exp -> bool exp
+    val assoc_to_seq : 'a assoc exp -> (string * 'a) Seq.t exp
+
+    type 'a decoder
+
+    val get_int : int decoder
+    val get_string : string decoder
+    val get_float : float decoder
+    val get_bool : bool decoder
+    val get_some : t decoder
+    val get_seq : t Seq.t decoder
+    val get_assoc : t assoc decoder
+
+    val decode :
+      'a decoder ->
       t exp ->
       ok:('a exp -> 'b stmt) ->
       error:(unit -> 'b stmt) ->
@@ -200,7 +196,6 @@ module type SEM = sig
     (** Runtime data. *)
 
     type t
-    (** Either a string, an integer, a float, an array, or a hash table. *)
 
     val int : int exp -> t exp
     val float : float exp -> t exp
@@ -267,10 +262,12 @@ end = struct
     fun seq ->
       match seq () with Seq.Nil -> unit | Seq.Cons (s1, seq) -> aux s1 seq
 
+  type 'a hashtbl = 'a Hashtbl.MakeSeeded(String).t
+
   type state = {
     components : (Data.t hashtbl -> string promise) hashtbl exp;
-    buf : buffer exp;
-    escape : (buffer -> string -> unit) exp;
+    buf : Buffer.t exp;
+    escape : (Buffer.t -> string -> unit) exp;
     props : Data.t hashtbl exp;
         (** We need to use a hash table as the root scope because components
             take a hash table as input. *)
@@ -501,7 +498,10 @@ end = struct
     | Compile.Map_dict (blocks, data, { tree; exits }) ->
         let@ blocks = construct_blocks state blocks in
         let$ match_arg = ("match_arg", construct_data blocks state data) in
-        hashtbl_iter (Data.to_hashtbl match_arg) (fun k v ->
+        iter
+          (hashtbl_to_seq (Data.to_hashtbl match_arg))
+          (fun p ->
+            let k, v = unpair p in
             let@ new_props = make_match_props exits in
             let& exit = ("exit", unset_exit) in
             let| () =
@@ -552,9 +552,9 @@ end = struct
     ty_str : string exp;
     stack : 'stack exp;
     stack_add : (string -> 'stack -> 'stack) exp;
-    buffer_add_sep : (buffer -> string -> string -> unit) exp;
+    buffer_add_sep : (Buffer.t -> string -> string -> unit) exp;
     decode_error : (External.t -> 'stack -> string -> unit) exp;
-    key_error : (buffer -> 'stack -> string -> unit) exp;
+    key_error : (Buffer.t -> 'stack -> string -> unit) exp;
   }
 
   let show_type =
@@ -580,7 +580,7 @@ end = struct
     match ty.contents with
     | T.Unknown _ -> set (Data.unknown input)
     | T.Enum_int ({ cases; _ }, Bool) ->
-        External.classify Bool input
+        External.decode External.get_bool input
           ~ok:(fun b ->
             if_else b
               ~then_:(fun () ->
@@ -591,11 +591,11 @@ end = struct
                 else push_error debug input))
           ~error:(fun () -> push_error debug input)
     | T.String | T.Enum_string { row = `Open; _ } ->
-        External.classify String input
+        External.decode External.get_string input
           ~ok:(fun s -> set (Data.string s))
           ~error:(fun () -> push_error debug input)
     | T.Enum_string { row = `Closed; cases } ->
-        External.classify String input
+        External.decode External.get_string input
           ~ok:(fun s ->
             let rec aux seq =
               match seq () with
@@ -609,11 +609,11 @@ end = struct
             aux (SetString.to_seq cases))
           ~error:(fun () -> push_error debug input)
     | T.Int | T.Enum_int ({ row = `Open; _ }, _) ->
-        External.classify Int input
+        External.decode External.get_int input
           ~ok:(fun i -> set (Data.int i))
           ~error:(fun () -> push_error debug input)
     | T.Enum_int ({ row = `Closed; cases }, _) ->
-        External.classify Int input
+        External.decode External.get_int input
           ~ok:(fun s ->
             let rec aux seq =
               match seq () with
@@ -627,14 +627,11 @@ end = struct
             aux (SetInt.to_seq cases))
           ~error:(fun () -> push_error debug input)
     | T.Float ->
-        External.classify Float input
+        External.decode External.get_float input
           ~ok:(fun f -> set (Data.float f))
-          ~error:(fun () ->
-            External.classify Int input
-              ~ok:(fun i -> set (Data.float (float_of_int i)))
-              ~error:(fun () -> push_error debug input))
+          ~error:(fun () -> push_error debug input)
     | T.Nullable ty ->
-        External.classify Not_null input
+        External.decode External.get_some input
           ~ok:(fun input ->
             let$ decoded = ("decoded", array [| nil_value |]) in
             let$ stack = ("stack", stack_add debug (string "<nullable>")) in
@@ -646,80 +643,76 @@ end = struct
             set (Data.array decoded))
           ~error:(fun () -> set nil_value)
     | T.List ty ->
-        External.classify Linear input
-          ~ok:(fun l ->
+        External.decode External.get_seq input
+          ~ok:(fun seq ->
+            let& i = ("index", int 0) in
             let$ decoded = ("decoded", array [| nil_value; nil_value |]) in
             let& decode_dst = ("decode_dst", decoded) in
             let| () =
-              External.iteri
-                (fun i input ->
+              iter seq (fun input ->
                   let$ decode_dst_new =
                     ("decode_dst_new", array [| nil_value; nil_value |])
                   in
-                  let$ stack = ("stack", stack_add debug (string_of_int i)) in
+                  let$ stack = ("stack", stack_add debug (string_of_int !i)) in
                   let| () =
                     decode
                       ~set:(fun data -> decode_dst_new.%(int 0) <- data)
                       ~debug:{ debug with stack } input ty
                   in
                   let| () = !decode_dst.%(int 1) <- Data.array decode_dst_new in
+                  let| () = incr i in
                   decode_dst := decode_dst_new)
-                l
             in
             set (list_tl decoded))
           ~error:(fun () -> push_error debug input)
     | T.Tuple tys ->
-        let length = int (List.length tys) in
-        External.classify Linear input
-          ~ok:(fun l ->
-            if_else
-              (External.length l = length)
-              ~then_:(fun () ->
-                let$ decoded = ("decoded", array_make length nil_value) in
-                External.iteri
-                  (fun i input ->
-                    let$ stack = ("stack", stack_add debug (string_of_int i)) in
-                    let debug = { debug with stack } in
-                    let rec aux i' = function
-                      | [] -> push_error debug input
-                      | ty :: tl ->
-                          if_else
-                            (i = int i')
-                            ~then_:(fun () ->
-                              decode
-                                ~set:(fun data -> decoded.%(i) <- data)
-                                ~debug input ty)
-                            ~else_:(fun () -> aux (succ i') tl)
-                    in
-                    let| () = aux 0 tys in
-                    set (Data.array decoded))
-                  l)
-              ~else_:(fun () -> push_error debug input))
+        External.decode External.get_seq input
+          ~ok:(fun seq ->
+            let length = List.length tys in
+            let$ decoded = ("decoded", array_make length nil_value) in
+            let rec aux i seq = function
+              | [] -> unit
+              | ty :: tl ->
+                  uncons seq
+                    ~nil:(fun () -> push_error debug input)
+                    ~cons:(fun input seq ->
+                      let$ stack =
+                        ("stack", stack_add debug (string_of_int (int i)))
+                      in
+                      let debug = { debug with stack } in
+                      let| () =
+                        decode
+                          ~set:(fun data -> decoded.%(int i) <- data)
+                          ~debug input ty
+                      in
+                      aux (succ i) seq tl)
+            in
+            let| () = aux 0 seq tys in
+            set (Data.array decoded))
           ~error:(fun () -> push_error debug input)
     | T.Record tys ->
-        External.classify Assoc input
-          ~ok:(fun input' ->
+        External.decode External.get_assoc input
+          ~ok:(fun input ->
             let$ decoded = ("decoded", hashtbl_create ()) in
-            let| () = decode_record_aux ~debug decoded input' tys.contents in
+            let| () = decode_record_aux ~debug decoded input tys.contents in
             set (Data.hashtbl decoded))
           ~error:(fun () -> push_error debug input)
     | T.Dict (ty, _) ->
-        External.classify Assoc input
-          ~ok:(fun a ->
+        External.decode External.get_assoc input
+          ~ok:(fun input ->
             let$ decoded = ("decoded", hashtbl_create ()) in
-            External.assoc_iter
-              (fun k input ->
+            iter (External.assoc_to_seq input) (fun p ->
+                let k, input = unpair p in
                 let$ stack = ("stack", stack_add debug k) in
                 let| () =
                   decode
                     ~set:(fun data -> decoded.%{k} <- data)
                     ~debug:{ debug with stack } input ty
                 in
-                set (Data.hashtbl decoded))
-              a)
+                set (Data.hashtbl decoded)))
           ~error:(fun () -> push_error debug input)
     | T.Union_int (key, { cases; row }, Bool) ->
-        decode_union Bool
+        decode_union External.get_bool
           ~if_equal:(fun extern ty ~then_ ~else_ ->
             match ty with
             | 0 ->
@@ -731,14 +724,14 @@ end = struct
               ~else_:(fun () -> f false_value))
           (MapInt.to_seq cases) (string key) row ~set ~debug input
     | T.Union_int (key, { cases; row }, Not_bool) ->
-        decode_union Int
+        decode_union External.get_int
           ~if_equal:(fun extern ty ~then_ ~else_ ->
             let ty = int ty in
             if_else (extern = ty) ~then_:(fun () -> then_ (Data.int ty)) ~else_)
           ~if_open:(fun x f -> f (Data.int x))
           (MapInt.to_seq cases) (string key) row ~set ~debug input
     | T.Union_string (key, { cases; row }) ->
-        decode_union String
+        decode_union External.get_string
           ~if_equal:(fun extern ty ~then_ ~else_ ->
             let ty = string ty in
             if_else (extern = ty)
@@ -749,7 +742,7 @@ end = struct
 
   and decode_union :
       type ty extern.
-      extern External.classify ->
+      extern External.decoder ->
       if_equal:
         (extern exp ->
         ty ->
@@ -759,13 +752,13 @@ end = struct
       if_open:(extern exp -> (Data.t exp -> unit stmt) -> unit stmt) ->
       (ty * T.record) Seq.t ->
       _ =
-   fun classify ~if_equal ~if_open seq key row ~set ~debug input ->
-    External.classify Assoc input
+   fun decoder ~if_equal ~if_open seq key row ~set ~debug input ->
+    External.decode External.get_assoc input
       ~ok:(fun input' ->
         if_else
           (External.assoc_mem key input')
           ~then_:(fun () ->
-            External.classify classify
+            External.decode decoder
               (External.assoc_find key input')
               ~ok:(fun x ->
                 let$ decoded = ("decoded", hashtbl_create ()) in
@@ -832,53 +825,43 @@ end = struct
             let$ props = ("props", get_nullable props) in
             encode ~set:(fun x -> set (External.some x)) props ty)
     | T.List ty ->
-        let& index = ("index", int 0) in
-        let& cell = ("cell", props) in
-        let| () =
-          while_ is_not_nil cell (fun () ->
-              let| () = incr index in
-              cell := list_tl (Data.to_array !cell))
+        let$ seq =
+          ( "seq",
+            generator (fun yield ->
+                let& cell = ("cell", props) in
+                while_ is_not_nil cell (fun () ->
+                    let$ cell' = ("cell", Data.to_array !cell) in
+                    let$ props = ("props", list_hd cell') in
+                    let| () = cell := list_tl cell' in
+                    encode ~set:yield props ty)) )
         in
-        let$ encoded = ("encoded", array_make !index External.null) in
-        let| () = cell := props in
-        let| () = index := int 0 in
-        let| () =
-          while_ is_not_nil cell (fun () ->
-              let$ props = ("props", Data.to_array !cell |> list_hd) in
-              let| () =
-                encode ~set:(fun x -> encoded.%(!index) <- x) props ty
-              in
-              let| () = incr index in
-              cell := list_tl (Data.to_array !cell))
-        in
-        set (External.of_array encoded)
+        set (External.of_seq seq)
     | T.Tuple tys ->
         let$ props = ("props", Data.to_array props) in
-        let$ encoded =
-          ("encoded", array_make (int (List.length tys)) External.null)
+        let$ seq =
+          ( "seq",
+            generator (fun yield ->
+                List.to_seq tys
+                |> Seq.mapi (fun i ty -> encode ~set:yield props.%(int i) ty)
+                |> stmt_join) )
         in
-        let| () =
-          List.to_seq tys
-          |> Seq.mapi (fun i ty ->
-                 let i = int i in
-                 let$ props = ("props", props.%(i)) in
-                 encode ~set:(fun x -> encoded.%(i) <- x) props ty)
-          |> stmt_join
-        in
-        set (External.of_array encoded)
+        set (External.of_seq seq)
     | T.Record tys ->
-        let$ encoded = ("encoded", hashtbl_create ()) in
-        let| () =
-          encode_record_aux encoded (Data.to_hashtbl props) tys.contents
+        let$ seq =
+          ("seq", encode_record_aux (Data.to_hashtbl props) tys.contents)
         in
-        set (External.of_hashtbl encoded)
+        set (External.of_seq_assoc seq)
     | T.Dict (ty, _) ->
-        let$ encoded = ("encoded", hashtbl_create ()) in
-        let| () =
-          hashtbl_iter (Data.to_hashtbl props) (fun k props ->
-              encode ~set:(fun x -> encoded.%{k} <- x) props ty)
+        let$ seq =
+          ( "seq",
+            generator (fun yield ->
+                iter
+                  (hashtbl_to_seq (Data.to_hashtbl props))
+                  (fun p ->
+                    let k, props = unpair p in
+                    encode ~set:(fun v -> yield (pair (k, v))) props ty)) )
         in
-        set (External.of_hashtbl encoded)
+        set (External.of_seq_assoc seq)
     | T.Union_int (key, { cases; row }, Bool) ->
         encode_union ~of_data:Data.to_int ~to_extern:external_of_int_bool
           (MapInt.to_seq cases |> Seq.map (fun (k, v) -> (int k, v)))
@@ -901,35 +884,42 @@ end = struct
    fun ~of_data ~to_extern cases row key ~set props ->
     let$ props = ("props", Data.to_hashtbl props) in
     let$ tag = ("tag", props.%{key} |> of_data) in
-    let$ encoded = ("encoded", hashtbl_create ()) in
-    let| () =
-      match cases () with
-      | Seq.Nil -> unit
-      | Seq.Cons (hd, seq) ->
-          let rec aux (tag', tys) seq =
-            if_else (tag = tag')
-              ~then_:(fun () ->
-                let| () = encoded.%{key} <- to_extern tag in
-                encode_record_aux encoded props tys.contents)
-              ~else_:(fun () ->
-                match seq () with
-                | Seq.Nil -> (
+    match cases () with
+    | Seq.Nil -> unit
+    | Seq.Cons (hd, seq) ->
+        let rec aux (tag', tys) seq =
+          if_else (tag = tag')
+            ~then_:(fun () ->
+              let$ seq =
+                ( "seq",
+                  encode_record_aux ~tag:(key, to_extern tag) props tys.contents
+                )
+              in
+              set (External.of_seq_assoc seq))
+            ~else_:(fun () ->
+              match seq () with
+              | Seq.Nil ->
+                  let tag =
                     match row with
-                    | `Closed -> unit
-                    | `Open -> encoded.%{key} <- to_extern tag)
-                | Seq.Cons (hd, seq) -> aux hd seq)
-          in
-          aux hd seq
-    in
-    set (External.of_hashtbl encoded)
+                    | `Closed -> None
+                    | `Open -> Some (key, to_extern tag)
+                  in
+                  let$ seq =
+                    ("seq", encode_record_aux ?tag props MapString.empty)
+                  in
+                  set (External.of_seq_assoc seq)
+              | Seq.Cons (hd, seq) -> aux hd seq)
+        in
+        aux hd seq
 
-  and encode_record_aux encoded props tys =
-    MapString.to_seq tys
-    |> Seq.map (fun (k, ty) ->
-           let k = string k in
-           let$ props = ("props", props.%{k}) in
-           encode ~set:(fun x -> encoded.%{k} <- x) props ty)
-    |> stmt_join
+  and encode_record_aux ?tag props tys =
+    generator (fun yield ->
+        let| () = match tag with Some t -> yield (pair t) | None -> unit in
+        MapString.to_seq tys
+        |> Seq.map (fun (k, ty) ->
+               let k = string k in
+               encode ~set:(fun v -> yield (pair (k, v))) props.%{k} ty)
+        |> stmt_join)
 
   let lambdak k f = lambda (fun a -> return (k (f a)))
   let lambda2 f = lambdak lambda f
@@ -940,7 +930,7 @@ end = struct
     let$ escape =
       ( "buffer_add_escape",
         lambda2 (fun buf str ->
-            string_iter str (fun c ->
+            iter (string_to_seq str) (fun c ->
                 match_char c (function
                   | '&' -> buffer_add_string buf (string "&amp;")
                   | '"' -> buffer_add_string buf (string "&quot;")
@@ -978,9 +968,8 @@ end = struct
                import v (fun import ->
                    components.%{string k} <-
                      lambda (fun props ->
-                         let$ encoded = ("encoded", hashtbl_create ()) in
-                         let| () = encode_record_aux encoded props tys in
-                         return (import @@ External.of_hashtbl encoded)))))
+                         let$ seq = ("seq", encode_record_aux props tys) in
+                         return (import @@ External.of_seq_assoc seq)))))
         (MapString.to_seq compiled.components
         |> Seq.map (fun (k, v) ->
                components.%{string k} <-
@@ -1053,7 +1042,7 @@ end = struct
              }
            in
            let| () =
-             External.classify Assoc input
+             External.decode External.get_assoc input
                ~ok:(fun input ->
                  decode_record_aux ~debug props input compiled.types)
                ~error:(fun () -> push_error debug input)
@@ -1101,13 +1090,10 @@ module MakeTrans
      and type 'a obs = 'a F.obs
      and type 'a exp = 'a T.exp
      and type 'a ref = 'a F.ref
-     and type 'a hashtbl = 'a F.hashtbl
-     and type buffer = F.buffer
      and type 'a promise = 'a F.promise
-     and type 'a External.linear = 'a F.External.linear
      and type 'a External.assoc = 'a F.External.assoc
      and type External.t = F.External.t
-     and type 'a External.classify = 'a F.External.classify
+     and type 'a External.decoder = 'a F.External.decoder
      and type Data.t = F.Data.t
      and type import = F.import = struct
   open T
@@ -1148,19 +1134,33 @@ module MakeTrans
   let string x = fwde (F.string x)
   let bool x = fwde (F.bool x)
   let ( = ) a b = fwde F.(bwde a = bwde b)
+  let pair (a, b) = fwde (F.pair (bwde a, bwde b))
+
+  let unpair x =
+    let a, b = F.unpair (bwde x) in
+    (fwde a, fwde b)
+
   let string_of_int x = fwde (F.string_of_int (bwde x))
-  let float_of_int x = fwde (F.float_of_int (bwde x))
   let string_of_float x = fwde (F.string_of_float (bwde x))
   let string_of_bool x = fwde (F.string_of_bool (bwde x))
 
-  let string_iter s f =
-    fwds (F.string_iter (bwde s) (fun c -> bwds (f (fwde c))))
+  let uncons s ~nil ~cons =
+    fwds
+      (F.uncons (bwde s)
+         ~nil:(fun () -> bwds (nil ()))
+         ~cons:(fun x s -> bwds (cons (fwde x) (fwde s))))
+
+  let generator f =
+    fwde (F.generator (fun yield -> bwds (f (fun x -> fwds (yield (bwde x))))))
+
+  let iter s f = fwds (F.iter (bwde s) (fun x -> bwds (f (fwde x))))
+  let string_to_seq s = fwde (F.string_to_seq (bwde s))
 
   let match_char c f =
     fwds (F.match_char (bwde c) (fun shape -> bwds (f shape)))
 
   let array x = fwde (F.array (Array.map bwde x))
-  let array_make i x = fwde (F.array_make (bwde i) (bwde x))
+  let array_make i x = fwde (F.array_make i (bwde x))
   let ( .%() ) a i = fwde F.((bwde a).%(bwde i))
   let ( .%()<- ) a i x = fwds F.((bwde a).%(bwde i) <- bwde x)
   let hashtbl x = fwde (F.hashtbl (Seq.map (fun (a, b) -> (bwde a, bwde b)) x))
@@ -1168,16 +1168,11 @@ module MakeTrans
   let ( .%{} ) h k = fwde F.((bwde h).%{bwde k})
   let ( .%{}<- ) h k x = fwds F.((bwde h).%{bwde k} <- bwde x)
   let hashtbl_mem h k = fwde (F.hashtbl_mem (bwde h) (bwde k))
-
-  let hashtbl_iter h f =
-    fwds (F.hashtbl_iter (bwde h) (fun k v -> bwds (f (fwde k) (fwde v))))
-
+  let hashtbl_to_seq h = fwde (F.hashtbl_to_seq (bwde h))
   let buffer_create () = fwde (F.buffer_create ())
   let buffer_add_string b s = fwds (F.buffer_add_string (bwde b) (bwde s))
-  let buffer_add_buffer b s = fwds (F.buffer_add_buffer (bwde b) (bwde s))
   let buffer_add_char b c = fwds (F.buffer_add_char (bwde b) (bwde c))
   let buffer_contents b = fwde (F.buffer_contents (bwde b))
-  let buffer_clear b = fwds (F.buffer_clear (bwde b))
   let buffer_length b = fwde (F.buffer_length (bwde b))
   let promise x = fwde (F.promise (bwde x))
   let await p = fwde (F.await (bwde p))
@@ -1187,30 +1182,21 @@ module MakeTrans
   module External = struct
     include F.External
 
-    let length t = fwde (F.External.length (bwde t))
-
-    let iteri f t =
-      fwds (F.External.iteri (fun k v -> bwds (f (fwde k) (fwde v))) (bwde t))
-
-    let assoc_find s t = fwde (F.External.assoc_find (bwde s) (bwde t))
-    let assoc_mem s t = fwde (F.External.assoc_mem (bwde s) (bwde t))
-
-    let assoc_iter f t =
-      fwds
-        (F.External.assoc_iter (fun k v -> bwds (f (fwde k) (fwde v))) (bwde t))
-
     let null = fwde F.External.null
     let some x = fwde (F.External.some (bwde x))
     let of_int x = fwde (F.External.of_int (bwde x))
     let of_float x = fwde (F.External.of_float (bwde x))
     let of_string x = fwde (F.External.of_string (bwde x))
     let of_bool x = fwde (F.External.of_bool (bwde x))
-    let of_array x = fwde (F.External.of_array (bwde x))
-    let of_hashtbl x = fwde (F.External.of_hashtbl (bwde x))
+    let of_seq x = fwde (F.External.of_seq (bwde x))
+    let of_seq_assoc x = fwde (F.External.of_seq_assoc (bwde x))
+    let assoc_find s t = fwde (F.External.assoc_find (bwde s) (bwde t))
+    let assoc_mem s t = fwde (F.External.assoc_mem (bwde s) (bwde t))
+    let assoc_to_seq t = fwde (F.External.assoc_to_seq (bwde t))
 
-    let classify c x ~ok ~error =
+    let decode d x ~ok ~error =
       fwds
-        (F.External.classify c (bwde x)
+        (F.External.decode d (bwde x)
            ~ok:(fun x -> bwds (ok (fwde x)))
            ~error:(fun () -> bwds (error ())))
 
@@ -1243,7 +1229,7 @@ end
 let pp (type a) pp_import ppf c =
   let module F = Format in
   let module M = Make (struct
-    module Tbl = Hashtbl.Make (String)
+    module Tbl = Hashtbl.MakeSeeded (String)
 
     let var =
       let tbl = Tbl.create 128 in
@@ -1300,14 +1286,26 @@ let pp (type a) pp_import ppf c =
     let string = F.dprintf "%S"
     let bool = F.dprintf "%B"
     let ( = ) = F.dprintf "(@[%t@ =@ %t@])"
+    let pair (a, b) = F.dprintf "(@[%t,@ %t@])" a b
+    let unpair x = (F.dprintf "(@[fst@ %t@])" x, F.dprintf "(@[snd@ %t@])" x)
     let string_of_int = F.dprintf "(@[string_of_int@ %t@])"
-    let float_of_int = F.dprintf "(@[float_of_int@ %t@])"
     let string_of_float = F.dprintf "(@[string_of_float@ %t@])"
     let string_of_bool = F.dprintf "(@[string_of_bool@ %t@])"
 
-    let string_iter s f =
-      let arg = var "char" in
-      F.dprintf "(@[string_iter@ %t@ %t@])" s (f arg)
+    let uncons seq ~nil ~cons =
+      let hd = var "hd" in
+      let seq' = var "seq" in
+      F.dprintf "(@[uncons@ %t@ (@[nil@ %t@])@ (@[cons@ %t@ %t@ %t@])@])" seq
+        (nil ()) hd seq' (cons hd seq')
+
+    let generator f =
+      F.dprintf "(@[generator@ %t@])" (f (F.dprintf "(@[yield@ %t@])"))
+
+    let iter s f =
+      let arg = var "arg" in
+      F.dprintf "(@[iter@ %t@ %t@])" s (f arg)
+
+    let string_to_seq = F.dprintf "(@[string_to_seq@ %t@])"
 
     let match_char c f =
       F.dprintf "(@[match_char@ %t@ (@[%a@ (@[_@ (@[%t@])@])@])@])" c
@@ -1319,13 +1317,11 @@ let pp (type a) pp_import ppf c =
     let array a =
       F.dprintf "[@[<hv>%a@]]" (F.pp_print_array ~pp_sep:Pp.comma ( |> )) a
 
-    let array_make = F.dprintf "(@[array_make@ %t@ %t@])"
+    let array_make = F.dprintf "(@[array_make@ %i@ %t@])"
     let bindop_get = F.dprintf "(@[%t@,.%%%c@[@,%t@,@]%c@])"
     let bindop_set = F.dprintf "(@[%t@,.%%%c@[@,%t@,@]%c@ <-@ %t@])"
     let ( .%() ) a i = bindop_get a '(' i ')'
     let ( .%()<- ) a i v = bindop_set a '(' i ')' v
-
-    type 'a hashtbl
 
     let hashtbl =
       F.dprintf "(@[hashtbl@ [@[<hv>%a@]]@])"
@@ -1336,21 +1332,11 @@ let pp (type a) pp_import ppf c =
     let ( .%{} ) t k = bindop_get t '{' k '}'
     let ( .%{}<- ) t k v = bindop_set t '{' k '}' v
     let hashtbl_mem = F.dprintf "(@[hashtbl_mem@ %t@ %t@])"
-
-    let hashtbl_iter t f =
-      let arg_k = var "key" in
-      let arg_v = var "value" in
-      F.dprintf "(@[hashtbl_iter@ %t@ %t@ %t@ %t@])" t arg_k arg_v
-        (f arg_k arg_v)
-
-    type buffer
-
+    let hashtbl_to_seq = F.dprintf "(@[hashtbl_to_seq@ %t@])"
     let buffer_create () = F.dprintf "(buffer_create)"
     let buffer_add_string = F.dprintf "(@[buffer_add_string@ %t@ %t@])"
-    let buffer_add_buffer = F.dprintf "(@[buffer_add_buffer@ %t@ %t@])"
     let buffer_add_char = F.dprintf "(@[buffer_add_char@ %t@ %t@])"
     let buffer_contents = F.dprintf "(@[buffer_contents@ %t@])"
-    let buffer_clear = F.dprintf "(@[buffer_clear@ %t@])"
     let buffer_length = F.dprintf "(@[buffer_length@ %t@])"
 
     type 'a promise
@@ -1361,27 +1347,6 @@ let pp (type a) pp_import ppf c =
     let async_lambda = lambda_aux "async_"
 
     module External = struct
-      type 'a linear
-
-      let length = F.dprintf "(@[External.length@ %t@])"
-
-      let iteri f a =
-        let arg_k = var "key" in
-        let arg_v = var "value" in
-        F.dprintf "(@[External.iteri@ %t@ %t@ %t@ %t@])" a arg_k arg_v
-          (f arg_k arg_v)
-
-      type 'a assoc
-
-      let assoc_find = F.dprintf "(@[External.assoc_find@ %t@ %t@])"
-      let assoc_mem = F.dprintf "(@[External.assoc_mem@ %t@ %t@])"
-
-      let assoc_iter f a =
-        let arg_k = var "key" in
-        let arg_v = var "value" in
-        F.dprintf "(@[External.assoc_iter@ %t@ %t@ %t@ %t@])" a arg_k arg_v
-          (f arg_k arg_v)
-
       type t
 
       let null = F.dprintf "null"
@@ -1390,33 +1355,31 @@ let pp (type a) pp_import ppf c =
       let of_string = F.dprintf "(@[External.of_string@ %t@])"
       let of_float = F.dprintf "(@[External.of_float@ %t@])"
       let of_bool = F.dprintf "(@[External.of_bool@ %t@])"
-      let of_array = F.dprintf "(@[External.of_array@ %t@])"
-      let of_hashtbl = F.dprintf "(@[External.of_hashtbl@ %t@])"
+      let of_seq = F.dprintf "(@[External.of_seq@ %t@])"
+      let of_seq_assoc = F.dprintf "(@[External.of_seq_assoc@ %t@])"
 
-      type _ classify =
-        | Int : int classify
-        | String : string classify
-        | Float : float classify
-        | Bool : bool classify
-        | Not_null : t classify
-        | Linear : t linear classify
-        | Assoc : t assoc classify
+      type 'a assoc
 
-      let classify_to_string : type a. a classify -> string = function
-        | Int -> "(int)"
-        | String -> "(string)"
-        | Float -> "(float)"
-        | Bool -> "(bool)"
-        | Not_null -> "(not_null)"
-        | Linear -> "(linear)"
-        | Assoc -> "(assoc)"
+      let assoc_find = F.dprintf "(@[External.assoc_find@ %t@ %t@])"
+      let assoc_mem = F.dprintf "(@[External.assoc_mem@ %t@ %t@])"
+      let assoc_to_seq = F.dprintf "(@[External.assoc_to_seq@ %t@])"
 
-      let classify c t ~ok ~error =
-        let classified = var "classified" in
+      type 'a decoder = string
+
+      let get_int = "(int)"
+      let get_string = "(string)"
+      let get_float = "(float)"
+      let get_bool = "(bool)"
+      let get_some = "(some)"
+      let get_seq = "(seq)"
+      let get_assoc = "(assoc)"
+
+      let decode c t ~ok ~error =
+        let decoded = var "decoded" in
         F.dprintf
-          "(@[External.classify@ %s@ %t@ (@[<hv>@[<hv>ok@ %t@]@ %t@])@ \
+          "(@[External.decode@ %s@ %t@ (@[<hv>@[<hv>ok@ %t@]@ %t@])@ \
            (@[<hv>error@ %t@])@])"
-          (classify_to_string c) t classified (ok classified) (error ())
+          c t decoded (ok decoded) (error ())
 
       let to_string = F.dprintf "(@[External.to_string@ %t@])"
     end
