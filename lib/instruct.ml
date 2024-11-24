@@ -50,7 +50,7 @@ module type SEM = sig
   (** A mutable reference variable. This is not compatible with expressions. *)
 
   val ( let| ) : unit stmt -> (unit -> 'a stmt) -> 'a stmt
-  (** Evaluate a unit statement.*)
+  (** Evaluate a unit statement. *)
 
   val ( let$ ) : string * 'a exp -> ('a exp -> 'b stmt) -> 'b stmt
   (** Define a new immutable binding. The string is used for pretty-printing. *)
@@ -68,8 +68,6 @@ module type SEM = sig
   val ( @@ ) : ('a -> 'b) exp -> 'a exp -> 'b exp
 
   (** {1 Control flow.} *)
-
-  val if_ : bool exp -> then_:(unit -> unit stmt) -> unit stmt
 
   val if_else :
     bool exp -> then_:(unit -> 'a stmt) -> else_:(unit -> 'a stmt) -> 'a stmt
@@ -249,6 +247,7 @@ end = struct
   let is_nil x = Data.equal x nil_value
   let is_not_nil x = not (is_nil x)
   let int_to_bool i = not (i = int 0)
+  let if_ x ~then_ = if_else x ~then_ ~else_:(fun () -> unit)
   let ( let@ ) = Stdlib.( @@ )
 
   let stmt_join =
@@ -1126,7 +1125,6 @@ module MakeTrans
   let incr x = fwds (F.incr x)
   let lambda f = fwde (F.lambda (fun x -> bwds (f (fwde x))))
   let ( @@ ) f x = fwde F.(bwde f @@ bwde x)
-  let if_ b ~then_ = fwds (F.if_ (bwde b) ~then_:(fun () -> bwds (then_ ())))
 
   let if_else b ~then_ ~else_ =
     fwds
@@ -1272,9 +1270,6 @@ let pp (type a) pp_import ppf c =
 
     let lambda = lambda_aux ""
     let ( @@ ) = F.dprintf "(@[%t@ %@%@ %t@])"
-
-    let if_ b ~then_ =
-      F.dprintf "(@[<hv>@[if@ %t@]@ (@[<hv>then@ %t@])@])" b (then_ ())
 
     let if_else b ~then_ ~else_ =
       F.dprintf
