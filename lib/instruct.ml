@@ -1229,14 +1229,7 @@ end
 let pp (type a) pp_import ppf c =
   let module F = Format in
   let module M = Make (struct
-    module Tbl = Hashtbl.MakeSeeded (String)
-
-    let var =
-      let tbl = Tbl.create 128 in
-      fun v ->
-        let i = try Tbl.find tbl v with Not_found -> 0 in
-        Tbl.add tbl v (succ i);
-        F.dprintf "%s/%i" v i
+    let var = F.dprintf "%s"
 
     type 'a stmt = F.formatter -> unit
     type 'a obs = F.formatter -> unit
