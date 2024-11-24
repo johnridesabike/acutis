@@ -22,7 +22,9 @@ let id_char = function
   | 'a' .. 'z' | 'A' .. 'Z' | '0' .. '9' | '_' -> true
   | _ -> false
 
-let is_id s = id_start_char s.[0] && String.for_all id_char s
+let is_id s =
+  String.length s <> 0 && id_start_char s.[0] && String.for_all id_char s
+
 let field ppf k = if is_id k then fprintf ppf "%s" k else fprintf ppf "%S" k
 
 let bool ppf = function

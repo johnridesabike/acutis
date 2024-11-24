@@ -37,6 +37,12 @@
       );
     };
   let stack_empty$0 = (arg$0) => {  };
+  let stack_is_empty$0 =
+    (arg$0) => {
+      let result$0 = true;
+      arg$0((arg$1) => { result$0 = false; });
+      return (result$0);
+    };
   let stack_add$0 =
     (arg$0) => {
       return (
@@ -94,13 +100,15 @@
       };
     let key_error$0 =
       (arg$1) => {
-        return (error_aux$0("\nInput is missing keys:\n")(arg$1.contents));
+        let buf$0 = {contents: ""};
+        arg$1(buffer_add_sep$0(buf$0)(", "));
+        return (error_aux$0("\nInput is missing keys:\n")(buf$0.contents));
       };
     let props$0 = new Map();
     let type$0 = "{}";
     if (typeof arg$0 === "object" && !(arg$0 === null)) {
-      let missing_keys$0 = {contents: ""};
-      if (!(missing_keys$0.contents.length === 0)) {
+      let missing_keys$0 = stack_empty$0;
+      if (!(stack_is_empty$0(missing_keys$0))) {
         key_error$0(missing_keys$0)(stack_empty$0)(type$0);
       }
     } else {
@@ -161,6 +169,12 @@
       );
     };
   let stack_empty$0 = (arg$0) => {  };
+  let stack_is_empty$0 =
+    (arg$0) => {
+      let result$0 = true;
+      arg$0((arg$1) => { result$0 = false; });
+      return (result$0);
+    };
   let stack_add$0 =
     (arg$0) => {
       return (
@@ -219,13 +233,15 @@
         };
       let key_error$0 =
         (arg$1) => {
-          return (error_aux$0("\nInput is missing keys:\n")(arg$1.contents));
+          let buf$0 = {contents: ""};
+          arg$1(buffer_add_sep$0(buf$0)(", "));
+          return (error_aux$0("\nInput is missing keys:\n")(buf$0.contents));
         };
       let props$0 = new Map();
       let type$0 = "{}";
       if (typeof arg$0 === "object" && !(arg$0 === null)) {
-        let missing_keys$0 = {contents: ""};
-        if (!(missing_keys$0.contents.length === 0)) {
+        let missing_keys$0 = stack_empty$0;
+        if (!(stack_is_empty$0(missing_keys$0))) {
           key_error$0(missing_keys$0)(stack_empty$0)(type$0);
         }
       } else {

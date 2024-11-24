@@ -519,6 +519,8 @@ let () =
   print_error "Multiple decode errors are reported."
     (render "{% match a with {b} %} {% b %} {% /match %} {% c %} {% d.e %}"
        ~json:{|{"a": {"b": []}, "c": 0, "d": {}}|});
+  print_error "Zero-length record fields are reported."
+    (render {|{% zero."" %}|} ~json:{|{"zero": {}}|});
 
   (* Interface parse *)
   print_error "Invalid field names."

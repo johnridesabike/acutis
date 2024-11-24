@@ -44,6 +44,12 @@
       );
     };
   let stack_empty$0 = (arg$0) => {  };
+  let stack_is_empty$0 =
+    (arg$0) => {
+      let result$0 = true;
+      arg$0((arg$1) => { result$0 = false; });
+      return (result$0);
+    };
   let stack_add$0 =
     (arg$0) => {
       return (
@@ -327,7 +333,9 @@
       };
     let key_error$0 =
       (arg$1) => {
-        return (error_aux$0("\nInput is missing keys:\n")(arg$1.contents));
+        let buf$0 = {contents: ""};
+        arg$1(buffer_add_sep$0(buf$0)(", "));
+        return (error_aux$0("\nInput is missing keys:\n")(buf$0.contents));
       };
     let props$0 = new Map();
     let type$0 =
@@ -361,7 +369,7 @@
     unknown: _\n\
   }";
     if (typeof arg$0 === "object" && !(arg$0 === null)) {
-      let missing_keys$0 = {contents: ""};
+      let missing_keys$0 = stack_empty$0;
       if (Object.hasOwn(arg$0, "big_float")) {
         let input$0 = arg$0["big_float"];
         let stack$0 = stack_add$0("big_float")(stack_empty$0);
@@ -372,7 +380,7 @@
           decode_error$0(input$0)(stack$0)(type$1);
         }
       } else {
-        buffer_add_sep$0(missing_keys$0)(", ")("big_float");
+        missing_keys$0 = stack_add$0("big_float")(missing_keys$0);
       }
       if (Object.hasOwn(arg$0, "big_int")) {
         let input$0 = arg$0["big_int"];
@@ -384,7 +392,7 @@
           decode_error$0(input$0)(stack$0)(type$1);
         }
       } else {
-        buffer_add_sep$0(missing_keys$0)(", ")("big_int");
+        missing_keys$0 = stack_add$0("big_int")(missing_keys$0);
       }
       if (Object.hasOwn(arg$0, "bool1")) {
         let input$0 = arg$0["bool1"];
@@ -400,7 +408,7 @@
           decode_error$0(input$0)(stack$0)(type$1);
         }
       } else {
-        buffer_add_sep$0(missing_keys$0)(", ")("bool1");
+        missing_keys$0 = stack_add$0("bool1")(missing_keys$0);
       }
       if (Object.hasOwn(arg$0, "bool2")) {
         let input$0 = arg$0["bool2"];
@@ -416,7 +424,7 @@
           decode_error$0(input$0)(stack$0)(type$1);
         }
       } else {
-        buffer_add_sep$0(missing_keys$0)(", ")("bool2");
+        missing_keys$0 = stack_add$0("bool2")(missing_keys$0);
       }
       if (Object.hasOwn(arg$0, "dangerous")) {
         let input$0 = arg$0["dangerous"];
@@ -428,7 +436,7 @@
           decode_error$0(input$0)(stack$0)(type$1);
         }
       } else {
-        buffer_add_sep$0(missing_keys$0)(", ")("dangerous");
+        missing_keys$0 = stack_add$0("dangerous")(missing_keys$0);
       }
       if (Object.hasOwn(arg$0, "int_list")) {
         let input$0 = arg$0["int_list"];
@@ -457,7 +465,7 @@
           decode_error$0(input$0)(stack$0)(type$1);
         }
       } else {
-        buffer_add_sep$0(missing_keys$0)(", ")("int_list");
+        missing_keys$0 = stack_add$0("int_list")(missing_keys$0);
       }
       if (Object.hasOwn(arg$0, "nested_list")) {
         let input$0 = arg$0["nested_list"];
@@ -520,7 +528,7 @@
           decode_error$0(input$0)(stack$0)(type$1);
         }
       } else {
-        buffer_add_sep$0(missing_keys$0)(", ")("nested_list");
+        missing_keys$0 = stack_add$0("nested_list")(missing_keys$0);
       }
       if (Object.hasOwn(arg$0, "nested_nullable_list")) {
         let input$0 = arg$0["nested_nullable_list"];
@@ -565,7 +573,7 @@
           decode_error$0(input$0)(stack$0)(type$1);
         }
       } else {
-        buffer_add_sep$0(missing_keys$0)(", ")("nested_nullable_list");
+        missing_keys$0 = stack_add$0("nested_nullable_list")(missing_keys$0);
       }
       if (Object.hasOwn(arg$0, "null_bool")) {
         let input$0 = arg$0["null_bool"];
@@ -675,7 +683,7 @@
           decode_error$0(input$0)(stack$0)(type$1);
         }
       } else {
-        buffer_add_sep$0(missing_keys$0)(", ")("null_string_dict");
+        missing_keys$0 = stack_add$0("null_string_dict")(missing_keys$0);
       }
       if (Object.hasOwn(arg$0, "record")) {
         let input$0 = arg$0["record"];
@@ -683,7 +691,7 @@
         let type$1 = "{int_enum: @8 | @40, string_enum: @\"no\" | @\"yes\"}";
         if (typeof input$0 === "object" && !(input$0 === null)) {
           let decoded$0 = new Map();
-          let missing_keys$1 = {contents: ""};
+          let missing_keys$1 = stack_empty$0;
           if (Object.hasOwn(input$0, "int_enum")) {
             let input$1 = input$0["int_enum"];
             let stack$1 = stack_add$0("int_enum")(stack$0);
@@ -702,7 +710,7 @@
               decode_error$0(input$1)(stack$1)(type$2);
             }
           } else {
-            buffer_add_sep$0(missing_keys$1)(", ")("int_enum");
+            missing_keys$1 = stack_add$0("int_enum")(missing_keys$1);
           }
           if (Object.hasOwn(input$0, "string_enum")) {
             let input$1 = input$0["string_enum"];
@@ -722,9 +730,9 @@
               decode_error$0(input$1)(stack$1)(type$2);
             }
           } else {
-            buffer_add_sep$0(missing_keys$1)(", ")("string_enum");
+            missing_keys$1 = stack_add$0("string_enum")(missing_keys$1);
           }
-          if (!(missing_keys$1.contents.length === 0)) {
+          if (!(stack_is_empty$0(missing_keys$1))) {
             key_error$0(missing_keys$1)(stack$0)(type$1);
           }
           props$0.set("record", decoded$0);
@@ -732,7 +740,7 @@
           decode_error$0(input$0)(stack$0)(type$1);
         }
       } else {
-        buffer_add_sep$0(missing_keys$0)(", ")("record");
+        missing_keys$0 = stack_add$0("record")(missing_keys$0);
       }
       if (Object.hasOwn(arg$0, "tagged_record_bool")) {
         let input$0 = arg$0["tagged_record_bool"];
@@ -744,7 +752,7 @@
               let decoded$0 = new Map();
               if (!(input$0["tag"])) {
                 decoded$0.set("tag", 0);
-                let missing_keys$1 = {contents: ""};
+                let missing_keys$1 = stack_empty$0;
                 if (Object.hasOwn(input$0, "a")) {
                   let input$1 = input$0["a"];
                   let stack$1 = stack_add$0("a")(stack$0);
@@ -755,15 +763,15 @@
                     decode_error$0(input$1)(stack$1)(type$2);
                   }
                 } else {
-                  buffer_add_sep$0(missing_keys$1)(", ")("a");
+                  missing_keys$1 = stack_add$0("a")(missing_keys$1);
                 }
-                if (!(missing_keys$1.contents.length === 0)) {
+                if (!(stack_is_empty$0(missing_keys$1))) {
                   key_error$0(missing_keys$1)(stack$0)(type$1);
                 }
               } else {
                 if (input$0["tag"]) {
                   decoded$0.set("tag", 1);
-                  let missing_keys$1 = {contents: ""};
+                  let missing_keys$1 = stack_empty$0;
                   if (Object.hasOwn(input$0, "b")) {
                     let input$1 = input$0["b"];
                     let stack$1 = stack_add$0("b")(stack$0);
@@ -774,9 +782,9 @@
                       decode_error$0(input$1)(stack$1)(type$2);
                     }
                   } else {
-                    buffer_add_sep$0(missing_keys$1)(", ")("b");
+                    missing_keys$1 = stack_add$0("b")(missing_keys$1);
                   }
-                  if (!(missing_keys$1.contents.length === 0)) {
+                  if (!(stack_is_empty$0(missing_keys$1))) {
                     key_error$0(missing_keys$1)(stack$0)(type$1);
                   }
                 } else {
@@ -794,7 +802,7 @@
           decode_error$0(input$0)(stack$0)(type$1);
         }
       } else {
-        buffer_add_sep$0(missing_keys$0)(", ")("tagged_record_bool");
+        missing_keys$0 = stack_add$0("tagged_record_bool")(missing_keys$0);
       }
       if (Object.hasOwn(arg$0, "tagged_record_int")) {
         let input$0 = arg$0["tagged_record_int"];
@@ -807,14 +815,14 @@
               let decoded$0 = new Map();
               if (input$0["tag"] === 0) {
                 decoded$0.set("tag", 0);
-                let missing_keys$1 = {contents: ""};
-                if (!(missing_keys$1.contents.length === 0)) {
+                let missing_keys$1 = stack_empty$0;
+                if (!(stack_is_empty$0(missing_keys$1))) {
                   key_error$0(missing_keys$1)(stack$0)(type$1);
                 }
               } else {
                 if (input$0["tag"] === 1) {
                   decoded$0.set("tag", 1);
-                  let missing_keys$1 = {contents: ""};
+                  let missing_keys$1 = stack_empty$0;
                   if (Object.hasOwn(input$0, "tuple")) {
                     let input$1 = input$0["tuple"];
                     let stack$1 = stack_add$0("tuple")(stack$0);
@@ -867,9 +875,9 @@
                       decode_error$0(input$1)(stack$1)(type$2);
                     }
                   } else {
-                    buffer_add_sep$0(missing_keys$1)(", ")("tuple");
+                    missing_keys$1 = stack_add$0("tuple")(missing_keys$1);
                   }
-                  if (!(missing_keys$1.contents.length === 0)) {
+                  if (!(stack_is_empty$0(missing_keys$1))) {
                     key_error$0(missing_keys$1)(stack$0)(type$1);
                   }
                 } else {
@@ -887,7 +895,7 @@
           decode_error$0(input$0)(stack$0)(type$1);
         }
       } else {
-        buffer_add_sep$0(missing_keys$0)(", ")("tagged_record_int");
+        missing_keys$0 = stack_add$0("tagged_record_int")(missing_keys$0);
       }
       if (Object.hasOwn(arg$0, "tagged_record_open")) {
         let input$0 = arg$0["tagged_record_open"];
@@ -900,7 +908,7 @@
               let decoded$0 = new Map();
               if (input$0["tag"] === 100) {
                 decoded$0.set("tag", 100);
-                let missing_keys$1 = {contents: ""};
+                let missing_keys$1 = stack_empty$0;
                 if (Object.hasOwn(input$0, "a")) {
                   let input$1 = input$0["a"];
                   let stack$1 = stack_add$0("a")(stack$0);
@@ -911,15 +919,15 @@
                     decode_error$0(input$1)(stack$1)(type$2);
                   }
                 } else {
-                  buffer_add_sep$0(missing_keys$1)(", ")("a");
+                  missing_keys$1 = stack_add$0("a")(missing_keys$1);
                 }
-                if (!(missing_keys$1.contents.length === 0)) {
+                if (!(stack_is_empty$0(missing_keys$1))) {
                   key_error$0(missing_keys$1)(stack$0)(type$1);
                 }
               } else {
                 if (input$0["tag"] === 200) {
                   decoded$0.set("tag", 200);
-                  let missing_keys$1 = {contents: ""};
+                  let missing_keys$1 = stack_empty$0;
                   if (Object.hasOwn(input$0, "b")) {
                     let input$1 = input$0["b"];
                     let stack$1 = stack_add$0("b")(stack$0);
@@ -930,15 +938,15 @@
                       decode_error$0(input$1)(stack$1)(type$2);
                     }
                   } else {
-                    buffer_add_sep$0(missing_keys$1)(", ")("b");
+                    missing_keys$1 = stack_add$0("b")(missing_keys$1);
                   }
-                  if (!(missing_keys$1.contents.length === 0)) {
+                  if (!(stack_is_empty$0(missing_keys$1))) {
                     key_error$0(missing_keys$1)(stack$0)(type$1);
                   }
                 } else {
                   if (input$0["tag"] === 300) {
                     decoded$0.set("tag", 300);
-                    let missing_keys$1 = {contents: ""};
+                    let missing_keys$1 = stack_empty$0;
                     if (Object.hasOwn(input$0, "c")) {
                       let input$1 = input$0["c"];
                       let stack$1 = stack_add$0("c")(stack$0);
@@ -949,9 +957,9 @@
                         decode_error$0(input$1)(stack$1)(type$2);
                       }
                     } else {
-                      buffer_add_sep$0(missing_keys$1)(", ")("c");
+                      missing_keys$1 = stack_add$0("c")(missing_keys$1);
                     }
-                    if (!(missing_keys$1.contents.length === 0)) {
+                    if (!(stack_is_empty$0(missing_keys$1))) {
                       key_error$0(missing_keys$1)(stack$0)(type$1);
                     }
                   } else {
@@ -970,7 +978,7 @@
           decode_error$0(input$0)(stack$0)(type$1);
         }
       } else {
-        buffer_add_sep$0(missing_keys$0)(", ")("tagged_record_open");
+        missing_keys$0 = stack_add$0("tagged_record_open")(missing_keys$0);
       }
       if (Object.hasOwn(arg$0, "tagged_record_string")) {
         let input$0 = arg$0["tagged_record_string"];
@@ -984,7 +992,7 @@
               let decoded$0 = new Map();
               if (input$0["tag"] === "a") {
                 decoded$0.set("tag", "a");
-                let missing_keys$1 = {contents: ""};
+                let missing_keys$1 = stack_empty$0;
                 if (Object.hasOwn(input$0, "record_list")) {
                   let input$1 = input$0["record_list"];
                   let stack$1 = stack_add$0("record_list")(stack$0);
@@ -1000,7 +1008,7 @@
                       let type$3 = "{job: string, name: string}";
                       if (typeof item$0 === "object" && !(item$0 === null)) {
                         let decoded$2 = new Map();
-                        let missing_keys$2 = {contents: ""};
+                        let missing_keys$2 = stack_empty$0;
                         if (Object.hasOwn(item$0, "job")) {
                           let input$2 = item$0["job"];
                           let stack$3 = stack_add$0("job")(stack$2);
@@ -1011,7 +1019,7 @@
                             decode_error$0(input$2)(stack$3)(type$4);
                           }
                         } else {
-                          buffer_add_sep$0(missing_keys$2)(", ")("job");
+                          missing_keys$2 = stack_add$0("job")(missing_keys$2);
                         }
                         if (Object.hasOwn(item$0, "name")) {
                           let input$2 = item$0["name"];
@@ -1023,9 +1031,9 @@
                             decode_error$0(input$2)(stack$3)(type$4);
                           }
                         } else {
-                          buffer_add_sep$0(missing_keys$2)(", ")("name");
+                          missing_keys$2 = stack_add$0("name")(missing_keys$2);
                         }
-                        if (!(missing_keys$2.contents.length === 0)) {
+                        if (!(stack_is_empty$0(missing_keys$2))) {
                           key_error$0(missing_keys$2)(stack$2)(type$3);
                         }
                         decode_dst_new$0[0] = decoded$2;
@@ -1041,15 +1049,15 @@
                     decode_error$0(input$1)(stack$1)(type$2);
                   }
                 } else {
-                  buffer_add_sep$0(missing_keys$1)(", ")("record_list");
+                  missing_keys$1 = stack_add$0("record_list")(missing_keys$1);
                 }
-                if (!(missing_keys$1.contents.length === 0)) {
+                if (!(stack_is_empty$0(missing_keys$1))) {
                   key_error$0(missing_keys$1)(stack$0)(type$1);
                 }
               } else {
                 if (input$0["tag"] === "b") {
                   decoded$0.set("tag", "b");
-                  let missing_keys$1 = {contents: ""};
+                  let missing_keys$1 = stack_empty$0;
                   if (Object.hasOwn(input$0, "open_enum")) {
                     let input$1 = input$0["open_enum"];
                     let stack$1 = stack_add$0("open_enum")(stack$0);
@@ -1060,9 +1068,9 @@
                       decode_error$0(input$1)(stack$1)(type$2);
                     }
                   } else {
-                    buffer_add_sep$0(missing_keys$1)(", ")("open_enum");
+                    missing_keys$1 = stack_add$0("open_enum")(missing_keys$1);
                   }
-                  if (!(missing_keys$1.contents.length === 0)) {
+                  if (!(stack_is_empty$0(missing_keys$1))) {
                     key_error$0(missing_keys$1)(stack$0)(type$1);
                   }
                 } else {
@@ -1080,7 +1088,7 @@
           decode_error$0(input$0)(stack$0)(type$1);
         }
       } else {
-        buffer_add_sep$0(missing_keys$0)(", ")("tagged_record_string");
+        missing_keys$0 = stack_add$0("tagged_record_string")(missing_keys$0);
       }
       if (Object.hasOwn(arg$0, "unicode_string")) {
         let input$0 = arg$0["unicode_string"];
@@ -1092,7 +1100,7 @@
           decode_error$0(input$0)(stack$0)(type$1);
         }
       } else {
-        buffer_add_sep$0(missing_keys$0)(", ")("unicode_string");
+        missing_keys$0 = stack_add$0("unicode_string")(missing_keys$0);
       }
       if (Object.hasOwn(arg$0, "unknown")) {
         let input$0 = arg$0["unknown"];
@@ -1102,7 +1110,7 @@
       } else {
         props$0.set("unknown", 0);
       }
-      if (!(missing_keys$0.contents.length === 0)) {
+      if (!(stack_is_empty$0(missing_keys$0))) {
         key_error$0(missing_keys$0)(stack_empty$0)(type$0);
       }
     } else {

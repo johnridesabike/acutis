@@ -90,3 +90,7 @@ Trailing commas parse correctly:
 Strings may contain line breaks:
 {% "a
 b" %}
+
+Zero-length record fields:
+{% zero."" %}
+{% match zero with {"": empty} %} {% empty %} {% /match %}

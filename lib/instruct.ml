@@ -551,10 +551,11 @@ end = struct
   type 'stack decode_runtime = {
     ty_str : string exp;
     stack : 'stack exp;
+    stack_empty : 'stack exp;
+    stack_is_empty : ('stack -> bool) exp;
     stack_add : (string -> 'stack -> 'stack) exp;
-    buffer_add_sep : (Buffer.t -> string -> string -> unit) exp;
     decode_error : (External.t -> 'stack -> string -> unit) exp;
-    key_error : (Buffer.t -> 'stack -> string -> unit) exp;
+    key_error : ('stack -> 'stack -> string -> unit) exp;
   }
 
   let show_type =
@@ -782,7 +783,7 @@ end = struct
       ~error:(fun () -> push_error debug input)
 
   and decode_record_aux ~debug decoded input tys =
-    let$ missing_keys = ("missing_keys", buffer_create ()) in
+    let& missing_keys = ("missing_keys", debug.stack_empty) in
     let| () =
       MapString.to_seq tys
       |> Seq.map (fun (k, ty) ->
@@ -798,15 +799,12 @@ end = struct
                ~else_:(fun () ->
                  match ty.contents with
                  | Nullable _ | Unknown _ -> decoded.%{k'} <- nil_value
-                 | _ ->
-                     stmt
-                       (((debug.buffer_add_sep @@ missing_keys) @@ string ", ")
-                       @@ k')))
+                 | _ -> missing_keys := (debug.stack_add @@ k') @@ !missing_keys))
       |> stmt_join
     in
     if_
-      (not (buffer_length missing_keys = int 0))
-      ~then_:(fun () -> push_key_error debug missing_keys)
+      (not (debug.stack_is_empty @@ !missing_keys))
+      ~then_:(fun () -> push_key_error debug !missing_keys)
 
   let external_of_int_bool i = External.of_bool (int_to_bool i)
 
@@ -954,6 +952,13 @@ end = struct
     in
     (* Use a functional continuation stack to track decode progress. *)
     let$ stack_empty = ("stack_empty", lambda (fun _ -> unit)) in
+    let$ stack_is_empty =
+      ( "stack_is_empty",
+        lambda (fun stack ->
+            let& result = ("result", bool true) in
+            let| () = stmt (stack @@ lambda (fun _ -> result := bool false)) in
+            return !result) )
+    in
     let$ stack_add =
       ( "stack_add",
         lambda3 (fun x stack f ->
@@ -1024,9 +1029,13 @@ end = struct
            let$ key_error =
              ( "key_error",
                lambda (fun keys ->
+                   let$ buf = ("buf", buffer_create ()) in
+                   let| () =
+                     stmt (keys @@ (buffer_add_sep @@ buf) @@ string ", ")
+                   in
                    return
                      ((error_aux @@ string "\nInput is missing keys:\n")
-                     @@ buffer_contents keys)) )
+                     @@ buffer_contents buf)) )
            in
            let$ props = ("props", hashtbl_create ()) in
            let stack = stack_empty in
@@ -1035,10 +1044,11 @@ end = struct
              {
                ty_str;
                stack;
+               stack_empty;
+               stack_is_empty;
                stack_add;
                decode_error;
                key_error;
-               buffer_add_sep;
              }
            in
            let| () =
