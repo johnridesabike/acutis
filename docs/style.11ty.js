@@ -7,8 +7,6 @@
 */
 
 import fs from "node:fs/promises";
-import path from "node:path";
-import url from "node:url";
 import postcss from "postcss";
 import postCssImport from "postcss-import";
 import postCssCustomProperties from "postcss-custom-properties";
@@ -16,9 +14,7 @@ import postCssCustomProperties from "postcss-custom-properties";
 let postcssWithOptions = postcss([postCssImport, postCssCustomProperties()]);
 
 let cssPath = "style.css";
-let cssFile = fs.readFile(
-  path.join(path.dirname(url.fileURLToPath(import.meta.url)), cssPath),
-);
+let cssFile = fs.readFile(new URL(cssPath, import.meta.url));
 
 export default function Template() {}
 

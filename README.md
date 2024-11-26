@@ -71,8 +71,10 @@ npm install acutis-lang
 Import the package in your Eleventy-powered site:
 
 ```javascript
-const acutis = require("acutis-lang");
-const acutisEleventy = require("acutis-lang/eleventy");
+// The compiler and runtime for creating components:
+import acutis from "acutis-lang";
+// The Eleventy plugin:
+import * as acutisEleventy from "acutis-lang/eleventy";
 ```
 
 ## Development

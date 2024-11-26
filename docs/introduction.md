@@ -59,15 +59,24 @@ After installing the npm package, you can import the compiler and the plugin
 into your JavaScript project.
 
 ```javascript
-const acutis = require("acutis-lang"); // The compiler and runtime.
-const acutisEleventy = require("acutis-lang/eleventy"); // The plugin.
+// The compiler and runtime for creating components:
+import acutis from "acutis-lang";
+// The Eleventy plugin:
+import * as acutisEleventy from "acutis-lang/eleventy";
 ```
 
 Inside your Eleventy configuration, you can enable the plugin with Eleventy's
 `addPlugin` function.
 
 ```javascript
-eleventyConfig.addPlugin(acutisEleventy);
+export default (eleventyConfig) => {
+  // ...
+  // Render the templates in memory:
+  eleventyConfig.addPlugin(acutisEleventy.plugin);
+  // Or print templates into ECMAScript modules for Eleventy to render:
+  eleventyConfig.addPlugin(acutisEleventy.printESM);
+  // ...
+}
 ```
 
 Beware: loading Acutis in Node.js has the side-effect of modifying how all
@@ -98,8 +107,8 @@ These offer basic syntax highlighting and indentation features.
 - [The Eleventy plugin source][4].
 
 [1]: https://github.com/johnridesabike/acutis/tree/master/docs
-[2]: https://github.com/johnridesabike/acutis/blob/master/bin/cli.ml
-[3]: https://github.com/johnridesabike/acutis/blob/master/js/acutis_js.ml
+[2]: https://github.com/johnridesabike/acutis/blob/master/acutis_cli.ml
+[3]: https://github.com/johnridesabike/acutis/blob/master/acutis_js.ml
 [4]: https://github.com/johnridesabike/acutis/blob/master/eleventy.js
 [eleventy]: https://www.11ty.dev/
 
