@@ -65,18 +65,27 @@ abilities in OCaml.</p>
 <h2 id="installation%3A-javascript" tabindex="-1">Installation: JavaScript</h2>
 <p>The Acutis JavaScript package is available through npm.</p>
 <pre class="language-shell"><code class="language-shell"><span class="token function">npm</span> <span class="token function">install</span> acutis-lang</code></pre>
-<p><a href="https://github.com/johnridesabike/acutis/blob/master/js/acutis_js.ml">You can view the JavaScript API here</a>. (It’s in OCaml syntax, sorry. I’ll
+<p><a href="https://github.com/johnridesabike/acutis/blob/master/acutis_js.ml">You can view the JavaScript API here</a>. (It’s in OCaml syntax, sorry. I’ll
 document it if it ever becomes stable.)</p>
 <h3 id="using-with-eleventy" tabindex="-1">Using with Eleventy</h3>
 <p><a href="https://www.11ty.dev/">Eleventy</a> is a static site generator in JavaScript. Acutis includes an Eleventy
 template language plugin.</p>
 <p>After installing the npm package, you can import the compiler and the plugin
 into your JavaScript project.</p>
-<pre class="language-javascript"><code class="language-javascript"><span class="token keyword">const</span> acutis <span class="token operator">=</span> <span class="token function">require</span><span class="token punctuation">(</span><span class="token string">"acutis-lang"</span><span class="token punctuation">)</span><span class="token punctuation">;</span> <span class="token comment">// The compiler and runtime.</span>
-<span class="token keyword">const</span> acutisEleventy <span class="token operator">=</span> <span class="token function">require</span><span class="token punctuation">(</span><span class="token string">"acutis-lang/eleventy"</span><span class="token punctuation">)</span><span class="token punctuation">;</span> <span class="token comment">// The plugin.</span></code></pre>
+<pre class="language-javascript"><code class="language-javascript"><span class="token comment">// The compiler and runtime for creating components:</span>
+<span class="token keyword">import</span> acutis <span class="token keyword">from</span> <span class="token string">"acutis-lang"</span><span class="token punctuation">;</span>
+<span class="token comment">// The Eleventy plugin:</span>
+<span class="token keyword">import</span> <span class="token operator">*</span> <span class="token keyword">as</span> acutisEleventy <span class="token keyword">from</span> <span class="token string">"acutis-lang/eleventy"</span><span class="token punctuation">;</span></code></pre>
 <p>Inside your Eleventy configuration, you can enable the plugin with Eleventy’s
 <code>addPlugin</code> function.</p>
-<pre class="language-javascript"><code class="language-javascript">eleventyConfig<span class="token punctuation">.</span><span class="token function">addPlugin</span><span class="token punctuation">(</span>acutisEleventy<span class="token punctuation">)</span><span class="token punctuation">;</span></code></pre>
+<pre class="language-javascript"><code class="language-javascript"><span class="token keyword">export</span> <span class="token keyword">default</span> <span class="token punctuation">(</span><span class="token parameter">eleventyConfig</span><span class="token punctuation">)</span> <span class="token operator">=></span> <span class="token punctuation">{</span>
+  <span class="token comment">// ...</span>
+  <span class="token comment">// Render the templates in memory:</span>
+  eleventyConfig<span class="token punctuation">.</span><span class="token function">addPlugin</span><span class="token punctuation">(</span>acutisEleventy<span class="token punctuation">.</span>plugin<span class="token punctuation">)</span><span class="token punctuation">;</span>
+  <span class="token comment">// Or print templates into ECMAScript modules for Eleventy to render:</span>
+  eleventyConfig<span class="token punctuation">.</span><span class="token function">addPlugin</span><span class="token punctuation">(</span>acutisEleventy<span class="token punctuation">.</span>printESM<span class="token punctuation">)</span><span class="token punctuation">;</span>
+  <span class="token comment">// ...</span>
+<span class="token punctuation">}</span></code></pre>
 <p>Beware: loading Acutis in Node.js has the side-effect of modifying how all
 uncaught exceptions are handled. This should not affect well-behaved code, but
 may make debugging errors more complicated.</p>
@@ -95,8 +104,8 @@ JavaScript compilation is slightly more experimental.</p>
 <h2 id="examples" tabindex="-1">Examples</h2>
 <ul>
 <li>This documentation uses Acutis with <a href="https://www.11ty.dev/">Eleventy</a>. <a href="https://github.com/johnridesabike/acutis/tree/master/docs">Browse the source here</a>.</li>
-<li><a href="https://github.com/johnridesabike/acutis/blob/master/bin/cli.ml">The Acutis CLI</a>.</li>
-<li><a href="https://github.com/johnridesabike/acutis/blob/master/js/acutis_js.ml">The JavaScript interface</a>.</li>
+<li><a href="https://github.com/johnridesabike/acutis/blob/master/acutis_cli.ml">The Acutis CLI</a>.</li>
+<li><a href="https://github.com/johnridesabike/acutis/blob/master/acutis_js.ml">The JavaScript interface</a>.</li>
 <li><a href="https://github.com/johnridesabike/acutis/blob/master/eleventy.js">The Eleventy plugin source</a>.</li>
 </ul>
 <h2 id="acutis-command-line-interface-(cli)" tabindex="-1">Acutis command line interface (CLI)</h2>
