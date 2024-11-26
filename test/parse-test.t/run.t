@@ -124,6 +124,14 @@ Print the untyped AST to make sure parsing works
     "Component2"
     (("children" (block ((text no_trim " " no_trim)))))
     "Component2")
+   (text
+    no_trim
+    "\n\nComponents are only bound once in the instructions.\n"
+    no_trim)
+   (component
+    "Component2"
+    (("children" (block ((text no_trim " " no_trim)))))
+    "Component2")
    (text no_trim "\n\nPatterns\n\nTuple:\n" no_trim)
    (match
     ((var "tuple"))
@@ -553,6 +561,8 @@ Print the optimized form
      ("i_prop" (block 2))))
    (text "\n\nComponent with implicit children\n")
    (component ((0 ((text " ")))) "Component2" (("children" (block 0))))
+   (text "\n\nComponents are only bound once in the instructions.\n")
+   (component ((0 ((text " ")))) "Component2" (("children" (block 0))))
    (text "\n\nPatterns\n\nTuple:\n")
    (match
     ()
@@ -943,8 +953,7 @@ Print the runtime instructions
     ((return
       (lambda arg
        ((return (lambda arg ((stmt (arg @@ arg)) (return (arg @@ arg)))))))))))
-  (let$ components = (hashtbl_create))
-  (components.%{"Component"} <-
+  (let$ Component =
    (async_lambda arg
     ((let$ buf = (buffer_create))
      (stmt ((buffer_add_escape @@ buf) @@ (Data.to_string (arg.%{"a_prop"}))))
@@ -962,7 +971,7 @@ Print the runtime instructions
      (stmt ((buffer_add_escape @@ buf) @@ (Data.to_string (arg.%{"i_prop"}))))
      (buffer_add_string buf "\n")
      (return (promise (buffer_contents buf))))))
-  (components.%{"Component2"} <-
+  (let$ Component2 =
    (async_lambda arg
     ((let$ buf = (buffer_create))
      (stmt ((buffer_add_escape @@ buf) @@ (Data.to_string (arg.%{"children"}))))
@@ -1823,7 +1832,7 @@ Print the runtime instructions
        (unit)
        (buffer_add_string buf
         (await
-         ((components.%{"Component"})
+         (Component
           @@ (hashtbl
               [("a_prop", (props.%{"b_prop"})),
                ("c_prop", (props.%{"c_prop"})),
@@ -1837,7 +1846,15 @@ Print the runtime instructions
        (buffer_add_string buf " ")
        (buffer_add_string buf
         (await
-         ((components.%{"Component2"})
+         (Component2
+          @@ (hashtbl [("children", (Data.string (buffer_contents buf)))]))))
+       (buffer_add_string buf
+        "\n\nComponents are only bound once in the instructions.\n")
+       (let$ buf = (buffer_create))
+       (buffer_add_string buf " ")
+       (buffer_add_string buf
+        (await
+         (Component2
           @@ (hashtbl [("children", (Data.string (buffer_contents buf)))]))))
        (buffer_add_string buf "\n\nPatterns\n\nTuple:\n")
        (let$ arg_match = [(props.%{"tuple"})])

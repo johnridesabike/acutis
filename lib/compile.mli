@@ -72,9 +72,10 @@ end
 type 'a t = {
   name : string;
   types : Typechecker.Type.scheme;
+  components : (string * nodes) list;
+      (** Components are topologically ordered. *)
+  externals : (string * Typechecker.Type.scheme * 'a) list;
   nodes : nodes;
-  components : nodes map_string;
-  externals : (Typechecker.Type.scheme * 'a) map_string;
 }
 
 val make : fname:string -> 'a Components.t -> Ast.t -> 'a t

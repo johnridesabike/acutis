@@ -4,4 +4,5 @@
   list = [int]
 ~%}
 {% %i optional ? children %}
-{% map list with i ~%} {% %i i %} {%~ /map ~%}
+{% map list with i ~%} {% %i i %} {%~ /map %}
+{% NestedComponent / ~%}

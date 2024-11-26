@@ -264,7 +264,7 @@ end = struct
   type 'a hashtbl = 'a Hashtbl.MakeSeeded(String).t
 
   type state = {
-    components : (Data.t hashtbl -> string promise) hashtbl exp;
+    components : (Data.t hashtbl -> string promise) exp MapString.t;
     buf : Buffer.t exp;
     escape : (Buffer.t -> string -> unit) exp;
     props : Data.t hashtbl exp;
@@ -514,7 +514,7 @@ end = struct
         let@ blocks = construct_blocks state blocks in
         buffer_add_string state.buf
           (await
-             (state.components.%{string name}
+             (MapString.find name state.components
              @@ construct_data_hashtbl blocks state dict))
 
   and construct_blocks state blocks f =
@@ -845,7 +845,7 @@ end = struct
         set (External.of_seq seq)
     | T.Record tys ->
         let$ seq =
-          ("seq", encode_record_aux (Data.to_hashtbl props) tys.contents)
+          ("seq", encode_record (Data.to_hashtbl props) tys.contents)
         in
         set (External.of_seq_assoc seq)
     | T.Dict (ty, _) ->
@@ -889,8 +889,7 @@ end = struct
             ~then_:(fun () ->
               let$ seq =
                 ( "seq",
-                  encode_record_aux ~tag:(key, to_extern tag) props tys.contents
-                )
+                  encode_record ~tag:(key, to_extern tag) props tys.contents )
               in
               set (External.of_seq_assoc seq))
             ~else_:(fun () ->
@@ -902,14 +901,14 @@ end = struct
                     | `Open -> Some (key, to_extern tag)
                   in
                   let$ seq =
-                    ("seq", encode_record_aux ?tag props MapString.empty)
+                    ("seq", encode_record ?tag props MapString.empty)
                   in
                   set (External.of_seq_assoc seq)
               | Seq.Cons (hd, seq) -> aux hd seq)
         in
         aux hd seq
 
-  and encode_record_aux ?tag props tys =
+  and encode_record ?tag props tys =
     generator (fun yield ->
         let| () = match tag with Some t -> yield (pair t) | None -> unit in
         MapString.to_seq tys
@@ -918,12 +917,38 @@ end = struct
                encode ~set:(fun v -> yield (pair (k, v))) props.%{k} ty)
         |> stmt_join)
 
+  let rec make_comps_external components components_input f =
+    match components_input with
+    | (k, tys, v) :: tl ->
+        import v (fun import ->
+            let$ comp =
+              ( k,
+                lambda (fun props ->
+                    let$ seq = ("seq", encode_record props tys) in
+                    return (import @@ External.of_seq_assoc seq)) )
+            in
+            make_comps_external (MapString.add k comp components) tl f)
+    | [] -> f components
+
+  let rec make_comps ~escape components components_input f =
+    match components_input with
+    | (k, v) :: tl ->
+        let$ comp =
+          ( k,
+            async_lambda (fun props ->
+                let@ state = state_make components ~props ~escape in
+                let| () = nodes state v in
+                return (promise (buffer_contents state.buf))) )
+        in
+        make_comps ~escape (MapString.add k comp components) tl f
+    | [] -> f components
+
   let lambdak k f = lambda (fun a -> return (k (f a)))
   let lambda2 f = lambdak lambda f
   let lambda3 f = lambdak lambda2 f
   let lambda4 f = lambdak lambda3 f
 
-  let eval compiled =
+  let eval (compiled : 'a Compile.t) =
     let$ escape =
       ( "buffer_add_escape",
         lambda2 (fun buf str ->
@@ -964,25 +989,8 @@ end = struct
             let| () = stmt (stack @@ f) (* Use FIFO evaluation. *) in
             return (f @@ x)) )
     in
-    let$ components = ("components", hashtbl_create ()) in
-    let| () =
-      Seq.append
-        (MapString.to_seq compiled.Compile.externals
-        |> Seq.map (fun (k, (tys, v)) ->
-               import v (fun import ->
-                   components.%{string k} <-
-                     lambda (fun props ->
-                         let$ seq = ("seq", encode_record_aux props tys) in
-                         return (import @@ External.of_seq_assoc seq)))))
-        (MapString.to_seq compiled.components
-        |> Seq.map (fun (k, v) ->
-               components.%{string k} <-
-                 async_lambda (fun props ->
-                     let@ state = state_make components ~props ~escape in
-                     let| () = nodes state v in
-                     return (promise (buffer_contents state.buf)))))
-      |> stmt_join
-    in
+    let@ components = make_comps_external MapString.empty compiled.externals in
+    let@ components = make_comps ~escape components compiled.components in
     export
       (async_lambda (fun input ->
            let$ errors = ("errors", buffer_create ()) in

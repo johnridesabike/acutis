@@ -60,6 +60,9 @@
   >   components/passthroughChild.acutis \
   >   components/passthroughChildNest.acutis \
   >   components/passthroughChildNestPun.acutis \
+  >   components/dependencyA.acutis \
+  >   components/dependencyB.acutis \
+  >   components/dependencyC.acutis \
   >   --data empty.json
   The default 'children' child works:
   pass
@@ -67,13 +70,16 @@
   pass
   
   
-  Children are passed correctly
+  Children are passed correctly:
   pass
   
   
   pass
   
   
+  
+  Dependencies work correctly:
+  pass
 
   $ acutis tagged_unions.acutis --data tagged_unions.json
   Tagged unions work:

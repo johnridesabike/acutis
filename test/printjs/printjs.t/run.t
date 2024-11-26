@@ -2,6 +2,7 @@
   >   --mode js \
   >   template.acutis \
   >   component.acutis \
+  >   nestedComponent.acutis \
   >   unused.acutis \
   >   --fun ./jscomponents.mjs stringify "$(cat stringify_interface)" \
   >   --fun ./jscomponents.mjs another_function "" \
@@ -58,18 +59,8 @@
         }
       );
     };
-  let components$0 = new Map();
-  import {"another_function" as import$0} from "./jscomponents.mjs";
-  components$0.set(
-    "Another_function",
-    (arg$0) => {
-      let seq$0 = (function* () {  })();
-      return (import$0(Object.fromEntries(seq$0)));
-    }
-  );
-  import {"stringify" as import$1} from "./jscomponents.mjs";
-  components$0.set(
-    "Stringify",
+  import {"stringify" as import$0} from "./jscomponents.mjs";
+  let Stringify$0 =
     (arg$0) => {
       let seq$0 =
         (function* () {
@@ -265,11 +256,21 @@
           }
           yield (["unknown", arg$0.get("unknown")]);
         })();
+      return (import$0(Object.fromEntries(seq$0)));
+    };
+  import {"another_function" as import$1} from "./jscomponents.mjs";
+  let Another_function$0 =
+    (arg$0) => {
+      let seq$0 = (function* () {  })();
       return (import$1(Object.fromEntries(seq$0)));
-    }
-  );
-  components$0.set(
-    "Component",
+    };
+  let NestedComponent$0 =
+    async (arg$0) => {
+      let buf$0 = {contents: ""};
+      buf$0.contents += "Nested component\n";
+      return (Promise.resolve(buf$0.contents));
+    };
+  let Component$0 =
     async (arg$0) => {
       let buf$0 = {contents: ""};
       let nullable$0 = arg$0.get("optional");
@@ -291,9 +292,10 @@
         index$0++;
         cell$0 = cell$0[1];
       }
+      buf$0.contents += "\n";
+      buf$0.contents += await NestedComponent$0(new Map([]));
       return (Promise.resolve(buf$0.contents));
-    }
-  );
+    };
   export default async (arg$0) => {
     let errors$0 = {contents: ""};
     let error_aux$0 =
@@ -1523,7 +1525,7 @@
       buf$3.contents += "Children prop";
       buf$0.contents +=
         await
-          components$0.get("Component")(
+          Component$0(
             new Map(
               [
                 ["children", buf$3.contents],
@@ -1533,8 +1535,7 @@
             )
           );
       buf$0.contents += "\n\n";
-      buf$0.contents +=
-        await components$0.get("Another_function")(new Map([]));
+      buf$0.contents += await Another_function$0(new Map([]));
       buf$0.contents +=
         "\n\
   \n\
@@ -1729,7 +1730,7 @@
   ";
       buf$0.contents +=
         await
-          components$0.get("Stringify")(
+          Stringify$0(
             new Map(
               [
                 ["int_list", props$0.get("int_list")],
@@ -1872,6 +1873,8 @@
   
   Children prop
   123
+  Nested component
+  
   
   success
   

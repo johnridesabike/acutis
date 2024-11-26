@@ -47,7 +47,6 @@ let stack_add$0 =
       }
     );
   };
-let components$0 = new Map();
 export default async (arg$0) => {
   let errors$0 = {contents: ""};
   let error_aux$0 =

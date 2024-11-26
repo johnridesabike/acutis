@@ -164,19 +164,22 @@ end
 type 'a t = {
   name : string;
   types : Typechecker.Type.scheme;
+  components : (string * nodes) list;
+  externals : (string * Typechecker.Type.scheme * 'a) list;
   nodes : nodes;
-  components : nodes MapString.t;
-  externals : (Typechecker.Type.scheme * 'a) MapString.t;
 }
 
+module SetString = Set.Make (String)
+
 type 'a linked_components = {
-  components : nodes MapString.t;
-  externals : (Typechecker.Type.scheme * 'a) MapString.t;
+  components : (string * nodes) list;
+  externals : (string * Typechecker.Type.scheme * 'a) list;
+  set : SetString.t;
   stack : string list;
 }
 
 let empty_linked =
-  { components = MapString.empty; externals = MapString.empty; stack = [] }
+  { components = []; externals = []; set = SetString.empty; stack = [] }
 
 let make ~fname components_src nodes =
   let typed = T.make ~root:fname components_src.Components.typed nodes in
@@ -197,22 +200,30 @@ let make ~fname components_src nodes =
             Matching.Exits.nodes m.exits |> Seq.fold_left get_components linked
         | Component (name, blocks, _) -> (
             let linked = Queue.fold get_components linked blocks in
-            match MapString.find_opt name components_src.optimized with
-            | None -> raise @@ Error.missing_component linked.stack name
-            | Some (Src (_, nodes)) ->
-                let components = MapString.add name nodes linked.components in
-                get_components
-                  { linked with components; stack = name :: linked.stack }
-                  nodes
-            | Some (Fun (_, props, f)) ->
-                let externals =
-                  MapString.add name (props, f) linked.externals
-                in
-                { linked with externals }))
+            if SetString.mem name linked.set then linked
+            else if List.exists (String.equal name) linked.stack then
+              raise @@ Error.cycle (name :: linked.stack)
+            else
+              match MapString.find_opt name components_src.optimized with
+              | None -> raise @@ Error.missing_component linked.stack name
+              | Some (Src (_, nodes)) ->
+                  let { components; externals; set; _ } =
+                    get_components
+                      { linked with stack = name :: linked.stack }
+                      nodes
+                  in
+                  let set = SetString.add name set in
+                  let components = (name, nodes) :: components in
+                  { linked with components; externals; set }
+              | Some (Fun (_, props, f)) ->
+                  let set = SetString.add name linked.set in
+                  let externals = (name, props, f) :: linked.externals in
+                  { linked with externals; set }))
       linked nodes
   in
   let { components; externals; _ } = get_components empty_linked nodes in
-  { name = fname; types = typed.types; nodes; components; externals }
+  let components = List.rev components in
+  { name = fname; types = typed.types; components; externals; nodes }
 
 let make_interface ~fname src =
   parse_interface ~fname src |> T.make_interface_standalone

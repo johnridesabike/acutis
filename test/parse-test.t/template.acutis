@@ -54,6 +54,9 @@ Component with props
 Component with implicit children
 {% Component2 %} {% /Component2 %}
 
+Components are only bound once in the instructions.
+{% Component2 %} {% /Component2 %}
+
 Patterns
 
 Tuple:
