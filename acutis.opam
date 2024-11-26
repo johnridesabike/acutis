@@ -21,6 +21,7 @@ depends: [
   "yojson"
   "dune-build-info"
   "ocamlformat" {= "0.26.2" & with-test}
+  "sherlodoc" {with-doc}
   "odoc" {with-doc}
 ]
 build: [

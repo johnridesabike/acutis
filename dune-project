@@ -36,7 +36,8 @@ compile them to self-contained JavaScript files.
   (ocamlformat
    (and
     (= 0.26.2)
-    :with-test))))
+    :with-test))
+  (sherlodoc :with-doc)))
 
 (package
  (name acutis_js)
