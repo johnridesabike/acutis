@@ -67,7 +67,7 @@
           let seq$1 =
             (function* () {
               let cell$0 = arg$0.get("int_list");
-              while (!(cell$0 === 0)) {
+              while (!(typeof cell$0 === "number")) {
                 let props$0 = cell$0[0];
                 cell$0 = cell$0[1];
                 yield (props$0);
@@ -77,19 +77,19 @@
           let seq$2 =
             (function* () {
               let cell$0 = arg$0.get("nested_list");
-              while (!(cell$0 === 0)) {
+              while (!(typeof cell$0 === "number")) {
                 let props$0 = cell$0[0];
                 cell$0 = cell$0[1];
                 let seq$3 =
                   (function* () {
                     let cell$1 = props$0;
-                    while (!(cell$1 === 0)) {
+                    while (!(typeof cell$1 === "number")) {
                       let props$1 = cell$1[0];
                       cell$1 = cell$1[1];
                       let seq$4 =
                         (function* () {
                           let cell$2 = props$1;
-                          while (!(cell$2 === 0)) {
+                          while (!(typeof cell$2 === "number")) {
                             let props$2 = cell$2[0];
                             cell$2 = cell$2[1];
                             yield (props$2);
@@ -105,14 +105,14 @@
           let seq$3 =
             (function* () {
               let cell$0 = arg$0.get("nested_nullable_list");
-              while (!(cell$0 === 0)) {
+              while (!(typeof cell$0 === "number")) {
                 let props$0 = cell$0[0];
                 cell$0 = cell$0[1];
-                if (props$0 === 0) {
+                if (typeof props$0 === "number") {
                   yield (null);
                 } else {
                   let props$1 = props$0[0];
-                  if (props$1 === 0) {
+                  if (typeof props$1 === "number") {
                     yield (null);
                   } else {
                     let props$2 = props$1[0];
@@ -125,7 +125,7 @@
           let seq$4 =
             (function* () {
               for (let item$0 of arg$0.get("null_string_dict").entries()) {
-                if (item$0[1] === 0) {
+                if (typeof item$0[1] === "number") {
                   yield ([item$0[0], null]);
                 } else {
                   let props$0 = item$0[1][0];
@@ -227,7 +227,7 @@
                 let seq$7 =
                   (function* () {
                     let cell$0 = props$3.get("record_list");
-                    while (!(cell$0 === 0)) {
+                    while (!(typeof cell$0 === "number")) {
                       let props$4 = cell$0[0];
                       cell$0 = cell$0[1];
                       let seq$8 =
@@ -274,15 +274,15 @@
     async (arg$0) => {
       let buf$0 = {contents: ""};
       let nullable$0 = arg$0.get("optional");
-      if (!(nullable$0 === 0)) {
-        buffer_add_escape$0(buf$0)(String(nullable$0[0]));
-      } else {
+      if (typeof nullable$0 === "number") {
         buffer_add_escape$0(buf$0)(arg$0.get("children"));
+      } else {
+        buffer_add_escape$0(buf$0)(String(nullable$0[0]));
       }
       buf$0.contents += "\n";
       let index$0 = 0;
       let cell$0 = arg$0.get("list");
-      while (!(cell$0 === 0)) {
+      while (!(typeof cell$0 === "number")) {
         let match_props$0 = new Map();
         let head$0 = cell$0[0];
         let exit$0 = -1;
@@ -1135,25 +1135,25 @@
       buf$0.contents +=
         "\n\nNullable echo chaining\n----------------------\n\n";
       let nullable$0 = props$0.get("null_int");
-      if (!(nullable$0 === 0)) {
-        buffer_add_escape$0(buf$0)(String(nullable$0[0]));
-      } else {
+      if (typeof nullable$0 === "number") {
         let nullable$1 = props$0.get("null_float");
-        if (!(nullable$1 === 0)) {
-          buffer_add_escape$0(buf$0)(String(nullable$1[0]));
-        } else {
+        if (typeof nullable$1 === "number") {
           let nullable$2 = props$0.get("null_bool");
-          if (!(nullable$2 === 0)) {
-            buffer_add_escape$0(buf$0)(String(!(nullable$2[0] === 0)));
-          } else {
+          if (typeof nullable$2 === "number") {
             let nullable$3 = props$0.get("null_string");
-            if (!(nullable$3 === 0)) {
-              buffer_add_escape$0(buf$0)(nullable$3[0]);
-            } else {
+            if (typeof nullable$3 === "number") {
               buffer_add_escape$0(buf$0)("pass");
+            } else {
+              buffer_add_escape$0(buf$0)(nullable$3[0]);
             }
+          } else {
+            buffer_add_escape$0(buf$0)(String(!(nullable$2[0] === 0)));
           }
+        } else {
+          buffer_add_escape$0(buf$0)(String(nullable$1[0]));
         }
+      } else {
+        buffer_add_escape$0(buf$0)(String(nullable$0[0]));
       }
       buf$0.contents += "\n\nMatching\n--------\n\n";
       let arg_match$0 = [props$0.get("record").get("int_enum")];
@@ -1258,7 +1258,7 @@
       for (let item$0 of match_arg$9.entries()) {
         let match_props$3 = new Map();
         let exit$5 = -1;
-        if (item$0[1] === 0) {
+        if (typeof item$0[1] === "number") {
           match_props$3.set("key", item$0[0]);
           exit$5 = 0;
         } else {
@@ -1279,7 +1279,7 @@
       }
       let index$0 = 0;
       let cell$0 = props$0.get("int_list");
-      while (!(cell$0 === 0)) {
+      while (!(typeof cell$0 === "number")) {
         let match_props$3 = new Map();
         let head$0 = cell$0[0];
         let exit$5 = -1;
@@ -1292,7 +1292,7 @@
       }
       let index$1 = 0;
       let cell$1 = props$0.get("int_list");
-      while (!(cell$1 === 0)) {
+      while (!(typeof cell$1 === "number")) {
         let match_props$3 = new Map();
         let head$0 = cell$1[0];
         let exit$5 = -1;
@@ -1308,7 +1308,7 @@
       }
       let index$2 = 0;
       let cell$2 = props$0.get("nested_list");
-      while (!(cell$2 === 0)) {
+      while (!(typeof cell$2 === "number")) {
         let match_props$3 = new Map();
         let head$0 = cell$2[0];
         let exit$5 = -1;
@@ -1316,7 +1316,7 @@
         exit$5 = 0;
         let index$3 = 0;
         let cell$3 = match_props$3.get("l");
-        while (!(cell$3 === 0)) {
+        while (!(typeof cell$3 === "number")) {
           let match_props$4 = new Map();
           let head$1 = cell$3[0];
           let exit$6 = -1;
@@ -1324,7 +1324,7 @@
           exit$6 = 0;
           let index$4 = 0;
           let cell$4 = match_props$4.get("l2");
-          while (!(cell$4 === 0)) {
+          while (!(typeof cell$4 === "number")) {
             let match_props$5 = new Map();
             let head$2 = cell$4[0];
             let exit$7 = -1;
@@ -1344,15 +1344,15 @@
       buf$0.contents += "\n\n";
       let index$3 = 0;
       let cell$3 = props$0.get("nested_nullable_list");
-      while (!(cell$3 === 0)) {
+      while (!(typeof cell$3 === "number")) {
         let match_props$3 = new Map();
         let head$0 = cell$3[0];
         let exit$5 = -1;
-        if (head$0 === 0) {
+        if (typeof head$0 === "number") {
           exit$5 = 0;
         } else {
           let match_arg$10 = head$0[0];
-          if (match_arg$10 === 0) {
+          if (typeof match_arg$10 === "number") {
             exit$5 = 1;
           } else {
             let match_arg$11 = head$0[0];
@@ -1388,7 +1388,7 @@
       let match_arg$10 = arg_match$5[0];
       if (match_arg$10.has("a")) {
         let match_arg$11 = match_arg$10.get("a");
-        if (match_arg$11 === 0) {
+        if (typeof match_arg$11 === "number") {
           if (match_arg$10.has("does_not_exist")) {
             let match_arg$12 = match_arg$10.get("does_not_exist");
             exit$5 = 1;
@@ -1400,7 +1400,7 @@
           if (match_arg$13 === "a") {
             if (match_arg$10.has("does_not_exist")) {
               let match_arg$14 = match_arg$10.get("does_not_exist");
-              if (match_arg$14 === 0) {
+              if (typeof match_arg$14 === "number") {
                 exit$5 = 2;
               } else {
                 let match_arg$15 = match_arg$10.get("does_not_exist");
@@ -1414,7 +1414,7 @@
           } else {
             if (match_arg$10.has("does_not_exist")) {
               let match_arg$14 = match_arg$10.get("does_not_exist");
-              if (!(match_arg$14 === 0)) {
+              if (!(typeof match_arg$14 === "number")) {
                 let match_arg$15 = match_arg$10.get("does_not_exist");
                 let match_arg$16 = match_arg$15[0];
                 match_props$3.set("a", match_arg$13);
@@ -1499,10 +1499,10 @@
       let buf$1 = {contents: ""};
       buf$1.contents += " Nested block ";
       let nullable$1 = props$0.get("null_string");
-      if (!(nullable$1 === 0)) {
-        buffer_add_escape$0(buf$1)(nullable$1[0]);
-      } else {
+      if (typeof nullable$1 === "number") {
         buffer_add_escape$0(buf$1)("pass");
+      } else {
+        buffer_add_escape$0(buf$1)(nullable$1[0]);
       }
       let buf$2 = {contents: ""};
       buf$2.contents += " Another nested block";
@@ -1549,7 +1549,7 @@
       let match_arg$15 = arg_match$8[0];
       if (match_arg$15 === 1) {
         let match_arg$16 = arg_match$8[1];
-        if (match_arg$16 === 0) {
+        if (typeof match_arg$16 === "number") {
           let match_arg$17 = arg_match$8[2];
           if (match_arg$17 === 0) {
             exit$8 = 0;
@@ -1575,7 +1575,7 @@
         }
       } else {
         let match_arg$16 = arg_match$8[1];
-        if (match_arg$16 === 0) {
+        if (typeof match_arg$16 === "number") {
           let match_arg$17 = arg_match$8[2];
           match_props$6.set("y", match_arg$17);
           exit$8 = 2;

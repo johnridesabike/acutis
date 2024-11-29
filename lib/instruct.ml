@@ -207,7 +207,7 @@ module type SEM = sig
     val to_array : t exp -> t array exp
     val to_hashtbl : t exp -> t hashtbl exp
     val to_external_untyped : t exp -> External.t exp
-    val equal : t exp -> t exp -> bool exp
+    val is_int : t exp -> bool exp
   end
 
   (** {1 Importing and exporting.} *)
@@ -244,7 +244,7 @@ end = struct
   let list_hd e = e.%(int 0)
   let list_tl e = e.%(int 1)
   let get_nullable e = list_hd (Data.to_array e)
-  let is_nil x = Data.equal x nil_value
+  let is_nil = Data.is_int
   let is_not_nil x = not (is_nil x)
   let int_to_bool i = not (i = int 0)
   let if_ x ~then_ = if_else x ~then_ ~else_:(fun () -> unit)
@@ -317,9 +317,9 @@ end = struct
     | [] -> fmt state esc (echo state default) default_fmt
     | (f, e) :: tl ->
         let$ nullable = ("nullable", echo state e) in
-        if_else (is_not_nil nullable)
-          ~then_:(fun () -> fmt state esc (get_nullable nullable) f)
-          ~else_:(fun () -> echoes state esc default default_fmt tl)
+        if_else (is_nil nullable)
+          ~then_:(fun () -> echoes state esc default default_fmt tl)
+          ~else_:(fun () -> fmt state esc (get_nullable nullable) f)
 
   let rec construct_data blocks state (data : Compile.data) =
     match data with
@@ -344,11 +344,6 @@ end = struct
 
   let add_vars ids arg vars =
     SetInt.fold (fun id vars -> MapInt.add id arg vars) ids vars
-
-  let of_scalar = function
-    | `String s -> Data.string (string s)
-    | `Int i -> Data.int (int i)
-    | `Float f -> Data.float (float f)
 
   let arg_indexed arg index ~optional:_ i f =
     match i with 0 -> f arg | _ -> f index
@@ -433,7 +428,10 @@ end = struct
   and switchcase ~exit ~leafstmt ~get_arg ~vars ~arg ~wildcard
       Matching.{ data; if_match; next } =
     if_else
-      (Data.equal arg (of_scalar data))
+      (match data with
+      | `String x -> Data.to_string arg = string x
+      | `Int x -> Data.to_int arg = int x
+      | `Float x -> Data.to_float arg = float x)
       ~then_:(fun () -> match_tree ~exit ~leafstmt ~get_arg ~vars if_match)
       ~else_:
         (match next with
@@ -1234,7 +1232,7 @@ module MakeTrans
     let to_array x = fwde (F.Data.to_array (bwde x))
     let to_hashtbl x = fwde (F.Data.to_hashtbl (bwde x))
     let to_external_untyped x = fwde (F.Data.to_external_untyped (bwde x))
-    let equal a b = fwde (F.Data.equal (bwde a) (bwde b))
+    let is_int x = fwde (F.Data.is_int (bwde x))
   end
 
   let import i f = fwds (F.import i (fun fi -> bwds (f (fwde fi))))
@@ -1405,7 +1403,7 @@ let pp (type a) pp_import ppf c =
       let to_array = F.dprintf "(@[Data.to_array@ %t@])"
       let to_hashtbl = F.dprintf "(@[Data.to_hashtbl@ %t@])"
       let to_external_untyped = F.dprintf "(@[Data.to_external_untyped@ %t@])"
-      let equal = F.dprintf "(@[Data.equal@ %t@ %t@])"
+      let is_int = F.dprintf "(@[Data.is_int@ %t@])"
     end
 
     type import = a

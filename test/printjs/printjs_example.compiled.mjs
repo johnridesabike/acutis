@@ -304,7 +304,7 @@ The data supplied does not match this template's interface.\n\
     buf$0.contents += " </h1>";
     let index$0 = 0;
     let cell$0 = props$0.get("blogPosts");
-    while (!(cell$0 === 0)) {
+    while (!(typeof cell$0 === "number")) {
       let match_props$0 = new Map();
       let head$0 = cell$0[0];
       let exit$0 = -1;
@@ -326,7 +326,7 @@ The data supplied does not match this template's interface.\n\
       let match_props$1 = new Map();
       let exit$1 = -1;
       let match_arg$6 = arg_match$0[0];
-      if (match_arg$6 === 0) {
+      if (typeof match_arg$6 === "number") {
         exit$1 = 0;
       } else {
         let match_arg$7 = arg_match$0[0];
@@ -348,10 +348,10 @@ The data supplied does not match this template's interface.\n\
       buffer_add_escape$0(buf$0)(match_props$0.get("title"));
       buf$0.contents += " </h2>\n      <span class=\"p-author\"> By ";
       let nullable$0 = match_props$0.get("name");
-      if (!(nullable$0 === 0)) {
-        buffer_add_escape$0(buf$0)(nullable$0[0]);
-      } else {
+      if (typeof nullable$0 === "number") {
         buffer_add_escape$0(buf$0)("Anonymous");
+      } else {
+        buffer_add_escape$0(buf$0)(nullable$0[0]);
       }
       buf$0.contents +=
         " </span>\n      <span class=\"dt-published\"> Posted on ";

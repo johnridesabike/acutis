@@ -248,23 +248,7 @@ end = struct
             |> Seq.map (fun (k, v) -> (k, to_external_untyped v))
             |> External.of_seq_assoc
 
-      let rec equal a b =
-        match (a, b) with
-        | Int a, Int b -> Int.equal a b
-        | Float a, Float b -> Float.equal a b
-        | String a, String b -> String.equal a b
-        | Array a, Array b -> Seq.equal equal (Array.to_seq a) (Array.to_seq b)
-        | Hashtbl a, Hashtbl b ->
-            Seq.equal
-              (fun (k1, v1) (k2, v2) -> String.equal k1 k2 && equal v1 v2)
-              (Tbl.to_seq a) (Tbl.to_seq b)
-        | Int _, _
-        | Float _, _
-        | String _, _
-        | Array _, _
-        | Hashtbl _, _
-        | Unknown _, _ ->
-            false
+      let is_int = function Int _ -> true | _ -> false
     end
 
     type import = External.t -> string promise
@@ -647,6 +631,7 @@ module PrintJs = struct
     module Data = struct
       type t
 
+      let is_int x = typeof x = string "number"
       let int = Fun.id
       let float = Fun.id
       let string = Fun.id
@@ -659,7 +644,6 @@ module PrintJs = struct
       let to_array = Fun.id
       let to_hashtbl = Fun.id
       let to_external_untyped = Fun.id
-      let equal = ( = )
     end
   end
 

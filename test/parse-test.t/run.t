@@ -1640,17 +1640,17 @@ Print the runtime instructions
        (stmt ((buffer_add_escape @@ buf) @@ (Data.to_string (Data.string "b"))))
        (buffer_add_string buf " ")
        (let$ nullable = (props.%{"ech_d"}))
-       (if_else (not (Data.equal nullable (Data.int 0)))
+       (if_else (Data.is_int nullable)
         (then
-         (buffer_add_string buf
-          (Data.to_string ((Data.to_array nullable).%(0)))))
-        (else
          (let$ nullable = (props.%{"ech_e"}))
-         (if_else (not (Data.equal nullable (Data.int 0)))
-          (then
+         (if_else (Data.is_int nullable)
+          (then (buffer_add_string buf (Data.to_string (Data.string "f\"g"))))
+          (else
            (buffer_add_string buf
-            (Data.to_string ((Data.to_array nullable).%(0)))))
-          (else (buffer_add_string buf (Data.to_string (Data.string "f\"g")))))))
+            (Data.to_string ((Data.to_array nullable).%(0)))))))
+        (else
+         (buffer_add_string buf
+          (Data.to_string ((Data.to_array nullable).%(0))))))
        (buffer_add_string buf "\n")
        (stmt
         ((buffer_add_escape @@ buf)
@@ -1668,25 +1668,25 @@ Print the runtime instructions
        (let& exit = -1)
        (let$ match_arg = (arg_match.%(0)))
        (let$ match_arg = ((Data.to_hashtbl match_arg).%{"exp1"}))
-       (if_else (Data.equal match_arg (Data.float 150))
+       (if_else ((Data.to_float match_arg) = 150)
         (then
          (let$ match_arg = ((Data.to_hashtbl match_arg).%{"exp2"}))
-         (if_else (Data.equal match_arg (Data.float -1000))
+         (if_else ((Data.to_float match_arg) = -1000)
           (then
            (let$ match_arg = ((Data.to_hashtbl match_arg).%{"exp3"}))
-           (if_else (Data.equal match_arg (Data.float 0.2))
+           (if_else ((Data.to_float match_arg) = 0.2)
             (then
              (let$ match_arg = ((Data.to_hashtbl match_arg).%{"frac"}))
-             (if_else (Data.equal match_arg (Data.float 10.55))
+             (if_else ((Data.to_float match_arg) = 10.55)
               (then
                (let$ match_arg = ((Data.to_hashtbl match_arg).%{"int"}))
-               (if_else (Data.equal match_arg (Data.int 1000))
+               (if_else ((Data.to_int match_arg) = 1000)
                 (then
                  (let$ match_arg = ((Data.to_hashtbl match_arg).%{"negfrac"}))
-                 (if_else (Data.equal match_arg (Data.float -12.34))
+                 (if_else ((Data.to_float match_arg) = -12.34)
                   (then
                    (let$ match_arg = ((Data.to_hashtbl match_arg).%{"negint"}))
-                   (if_else (Data.equal match_arg (Data.int -999))
+                   (if_else ((Data.to_int match_arg) = -999)
                     (then (unit) (exit := 0))
                     (else (unit))))
                   (else (unit))))
@@ -1717,13 +1717,13 @@ Print the runtime instructions
        (let$ arg_match = [(props.%{"match_a"})])
        (let& exit = -1)
        (let$ match_arg = (arg_match.%(0)))
-       (if_else (Data.equal match_arg (Data.int 1))
+       (if_else ((Data.to_int match_arg) = 1)
         (then (unit) (exit := 0))
         (else
-         (if_else (Data.equal match_arg (Data.int 2))
+         (if_else ((Data.to_int match_arg) = 2)
           (then (unit) (exit := 0))
           (else
-           (if_else (Data.equal match_arg (Data.int 3))
+           (if_else ((Data.to_int match_arg) = 3)
             (then (unit) (exit := 1))
             (else (unit) (exit := 2)))))))
        (if_else (!exit = 0)
@@ -1762,18 +1762,18 @@ Print the runtime instructions
        (buffer_add_string buf "\n\nMap list\n")
        (let& index = 0)
        (let& cell = (props.%{"map_l"}))
-       (while (not (Data.equal !cell (Data.int 0)))
+       (while (not (Data.is_int !cell))
         ((let$ match_props = (hashtbl_create))
          (let$ list = (Data.to_array !cell))
          (let$ head = (list.%(0)))
          (let& exit = -1)
-         (if_else (Data.equal head (Data.int 1))
+         (if_else ((Data.to_int head) = 1)
           (then (unit) (exit := 0))
           (else
-           (if_else (Data.equal head (Data.int 2))
+           (if_else ((Data.to_int head) = 2)
             (then (unit) (exit := 0))
             (else
-             (if_else (Data.equal head (Data.int 3))
+             (if_else ((Data.to_int head) = 3)
               (then (match_props.%{"i"} <- (Data.int !index)) (exit := 1))
               (else (unit) (exit := 2)))))))
          (if_else (!exit = 0)
@@ -1793,13 +1793,13 @@ Print the runtime instructions
        (let$ match_arg = (props.%{"map_d"}))
        (iter (hashtbl_to_seq (Data.to_hashtbl match_arg))
         (let$ match_props = (hashtbl_create)) (let& exit = -1)
-        (if_else (Data.equal (snd arg) (Data.int 1))
+        (if_else ((Data.to_int (snd arg)) = 1)
          (then (unit) (exit := 0))
          (else
-          (if_else (Data.equal (snd arg) (Data.int 2))
+          (if_else ((Data.to_int (snd arg)) = 2)
            (then (unit) (exit := 0))
            (else
-            (if_else (Data.equal (snd arg) (Data.int 3))
+            (if_else ((Data.to_int (snd arg)) = 3)
              (then (match_props.%{"k"} <- (Data.string (fst arg))) (exit := 1))
              (else (unit) (exit := 2)))))))
         (if_else (!exit = 0)
@@ -1861,13 +1861,13 @@ Print the runtime instructions
        (let& exit = -1)
        (let$ match_arg = (arg_match.%(0)))
        (let$ match_arg = ((Data.to_array match_arg).%(0)))
-       (if_else (Data.equal match_arg (Data.int 1))
+       (if_else ((Data.to_int match_arg) = 1)
         (then
          (let$ match_arg = ((Data.to_array match_arg).%(1)))
-         (if_else (Data.equal match_arg (Data.float 2.5))
+         (if_else ((Data.to_float match_arg) = 2.5)
           (then
            (let$ match_arg = ((Data.to_array match_arg).%(2)))
-           (if_else (Data.equal match_arg (Data.string "a"))
+           (if_else ((Data.to_string match_arg) = "a")
             (then (unit) (exit := 0))
             (else (unit))))
           (else (unit))))
@@ -1881,12 +1881,12 @@ Print the runtime instructions
        (let$ match_props = (hashtbl_create))
        (let& exit = -1)
        (let$ match_arg = (arg_match.%(0)))
-       (if_else (Data.equal match_arg (Data.int 0))
+       (if_else (Data.is_int match_arg)
         (then (unit) (exit := 0))
         (else
          (let$ match_arg = (arg_match.%(0)))
          (let$ match_arg = ((Data.to_array match_arg).%(0)))
-         (if_else (Data.equal match_arg (Data.int 0))
+         (if_else (Data.is_int match_arg)
           (then
            (let$ match_arg = ((Data.to_array match_arg).%(1)))
            (match_props.%{"_tl"} <- match_arg)
@@ -1896,7 +1896,7 @@ Print the runtime instructions
            (let$ match_arg = ((Data.to_array match_arg).%(0)))
            (let$ match_arg = ((Data.to_array match_arg).%(0)))
            (let$ match_arg = ((Data.to_array match_arg).%(1)))
-           (if_else (Data.equal match_arg (Data.int 0))
+           (if_else (Data.is_int match_arg)
             (then
              (match_props.%{"_tl"} <- match_arg)
              (match_props.%{"_z"} <- match_arg)
@@ -1904,10 +1904,10 @@ Print the runtime instructions
             (else
              (let$ match_arg = ((Data.to_array match_arg).%(1)))
              (let$ match_arg = ((Data.to_array match_arg).%(0)))
-             (if_else (Data.equal match_arg (Data.int 0))
+             (if_else (Data.is_int match_arg)
               (then
                (let$ match_arg = ((Data.to_array match_arg).%(1)))
-               (if_else (Data.equal match_arg (Data.int 0))
+               (if_else (Data.is_int match_arg)
                 (then (match_props.%{"a"} <- match_arg) (exit := 1))
                 (else (unit))))
               (else (unit)))
@@ -1950,16 +1950,16 @@ Print the runtime instructions
        (let& exit = -1)
        (let$ match_arg = (arg_match.%(0)))
        (let$ match_arg = ((Data.to_array match_arg).%(0)))
-       (if_else (Data.equal match_arg (Data.string "a"))
+       (if_else ((Data.to_string match_arg) = "a")
         (then
          (let$ match_arg = ((Data.to_array match_arg).%(1)))
-         (if_else (Data.equal match_arg (Data.int 1))
+         (if_else ((Data.to_int match_arg) = 1)
           (then
            (let$ match_arg = ((Data.to_array match_arg).%(2)))
-           (if_else (Data.equal match_arg (Data.int 1))
+           (if_else ((Data.to_int match_arg) = 1)
             (then
              (let$ match_arg = ((Data.to_array match_arg).%(3)))
-             (if_else (Data.equal match_arg (Data.int 0))
+             (if_else ((Data.to_int match_arg) = 0)
               (then (unit) (exit := 0))
               (else (unit))))
             (else (unit))))
@@ -1975,10 +1975,10 @@ Print the runtime instructions
        (let& exit = -1)
        (let$ match_arg = (arg_match.%(0)))
        (let$ match_arg = ((Data.to_hashtbl match_arg).%{"tag"}))
-       (if_else (Data.equal match_arg (Data.int 0))
+       (if_else ((Data.to_int match_arg) = 0)
         (then (unit) (exit := 1))
         (else
-         (if_else (Data.equal match_arg (Data.int 1))
+         (if_else ((Data.to_int match_arg) = 1)
           (then
            (let$ match_arg = ((Data.to_hashtbl match_arg).%{"a"}))
            (match_props.%{"a"} <- match_arg)
@@ -1998,12 +1998,12 @@ Print the runtime instructions
        (if_else (hashtbl_mem (Data.to_hashtbl match_arg) "a")
         (then
          (let$ match_arg = ((Data.to_hashtbl match_arg).%{"a"}))
-         (if_else (Data.equal match_arg (Data.int 1))
+         (if_else ((Data.to_int match_arg) = 1)
           (then
            (if_else (hashtbl_mem (Data.to_hashtbl match_arg) "b")
             (then
              (let$ match_arg = ((Data.to_hashtbl match_arg).%{"b"}))
-             (if_else (Data.equal match_arg (Data.int 2))
+             (if_else ((Data.to_int match_arg) = 2)
               (then (unit) (exit := 0))
               (else (unit))))
             (else (unit))))
@@ -2021,16 +2021,16 @@ Print the runtime instructions
               .%{"c"})])])])
        (let& exit = -1)
        (let$ match_arg = (arg_match.%(0)))
-       (if_else (Data.equal match_arg (Data.int 0))
+       (if_else (Data.is_int match_arg)
         (then (unit) (exit := 1))
         (else
          (let$ match_arg = (arg_match.%(0)))
          (let$ match_arg = ((Data.to_array match_arg).%(0)))
-         (if_else (not (Data.equal match_arg (Data.int 0)))
+         (if_else (not (Data.is_int match_arg))
           (then
            (let$ match_arg = ((Data.to_array match_arg).%(0)))
            (let$ match_arg = ((Data.to_array match_arg).%(0)))
-           (if_else (Data.equal match_arg (Data.int 0))
+           (if_else ((Data.to_int match_arg) = 0)
             (then (unit) (exit := 0))
             (else (unit))))
           (else (unit)))
