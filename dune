@@ -8,7 +8,7 @@
  (public_name acutis)
  (modules acutis_cli)
  (package acutis)
- (libraries unix acutis yojson dune-build-info))
+ (libraries acutis yojson dune-build-info))
 
 (executable
  (name acutis_js)

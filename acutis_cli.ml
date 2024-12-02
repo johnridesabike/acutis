@@ -186,7 +186,7 @@ let () =
             let data =
               match !arg_data with
               | "-" ->
-                  if Unix.isatty Unix.stdin then
+                  if In_channel.isatty stdin then
                     print_endline "Enter JSON data:";
                   Yojson.Basic.from_channel stdin
               | fname ->
