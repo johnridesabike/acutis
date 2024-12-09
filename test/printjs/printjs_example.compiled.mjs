@@ -47,6 +47,12 @@ let stack_add$0 =
       }
     );
   };
+function Int$0(arg$0) { this.v = arg$0; }
+function String$0(arg$0) { this.v = arg$0; }
+function Float$0(arg$0) { this.v = arg$0; }
+function Array$0(arg$0) { this.v = arg$0; }
+function Hashtbl$0(arg$0) { this.v = arg$0; }
+function Unknown$0(arg$0) { this.v = arg$0; }
 export default async (arg$0) => {
   let errors$0 = {contents: ""};
   let error_aux$0 =
@@ -123,10 +129,10 @@ The data supplied does not match this template's interface.\n\
       if (Array.isArray(input$0)) {
         let seq$0 = input$0.values();
         let index$0 = 0;
-        let decoded$0 = [0, 0];
+        let decoded$0 = [new Int$0(0), new Int$0(0)];
         let decode_dst$0 = decoded$0;
         for (let item$0 of seq$0) {
-          let decode_dst_new$0 = [0, 0];
+          let decode_dst_new$0 = [new Int$0(0), new Int$0(0)];
           let stack$1 = stack_add$0(String(index$0))(stack$0);
           let type$2 =
             "{\n\
@@ -151,25 +157,25 @@ The data supplied does not match this template's interface.\n\
                   let stack$3 = stack_add$0("name")(stack$2);
                   let type$4 = "?string";
                   if (!(input$2 === null) && !(input$2 === undefined)) {
-                    let decoded$3 = [0];
+                    let decoded$3 = [new Int$0(0)];
                     let stack$4 = stack_add$0("<nullable>")(stack$3);
                     let type$5 = "string";
                     if (typeof input$2 === "string") {
-                      decoded$3[0] = input$2;
+                      decoded$3[0] = new String$0(input$2);
                     } else {
                       decode_error$0(input$2)(stack$4)(type$5);
                     }
-                    decoded$2.set("name", decoded$3);
+                    decoded$2.set("name", new Array$0(decoded$3));
                   } else {
-                    decoded$2.set("name", 0);
+                    decoded$2.set("name", new Int$0(0));
                   }
                 } else {
-                  decoded$2.set("name", 0);
+                  decoded$2.set("name", new Int$0(0));
                 }
                 if (!(stack_is_empty$0(missing_keys$2))) {
                   key_error$0(missing_keys$2)(stack$2)(type$3);
                 }
-                decoded$1.set("author", decoded$2);
+                decoded$1.set("author", new Hashtbl$0(decoded$2));
               } else {
                 decode_error$0(input$1)(stack$2)(type$3);
               }
@@ -181,7 +187,7 @@ The data supplied does not match this template's interface.\n\
               let stack$2 = stack_add$0("content")(stack$1);
               let type$3 = "string";
               if (typeof input$1 === "string") {
-                decoded$1.set("content", input$1);
+                decoded$1.set("content", new String$0(input$1));
               } else {
                 decode_error$0(input$1)(stack$2)(type$3);
               }
@@ -193,7 +199,7 @@ The data supplied does not match this template's interface.\n\
               let stack$2 = stack_add$0("date")(stack$1);
               let type$3 = "string";
               if (typeof input$1 === "string") {
-                decoded$1.set("date", input$1);
+                decoded$1.set("date", new String$0(input$1));
               } else {
                 decode_error$0(input$1)(stack$2)(type$3);
               }
@@ -205,7 +211,7 @@ The data supplied does not match this template's interface.\n\
               let stack$2 = stack_add$0("image")(stack$1);
               let type$3 = "?{alt: string, src: string}";
               if (!(input$1 === null) && !(input$1 === undefined)) {
-                let decoded$2 = [0];
+                let decoded$2 = [new Int$0(0)];
                 let stack$3 = stack_add$0("<nullable>")(stack$2);
                 let type$4 = "{alt: string, src: string}";
                 if (typeof input$1 === "object" && !(input$1 === null)) {
@@ -216,7 +222,7 @@ The data supplied does not match this template's interface.\n\
                     let stack$4 = stack_add$0("alt")(stack$3);
                     let type$5 = "string";
                     if (typeof input$2 === "string") {
-                      decoded$3.set("alt", input$2);
+                      decoded$3.set("alt", new String$0(input$2));
                     } else {
                       decode_error$0(input$2)(stack$4)(type$5);
                     }
@@ -228,7 +234,7 @@ The data supplied does not match this template's interface.\n\
                     let stack$4 = stack_add$0("src")(stack$3);
                     let type$5 = "string";
                     if (typeof input$2 === "string") {
-                      decoded$3.set("src", input$2);
+                      decoded$3.set("src", new String$0(input$2));
                     } else {
                       decode_error$0(input$2)(stack$4)(type$5);
                     }
@@ -238,23 +244,23 @@ The data supplied does not match this template's interface.\n\
                   if (!(stack_is_empty$0(missing_keys$2))) {
                     key_error$0(missing_keys$2)(stack$3)(type$4);
                   }
-                  decoded$2[0] = decoded$3;
+                  decoded$2[0] = new Hashtbl$0(decoded$3);
                 } else {
                   decode_error$0(input$1)(stack$3)(type$4);
                 }
-                decoded$1.set("image", decoded$2);
+                decoded$1.set("image", new Array$0(decoded$2));
               } else {
-                decoded$1.set("image", 0);
+                decoded$1.set("image", new Int$0(0));
               }
             } else {
-              decoded$1.set("image", 0);
+              decoded$1.set("image", new Int$0(0));
             }
             if (Object.hasOwn(item$0, "title")) {
               let input$1 = item$0["title"];
               let stack$2 = stack_add$0("title")(stack$1);
               let type$3 = "string";
               if (typeof input$1 === "string") {
-                decoded$1.set("title", input$1);
+                decoded$1.set("title", new String$0(input$1));
               } else {
                 decode_error$0(input$1)(stack$2)(type$3);
               }
@@ -264,11 +270,11 @@ The data supplied does not match this template's interface.\n\
             if (!(stack_is_empty$0(missing_keys$1))) {
               key_error$0(missing_keys$1)(stack$1)(type$2);
             }
-            decode_dst_new$0[0] = decoded$1;
+            decode_dst_new$0[0] = new Hashtbl$0(decoded$1);
           } else {
             decode_error$0(item$0)(stack$1)(type$2);
           }
-          decode_dst$0[1] = decode_dst_new$0;
+          decode_dst$0[1] = new Array$0(decode_dst_new$0);
           index$0++;
           decode_dst$0 = decode_dst_new$0;
         }
@@ -284,7 +290,7 @@ The data supplied does not match this template's interface.\n\
       let stack$0 = stack_add$0("siteTitle")(stack_empty$0);
       let type$1 = "string";
       if (typeof input$0 === "string") {
-        props$0.set("siteTitle", input$0);
+        props$0.set("siteTitle", new String$0(input$0));
       } else {
         decode_error$0(input$0)(stack$0)(type$1);
       }
@@ -300,20 +306,21 @@ The data supplied does not match this template's interface.\n\
   if (errors$0.contents.length === 0) {
     let buf$0 = {contents: ""};
     buf$0.contents += "<h1> Blog posts for ";
-    buffer_add_escape$0(buf$0)(props$0.get("siteTitle"));
+    buffer_add_escape$0(buf$0)(props$0.get("siteTitle").v);
     buf$0.contents += " </h1>";
     let index$0 = 0;
     let cell$0 = props$0.get("blogPosts");
-    while (!(typeof cell$0 === "number")) {
+    while (!(cell$0 instanceof Int$0)) {
       let match_props$0 = new Map();
-      let head$0 = cell$0[0];
+      let list$0 = cell$0.v;
+      let head$0 = list$0[0];
       let exit$0 = -1;
-      let match_arg$0 = head$0.get("author");
-      let match_arg$1 = match_arg$0.get("name");
-      let match_arg$2 = head$0.get("content");
-      let match_arg$3 = head$0.get("date");
-      let match_arg$4 = head$0.get("image");
-      let match_arg$5 = head$0.get("title");
+      let match_arg$0 = head$0.v.get("author");
+      let match_arg$1 = match_arg$0.v.get("name");
+      let match_arg$2 = head$0.v.get("content");
+      let match_arg$3 = head$0.v.get("date");
+      let match_arg$4 = head$0.v.get("image");
+      let match_arg$5 = head$0.v.get("title");
       match_props$0.set("content", match_arg$2);
       match_props$0.set("date", match_arg$3);
       match_props$0.set("image", match_arg$4);
@@ -326,42 +333,42 @@ The data supplied does not match this template's interface.\n\
       let match_props$1 = new Map();
       let exit$1 = -1;
       let match_arg$6 = arg_match$0[0];
-      if (typeof match_arg$6 === "number") {
+      if (match_arg$6 instanceof Int$0) {
         exit$1 = 0;
       } else {
         let match_arg$7 = arg_match$0[0];
-        let match_arg$8 = match_arg$7[0];
-        let match_arg$9 = match_arg$8.get("alt");
-        let match_arg$10 = match_arg$8.get("src");
+        let match_arg$8 = match_arg$7.v[0];
+        let match_arg$9 = match_arg$8.v.get("alt");
+        let match_arg$10 = match_arg$8.v.get("src");
         match_props$1.set("alt", match_arg$9);
         match_props$1.set("src", match_arg$10);
         exit$1 = 1;
       }
       if (!(exit$1 === 0)) {
         buf$0.contents += "<img src=\"";
-        buffer_add_escape$0(buf$0)(match_props$1.get("src"));
+        buffer_add_escape$0(buf$0)(match_props$1.get("src").v);
         buf$0.contents += "\" alt=\"";
-        buffer_add_escape$0(buf$0)(match_props$1.get("alt"));
+        buffer_add_escape$0(buf$0)(match_props$1.get("alt").v);
         buf$0.contents += "\">\n      ";
       }
       buf$0.contents += "<h2 class=\"p-name\"> ";
-      buffer_add_escape$0(buf$0)(match_props$0.get("title"));
+      buffer_add_escape$0(buf$0)(match_props$0.get("title").v);
       buf$0.contents += " </h2>\n      <span class=\"p-author\"> By ";
       let nullable$0 = match_props$0.get("name");
-      if (typeof nullable$0 === "number") {
+      if (nullable$0 instanceof Int$0) {
         buffer_add_escape$0(buf$0)("Anonymous");
       } else {
-        buffer_add_escape$0(buf$0)(nullable$0[0]);
+        buffer_add_escape$0(buf$0)(nullable$0.v[0].v);
       }
       buf$0.contents +=
         " </span>\n      <span class=\"dt-published\"> Posted on ";
-      buffer_add_escape$0(buf$0)(match_props$0.get("date"));
+      buffer_add_escape$0(buf$0)(match_props$0.get("date").v);
       buf$0.contents +=
         " </span>\n    </header>\n    <div class=\"e-content\"> ";
-      buf$0.contents += match_props$0.get("content");
+      buf$0.contents += match_props$0.get("content").v;
       buf$0.contents += " </div>\n  </article>\n";
       index$0++;
-      cell$0 = cell$0[1];
+      cell$0 = list$0[1];
     }
     buf$0.contents += "\n";
     return (Promise.resolve(buf$0.contents));

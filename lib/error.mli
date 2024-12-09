@@ -80,6 +80,9 @@ val missing_component : string list -> string -> exn
 
 (** {1 Internal errors.} *)
 
-val internal : __POS__:string * int * int * int -> string -> _
+val internal :
+  __POS__:string * int * int * int ->
+  ('a, Format.formatter, unit, _) format4 ->
+  'a
 (** Use this instead of [assert false] when an internal invariant breaks. It
     indicates a bug in the compiler. *)

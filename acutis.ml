@@ -116,11 +116,11 @@ end = struct
   module I = A.Instruct.Make (struct
     include Stdlib
 
-    type 'a stmt = 'a
+    type 'a stm = 'a
     type 'a exp = 'a
 
     let return = Fun.id
-    let stmt = Fun.id
+    let stm = Fun.id
     let ( let| ) a f = a; f ()
     let ( let$ ) (_, x) f = f x
     let ( let& ) (_, x) f = f (ref x)
@@ -191,6 +191,31 @@ end = struct
     let error s = P.error (Acutis_error (A.Error.of_string s))
     let async_lambda = Fun.id
 
+    type untyped = ..
+
+    module type UNTYPED = sig
+      type t
+
+      val set : t exp -> untyped exp
+      val get : untyped exp -> t exp
+      val test : untyped exp -> bool exp
+    end
+
+    let untyped (type a) name (f : (module UNTYPED with type t = a) -> _) =
+      f
+        (module struct
+          type t = a
+          type untyped += Boxed of a
+
+          let set a = Boxed a
+
+          let get = function
+            | Boxed a -> a
+            | _ -> A.Error.internal ~__POS__ "Expected %s" name
+
+          let test = function Boxed _ -> true | _ -> false
+        end)
+
     module External = struct
       include D
 
@@ -198,57 +223,6 @@ end = struct
 
       let decode f t ~ok ~error =
         match f t with Some x -> ok x | None -> error ()
-    end
-
-    module Data = struct
-      type t =
-        | Int of int
-        | Float of float
-        | String of string
-        | Array of t array
-        | Hashtbl of t Tbl.t
-        | Unknown of External.t
-
-      let int x = Int x
-      let float x = Float x
-      let string x = String x
-      let array x = Array x
-      let hashtbl x = Hashtbl x
-      let unknown x = Unknown x
-
-      let to_int = function
-        | Int x -> x
-        | _ -> A.Error.internal ~__POS__ "Expected Int."
-
-      let to_float = function
-        | Float x -> x
-        | _ -> A.Error.internal ~__POS__ "Expected Float."
-
-      let to_string = function
-        | String x -> x
-        | _ -> A.Error.internal ~__POS__ "Expected String."
-
-      let to_array = function
-        | Array x -> x
-        | _ -> A.Error.internal ~__POS__ "Expected Array."
-
-      let to_hashtbl = function
-        | Hashtbl x -> x
-        | _ -> A.Error.internal ~__POS__ "Expected Hashtbl."
-
-      let rec to_external_untyped = function
-        | Unknown x -> x
-        | Int x -> External.of_int x
-        | Float x -> External.of_float x
-        | String x -> External.of_string x
-        | Array x ->
-            Array.to_seq x |> Seq.map to_external_untyped |> External.of_seq
-        | Hashtbl x ->
-            Tbl.to_seq x
-            |> Seq.map (fun (k, v) -> (k, to_external_untyped v))
-            |> External.of_seq_assoc
-
-      let is_int = function Int _ -> true | _ -> false
     end
 
     type import = External.t -> string promise
@@ -331,13 +305,13 @@ module PrintJs = struct
 
   (** Common functions used amongst the different modules. *)
   module JavascriptShared = struct
-    let stmt x ppf state = F.fprintf ppf "@[<hv 2>%a;@]" x state
+    let stm x ppf state = F.fprintf ppf "@[<hv 2>%a;@]" x state
     let ( let| ) a f ppf state = F.fprintf ppf "%a@ %a" a state (f ()) state
 
     let ( let$ ) (name, x) f ppf state =
       let name = State.var name state in
       (let| () =
-         stmt (fun ppf state ->
+         stm (fun ppf state ->
              F.fprintf ppf "let %a =@ @[<hv 2>%a@]" name state x state)
        in
        f name)
@@ -353,7 +327,7 @@ module PrintJs = struct
     let string x ppf _ = pp_string ppf x
 
     let set a b =
-      stmt (fun ppf state -> F.fprintf ppf "%a =@ @[<hv 2>%a@]" a state b state)
+      stm (fun ppf state -> F.fprintf ppf "%a =@ @[<hv 2>%a@]" a state b state)
 
     let ( .%() ) a b ppf state = F.fprintf ppf "%a[%a]" a state b state
     let ( .%()<- ) a i b = set a.%(i) b
@@ -378,14 +352,14 @@ module PrintJs = struct
     let import { module_path; function_path } f ppf state =
       let import = State.var "import" state in
       (let| () =
-         stmt (fun ppf state ->
+         stm (fun ppf state ->
              F.fprintf ppf "import {%a as %a} from %a" pp_string function_path
                import state pp_string module_path)
        in
        f import)
         ppf state
 
-    let export x = stmt (fun ppf -> F.fprintf ppf "export default %a" x)
+    let export x = stm (fun ppf -> F.fprintf ppf "export default %a" x)
   end
 
   module Cjs : JSMODULE = struct
@@ -404,7 +378,7 @@ module PrintJs = struct
   module type SEM_JAVASCRIPT = sig
     include A.Instruct.SEM
 
-    val if_ : bool exp -> then_:(unit -> unit stmt) -> unit stmt
+    val if_ : bool exp -> then_:(unit -> unit stm) -> unit stm
   end
 
   module JsSem (JsMod : JSMODULE) :
@@ -412,7 +386,7 @@ module PrintJs = struct
     include JavascriptShared
     include JsMod
 
-    type 'a stmt = t
+    type 'a stm = t
     type 'a obs = t
 
     let observe = Fun.id
@@ -420,16 +394,16 @@ module PrintJs = struct
     type 'a exp = t
 
     let return x =
-      stmt (fun ppf -> F.fprintf ppf "return (@,@[<hv 2>%a@]@;<0 -2>)" x)
+      stm (fun ppf -> F.fprintf ppf "return (@,@[<hv 2>%a@]@;<0 -2>)" x)
 
     type 'a ref = t
 
     let ( let& ) = ( let$ )
     let ( ! ) = Fun.id
-    let incr a = stmt (fun ppf -> F.fprintf ppf "%a++" a)
+    let incr a = stm (fun ppf -> F.fprintf ppf "%a++" a)
 
     let ( := ) a b =
-      stmt (fun ppf state -> F.fprintf ppf "%a =@ @[<hv 2>%a@]" a state b state)
+      stm (fun ppf state -> F.fprintf ppf "%a =@ @[<hv 2>%a@]" a state b state)
 
     let lambda_aux async f ppf state =
       let state = State.add_block state in
@@ -489,7 +463,7 @@ module PrintJs = struct
           cons next.!("value") seq)
 
     let yield x =
-      stmt (fun ppf -> F.fprintf ppf "yield (@,@[<hv 2>%a@]@;<0 -2>)" x)
+      stm (fun ppf -> F.fprintf ppf "yield (@,@[<hv 2>%a@]@;<0 -2>)" x)
 
     let generator f ppf state =
       let state = State.add_block state in
@@ -531,21 +505,20 @@ module PrintJs = struct
     let array_make i x = array_of_seq (Seq.init i (Fun.const x))
 
     let new_ name args ppf state =
-      F.fprintf ppf "@[<hv 2>new %s(@,@[<hv 2>%a@]@;<0 -2>)@]" name
+      F.fprintf ppf "@[<hv 2>new %a(@,@[<hv 2>%a@]@;<0 -2>)@]" name state
         (F.pp_print_list ~pp_sep:A.Pp.comma (fun ppf x ->
              F.fprintf ppf "@[<hv 2>%a@]" x state))
         args
 
-    let hashtbl s = new_ "Map" [ array_of_seq (Seq.map pair s) ]
-    let hashtbl_create () = new_ "Map" [ unit ]
+    let hashtbl s = new_ (global "Map") [ array_of_seq (Seq.map pair s) ]
+    let hashtbl_create () = new_ (global "Map") [ unit ]
     let ( .%{} ) x k = x.!("get") @@ k
-    let ( .%{}<- ) x k v = stmt (apply_n x.!("set") [ k; v ])
+    let ( .%{}<- ) x k v = stm (apply_n x.!("set") [ k; v ])
     let hashtbl_mem x k = x.!("has") @@ k
     let hashtbl_to_seq x = apply_n x.!("entries") []
 
     let ( += ) a b =
-      stmt (fun ppf state ->
-          F.fprintf ppf "%a +=@ @[<hv 2>%a@]" a state b state)
+      stm (fun ppf state -> F.fprintf ppf "%a +=@ @[<hv 2>%a@]" a state b state)
 
     let buffer_create () = obj [ ("contents", string "") ]
     let buffer_add_string b s = b.!("contents") += s
@@ -557,13 +530,45 @@ module PrintJs = struct
 
     let promise x = (global "Promise").!("resolve") @@ x
     let await p ppf state = F.fprintf ppf "@[<hv 2>await@ %a@]" p state
-    let error s = (global "Promise").!("reject") @@ new_ "Error" [ s ]
+    let error s = (global "Promise").!("reject") @@ new_ (global "Error") [ s ]
     let async_lambda = lambda_aux `Async
 
     let and_ a b ppf state =
       F.fprintf ppf "@[<hv>%a &&@]@ @[<hv>%a@]" a state b state
 
     let typeof expr ppf state = F.fprintf ppf "typeof %a" expr state
+
+    let instanceof a b ppf state =
+      F.fprintf ppf "%a instanceof %a" a state b state
+
+    type untyped
+
+    module type UNTYPED = sig
+      type t
+
+      val set : t exp -> untyped exp
+      val get : untyped exp -> t exp
+      val test : untyped exp -> bool exp
+    end
+
+    let untyped (type a) name (f : (module UNTYPED with type t = a) -> _) ppf
+        state =
+      let name = State.var (String.capitalize_ascii name) state in
+      let state' = State.add_block state in
+      let arg = State.var "arg" state' in
+      F.fprintf ppf "function %a(%a) {@[<hv 2>@ %a@;<1 -2>@]}@ %a" name state
+        arg state'
+        ((global "this").!("v") := arg)
+        state'
+        (f
+           (module struct
+             type t = a
+
+             let set a = new_ name [ a ]
+             let get a = a.!("v")
+             let test a = instanceof a name
+           end))
+        state
 
     module External = struct
       type t
@@ -586,7 +591,7 @@ module PrintJs = struct
 
       type 'a decoder = {
         test : t exp -> bool exp;
-        convert : 'b. t exp -> ('a exp -> 'b stmt) -> 'b stmt;
+        convert : 'b. t exp -> ('a exp -> 'b stm) -> 'b stm;
       }
 
       let get_int =
@@ -627,24 +632,6 @@ module PrintJs = struct
 
       let to_string = to_string
     end
-
-    module Data = struct
-      type t
-
-      let is_int x = typeof x = string "number"
-      let int = Fun.id
-      let float = Fun.id
-      let string = Fun.id
-      let array = Fun.id
-      let hashtbl = Fun.id
-      let unknown = Fun.id
-      let to_int = Fun.id
-      let to_float = Fun.id
-      let to_string = Fun.id
-      let to_array = Fun.id
-      let to_hashtbl = Fun.id
-      let to_external_untyped = Fun.id
-    end
   end
 
   (** Remove identity bindings, extra unit statements, etc. *)
@@ -661,12 +648,12 @@ module PrintJs = struct
       let fwde x = { from = x; identity = false }
       let bwde x = x.from
 
-      type 'a from_stmt = 'a F.stmt
-      type _ stmt = Unit : unit stmt | Unk : 'a F.stmt -> 'a stmt
+      type 'a from_stm = 'a F.stm
+      type _ stm = Unit : unit stm | Unk : 'a F.stm -> 'a stm
 
       let fwds x = Unk x
 
-      let bwds : type a. a stmt -> a from_stmt = function
+      let bwds : type a. a stm -> a from_stm = function
         | Unit -> F.unit
         | Unk x -> x
     end
@@ -675,7 +662,7 @@ module PrintJs = struct
     module M = A.Instruct.MakeTrans (Trans) (F)
     include M
 
-    let ( let| ) : type a. unit stmt -> (unit -> a stmt) -> a stmt =
+    let ( let| ) : type a. unit stm -> (unit -> a stm) -> a stm =
      fun a f ->
       match (a, f ()) with
       | Unit, x -> x
@@ -686,7 +673,7 @@ module PrintJs = struct
 
     let if_else :
         type a.
-        bool exp -> then_:(unit -> a stmt) -> else_:(unit -> a stmt) -> a stmt =
+        bool exp -> then_:(unit -> a stm) -> else_:(unit -> a stm) -> a stm =
      fun x ~then_ ~else_ ->
       match (then_ (), else_ ()) with
       | Unit, Unit -> Unit
@@ -709,25 +696,6 @@ module PrintJs = struct
       fwde (F.lambda (fun x -> bwds (f { from = x; identity = true })))
 
     let ( ! ) x = { from = F.(!x); identity = true }
-
-    module Data = struct
-      include M.Data
-
-      let int x = { x with from = F.Data.int x.from }
-      let float x = { x with from = F.Data.float x.from }
-      let string x = { x with from = F.Data.string x.from }
-      let array x = { x with from = F.Data.array x.from }
-      let hashtbl x = { x with from = F.Data.hashtbl x.from }
-      let unknown x = { x with from = F.Data.unknown x.from }
-      let to_int x = { x with from = F.Data.to_int x.from }
-      let to_float x = { x with from = F.Data.to_float x.from }
-      let to_string x = { x with from = F.Data.to_string x.from }
-      let to_array x = { x with from = F.Data.to_array x.from }
-      let to_hashtbl x = { x with from = F.Data.to_hashtbl x.from }
-
-      let to_external_untyped x =
-        { x with from = F.Data.to_external_untyped x.from }
-    end
 
     module External = struct
       include M.External

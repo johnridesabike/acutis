@@ -7,12 +7,13 @@
       some: ?string,
       none: ?string,
       t: false | true,
-      f: false | true
+      f: false | true,
+      unknown: _
     }
 ~%}
-{% match encode with {dict, arr, arrEmpty, some, none, t, f} ~%}
+{% match encode with {dict, arr, arrEmpty, some, none, t, f, unknown} ~%}
 Encoding:
-{% Comp dict arr arrEmpty some none t f / %}
+{% Comp dict arr arrEmpty some none t f unknown / %}
 Encoding unknowns:
-{% UnknownComp dict arr arrEmpty some none t f / %}
+{% UnknownComp dict arr arrEmpty some none t f unknown / %}
 {%~ /match ~%}

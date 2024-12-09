@@ -51,11 +51,17 @@
         }
       );
     };
+  function Int$0(arg$0) { this.v = arg$0; }
+  function String$0(arg$0) { this.v = arg$0; }
+  function Float$0(arg$0) { this.v = arg$0; }
+  function Array$0(arg$0) { this.v = arg$0; }
+  function Hashtbl$0(arg$0) { this.v = arg$0; }
+  function Unknown$0(arg$0) { this.v = arg$0; }
   import {"externalFunction" as import$0} from "./jsfile.mjs";
   let ExternalFunction$0 =
     (arg$0) => {
       let seq$0 =
-        (function* () { yield (["children", arg$0.get("children")]); })();
+        (function* () { yield (["children", arg$0.get("children").v]); })();
       return (import$0(Object.fromEntries(seq$0)));
     };
   export default async (arg$0) => {
@@ -116,7 +122,10 @@
       let buf$1 = {contents: ""};
       buf$1.contents += " text ";
       buf$0.contents +=
-        await ExternalFunction$0(new Map([["children", buf$1.contents]]));
+        await
+          ExternalFunction$0(
+            new Map([["children", new String$0(buf$1.contents)]])
+          );
       buf$0.contents += "\n";
       return (Promise.resolve(buf$0.contents));
     } else {
@@ -177,11 +186,17 @@
         }
       );
     };
+  function Int$0(arg$0) { this.v = arg$0; }
+  function String$0(arg$0) { this.v = arg$0; }
+  function Float$0(arg$0) { this.v = arg$0; }
+  function Array$0(arg$0) { this.v = arg$0; }
+  function Hashtbl$0(arg$0) { this.v = arg$0; }
+  function Unknown$0(arg$0) { this.v = arg$0; }
   let import$0 = require("./jsfile.cjs");
   let ExternalFunction$0 =
     (arg$0) => {
       let seq$0 =
-        (function* () { yield (["children", arg$0.get("children")]); })();
+        (function* () { yield (["children", arg$0.get("children").v]); })();
       return (import$0["externalFunction"](Object.fromEntries(seq$0)));
     };
   module.exports =
@@ -243,7 +258,10 @@
         let buf$1 = {contents: ""};
         buf$1.contents += " text ";
         buf$0.contents +=
-          await ExternalFunction$0(new Map([["children", buf$1.contents]]));
+          await
+            ExternalFunction$0(
+              new Map([["children", new String$0(buf$1.contents)]])
+            );
         buf$0.contents += "\n";
         return (Promise.resolve(buf$0.contents));
       } else {

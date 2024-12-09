@@ -59,6 +59,12 @@
         }
       );
     };
+  function Int$0(arg$0) { this.v = arg$0; }
+  function String$0(arg$0) { this.v = arg$0; }
+  function Float$0(arg$0) { this.v = arg$0; }
+  function Array$0(arg$0) { this.v = arg$0; }
+  function Hashtbl$0(arg$0) { this.v = arg$0; }
+  function Unknown$0(arg$0) { this.v = arg$0; }
   import {"stringify" as import$0} from "./jscomponents.mjs";
   let Stringify$0 =
     (arg$0) => {
@@ -67,32 +73,36 @@
           let seq$1 =
             (function* () {
               let cell$0 = arg$0.get("int_list");
-              while (!(typeof cell$0 === "number")) {
-                let props$0 = cell$0[0];
-                cell$0 = cell$0[1];
-                yield (props$0);
+              while (!(cell$0 instanceof Int$0)) {
+                let cell$1 = cell$0.v;
+                let props$0 = cell$1[0];
+                cell$0 = cell$1[1];
+                yield (props$0.v);
               }
             })();
           yield (["int_list", Array.from(seq$1)]);
           let seq$2 =
             (function* () {
               let cell$0 = arg$0.get("nested_list");
-              while (!(typeof cell$0 === "number")) {
-                let props$0 = cell$0[0];
-                cell$0 = cell$0[1];
+              while (!(cell$0 instanceof Int$0)) {
+                let cell$1 = cell$0.v;
+                let props$0 = cell$1[0];
+                cell$0 = cell$1[1];
                 let seq$3 =
                   (function* () {
-                    let cell$1 = props$0;
-                    while (!(typeof cell$1 === "number")) {
-                      let props$1 = cell$1[0];
-                      cell$1 = cell$1[1];
+                    let cell$2 = props$0;
+                    while (!(cell$2 instanceof Int$0)) {
+                      let cell$3 = cell$2.v;
+                      let props$1 = cell$3[0];
+                      cell$2 = cell$3[1];
                       let seq$4 =
                         (function* () {
-                          let cell$2 = props$1;
-                          while (!(typeof cell$2 === "number")) {
-                            let props$2 = cell$2[0];
-                            cell$2 = cell$2[1];
-                            yield (props$2);
+                          let cell$4 = props$1;
+                          while (!(cell$4 instanceof Int$0)) {
+                            let cell$5 = cell$4.v;
+                            let props$2 = cell$5[0];
+                            cell$4 = cell$5[1];
+                            yield (props$2.v);
                           }
                         })();
                       yield (Array.from(seq$4));
@@ -105,18 +115,19 @@
           let seq$3 =
             (function* () {
               let cell$0 = arg$0.get("nested_nullable_list");
-              while (!(typeof cell$0 === "number")) {
-                let props$0 = cell$0[0];
-                cell$0 = cell$0[1];
-                if (typeof props$0 === "number") {
+              while (!(cell$0 instanceof Int$0)) {
+                let cell$1 = cell$0.v;
+                let props$0 = cell$1[0];
+                cell$0 = cell$1[1];
+                if (props$0 instanceof Int$0) {
                   yield (null);
                 } else {
-                  let props$1 = props$0[0];
-                  if (typeof props$1 === "number") {
+                  let props$1 = props$0.v[0];
+                  if (props$1 instanceof Int$0) {
                     yield (null);
                   } else {
-                    let props$2 = props$1[0];
-                    yield (!(props$2 === 0));
+                    let props$2 = props$1.v[0];
+                    yield (!(props$2.v === 0));
                   }
                 }
               }
@@ -124,29 +135,31 @@
           yield (["nested_nullable_list", Array.from(seq$3)]);
           let seq$4 =
             (function* () {
-              for (let item$0 of arg$0.get("null_string_dict").entries()) {
-                if (typeof item$0[1] === "number") {
+              for (let item$0 of arg$0.get("null_string_dict").v.entries()) {
+                if (item$0[1] instanceof Int$0) {
                   yield ([item$0[0], null]);
                 } else {
-                  let props$0 = item$0[1][0];
-                  yield ([item$0[0], props$0]);
+                  let props$0 = item$0[1].v[0];
+                  yield ([item$0[0], props$0.v]);
                 }
               }
             })();
           yield (["null_string_dict", Object.fromEntries(seq$4)]);
           let seq$5 =
             (function* () {
-              yield (["int_enum", arg$0.get("record").get("int_enum")]);
-              yield (["string_enum", arg$0.get("record").get("string_enum")]);
+              yield (["int_enum", arg$0.get("record").v.get("int_enum").v]);
+              yield (
+                ["string_enum", arg$0.get("record").v.get("string_enum").v]
+              );
             })();
           yield (["record", Object.fromEntries(seq$5)]);
-          let props$0 = arg$0.get("tagged_record_bool");
-          let tag$0 = props$0.get("tag");
+          let props$0 = arg$0.get("tagged_record_bool").v;
+          let tag$0 = props$0.get("tag").v;
           if (tag$0 === 0) {
             let seq$6 =
               (function* () {
                 yield (["tag", !(tag$0 === 0)]);
-                yield (["a", props$0.get("a")]);
+                yield (["a", props$0.get("a").v]);
               })();
             yield (["tagged_record_bool", Object.fromEntries(seq$6)]);
           } else {
@@ -154,7 +167,7 @@
               let seq$6 =
                 (function* () {
                   yield (["tag", !(tag$0 === 0)]);
-                  yield (["b", props$0.get("b")]);
+                  yield (["b", props$0.get("b").v]);
                 })();
               yield (["tagged_record_bool", Object.fromEntries(seq$6)]);
             } else {
@@ -162,8 +175,8 @@
               yield (["tagged_record_bool", Object.fromEntries(seq$6)]);
             }
           }
-          let props$1 = arg$0.get("tagged_record_int");
-          let tag$1 = props$1.get("tag");
+          let props$1 = arg$0.get("tagged_record_int").v;
+          let tag$1 = props$1.get("tag").v;
           if (tag$1 === 0) {
             let seq$6 = (function* () { yield (["tag", tag$1]); })();
             yield (["tagged_record_int", Object.fromEntries(seq$6)]);
@@ -172,12 +185,12 @@
               let seq$6 =
                 (function* () {
                   yield (["tag", tag$1]);
-                  let props$2 = props$1.get("tuple");
+                  let props$2 = props$1.get("tuple").v;
                   let seq$7 =
                     (function* () {
-                      yield (props$2[0]);
-                      yield (props$2[1]);
-                      yield (!(props$2[2] === 0));
+                      yield (props$2[0].v);
+                      yield (props$2[1].v);
+                      yield (!(props$2[2].v === 0));
                     })();
                   yield (["tuple", Array.from(seq$7)]);
                 })();
@@ -187,13 +200,13 @@
               yield (["tagged_record_int", Object.fromEntries(seq$6)]);
             }
           }
-          let props$2 = arg$0.get("tagged_record_open");
-          let tag$2 = props$2.get("tag");
+          let props$2 = arg$0.get("tagged_record_open").v;
+          let tag$2 = props$2.get("tag").v;
           if (tag$2 === 100) {
             let seq$6 =
               (function* () {
                 yield (["tag", tag$2]);
-                yield (["a", props$2.get("a")]);
+                yield (["a", props$2.get("a").v]);
               })();
             yield (["tagged_record_open", Object.fromEntries(seq$6)]);
           } else {
@@ -201,7 +214,7 @@
               let seq$6 =
                 (function* () {
                   yield (["tag", tag$2]);
-                  yield (["b", props$2.get("b")]);
+                  yield (["b", props$2.get("b").v]);
                 })();
               yield (["tagged_record_open", Object.fromEntries(seq$6)]);
             } else {
@@ -209,7 +222,7 @@
                 let seq$6 =
                   (function* () {
                     yield (["tag", tag$2]);
-                    yield (["c", props$2.get("c")]);
+                    yield (["c", props$2.get("c").v]);
                   })();
                 yield (["tagged_record_open", Object.fromEntries(seq$6)]);
               } else {
@@ -218,8 +231,8 @@
               }
             }
           }
-          let props$3 = arg$0.get("tagged_record_string");
-          let tag$3 = props$3.get("tag");
+          let props$3 = arg$0.get("tagged_record_string").v;
+          let tag$3 = props$3.get("tag").v;
           if (tag$3 === "a") {
             let seq$6 =
               (function* () {
@@ -227,13 +240,14 @@
                 let seq$7 =
                   (function* () {
                     let cell$0 = props$3.get("record_list");
-                    while (!(typeof cell$0 === "number")) {
-                      let props$4 = cell$0[0];
-                      cell$0 = cell$0[1];
+                    while (!(cell$0 instanceof Int$0)) {
+                      let cell$1 = cell$0.v;
+                      let props$4 = cell$1[0];
+                      cell$0 = cell$1[1];
                       let seq$8 =
                         (function* () {
-                          yield (["job", props$4.get("job")]);
-                          yield (["name", props$4.get("name")]);
+                          yield (["job", props$4.v.get("job").v]);
+                          yield (["name", props$4.v.get("name").v]);
                         })();
                       yield (Object.fromEntries(seq$8));
                     }
@@ -246,7 +260,7 @@
               let seq$6 =
                 (function* () {
                   yield (["tag", tag$3]);
-                  yield (["open_enum", props$3.get("open_enum")]);
+                  yield (["open_enum", props$3.get("open_enum").v]);
                 })();
               yield (["tagged_record_string", Object.fromEntries(seq$6)]);
             } else {
@@ -254,7 +268,11 @@
               yield (["tagged_record_string", Object.fromEntries(seq$6)]);
             }
           }
-          yield (["unknown", arg$0.get("unknown")]);
+          if (arg$0.get("unknown") instanceof Unknown$0) {
+            yield (["unknown", arg$0.get("unknown").v]);
+          } else {
+            yield (["unknown", null]);
+          }
         })();
       return (import$0(Object.fromEntries(seq$0)));
     };
@@ -274,23 +292,24 @@
     async (arg$0) => {
       let buf$0 = {contents: ""};
       let nullable$0 = arg$0.get("optional");
-      if (typeof nullable$0 === "number") {
-        buffer_add_escape$0(buf$0)(arg$0.get("children"));
+      if (nullable$0 instanceof Int$0) {
+        buffer_add_escape$0(buf$0)(arg$0.get("children").v);
       } else {
-        buffer_add_escape$0(buf$0)(String(nullable$0[0]));
+        buffer_add_escape$0(buf$0)(String(nullable$0.v[0].v));
       }
       buf$0.contents += "\n";
       let index$0 = 0;
       let cell$0 = arg$0.get("list");
-      while (!(typeof cell$0 === "number")) {
+      while (!(cell$0 instanceof Int$0)) {
         let match_props$0 = new Map();
-        let head$0 = cell$0[0];
+        let list$0 = cell$0.v;
+        let head$0 = list$0[0];
         let exit$0 = -1;
         match_props$0.set("i", head$0);
         exit$0 = 0;
-        buffer_add_escape$0(buf$0)(String(match_props$0.get("i")));
+        buffer_add_escape$0(buf$0)(String(match_props$0.get("i").v));
         index$0++;
-        cell$0 = cell$0[1];
+        cell$0 = list$0[1];
       }
       buf$0.contents += "\n";
       buf$0.contents += await NestedComponent$0(new Map([]));
@@ -377,7 +396,7 @@
         let stack$0 = stack_add$0("big_float")(stack_empty$0);
         let type$1 = "float";
         if (typeof input$0 === "number") {
-          props$0.set("big_float", input$0);
+          props$0.set("big_float", new Float$0(input$0));
         } else {
           decode_error$0(input$0)(stack$0)(type$1);
         }
@@ -389,7 +408,7 @@
         let stack$0 = stack_add$0("big_int")(stack_empty$0);
         let type$1 = "int";
         if (Number.isInteger(input$0)) {
-          props$0.set("big_int", input$0);
+          props$0.set("big_int", new Int$0(input$0));
         } else {
           decode_error$0(input$0)(stack$0)(type$1);
         }
@@ -402,9 +421,9 @@
         let type$1 = "false | true";
         if (typeof input$0 === "boolean") {
           if (input$0) {
-            props$0.set("bool1", 1);
+            props$0.set("bool1", new Int$0(1));
           } else {
-            props$0.set("bool1", 0);
+            props$0.set("bool1", new Int$0(0));
           }
         } else {
           decode_error$0(input$0)(stack$0)(type$1);
@@ -418,9 +437,9 @@
         let type$1 = "false | true";
         if (typeof input$0 === "boolean") {
           if (input$0) {
-            props$0.set("bool2", 1);
+            props$0.set("bool2", new Int$0(1));
           } else {
-            props$0.set("bool2", 0);
+            props$0.set("bool2", new Int$0(0));
           }
         } else {
           decode_error$0(input$0)(stack$0)(type$1);
@@ -433,7 +452,7 @@
         let stack$0 = stack_add$0("dangerous")(stack_empty$0);
         let type$1 = "string";
         if (typeof input$0 === "string") {
-          props$0.set("dangerous", input$0);
+          props$0.set("dangerous", new String$0(input$0));
         } else {
           decode_error$0(input$0)(stack$0)(type$1);
         }
@@ -447,18 +466,18 @@
         if (Array.isArray(input$0)) {
           let seq$0 = input$0.values();
           let index$0 = 0;
-          let decoded$0 = [0, 0];
+          let decoded$0 = [new Int$0(0), new Int$0(0)];
           let decode_dst$0 = decoded$0;
           for (let item$0 of seq$0) {
-            let decode_dst_new$0 = [0, 0];
+            let decode_dst_new$0 = [new Int$0(0), new Int$0(0)];
             let stack$1 = stack_add$0(String(index$0))(stack$0);
             let type$2 = "int";
             if (Number.isInteger(item$0)) {
-              decode_dst_new$0[0] = item$0;
+              decode_dst_new$0[0] = new Int$0(item$0);
             } else {
               decode_error$0(item$0)(stack$1)(type$2);
             }
-            decode_dst$0[1] = decode_dst_new$0;
+            decode_dst$0[1] = new Array$0(decode_dst_new$0);
             index$0++;
             decode_dst$0 = decode_dst_new$0;
           }
@@ -476,36 +495,36 @@
         if (Array.isArray(input$0)) {
           let seq$0 = input$0.values();
           let index$0 = 0;
-          let decoded$0 = [0, 0];
+          let decoded$0 = [new Int$0(0), new Int$0(0)];
           let decode_dst$0 = decoded$0;
           for (let item$0 of seq$0) {
-            let decode_dst_new$0 = [0, 0];
+            let decode_dst_new$0 = [new Int$0(0), new Int$0(0)];
             let stack$1 = stack_add$0(String(index$0))(stack$0);
             let type$2 = "[[int]]";
             if (Array.isArray(item$0)) {
               let seq$1 = item$0.values();
               let index$1 = 0;
-              let decoded$1 = [0, 0];
+              let decoded$1 = [new Int$0(0), new Int$0(0)];
               let decode_dst$1 = decoded$1;
               for (let item$1 of seq$1) {
-                let decode_dst_new$1 = [0, 0];
+                let decode_dst_new$1 = [new Int$0(0), new Int$0(0)];
                 let stack$2 = stack_add$0(String(index$1))(stack$1);
                 let type$3 = "[int]";
                 if (Array.isArray(item$1)) {
                   let seq$2 = item$1.values();
                   let index$2 = 0;
-                  let decoded$2 = [0, 0];
+                  let decoded$2 = [new Int$0(0), new Int$0(0)];
                   let decode_dst$2 = decoded$2;
                   for (let item$2 of seq$2) {
-                    let decode_dst_new$2 = [0, 0];
+                    let decode_dst_new$2 = [new Int$0(0), new Int$0(0)];
                     let stack$3 = stack_add$0(String(index$2))(stack$2);
                     let type$4 = "int";
                     if (Number.isInteger(item$2)) {
-                      decode_dst_new$2[0] = item$2;
+                      decode_dst_new$2[0] = new Int$0(item$2);
                     } else {
                       decode_error$0(item$2)(stack$3)(type$4);
                     }
-                    decode_dst$2[1] = decode_dst_new$2;
+                    decode_dst$2[1] = new Array$0(decode_dst_new$2);
                     index$2++;
                     decode_dst$2 = decode_dst_new$2;
                   }
@@ -513,7 +532,7 @@
                 } else {
                   decode_error$0(item$1)(stack$2)(type$3);
                 }
-                decode_dst$1[1] = decode_dst_new$1;
+                decode_dst$1[1] = new Array$0(decode_dst_new$1);
                 index$1++;
                 decode_dst$1 = decode_dst_new$1;
               }
@@ -521,7 +540,7 @@
             } else {
               decode_error$0(item$0)(stack$1)(type$2);
             }
-            decode_dst$0[1] = decode_dst_new$0;
+            decode_dst$0[1] = new Array$0(decode_dst_new$0);
             index$0++;
             decode_dst$0 = decode_dst_new$0;
           }
@@ -539,34 +558,38 @@
         if (Array.isArray(input$0)) {
           let seq$0 = input$0.values();
           let index$0 = 0;
-          let decoded$0 = [0, 0];
+          let decoded$0 = [new Int$0(0), new Int$0(0)];
           let decode_dst$0 = decoded$0;
           for (let item$0 of seq$0) {
-            let decode_dst_new$0 = [0, 0];
+            let decode_dst_new$0 = [new Int$0(0), new Int$0(0)];
             let stack$1 = stack_add$0(String(index$0))(stack$0);
             let type$2 = "??false | true";
             if (!(item$0 === null) && !(item$0 === undefined)) {
-              let decoded$1 = [0];
+              let decoded$1 = [new Int$0(0)];
               let stack$2 = stack_add$0("<nullable>")(stack$1);
               let type$3 = "?false | true";
               if (!(item$0 === null) && !(item$0 === undefined)) {
-                let decoded$2 = [0];
+                let decoded$2 = [new Int$0(0)];
                 let stack$3 = stack_add$0("<nullable>")(stack$2);
                 let type$4 = "false | true";
                 if (typeof item$0 === "boolean") {
-                  if (item$0) { decoded$2[0] = 1; } else { decoded$2[0] = 0; }
+                  if (item$0) {
+                    decoded$2[0] = new Int$0(1);
+                  } else {
+                    decoded$2[0] = new Int$0(0);
+                  }
                 } else {
                   decode_error$0(item$0)(stack$3)(type$4);
                 }
-                decoded$1[0] = decoded$2;
+                decoded$1[0] = new Array$0(decoded$2);
               } else {
-                decoded$1[0] = 0;
+                decoded$1[0] = new Int$0(0);
               }
-              decode_dst_new$0[0] = decoded$1;
+              decode_dst_new$0[0] = new Array$0(decoded$1);
             } else {
-              decode_dst_new$0[0] = 0;
+              decode_dst_new$0[0] = new Int$0(0);
             }
-            decode_dst$0[1] = decode_dst_new$0;
+            decode_dst$0[1] = new Array$0(decode_dst_new$0);
             index$0++;
             decode_dst$0 = decode_dst_new$0;
           }
@@ -582,80 +605,84 @@
         let stack$0 = stack_add$0("null_bool")(stack_empty$0);
         let type$1 = "?false | true";
         if (!(input$0 === null) && !(input$0 === undefined)) {
-          let decoded$0 = [0];
+          let decoded$0 = [new Int$0(0)];
           let stack$1 = stack_add$0("<nullable>")(stack$0);
           let type$2 = "false | true";
           if (typeof input$0 === "boolean") {
-            if (input$0) { decoded$0[0] = 1; } else { decoded$0[0] = 0; }
+            if (input$0) {
+              decoded$0[0] = new Int$0(1);
+            } else {
+              decoded$0[0] = new Int$0(0);
+            }
           } else {
             decode_error$0(input$0)(stack$1)(type$2);
           }
-          props$0.set("null_bool", decoded$0);
+          props$0.set("null_bool", new Array$0(decoded$0));
         } else {
-          props$0.set("null_bool", 0);
+          props$0.set("null_bool", new Int$0(0));
         }
       } else {
-        props$0.set("null_bool", 0);
+        props$0.set("null_bool", new Int$0(0));
       }
       if (Object.hasOwn(arg$0, "null_float")) {
         let input$0 = arg$0["null_float"];
         let stack$0 = stack_add$0("null_float")(stack_empty$0);
         let type$1 = "?float";
         if (!(input$0 === null) && !(input$0 === undefined)) {
-          let decoded$0 = [0];
+          let decoded$0 = [new Int$0(0)];
           let stack$1 = stack_add$0("<nullable>")(stack$0);
           let type$2 = "float";
           if (typeof input$0 === "number") {
-            decoded$0[0] = input$0;
+            decoded$0[0] = new Float$0(input$0);
           } else {
             decode_error$0(input$0)(stack$1)(type$2);
           }
-          props$0.set("null_float", decoded$0);
+          props$0.set("null_float", new Array$0(decoded$0));
         } else {
-          props$0.set("null_float", 0);
+          props$0.set("null_float", new Int$0(0));
         }
       } else {
-        props$0.set("null_float", 0);
+        props$0.set("null_float", new Int$0(0));
       }
       if (Object.hasOwn(arg$0, "null_int")) {
         let input$0 = arg$0["null_int"];
         let stack$0 = stack_add$0("null_int")(stack_empty$0);
         let type$1 = "?int";
         if (!(input$0 === null) && !(input$0 === undefined)) {
-          let decoded$0 = [0];
+          let decoded$0 = [new Int$0(0)];
           let stack$1 = stack_add$0("<nullable>")(stack$0);
           let type$2 = "int";
           if (Number.isInteger(input$0)) {
-            decoded$0[0] = input$0;
+            decoded$0[0] = new Int$0(input$0);
           } else {
             decode_error$0(input$0)(stack$1)(type$2);
           }
-          props$0.set("null_int", decoded$0);
+          props$0.set("null_int", new Array$0(decoded$0));
         } else {
-          props$0.set("null_int", 0);
+          props$0.set("null_int", new Int$0(0));
         }
       } else {
-        props$0.set("null_int", 0);
+        props$0.set("null_int", new Int$0(0));
       }
       if (Object.hasOwn(arg$0, "null_string")) {
         let input$0 = arg$0["null_string"];
         let stack$0 = stack_add$0("null_string")(stack_empty$0);
         let type$1 = "?string";
         if (!(input$0 === null) && !(input$0 === undefined)) {
-          let decoded$0 = [0];
+          let decoded$0 = [new Int$0(0)];
           let stack$1 = stack_add$0("<nullable>")(stack$0);
           let type$2 = "string";
           if (typeof input$0 === "string") {
-            decoded$0[0] = input$0;
+            decoded$0[0] = new String$0(input$0);
           } else {
             decode_error$0(input$0)(stack$1)(type$2);
           }
-          props$0.set("null_string", decoded$0);
+          props$0.set("null_string", new Array$0(decoded$0));
         } else {
-          props$0.set("null_string", 0);
+          props$0.set("null_string", new Int$0(0));
         }
       } else {
-        props$0.set("null_string", 0);
+        props$0.set("null_string", new Int$0(0));
       }
       if (Object.hasOwn(arg$0, "null_string_dict")) {
         let input$0 = arg$0["null_string_dict"];
@@ -667,19 +694,19 @@
             let stack$1 = stack_add$0(item$0[0])(stack$0);
             let type$2 = "?string";
             if (!(item$0[1] === null) && !(item$0[1] === undefined)) {
-              let decoded$1 = [0];
+              let decoded$1 = [new Int$0(0)];
               let stack$2 = stack_add$0("<nullable>")(stack$1);
               let type$3 = "string";
               if (typeof item$0[1] === "string") {
-                decoded$1[0] = item$0[1];
+                decoded$1[0] = new String$0(item$0[1]);
               } else {
                 decode_error$0(item$0[1])(stack$2)(type$3);
               }
-              decoded$0.set(item$0[0], decoded$1);
+              decoded$0.set(item$0[0], new Array$0(decoded$1));
             } else {
-              decoded$0.set(item$0[0], 0);
+              decoded$0.set(item$0[0], new Int$0(0));
             }
-            props$0.set("null_string_dict", decoded$0);
+            props$0.set("null_string_dict", new Hashtbl$0(decoded$0));
           }
         } else {
           decode_error$0(input$0)(stack$0)(type$1);
@@ -700,10 +727,10 @@
             let type$2 = "@8 | @40";
             if (Number.isInteger(input$1)) {
               if (input$1 === 8) {
-                decoded$0.set("int_enum", input$1);
+                decoded$0.set("int_enum", new Int$0(input$1));
               } else {
                 if (input$1 === 40) {
-                  decoded$0.set("int_enum", input$1);
+                  decoded$0.set("int_enum", new Int$0(input$1));
                 } else {
                   decode_error$0(input$1)(stack$1)(type$2);
                 }
@@ -720,10 +747,10 @@
             let type$2 = "@\"no\" | @\"yes\"";
             if (typeof input$1 === "string") {
               if (input$1 === "no") {
-                decoded$0.set("string_enum", input$1);
+                decoded$0.set("string_enum", new String$0(input$1));
               } else {
                 if (input$1 === "yes") {
-                  decoded$0.set("string_enum", input$1);
+                  decoded$0.set("string_enum", new String$0(input$1));
                 } else {
                   decode_error$0(input$1)(stack$1)(type$2);
                 }
@@ -737,7 +764,7 @@
           if (!(stack_is_empty$0(missing_keys$1))) {
             key_error$0(missing_keys$1)(stack$0)(type$1);
           }
-          props$0.set("record", decoded$0);
+          props$0.set("record", new Hashtbl$0(decoded$0));
         } else {
           decode_error$0(input$0)(stack$0)(type$1);
         }
@@ -753,14 +780,14 @@
             if (typeof input$0["tag"] === "boolean") {
               let decoded$0 = new Map();
               if (!(input$0["tag"])) {
-                decoded$0.set("tag", 0);
+                decoded$0.set("tag", new Int$0(0));
                 let missing_keys$1 = stack_empty$0;
                 if (Object.hasOwn(input$0, "a")) {
                   let input$1 = input$0["a"];
                   let stack$1 = stack_add$0("a")(stack$0);
                   let type$2 = "string";
                   if (typeof input$1 === "string") {
-                    decoded$0.set("a", input$1);
+                    decoded$0.set("a", new String$0(input$1));
                   } else {
                     decode_error$0(input$1)(stack$1)(type$2);
                   }
@@ -772,14 +799,14 @@
                 }
               } else {
                 if (input$0["tag"]) {
-                  decoded$0.set("tag", 1);
+                  decoded$0.set("tag", new Int$0(1));
                   let missing_keys$1 = stack_empty$0;
                   if (Object.hasOwn(input$0, "b")) {
                     let input$1 = input$0["b"];
                     let stack$1 = stack_add$0("b")(stack$0);
                     let type$2 = "int";
                     if (Number.isInteger(input$1)) {
-                      decoded$0.set("b", input$1);
+                      decoded$0.set("b", new Int$0(input$1));
                     } else {
                       decode_error$0(input$1)(stack$1)(type$2);
                     }
@@ -793,7 +820,7 @@
                   decode_error$0(input$0)(stack$0)(type$1);
                 }
               }
-              props$0.set("tagged_record_bool", decoded$0);
+              props$0.set("tagged_record_bool", new Hashtbl$0(decoded$0));
             } else {
               decode_error$0(input$0)(stack$0)(type$1);
             }
@@ -816,14 +843,14 @@
             if (Number.isInteger(input$0["tag"])) {
               let decoded$0 = new Map();
               if (input$0["tag"] === 0) {
-                decoded$0.set("tag", 0);
+                decoded$0.set("tag", new Int$0(0));
                 let missing_keys$1 = stack_empty$0;
                 if (!(stack_is_empty$0(missing_keys$1))) {
                   key_error$0(missing_keys$1)(stack$0)(type$1);
                 }
               } else {
                 if (input$0["tag"] === 1) {
-                  decoded$0.set("tag", 1);
+                  decoded$0.set("tag", new Int$0(1));
                   let missing_keys$1 = stack_empty$0;
                   if (Object.hasOwn(input$0, "tuple")) {
                     let input$1 = input$0["tuple"];
@@ -831,7 +858,8 @@
                     let type$2 = "(float, string, false | true)";
                     if (Array.isArray(input$1)) {
                       let seq$0 = input$1.values();
-                      let decoded$1 = [0, 0, 0];
+                      let decoded$1 =
+                        [new Int$0(0), new Int$0(0), new Int$0(0)];
                       let next$0 = seq$0.next();
                       if (next$0.done) {
                         decode_error$0(input$1)(stack$1)(type$2);
@@ -839,7 +867,7 @@
                         let stack$2 = stack_add$0(String(0))(stack$1);
                         let type$3 = "float";
                         if (typeof next$0.value === "number") {
-                          decoded$1[0] = next$0.value;
+                          decoded$1[0] = new Float$0(next$0.value);
                         } else {
                           decode_error$0(next$0.value)(stack$2)(type$3);
                         }
@@ -850,7 +878,7 @@
                           let stack$3 = stack_add$0(String(1))(stack$1);
                           let type$4 = "string";
                           if (typeof next$1.value === "string") {
-                            decoded$1[1] = next$1.value;
+                            decoded$1[1] = new String$0(next$1.value);
                           } else {
                             decode_error$0(next$1.value)(stack$3)(type$4);
                           }
@@ -862,9 +890,9 @@
                             let type$5 = "false | true";
                             if (typeof next$2.value === "boolean") {
                               if (next$2.value) {
-                                decoded$1[2] = 1;
+                                decoded$1[2] = new Int$0(1);
                               } else {
-                                decoded$1[2] = 0;
+                                decoded$1[2] = new Int$0(0);
                               }
                             } else {
                               decode_error$0(next$2.value)(stack$4)(type$5);
@@ -872,7 +900,7 @@
                           }
                         }
                       }
-                      decoded$0.set("tuple", decoded$1);
+                      decoded$0.set("tuple", new Array$0(decoded$1));
                     } else {
                       decode_error$0(input$1)(stack$1)(type$2);
                     }
@@ -886,7 +914,7 @@
                   decode_error$0(input$0)(stack$0)(type$1);
                 }
               }
-              props$0.set("tagged_record_int", decoded$0);
+              props$0.set("tagged_record_int", new Hashtbl$0(decoded$0));
             } else {
               decode_error$0(input$0)(stack$0)(type$1);
             }
@@ -909,14 +937,14 @@
             if (Number.isInteger(input$0["tag"])) {
               let decoded$0 = new Map();
               if (input$0["tag"] === 100) {
-                decoded$0.set("tag", 100);
+                decoded$0.set("tag", new Int$0(100));
                 let missing_keys$1 = stack_empty$0;
                 if (Object.hasOwn(input$0, "a")) {
                   let input$1 = input$0["a"];
                   let stack$1 = stack_add$0("a")(stack$0);
                   let type$2 = "int";
                   if (Number.isInteger(input$1)) {
-                    decoded$0.set("a", input$1);
+                    decoded$0.set("a", new Int$0(input$1));
                   } else {
                     decode_error$0(input$1)(stack$1)(type$2);
                   }
@@ -928,14 +956,14 @@
                 }
               } else {
                 if (input$0["tag"] === 200) {
-                  decoded$0.set("tag", 200);
+                  decoded$0.set("tag", new Int$0(200));
                   let missing_keys$1 = stack_empty$0;
                   if (Object.hasOwn(input$0, "b")) {
                     let input$1 = input$0["b"];
                     let stack$1 = stack_add$0("b")(stack$0);
                     let type$2 = "string";
                     if (typeof input$1 === "string") {
-                      decoded$0.set("b", input$1);
+                      decoded$0.set("b", new String$0(input$1));
                     } else {
                       decode_error$0(input$1)(stack$1)(type$2);
                     }
@@ -947,14 +975,14 @@
                   }
                 } else {
                   if (input$0["tag"] === 300) {
-                    decoded$0.set("tag", 300);
+                    decoded$0.set("tag", new Int$0(300));
                     let missing_keys$1 = stack_empty$0;
                     if (Object.hasOwn(input$0, "c")) {
                       let input$1 = input$0["c"];
                       let stack$1 = stack_add$0("c")(stack$0);
                       let type$2 = "float";
                       if (typeof input$1 === "number") {
-                        decoded$0.set("c", input$1);
+                        decoded$0.set("c", new Float$0(input$1));
                       } else {
                         decode_error$0(input$1)(stack$1)(type$2);
                       }
@@ -965,11 +993,11 @@
                       key_error$0(missing_keys$1)(stack$0)(type$1);
                     }
                   } else {
-                    decoded$0.set("tag", input$0["tag"]);
+                    decoded$0.set("tag", new Int$0(input$0["tag"]));
                   }
                 }
               }
-              props$0.set("tagged_record_open", decoded$0);
+              props$0.set("tagged_record_open", new Hashtbl$0(decoded$0));
             } else {
               decode_error$0(input$0)(stack$0)(type$1);
             }
@@ -993,7 +1021,7 @@
             if (typeof input$0["tag"] === "string") {
               let decoded$0 = new Map();
               if (input$0["tag"] === "a") {
-                decoded$0.set("tag", "a");
+                decoded$0.set("tag", new String$0("a"));
                 let missing_keys$1 = stack_empty$0;
                 if (Object.hasOwn(input$0, "record_list")) {
                   let input$1 = input$0["record_list"];
@@ -1002,10 +1030,10 @@
                   if (Array.isArray(input$1)) {
                     let seq$0 = input$1.values();
                     let index$0 = 0;
-                    let decoded$1 = [0, 0];
+                    let decoded$1 = [new Int$0(0), new Int$0(0)];
                     let decode_dst$0 = decoded$1;
                     for (let item$0 of seq$0) {
-                      let decode_dst_new$0 = [0, 0];
+                      let decode_dst_new$0 = [new Int$0(0), new Int$0(0)];
                       let stack$2 = stack_add$0(String(index$0))(stack$1);
                       let type$3 = "{job: string, name: string}";
                       if (typeof item$0 === "object" && !(item$0 === null)) {
@@ -1016,7 +1044,7 @@
                           let stack$3 = stack_add$0("job")(stack$2);
                           let type$4 = "string";
                           if (typeof input$2 === "string") {
-                            decoded$2.set("job", input$2);
+                            decoded$2.set("job", new String$0(input$2));
                           } else {
                             decode_error$0(input$2)(stack$3)(type$4);
                           }
@@ -1028,7 +1056,7 @@
                           let stack$3 = stack_add$0("name")(stack$2);
                           let type$4 = "string";
                           if (typeof input$2 === "string") {
-                            decoded$2.set("name", input$2);
+                            decoded$2.set("name", new String$0(input$2));
                           } else {
                             decode_error$0(input$2)(stack$3)(type$4);
                           }
@@ -1038,11 +1066,11 @@
                         if (!(stack_is_empty$0(missing_keys$2))) {
                           key_error$0(missing_keys$2)(stack$2)(type$3);
                         }
-                        decode_dst_new$0[0] = decoded$2;
+                        decode_dst_new$0[0] = new Hashtbl$0(decoded$2);
                       } else {
                         decode_error$0(item$0)(stack$2)(type$3);
                       }
-                      decode_dst$0[1] = decode_dst_new$0;
+                      decode_dst$0[1] = new Array$0(decode_dst_new$0);
                       index$0++;
                       decode_dst$0 = decode_dst_new$0;
                     }
@@ -1058,14 +1086,14 @@
                 }
               } else {
                 if (input$0["tag"] === "b") {
-                  decoded$0.set("tag", "b");
+                  decoded$0.set("tag", new String$0("b"));
                   let missing_keys$1 = stack_empty$0;
                   if (Object.hasOwn(input$0, "open_enum")) {
                     let input$1 = input$0["open_enum"];
                     let stack$1 = stack_add$0("open_enum")(stack$0);
                     let type$2 = "@0 | @1 | ...";
                     if (Number.isInteger(input$1)) {
-                      decoded$0.set("open_enum", input$1);
+                      decoded$0.set("open_enum", new Int$0(input$1));
                     } else {
                       decode_error$0(input$1)(stack$1)(type$2);
                     }
@@ -1079,7 +1107,7 @@
                   decode_error$0(input$0)(stack$0)(type$1);
                 }
               }
-              props$0.set("tagged_record_string", decoded$0);
+              props$0.set("tagged_record_string", new Hashtbl$0(decoded$0));
             } else {
               decode_error$0(input$0)(stack$0)(type$1);
             }
@@ -1097,7 +1125,7 @@
         let stack$0 = stack_add$0("unicode_string")(stack_empty$0);
         let type$1 = "string";
         if (typeof input$0 === "string") {
-          props$0.set("unicode_string", input$0);
+          props$0.set("unicode_string", new String$0(input$0));
         } else {
           decode_error$0(input$0)(stack$0)(type$1);
         }
@@ -1108,9 +1136,9 @@
         let input$0 = arg$0["unknown"];
         let stack$0 = stack_add$0("unknown")(stack_empty$0);
         let type$1 = "_";
-        props$0.set("unknown", input$0);
+        props$0.set("unknown", new Unknown$0(input$0));
       } else {
-        props$0.set("unknown", 0);
+        props$0.set("unknown", new Int$0(0));
       }
       if (!(stack_is_empty$0(missing_keys$0))) {
         key_error$0(missing_keys$0)(stack_empty$0)(type$0);
@@ -1121,48 +1149,48 @@
     if (errors$0.contents.length === 0) {
       let buf$0 = {contents: ""};
       buf$0.contents += "Formatters\n----------\n\n%i    ";
-      buffer_add_escape$0(buf$0)(String(props$0.get("big_int")));
+      buffer_add_escape$0(buf$0)(String(props$0.get("big_int").v));
       buf$0.contents += "\n%f    ";
-      buffer_add_escape$0(buf$0)(String(props$0.get("big_float")));
+      buffer_add_escape$0(buf$0)(String(props$0.get("big_float").v));
       buf$0.contents += "\n%b    ";
-      buffer_add_escape$0(buf$0)(String(!(props$0.get("bool1") === 0)));
+      buffer_add_escape$0(buf$0)(String(!(props$0.get("bool1").v === 0)));
       buf$0.contents += "\n%b    ";
-      buffer_add_escape$0(buf$0)(String(!(props$0.get("bool2") === 0)));
+      buffer_add_escape$0(buf$0)(String(!(props$0.get("bool2").v === 0)));
       buf$0.contents += "\n\nEscaping\n--------\n\nEscaped     ";
-      buffer_add_escape$0(buf$0)(props$0.get("dangerous"));
+      buffer_add_escape$0(buf$0)(props$0.get("dangerous").v);
       buf$0.contents += "\nNot escaped ";
-      buf$0.contents += props$0.get("dangerous");
+      buf$0.contents += props$0.get("dangerous").v;
       buf$0.contents +=
         "\n\nNullable echo chaining\n----------------------\n\n";
       let nullable$0 = props$0.get("null_int");
-      if (typeof nullable$0 === "number") {
+      if (nullable$0 instanceof Int$0) {
         let nullable$1 = props$0.get("null_float");
-        if (typeof nullable$1 === "number") {
+        if (nullable$1 instanceof Int$0) {
           let nullable$2 = props$0.get("null_bool");
-          if (typeof nullable$2 === "number") {
+          if (nullable$2 instanceof Int$0) {
             let nullable$3 = props$0.get("null_string");
-            if (typeof nullable$3 === "number") {
+            if (nullable$3 instanceof Int$0) {
               buffer_add_escape$0(buf$0)("pass");
             } else {
-              buffer_add_escape$0(buf$0)(nullable$3[0]);
+              buffer_add_escape$0(buf$0)(nullable$3.v[0].v);
             }
           } else {
-            buffer_add_escape$0(buf$0)(String(!(nullable$2[0] === 0)));
+            buffer_add_escape$0(buf$0)(String(!(nullable$2.v[0].v === 0)));
           }
         } else {
-          buffer_add_escape$0(buf$0)(String(nullable$1[0]));
+          buffer_add_escape$0(buf$0)(String(nullable$1.v[0].v));
         }
       } else {
-        buffer_add_escape$0(buf$0)(String(nullable$0[0]));
+        buffer_add_escape$0(buf$0)(String(nullable$0.v[0].v));
       }
       buf$0.contents += "\n\nMatching\n--------\n\n";
-      let arg_match$0 = [props$0.get("record").get("int_enum")];
+      let arg_match$0 = [props$0.get("record").v.get("int_enum")];
       let exit$0 = -1;
       let match_arg$0 = arg_match$0[0];
-      if (match_arg$0 === 8) {
+      if (match_arg$0.v === 8) {
         exit$0 = 0;
       } else {
-        if (match_arg$0 === 40) { exit$0 = 1; }
+        if (match_arg$0.v === 40) { exit$0 = 1; }
       }
       if (exit$0 === 0) {
         buf$0.contents += "8\n";
@@ -1172,11 +1200,11 @@
       let arg_match$1 = [props$0.get("record")];
       let exit$1 = -1;
       let match_arg$1 = arg_match$1[0];
-      let match_arg$2 = match_arg$1.get("string_enum");
-      if (match_arg$2 === "no") {
+      let match_arg$2 = match_arg$1.v.get("string_enum");
+      if (match_arg$2.v === "no") {
         exit$1 = 1;
       } else {
-        if (match_arg$2 === "yes") { exit$1 = 0; }
+        if (match_arg$2.v === "yes") { exit$1 = 0; }
       }
       if (exit$1 === 0) {
         buf$0.contents += "yes\n";
@@ -1187,38 +1215,38 @@
       let match_props$0 = new Map();
       let exit$2 = -1;
       let match_arg$3 = arg_match$2[0];
-      let match_arg$4 = match_arg$3.get("tag");
-      if (match_arg$4 === 0) {
-        let match_arg$5 = match_arg$3.get("a");
+      let match_arg$4 = match_arg$3.v.get("tag");
+      if (match_arg$4.v === 0) {
+        let match_arg$5 = match_arg$3.v.get("a");
         match_props$0.set("a", match_arg$5);
         exit$2 = 0;
       } else {
-        if (match_arg$4 === 1) {
-          let match_arg$5 = match_arg$3.get("b");
+        if (match_arg$4.v === 1) {
+          let match_arg$5 = match_arg$3.v.get("b");
           match_props$0.set("b", match_arg$5);
           exit$2 = 1;
         }
       }
       if (exit$2 === 0) {
-        buffer_add_escape$0(buf$0)(match_props$0.get("a"));
+        buffer_add_escape$0(buf$0)(match_props$0.get("a").v);
         buf$0.contents += "\n";
       } else {
-        buffer_add_escape$0(buf$0)(String(match_props$0.get("b")));
+        buffer_add_escape$0(buf$0)(String(match_props$0.get("b").v));
         buf$0.contents += "\n";
       }
       let arg_match$3 = [props$0.get("tagged_record_int")];
       let match_props$1 = new Map();
       let exit$3 = -1;
       let match_arg$5 = arg_match$3[0];
-      let match_arg$6 = match_arg$5.get("tag");
-      if (match_arg$6 === 0) {
+      let match_arg$6 = match_arg$5.v.get("tag");
+      if (match_arg$6.v === 0) {
         exit$3 = 0;
       } else {
-        if (match_arg$6 === 1) {
-          let match_arg$7 = match_arg$5.get("tuple");
-          let match_arg$8 = match_arg$7[0];
-          let match_arg$9 = match_arg$7[1];
-          let match_arg$10 = match_arg$7[2];
+        if (match_arg$6.v === 1) {
+          let match_arg$7 = match_arg$5.v.get("tuple");
+          let match_arg$8 = match_arg$7.v[0];
+          let match_arg$9 = match_arg$7.v[1];
+          let match_arg$10 = match_arg$7.v[2];
           match_props$1.set("a", match_arg$8);
           match_props$1.set("b", match_arg$9);
           match_props$1.set("c", match_arg$10);
@@ -1228,135 +1256,141 @@
       if (exit$3 === 0) {
         buf$0.contents += "Fail\n";
       } else {
-        buffer_add_escape$0(buf$0)(String(match_props$1.get("a")));
+        buffer_add_escape$0(buf$0)(String(match_props$1.get("a").v));
         buf$0.contents += " ";
-        buffer_add_escape$0(buf$0)(match_props$1.get("b"));
+        buffer_add_escape$0(buf$0)(match_props$1.get("b").v);
         buf$0.contents += " ";
-        buffer_add_escape$0(buf$0)(String(!(match_props$1.get("c") === 0)));
+        buffer_add_escape$0(buf$0)(String(!(match_props$1.get("c").v === 0)));
         buf$0.contents += "\n";
       }
       let arg_match$4 = [props$0.get("tagged_record_open")];
       let match_props$2 = new Map();
       let exit$4 = -1;
       let match_arg$7 = arg_match$4[0];
-      let match_arg$8 = match_arg$7.get("tag");
-      if (match_arg$8 === 200) {
-        let match_arg$9 = match_arg$7.get("b");
+      let match_arg$8 = match_arg$7.v.get("tag");
+      if (match_arg$8.v === 200) {
+        let match_arg$9 = match_arg$7.v.get("b");
         match_props$2.set("b", match_arg$9);
         exit$4 = 0;
       }
       if (exit$4 === -1) { exit$4 = 1; }
       if (exit$4 === 0) {
         buf$0.contents += " ";
-        buffer_add_escape$0(buf$0)(match_props$2.get("b"));
+        buffer_add_escape$0(buf$0)(match_props$2.get("b").v);
         buf$0.contents += "\n";
       } else {
         buf$0.contents += "Another tag!\n";
       }
       buf$0.contents += "\n\nMapping\n-------\n\n";
       let match_arg$9 = props$0.get("null_string_dict");
-      for (let item$0 of match_arg$9.entries()) {
+      for (let item$0 of match_arg$9.v.entries()) {
         let match_props$3 = new Map();
         let exit$5 = -1;
-        if (typeof item$0[1] === "number") {
-          match_props$3.set("key", item$0[0]);
+        if (item$0[1] instanceof Int$0) {
+          match_props$3.set("key", new String$0(item$0[0]));
           exit$5 = 0;
         } else {
-          let match_arg$10 = item$0[1][0];
-          match_props$3.set("key", item$0[0]);
+          let match_arg$10 = item$0[1].v[0];
+          match_props$3.set("key", new String$0(item$0[0]));
           match_props$3.set("str", match_arg$10);
           exit$5 = 1;
         }
         if (exit$5 === 0) {
-          buffer_add_escape$0(buf$0)(match_props$3.get("key"));
+          buffer_add_escape$0(buf$0)(match_props$3.get("key").v);
           buf$0.contents += " is null.\n";
         } else {
-          buffer_add_escape$0(buf$0)(match_props$3.get("key"));
+          buffer_add_escape$0(buf$0)(match_props$3.get("key").v);
           buf$0.contents += " is ";
-          buffer_add_escape$0(buf$0)(match_props$3.get("str"));
+          buffer_add_escape$0(buf$0)(match_props$3.get("str").v);
           buf$0.contents += "\n";
         }
       }
       let index$0 = 0;
       let cell$0 = props$0.get("int_list");
-      while (!(typeof cell$0 === "number")) {
+      while (!(cell$0 instanceof Int$0)) {
         let match_props$3 = new Map();
-        let head$0 = cell$0[0];
+        let list$0 = cell$0.v;
+        let head$0 = list$0[0];
         let exit$5 = -1;
         match_props$3.set("i", head$0);
         exit$5 = 0;
-        buffer_add_escape$0(buf$0)(String(match_props$3.get("i")));
+        buffer_add_escape$0(buf$0)(String(match_props$3.get("i").v));
         buf$0.contents += "\n";
         index$0++;
-        cell$0 = cell$0[1];
+        cell$0 = list$0[1];
       }
       let index$1 = 0;
       let cell$1 = props$0.get("int_list");
-      while (!(typeof cell$1 === "number")) {
+      while (!(cell$1 instanceof Int$0)) {
         let match_props$3 = new Map();
-        let head$0 = cell$1[0];
+        let list$0 = cell$1.v;
+        let head$0 = list$0[0];
         let exit$5 = -1;
         match_props$3.set("i", head$0);
-        match_props$3.set("key", index$1);
+        match_props$3.set("key", new Int$0(index$1));
         exit$5 = 0;
-        buffer_add_escape$0(buf$0)(String(match_props$3.get("key")));
+        buffer_add_escape$0(buf$0)(String(match_props$3.get("key").v));
         buf$0.contents += " : ";
-        buffer_add_escape$0(buf$0)(String(match_props$3.get("i")));
+        buffer_add_escape$0(buf$0)(String(match_props$3.get("i").v));
         buf$0.contents += "\n";
         index$1++;
-        cell$1 = cell$1[1];
+        cell$1 = list$0[1];
       }
       let index$2 = 0;
       let cell$2 = props$0.get("nested_list");
-      while (!(typeof cell$2 === "number")) {
+      while (!(cell$2 instanceof Int$0)) {
         let match_props$3 = new Map();
-        let head$0 = cell$2[0];
+        let list$0 = cell$2.v;
+        let head$0 = list$0[0];
         let exit$5 = -1;
         match_props$3.set("l", head$0);
         exit$5 = 0;
         let index$3 = 0;
         let cell$3 = match_props$3.get("l");
-        while (!(typeof cell$3 === "number")) {
+        while (!(cell$3 instanceof Int$0)) {
           let match_props$4 = new Map();
-          let head$1 = cell$3[0];
+          let list$1 = cell$3.v;
+          let head$1 = list$1[0];
           let exit$6 = -1;
           match_props$4.set("l2", head$1);
           exit$6 = 0;
           let index$4 = 0;
           let cell$4 = match_props$4.get("l2");
-          while (!(typeof cell$4 === "number")) {
+          while (!(cell$4 instanceof Int$0)) {
             let match_props$5 = new Map();
-            let head$2 = cell$4[0];
+            let list$2 = cell$4.v;
+            let head$2 = list$2[0];
             let exit$7 = -1;
             match_props$5.set("i", head$2);
             exit$7 = 0;
-            buffer_add_escape$0(buf$0)(String(match_props$5.get("i")));
+            buffer_add_escape$0(buf$0)(String(match_props$5.get("i").v));
             buf$0.contents += " ";
             index$4++;
-            cell$4 = cell$4[1];
+            cell$4 = list$2[1];
           }
           index$3++;
-          cell$3 = cell$3[1];
+          cell$3 = list$1[1];
         }
         index$2++;
-        cell$2 = cell$2[1];
+        cell$2 = list$0[1];
       }
       buf$0.contents += "\n\n";
       let index$3 = 0;
       let cell$3 = props$0.get("nested_nullable_list");
-      while (!(typeof cell$3 === "number")) {
+      while (!(cell$3 instanceof Int$0)) {
         let match_props$3 = new Map();
-        let head$0 = cell$3[0];
+        let list$0 = cell$3.v;
+        let head$0 = list$0[0];
         let exit$5 = -1;
-        if (typeof head$0 === "number") {
+        if (head$0 instanceof Int$0) {
           exit$5 = 0;
         } else {
-          let match_arg$10 = head$0[0];
-          if (typeof match_arg$10 === "number") {
+          let match_arg$10 = head$0.v[0];
+          if (match_arg$10 instanceof Int$0) {
             exit$5 = 1;
           } else {
-            let match_arg$11 = head$0[0];
-            let match_arg$12 = match_arg$11[0];
+            let match_arg$11 = head$0.v[0];
+            let match_arg$12 = match_arg$11.v[0];
             match_props$3.set("b", match_arg$12);
             exit$5 = 2;
           }
@@ -1368,12 +1402,14 @@
             buf$0.contents += "Level 2 null (This shouldn't render.)\n";
           } else {
             buf$0.contents += "Level 3 ";
-            buffer_add_escape$0(buf$0)(String(!(match_props$3.get("b") === 0)));
+            buffer_add_escape$0(buf$0)(
+              String(!(match_props$3.get("b").v === 0))
+            );
             buf$0.contents += "\n";
           }
         }
         index$3++;
-        cell$3 = cell$3[1];
+        cell$3 = list$0[1];
       }
       buf$0.contents +=
         "\n\
@@ -1386,25 +1422,25 @@
       let match_props$3 = new Map();
       let exit$5 = -1;
       let match_arg$10 = arg_match$5[0];
-      if (match_arg$10.has("a")) {
-        let match_arg$11 = match_arg$10.get("a");
-        if (typeof match_arg$11 === "number") {
-          if (match_arg$10.has("does_not_exist")) {
-            let match_arg$12 = match_arg$10.get("does_not_exist");
+      if (match_arg$10.v.has("a")) {
+        let match_arg$11 = match_arg$10.v.get("a");
+        if (match_arg$11 instanceof Int$0) {
+          if (match_arg$10.v.has("does_not_exist")) {
+            let match_arg$12 = match_arg$10.v.get("does_not_exist");
             exit$5 = 1;
           }
           if (exit$5 === -1) { exit$5 = 1; }
         } else {
-          let match_arg$12 = match_arg$10.get("a");
-          let match_arg$13 = match_arg$12[0];
-          if (match_arg$13 === "a") {
-            if (match_arg$10.has("does_not_exist")) {
-              let match_arg$14 = match_arg$10.get("does_not_exist");
-              if (typeof match_arg$14 === "number") {
+          let match_arg$12 = match_arg$10.v.get("a");
+          let match_arg$13 = match_arg$12.v[0];
+          if (match_arg$13.v === "a") {
+            if (match_arg$10.v.has("does_not_exist")) {
+              let match_arg$14 = match_arg$10.v.get("does_not_exist");
+              if (match_arg$14 instanceof Int$0) {
                 exit$5 = 2;
               } else {
-                let match_arg$15 = match_arg$10.get("does_not_exist");
-                let match_arg$16 = match_arg$15[0];
+                let match_arg$15 = match_arg$10.v.get("does_not_exist");
+                let match_arg$16 = match_arg$15.v[0];
                 match_props$3.set("a", match_arg$13);
                 match_props$3.set("b", match_arg$16);
                 exit$5 = 0;
@@ -1412,11 +1448,11 @@
             }
             if (exit$5 === -1) { exit$5 = 2; }
           } else {
-            if (match_arg$10.has("does_not_exist")) {
-              let match_arg$14 = match_arg$10.get("does_not_exist");
-              if (!(typeof match_arg$14 === "number")) {
-                let match_arg$15 = match_arg$10.get("does_not_exist");
-                let match_arg$16 = match_arg$15[0];
+            if (match_arg$10.v.has("does_not_exist")) {
+              let match_arg$14 = match_arg$10.v.get("does_not_exist");
+              if (!(match_arg$14 instanceof Int$0)) {
+                let match_arg$15 = match_arg$10.v.get("does_not_exist");
+                let match_arg$16 = match_arg$15.v[0];
                 match_props$3.set("a", match_arg$13);
                 match_props$3.set("b", match_arg$16);
                 exit$5 = 0;
@@ -1428,9 +1464,9 @@
       if (exit$5 === -1) { exit$5 = 3; }
       if (exit$5 === 0) {
         buf$0.contents += " ";
-        buffer_add_escape$0(buf$0)(match_props$3.get("a"));
+        buffer_add_escape$0(buf$0)(match_props$3.get("a").v);
         buf$0.contents += " ";
-        buffer_add_escape$0(buf$0)(match_props$3.get("b"));
+        buffer_add_escape$0(buf$0)(match_props$3.get("b").v);
         buf$0.contents += "\n";
       } else {
         if (exit$5 === 1) {
@@ -1443,32 +1479,32 @@
           }
         }
       }
-      let arg_match$6 = [new Map([["a", "a"]])];
+      let arg_match$6 = [new Hashtbl$0(new Map([["a", new String$0("a")]]))];
       let match_props$4 = new Map();
       let exit$6 = -1;
       let match_arg$11 = arg_match$6[0];
-      if (match_arg$11.has("a")) {
-        let match_arg$12 = match_arg$11.get("a");
-        if (match_arg$12 === "") {
-          if (match_arg$11.has("does_not_exist")) {
-            let match_arg$13 = match_arg$11.get("does_not_exist");
+      if (match_arg$11.v.has("a")) {
+        let match_arg$12 = match_arg$11.v.get("a");
+        if (match_arg$12.v === "") {
+          if (match_arg$11.v.has("does_not_exist")) {
+            let match_arg$13 = match_arg$11.v.get("does_not_exist");
             match_props$4.set("a", match_arg$12);
             match_props$4.set("b", match_arg$13);
             exit$6 = 0;
           }
           if (exit$6 === -1) { exit$6 = 1; }
         } else {
-          if (match_arg$12 === "a") {
-            if (match_arg$11.has("does_not_exist")) {
-              let match_arg$13 = match_arg$11.get("does_not_exist");
+          if (match_arg$12.v === "a") {
+            if (match_arg$11.v.has("does_not_exist")) {
+              let match_arg$13 = match_arg$11.v.get("does_not_exist");
               match_props$4.set("a", match_arg$12);
               match_props$4.set("b", match_arg$13);
               exit$6 = 0;
             }
             if (exit$6 === -1) { exit$6 = 2; }
           } else {
-            if (match_arg$11.has("does_not_exist")) {
-              let match_arg$13 = match_arg$11.get("does_not_exist");
+            if (match_arg$11.v.has("does_not_exist")) {
+              let match_arg$13 = match_arg$11.v.get("does_not_exist");
               match_props$4.set("a", match_arg$12);
               match_props$4.set("b", match_arg$13);
               exit$6 = 0;
@@ -1479,9 +1515,9 @@
       if (exit$6 === -1) { exit$6 = 3; }
       if (exit$6 === 0) {
         buf$0.contents += " Fail. ";
-        buffer_add_escape$0(buf$0)(match_props$4.get("a"));
+        buffer_add_escape$0(buf$0)(match_props$4.get("a").v);
         buf$0.contents += " ";
-        buffer_add_escape$0(buf$0)(match_props$4.get("b"));
+        buffer_add_escape$0(buf$0)(match_props$4.get("b").v);
         buf$0.contents += "\n";
       } else {
         if (exit$6 === 1) {
@@ -1499,26 +1535,35 @@
       let buf$1 = {contents: ""};
       buf$1.contents += " Nested block ";
       let nullable$1 = props$0.get("null_string");
-      if (typeof nullable$1 === "number") {
+      if (nullable$1 instanceof Int$0) {
         buffer_add_escape$0(buf$1)("pass");
       } else {
-        buffer_add_escape$0(buf$1)(nullable$1[0]);
+        buffer_add_escape$0(buf$1)(nullable$1.v[0].v);
       }
       let buf$2 = {contents: ""};
       buf$2.contents += " Another nested block";
       let arg_match$7 =
-        [new Map([["a", buf$1.contents], ["b", buf$2.contents]])];
+        [
+          new Hashtbl$0(
+            new Map(
+              [
+                ["a", new String$0(buf$1.contents)],
+                ["b", new String$0(buf$2.contents)],
+              ]
+            )
+          ),
+        ];
       let match_props$5 = new Map();
       let exit$7 = -1;
       let match_arg$12 = arg_match$7[0];
-      let match_arg$13 = match_arg$12.get("a");
-      let match_arg$14 = match_arg$12.get("b");
+      let match_arg$13 = match_arg$12.v.get("a");
+      let match_arg$14 = match_arg$12.v.get("b");
       match_props$5.set("a", match_arg$13);
       match_props$5.set("b", match_arg$14);
       exit$7 = 0;
-      buffer_add_escape$0(buf$0)(match_props$5.get("a"));
+      buffer_add_escape$0(buf$0)(match_props$5.get("a").v);
       buf$0.contents += " ";
-      buffer_add_escape$0(buf$0)(match_props$5.get("b"));
+      buffer_add_escape$0(buf$0)(match_props$5.get("b").v);
       buf$0.contents += "\n";
       buf$0.contents += "Component\n---------\n\n";
       let buf$3 = {contents: ""};
@@ -1528,9 +1573,22 @@
           Component$0(
             new Map(
               [
-                ["children", buf$3.contents],
-                ["list", [1, [2, [3, 0]]]],
-                ["optional", 0],
+                ["children", new String$0(buf$3.contents)],
+                [
+                  "list",
+                  new Array$0(
+                    [
+                      new Int$0(1),
+                      new Array$0(
+                        [
+                          new Int$0(2),
+                          new Array$0([new Int$0(3), new Int$0(0)]),
+                        ]
+                      ),
+                    ]
+                  ),
+                ],
+                ["optional", new Int$0(0)],
               ]
             )
           );
@@ -1543,15 +1601,15 @@
   ----------------------------\n\
   \n\
   ";
-      let arg_match$8 = [1, 0, 3];
+      let arg_match$8 = [new Int$0(1), new Int$0(0), new Int$0(3)];
       let match_props$6 = new Map();
       let exit$8 = -1;
       let match_arg$15 = arg_match$8[0];
-      if (match_arg$15 === 1) {
+      if (match_arg$15.v === 1) {
         let match_arg$16 = arg_match$8[1];
-        if (typeof match_arg$16 === "number") {
+        if (match_arg$16 instanceof Int$0) {
           let match_arg$17 = arg_match$8[2];
-          if (match_arg$17 === 0) {
+          if (match_arg$17.v === 0) {
             exit$8 = 0;
           } else {
             match_props$6.set("y", match_arg$17);
@@ -1559,32 +1617,32 @@
           }
         } else {
           let match_arg$17 = arg_match$8[1];
-          let match_arg$18 = match_arg$17[0];
-          if (match_arg$18 === 1) {
+          let match_arg$18 = match_arg$17.v[0];
+          if (match_arg$18.v === 1) {
             let match_arg$19 = arg_match$8[2];
-            if (match_arg$19 === 0) {
+            if (match_arg$19.v === 0) {
               exit$8 = 0;
             } else {
-              if (match_arg$19 === 1) { exit$8 = 3; } else { exit$8 = 4; }
+              if (match_arg$19.v === 1) { exit$8 = 3; } else { exit$8 = 4; }
             }
           }
           if (exit$8 === -1) {
             let match_arg$19 = arg_match$8[2];
-            if (match_arg$19 === 0) { exit$8 = 0; } else { exit$8 = 4; }
+            if (match_arg$19.v === 0) { exit$8 = 0; } else { exit$8 = 4; }
           }
         }
       } else {
         let match_arg$16 = arg_match$8[1];
-        if (typeof match_arg$16 === "number") {
+        if (match_arg$16 instanceof Int$0) {
           let match_arg$17 = arg_match$8[2];
           match_props$6.set("y", match_arg$17);
           exit$8 = 2;
         } else {
           let match_arg$17 = arg_match$8[1];
-          let match_arg$18 = match_arg$17[0];
-          if (match_arg$18 === 1) {
+          let match_arg$18 = match_arg$17.v[0];
+          if (match_arg$18.v === 1) {
             let match_arg$19 = arg_match$8[2];
-            if (match_arg$19 === 0) {
+            if (match_arg$19.v === 0) {
               match_props$6.set("x", match_arg$15);
               exit$8 = 1;
             } else {
@@ -1599,12 +1657,12 @@
       } else {
         if (exit$8 === 1) {
           buf$0.contents += " 1 ";
-          buffer_add_escape$0(buf$0)(String(match_props$6.get("x")));
+          buffer_add_escape$0(buf$0)(String(match_props$6.get("x").v));
           buf$0.contents += "\n";
         } else {
           if (exit$8 === 2) {
             buf$0.contents += " 2 ";
-            buffer_add_escape$0(buf$0)(String(match_props$6.get("y")));
+            buffer_add_escape$0(buf$0)(String(match_props$6.get("y").v));
             buf$0.contents += "\n";
           } else {
             if (exit$8 === 3) {
@@ -1615,22 +1673,28 @@
           }
         }
       }
-      let arg_match$9 = [[[10, 20], 30], 40];
+      let arg_match$9 =
+        [
+          new Array$0(
+            [new Array$0([new Int$0(10), new Int$0(20)]), new Int$0(30)]
+          ),
+          new Int$0(40),
+        ];
       let match_props$7 = new Map();
       let exit$9 = -1;
       let match_arg$16 = arg_match$9[0];
-      let match_arg$17 = match_arg$16[0];
-      let match_arg$18 = match_arg$17[0];
-      if (match_arg$18 === 10) {
-        let match_arg$19 = match_arg$17[1];
-        if (match_arg$19 === 20) {
-          let match_arg$20 = match_arg$16[1];
-          if (match_arg$20 === 30) {
+      let match_arg$17 = match_arg$16.v[0];
+      let match_arg$18 = match_arg$17.v[0];
+      if (match_arg$18.v === 10) {
+        let match_arg$19 = match_arg$17.v[1];
+        if (match_arg$19.v === 20) {
+          let match_arg$20 = match_arg$16.v[1];
+          if (match_arg$20.v === 30) {
             let match_arg$21 = arg_match$9[1];
-            if (match_arg$21 === 40) {
+            if (match_arg$21.v === 40) {
               exit$9 = 1;
             } else {
-              if (match_arg$21 === 41) {
+              if (match_arg$21.v === 41) {
                 match_props$7.set("_x", match_arg$16);
                 exit$9 = 0;
               } else {
@@ -1644,7 +1708,7 @@
       }
       if (exit$9 === -1) {
         let match_arg$19 = arg_match$9[1];
-        if (match_arg$19 === 41) {
+        if (match_arg$19.v === 41) {
           match_props$7.set("_x", match_arg$16);
           exit$9 = 0;
         } else {
@@ -1660,26 +1724,32 @@
           buf$0.contents += " Pass\n";
         } else {
           buf$0.contents += " ";
-          buffer_add_escape$0(buf$0)(String(match_props$7.get("z")));
+          buffer_add_escape$0(buf$0)(String(match_props$7.get("z").v));
           buf$0.contents += "\n";
         }
       }
-      let arg_match$10 = [[[10, 20], 99], 40];
+      let arg_match$10 =
+        [
+          new Array$0(
+            [new Array$0([new Int$0(10), new Int$0(20)]), new Int$0(99)]
+          ),
+          new Int$0(40),
+        ];
       let match_props$8 = new Map();
       let exit$10 = -1;
       let match_arg$19 = arg_match$10[0];
-      let match_arg$20 = match_arg$19[0];
-      let match_arg$21 = match_arg$20[0];
-      if (match_arg$21 === 10) {
-        let match_arg$22 = match_arg$20[1];
-        if (match_arg$22 === 20) {
-          let match_arg$23 = match_arg$19[1];
-          if (match_arg$23 === 30) {
+      let match_arg$20 = match_arg$19.v[0];
+      let match_arg$21 = match_arg$20.v[0];
+      if (match_arg$21.v === 10) {
+        let match_arg$22 = match_arg$20.v[1];
+        if (match_arg$22.v === 20) {
+          let match_arg$23 = match_arg$19.v[1];
+          if (match_arg$23.v === 30) {
             let match_arg$24 = arg_match$10[1];
-            if (match_arg$24 === 40) {
+            if (match_arg$24.v === 40) {
               exit$10 = 1;
             } else {
-              if (match_arg$24 === 41) {
+              if (match_arg$24.v === 41) {
                 match_props$8.set("_x", match_arg$19);
                 exit$10 = 0;
               } else {
@@ -1693,7 +1763,7 @@
       }
       if (exit$10 === -1) {
         let match_arg$22 = arg_match$10[1];
-        if (match_arg$22 === 41) {
+        if (match_arg$22.v === 41) {
           match_props$8.set("_x", match_arg$19);
           exit$10 = 0;
         } else {
@@ -1709,7 +1779,7 @@
           buf$0.contents += " Fail\n";
         } else {
           buf$0.contents += " ";
-          buffer_add_escape$0(buf$0)(String(match_props$8.get("z")));
+          buffer_add_escape$0(buf$0)(String(match_props$8.get("z").v));
           buf$0.contents += "\n";
         }
       }
@@ -1721,7 +1791,7 @@
   \\\" \\ \\ \\\"\n\
   \n\
   ";
-      buffer_add_escape$0(buf$0)(props$0.get("unicode_string"));
+      buffer_add_escape$0(buf$0)(props$0.get("unicode_string").v);
       buf$0.contents +=
         "\n\
   \n\

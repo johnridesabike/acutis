@@ -219,12 +219,11 @@ let missing_component stack name =
   in
   Acutis_error (msg_compile f)
 
-let internal ~__POS__:(file, lnum, cnum, enum) s =
-  let f =
-    F.dprintf
-      "This is a bug in the compiler. Please contact the Acutis developer.@;\
-       @[OCaml source file %S, line %d, characters %d-%d.@]@;\
-       @[%a@]"
-      file lnum cnum enum F.pp_print_text s
-  in
-  raise @@ msg_compile f
+let internal ~__POS__:(file, lnum, cnum, enum) =
+  F.kdprintf @@ fun t ->
+  raise
+  @@ F.dprintf
+       "This is a bug in the compiler. Please contact the Acutis developer.@;\
+        @[OCaml source file %S, line %d, characters %d-%d.@]@;\
+        @[%t@]"
+       file lnum cnum enum t

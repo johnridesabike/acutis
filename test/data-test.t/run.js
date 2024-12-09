@@ -1,6 +1,6 @@
 import fs from "node:fs/promises";
 import acutis from "#main";
-let { Compile, Component, Render, Typescheme } = acutis;
+let { Compile, Component, Render, Typescheme, Utils } = acutis;
 
 let filepath = process.argv[2];
 let Ty = Typescheme;
@@ -22,6 +22,7 @@ let components = Compile.components([
       ["none", Ty.nullable(Ty.string())],
       ["t", Ty.boolean()],
       ["f", Ty.boolean()],
+      ["unknown", Ty.unknown()],
     ]),
     (props) => JSON.stringify(props, null, 2),
   ),
@@ -35,6 +36,7 @@ let components = Compile.components([
       ["none", Ty.unknown()],
       ["t", Ty.unknown()],
       ["f", Ty.unknown()],
+      ["unknown", Ty.unknown()],
     ]),
     (props) => JSON.stringify(props, null, 2),
   ),
@@ -47,4 +49,10 @@ Promise.all([fs.readFile("data.json"), fs.readFile(filepath)])
     let result = Render.sync(template, data);
     process.stdout.write(result);
   })
-  .catch(console.error);
+  .catch((e) => {
+    if (Utils.isError(e)) {
+      console.error(Utils.getError(e));
+    } else {
+      console.error(e);
+    }
+  });
