@@ -15,5 +15,5 @@
 Encoding:
 {% Comp dict arr arrEmpty some none t f unknown / %}
 Encoding unknowns:
-{% UnknownComp dict arr arrEmpty some none t f unknown / %}
+{% UnknownComp unknown / %}
 {%~ /match ~%}

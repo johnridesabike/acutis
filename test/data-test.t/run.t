@@ -44,8 +44,9 @@ Both the JavaScript and native runtimes should decode data identically.
   pass
 
 Encoding data should work. If a function component takes an 'unknown' prop, then
-unknown values are passed as-is, and passing concrete values is not an error but
-is unspecified behavior (currently they're made null).
+unknown values are passed as-is, and passing concrete values returns their
+internal representation. The latter case is not included in this test because
+that representation is not deterministic across all build profiles.
   $ node run.js encode.acutis
   Encoding:
   {
@@ -74,13 +75,6 @@ is unspecified behavior (currently they're made null).
   }
   Encoding unknowns:
   {
-    "arr": null,
-    "arrEmpty": null,
-    "dict": null,
-    "f": null,
-    "none": null,
-    "some": null,
-    "t": null,
     "unknown": [
       true,
       null,

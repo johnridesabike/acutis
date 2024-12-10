@@ -108,6 +108,7 @@ module type DECODABLE = sig
   val of_seq : t Seq.t -> t
   val of_seq_assoc : (string * t) Seq.t -> t
   val to_string : t -> string
+  val marshal : 'a -> t
 end
 
 module Render (P : PROMISE) (D : DECODABLE) : sig
@@ -631,6 +632,7 @@ module PrintJs = struct
         if_else (test x) ~then_:(fun () -> convert x ok) ~else_:error
 
       let to_string = to_string
+      let marshal = Fun.id
     end
   end
 
@@ -705,6 +707,7 @@ module PrintJs = struct
       let of_float x = { x with from = F.External.of_float x.from }
       let of_string x = { x with from = F.External.of_string x.from }
       let of_bool x = { x with from = F.External.of_bool x.from }
+      let marshal x = { x with from = F.External.marshal x.from }
     end
   end
 

@@ -203,6 +203,7 @@ module type DECODABLE = sig
   (** {1 Debugging} *)
 
   val to_string : t -> string
+  val marshal : 'a -> t
 end
 
 (** A functor that builds a render implementation for a given promise interface

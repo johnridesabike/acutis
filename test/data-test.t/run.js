@@ -29,6 +29,9 @@ let components = Compile.components([
   Component.funSync(
     "UnknownComp",
     Ty.make([
+      // The marshaled representation of these values is not deterministic.
+      // Uncomment to test them but don't commit the output.
+      /*
       ["dict", Ty.unknown()],
       ["arr", Ty.unknown()],
       ["arrEmpty", Ty.unknown()],
@@ -36,6 +39,7 @@ let components = Compile.components([
       ["none", Ty.unknown()],
       ["t", Ty.unknown()],
       ["f", Ty.unknown()],
+      */
       ["unknown", Ty.unknown()],
     ]),
     (props) => JSON.stringify(props, null, 2),

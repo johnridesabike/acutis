@@ -92,6 +92,8 @@ module DecodeJs = struct
 
   let to_string j =
     Js.Unsafe.fun_call Js.Unsafe.global##._String [| j |] |> Js.to_string
+
+  let marshal = Js.Unsafe.inject
 end
 
 module Promise = struct

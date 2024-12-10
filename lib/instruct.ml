@@ -201,6 +201,7 @@ module type SEM = sig
       'b stm
 
     val to_string : t exp -> string exp
+    val marshal : 'a exp -> t exp
   end
 
   (** {1 Importing and exporting.} *)
@@ -830,7 +831,7 @@ end = struct
       | T.Unknown _ ->
           if_else (UUnknown.test props)
             ~then_:(fun () -> set (UUnknown.get props))
-            ~else_:(fun () -> set External.null)
+            ~else_:(fun () -> set (External.marshal props))
       | T.Enum_int (_, Bool) -> set (external_of_int_bool (UInt.get props))
       | T.String | T.Enum_string _ ->
           set (External.of_string (UString.get props))
@@ -1276,6 +1277,7 @@ module MakeTrans
            ~error:(fun () -> bwds (error ())))
 
     let to_string x = fwde (F.External.to_string (bwde x))
+    let marshal x = fwde (F.External.marshal (bwde x))
   end
 
   let import i f = fwds (F.import i (fun fi -> bwds (f (fwde fi))))
@@ -1449,6 +1451,7 @@ let pp (type a) pp_import ppf c =
           c t decoded (ok decoded) (error ())
 
       let to_string = F.dprintf "(@[External.to_string@ %t@])"
+      let marshal = F.dprintf "(@[External.marshal@ %t@])"
     end
 
     type import = a

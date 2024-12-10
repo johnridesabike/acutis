@@ -36,6 +36,7 @@ module Json = struct
   let of_seq x = `List (List.of_seq x)
   let of_seq_assoc x = `Assoc (List.of_seq x)
   let to_string t = Yojson.Basic.pretty_to_string t
+  let marshal x = `String (Marshal.to_string x [])
 end
 
 let usage_msg =

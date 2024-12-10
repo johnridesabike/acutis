@@ -271,7 +271,7 @@
           if (arg$0.get("unknown") instanceof Unknown$0) {
             yield (["unknown", arg$0.get("unknown").v]);
           } else {
-            yield (["unknown", null]);
+            yield (["unknown", arg$0.get("unknown")]);
           }
         })();
       return (import$0(Object.fromEntries(seq$0)));
