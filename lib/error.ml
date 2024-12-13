@@ -43,14 +43,14 @@ let lex_unterminated_string lexbuf =
   let f = F.dprintf "@[%a@]" F.pp_print_text "Unterminated string." in
   raise @@ msg_syntax (loc_of_lexbuf lexbuf) f
 
-let parse_error i lexbuf =
+let parse_error i loc =
   let f =
     try
       let mess = ParserMessages.message i in
       F.dprintf "@[%a@]" F.pp_print_text (String.trim mess)
     with Not_found -> F.dprintf "Unexpected token."
   in
-  raise @@ msg ~kind:"Parse error" (loc_of_lexbuf lexbuf) f
+  raise @@ msg ~kind:"Parse error" loc f
 
 let msg_ty = msg ~kind:"Type error"
 

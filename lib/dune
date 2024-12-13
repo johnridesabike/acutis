@@ -1,12 +1,13 @@
 (library
  (public_name acutis.internals)
- (name acutis_internals))
+ (name acutis_internals)
+ (libraries menhirLib))
 
 (ocamllex lexer)
 
 (menhir
  (modules parser)
- (flags --dump --exn-carries-state))
+ (flags --dump --table))
 
 ;; These rules generate the Menhir error messages:
 

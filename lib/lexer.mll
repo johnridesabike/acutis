@@ -14,12 +14,11 @@ module L = Lexing
 open Parser
 
 type mode = Text | Expr | Queue of token * mode
+type state = { mutable mode : mode; lexbuf : L.lexbuf }
 
-type state = mode ref
-
-let make_state () = ref Text
-
-let make_state_interface () = ref Expr
+let make_state lexbuf = { mode = Text; lexbuf; }
+let make_state_interface lexbuf = { mode = Expr; lexbuf; }
+let loc { lexbuf; _ } = (lexbuf.lex_start_p, lexbuf.lex_curr_p)
 }
 
 let white = [' ' '\t']+
@@ -39,21 +38,21 @@ let float = '-'? digit+ frac? exp?
 (* Because comments can nest, we include the delimiters in their text. *)
 
 rule text state buf = parse
-  | "{%"          { state := Expr; TEXT (B.contents buf) }
-  | "{%~"         { state := Queue (TILDE, Expr); TEXT (B.contents buf) }
-  | "{{%"         { state := Queue (UNESCAPE_BEGIN, Expr);
+  | "{%"          { state.mode <- Expr; TEXT (B.contents buf) }
+  | "{%~"         { state.mode <- Queue (TILDE, Expr); TEXT (B.contents buf) }
+  | "{{%"         { state.mode <- Queue (UNESCAPE_BEGIN, Expr);
                     TEXT (B.contents buf) }
-  | "{{%~"        { state := Queue (TILDE, Queue (UNESCAPE_BEGIN, Expr));
+  | "{{%~"        { state.mode <- Queue (TILDE, Queue (UNESCAPE_BEGIN, Expr));
                     TEXT (B.contents buf) }
   | "{*" as s     { let cbuf = B.create 256 in
                     B.add_string cbuf s;
                     comment lexbuf.lex_start_p cbuf lexbuf;
-                    state := Queue (COMMENT (B.contents cbuf), Text);
+                    state.mode <- Queue (COMMENT (B.contents cbuf), Text);
                     TEXT (B.contents buf) }
   | newline as s  { L.new_line lexbuf;
                     B.add_string buf s;
                     text state buf lexbuf }
-  | eof           { state := Queue (EOF, Text); TEXT (B.contents buf) }
+  | eof           { state.mode <- Queue (EOF, Text); TEXT (B.contents buf) }
   | _ as c        { B.add_char buf c; text state buf lexbuf }
 
 and comment pos buf = parse
@@ -69,10 +68,10 @@ and comment pos buf = parse
   | _ as c        { B.add_char buf c; comment pos buf lexbuf }
 
 and expr state = parse
-  | "%}"          { state := Text; text state (B.create 256) lexbuf }
-  | "~%}"         { state := Text; TILDE }
-  | "%}}"         { state := Text; UNESCAPE_END }
-  | "~%}}"        { state := Queue (TILDE, Text); UNESCAPE_END }
+  | "%}"          { state.mode <- Text; text state (B.create 256) lexbuf }
+  | "~%}"         { state.mode <- Text; TILDE }
+  | "%}}"         { state.mode <- Text; UNESCAPE_END }
+  | "~%}}"        { state.mode <- Queue (TILDE, Text); UNESCAPE_END }
   | "match"       { MATCH }
   | "with"        { WITH }
   | "map"         { MAP }
@@ -133,9 +132,12 @@ and string pos buf = parse
   | _ as c        { B.add_char buf c; string pos buf lexbuf }
 
 {
-let acutis state lexbuf =
-  match !state with
-  | Text -> text state (B.create 256) lexbuf
-  | Expr -> expr state lexbuf
-  | Queue (tok , state') -> state := state'; tok
+let supplier state () =
+  let token = 
+    match state.mode with
+    | Text -> text state (B.create 256) state.lexbuf
+    | Expr -> expr state state.lexbuf
+    | Queue (token, state') -> state.mode <- state'; token
+  in
+  (token, state.lexbuf.lex_start_p, state.lexbuf.lex_curr_p)
 }
