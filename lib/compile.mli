@@ -8,8 +8,8 @@
 (*                                                                        *)
 (**************************************************************************)
 
-(** Orchestrate the {!Lexer}, {!Parser}, {!Typechecker}, and {!Matching}
-    to produce the final template. *)
+(** Orchestrate the {!Lexer}, {!Parser}, {!Typechecker}, and {!Matching} to
+    produce the final template. *)
 
 type 'a map_string := 'a Map.Make(String).t
 

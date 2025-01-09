@@ -16,6 +16,6 @@ let pp_pos ppf pos = Format.fprintf ppf "%d:%d" pos.Lexing.pos_lnum (column pos)
 let pp ppf (start, end_) = Format.fprintf ppf "%a-%a" pp_pos start pp_pos end_
 let dummy = (Lexing.dummy_pos, Lexing.dummy_pos)
 
-(** Don't show locations.
-    In development, this can be modified to show information as needed. *)
+(** Don't show locations. In development, this can be modified to show
+    information as needed. *)
 let to_sexp _ = Sexp.noop

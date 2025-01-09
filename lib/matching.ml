@@ -116,11 +116,9 @@ type 'a t = { tree : (leaf, int) tree; exits : 'a Exits.t }
    change anyway. *)
 
 let rec equal_tree :
-      'leaf 'key.
-      ('leaf -> 'leaf -> bool) ->
-      ('leaf, 'key) tree ->
-      ('leaf, 'key) tree ->
-      bool =
+    'leaf 'key.
+    ('leaf -> 'leaf -> bool) -> ('leaf, 'key) tree -> ('leaf, 'key) tree -> bool
+    =
  fun equal_leaf a b ->
   match (a, b) with
   | Switch a, Switch { cases; wildcard; ids = _; key = _; check_cases = _ } ->
@@ -413,9 +411,9 @@ let safe_nest n ~key ~ids ~child ~wildcard =
       | Exhaustive -> Nest { key; ids; child; wildcard = None }
       | Partial -> Nest { key; ids; child; wildcard })
 
-(** The merge algorithm must do some extra work to detect when merges fail.
-    A failure is defined by when a merger returns a tree that is identical to
-    its input tree. This is important because it enables us to detect unused
+(** The merge algorithm must do some extra work to detect when merges fail. A
+    failure is defined by when a merger returns a tree that is identical to its
+    input tree. This is important because it enables us to detect unused
     patterns.
 
     In some cases, it's possible to produce structurally different trees even
@@ -429,8 +427,7 @@ let safe_nest n ~key ~ids ~child ~wildcard =
     original, then merge them. If the new value is greater than the original,
     then check if we're at the end of the list. If we are, then add this new
     case. If not, then keep searching. *)
-let[@tail_mod_cons] rec merge_testcases_aux :
-    type a k.
+let[@tail_mod_cons] rec merge_testcases_aux : type a k.
     (a, leaf) depth ->
     (a, k) switchcase ->
     scalar ->
@@ -450,10 +447,9 @@ let[@tail_mod_cons] rec merge_testcases_aux :
         | Some next -> Some (merge_testcases_aux n next data if_match));
     }
 
-(** When merging [a] and [b], we take each value from [b] and try to merge
-    them with the items in [a]. *)
-and merge_testcases :
-    type a k.
+(** When merging [a] and [b], we take each value from [b] and try to merge them
+    with the items in [a]. *)
+and merge_testcases : type a k.
     (a, leaf) depth ->
     (a, k) switchcase ->
     (a, k) switchcase ->
@@ -465,8 +461,7 @@ and merge_testcases :
 (** When we merge a list of values with a wildcard, some of them may not merge
     successfully. We filter out any unsuccessful mergers, since their paths are
     covered by the wildcard case. *)
-and[@tail_mod_cons] merge_testcases_into_wildcard :
-    type a k.
+and[@tail_mod_cons] merge_testcases_into_wildcard : type a k.
     (a, leaf) depth ->
     (a, k) tree ->
     (a, k) switchcase ->
@@ -487,8 +482,7 @@ and[@tail_mod_cons] merge_testcases_into_wildcard :
 
 (** When we expand a wildcard into a list of test values, we merge it with each
     child. *)
-and[@tail_mod_cons] expand_wildcard_into_testcases :
-    type a k.
+and[@tail_mod_cons] expand_wildcard_into_testcases : type a k.
     (a, leaf) depth -> (a, k) switchcase -> (a, k) tree -> (a, k) switchcase =
  fun n { data; if_match; next } wildcard ->
   let if_match = merge n if_match wildcard in
@@ -505,8 +499,7 @@ and[@tail_mod_cons] expand_wildcard_into_testcases :
     wildcard's child nodes after the nest's child nodes. We use a second [depth]
     value to track where we are relative to the beginning of the nest. [Z]
     represents the depth where the nest began. *)
-and expand_wildcard_after_nest :
-    type a b ka kb.
+and expand_wildcard_after_nest : type a b ka kb.
     (a, leaf) depth ->
     (a, (b, kb) tree) depth ->
     (a, ka) tree ->
@@ -574,8 +567,7 @@ and expand_wildcard_after_nest :
     successful mergers. For constructs and switch nodes, then at least one path
     must merge successfully. Unsuccessful paths are filtered out, since their
     paths are covered by the wildcard case. *)
-and merge_wildcard_after_nest :
-    type a b ka kb.
+and merge_wildcard_after_nest : type a b ka kb.
     (b, (a, ka) tree) depth ->
     (b, leaf) depth ->
     wildcard:(a, ka) tree ->
@@ -666,8 +658,8 @@ and merge_wildcard_after_nest :
 
 (** Merge two trees. If the merge is unsuccessful, then the result will be
     structurally equal to the first tree. *)
-and merge :
-    type a k. (a, leaf) depth -> (a, k) tree -> (a, k) tree -> (a, k) tree =
+and merge : type a k.
+    (a, leaf) depth -> (a, k) tree -> (a, k) tree -> (a, k) tree =
  fun n a b ->
   match (a, b) with
   | End a, End b -> ( match n with Z -> End a | S n -> End (merge n a b))
@@ -855,12 +847,12 @@ let of_scalar key data if_match check_cases =
   Switch { key; ids; cases; wildcard = None; check_cases }
 
 let rec of_tpat :
-      'a 'k.
-      key:'k ->
-      bindings ->
-      (bindings -> ('a, 'k) tree) ->
-      [ `Destruct ] T.pat ->
-      ('a, 'k) tree =
+    'a 'k.
+    key:'k ->
+    bindings ->
+    (bindings -> ('a, 'k) tree) ->
+    [ `Destruct ] T.pat ->
+    ('a, 'k) tree =
  fun ~key b k -> function
   | Any -> Wildcard { ids; key; child = k b }
   | Var x ->
@@ -920,12 +912,12 @@ let rec of_tpat :
       Nest { key; ids; child = String_keys child; wildcard = None }
 
 and of_list :
-      'a.
-      key:int ->
-      bindings ->
-      (bindings -> ('a, int) tree) ->
-      [ `Destruct ] T.pat list ->
-      ('a, int) tree =
+    'a.
+    key:int ->
+    bindings ->
+    (bindings -> ('a, int) tree) ->
+    [ `Destruct ] T.pat list ->
+    ('a, int) tree =
  fun ~key b k -> function
   | [] -> k b
   | p :: l -> of_tpat ~key b (fun b -> of_list ~key:(succ key) b k l) p
@@ -995,8 +987,8 @@ let scalar_to_sexp = function
   | `Float f -> Sexp.float f
 
 let rec tree_to_sexp :
-      'leaf 'key.
-      ('leaf -> Sexp.t) -> ('key -> Sexp.t) -> ('leaf, 'key) tree -> Sexp.t =
+    'leaf 'key.
+    ('leaf -> Sexp.t) -> ('key -> Sexp.t) -> ('leaf, 'key) tree -> Sexp.t =
  fun leaf_f key_f -> function
   | Switch { key; ids; cases; wildcard; check_cases } ->
       Sexp.make "switch"

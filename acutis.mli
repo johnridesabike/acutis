@@ -19,8 +19,8 @@ exception Acutis_error of error
 
 (** {1 Declaring type schemes.} *)
 
-(** These are used primarily for component functions. The examples are in
-    Acutis syntax. *)
+(** These are used primarily for component functions. The examples are in Acutis
+    syntax. *)
 
 type ty = private Acutis_internals.Typechecker.Type.t
 type typescheme = private Acutis_internals.Typechecker.Type.scheme
@@ -104,16 +104,16 @@ val union_int :
 val union_boolean :
   string -> f:(string * ty) Seq.t -> t:(string * ty) Seq.t -> ty
 (** [union_boolean field ~f ~t] creates a record where if [field] is [false]
-      then the record has the shape of [f] and if [field] is [true] then the
-      record has the shape of [t]. *)
+    then the record has the shape of [f] and if [field] is [true] then the
+    record has the shape of [t]. *)
 
 val union_false_only : string -> (string * ty) Seq.t -> ty
 (** This is similar to [union_boolean] except that the field can only be
     [false]. *)
 
 val union_true_only : string -> (string * ty) Seq.t -> ty
-(** This is similar to [union_boolean] except that the field can only be
-    [true]. *)
+(** This is similar to [union_boolean] except that the field can only be [true].
+*)
 
 (** {1 Compiling templates.}*)
 
@@ -128,8 +128,8 @@ val comp_parse : fname:string -> name:string -> Lexing.lexbuf -> 'a comp
     component is called in Acutis code.*)
 
 val comp_fun : name:string -> typescheme -> 'a -> 'a comp
-(** Convert a function (or possibly data for loading a function) into a
-    template component. *)
+(** Convert a function (or possibly data for loading a function) into a template
+    component. *)
 
 type 'a comps_compiled = private 'a Acutis_internals.Compile.Components.t
 (** A group of compiled and linked components. *)

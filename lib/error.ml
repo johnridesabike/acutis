@@ -163,7 +163,8 @@ let interface_type_mismatch loc k pp a b =
        Interface:@;\
        <1 2>%a@;\
        Implementation:@;\
-       <1 2>%a" k pp a pp b
+       <1 2>%a"
+      k pp a pp b
   in
   raise @@ msg_ty loc f
 
@@ -174,7 +175,8 @@ let interface_missing_prop loc k pp ty =
        Missing prop name:@;\
        <1 2>%s@;\
        Of type:@;\
-       <1 2>%a" k pp ty
+       <1 2>%a"
+      k pp ty
   in
   raise @@ msg_ty loc f
 
@@ -189,7 +191,8 @@ let parmatch loc pp_pat pat =
     F.dprintf
       "This pattern-matching is not exhaustive.@;\
        Here's an example of a pattern which is not matched:@;\
-       <1 2>%a" pp_pat pat
+       <1 2>%a"
+      pp_pat pat
   in
   raise @@ msg_match loc f
 

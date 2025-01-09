@@ -56,7 +56,8 @@ module type SEM = sig
   (** Define a new immutable binding. The string is used for pretty-printing. *)
 
   val ( let& ) : string * 'a exp -> ('a ref -> 'b stm) -> 'b stm
-  (** Define a new reference variable. The string is used for pretty-printing. *)
+  (** Define a new reference variable. The string is used for pretty-printing.
+  *)
 
   val ( ! ) : 'a ref -> 'a exp
   val ( := ) : 'a ref -> 'a exp -> unit stm
@@ -378,15 +379,14 @@ end = struct
       else ( let$ ) ("match_arg", arg.%{string key}) f
 
     let rec match_tree :
-          'leaf 'key.
-          exit:int ref ->
-          leafstm:(vars:untyped exp MapInt.t -> 'leaf -> unit stm) ->
-          get_arg:
-            (optional:bool -> 'key -> (untyped exp -> unit stm) -> unit stm) ->
-          vars:untyped exp MapInt.t ->
-          ?optional:bool ->
-          ('leaf, 'key) Matching.tree ->
-          unit stm =
+        'leaf 'key.
+        exit:int ref ->
+        leafstm:(vars:untyped exp MapInt.t -> 'leaf -> unit stm) ->
+        get_arg:(optional:bool -> 'key -> (untyped exp -> unit stm) -> unit stm) ->
+        vars:untyped exp MapInt.t ->
+        ?optional:bool ->
+        ('leaf, 'key) Matching.tree ->
+        unit stm =
      fun ~exit ~leafstm ~get_arg ~vars ?(optional = false) -> function
       | Matching.Switch { key; ids; cases; wildcard; _ } ->
           let@ arg = get_arg ~optional key in
@@ -759,8 +759,7 @@ end = struct
             ~if_open:(fun x f -> f (UString.set x))
             (MapString.to_seq cases) (string key) row ~set ~debug input
 
-    and decode_union :
-        type ty extern.
+    and decode_union : type ty extern.
         extern External.decoder ->
         if_equal:
           (extern exp ->
@@ -892,8 +891,7 @@ end = struct
             (MapString.to_seq cases |> Seq.map (fun (k, v) -> (string k, v)))
             row (string key) ~set props
 
-    and encode_union :
-        type a.
+    and encode_union : type a.
         unbox:(untyped exp -> a exp) ->
         to_extern:(a exp -> External.t exp) ->
         (a exp * T.record) Seq.t ->
@@ -1008,7 +1006,7 @@ end = struct
     let$ stack_add =
       ( "stack_add",
         lambda3 (fun x stack f ->
-            let| () = stm (stack @@ f) (* Use FIFO evaluation. *) in
+            let| () = (* Use FIFO evaluation. *) stm (stack @@ f) in
             return (f @@ x)) )
     in
     let@ (module UInt : UNTYPED with type t = int) = untyped "int" in

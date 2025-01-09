@@ -154,12 +154,12 @@ module Type = struct
       ppf (MapString.to_seq !m)
 
   and pp_union :
-        'a.
-        (F.formatter -> 'a -> unit) ->
-        string ->
-        F.formatter ->
-        'a * record ->
-        unit =
+      'a.
+      (F.formatter -> 'a -> unit) ->
+      string ->
+      F.formatter ->
+      'a * record ->
+      unit =
    fun pp_tag key ppf (tag, fields) ->
     pp_record ~tag:(pp_tag, (key, tag)) ppf fields
 
@@ -191,14 +191,12 @@ module Type = struct
       | Int -> MapInt.iter
       | String -> MapString.iter
 
-    let union :
-        type k v m. (k, v, m) t -> (k -> v -> v -> v option) -> m -> m -> m =
-      function
+    let union : type k v m.
+        (k, v, m) t -> (k -> v -> v -> v option) -> m -> m -> m = function
       | Int -> MapInt.union
       | String -> MapString.union
 
-    let merge :
-        type k v m.
+    let merge : type k v m.
         (k, v, m) t -> (k -> v option -> v option -> v option) -> m -> m -> m =
       function
       | Int -> MapInt.merge
@@ -345,12 +343,12 @@ module Type = struct
             !a !b
 
   and unify_union :
-        'k 'm. ('k, 'v, 'm) Polymap.t -> unify_mode -> 'm -> 'm -> 'm =
+      'k 'm. ('k, 'v, 'm) Polymap.t -> unify_mode -> 'm -> 'm -> 'm =
    fun poly mode a b ->
     Polymap.union poly (fun _ a b -> unify_record mode a b; Some a) a b
 
   and subset_union :
-        'k 'm. ('k, 'v, 'm) Polymap.t -> unify_mode -> 'm -> 'm -> unit =
+      'k 'm. ('k, 'v, 'm) Polymap.t -> unify_mode -> 'm -> 'm -> unit =
    fun poly mode a b ->
     Polymap.merge poly
       (fun _ a b ->
@@ -393,7 +391,7 @@ module Type = struct
     | _ -> false
 
   and check_interface_union :
-        'k 'm. ('k, 'v, 'm) Polymap.t -> intf:'m sum -> impl:'m sum -> bool =
+      'k 'm. ('k, 'v, 'm) Polymap.t -> intf:'m sum -> impl:'m sum -> bool =
    fun poly ~intf ~impl ->
     match (intf.row, impl.row) with
     | `Closed, `Closed ->
@@ -417,8 +415,8 @@ module Type = struct
         | None -> false)
       !impl
 
-  (** Check for equality, but allow the interface to add additional
-      fields to records and additional entries to open enums and unions. *)
+  (** Check for equality, but allow the interface to add additional fields to
+      records and additional entries to open enums and unions. *)
   let check_interface loc ~intf ~impl =
     MapString.iter
       (fun k impl ->
@@ -781,15 +779,14 @@ type (_, _) var_action =
 
 type _ Effect.t += Get_component_types : string -> Type.scheme Effect.t
 
-(** When we type-check a pattern, we create a temporary type and unify it
-    with the input type. Information retained in the resulting typed-pattern
+(** When we type-check a pattern, we create a temporary type and unify it with
+    the input type. Information retained in the resulting typed-pattern
     structure, for example dictionary keys or sum-type data, must come from the
     input type if possible, not the newly created one. The input type is the
     master copy which gets reused, and the temporary copy will become stale. *)
 
-let rec make_pat :
-    type a. (a, 'b) var_action -> Type.unify_mode -> Type.t -> Ast.pat -> a pat
-    =
+let rec make_pat : type a.
+    (a, 'b) var_action -> Type.unify_mode -> Type.t -> Ast.pat -> a pat =
  fun var_action mode ty -> function
   | Int (loc, i) ->
       Type.unify loc mode ty (Type.int ());
@@ -926,8 +923,7 @@ let rec make_pat :
       | Construct_update_vars ctx -> Context.update ctx loc b ty);
       Var b
 
-and[@tail_mod_cons] make_list :
-    type a.
+and[@tail_mod_cons] make_list : type a.
     tl:a pat ->
     (a, 'b) var_action ->
     Type.unify_mode ->
@@ -940,8 +936,7 @@ and[@tail_mod_cons] make_list :
       let hd = make_pat var_action mode ty p in
       Cons (Tuple [ hd; make_list ~tl var_action mode ty l ])
 
-and make_record :
-    type a.
+and make_record : type a.
     (a, 'b) var_action ->
     Loc.t ->
     Type.unify_mode ->
@@ -980,7 +975,7 @@ and make_component_props loc name ctx tyvars m =
       | None, None -> None)
     m tyvars
 
-(** @raises [Invalid_argument] if the list sizes are mismatched. *)
+(** @raise [Invalid_argument] if the list sizes are mismatched. *)
 and unify_match_cases pats tys ctx =
   Nonempty.map2
     (make_pat (Construct_update_vars ctx) Construct_literal)
@@ -1113,14 +1108,12 @@ let make_components =
     if List.exists (String.equal name) stack then Error.cycle (name :: stack)
     else Error.missing_component stack name
   in
-  let rec continue :
-      type a.
+  let rec continue : type a.
       'f graph -> (a, t) Effect.Shallow.continuation -> a -> t * 'f graph =
    fun ({ linked; not_linked; stack } as graph) k v ->
     let retc ret = (ret, graph) in
     let exnc = raise in
-    let rec effc :
-        type b.
+    let rec effc : type b.
         b Effect.t ->
         ((b, t) Effect.Shallow.continuation -> t * 'f graph) option = function
       | Get_component_types key ->
@@ -1177,8 +1170,8 @@ let make ~root components ast =
   let rec continue : type a. (a, t) Effect.Shallow.continuation -> a -> t =
     let retc = Fun.id in
     let exnc = raise in
-    let rec effc :
-        type b. b Effect.t -> ((b, t) Effect.Shallow.continuation -> t) option =
+    let rec effc : type b.
+        b Effect.t -> ((b, t) Effect.Shallow.continuation -> t) option =
       function
       | Get_component_types key ->
           Some

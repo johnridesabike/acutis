@@ -17,8 +17,8 @@ type t =
   | Float of float
   | Noop
   | List of t Seq.t
-      (** Since a lot of data types will need to convert to this, we'll just
-          use Seq.t internally. *)
+      (** Since a lot of data types will need to convert to this, we'll just use
+          Seq.t internally. *)
 
 let make hd l = List (fun () -> Cons (Symbol hd, List.to_seq l))
 let symbol s = Symbol s

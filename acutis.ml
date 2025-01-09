@@ -155,9 +155,8 @@ end = struct
       end in
       let yield v = Effect.perform (M.Yield v) in
       let retc () = Seq.Nil in
-      let effc :
-          type b. b Effect.t -> ((b, _) Effect.Deep.continuation -> _) option =
-        function
+      let effc : type b.
+          b Effect.t -> ((b, _) Effect.Deep.continuation -> _) option = function
         | M.Yield v -> Some (fun k -> Seq.Cons (v, Effect.Deep.continue k))
         | _ -> None
       in
@@ -253,7 +252,7 @@ module PrintJs = struct
   module State : sig
     type t
     (** This tracks variable names used across JavaScript scopes so let-bindings
-      are safe. JavaScript block scope is not equivalent to our native scope. *)
+        are safe. JavaScript scope is not equivalent to our native scope. *)
 
     val make : unit -> t
     val var : string -> t -> F.formatter -> t -> unit
@@ -280,7 +279,9 @@ module PrintJs = struct
   let trailing_comma =
     F.pp_print_custom_break ~fits:("", 0, "") ~breaks:(",", -2, "")
 
-  (** See https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String#escape_sequences *)
+  (** See
+      https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String#escape_sequences
+  *)
   let pp_char_aux ~newline ppf = function
     | '\n' -> F.fprintf ppf "\\n%a" newline ()
     | '\b' -> F.pp_print_string ppf "\\b"
@@ -645,7 +646,7 @@ module PrintJs = struct
 
       type 'a exp = { from : 'a from_exp; identity : bool }
       (** The identity property should track which functions are implemented as
-        [Fun.id] in the main runtime below. *)
+          [Fun.id] in the main runtime below. *)
 
       let fwde x = { from = x; identity = false }
       let bwde x = x.from
@@ -673,8 +674,7 @@ module PrintJs = struct
 
     let unit = Unit
 
-    let if_else :
-        type a.
+    let if_else : type a.
         bool exp -> then_:(unit -> a stm) -> else_:(unit -> a stm) -> a stm =
      fun x ~then_ ~else_ ->
       match (then_ (), else_ ()) with

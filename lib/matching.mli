@@ -35,8 +35,7 @@
     may produce extremely large trees.
 
     Detecting redundant patterns is almost "free" with this strategy because
-    merging a redundant tree fails to produce a new, different tree.
-*)
+    merging a redundant tree fails to produce a new, different tree. *)
 
 (** {1 Example patterns and their resulting trees.}
 
@@ -46,36 +45,36 @@
 
     {2 A basic list of integers.}
 
-{v
+    {v
 {% match a
    with 0  %} a
 {% with 10 %} b
 {% with 20 %} c
 {% with _  %} d
 {% /match %}
-v}
+    v}
 
-{v
+    {v
 |- case 0 -> a
 |- case 10 -> b
 |- case 20 -> c
 |- wildcard -> d
-v}
+    v}
 
-    {2 A record nested in a tuple. }
+    {2 A record nested in a tuple.}
 
     (Note: internally, all arguments passed to a [match] statement are
     implicitly wrapped in a tuple-like structure.)
 
-{v
+    {v
 {% match a, b
    with {a: 10, b: 11}, 12 %} a
 {% with {b: 21, a: 20}, 22 %} b
 {% with _, _ %} c
 {% /match %}
-v}
+    v}
 
-{v
+    {v
 key 0
   |- begin nest
       |- key "a"
@@ -96,9 +95,9 @@ key 0
       |- wildcard
           |----------------- key 1
                               |- wildcard -> c
-v}
+    v}
 
-    {2 A list. }
+    {2 A list.}
 
     Remember that the [[1, 2, ...tl]] list syntax is basically sugar for
     [!(1, !(2, tl))].
@@ -109,9 +108,9 @@ v}
 {% with [x] %} b
 {% with [x, ...y] %} c
 {% /match %}
-v}
+    v}
 
-{v
+    {v
 |- nil -> a
 |- cons
     |- begin nest
@@ -124,7 +123,7 @@ v}
                     |- cons
                         |- wildcard
                             |- end nest -> c
-v}
+    v}
 
     {2 Nested tuples with wildcards.}
 
@@ -132,15 +131,15 @@ v}
     throughout the tree. For larger, more complex patterns, this can create
     unexpectedly enormous trees.
 
-{v
+    {v
 {% match              a,  b
    with               x, 41 %} a
 {% with  ((10, 20), 30), 40 %} b
 {% with               y,  z %} c
 {% /match %}
-v}
+    v}
 
-{v
+    {v
 key 0
   |- begin nest
       |- key 0
@@ -161,9 +160,7 @@ key 0
           |------------------------------------- key 1
                                                   |- case 41 -> a
                                                   |- wildcard -> c
-
-v}
-    *)
+    v} *)
 
 (** {1 Type definitions.} *)
 
