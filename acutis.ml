@@ -154,13 +154,10 @@ end = struct
         type _ Effect.t += Yield : a -> unit Effect.t
       end in
       let yield v = Effect.perform (M.Yield v) in
-      let retc () = Seq.Nil in
-      let effc : type b.
-          b Effect.t -> ((b, _) Effect.Deep.continuation -> _) option = function
-        | M.Yield v -> Some (fun k -> Seq.Cons (v, Effect.Deep.continue k))
-        | _ -> None
-      in
-      fun () -> Effect.Deep.match_with f yield { retc; exnc = raise; effc }
+      fun () ->
+        match f yield with
+        | () -> Seq.Nil
+        | effect M.Yield v, k -> Seq.Cons (v, Effect.Deep.continue k)
 
     let iter s f = Seq.iter f s
     let string_to_seq = String.to_seq

@@ -16,7 +16,7 @@ doc: "https://johnridesa.bike/acutis/"
 bug-reports: "https://github.com/johnridesabike/acutis/issues"
 depends: [
   "dune" {>= "3.13"}
-  "ocaml" {>= "5.2"}
+  "ocaml" {>= "5.3"}
   "menhir"
   "yojson"
   "dune-build-info"

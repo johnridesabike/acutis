@@ -110,19 +110,14 @@ module Promise = struct
         Js.Unsafe.inject (Js.wrap_callback reject);
       |]
 
-  module E = Effect
-  module ED = Effect.Deep
+  type _ Effect.t += Await : 'a t -> 'a Effect.t
 
-  type _ E.t += Await : 'a t -> 'a E.t
+  let await p = Effect.perform (Await p)
 
-  let await p = E.perform (Await p)
-
-  let effc : type a. a E.t -> ((a, 'b t) ED.continuation -> 'b t) option =
-    function
-    | Await p -> Some (fun k -> then_ p (ED.continue k) (ED.discontinue k))
-    | _ -> None
-
-  let handle_await f = ED.try_with f () { effc }
+  let handle_await f =
+    match f () with
+    | x -> x
+    | effect Await p, k -> Effect.Deep.(then_ p (continue k) (discontinue k))
 end
 
 let fname_to_compname s =

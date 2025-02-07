@@ -29,7 +29,7 @@ compile them to self-contained JavaScript files.
 ")
  (depends
   (ocaml
-   (>= 5.2))
+   (>= 5.3))
   menhir
   yojson
   dune-build-info
@@ -44,8 +44,7 @@ compile them to self-contained JavaScript files.
  (synopsis "A virtual package containing the Acutis JavaScript dependencies")
  (allow_empty)
  (depends
-  (ocaml
-   (>= 5.0))
+  ocaml
   (acutis
    (= :version))
   (js_of_ocaml
