@@ -2,12 +2,12 @@
 
 Most changes are breaking changes.
 
-## Latest
+## 0.26.0
 
 - Move the bulk of the compiler to the `acutis.internals` library and make the
   `acutis` library a simple wrapper around it.
 - Change the JavaScript API.
-- Change the Eleventy plugin API and now require Eleventy 3.0.
+- Change the Eleventy plugin API and require Eleventy 3.0.
 
 ## 0.25.0
 
