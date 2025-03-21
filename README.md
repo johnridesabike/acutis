@@ -91,10 +91,10 @@ Compile the code:
 dune build
 ```
 
-Run tests:
+Build the code and also run the CI tests:
 
 ```shell
-dune runtest
+dune build @ci
 ```
 
 ## License

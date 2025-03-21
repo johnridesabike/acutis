@@ -55,6 +55,14 @@
     "#main"
     ./%{dep:main.cjs}))))
 
+(alias
+ (name ci)
+ (deps
+  (alias_rec fmt)
+  (alias_rec default)
+  (alias_rec runtest)
+  (alias_rec doc)))
+
 ; Our docs folder contains symlinks to our Dune build folder, but otherwise uses
 ; a completely different build system. It's easier to just manage it separately.
 ; We need to exclude it so as not to confuse Dune.
