@@ -93,8 +93,8 @@ val union_string :
     field. E.g.:
 
     {v
-{@shape: "circle", radius: int} |
-{@shape: "rectagle", height: int, width: int}
+    {@shape: "circle", radius: int} |
+    {@shape: "rectagle", height: int, width: int}
     v} *)
 
 val union_int :

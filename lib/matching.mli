@@ -46,19 +46,19 @@
     {2 A basic list of integers.}
 
     {v
-{% match a
-   with 0  %} a
-{% with 10 %} b
-{% with 20 %} c
-{% with _  %} d
-{% /match %}
+    {% match a
+       with 0  %} a
+    {% with 10 %} b
+    {% with 20 %} c
+    {% with _  %} d
+    {% /match %}
     v}
 
     {v
-|- case 0 -> a
-|- case 10 -> b
-|- case 20 -> c
-|- wildcard -> d
+    |- case 0 -> a
+    |- case 10 -> b
+    |- case 20 -> c
+    |- wildcard -> d
     v}
 
     {2 A record nested in a tuple.}
@@ -67,34 +67,34 @@
     implicitly wrapped in a tuple-like structure.)
 
     {v
-{% match a, b
-   with {a: 10, b: 11}, 12 %} a
-{% with {b: 21, a: 20}, 22 %} b
-{% with _, _ %} c
-{% /match %}
+    {% match a, b
+       with {a: 10, b: 11}, 12 %} a
+    {% with {b: 21, a: 20}, 22 %} b
+    {% with _, _ %} c
+    {% /match %}
     v}
 
     {v
-key 0
-  |- begin nest
-      |- key "a"
-      |   |- case 10
-      |   |   |- key "b"
-      |   |       |- case 11
-      |   |           |- end nest
-      |   |               |- key 1
-      |   |                   |- case 12 -> a
-      |   |                   |- wildcard -> c
-      |   |- case 20
-      |       |- key "b"
-      |           |- case 21
-      |               |- end nest
-      |                   |- key 1
-      |                       |- case 22 -> b
-      |                       |- wildcard -> c
-      |- wildcard
-          |----------------- key 1
-                              |- wildcard -> c
+    key 0
+      |- begin nest
+          |- key "a"
+          |   |- case 10
+          |   |   |- key "b"
+          |   |       |- case 11
+          |   |           |- end nest
+          |   |               |- key 1
+          |   |                   |- case 12 -> a
+          |   |                   |- wildcard -> c
+          |   |- case 20
+          |       |- key "b"
+          |           |- case 21
+          |               |- end nest
+          |                   |- key 1
+          |                       |- case 22 -> b
+          |                       |- wildcard -> c
+          |- wildcard
+              |----------------- key 1
+                                  |- wildcard -> c
     v}
 
     {2 A list.}
@@ -103,26 +103,26 @@ key 0
     [!(1, !(2, tl))].
 
     {v
-{% match a
-   with [] %} a
-{% with [x] %} b
-{% with [x, ...y] %} c
-{% /match %}
+    {% match a
+       with [] %} a
+    {% with [x] %} b
+    {% with [x, ...y] %} c
+    {% /match %}
     v}
 
     {v
-|- nil -> a
-|- cons
-    |- begin nest
-        |- key 0
-            |- wildcard
-                |- key 1
-                    |- nil
-                    |  |- end nest -> b
-                    |
-                    |- cons
-                        |- wildcard
-                            |- end nest -> c
+    |- nil -> a
+    |- cons
+        |- begin nest
+            |- key 0
+                |- wildcard
+                    |- key 1
+                        |- nil
+                        |  |- end nest -> b
+                        |
+                        |- cons
+                            |- wildcard
+                                |- end nest -> c
     v}
 
     {2 Nested tuples with wildcards.}
@@ -132,34 +132,34 @@ key 0
     unexpectedly enormous trees.
 
     {v
-{% match              a,  b
-   with               x, 41 %} a
-{% with  ((10, 20), 30), 40 %} b
-{% with               y,  z %} c
-{% /match %}
+    {% match              a,  b
+       with               x, 41 %} a
+    {% with  ((10, 20), 30), 40 %} b
+    {% with               y,  z %} c
+    {% /match %}
     v}
 
     {v
-key 0
-  |- begin nest
-      |- key 0
-      |   |- begin nest
-      |       |- key 0
-      |           |- case 10
-      |               |- key 1
-      |                   |- case 20
-      |                       |- end nest
-      |                           |- key 1
-      |                               |- case 30
-      |                                   |- end nest
-      |                                       |- key 1
-      |                                           |- case 40 -> b
-      |                                           |- case 41 -> a
-      |                                           |- wildcard -> c
-      |- wildcard
-          |------------------------------------- key 1
-                                                  |- case 41 -> a
-                                                  |- wildcard -> c
+    key 0
+      |- begin nest
+          |- key 0
+          |   |- begin nest
+          |       |- key 0
+          |           |- case 10
+          |               |- key 1
+          |                   |- case 20
+          |                       |- end nest
+          |                           |- key 1
+          |                               |- case 30
+          |                                   |- end nest
+          |                                       |- key 1
+          |                                           |- case 40 -> b
+          |                                           |- case 41 -> a
+          |                                           |- wildcard -> c
+          |- wildcard
+              |------------------------------------- key 1
+                                                      |- case 41 -> a
+                                                      |- wildcard -> c
     v} *)
 
 (** {1 Type definitions.} *)
