@@ -956,25 +956,25 @@ Print the runtime instructions
   (let$ Component =
    (async_lambda arg
     ((let$ buf = (buffer_create))
-     (stm ((buffer_add_escape @@ buf) @@ (get_string (arg.%{"a_prop"}))))
+     (stm ((buffer_add_escape @@ buf) @@ (prj_string (arg.%{"a_prop"}))))
      (buffer_add_string buf "\n")
-     (stm ((buffer_add_escape @@ buf) @@ (get_string (arg.%{"c_prop"}))))
+     (stm ((buffer_add_escape @@ buf) @@ (prj_string (arg.%{"c_prop"}))))
      (buffer_add_string buf "\n")
-     (stm ((buffer_add_escape @@ buf) @@ (get_string (arg.%{"d_prop"}))))
+     (stm ((buffer_add_escape @@ buf) @@ (prj_string (arg.%{"d_prop"}))))
      (buffer_add_string buf "\n")
-     (stm ((buffer_add_escape @@ buf) @@ (get_string (arg.%{"f_prop"}))))
+     (stm ((buffer_add_escape @@ buf) @@ (prj_string (arg.%{"f_prop"}))))
      (buffer_add_string buf "\n")
-     (stm ((buffer_add_escape @@ buf) @@ (get_string (arg.%{"g_prop"}))))
+     (stm ((buffer_add_escape @@ buf) @@ (prj_string (arg.%{"g_prop"}))))
      (buffer_add_string buf "\n")
-     (stm ((buffer_add_escape @@ buf) @@ (get_string (arg.%{"h_prop"}))))
+     (stm ((buffer_add_escape @@ buf) @@ (prj_string (arg.%{"h_prop"}))))
      (buffer_add_string buf "\n")
-     (stm ((buffer_add_escape @@ buf) @@ (get_string (arg.%{"i_prop"}))))
+     (stm ((buffer_add_escape @@ buf) @@ (prj_string (arg.%{"i_prop"}))))
      (buffer_add_string buf "\n")
      (return (promise (buffer_contents buf))))))
   (let$ Component2 =
    (async_lambda arg
     ((let$ buf = (buffer_create))
-     (stm ((buffer_add_escape @@ buf) @@ (get_string (arg.%{"children"}))))
+     (stm ((buffer_add_escape @@ buf) @@ (prj_string (arg.%{"children"}))))
      (buffer_add_string buf "\n")
      (return (promise (buffer_contents buf))))))
   (export
@@ -1043,20 +1043,20 @@ Print the runtime instructions
                  (External.decode (bool) input
                   (ok decoded
                    (if_else decoded
-                    (then (decoded.%{"c"} <- (set_int 1)))
-                    (else (decoded.%{"c"} <- (set_int 0)))))
+                    (then (decoded.%{"c"} <- (inj_int 1)))
+                    (else (decoded.%{"c"} <- (inj_int 0)))))
                   (error (stm (((decode_error @@ input) @@ stack) @@ type)))))
                 (else (missing_keys := ((stack_add @@ "c") @@ !missing_keys))))
                (if_else (not (stack_is_empty @@ !missing_keys))
                 (then (stm (((key_error @@ !missing_keys) @@ stack) @@ type)))
                 (else (unit)))
-               (decoded.%{"b"} <- (set_hashtbl decoded)))
+               (decoded.%{"b"} <- (inj_hashtbl decoded)))
               (error (stm (((decode_error @@ input) @@ stack) @@ type)))))
             (else (missing_keys := ((stack_add @@ "b") @@ !missing_keys))))
            (if_else (not (stack_is_empty @@ !missing_keys))
             (then (stm (((key_error @@ !missing_keys) @@ stack) @@ type)))
             (else (unit)))
-           (props.%{"a"} <- (set_hashtbl decoded)))
+           (props.%{"a"} <- (inj_hashtbl decoded)))
           (error (stm (((decode_error @@ input) @@ stack) @@ type)))))
         (else (missing_keys := ((stack_add @@ "a") @@ !missing_keys))))
        (if_else (External.assoc_mem "a_prop" decoded)
@@ -1065,7 +1065,7 @@ Print the runtime instructions
          (let$ stack = ((stack_add @@ "a_prop") @@ stack_empty))
          (let$ type = "string")
          (External.decode (string) input
-          (ok decoded (props.%{"a_prop"} <- (set_string decoded)))
+          (ok decoded (props.%{"a_prop"} <- (inj_string decoded)))
           (error (stm (((decode_error @@ input) @@ stack) @@ type)))))
         (else (missing_keys := ((stack_add @@ "a_prop") @@ !missing_keys))))
        (if_else (External.assoc_mem "b_prop" decoded)
@@ -1074,7 +1074,7 @@ Print the runtime instructions
          (let$ stack = ((stack_add @@ "b_prop") @@ stack_empty))
          (let$ type = "string")
          (External.decode (string) input
-          (ok decoded (props.%{"b_prop"} <- (set_string decoded)))
+          (ok decoded (props.%{"b_prop"} <- (inj_string decoded)))
           (error (stm (((decode_error @@ input) @@ stack) @@ type)))))
         (else (missing_keys := ((stack_add @@ "b_prop") @@ !missing_keys))))
        (if_else (External.assoc_mem "c_prop" decoded)
@@ -1083,7 +1083,7 @@ Print the runtime instructions
          (let$ stack = ((stack_add @@ "c_prop") @@ stack_empty))
          (let$ type = "string")
          (External.decode (string) input
-          (ok decoded (props.%{"c_prop"} <- (set_string decoded)))
+          (ok decoded (props.%{"c_prop"} <- (inj_string decoded)))
           (error (stm (((decode_error @@ input) @@ stack) @@ type)))))
         (else (missing_keys := ((stack_add @@ "c_prop") @@ !missing_keys))))
        (if_else (External.assoc_mem "d" decoded)
@@ -1092,7 +1092,7 @@ Print the runtime instructions
          (let$ stack = ((stack_add @@ "d") @@ stack_empty))
          (let$ type = "string")
          (External.decode (string) input
-          (ok decoded (props.%{"d"} <- (set_string decoded)))
+          (ok decoded (props.%{"d"} <- (inj_string decoded)))
           (error (stm (((decode_error @@ input) @@ stack) @@ type)))))
         (else (missing_keys := ((stack_add @@ "d") @@ !missing_keys))))
        (if_else (External.assoc_mem "dict" decoded)
@@ -1107,9 +1107,9 @@ Print the runtime instructions
             (let$ stack = ((stack_add @@ (fst arg)) @@ stack))
             (let$ type = "int")
             (External.decode (int) (snd arg)
-             (ok decoded (decoded.%{(fst arg)} <- (set_int decoded)))
+             (ok decoded (decoded.%{(fst arg)} <- (inj_int decoded)))
              (error (stm (((decode_error @@ (snd arg)) @@ stack) @@ type))))
-            (props.%{"dict"} <- (set_hashtbl decoded))))
+            (props.%{"dict"} <- (inj_hashtbl decoded))))
           (error (stm (((decode_error @@ input) @@ stack) @@ type)))))
         (else (missing_keys := ((stack_add @@ "dict") @@ !missing_keys))))
        (if_else (External.assoc_mem "e" decoded)
@@ -1118,7 +1118,7 @@ Print the runtime instructions
          (let$ stack = ((stack_add @@ "e") @@ stack_empty))
          (let$ type = "string")
          (External.decode (string) input
-          (ok decoded (props.%{"e"} <- (set_string decoded)))
+          (ok decoded (props.%{"e"} <- (inj_string decoded)))
           (error (stm (((decode_error @@ input) @@ stack) @@ type)))))
         (else (missing_keys := ((stack_add @@ "e") @@ !missing_keys))))
        (if_else (External.assoc_mem "e_prop" decoded)
@@ -1127,7 +1127,7 @@ Print the runtime instructions
          (let$ stack = ((stack_add @@ "e_prop") @@ stack_empty))
          (let$ type = "string")
          (External.decode (string) input
-          (ok decoded (props.%{"e_prop"} <- (set_string decoded)))
+          (ok decoded (props.%{"e_prop"} <- (inj_string decoded)))
           (error (stm (((decode_error @@ input) @@ stack) @@ type)))))
         (else (missing_keys := ((stack_add @@ "e_prop") @@ !missing_keys))))
        (if_else (External.assoc_mem "ech_a" decoded)
@@ -1136,7 +1136,7 @@ Print the runtime instructions
          (let$ stack = ((stack_add @@ "ech_a") @@ stack_empty))
          (let$ type = "string")
          (External.decode (string) input
-          (ok decoded (props.%{"ech_a"} <- (set_string decoded)))
+          (ok decoded (props.%{"ech_a"} <- (inj_string decoded)))
           (error (stm (((decode_error @@ input) @@ stack) @@ type)))))
         (else (missing_keys := ((stack_add @@ "ech_a") @@ !missing_keys))))
        (if_else (External.assoc_mem "ech_b" decoded)
@@ -1147,8 +1147,8 @@ Print the runtime instructions
          (External.decode (bool) input
           (ok decoded
            (if_else decoded
-            (then (props.%{"ech_b"} <- (set_int 1)))
-            (else (props.%{"ech_b"} <- (set_int 0)))))
+            (then (props.%{"ech_b"} <- (inj_int 1)))
+            (else (props.%{"ech_b"} <- (inj_int 0)))))
           (error (stm (((decode_error @@ input) @@ stack) @@ type)))))
         (else (missing_keys := ((stack_add @@ "ech_b") @@ !missing_keys))))
        (if_else (External.assoc_mem "ech_d" decoded)
@@ -1158,15 +1158,15 @@ Print the runtime instructions
          (let$ type = "?string")
          (External.decode (some) input
           (ok decoded
-           (let$ decoded = [(set_int 0)])
+           (let$ decoded = [(inj_int 0)])
            (let$ stack = ((stack_add @@ "<nullable>") @@ stack))
            (let$ type = "string")
            (External.decode (string) decoded
-            (ok decoded (decoded.%(0) <- (set_string decoded)))
+            (ok decoded (decoded.%(0) <- (inj_string decoded)))
             (error (stm (((decode_error @@ decoded) @@ stack) @@ type))))
-           (props.%{"ech_d"} <- (set_array decoded)))
-          (error (props.%{"ech_d"} <- (set_int 0)))))
-        (else (props.%{"ech_d"} <- (set_int 0))))
+           (props.%{"ech_d"} <- (inj_array decoded)))
+          (error (props.%{"ech_d"} <- (inj_int 0)))))
+        (else (props.%{"ech_d"} <- (inj_int 0))))
        (if_else (External.assoc_mem "ech_e" decoded)
         (then
          (let$ input = (External.assoc_find "ech_e" decoded))
@@ -1174,22 +1174,22 @@ Print the runtime instructions
          (let$ type = "?string")
          (External.decode (some) input
           (ok decoded
-           (let$ decoded = [(set_int 0)])
+           (let$ decoded = [(inj_int 0)])
            (let$ stack = ((stack_add @@ "<nullable>") @@ stack))
            (let$ type = "string")
            (External.decode (string) decoded
-            (ok decoded (decoded.%(0) <- (set_string decoded)))
+            (ok decoded (decoded.%(0) <- (inj_string decoded)))
             (error (stm (((decode_error @@ decoded) @@ stack) @@ type))))
-           (props.%{"ech_e"} <- (set_array decoded)))
-          (error (props.%{"ech_e"} <- (set_int 0)))))
-        (else (props.%{"ech_e"} <- (set_int 0))))
+           (props.%{"ech_e"} <- (inj_array decoded)))
+          (error (props.%{"ech_e"} <- (inj_int 0)))))
+        (else (props.%{"ech_e"} <- (inj_int 0))))
        (if_else (External.assoc_mem "ech_f" decoded)
         (then
          (let$ input = (External.assoc_find "ech_f" decoded))
          (let$ stack = ((stack_add @@ "ech_f") @@ stack_empty))
          (let$ type = "float")
          (External.decode (float) input
-          (ok decoded (props.%{"ech_f"} <- (set_float decoded)))
+          (ok decoded (props.%{"ech_f"} <- (inj_float decoded)))
           (error (stm (((decode_error @@ input) @@ stack) @@ type)))))
         (else (missing_keys := ((stack_add @@ "ech_f") @@ !missing_keys))))
        (if_else (External.assoc_mem "ech_i" decoded)
@@ -1198,7 +1198,7 @@ Print the runtime instructions
          (let$ stack = ((stack_add @@ "ech_i") @@ stack_empty))
          (let$ type = "int")
          (External.decode (int) input
-          (ok decoded (props.%{"ech_i"} <- (set_int decoded)))
+          (ok decoded (props.%{"ech_i"} <- (inj_int decoded)))
           (error (stm (((decode_error @@ input) @@ stack) @@ type)))))
         (else (missing_keys := ((stack_add @@ "ech_i") @@ !missing_keys))))
        (if_else (External.assoc_mem "enums" decoded)
@@ -1208,14 +1208,14 @@ Print the runtime instructions
          (let$ type = "(@\"a\" | ..., @1 | ..., false | true, false | true)")
          (External.decode (seq) input
           (ok decoded
-           (let$ decoded = (array_make 4 (set_int 0)))
+           (let$ decoded = (array_make 4 (inj_int 0)))
            (uncons decoded
             (nil (stm (((decode_error @@ input) @@ stack) @@ type)))
             (cons hd seq
              (let$ stack = ((stack_add @@ (string_of_int 0)) @@ stack))
              (let$ type = "@\"a\" | ...")
              (External.decode (string) hd
-              (ok decoded (decoded.%(0) <- (set_string decoded)))
+              (ok decoded (decoded.%(0) <- (inj_string decoded)))
               (error (stm (((decode_error @@ hd) @@ stack) @@ type))))
              (uncons seq
               (nil (stm (((decode_error @@ input) @@ stack) @@ type)))
@@ -1223,7 +1223,7 @@ Print the runtime instructions
                (let$ stack = ((stack_add @@ (string_of_int 1)) @@ stack))
                (let$ type = "@1 | ...")
                (External.decode (int) hd
-                (ok decoded (decoded.%(1) <- (set_int decoded)))
+                (ok decoded (decoded.%(1) <- (inj_int decoded)))
                 (error (stm (((decode_error @@ hd) @@ stack) @@ type))))
                (uncons seq
                 (nil (stm (((decode_error @@ input) @@ stack) @@ type)))
@@ -1233,8 +1233,8 @@ Print the runtime instructions
                  (External.decode (bool) hd
                   (ok decoded
                    (if_else decoded
-                    (then (decoded.%(2) <- (set_int 1)))
-                    (else (decoded.%(2) <- (set_int 0)))))
+                    (then (decoded.%(2) <- (inj_int 1)))
+                    (else (decoded.%(2) <- (inj_int 0)))))
                   (error (stm (((decode_error @@ hd) @@ stack) @@ type))))
                  (uncons seq
                   (nil (stm (((decode_error @@ input) @@ stack) @@ type)))
@@ -1244,11 +1244,11 @@ Print the runtime instructions
                    (External.decode (bool) hd
                     (ok decoded
                      (if_else decoded
-                      (then (decoded.%(3) <- (set_int 1)))
-                      (else (decoded.%(3) <- (set_int 0)))))
+                      (then (decoded.%(3) <- (inj_int 1)))
+                      (else (decoded.%(3) <- (inj_int 0)))))
                     (error (stm (((decode_error @@ hd) @@ stack) @@ type))))
                    (unit)))))))))
-           (props.%{"enums"} <- (set_array decoded)))
+           (props.%{"enums"} <- (inj_array decoded)))
           (error (stm (((decode_error @@ input) @@ stack) @@ type)))))
         (else (missing_keys := ((stack_add @@ "enums") @@ !missing_keys))))
        (if_else (External.assoc_mem "f_prop" decoded)
@@ -1257,7 +1257,7 @@ Print the runtime instructions
          (let$ stack = ((stack_add @@ "f_prop") @@ stack_empty))
          (let$ type = "string")
          (External.decode (string) input
-          (ok decoded (props.%{"f_prop"} <- (set_string decoded)))
+          (ok decoded (props.%{"f_prop"} <- (inj_string decoded)))
           (error (stm (((decode_error @@ input) @@ stack) @@ type)))))
         (else (missing_keys := ((stack_add @@ "f_prop") @@ !missing_keys))))
        (if_else (External.assoc_mem "list" decoded)
@@ -1268,22 +1268,22 @@ Print the runtime instructions
          (External.decode (seq) input
           (ok decoded
            (let& index = 0)
-           (let$ decoded = [(set_int 0), (set_int 0)])
+           (let$ decoded = [(inj_int 0), (inj_int 0)])
            (let& decode_dst = decoded)
-           (iter decoded (let$ decode_dst_new = [(set_int 0), (set_int 0)])
+           (iter decoded (let$ decode_dst_new = [(inj_int 0), (inj_int 0)])
             (let$ stack = ((stack_add @@ (string_of_int !index)) @@ stack))
             (let$ type = "?string")
             (External.decode (some) arg
              (ok decoded
-              (let$ decoded = [(set_int 0)])
+              (let$ decoded = [(inj_int 0)])
               (let$ stack = ((stack_add @@ "<nullable>") @@ stack))
               (let$ type = "string")
               (External.decode (string) decoded
-               (ok decoded (decoded.%(0) <- (set_string decoded)))
+               (ok decoded (decoded.%(0) <- (inj_string decoded)))
                (error (stm (((decode_error @@ decoded) @@ stack) @@ type))))
-              (decode_dst_new.%(0) <- (set_array decoded)))
-             (error (decode_dst_new.%(0) <- (set_int 0))))
-            (!decode_dst.%(1) <- (set_array decode_dst_new)) (incr index)
+              (decode_dst_new.%(0) <- (inj_array decoded)))
+             (error (decode_dst_new.%(0) <- (inj_int 0))))
+            (!decode_dst.%(1) <- (inj_array decode_dst_new)) (incr index)
             (decode_dst := decode_dst_new))
            (props.%{"list"} <- (decoded.%(1))))
           (error (stm (((decode_error @@ input) @@ stack) @@ type)))))
@@ -1300,9 +1300,9 @@ Print the runtime instructions
             (let$ stack = ((stack_add @@ (fst arg)) @@ stack))
             (let$ type = "int")
             (External.decode (int) (snd arg)
-             (ok decoded (decoded.%{(fst arg)} <- (set_int decoded)))
+             (ok decoded (decoded.%{(fst arg)} <- (inj_int decoded)))
              (error (stm (((decode_error @@ (snd arg)) @@ stack) @@ type))))
-            (props.%{"map_d"} <- (set_hashtbl decoded))))
+            (props.%{"map_d"} <- (inj_hashtbl decoded))))
           (error (stm (((decode_error @@ input) @@ stack) @@ type)))))
         (else (missing_keys := ((stack_add @@ "map_d") @@ !missing_keys))))
        (if_else (External.assoc_mem "map_l" decoded)
@@ -1313,15 +1313,15 @@ Print the runtime instructions
          (External.decode (seq) input
           (ok decoded
            (let& index = 0)
-           (let$ decoded = [(set_int 0), (set_int 0)])
+           (let$ decoded = [(inj_int 0), (inj_int 0)])
            (let& decode_dst = decoded)
-           (iter decoded (let$ decode_dst_new = [(set_int 0), (set_int 0)])
+           (iter decoded (let$ decode_dst_new = [(inj_int 0), (inj_int 0)])
             (let$ stack = ((stack_add @@ (string_of_int !index)) @@ stack))
             (let$ type = "int")
             (External.decode (int) arg
-             (ok decoded (decode_dst_new.%(0) <- (set_int decoded)))
+             (ok decoded (decode_dst_new.%(0) <- (inj_int decoded)))
              (error (stm (((decode_error @@ arg) @@ stack) @@ type))))
-            (!decode_dst.%(1) <- (set_array decode_dst_new)) (incr index)
+            (!decode_dst.%(1) <- (inj_array decode_dst_new)) (incr index)
             (decode_dst := decode_dst_new))
            (props.%{"map_l"} <- (decoded.%(1))))
           (error (stm (((decode_error @@ input) @@ stack) @@ type)))))
@@ -1332,7 +1332,7 @@ Print the runtime instructions
          (let$ stack = ((stack_add @@ "match_a") @@ stack_empty))
          (let$ type = "int")
          (External.decode (int) input
-          (ok decoded (props.%{"match_a"} <- (set_int decoded)))
+          (ok decoded (props.%{"match_a"} <- (inj_int decoded)))
           (error (stm (((decode_error @@ input) @@ stack) @@ type)))))
         (else (missing_keys := ((stack_add @@ "match_a") @@ !missing_keys))))
        (if_else (External.assoc_mem "match_b" decoded)
@@ -1341,7 +1341,7 @@ Print the runtime instructions
          (let$ stack = ((stack_add @@ "match_b") @@ stack_empty))
          (let$ type = "string")
          (External.decode (string) input
-          (ok decoded (props.%{"match_b"} <- (set_string decoded)))
+          (ok decoded (props.%{"match_b"} <- (inj_string decoded)))
           (error (stm (((decode_error @@ input) @@ stack) @@ type)))))
         (else (missing_keys := ((stack_add @@ "match_b") @@ !missing_keys))))
        (if_else (External.assoc_mem "numbers" decoded)
@@ -1360,7 +1360,7 @@ Print the runtime instructions
              (let$ stack = ((stack_add @@ "exp1") @@ stack))
              (let$ type = "float")
              (External.decode (float) input
-              (ok decoded (decoded.%{"exp1"} <- (set_float decoded)))
+              (ok decoded (decoded.%{"exp1"} <- (inj_float decoded)))
               (error (stm (((decode_error @@ input) @@ stack) @@ type)))))
             (else (missing_keys := ((stack_add @@ "exp1") @@ !missing_keys))))
            (if_else (External.assoc_mem "exp2" decoded)
@@ -1369,7 +1369,7 @@ Print the runtime instructions
              (let$ stack = ((stack_add @@ "exp2") @@ stack))
              (let$ type = "float")
              (External.decode (float) input
-              (ok decoded (decoded.%{"exp2"} <- (set_float decoded)))
+              (ok decoded (decoded.%{"exp2"} <- (inj_float decoded)))
               (error (stm (((decode_error @@ input) @@ stack) @@ type)))))
             (else (missing_keys := ((stack_add @@ "exp2") @@ !missing_keys))))
            (if_else (External.assoc_mem "exp3" decoded)
@@ -1378,7 +1378,7 @@ Print the runtime instructions
              (let$ stack = ((stack_add @@ "exp3") @@ stack))
              (let$ type = "float")
              (External.decode (float) input
-              (ok decoded (decoded.%{"exp3"} <- (set_float decoded)))
+              (ok decoded (decoded.%{"exp3"} <- (inj_float decoded)))
               (error (stm (((decode_error @@ input) @@ stack) @@ type)))))
             (else (missing_keys := ((stack_add @@ "exp3") @@ !missing_keys))))
            (if_else (External.assoc_mem "frac" decoded)
@@ -1387,7 +1387,7 @@ Print the runtime instructions
              (let$ stack = ((stack_add @@ "frac") @@ stack))
              (let$ type = "float")
              (External.decode (float) input
-              (ok decoded (decoded.%{"frac"} <- (set_float decoded)))
+              (ok decoded (decoded.%{"frac"} <- (inj_float decoded)))
               (error (stm (((decode_error @@ input) @@ stack) @@ type)))))
             (else (missing_keys := ((stack_add @@ "frac") @@ !missing_keys))))
            (if_else (External.assoc_mem "int" decoded)
@@ -1396,7 +1396,7 @@ Print the runtime instructions
              (let$ stack = ((stack_add @@ "int") @@ stack))
              (let$ type = "int")
              (External.decode (int) input
-              (ok decoded (decoded.%{"int"} <- (set_int decoded)))
+              (ok decoded (decoded.%{"int"} <- (inj_int decoded)))
               (error (stm (((decode_error @@ input) @@ stack) @@ type)))))
             (else (missing_keys := ((stack_add @@ "int") @@ !missing_keys))))
            (if_else (External.assoc_mem "negfrac" decoded)
@@ -1405,7 +1405,7 @@ Print the runtime instructions
              (let$ stack = ((stack_add @@ "negfrac") @@ stack))
              (let$ type = "float")
              (External.decode (float) input
-              (ok decoded (decoded.%{"negfrac"} <- (set_float decoded)))
+              (ok decoded (decoded.%{"negfrac"} <- (inj_float decoded)))
               (error (stm (((decode_error @@ input) @@ stack) @@ type)))))
             (else (missing_keys := ((stack_add @@ "negfrac") @@ !missing_keys))))
            (if_else (External.assoc_mem "negint" decoded)
@@ -1414,13 +1414,13 @@ Print the runtime instructions
              (let$ stack = ((stack_add @@ "negint") @@ stack))
              (let$ type = "int")
              (External.decode (int) input
-              (ok decoded (decoded.%{"negint"} <- (set_int decoded)))
+              (ok decoded (decoded.%{"negint"} <- (inj_int decoded)))
               (error (stm (((decode_error @@ input) @@ stack) @@ type)))))
             (else (missing_keys := ((stack_add @@ "negint") @@ !missing_keys))))
            (if_else (not (stack_is_empty @@ !missing_keys))
             (then (stm (((key_error @@ !missing_keys) @@ stack) @@ type)))
             (else (unit)))
-           (props.%{"numbers"} <- (set_hashtbl decoded)))
+           (props.%{"numbers"} <- (inj_hashtbl decoded)))
           (error (stm (((decode_error @@ input) @@ stack) @@ type)))))
         (else (missing_keys := ((stack_add @@ "numbers") @@ !missing_keys))))
        (if_else (External.assoc_mem "record" decoded)
@@ -1438,7 +1438,7 @@ Print the runtime instructions
              (let$ stack = ((stack_add @@ "!#%@") @@ stack))
              (let$ type = "string")
              (External.decode (string) input
-              (ok decoded (decoded.%{"!#%@"} <- (set_string decoded)))
+              (ok decoded (decoded.%{"!#%@"} <- (inj_string decoded)))
               (error (stm (((decode_error @@ input) @@ stack) @@ type)))))
             (else (missing_keys := ((stack_add @@ "!#%@") @@ !missing_keys))))
            (if_else (External.assoc_mem "a" decoded)
@@ -1447,13 +1447,13 @@ Print the runtime instructions
              (let$ stack = ((stack_add @@ "a") @@ stack))
              (let$ type = "string")
              (External.decode (string) input
-              (ok decoded (decoded.%{"a"} <- (set_string decoded)))
+              (ok decoded (decoded.%{"a"} <- (inj_string decoded)))
               (error (stm (((decode_error @@ input) @@ stack) @@ type)))))
             (else (missing_keys := ((stack_add @@ "a") @@ !missing_keys))))
            (if_else (not (stack_is_empty @@ !missing_keys))
             (then (stm (((key_error @@ !missing_keys) @@ stack) @@ type)))
             (else (unit)))
-           (props.%{"record"} <- (set_hashtbl decoded)))
+           (props.%{"record"} <- (inj_hashtbl decoded)))
           (error (stm (((decode_error @@ input) @@ stack) @@ type)))))
         (else (missing_keys := ((stack_add @@ "record") @@ !missing_keys))))
        (if_else (External.assoc_mem "tagged" decoded)
@@ -1470,7 +1470,7 @@ Print the runtime instructions
                (let$ decoded = (hashtbl_create))
                (if_else (not decoded)
                 (then
-                 (decoded.%{"tag"} <- (set_int 0))
+                 (decoded.%{"tag"} <- (inj_int 0))
                  (let& missing_keys = stack_empty)
                  (unit)
                  (if_else (not (stack_is_empty @@ !missing_keys))
@@ -1479,7 +1479,7 @@ Print the runtime instructions
                 (else
                  (if_else decoded
                   (then
-                   (decoded.%{"tag"} <- (set_int 1))
+                   (decoded.%{"tag"} <- (inj_int 1))
                    (let& missing_keys = stack_empty)
                    (if_else (External.assoc_mem "a" decoded)
                     (then
@@ -1487,7 +1487,7 @@ Print the runtime instructions
                      (let$ stack = ((stack_add @@ "a") @@ stack))
                      (let$ type = "string")
                      (External.decode (string) input
-                      (ok decoded (decoded.%{"a"} <- (set_string decoded)))
+                      (ok decoded (decoded.%{"a"} <- (inj_string decoded)))
                       (error (stm (((decode_error @@ input) @@ stack) @@ type)))))
                     (else
                      (missing_keys := ((stack_add @@ "a") @@ !missing_keys))))
@@ -1496,7 +1496,7 @@ Print the runtime instructions
                      (stm (((key_error @@ !missing_keys) @@ stack) @@ type)))
                     (else (unit))))
                   (else (stm (((decode_error @@ input) @@ stack) @@ type))))))
-               (props.%{"tagged"} <- (set_hashtbl decoded)))
+               (props.%{"tagged"} <- (inj_hashtbl decoded)))
               (error (stm (((decode_error @@ input) @@ stack) @@ type)))))
             (else (stm (((decode_error @@ input) @@ stack) @@ type)))))
           (error (stm (((decode_error @@ input) @@ stack) @@ type)))))
@@ -1507,7 +1507,7 @@ Print the runtime instructions
          (let$ stack = ((stack_add @@ "trim_a") @@ stack_empty))
          (let$ type = "string")
          (External.decode (string) input
-          (ok decoded (props.%{"trim_a"} <- (set_string decoded)))
+          (ok decoded (props.%{"trim_a"} <- (inj_string decoded)))
           (error (stm (((decode_error @@ input) @@ stack) @@ type)))))
         (else (missing_keys := ((stack_add @@ "trim_a") @@ !missing_keys))))
        (if_else (External.assoc_mem "trim_b" decoded)
@@ -1516,7 +1516,7 @@ Print the runtime instructions
          (let$ stack = ((stack_add @@ "trim_b") @@ stack_empty))
          (let$ type = "string")
          (External.decode (string) input
-          (ok decoded (props.%{"trim_b"} <- (set_string decoded)))
+          (ok decoded (props.%{"trim_b"} <- (inj_string decoded)))
           (error (stm (((decode_error @@ input) @@ stack) @@ type)))))
         (else (missing_keys := ((stack_add @@ "trim_b") @@ !missing_keys))))
        (if_else (External.assoc_mem "trim_c" decoded)
@@ -1525,7 +1525,7 @@ Print the runtime instructions
          (let$ stack = ((stack_add @@ "trim_c") @@ stack_empty))
          (let$ type = "string")
          (External.decode (string) input
-          (ok decoded (props.%{"trim_c"} <- (set_string decoded)))
+          (ok decoded (props.%{"trim_c"} <- (inj_string decoded)))
           (error (stm (((decode_error @@ input) @@ stack) @@ type)))))
         (else (missing_keys := ((stack_add @@ "trim_c") @@ !missing_keys))))
        (if_else (External.assoc_mem "trim_d" decoded)
@@ -1534,7 +1534,7 @@ Print the runtime instructions
          (let$ stack = ((stack_add @@ "trim_d") @@ stack_empty))
          (let$ type = "string")
          (External.decode (string) input
-          (ok decoded (props.%{"trim_d"} <- (set_string decoded)))
+          (ok decoded (props.%{"trim_d"} <- (inj_string decoded)))
           (error (stm (((decode_error @@ input) @@ stack) @@ type)))))
         (else (missing_keys := ((stack_add @@ "trim_d") @@ !missing_keys))))
        (if_else (External.assoc_mem "trim_e" decoded)
@@ -1543,7 +1543,7 @@ Print the runtime instructions
          (let$ stack = ((stack_add @@ "trim_e") @@ stack_empty))
          (let$ type = "string")
          (External.decode (string) input
-          (ok decoded (props.%{"trim_e"} <- (set_string decoded)))
+          (ok decoded (props.%{"trim_e"} <- (inj_string decoded)))
           (error (stm (((decode_error @@ input) @@ stack) @@ type)))))
         (else (missing_keys := ((stack_add @@ "trim_e") @@ !missing_keys))))
        (if_else (External.assoc_mem "trim_f" decoded)
@@ -1552,7 +1552,7 @@ Print the runtime instructions
          (let$ stack = ((stack_add @@ "trim_f") @@ stack_empty))
          (let$ type = "string")
          (External.decode (string) input
-          (ok decoded (props.%{"trim_f"} <- (set_string decoded)))
+          (ok decoded (props.%{"trim_f"} <- (inj_string decoded)))
           (error (stm (((decode_error @@ input) @@ stack) @@ type)))))
         (else (missing_keys := ((stack_add @@ "trim_f") @@ !missing_keys))))
        (if_else (External.assoc_mem "trim_g" decoded)
@@ -1561,7 +1561,7 @@ Print the runtime instructions
          (let$ stack = ((stack_add @@ "trim_g") @@ stack_empty))
          (let$ type = "string")
          (External.decode (string) input
-          (ok decoded (props.%{"trim_g"} <- (set_string decoded)))
+          (ok decoded (props.%{"trim_g"} <- (inj_string decoded)))
           (error (stm (((decode_error @@ input) @@ stack) @@ type)))))
         (else (missing_keys := ((stack_add @@ "trim_g") @@ !missing_keys))))
        (if_else (External.assoc_mem "tuple" decoded)
@@ -1571,14 +1571,14 @@ Print the runtime instructions
          (let$ type = "(int, float, string)")
          (External.decode (seq) input
           (ok decoded
-           (let$ decoded = (array_make 3 (set_int 0)))
+           (let$ decoded = (array_make 3 (inj_int 0)))
            (uncons decoded
             (nil (stm (((decode_error @@ input) @@ stack) @@ type)))
             (cons hd seq
              (let$ stack = ((stack_add @@ (string_of_int 0)) @@ stack))
              (let$ type = "int")
              (External.decode (int) hd
-              (ok decoded (decoded.%(0) <- (set_int decoded)))
+              (ok decoded (decoded.%(0) <- (inj_int decoded)))
               (error (stm (((decode_error @@ hd) @@ stack) @@ type))))
              (uncons seq
               (nil (stm (((decode_error @@ input) @@ stack) @@ type)))
@@ -1586,7 +1586,7 @@ Print the runtime instructions
                (let$ stack = ((stack_add @@ (string_of_int 1)) @@ stack))
                (let$ type = "float")
                (External.decode (float) hd
-                (ok decoded (decoded.%(1) <- (set_float decoded)))
+                (ok decoded (decoded.%(1) <- (inj_float decoded)))
                 (error (stm (((decode_error @@ hd) @@ stack) @@ type))))
                (uncons seq
                 (nil (stm (((decode_error @@ input) @@ stack) @@ type)))
@@ -1594,10 +1594,10 @@ Print the runtime instructions
                  (let$ stack = ((stack_add @@ (string_of_int 2)) @@ stack))
                  (let$ type = "string")
                  (External.decode (string) hd
-                  (ok decoded (decoded.%(2) <- (set_string decoded)))
+                  (ok decoded (decoded.%(2) <- (inj_string decoded)))
                   (error (stm (((decode_error @@ hd) @@ stack) @@ type))))
                  (unit)))))))
-           (props.%{"tuple"} <- (set_array decoded)))
+           (props.%{"tuple"} <- (inj_array decoded)))
           (error (stm (((decode_error @@ input) @@ stack) @@ type)))))
         (else (missing_keys := ((stack_add @@ "tuple") @@ !missing_keys))))
        (if_else (External.assoc_mem "zero" decoded)
@@ -1615,13 +1615,13 @@ Print the runtime instructions
              (let$ stack = ((stack_add @@ "") @@ stack))
              (let$ type = "string")
              (External.decode (string) input
-              (ok decoded (decoded.%{""} <- (set_string decoded)))
+              (ok decoded (decoded.%{""} <- (inj_string decoded)))
               (error (stm (((decode_error @@ input) @@ stack) @@ type)))))
             (else (missing_keys := ((stack_add @@ "") @@ !missing_keys))))
            (if_else (not (stack_is_empty @@ !missing_keys))
             (then (stm (((key_error @@ !missing_keys) @@ stack) @@ type)))
             (else (unit)))
-           (props.%{"zero"} <- (set_hashtbl decoded)))
+           (props.%{"zero"} <- (inj_hashtbl decoded)))
           (error (stm (((decode_error @@ input) @@ stack) @@ type)))))
         (else (missing_keys := ((stack_add @@ "zero") @@ !missing_keys))))
        (if_else (not (stack_is_empty @@ !missing_keys))
@@ -1632,7 +1632,7 @@ Print the runtime instructions
       (then
        (let$ buf = (buffer_create))
        (buffer_add_string buf "Echoes\n")
-       (stm ((buffer_add_escape @@ buf) @@ (get_string (props.%{"ech_a"}))))
+       (stm ((buffer_add_escape @@ buf) @@ (prj_string (props.%{"ech_a"}))))
        (buffer_add_string buf " ")
        (stm ((buffer_add_escape @@ buf) @@ "b"))
        (buffer_add_string buf " ")
@@ -1643,44 +1643,44 @@ Print the runtime instructions
          (if_else (test_int nullable)
           (then (buffer_add_string buf "f\"g"))
           (else
-           (buffer_add_string buf (get_string ((get_array nullable).%(0)))))))
-        (else (buffer_add_string buf (get_string ((get_array nullable).%(0))))))
+           (buffer_add_string buf (prj_string ((prj_array nullable).%(0)))))))
+        (else (buffer_add_string buf (prj_string ((prj_array nullable).%(0))))))
        (buffer_add_string buf "\n")
        (stm
         ((buffer_add_escape @@ buf)
-         @@ (string_of_int (get_int (props.%{"ech_i"})))))
+         @@ (string_of_int (prj_int (props.%{"ech_i"})))))
        (buffer_add_string buf " ")
        (stm
         ((buffer_add_escape @@ buf)
-         @@ (string_of_float (get_float (props.%{"ech_f"})))))
+         @@ (string_of_float (prj_float (props.%{"ech_f"})))))
        (buffer_add_string buf " ")
        (stm
         ((buffer_add_escape @@ buf)
-         @@ (string_of_bool (not ((get_int (props.%{"ech_b"})) = 0)))))
+         @@ (string_of_bool (not ((prj_int (props.%{"ech_b"})) = 0)))))
        (buffer_add_string buf "\n\nNumbers\n")
        (let$ arg_match = [(props.%{"numbers"})])
        (let& exit = -1)
        (let$ match_arg = (arg_match.%(0)))
-       (let$ match_arg = ((get_hashtbl match_arg).%{"exp1"}))
-       (if_else ((get_float match_arg) = 150)
+       (let$ match_arg = ((prj_hashtbl match_arg).%{"exp1"}))
+       (if_else ((prj_float match_arg) = 150)
         (then
-         (let$ match_arg = ((get_hashtbl match_arg).%{"exp2"}))
-         (if_else ((get_float match_arg) = -1000)
+         (let$ match_arg = ((prj_hashtbl match_arg).%{"exp2"}))
+         (if_else ((prj_float match_arg) = -1000)
           (then
-           (let$ match_arg = ((get_hashtbl match_arg).%{"exp3"}))
-           (if_else ((get_float match_arg) = 0.2)
+           (let$ match_arg = ((prj_hashtbl match_arg).%{"exp3"}))
+           (if_else ((prj_float match_arg) = 0.2)
             (then
-             (let$ match_arg = ((get_hashtbl match_arg).%{"frac"}))
-             (if_else ((get_float match_arg) = 10.55)
+             (let$ match_arg = ((prj_hashtbl match_arg).%{"frac"}))
+             (if_else ((prj_float match_arg) = 10.55)
               (then
-               (let$ match_arg = ((get_hashtbl match_arg).%{"int"}))
-               (if_else ((get_int match_arg) = 1000)
+               (let$ match_arg = ((prj_hashtbl match_arg).%{"int"}))
+               (if_else ((prj_int match_arg) = 1000)
                 (then
-                 (let$ match_arg = ((get_hashtbl match_arg).%{"negfrac"}))
-                 (if_else ((get_float match_arg) = -12.34)
+                 (let$ match_arg = ((prj_hashtbl match_arg).%{"negfrac"}))
+                 (if_else ((prj_float match_arg) = -12.34)
                   (then
-                   (let$ match_arg = ((get_hashtbl match_arg).%{"negint"}))
-                   (if_else ((get_int match_arg) = -999)
+                   (let$ match_arg = ((prj_hashtbl match_arg).%{"negint"}))
+                   (if_else ((prj_int match_arg) = -999)
                     (then (unit) (exit := 0))
                     (else (unit))))
                   (else (unit))))
@@ -1692,28 +1692,28 @@ Print the runtime instructions
        (if_else (!exit = -1) (then (unit) (exit := 1)) (else (unit)))
        (if_else (!exit = 0) (then (unit)) (else (unit)))
        (buffer_add_string buf "\n\nTrim")
-       (stm ((buffer_add_escape @@ buf) @@ (get_string (props.%{"trim_a"}))))
-       (stm ((buffer_add_escape @@ buf) @@ (get_string (props.%{"trim_b"}))))
+       (stm ((buffer_add_escape @@ buf) @@ (prj_string (props.%{"trim_a"}))))
+       (stm ((buffer_add_escape @@ buf) @@ (prj_string (props.%{"trim_b"}))))
        (buffer_add_string buf " ")
-       (stm ((buffer_add_escape @@ buf) @@ (get_string (props.%{"trim_c"}))))
-       (stm ((buffer_add_escape @@ buf) @@ (get_string (props.%{"trim_d"}))))
-       (buffer_add_string buf (get_string (props.%{"trim_e"})))
+       (stm ((buffer_add_escape @@ buf) @@ (prj_string (props.%{"trim_c"}))))
+       (stm ((buffer_add_escape @@ buf) @@ (prj_string (props.%{"trim_d"}))))
+       (buffer_add_string buf (prj_string (props.%{"trim_e"})))
        (buffer_add_string buf "\n")
-       (buffer_add_string buf (get_string (props.%{"trim_f"})))
-       (buffer_add_string buf (get_string (props.%{"trim_g"})))
+       (buffer_add_string buf (prj_string (props.%{"trim_f"})))
+       (buffer_add_string buf (prj_string (props.%{"trim_g"})))
        (buffer_add_string buf "Comments\na ")
        (buffer_add_string buf "b")
        (buffer_add_string buf " c\n\nFlat match\n")
        (let$ arg_match = [(props.%{"match_a"})])
        (let& exit = -1)
        (let$ match_arg = (arg_match.%(0)))
-       (if_else ((get_int match_arg) = 1)
+       (if_else ((prj_int match_arg) = 1)
         (then (unit) (exit := 0))
         (else
-         (if_else ((get_int match_arg) = 2)
+         (if_else ((prj_int match_arg) = 2)
           (then (unit) (exit := 0))
           (else
-           (if_else ((get_int match_arg) = 3)
+           (if_else ((prj_int match_arg) = 3)
             (then (unit) (exit := 1))
             (else (unit) (exit := 2)))))))
        (if_else (!exit = 0)
@@ -1739,11 +1739,11 @@ Print the runtime instructions
        (match_props.%{"g"} <- match_arg)
        (exit := 0)
        (buffer_add_string buf " ")
-       (stm ((buffer_add_escape @@ buf) @@ (get_string (match_props.%{"c"}))))
+       (stm ((buffer_add_escape @@ buf) @@ (prj_string (match_props.%{"c"}))))
        (buffer_add_string buf " ")
-       (stm ((buffer_add_escape @@ buf) @@ (get_string (match_props.%{"f"}))))
+       (stm ((buffer_add_escape @@ buf) @@ (prj_string (match_props.%{"f"}))))
        (buffer_add_string buf " ")
-       (stm ((buffer_add_escape @@ buf) @@ (get_string (match_props.%{"g"}))))
+       (stm ((buffer_add_escape @@ buf) @@ (prj_string (match_props.%{"g"}))))
        (buffer_add_string buf " ")
        (buffer_add_string buf "\n")
        (buffer_add_string buf "\n\nMap list\n")
@@ -1751,17 +1751,17 @@ Print the runtime instructions
        (let& cell = (props.%{"map_l"}))
        (while (not (test_int !cell))
         ((let$ match_props = (hashtbl_create))
-         (let$ list = (get_array !cell))
+         (let$ list = (prj_array !cell))
          (let$ head = (list.%(0)))
          (let& exit = -1)
-         (if_else ((get_int head) = 1)
+         (if_else ((prj_int head) = 1)
           (then (unit) (exit := 0))
           (else
-           (if_else ((get_int head) = 2)
+           (if_else ((prj_int head) = 2)
             (then (unit) (exit := 0))
             (else
-             (if_else ((get_int head) = 3)
-              (then (match_props.%{"i"} <- (set_int !index)) (exit := 1))
+             (if_else ((prj_int head) = 3)
+              (then (match_props.%{"i"} <- (inj_int !index)) (exit := 1))
               (else (unit) (exit := 2)))))))
          (if_else (!exit = 0)
           (then (unit))
@@ -1771,23 +1771,23 @@ Print the runtime instructions
              (buffer_add_string buf " ")
              (stm
               ((buffer_add_escape @@ buf)
-               @@ (string_of_int (get_int (match_props.%{"i"})))))
+               @@ (string_of_int (prj_int (match_props.%{"i"})))))
              (buffer_add_string buf " "))
             (else (buffer_add_string buf " ")))))
          (incr index)
          (cell := (list.%(1)))))
        (buffer_add_string buf "\n\nMap dict\n")
        (let$ match_arg = (props.%{"map_d"}))
-       (iter (hashtbl_to_seq (get_hashtbl match_arg))
+       (iter (hashtbl_to_seq (prj_hashtbl match_arg))
         (let$ match_props = (hashtbl_create)) (let& exit = -1)
-        (if_else ((get_int (snd arg)) = 1)
+        (if_else ((prj_int (snd arg)) = 1)
          (then (unit) (exit := 0))
          (else
-          (if_else ((get_int (snd arg)) = 2)
+          (if_else ((prj_int (snd arg)) = 2)
            (then (unit) (exit := 0))
            (else
-            (if_else ((get_int (snd arg)) = 3)
-             (then (match_props.%{"k"} <- (set_string (fst arg))) (exit := 1))
+            (if_else ((prj_int (snd arg)) = 3)
+             (then (match_props.%{"k"} <- (inj_string (fst arg))) (exit := 1))
              (else (unit) (exit := 2)))))))
         (if_else (!exit = 0)
          (then (unit))
@@ -1796,7 +1796,7 @@ Print the runtime instructions
            (then
             (buffer_add_string buf " ")
             (stm
-             ((buffer_add_escape @@ buf) @@ (get_string (match_props.%{"k"}))))
+             ((buffer_add_escape @@ buf) @@ (prj_string (match_props.%{"k"}))))
             (buffer_add_string buf " "))
            (else (buffer_add_string buf "\n"))))))
        (buffer_add_string buf "\n\nComponent with props\n")
@@ -1811,7 +1811,7 @@ Print the runtime instructions
        (exit := 0)
        (buffer_add_string buf " ")
        (stm
-        ((buffer_add_escape @@ buf) @@ (get_string (match_props.%{"b_prop"}))))
+        ((buffer_add_escape @@ buf) @@ (prj_string (match_props.%{"b_prop"}))))
        (buffer_add_string buf " ")
        (let$ buf = (buffer_create))
        (unit)
@@ -1823,16 +1823,16 @@ Print the runtime instructions
                ("c_prop", (props.%{"c_prop"})),
                ("d_prop", (props.%{"e_prop"})),
                ("f_prop", (props.%{"f_prop"})),
-               ("g_prop", (set_string (buffer_contents buf))),
-               ("h_prop", (set_string (buffer_contents buf))),
-               ("i_prop", (set_string (buffer_contents buf)))]))))
+               ("g_prop", (inj_string (buffer_contents buf))),
+               ("h_prop", (inj_string (buffer_contents buf))),
+               ("i_prop", (inj_string (buffer_contents buf)))]))))
        (buffer_add_string buf "\n\nComponent with implicit children\n")
        (let$ buf = (buffer_create))
        (buffer_add_string buf " ")
        (buffer_add_string buf
         (await
          (Component2
-          @@ (hashtbl [("children", (set_string (buffer_contents buf)))]))))
+          @@ (hashtbl [("children", (inj_string (buffer_contents buf)))]))))
        (buffer_add_string buf
         "\n\nComponents are only bound once in the instructions.\n")
        (let$ buf = (buffer_create))
@@ -1840,19 +1840,19 @@ Print the runtime instructions
        (buffer_add_string buf
         (await
          (Component2
-          @@ (hashtbl [("children", (set_string (buffer_contents buf)))]))))
+          @@ (hashtbl [("children", (inj_string (buffer_contents buf)))]))))
        (buffer_add_string buf "\n\nPatterns\n\nTuple:\n")
        (let$ arg_match = [(props.%{"tuple"})])
        (let& exit = -1)
        (let$ match_arg = (arg_match.%(0)))
-       (let$ match_arg = ((get_array match_arg).%(0)))
-       (if_else ((get_int match_arg) = 1)
+       (let$ match_arg = ((prj_array match_arg).%(0)))
+       (if_else ((prj_int match_arg) = 1)
         (then
-         (let$ match_arg = ((get_array match_arg).%(1)))
-         (if_else ((get_float match_arg) = 2.5)
+         (let$ match_arg = ((prj_array match_arg).%(1)))
+         (if_else ((prj_float match_arg) = 2.5)
           (then
-           (let$ match_arg = ((get_array match_arg).%(2)))
-           (if_else ((get_string match_arg) = "a")
+           (let$ match_arg = ((prj_array match_arg).%(2)))
+           (if_else ((prj_string match_arg) = "a")
             (then (unit) (exit := 0))
             (else (unit))))
           (else (unit))))
@@ -1870,28 +1870,28 @@ Print the runtime instructions
         (then (unit) (exit := 0))
         (else
          (let$ match_arg = (arg_match.%(0)))
-         (let$ match_arg = ((get_array match_arg).%(0)))
+         (let$ match_arg = ((prj_array match_arg).%(0)))
          (if_else (test_int match_arg)
           (then
-           (let$ match_arg = ((get_array match_arg).%(1)))
+           (let$ match_arg = ((prj_array match_arg).%(1)))
            (match_props.%{"_tl"} <- match_arg)
            (match_props.%{"_z"} <- match_arg)
            (exit := 2))
           (else
-           (let$ match_arg = ((get_array match_arg).%(0)))
-           (let$ match_arg = ((get_array match_arg).%(0)))
-           (let$ match_arg = ((get_array match_arg).%(1)))
+           (let$ match_arg = ((prj_array match_arg).%(0)))
+           (let$ match_arg = ((prj_array match_arg).%(0)))
+           (let$ match_arg = ((prj_array match_arg).%(1)))
            (if_else (test_int match_arg)
             (then
              (match_props.%{"_tl"} <- match_arg)
              (match_props.%{"_z"} <- match_arg)
              (exit := 2))
             (else
-             (let$ match_arg = ((get_array match_arg).%(1)))
-             (let$ match_arg = ((get_array match_arg).%(0)))
+             (let$ match_arg = ((prj_array match_arg).%(1)))
+             (let$ match_arg = ((prj_array match_arg).%(0)))
              (if_else (test_int match_arg)
               (then
-               (let$ match_arg = ((get_array match_arg).%(1)))
+               (let$ match_arg = ((prj_array match_arg).%(1)))
                (if_else (test_int match_arg)
                 (then (match_props.%{"a"} <- match_arg) (exit := 1))
                 (else (unit))))
@@ -1909,7 +1909,7 @@ Print the runtime instructions
           (then
            (buffer_add_string buf " ")
            (stm
-            ((buffer_add_escape @@ buf) @@ (get_string (match_props.%{"a"}))))
+            ((buffer_add_escape @@ buf) @@ (prj_string (match_props.%{"a"}))))
            (buffer_add_string buf "\n"))
           (else (buffer_add_string buf "\n")))))
        (buffer_add_string buf "\n\nRecord:\n")
@@ -1917,31 +1917,31 @@ Print the runtime instructions
        (let$ match_props = (hashtbl_create))
        (let& exit = -1)
        (let$ match_arg = (arg_match.%(0)))
-       (let$ match_arg = ((get_hashtbl match_arg).%{"!#%@"}))
-       (let$ match_arg = ((get_hashtbl match_arg).%{"a"}))
+       (let$ match_arg = ((prj_hashtbl match_arg).%{"!#%@"}))
+       (let$ match_arg = ((prj_hashtbl match_arg).%{"a"}))
        (match_props.%{"a"} <- match_arg)
        (match_props.%{"b"} <- match_arg)
        (exit := 0)
        (buffer_add_string buf " ")
-       (stm ((buffer_add_escape @@ buf) @@ (get_string (match_props.%{"a"}))))
+       (stm ((buffer_add_escape @@ buf) @@ (prj_string (match_props.%{"a"}))))
        (buffer_add_string buf " ")
-       (stm ((buffer_add_escape @@ buf) @@ (get_string (match_props.%{"b"}))))
+       (stm ((buffer_add_escape @@ buf) @@ (prj_string (match_props.%{"b"}))))
        (buffer_add_string buf " ")
        (buffer_add_string buf "\n\nEnum:\n")
        (let$ arg_match = [(props.%{"enums"})])
        (let& exit = -1)
        (let$ match_arg = (arg_match.%(0)))
-       (let$ match_arg = ((get_array match_arg).%(0)))
-       (if_else ((get_string match_arg) = "a")
+       (let$ match_arg = ((prj_array match_arg).%(0)))
+       (if_else ((prj_string match_arg) = "a")
         (then
-         (let$ match_arg = ((get_array match_arg).%(1)))
-         (if_else ((get_int match_arg) = 1)
+         (let$ match_arg = ((prj_array match_arg).%(1)))
+         (if_else ((prj_int match_arg) = 1)
           (then
-           (let$ match_arg = ((get_array match_arg).%(2)))
-           (if_else ((get_int match_arg) = 1)
+           (let$ match_arg = ((prj_array match_arg).%(2)))
+           (if_else ((prj_int match_arg) = 1)
             (then
-             (let$ match_arg = ((get_array match_arg).%(3)))
-             (if_else ((get_int match_arg) = 0)
+             (let$ match_arg = ((prj_array match_arg).%(3)))
+             (if_else ((prj_int match_arg) = 0)
               (then (unit) (exit := 0))
               (else (unit))))
             (else (unit))))
@@ -1956,35 +1956,35 @@ Print the runtime instructions
        (let$ match_props = (hashtbl_create))
        (let& exit = -1)
        (let$ match_arg = (arg_match.%(0)))
-       (let$ match_arg = ((get_hashtbl match_arg).%{"tag"}))
-       (if_else ((get_int match_arg) = 0)
+       (let$ match_arg = ((prj_hashtbl match_arg).%{"tag"}))
+       (if_else ((prj_int match_arg) = 0)
         (then (unit) (exit := 1))
         (else
-         (if_else ((get_int match_arg) = 1)
+         (if_else ((prj_int match_arg) = 1)
           (then
-           (let$ match_arg = ((get_hashtbl match_arg).%{"a"}))
+           (let$ match_arg = ((prj_hashtbl match_arg).%{"a"}))
            (match_props.%{"a"} <- match_arg)
            (exit := 0))
           (else (unit)))))
        (if_else (!exit = 0)
         (then
          (buffer_add_string buf " ")
-         (stm ((buffer_add_escape @@ buf) @@ (get_string (match_props.%{"a"}))))
+         (stm ((buffer_add_escape @@ buf) @@ (prj_string (match_props.%{"a"}))))
          (buffer_add_string buf " "))
         (else (buffer_add_string buf "\n")))
        (buffer_add_string buf "\n\nDictionary:\n")
        (let$ arg_match = [(props.%{"dict"})])
        (let& exit = -1)
        (let$ match_arg = (arg_match.%(0)))
-       (if_else (hashtbl_mem (get_hashtbl match_arg) "a")
+       (if_else (hashtbl_mem (prj_hashtbl match_arg) "a")
         (then
-         (let$ match_arg = ((get_hashtbl match_arg).%{"a"}))
-         (if_else ((get_int match_arg) = 1)
+         (let$ match_arg = ((prj_hashtbl match_arg).%{"a"}))
+         (if_else ((prj_int match_arg) = 1)
           (then
-           (if_else (hashtbl_mem (get_hashtbl match_arg) "b")
+           (if_else (hashtbl_mem (prj_hashtbl match_arg) "b")
             (then
-             (let$ match_arg = ((get_hashtbl match_arg).%{"b"}))
-             (if_else ((get_int match_arg) = 2)
+             (let$ match_arg = ((prj_hashtbl match_arg).%{"b"}))
+             (if_else ((prj_int match_arg) = 2)
               (then (unit) (exit := 0))
               (else (unit))))
             (else (unit))))
@@ -1996,21 +1996,21 @@ Print the runtime instructions
         (else (buffer_add_string buf " ")))
        (buffer_add_string buf "\n\n! and . precedence works correctly\n")
        (let$ arg_match =
-        [(set_array
-          [(set_array
-            [((get_hashtbl ((get_hashtbl (props.%{"a"})).%{"b"})).%{"c"})])])])
+        [(inj_array
+          [(inj_array
+            [((prj_hashtbl ((prj_hashtbl (props.%{"a"})).%{"b"})).%{"c"})])])])
        (let& exit = -1)
        (let$ match_arg = (arg_match.%(0)))
        (if_else (test_int match_arg)
         (then (unit) (exit := 1))
         (else
          (let$ match_arg = (arg_match.%(0)))
-         (let$ match_arg = ((get_array match_arg).%(0)))
+         (let$ match_arg = ((prj_array match_arg).%(0)))
          (if_else (not (test_int match_arg))
           (then
-           (let$ match_arg = ((get_array match_arg).%(0)))
-           (let$ match_arg = ((get_array match_arg).%(0)))
-           (if_else ((get_int match_arg) = 0)
+           (let$ match_arg = ((prj_array match_arg).%(0)))
+           (let$ match_arg = ((prj_array match_arg).%(0)))
+           (if_else ((prj_int match_arg) = 0)
             (then (unit) (exit := 0))
             (else (unit))))
           (else (unit)))
@@ -2019,12 +2019,12 @@ Print the runtime instructions
        (buffer_add_string buf
         "\n\nOther syntax features\n\nTrailing commas parse correctly:\n")
        (let$ arg_match =
-        [(set_hashtbl
+        [(inj_hashtbl
           (hashtbl
            [("a",
-             (set_array [(set_int 1), (set_array [(set_int 2), (set_int 0)])])),
-            ("b", (set_array [(set_int 3), (set_int 4)])),
-            ("c", (set_hashtbl (hashtbl [("k", (set_int 5))])))]))])
+             (inj_array [(inj_int 1), (inj_array [(inj_int 2), (inj_int 0)])])),
+            ("b", (inj_array [(inj_int 3), (inj_int 4)])),
+            ("c", (inj_hashtbl (hashtbl [("k", (inj_int 5))])))]))])
        (let& exit = -1)
        (let$ match_arg = (arg_match.%(0)))
        (unit)
@@ -2035,18 +2035,18 @@ Print the runtime instructions
        (buffer_add_string buf "\n\nZero-length record fields:\n")
        (stm
         ((buffer_add_escape @@ buf)
-         @@ (get_string ((get_hashtbl (props.%{"zero"})).%{""}))))
+         @@ (prj_string ((prj_hashtbl (props.%{"zero"})).%{""}))))
        (buffer_add_string buf "\n")
        (let$ arg_match = [(props.%{"zero"})])
        (let$ match_props = (hashtbl_create))
        (let& exit = -1)
        (let$ match_arg = (arg_match.%(0)))
-       (let$ match_arg = ((get_hashtbl match_arg).%{""}))
+       (let$ match_arg = ((prj_hashtbl match_arg).%{""}))
        (match_props.%{"empty"} <- match_arg)
        (exit := 0)
        (buffer_add_string buf " ")
        (stm
-        ((buffer_add_escape @@ buf) @@ (get_string (match_props.%{"empty"}))))
+        ((buffer_add_escape @@ buf) @@ (prj_string (match_props.%{"empty"}))))
        (buffer_add_string buf " ")
        (buffer_add_string buf "\n")
        (return (promise (buffer_contents buf))))

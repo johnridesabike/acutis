@@ -154,8 +154,8 @@ module type SEM = sig
   module type UNTYPED = sig
     type t
 
-    val set : t exp -> untyped exp
-    val get : untyped exp -> t exp
+    val inject : t exp -> untyped exp
+    val project : untyped exp -> t exp
     val test : untyped exp -> bool exp
   end
 
@@ -272,10 +272,10 @@ end = struct
   struct
     open Runtime
 
-    let nil_value = UInt.set (int 0)
+    let nil_value = UInt.inject (int 0)
     let false_value = nil_value
-    let true_value = UInt.set (int 1)
-    let get_nullable e = list_hd (UArray.get e)
+    let true_value = UInt.inject (int 1)
+    let get_nullable e = list_hd (UArray.project e)
     let is_nil = UInt.test
     let is_not_nil x = not (is_nil x)
 
@@ -315,12 +315,13 @@ end = struct
       | Compile.Escape -> stm ((escape @@ state.buf) @@ x)
 
     let fmt state esc x = function
-      | Compile.Fmt_string -> parse_escape state esc (UString.get x)
-      | Compile.Fmt_int -> parse_escape state esc (string_of_int (UInt.get x))
+      | Compile.Fmt_string -> parse_escape state esc (UString.project x)
+      | Compile.Fmt_int ->
+          parse_escape state esc (string_of_int (UInt.project x))
       | Compile.Fmt_float ->
-          parse_escape state esc (string_of_float (UFloat.get x))
+          parse_escape state esc (string_of_float (UFloat.project x))
       | Compile.Fmt_bool ->
-          parse_escape state esc (string_of_bool (int_to_bool (UInt.get x)))
+          parse_escape state esc (string_of_bool (int_to_bool (UInt.project x)))
 
     let rec echo state esc (ech : Compile.echo) k =
       match ech with
@@ -329,7 +330,7 @@ end = struct
       | `Var x -> k (props_find x state)
       | `Field (e, s) ->
           let@ tbl = echo state esc e in
-          k (UHashtbl.get tbl).%{string s}
+          k (UHashtbl.project tbl).%{string s}
 
     let rec echoes state esc default default_fmt = function
       | [] ->
@@ -345,15 +346,15 @@ end = struct
     let rec construct_data blocks state (data : Compile.data) =
       match data with
       | `Null -> nil_value
-      | `Int i -> UInt.set (int i)
-      | `String s -> UString.set (string s)
-      | `Float f -> UFloat.set (float f)
+      | `Int i -> UInt.inject (int i)
+      | `String s -> UString.inject (string s)
+      | `Float f -> UFloat.inject (float f)
       | `Var s -> props_find s state
-      | `Array a -> construct_data_array blocks state a |> UArray.set
-      | `Assoc d -> construct_data_hashtbl blocks state d |> UHashtbl.set
-      | `Block i -> blocks.(i) |> UString.set
+      | `Array a -> construct_data_array blocks state a |> UArray.inject
+      | `Assoc d -> construct_data_hashtbl blocks state d |> UHashtbl.inject
+      | `Block i -> blocks.(i) |> UString.inject
       | `Field (d, s) ->
-          (construct_data blocks state d |> UHashtbl.get).%{string s}
+          (construct_data blocks state d |> UHashtbl.project).%{string s}
 
     and construct_data_array blocks state a =
       array (Array.map (construct_data blocks state) a)
@@ -404,11 +405,11 @@ end = struct
             match child with
             | Int_keys tree ->
                 match_tree ~exit ~leafstm
-                  ~get_arg:(arg_int (UArray.get arg))
+                  ~get_arg:(arg_int (UArray.project arg))
                   ~vars tree
             | String_keys tree ->
                 match_tree ~exit ~leafstm
-                  ~get_arg:(arg_str (UHashtbl.get arg))
+                  ~get_arg:(arg_str (UHashtbl.project arg))
                   ~vars tree
           in
           match wildcard with
@@ -449,9 +450,9 @@ end = struct
         Matching.{ data; if_match; next } =
       if_else
         (match data with
-        | `String x -> UString.get arg = string x
-        | `Int x -> UInt.get arg = int x
-        | `Float x -> UFloat.get arg = float x)
+        | `String x -> UString.project arg = string x
+        | `Int x -> UInt.project arg = int x
+        | `Float x -> UFloat.project arg = float x)
         ~then_:(fun () -> match_tree ~exit ~leafstm ~get_arg ~vars if_match)
         ~else_:
           (match next with
@@ -501,13 +502,13 @@ end = struct
           let& cell = ("cell", construct_data blocks state data) in
           while_ is_not_nil cell (fun () ->
               let@ new_props = make_match_props exits in
-              let$ list = ("list", UArray.get !cell) in
+              let$ list = ("list", UArray.project !cell) in
               let$ head = ("head", list_hd list) in
               let& exit = ("exit", unset_exit) in
               let| () =
                 match_tree ~exit
                   ~leafstm:(match_leaf exit new_props)
-                  ~get_arg:(arg_indexed head (UInt.set !index))
+                  ~get_arg:(arg_indexed head (UInt.inject !index))
                   ~vars:MapInt.empty tree
               in
               let| () = make_exits exit exits state new_props in
@@ -517,7 +518,7 @@ end = struct
           let@ blocks = construct_blocks state blocks in
           let$ match_arg = ("match_arg", construct_data blocks state data) in
           iter
-            (hashtbl_to_seq (UHashtbl.get match_arg))
+            (hashtbl_to_seq (UHashtbl.project match_arg))
             (fun p ->
               let k, v = unpair p in
               let@ new_props = make_match_props exits in
@@ -525,7 +526,7 @@ end = struct
               let| () =
                 match_tree ~exit
                   ~leafstm:(match_leaf exit new_props)
-                  ~get_arg:(arg_indexed v (UString.set k))
+                  ~get_arg:(arg_indexed v (UString.inject k))
                   ~vars:MapInt.empty tree
               in
               make_exits exit exits state new_props)
@@ -585,21 +586,21 @@ end = struct
       let$ ty_str = ("type", show_type ty) in
       let debug = { debug with ty_str } in
       match ty.contents with
-      | T.Unknown _ -> set (UUnknown.set input)
+      | T.Unknown _ -> set (UUnknown.inject input)
       | T.Enum_int ({ cases; _ }, Bool) ->
           External.decode External.get_bool input
             ~ok:(fun b ->
               if_else b
                 ~then_:(fun () ->
-                  if SetInt.mem 1 cases then set (UInt.set (int 1))
+                  if SetInt.mem 1 cases then set (UInt.inject (int 1))
                   else push_error debug input)
                 ~else_:(fun () ->
-                  if SetInt.mem 0 cases then set (UInt.set (int 0))
+                  if SetInt.mem 0 cases then set (UInt.inject (int 0))
                   else push_error debug input))
             ~error:(fun () -> push_error debug input)
       | T.String | T.Enum_string { row = `Open; _ } ->
           External.decode External.get_string input
-            ~ok:(fun s -> set (UString.set s))
+            ~ok:(fun s -> set (UString.inject s))
             ~error:(fun () -> push_error debug input)
       | T.Enum_string { row = `Closed; cases } ->
           External.decode External.get_string input
@@ -610,14 +611,14 @@ end = struct
                 | Seq.Cons (case, seq) ->
                     if_else
                       (s = string case)
-                      ~then_:(fun () -> set (UString.set s))
+                      ~then_:(fun () -> set (UString.inject s))
                       ~else_:(fun () -> aux seq)
               in
               aux (SetString.to_seq cases))
             ~error:(fun () -> push_error debug input)
       | T.Int | T.Enum_int ({ row = `Open; _ }, _) ->
           External.decode External.get_int input
-            ~ok:(fun i -> set (UInt.set i))
+            ~ok:(fun i -> set (UInt.inject i))
             ~error:(fun () -> push_error debug input)
       | T.Enum_int ({ row = `Closed; cases }, _) ->
           External.decode External.get_int input
@@ -628,14 +629,14 @@ end = struct
                 | Seq.Cons (case, seq) ->
                     if_else
                       (s = int case)
-                      ~then_:(fun () -> set (UInt.set s))
+                      ~then_:(fun () -> set (UInt.inject s))
                       ~else_:(fun () -> aux seq)
               in
               aux (SetInt.to_seq cases))
             ~error:(fun () -> push_error debug input)
       | T.Float ->
           External.decode External.get_float input
-            ~ok:(fun f -> set (UFloat.set f))
+            ~ok:(fun f -> set (UFloat.inject f))
             ~error:(fun () -> push_error debug input)
       | T.Nullable ty ->
           External.decode External.get_some input
@@ -649,7 +650,7 @@ end = struct
                   ~set:(fun data -> decoded.%(int 0) <- data)
                   ~debug:{ debug with stack } input ty
               in
-              set (UArray.set decoded))
+              set (UArray.inject decoded))
             ~error:(fun () -> set nil_value)
       | T.List ty ->
           External.decode External.get_seq input
@@ -671,7 +672,7 @@ end = struct
                         ~debug:{ debug with stack } input ty
                     in
                     let| () =
-                      !decode_dst.%(int 1) <- UArray.set decode_dst_new
+                      !decode_dst.%(int 1) <- UArray.inject decode_dst_new
                     in
                     let| () = incr i in
                     decode_dst := decode_dst_new)
@@ -703,14 +704,14 @@ end = struct
                         aux (succ i) seq tl)
               in
               let| () = aux 0 seq tys in
-              set (UArray.set decoded))
+              set (UArray.inject decoded))
             ~error:(fun () -> push_error debug input)
       | T.Record tys ->
           External.decode External.get_assoc input
             ~ok:(fun input ->
               let$ decoded = ("decoded", hashtbl_create ()) in
               let| () = decode_record ~debug decoded input tys.contents in
-              set (UHashtbl.set decoded))
+              set (UHashtbl.inject decoded))
             ~error:(fun () -> push_error debug input)
       | T.Dict (ty, _) ->
           External.decode External.get_assoc input
@@ -724,7 +725,7 @@ end = struct
                       ~set:(fun data -> decoded.%{k} <- data)
                       ~debug:{ debug with stack } input ty
                   in
-                  set (UHashtbl.set decoded)))
+                  set (UHashtbl.inject decoded)))
             ~error:(fun () -> push_error debug input)
       | T.Union_int (key, { cases; row }, Bool) ->
           decode_union External.get_bool
@@ -745,18 +746,18 @@ end = struct
             ~if_equal:(fun extern ty ~then_ ~else_ ->
               let ty = int ty in
               if_else (extern = ty)
-                ~then_:(fun () -> then_ (UInt.set ty))
+                ~then_:(fun () -> then_ (UInt.inject ty))
                 ~else_)
-            ~if_open:(fun x f -> f (UInt.set x))
+            ~if_open:(fun x f -> f (UInt.inject x))
             (MapInt.to_seq cases) (string key) row ~set ~debug input
       | T.Union_string (key, { cases; row }) ->
           decode_union External.get_string
             ~if_equal:(fun extern ty ~then_ ~else_ ->
               let ty = string ty in
               if_else (extern = ty)
-                ~then_:(fun () -> then_ (UString.set ty))
+                ~then_:(fun () -> then_ (UString.inject ty))
                 ~else_)
-            ~if_open:(fun x f -> f (UString.set x))
+            ~if_open:(fun x f -> f (UString.inject x))
             (MapString.to_seq cases) (string key) row ~set ~debug input
 
     and decode_union : type ty extern.
@@ -794,7 +795,7 @@ end = struct
                           ~else_:(fun () -> aux seq)
                   in
                   let| () = aux seq in
-                  set (UHashtbl.set decoded))
+                  set (UHashtbl.inject decoded))
                 ~error:(fun () -> push_error debug input))
             ~else_:(fun () -> push_error debug input))
         ~error:(fun () -> push_error debug input)
@@ -829,13 +830,13 @@ end = struct
       match ty.contents with
       | T.Unknown _ ->
           if_else (UUnknown.test props)
-            ~then_:(fun () -> set (UUnknown.get props))
+            ~then_:(fun () -> set (UUnknown.project props))
             ~else_:(fun () -> set (External.marshal props))
-      | T.Enum_int (_, Bool) -> set (external_of_int_bool (UInt.get props))
+      | T.Enum_int (_, Bool) -> set (external_of_int_bool (UInt.project props))
       | T.String | T.Enum_string _ ->
-          set (External.of_string (UString.get props))
-      | T.Int | T.Enum_int _ -> set (External.of_int (UInt.get props))
-      | T.Float -> set (External.of_float (UFloat.get props))
+          set (External.of_string (UString.project props))
+      | T.Int | T.Enum_int _ -> set (External.of_int (UInt.project props))
+      | T.Float -> set (External.of_float (UFloat.project props))
       | T.Nullable ty ->
           if_else (is_nil props)
             ~then_:(fun () -> set External.null)
@@ -848,14 +849,14 @@ end = struct
               generator (fun yield ->
                   let& cell = ("cell", props) in
                   while_ is_not_nil cell (fun () ->
-                      let$ cell' = ("cell", UArray.get !cell) in
+                      let$ cell' = ("cell", UArray.project !cell) in
                       let$ props = ("props", list_hd cell') in
                       let| () = cell := list_tl cell' in
                       encode ~set:yield props ty)) )
           in
           set (External.of_seq seq)
       | T.Tuple tys ->
-          let$ props = ("props", UArray.get props) in
+          let$ props = ("props", UArray.project props) in
           let$ seq =
             ( "seq",
               generator (fun yield ->
@@ -865,29 +866,31 @@ end = struct
           in
           set (External.of_seq seq)
       | T.Record tys ->
-          let$ seq = ("seq", encode_record (UHashtbl.get props) tys.contents) in
+          let$ seq =
+            ("seq", encode_record (UHashtbl.project props) tys.contents)
+          in
           set (External.of_seq_assoc seq)
       | T.Dict (ty, _) ->
           let$ seq =
             ( "seq",
               generator (fun yield ->
                   iter
-                    (hashtbl_to_seq (UHashtbl.get props))
+                    (hashtbl_to_seq (UHashtbl.project props))
                     (fun p ->
                       let k, props = unpair p in
                       encode ~set:(fun v -> yield (pair (k, v))) props ty)) )
           in
           set (External.of_seq_assoc seq)
       | T.Union_int (key, { cases; row }, Bool) ->
-          encode_union ~unbox:UInt.get ~to_extern:external_of_int_bool
+          encode_union ~unbox:UInt.project ~to_extern:external_of_int_bool
             (MapInt.to_seq cases |> Seq.map (fun (k, v) -> (int k, v)))
             row (string key) ~set props
       | T.Union_int (key, { cases; row }, Not_bool) ->
-          encode_union ~unbox:UInt.get ~to_extern:External.of_int
+          encode_union ~unbox:UInt.project ~to_extern:External.of_int
             (MapInt.to_seq cases |> Seq.map (fun (k, v) -> (int k, v)))
             row (string key) ~set props
       | T.Union_string (key, { cases; row }) ->
-          encode_union ~unbox:UString.get ~to_extern:External.of_string
+          encode_union ~unbox:UString.project ~to_extern:External.of_string
             (MapString.to_seq cases |> Seq.map (fun (k, v) -> (string k, v)))
             row (string key) ~set props
 
@@ -897,7 +900,7 @@ end = struct
         (a exp * T.record) Seq.t ->
         _ =
      fun ~unbox ~to_extern cases row key ~set props ->
-      let$ props = ("props", UHashtbl.get props) in
+      let$ props = ("props", UHashtbl.project props) in
       let$ tag = ("tag", props.%{key} |> unbox) in
       match cases () with
       | Seq.Nil -> unit
@@ -1235,8 +1238,8 @@ module MakeTrans
   module type UNTYPED = sig
     type t
 
-    val set : t exp -> untyped exp
-    val get : untyped exp -> t exp
+    val inject : t exp -> untyped exp
+    val project : untyped exp -> t exp
     val test : untyped exp -> bool exp
   end
 
@@ -1248,8 +1251,8 @@ module MakeTrans
                 (module struct
                   type t = M.t
 
-                  let set a = fwde (M.set (bwde a))
-                  let get a = fwde (M.get (bwde a))
+                  let inject a = fwde (M.inject (bwde a))
+                  let project a = fwde (M.project (bwde a))
                   let test a = fwde (M.test (bwde a))
                 end))))
 
@@ -1398,8 +1401,8 @@ let pp (type a) pp_import ppf c =
     module type UNTYPED = sig
       type t
 
-      val set : t exp -> untyped exp
-      val get : untyped exp -> t exp
+      val inject : t exp -> untyped exp
+      val project : untyped exp -> t exp
       val test : untyped exp -> bool exp
     end
 
@@ -1408,8 +1411,8 @@ let pp (type a) pp_import ppf c =
         (module struct
           type t = a
 
-          let set = F.dprintf "(@[set_%s@ %t@])" name
-          let get = F.dprintf "(@[get_%s@ %t@])" name
+          let inject = F.dprintf "(@[inj_%s@ %t@])" name
+          let project = F.dprintf "(@[prj_%s@ %t@])" name
           let test = F.dprintf "(@[test_%s@ %t@])" name
         end)
 

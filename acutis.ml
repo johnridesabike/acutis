@@ -193,8 +193,8 @@ end = struct
     module type UNTYPED = sig
       type t
 
-      val set : t exp -> untyped exp
-      val get : untyped exp -> t exp
+      val inject : t exp -> untyped exp
+      val project : untyped exp -> t exp
       val test : untyped exp -> bool exp
     end
 
@@ -202,15 +202,15 @@ end = struct
       f
         (module struct
           type t = a
-          type untyped += Boxed of a
+          type untyped += Untyped of a
 
-          let set a = Boxed a
+          let inject a = Untyped a
 
-          let get = function
-            | Boxed a -> a
+          let project = function
+            | Untyped a -> a
             | _ -> A.Error.internal ~__POS__ "Expected %s" name
 
-          let test = function Boxed _ -> true | _ -> false
+          let test = function Untyped _ -> true | _ -> false
         end)
 
     module External = struct
@@ -545,8 +545,8 @@ module PrintJs = struct
     module type UNTYPED = sig
       type t
 
-      val set : t exp -> untyped exp
-      val get : untyped exp -> t exp
+      val inject : t exp -> untyped exp
+      val project : untyped exp -> t exp
       val test : untyped exp -> bool exp
     end
 
@@ -563,8 +563,8 @@ module PrintJs = struct
            (module struct
              type t = a
 
-             let set a = new_ name [ a ]
-             let get a = a.!("v")
+             let inject a = new_ name [ a ]
+             let project a = a.!("v")
              let test a = instanceof a name
            end))
         state
