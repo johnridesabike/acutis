@@ -11,9 +11,6 @@
 type 'a assoc = (Loc.t * string * 'a) list
 type 'a assoc_nonempty = (Loc.t * string * 'a) Nonempty.t
 
-let assoc_to_sexp f l =
-  Sexp.of_seq (Sexp.triple Loc.to_sexp Sexp.string f) (List.to_seq l)
-
 type tag =
   | Tag_int of Loc.t * int
   | Tag_bool of Loc.t * int
@@ -21,23 +18,7 @@ type tag =
 
 type 'a value = Tag of tag | Value of 'a
 type 'a record = 'a value assoc_nonempty
-
-let value_to_sexp f = function
-  | Tag (Tag_int (loc, i)) -> Sexp.make "tag" [ Loc.to_sexp loc; Sexp.int i ]
-  | Tag (Tag_bool (loc, i)) -> Sexp.make "tag" [ Loc.to_sexp loc; Sexp.bool i ]
-  | Tag (Tag_string (loc, s)) ->
-      Sexp.make "tag" [ Loc.to_sexp loc; Sexp.string s ]
-  | Value v -> f v
-
-let record_to_sexp f l =
-  Nonempty.to_sexp (Sexp.triple Loc.to_sexp Sexp.string (value_to_sexp f)) l
-
 type row = Loc.t * [ `Closed | `Open ]
-
-let row_to_sexp row =
-  Sexp.pair Loc.to_sexp
-    (function `Closed -> Sexp.symbol "closed" | `Open -> Sexp.symbol "open")
-    row
 
 type ty =
   | Ty_named of Loc.t * string
@@ -52,31 +33,6 @@ type ty =
 
 type prop = { loc : Loc.t; name : string; ty : ty }
 type interface = prop list
-
-let rec ty_to_sexp = function
-  | Ty_named (loc, s) -> Sexp.make "named" [ Loc.to_sexp loc; Sexp.string s ]
-  | Ty_nullable t -> Sexp.make "nullable" [ ty_to_sexp t ]
-  | Ty_list t -> Sexp.make "list" [ ty_to_sexp t ]
-  | Ty_dict t -> Sexp.make "dict" [ ty_to_sexp t ]
-  | Ty_enum_int (l, row) ->
-      Sexp.make "enum_int" [ Nonempty.to_sexp Sexp.int l; row_to_sexp row ]
-  | Ty_enum_bool l -> Sexp.make "enum_bool" [ Nonempty.to_sexp Sexp.bool l ]
-  | Ty_enum_string (l, row) ->
-      Sexp.make "enum_string"
-        [ Nonempty.to_sexp Sexp.string l; row_to_sexp row ]
-  | Ty_record (l, row) ->
-      Sexp.make "record"
-        [
-          Nonempty.to_sexp (Sexp.pair Loc.to_sexp (record_to_sexp ty_to_sexp)) l;
-          row_to_sexp row;
-        ]
-  | Ty_tuple l -> Sexp.make "tuple" [ Sexp.of_seq ty_to_sexp (List.to_seq l) ]
-
-let prop_to_sexp { loc; name; ty } =
-  Sexp.make "prop" [ Loc.to_sexp loc; Sexp.string name; ty_to_sexp ty ]
-
-let interface_to_sexp l = Sexp.of_seq prop_to_sexp (List.to_seq l)
-
 type trim = No_trim | Trim
 type escape = No_escape | Escape
 type echo_format = Fmt_string | Fmt_int | Fmt_float | Fmt_bool
@@ -117,118 +73,115 @@ and t = node list
 
 let dummy_var = Var (Loc.dummy, "_")
 
-let trim_to_sexp = function
-  | No_trim -> Sexp.symbol "no_trim"
-  | Trim -> Sexp.symbol "trim"
+module TyRepr = struct
+  open Pp.TyRepr
+  module Loc = Loc.TyRepr
+  module Nonempty = Linear (Nonempty)
 
-let escape_to_sexp = function
-  | No_escape -> Sexp.symbol "no_escape"
-  | Escape -> Sexp.symbol "escape"
+  let assoc_triple f = tuple3 Loc.t string f
+  let assoc f l = list (assoc_triple f) l
+  let assoc_nonempty f l = Nonempty.t (assoc_triple f) l
 
-let echo_format_to_sexp = function
-  | Fmt_string -> Sexp.symbol "fmt_string"
-  | Fmt_int -> Sexp.symbol "fmt_int"
-  | Fmt_float -> Sexp.symbol "fmt_float"
-  | Fmt_bool -> Sexp.symbol "fmt_bool"
+  let tag = function
+    | Tag_int (l, i) -> variant "Tag_int" (args (Loc.t l) * int i)
+    | Tag_bool (l, i) -> variant "Tag_bool" (args (Loc.t l) * int i)
+    | Tag_string (l, s) -> variant "Tag_string" (args (Loc.t l) * string s)
 
-let rec echo_to_sexp = function
-  | Echo_var (loc, s) -> Sexp.make "echo_var" [ Loc.to_sexp loc; Sexp.string s ]
-  | Echo_string (loc, s) ->
-      Sexp.make "echo_string" [ Loc.to_sexp loc; Sexp.string s ]
-  | Echo_field (x, field) ->
-      Sexp.make "echo_field" [ Sexp.string field; echo_to_sexp x ]
+  let value f = function
+    | Tag t -> variant "Tag" (args (tag t))
+    | Value v -> variant "Value" (args (f v))
 
-let rec pat_to_sexp = function
-  | Var (loc, s) -> Sexp.make "var" [ Loc.to_sexp loc; Sexp.string s ]
-  | Bool (loc, i) -> Sexp.make "bool" [ Loc.to_sexp loc; Sexp.bool i ]
-  | Int (loc, i) -> Sexp.make "int" [ Loc.to_sexp loc; Sexp.int i ]
-  | Float (loc, f) -> Sexp.make "float" [ Loc.to_sexp loc; Sexp.float f ]
-  | String (loc, s) -> Sexp.make "string" [ Loc.to_sexp loc; Sexp.string s ]
-  | Nullable (loc, t) ->
-      Sexp.make "nullable"
-        [
-          Loc.to_sexp loc;
-          (match t with None -> Sexp.symbol "null" | Some t -> pat_to_sexp t);
-        ]
-  | Enum_string (loc, s) ->
-      Sexp.make "enum_string" [ Loc.to_sexp loc; Sexp.string s ]
-  | Enum_int (loc, i) -> Sexp.make "enum_int" [ Loc.to_sexp loc; Sexp.int i ]
-  | List (loc, l, None) ->
-      Sexp.make "list"
-        [ Loc.to_sexp loc; Sexp.of_seq pat_to_sexp (List.to_seq l) ]
-  | List (loc, l, Some t) ->
-      Sexp.make "list"
-        [
-          Loc.to_sexp loc;
-          Sexp.of_seq pat_to_sexp (List.to_seq l);
-          pat_to_sexp t;
-        ]
-  | Tuple (loc, l) ->
-      Sexp.make "tuple"
-        [ Loc.to_sexp loc; Sexp.of_seq pat_to_sexp (List.to_seq l) ]
-  | Record (loc, m) ->
-      Sexp.make "record" [ Loc.to_sexp loc; record_to_sexp pat_to_sexp m ]
-  | Dict (loc, m) ->
-      Sexp.make "dict" [ Loc.to_sexp loc; assoc_to_sexp pat_to_sexp m ]
-  | Block (loc, x) -> Sexp.make "block" [ Loc.to_sexp loc; to_sexp x ]
-  | Field (loc, x, s) ->
-      Sexp.make "field" [ Loc.to_sexp loc; pat_to_sexp x; Sexp.string s ]
+  let record f l = assoc_nonempty (value f) l
+  let trim = function No_trim -> variant0 "No_trim" | Trim -> variant0 "Trim"
 
-and node_to_sexp = function
-  | Text (s, triml, trimr) ->
-      Sexp.make "text" [ trim_to_sexp triml; Sexp.string s; trim_to_sexp trimr ]
-  | Echo (l, fmt, ech, esc) ->
-      Sexp.make "echo"
-        [
-          Sexp.of_seq
-            (Sexp.pair echo_format_to_sexp echo_to_sexp)
-            (List.to_seq l);
-          echo_format_to_sexp fmt;
-          echo_to_sexp ech;
-          escape_to_sexp esc;
-        ]
-  | Match (loc, pats, cases) ->
-      Sexp.make "match"
-        [
-          Loc.to_sexp loc;
-          Nonempty.to_sexp pat_to_sexp pats;
-          Nonempty.to_sexp case_to_sexp cases;
-        ]
-  | Map_list (loc, pat, cases) ->
-      Sexp.make "map"
-        [
-          Loc.to_sexp loc; pat_to_sexp pat; Nonempty.to_sexp case_to_sexp cases;
-        ]
-  | Map_dict (loc, pat, cases) ->
-      Sexp.make "map_dict"
-        [
-          Loc.to_sexp loc; pat_to_sexp pat; Nonempty.to_sexp case_to_sexp cases;
-        ]
-  | Component (loc, s1, s2, pats) ->
-      Sexp.make "component"
-        [
-          Loc.to_sexp loc;
-          Sexp.string s1;
-          assoc_to_sexp pat_to_sexp pats;
-          Sexp.string s2;
-        ]
-  | Interface (loc, i) ->
-      Sexp.make "interface" [ Loc.to_sexp loc; interface_to_sexp i ]
-  | Comment s -> Sexp.make "comment" [ Sexp.string s ]
+  let escape = function
+    | No_escape -> variant0 "No_escape"
+    | Escape -> variant0 "Escape"
 
-and case_to_sexp { pats; nodes } =
-  Sexp.make "case"
-    [
-      Sexp.make "pats"
-        [
-          Nonempty.to_sexp
-            (Sexp.pair Loc.to_sexp (Nonempty.to_sexp pat_to_sexp))
-            pats;
-        ];
-      Sexp.make "nodes" [ to_sexp nodes ];
-    ]
+  let row =
+    tuple2 Loc.t (function
+      | `Closed -> polyvar0 "Closed"
+      | `Open -> polyvar0 "Open")
 
-and to_sexp l = Sexp.of_seq node_to_sexp (List.to_seq l)
+  let rec ty = function
+    | Ty_named (loc, s) -> variant "Ty_named" (args (Loc.t loc) * string s)
+    | Ty_nullable t -> variant "Ty_nullable" (args (ty t))
+    | Ty_list t -> variant "Ty_list" (args (ty t))
+    | Ty_dict t -> variant "Ty_dict" (args (ty t))
+    | Ty_enum_int (l, r) ->
+        variant "Ty_enum_int" (args (Nonempty.t int l) * row r)
+    | Ty_enum_bool l -> variant "Ty_enum_bool" (args (Nonempty.t int l))
+    | Ty_enum_string (l, r) ->
+        variant "Ty_enum_string" (args (Nonempty.t string l) * row r)
+    | Ty_record (l, r) ->
+        variant "Ty_record"
+          (args (Nonempty.t (tuple2 Loc.t (record ty)) l) * row r)
+    | Ty_tuple l -> variant "Ty_tuple" (args (list ty l))
+
+  let prop { loc; name; ty = ty' } =
+    Pp.TyRepr.record
+      (fields "loc" (Loc.t loc)
+      |> field "name" (string name)
+      |> field "ty" (ty ty'))
+
+  let interface l = list prop l
+
+  let echo_format = function
+    | Fmt_string -> variant0 "Fmt_string"
+    | Fmt_int -> variant0 "Fmt_int"
+    | Fmt_float -> variant0 "Fmt_float"
+    | Fmt_bool -> variant0 "Fmt_bool"
+
+  let rec echo = function
+    | Echo_var (loc, s) -> variant "Echo_var" (args (Loc.t loc) * string s)
+    | Echo_string (loc, s) -> variant "Echo_string" (args (Loc.t loc) * string s)
+    | Echo_field (x, field) ->
+        variant "Echo_field" (args (echo x) * string field)
+
+  let rec pat = function
+    | Var (loc, s) -> variant "Var" (args (Loc.t loc) * string s)
+    | Bool (loc, i) -> variant "Bool" (args (Loc.t loc) * int i)
+    | Int (loc, i) -> variant "Int" (args (Loc.t loc) * int i)
+    | Float (loc, f) -> variant "Float" (args (Loc.t loc) * float f)
+    | String (loc, s) -> variant "String" (args (Loc.t loc) * string s)
+    | Nullable (loc, t) -> variant "Nullable" (args (Loc.t loc) * option pat t)
+    | Enum_string (loc, s) -> variant "Enum_string" (args (Loc.t loc) * string s)
+    | Enum_int (loc, i) -> variant "Enum_int" (args (Loc.t loc) * int i)
+    | List (loc, l, tl) ->
+        variant "List" (args (Loc.t loc) * list pat l * option pat tl)
+    | Tuple (loc, l) -> variant "Tuple" (args (Loc.t loc) * list pat l)
+    | Record (loc, m) -> variant "Record" (args (Loc.t loc) * record pat m)
+    | Dict (loc, m) -> variant "Dict" (args (Loc.t loc) * assoc pat m)
+    | Block (loc, x) -> variant "Block" (args (Loc.t loc) * t x)
+    | Field (loc, x, s) -> variant "Field" (args (Loc.t loc) * pat x * string s)
+
+  and node = function
+    | Text (s, triml, trimr) ->
+        variant "Text" (args (trim triml) * string s * trim trimr)
+    | Echo (l, fmt, ech, esc) ->
+        variant "Echo"
+          (args (list (tuple2 echo_format echo) l)
+          * echo_format fmt * echo ech * escape esc)
+    | Match (loc, pats, cases) ->
+        variant "Match"
+          (args (Loc.t loc) * Nonempty.t pat pats * Nonempty.t case cases)
+    | Map_list (loc, p, cases) ->
+        variant "Map" (args (Loc.t loc) * pat p * Nonempty.t case cases)
+    | Map_dict (loc, p, cases) ->
+        variant "Map_dict" (args (Loc.t loc) * pat p * Nonempty.t case cases)
+    | Component (loc, s1, s2, pats) ->
+        variant "Component"
+          (args (Loc.t loc) * string s1 * string s2 * assoc pat pats)
+    | Interface (loc, i) -> variant "Interface" (args (Loc.t loc) * interface i)
+    | Comment s -> variant "Comment" (args (string s))
+
+  and case { pats; nodes } =
+    Pp.TyRepr.record
+      (fields "pats" (Nonempty.t (tuple2 Loc.t (Nonempty.t pat)) pats)
+      |> field "nodes" (t nodes))
+
+  and t l = list node l
+end
 
 module F = Format
 

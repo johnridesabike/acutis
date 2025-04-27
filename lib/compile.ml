@@ -234,58 +234,44 @@ let make ~fname components_src nodes =
 let make_interface ~fname src =
   parse_interface ~fname src |> T.make_interface_standalone
 
-let rec data_to_sexp = function
-  | `Null -> Sexp.symbol "null"
-  | `Int i -> Sexp.int i
-  | `String s -> Sexp.string s
-  | `Float f -> Sexp.float f
-  | `Array a -> Sexp.make "array" [ Sexp.of_seq data_to_sexp (Array.to_seq a) ]
-  | `Assoc d -> Sexp.make "assoc" [ assoc_to_sexp d ]
-  | `Var s -> Sexp.make "var" [ Sexp.string s ]
-  | `Block n -> Sexp.make "block" [ Sexp.int n ]
-  | `Field (d, f) -> Sexp.make "field" [ data_to_sexp d; Sexp.string f ]
+module TyRepr = struct
+  open Pp.TyRepr
+  module MapString = Map (String)
+  module Ast = Ast.TyRepr
+  module Matching = Matching.TyRepr
 
-and assoc_to_sexp d = Sexp.map_string data_to_sexp d
+  let rec data = function
+    | `Null -> polyvar0 "Null"
+    | `Int i -> polyvar "Int" (args (int i))
+    | `String s -> polyvar "String" (args (string s))
+    | `Float f -> polyvar "Float" (args (float f))
+    | `Array a -> polyvar "Array" (args (array data a))
+    | `Assoc d -> polyvar "Assoc" (args (MapString.t data d))
+    | `Var s -> polyvar "Var" (args (string s))
+    | `Block n -> polyvar "Block" (args (int n))
+    | `Field (d, f) -> polyvar "Field" (args (data d) * string f)
 
-let rec node_to_sexp = function
-  | Text s -> Sexp.make "text" [ Sexp.string s ]
-  | Echo (l, fmt, ech, esc) ->
-      Sexp.make "echo"
-        [
-          Sexp.of_seq
-            (Sexp.pair Ast.echo_format_to_sexp data_to_sexp)
-            (List.to_seq l);
-          Ast.echo_format_to_sexp fmt;
-          data_to_sexp ech;
-          Ast.escape_to_sexp esc;
-        ]
-  | Match (blocks, data, matching) ->
-      Sexp.make "match"
-        [
-          Sexp.of_seq (Sexp.pair Sexp.int to_sexp) (blocks_to_seq blocks);
-          Sexp.of_seq data_to_sexp (Array.to_seq data);
-          Matching.to_sexp to_sexp matching;
-        ]
-  | Map_list (blocks, data, matching) ->
-      Sexp.make "map_list"
-        [
-          Sexp.of_seq (Sexp.pair Sexp.int to_sexp) (blocks_to_seq blocks);
-          data_to_sexp data;
-          Matching.to_sexp to_sexp matching;
-        ]
-  | Map_dict (blocks, data, matching) ->
-      Sexp.make "map_dict"
-        [
-          Sexp.of_seq (Sexp.pair Sexp.int to_sexp) (blocks_to_seq blocks);
-          data_to_sexp data;
-          Matching.to_sexp to_sexp matching;
-        ]
-  | Component (name, blocks, props) ->
-      Sexp.make "component"
-        [
-          Sexp.of_seq (Sexp.pair Sexp.int to_sexp) (blocks_to_seq blocks);
-          Sexp.string name;
-          assoc_to_sexp props;
-        ]
+  let rec node = function
+    | Text s -> variant "Text" (args (string s))
+    | Echo (l, fmt, ech, esc) ->
+        variant "Echo"
+          (args (list (tuple2 Ast.echo_format data) l)
+          * Ast.echo_format fmt * data ech * Ast.escape esc)
+    | Match (blocks', data', matching) ->
+        variant "Match"
+          (args (blocks blocks')
+          * (array data) data'
+          * Matching.t nodes matching)
+    | Map_list (blocks', data', matching) ->
+        variant "Map_list"
+          (args (blocks blocks') * data data' * Matching.t nodes matching)
+    | Map_dict (blocks', data', matching) ->
+        variant "Map_dict"
+          (args (blocks blocks') * data data' * Matching.t nodes matching)
+    | Component (name, blocks', props) ->
+        variant "Component"
+          (args (blocks blocks') * string name * MapString.t data props)
 
-and to_sexp l = Sexp.of_seq node_to_sexp (List.to_seq l)
+  and blocks b = seq (tuple2 int nodes) (blocks_to_seq b)
+  and nodes l = list node l
+end

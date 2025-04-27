@@ -16,4 +16,7 @@ type t = Lexing.position * Lexing.position
 val fname : t -> string
 val pp : Format.formatter -> t -> unit
 val dummy : t
-val to_sexp : t -> Sexp.t
+
+module TyRepr : sig
+  val t : t -> Pp.TyRepr.t
+end

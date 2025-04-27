@@ -263,4 +263,6 @@ val make :
 (** Raises {!Error.Acutis_error} if the cases are non-exhaustive or if there is
     an unused case. *)
 
-val to_sexp : ('a -> Sexp.t) -> 'a t -> Sexp.t
+module TyRepr : sig
+  val t : ('a -> Pp.TyRepr.t) -> 'a t -> Pp.TyRepr.t
+end

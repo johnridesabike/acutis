@@ -95,16 +95,18 @@ module Exits = struct
   let nodes x = Nonempty.to_seq x |> Seq.map (fun x -> x.nodes)
   let to_nonempty = Nonempty.rev (* Reverse before exposing to outside code. *)
 
-  let exit_to_sexp f { id; bindings; nodes } =
-    Sexp.make "exit"
-      [
-        Sexp.make "id" [ Sexp.int id ];
-        Sexp.make "bindings" [ Sexp.of_seq Sexp.string (List.to_seq bindings) ];
-        Sexp.make "nodes" [ f nodes ];
-      ]
+  module TyRepr = struct
+    open Pp.TyRepr
+    module Nonempty = Linear (Nonempty)
 
-  let to_sexp f x =
-    Nonempty.rev x |> Nonempty.to_seq |> Sexp.of_seq (exit_to_sexp f)
+    let exit f { id; bindings; nodes } =
+      record
+        (fields "id" (int id)
+        |> field "bindings" (list string bindings)
+        |> field "nodes" (f nodes))
+
+    let t f x = to_nonempty x |> Nonempty.t (exit f)
+  end
 end
 
 type leaf = { names : int MapString.t; exit : Exits.key }
@@ -979,100 +981,76 @@ let make loc tys Nonempty.(Typechecker.{ pats; nodes; bindings } :: tl_cases) =
   in
   aux hd_tree exits tl_cases
 
-let set_to_sexp s = Sexp.of_seq Sexp.int (SetInt.to_seq s)
+module TyRepr = struct
+  open Pp.TyRepr
+  module SetInt = Set (Int)
+  module MapString = Map (String)
+  module Exits = Exits.TyRepr
 
-let scalar_to_sexp = function
-  | `Int i -> Sexp.int i
-  | `String s -> Sexp.string s
-  | `Float f -> Sexp.float f
+  let scalar = function
+    | `Int i -> polyvar "Int" (args (int i))
+    | `String s -> polyvar "String" (args (string s))
+    | `Float f -> polyvar "Float" (args (float f))
 
-let rec tree_to_sexp :
-    'leaf 'key.
-    ('leaf -> Sexp.t) -> ('key -> Sexp.t) -> ('leaf, 'key) tree -> Sexp.t =
- fun leaf_f key_f -> function
-  | Switch { key; ids; cases; wildcard; check_cases } ->
-      Sexp.make "switch"
-        [
-          Sexp.make "key" [ key_f key ];
-          Sexp.make "ids" [ set_to_sexp ids ];
-          Sexp.make "cases" [ switchcase_to_sexp leaf_f key_f cases ];
-          Sexp.make "wildcard"
-            [ Sexp.option (tree_to_sexp leaf_f key_f) wildcard ];
-          Sexp.make "check_cases"
-            [ Sexp.option (Sexp.of_seq scalar_to_sexp) check_cases ];
-        ]
-  | Nest { key; ids; child; wildcard } ->
-      Sexp.make "nest"
-        [
-          Sexp.make "key" [ key_f key ];
-          Sexp.make "ids" [ set_to_sexp ids ];
-          Sexp.make "child" [ nest_to_sexp leaf_f key_f child ];
-          Sexp.make "wildcard"
-            [ Sexp.option (tree_to_sexp leaf_f key_f) wildcard ];
-        ]
-  | Nil { key; ids; child } ->
-      Sexp.make "nil"
-        [
-          Sexp.make "key" [ key_f key ];
-          Sexp.make "ids" [ set_to_sexp ids ];
-          Sexp.make "child" [ tree_to_sexp leaf_f key_f child ];
-        ]
-  | Cons { key; ids; child } ->
-      Sexp.make "cons"
-        [
-          Sexp.make "key" [ key_f key ];
-          Sexp.make "ids" [ set_to_sexp ids ];
-          Sexp.make "child" [ tree_to_sexp leaf_f key_f child ];
-        ]
-  | Nil_or_cons { key; ids; nil; cons } ->
-      Sexp.make "nil_or_cons"
-        [
-          Sexp.make "key" [ key_f key ];
-          Sexp.make "ids" [ set_to_sexp ids ];
-          Sexp.make "nil" [ tree_to_sexp leaf_f key_f nil ];
-          Sexp.make "cons" [ tree_to_sexp leaf_f key_f cons ];
-        ]
-  | Wildcard { key; ids; child } ->
-      Sexp.make "wildcard"
-        [
-          Sexp.make "key" [ key_f key ];
-          Sexp.make "ids" [ set_to_sexp ids ];
-          Sexp.make "child" [ tree_to_sexp leaf_f key_f child ];
-        ]
-  | Optional { child; next } ->
-      Sexp.make "optional"
-        [
-          Sexp.make "child" [ tree_to_sexp leaf_f key_f child ];
-          Sexp.make "next" [ Sexp.option (tree_to_sexp leaf_f key_f) next ];
-        ]
-  | End leaf -> Sexp.make "end" [ leaf_f leaf ]
+  let rec tree :
+      'leaf 'key. ('leaf -> t) -> ('key -> t) -> ('leaf, 'key) tree -> t =
+   fun leaf_f key_f -> function
+    | Switch { key; ids; cases; wildcard; check_cases } ->
+        variantr "Switch"
+          (fields "key" (key_f key)
+          |> field "ids" (SetInt.t ids)
+          |> field "cases" (switchcase leaf_f key_f cases)
+          |> field "wildcard" (option (tree leaf_f key_f) wildcard)
+          |> field "check_cases" (option (seq scalar) check_cases))
+    | Nest { key; ids; child; wildcard } ->
+        variantr "Nest"
+          (fields "key" (key_f key)
+          |> field "ids" (SetInt.t ids)
+          |> field "child" (nest leaf_f key_f child)
+          |> field "wildcard" (option (tree leaf_f key_f) wildcard))
+    | Nil { key; ids; child } ->
+        variantr "Nil"
+          (fields "key" (key_f key)
+          |> field "ids" (SetInt.t ids)
+          |> field "child" (tree leaf_f key_f child))
+    | Cons { key; ids; child } ->
+        variantr "Cons"
+          (fields "key" (key_f key)
+          |> field "ids" (SetInt.t ids)
+          |> field "child" (tree leaf_f key_f child))
+    | Nil_or_cons { key; ids; nil; cons } ->
+        variantr "Nil_or_cons"
+          (fields "key" (key_f key)
+          |> field "ids" (SetInt.t ids)
+          |> field "nil" (tree leaf_f key_f nil)
+          |> field "cons" (tree leaf_f key_f cons))
+    | Wildcard { key; ids; child } ->
+        variantr "Wildcard"
+          (fields "key" (key_f key)
+          |> field "ids" (SetInt.t ids)
+          |> field "child" (tree leaf_f key_f child))
+    | Optional { child; next } ->
+        variantr "Optional"
+          (fields "child" (tree leaf_f key_f child)
+          |> field "next" (option (tree leaf_f key_f) next))
+    | End leaf -> variant "end" (args (leaf_f leaf))
 
-and nest_to_sexp leaf_f key_f = function
-  | Int_keys tree ->
-      Sexp.make "int_keys"
-        [ tree_to_sexp (tree_to_sexp leaf_f key_f) Sexp.int tree ]
-  | String_keys tree ->
-      Sexp.make "string_keys"
-        [ tree_to_sexp (tree_to_sexp leaf_f key_f) Sexp.string tree ]
+  and nest leaf_f key_f = function
+    | Int_keys tree' ->
+        variant "Int_keys" (args (tree (tree leaf_f key_f) int tree'))
+    | String_keys tree' ->
+        variant "String_keys" (args (tree (tree leaf_f key_f) string tree'))
 
-and switchcase_to_sexp leaf_f key_f { data; if_match; next } =
-  Sexp.make "case"
-    [
-      Sexp.make "data" [ scalar_to_sexp data ];
-      Sexp.make "if_match" [ tree_to_sexp leaf_f key_f if_match ];
-      Sexp.make "next" [ Sexp.option (switchcase_to_sexp leaf_f key_f) next ];
-    ]
+  and switchcase leaf_f key_f { data; if_match; next } =
+    record
+      (fields "data" (scalar data)
+      |> field "if_match" (tree leaf_f key_f if_match)
+      |> field "next" (option (switchcase leaf_f key_f) next))
 
-let leaf_to_sexp { names; exit } =
-  Sexp.make "leaf"
-    [
-      Sexp.make "names" [ Sexp.map_string Sexp.int names ];
-      Sexp.make "exit" [ Sexp.int exit ];
-    ]
+  let leaf { names; exit } =
+    record (fields "names" (MapString.t int names) |> field "exit" (int exit))
 
-let to_sexp f { tree; exits } =
-  Sexp.make "matching"
-    [
-      Sexp.make "tree" [ tree_to_sexp leaf_to_sexp Sexp.int tree ];
-      Sexp.make "exits" [ Exits.to_sexp f exits ];
-    ]
+  let t f { tree = tree'; exits } =
+    record
+      (fields "tree" (tree leaf int tree') |> field "exits" (Exits.t f exits))
+end

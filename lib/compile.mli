@@ -80,4 +80,7 @@ type 'a t = {
 
 val make : fname:string -> 'a Components.t -> Ast.t -> 'a t
 val make_interface : fname:string -> Lexing.lexbuf -> Typechecker.Type.scheme
-val to_sexp : nodes -> Sexp.t
+
+module TyRepr : sig
+  val nodes : nodes -> Pp.TyRepr.t
+end

@@ -79,8 +79,11 @@ and t = node list
 val dummy_var : pat
 (** A variable that is always ignored. *)
 
-val echo_format_to_sexp : echo_format -> Sexp.t
-val escape_to_sexp : escape -> Sexp.t
-val to_sexp : t -> Sexp.t
+module TyRepr : sig
+  val echo_format : echo_format -> Pp.TyRepr.t
+  val escape : escape -> Pp.TyRepr.t
+  val t : t -> Pp.TyRepr.t
+end
+
 val pp_tag : Format.formatter -> tag -> unit
 val pp_pat : Format.formatter -> pat -> unit

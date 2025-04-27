@@ -1,858 +1,849 @@
 Basic tree
   $ acutis basic.acutis --printopt
-  ((match
+  ((Match
     ()
-    ((var "a"))
-    (matching
-     (tree
-      (nil_or_cons
-       (key 0)
-       (ids ())
-       (nil (end (leaf (names ()) (exit 1))))
-       (cons
-        (nest
-         (key 0)
-         (ids ())
-         (child
-          (int_keys
-           (wildcard
-            (key 0)
-            (ids (0))
-            (child (end (end (leaf (names (("_a" 0))) (exit 0))))))))
-         (wildcard none)))))
+    ((`Var "a"))
+    ((tree
+      (Nil_or_cons
+       ((key 0)
+        (ids (Set ()))
+        (nil (end ((names (Map ())) (exit 1))))
+        (cons
+         (Nest
+          ((key 0)
+           (ids (Set ()))
+           (child
+            (Int_keys
+             (Wildcard
+              ((key 0)
+               (ids (Set (0)))
+               (child (end (end ((names (Map (("_a" 0)))) (exit 0)))))))))
+           (wildcard None)))))))
      (exits
-      ((exit (id 0) (bindings ("_a")) (nodes ((text " "))))
-       (exit (id 1) (bindings ()) (nodes ((text " "))))))))
-   (text "\n"))
+      (((id 0) (bindings ("_a")) (nodes ((Text " "))))
+       ((id 1) (bindings ()) (nodes ((Text " "))))))))
+   (Text "\n"))
 
 Cases are sorted correctly
   $ acutis sorting.acutis --printopt
-  ((match
+  ((Match
     ()
-    ((var "a"))
-    (matching
-     (tree
-      (switch
-       (key 0)
-       (ids ())
-       (cases
-        (case
-         (data 0)
-         (if_match (end (leaf (names ()) (exit 0))))
-         (next
-          (case
-           (data 10)
-           (if_match (end (leaf (names ()) (exit 0))))
-           (next
-            (case
-             (data 15)
-             (if_match (end (leaf (names ()) (exit 1))))
+    ((`Var "a"))
+    ((tree
+      (Switch
+       ((key 0)
+        (ids (Set ()))
+        (cases
+         ((data (`Int 0))
+          (if_match (end ((names (Map ())) (exit 0))))
+          (next
+           (Some
+            ((data (`Int 10))
+             (if_match (end ((names (Map ())) (exit 0))))
              (next
-              (case
-               (data 20)
-               (if_match (end (leaf (names ()) (exit 0))))
-               (next
-                (case
-                 (data 30)
-                 (if_match (end (leaf (names ()) (exit 0))))
-                 (next none)))))))))))
-       (wildcard (end (leaf (names ()) (exit 2))))
-       (check_cases none)))
+              (Some
+               ((data (`Int 15))
+                (if_match (end ((names (Map ())) (exit 1))))
+                (next
+                 (Some
+                  ((data (`Int 20))
+                   (if_match (end ((names (Map ())) (exit 0))))
+                   (next
+                    (Some
+                     ((data (`Int 30))
+                      (if_match (end ((names (Map ())) (exit 0))))
+                      (next None)))))))))))))))
+        (wildcard (Some (end ((names (Map ())) (exit 2)))))
+        (check_cases None))))
      (exits
-      ((exit (id 0) (bindings ()) (nodes ((text " "))))
-       (exit (id 1) (bindings ()) (nodes ((text " "))))
-       (exit (id 2) (bindings ()) (nodes ((text "\n"))))))))
-   (text "\n"))
+      (((id 0) (bindings ()) (nodes ((Text " "))))
+       ((id 1) (bindings ()) (nodes ((Text " "))))
+       ((id 2) (bindings ()) (nodes ((Text "\n"))))))))
+   (Text "\n"))
 
 A basic decision tree works
   $ acutis basic_decision_tree.acutis --printopt
-  ((match
+  ((Match
     ()
-    ((var "a") (var "b") (var "c"))
-    (matching
-     (tree
-      (switch
-       (key 0)
-       (ids (0 2))
-       (cases
-        (case
-         (data 10)
-         (if_match
-          (switch
-           (key 1)
-           (ids (3))
-           (cases
-            (case
-             (data 11)
-             (if_match
-              (switch
-               (key 2)
-               (ids (4))
-               (cases
-                (case
-                 (data 12)
-                 (if_match (end (leaf (names ()) (exit 0))))
-                 (next none)))
-               (wildcard
-                (end (leaf (names (("_a" 2) ("_b" 3) ("_c" 4))) (exit 4))))
-               (check_cases none)))
-             (next
-              (case
-               (data 21)
-               (if_match
-                (switch
-                 (key 2)
-                 (ids (4))
-                 (cases
-                  (case
-                   (data 22)
-                   (if_match (end (leaf (names (("_x" 0))) (exit 1))))
-                   (next none)))
-                 (wildcard
-                  (end (leaf (names (("_a" 2) ("_b" 3) ("_c" 4))) (exit 4))))
-                 (check_cases none)))
-               (next none)))))
-           (wildcard
-            (wildcard
-             (key 2)
-             (ids (4))
-             (child (end (leaf (names (("_a" 2) ("_b" 3) ("_c" 4))) (exit 4))))))
-           (check_cases none)))
-         (next
-          (case
-           (data 30)
-           (if_match
-            (switch
-             (key 1)
-             (ids (1 3))
+    ((`Var "a") (`Var "b") (`Var "c"))
+    ((tree
+      (Switch
+       ((key 0)
+        (ids (Set (0 2)))
+        (cases
+         ((data (`Int 10))
+          (if_match
+           (Switch
+            ((key 1)
+             (ids (Set (3)))
              (cases
-              (case
-               (data 21)
+              ((data (`Int 11))
                (if_match
-                (switch
-                 (key 2)
-                 (ids (4))
-                 (cases
-                  (case
-                   (data 22)
-                   (if_match (end (leaf (names (("_x" 0))) (exit 1))))
-                   (next
-                    (case
-                     (data 42)
-                     (if_match (end (leaf (names (("_y" 1))) (exit 3))))
-                     (next none)))))
-                 (wildcard
-                  (end (leaf (names (("_a" 2) ("_b" 3) ("_c" 4))) (exit 4))))
-                 (check_cases none)))
+                (Switch
+                 ((key 2)
+                  (ids (Set (4)))
+                  (cases
+                   ((data (`Int 12))
+                    (if_match (end ((names (Map ())) (exit 0))))
+                    (next None)))
+                  (wildcard
+                   (Some
+                    (end ((names (Map (("_a" 2) ("_b" 3) ("_c" 4)))) (exit 4)))))
+                  (check_cases None))))
                (next
-                (case
-                 (data 31)
-                 (if_match
-                  (switch
-                   (key 2)
-                   (ids (4))
-                   (cases
-                    (case
-                     (data 32)
-                     (if_match (end (leaf (names ()) (exit 2))))
-                     (next
-                      (case
-                       (data 42)
-                       (if_match (end (leaf (names (("_y" 1))) (exit 3))))
-                       (next none)))))
-                   (wildcard
-                    (end (leaf (names (("_a" 2) ("_b" 3) ("_c" 4))) (exit 4))))
-                   (check_cases none)))
-                 (next none)))))
+                (Some
+                 ((data (`Int 21))
+                  (if_match
+                   (Switch
+                    ((key 2)
+                     (ids (Set (4)))
+                     (cases
+                      ((data (`Int 22))
+                       (if_match (end ((names (Map (("_x" 0)))) (exit 1))))
+                       (next None)))
+                     (wildcard
+                      (Some
+                       (end
+                        ((names (Map (("_a" 2) ("_b" 3) ("_c" 4)))) (exit 4)))))
+                     (check_cases None))))
+                  (next None))))))
              (wildcard
-              (switch
-               (key 2)
-               (ids (4))
-               (cases
-                (case
-                 (data 42)
-                 (if_match (end (leaf (names (("_y" 1))) (exit 3))))
-                 (next none)))
-               (wildcard
-                (end (leaf (names (("_a" 2) ("_b" 3) ("_c" 4))) (exit 4))))
-               (check_cases none)))
-             (check_cases none)))
-           (next none)))))
-       (wildcard
-        (switch
-         (key 1)
-         (ids (3))
-         (cases
-          (case
-           (data 21)
-           (if_match
-            (switch
-             (key 2)
-             (ids (4))
-             (cases
-              (case
-               (data 22)
-               (if_match (end (leaf (names (("_x" 0))) (exit 1))))
-               (next none)))
-             (wildcard
-              (end (leaf (names (("_a" 2) ("_b" 3) ("_c" 4))) (exit 4))))
-             (check_cases none)))
-           (next none)))
-         (wildcard
-          (wildcard
-           (key 2)
-           (ids (4))
-           (child (end (leaf (names (("_a" 2) ("_b" 3) ("_c" 4))) (exit 4))))))
-         (check_cases none)))
-       (check_cases none)))
+              (Some
+               (Wildcard
+                ((key 2)
+                 (ids (Set (4)))
+                 (child
+                  (end ((names (Map (("_a" 2) ("_b" 3) ("_c" 4)))) (exit 4))))))))
+             (check_cases None))))
+          (next
+           (Some
+            ((data (`Int 30))
+             (if_match
+              (Switch
+               ((key 1)
+                (ids (Set (1 3)))
+                (cases
+                 ((data (`Int 21))
+                  (if_match
+                   (Switch
+                    ((key 2)
+                     (ids (Set (4)))
+                     (cases
+                      ((data (`Int 22))
+                       (if_match (end ((names (Map (("_x" 0)))) (exit 1))))
+                       (next
+                        (Some
+                         ((data (`Int 42))
+                          (if_match (end ((names (Map (("_y" 1)))) (exit 3))))
+                          (next None))))))
+                     (wildcard
+                      (Some
+                       (end
+                        ((names (Map (("_a" 2) ("_b" 3) ("_c" 4)))) (exit 4)))))
+                     (check_cases None))))
+                  (next
+                   (Some
+                    ((data (`Int 31))
+                     (if_match
+                      (Switch
+                       ((key 2)
+                        (ids (Set (4)))
+                        (cases
+                         ((data (`Int 32))
+                          (if_match (end ((names (Map ())) (exit 2))))
+                          (next
+                           (Some
+                            ((data (`Int 42))
+                             (if_match
+                              (end ((names (Map (("_y" 1)))) (exit 3))))
+                             (next None))))))
+                        (wildcard
+                         (Some
+                          (end
+                           ((names (Map (("_a" 2) ("_b" 3) ("_c" 4)))) (exit 4)))))
+                        (check_cases None))))
+                     (next None))))))
+                (wildcard
+                 (Some
+                  (Switch
+                   ((key 2)
+                    (ids (Set (4)))
+                    (cases
+                     ((data (`Int 42))
+                      (if_match (end ((names (Map (("_y" 1)))) (exit 3))))
+                      (next None)))
+                    (wildcard
+                     (Some
+                      (end
+                       ((names (Map (("_a" 2) ("_b" 3) ("_c" 4)))) (exit 4)))))
+                    (check_cases None)))))
+                (check_cases None))))
+             (next None))))))
+        (wildcard
+         (Some
+          (Switch
+           ((key 1)
+            (ids (Set (3)))
+            (cases
+             ((data (`Int 21))
+              (if_match
+               (Switch
+                ((key 2)
+                 (ids (Set (4)))
+                 (cases
+                  ((data (`Int 22))
+                   (if_match (end ((names (Map (("_x" 0)))) (exit 1))))
+                   (next None)))
+                 (wildcard
+                  (Some
+                   (end ((names (Map (("_a" 2) ("_b" 3) ("_c" 4)))) (exit 4)))))
+                 (check_cases None))))
+              (next None)))
+            (wildcard
+             (Some
+              (Wildcard
+               ((key 2)
+                (ids (Set (4)))
+                (child
+                 (end ((names (Map (("_a" 2) ("_b" 3) ("_c" 4)))) (exit 4))))))))
+            (check_cases None)))))
+        (check_cases None))))
      (exits
-      ((exit (id 0) (bindings ()) (nodes ((text "\n"))))
-       (exit (id 1) (bindings ("_x")) (nodes ((text "\n"))))
-       (exit (id 2) (bindings ()) (nodes ((text "\n"))))
-       (exit (id 3) (bindings ("_y")) (nodes ((text "\n"))))
-       (exit (id 4) (bindings ("_a" "_b" "_c")) (nodes ((text "\n"))))))))
-   (text "\n"))
+      (((id 0) (bindings ()) (nodes ((Text "\n"))))
+       ((id 1) (bindings ("_x")) (nodes ((Text "\n"))))
+       ((id 2) (bindings ()) (nodes ((Text "\n"))))
+       ((id 3) (bindings ("_y")) (nodes ((Text "\n"))))
+       ((id 4) (bindings ("_a" "_b" "_c")) (nodes ((Text "\n"))))))))
+   (Text "\n"))
 
 Nests merge correctly
   $ acutis merge_nests.acutis --printopt
-  ((match
+  ((Match
     ()
-    ((var "a") (var "b") (var "c"))
-    (matching
-     (tree
-      (wildcard
-       (key 0)
-       (ids ())
-       (child
-        (nest
-         (key 1)
-         (ids ())
-         (child
-          (int_keys
-           (switch
-            (key 0)
-            (ids ())
-            (cases
-             (case
-              (data 20)
-              (if_match
-               (switch
-                (key 1)
-                (ids ())
-                (cases
-                 (case
-                  (data 21)
-                  (if_match
-                   (end
-                    (switch
-                     (key 2)
-                     (ids ())
-                     (cases
-                      (case
-                       (data 12)
-                       (if_match (end (leaf (names ()) (exit 0))))
-                       (next
-                        (case
-                         (data 22)
-                         (if_match (end (leaf (names ()) (exit 1))))
-                         (next
-                          (case
-                           (data 32)
-                           (if_match (end (leaf (names ()) (exit 2))))
-                           (next none)))))))
-                     (wildcard (end (leaf (names ()) (exit 3))))
-                     (check_cases none))))
-                  (next none)))
-                (wildcard
-                 (end
-                  (switch
-                   (key 2)
-                   (ids ())
-                   (cases
-                    (case
-                     (data 12)
-                     (if_match (end (leaf (names ()) (exit 0))))
-                     (next none)))
-                   (wildcard (end (leaf (names ()) (exit 3))))
-                   (check_cases none))))
-                (check_cases none)))
-              (next none)))
-            (wildcard
-             (wildcard
-              (key 1)
-              (ids ())
-              (child
-               (end
-                (switch
-                 (key 2)
-                 (ids ())
-                 (cases
-                  (case
-                   (data 12)
-                   (if_match (end (leaf (names ()) (exit 0))))
-                   (next none)))
-                 (wildcard (end (leaf (names ()) (exit 3))))
-                 (check_cases none))))))
-            (check_cases none))))
-         (wildcard none)))))
+    ((`Var "a") (`Var "b") (`Var "c"))
+    ((tree
+      (Wildcard
+       ((key 0)
+        (ids (Set ()))
+        (child
+         (Nest
+          ((key 1)
+           (ids (Set ()))
+           (child
+            (Int_keys
+             (Switch
+              ((key 0)
+               (ids (Set ()))
+               (cases
+                ((data (`Int 20))
+                 (if_match
+                  (Switch
+                   ((key 1)
+                    (ids (Set ()))
+                    (cases
+                     ((data (`Int 21))
+                      (if_match
+                       (end
+                        (Switch
+                         ((key 2)
+                          (ids (Set ()))
+                          (cases
+                           ((data (`Int 12))
+                            (if_match (end ((names (Map ())) (exit 0))))
+                            (next
+                             (Some
+                              ((data (`Int 22))
+                               (if_match (end ((names (Map ())) (exit 1))))
+                               (next
+                                (Some
+                                 ((data (`Int 32))
+                                  (if_match (end ((names (Map ())) (exit 2))))
+                                  (next None)))))))))
+                          (wildcard (Some (end ((names (Map ())) (exit 3)))))
+                          (check_cases None)))))
+                      (next None)))
+                    (wildcard
+                     (Some
+                      (end
+                       (Switch
+                        ((key 2)
+                         (ids (Set ()))
+                         (cases
+                          ((data (`Int 12))
+                           (if_match (end ((names (Map ())) (exit 0))))
+                           (next None)))
+                         (wildcard (Some (end ((names (Map ())) (exit 3)))))
+                         (check_cases None))))))
+                    (check_cases None))))
+                 (next None)))
+               (wildcard
+                (Some
+                 (Wildcard
+                  ((key 1)
+                   (ids (Set ()))
+                   (child
+                    (end
+                     (Switch
+                      ((key 2)
+                       (ids (Set ()))
+                       (cases
+                        ((data (`Int 12))
+                         (if_match (end ((names (Map ())) (exit 0))))
+                         (next None)))
+                       (wildcard (Some (end ((names (Map ())) (exit 3)))))
+                       (check_cases None)))))))))
+               (check_cases None)))))
+           (wildcard None)))))))
      (exits
-      ((exit (id 0) (bindings ()) (nodes ((text "\n"))))
-       (exit (id 1) (bindings ()) (nodes ((text "\n"))))
-       (exit (id 2) (bindings ()) (nodes ((text "\n"))))
-       (exit (id 3) (bindings ()) (nodes ((text "\n"))))))))
-   (text "\n"))
+      (((id 0) (bindings ()) (nodes ((Text "\n"))))
+       ((id 1) (bindings ()) (nodes ((Text "\n"))))
+       ((id 2) (bindings ()) (nodes ((Text "\n"))))
+       ((id 3) (bindings ()) (nodes ((Text "\n"))))))))
+   (Text "\n"))
 
 Wildcards merge after nests correctly
   $ acutis wildcard_merge_after_nest.acutis --printopt
-  ((match
+  ((Match
     ()
-    ((var "a") (var "b"))
-    (matching
-     (tree
-      (nest
-       (key 0)
-       (ids (0 1))
-       (child
-        (int_keys
-         (nest
-          (key 0)
-          (ids ())
-          (child
-           (int_keys
-            (switch
-             (key 0)
-             (ids ())
-             (cases
-              (case
-               (data 10)
-               (if_match
-                (switch
-                 (key 1)
-                 (ids ())
-                 (cases
-                  (case
-                   (data 20)
-                   (if_match
-                    (end
-                     (switch
-                      (key 1)
-                      (ids ())
-                      (cases
-                       (case
-                        (data 30)
-                        (if_match
-                         (end
-                          (switch
-                           (key 1)
-                           (ids (2))
+    ((`Var "a") (`Var "b"))
+    ((tree
+      (Nest
+       ((key 0)
+        (ids (Set (0 1)))
+        (child
+         (Int_keys
+          (Nest
+           ((key 0)
+            (ids (Set ()))
+            (child
+             (Int_keys
+              (Switch
+               ((key 0)
+                (ids (Set ()))
+                (cases
+                 ((data (`Int 10))
+                  (if_match
+                   (Switch
+                    ((key 1)
+                     (ids (Set ()))
+                     (cases
+                      ((data (`Int 20))
+                       (if_match
+                        (end
+                         (Switch
+                          ((key 1)
+                           (ids (Set ()))
                            (cases
-                            (case
-                             (data 40)
-                             (if_match (end (leaf (names ()) (exit 1))))
-                             (next
-                              (case
-                               (data 41)
-                               (if_match
-                                (end (leaf (names (("_x" 0))) (exit 0))))
-                               (next none)))))
-                           (wildcard
-                            (end (leaf (names (("_y" 1) ("_z" 2))) (exit 2))))
-                           (check_cases none))))
-                        (next none)))
-                      (wildcard none)
-                      (check_cases none))))
-                   (next none)))
-                 (wildcard none)
-                 (check_cases none)))
-               (next none)))
-             (wildcard none)
-             (check_cases none))))
-          (wildcard none))))
-       (wildcard
-        (switch
-         (key 1)
-         (ids (2))
-         (cases
-          (case
-           (data 41)
-           (if_match (end (leaf (names (("_x" 0))) (exit 0))))
-           (next none)))
-         (wildcard (end (leaf (names (("_y" 1) ("_z" 2))) (exit 2))))
-         (check_cases none)))))
+                            ((data (`Int 30))
+                             (if_match
+                              (end
+                               (Switch
+                                ((key 1)
+                                 (ids (Set (2)))
+                                 (cases
+                                  ((data (`Int 40))
+                                   (if_match (end ((names (Map ())) (exit 1))))
+                                   (next
+                                    (Some
+                                     ((data (`Int 41))
+                                      (if_match
+                                       (end ((names (Map (("_x" 0)))) (exit 0))))
+                                      (next None))))))
+                                 (wildcard
+                                  (Some
+                                   (end
+                                    ((names (Map (("_y" 1) ("_z" 2)))) (exit 2)))))
+                                 (check_cases None)))))
+                             (next None)))
+                           (wildcard None)
+                           (check_cases None)))))
+                       (next None)))
+                     (wildcard None)
+                     (check_cases None))))
+                  (next None)))
+                (wildcard None)
+                (check_cases None)))))
+            (wildcard None)))))
+        (wildcard
+         (Some
+          (Switch
+           ((key 1)
+            (ids (Set (2)))
+            (cases
+             ((data (`Int 41))
+              (if_match (end ((names (Map (("_x" 0)))) (exit 0))))
+              (next None)))
+            (wildcard (Some (end ((names (Map (("_y" 1) ("_z" 2)))) (exit 2)))))
+            (check_cases None))))))))
      (exits
-      ((exit (id 0) (bindings ("_x")) (nodes ((text "\n"))))
-       (exit (id 1) (bindings ()) (nodes ((text "\n"))))
-       (exit (id 2) (bindings ("_y" "_z")) (nodes ((text "\n"))))))))
-   (text "\n"))
+      (((id 0) (bindings ("_x")) (nodes ((Text "\n"))))
+       ((id 1) (bindings ()) (nodes ((Text "\n"))))
+       ((id 2) (bindings ("_y" "_z")) (nodes ((Text "\n"))))))))
+   (Text "\n"))
 
 Different-sized lists merge correctly
   $ acutis diff_size_lists.acutis --printopt
-  ((match
+  ((Match
     ()
-    ((var "a"))
-    (matching
-     (tree
-      (nil_or_cons
-       (key 0)
-       (ids ())
-       (nil (end (leaf (names ()) (exit 0))))
-       (cons
-        (nest
-         (key 0)
-         (ids ())
-         (child
-          (int_keys
-           (wildcard
-            (key 0)
-            (ids (0 1))
-            (child
-             (nil_or_cons
-              (key 1)
-              (ids (2))
-              (nil (end (end (leaf (names (("_x" 0))) (exit 1)))))
-              (cons
-               (wildcard
-                (key 1)
-                (ids (2))
-                (child (end (end (leaf (names (("_x" 1) ("_y" 2))) (exit 2))))))))))))
-         (wildcard none)))))
+    ((`Var "a"))
+    ((tree
+      (Nil_or_cons
+       ((key 0)
+        (ids (Set ()))
+        (nil (end ((names (Map ())) (exit 0))))
+        (cons
+         (Nest
+          ((key 0)
+           (ids (Set ()))
+           (child
+            (Int_keys
+             (Wildcard
+              ((key 0)
+               (ids (Set (0 1)))
+               (child
+                (Nil_or_cons
+                 ((key 1)
+                  (ids (Set (2)))
+                  (nil (end (end ((names (Map (("_x" 0)))) (exit 1)))))
+                  (cons
+                   (Wildcard
+                    ((key 1)
+                     (ids (Set (2)))
+                     (child
+                      (end (end ((names (Map (("_x" 1) ("_y" 2)))) (exit 2)))))))))))))))
+           (wildcard None)))))))
      (exits
-      ((exit (id 0) (bindings ()) (nodes ((text "\n"))))
-       (exit (id 1) (bindings ("_x")) (nodes ((text "\n"))))
-       (exit (id 2) (bindings ("_x" "_y")) (nodes ((text "\n"))))))))
-   (text "\n"))
+      (((id 0) (bindings ()) (nodes ((Text "\n"))))
+       ((id 1) (bindings ("_x")) (nodes ((Text "\n"))))
+       ((id 2) (bindings ("_x" "_y")) (nodes ((Text "\n"))))))))
+   (Text "\n"))
 
 A big list pattern works
   $ acutis big_list.acutis --printopt
-  ((match
+  ((Match
     ()
-    ((var "a") (var "b"))
-    (matching
-     (tree
-      (nil_or_cons
-       (key 0)
-       (ids (1))
-       (nil
-        (switch
-         (key 1)
-         (ids ())
-         (cases
-          (case
-           (data 42)
-           (if_match (end (leaf (names (("_y" 1))) (exit 3))))
-           (next none)))
-         (wildcard (end (leaf (names ()) (exit 4))))
-         (check_cases none)))
-       (cons
-        (nest
-         (key 0)
-         (ids (1))
-         (child
-          (int_keys
-           (switch
-            (key 0)
-            (ids ())
-            (cases
-             (case
-              (data 10)
-              (if_match
-               (cons
-                (key 1)
-                (ids ())
-                (child
-                 (nest
-                  (key 1)
-                  (ids ())
-                  (child
-                   (int_keys
-                    (switch
-                     (key 0)
-                     (ids ())
-                     (cases
-                      (case
-                       (data 11)
-                       (if_match
-                        (nil_or_cons
-                         (key 1)
-                         (ids (0))
-                         (nil
-                          (end
-                           (end
-                            (switch
-                             (key 1)
-                             (ids ())
-                             (cases
-                              (case
-                               (data 12)
-                               (if_match (end (leaf (names ()) (exit 0))))
-                               (next
-                                (case
-                                 (data 22)
-                                 (if_match
-                                  (end (leaf (names (("_x" 0))) (exit 1))))
-                                 (next
-                                  (case
-                                   (data 42)
-                                   (if_match
-                                    (end (leaf (names (("_y" 1))) (exit 3))))
-                                   (next none)))))))
-                             (wildcard (end (leaf (names ()) (exit 4))))
-                             (check_cases none)))))
-                         (cons
-                          (wildcard
-                           (key 1)
-                           (ids (0))
-                           (child
-                            (end
-                             (end
-                              (switch
-                               (key 1)
-                               (ids ())
-                               (cases
-                                (case
-                                 (data 22)
-                                 (if_match
-                                  (end (leaf (names (("_x" 0))) (exit 1))))
-                                 (next
-                                  (case
-                                   (data 42)
-                                   (if_match
-                                    (end (leaf (names (("_y" 1))) (exit 3))))
-                                   (next none)))))
-                               (wildcard (end (leaf (names ()) (exit 4))))
-                               (check_cases none)))))))))
-                       (next none)))
-                     (wildcard none)
-                     (check_cases none))))
-                  (wildcard none)))))
-              (next
-               (case
-                (data 30)
-                (if_match
-                 (nil
-                  (key 1)
-                  (ids ())
-                  (child
-                   (end
-                    (switch
-                     (key 1)
-                     (ids ())
-                     (cases
-                      (case
-                       (data 32)
-                       (if_match (end (leaf (names ()) (exit 2))))
-                       (next
-                        (case
-                         (data 42)
-                         (if_match (end (leaf (names (("_y" 1))) (exit 3))))
-                         (next none)))))
-                     (wildcard (end (leaf (names ()) (exit 4))))
-                     (check_cases none))))))
-                (next none)))))
-            (wildcard none)
-            (check_cases none))))
-         (wildcard
-          (switch
-           (key 1)
-           (ids ())
+    ((`Var "a") (`Var "b"))
+    ((tree
+      (Nil_or_cons
+       ((key 0)
+        (ids (Set (1)))
+        (nil
+         (Switch
+          ((key 1)
+           (ids (Set ()))
            (cases
-            (case
-             (data 42)
-             (if_match (end (leaf (names (("_y" 1))) (exit 3))))
-             (next none)))
-           (wildcard (end (leaf (names ()) (exit 4))))
-           (check_cases none)))))))
+            ((data (`Int 42))
+             (if_match (end ((names (Map (("_y" 1)))) (exit 3))))
+             (next None)))
+           (wildcard (Some (end ((names (Map ())) (exit 4)))))
+           (check_cases None))))
+        (cons
+         (Nest
+          ((key 0)
+           (ids (Set (1)))
+           (child
+            (Int_keys
+             (Switch
+              ((key 0)
+               (ids (Set ()))
+               (cases
+                ((data (`Int 10))
+                 (if_match
+                  (Cons
+                   ((key 1)
+                    (ids (Set ()))
+                    (child
+                     (Nest
+                      ((key 1)
+                       (ids (Set ()))
+                       (child
+                        (Int_keys
+                         (Switch
+                          ((key 0)
+                           (ids (Set ()))
+                           (cases
+                            ((data (`Int 11))
+                             (if_match
+                              (Nil_or_cons
+                               ((key 1)
+                                (ids (Set (0)))
+                                (nil
+                                 (end
+                                  (end
+                                   (Switch
+                                    ((key 1)
+                                     (ids (Set ()))
+                                     (cases
+                                      ((data (`Int 12))
+                                       (if_match
+                                        (end ((names (Map ())) (exit 0))))
+                                       (next
+                                        (Some
+                                         ((data (`Int 22))
+                                          (if_match
+                                           (end
+                                            ((names (Map (("_x" 0)))) (exit 1))))
+                                          (next
+                                           (Some
+                                            ((data (`Int 42))
+                                             (if_match
+                                              (end
+                                               ((names (Map (("_y" 1))))
+                                                (exit 3))))
+                                             (next None)))))))))
+                                     (wildcard
+                                      (Some (end ((names (Map ())) (exit 4)))))
+                                     (check_cases None))))))
+                                (cons
+                                 (Wildcard
+                                  ((key 1)
+                                   (ids (Set (0)))
+                                   (child
+                                    (end
+                                     (end
+                                      (Switch
+                                       ((key 1)
+                                        (ids (Set ()))
+                                        (cases
+                                         ((data (`Int 22))
+                                          (if_match
+                                           (end
+                                            ((names (Map (("_x" 0)))) (exit 1))))
+                                          (next
+                                           (Some
+                                            ((data (`Int 42))
+                                             (if_match
+                                              (end
+                                               ((names (Map (("_y" 1))))
+                                                (exit 3))))
+                                             (next None))))))
+                                        (wildcard
+                                         (Some
+                                          (end ((names (Map ())) (exit 4)))))
+                                        (check_cases None))))))))))))
+                             (next None)))
+                           (wildcard None)
+                           (check_cases None)))))
+                       (wildcard None)))))))
+                 (next
+                  (Some
+                   ((data (`Int 30))
+                    (if_match
+                     (Nil
+                      ((key 1)
+                       (ids (Set ()))
+                       (child
+                        (end
+                         (Switch
+                          ((key 1)
+                           (ids (Set ()))
+                           (cases
+                            ((data (`Int 32))
+                             (if_match (end ((names (Map ())) (exit 2))))
+                             (next
+                              (Some
+                               ((data (`Int 42))
+                                (if_match
+                                 (end ((names (Map (("_y" 1)))) (exit 3))))
+                                (next None))))))
+                           (wildcard (Some (end ((names (Map ())) (exit 4)))))
+                           (check_cases None))))))))
+                    (next None))))))
+               (wildcard None)
+               (check_cases None)))))
+           (wildcard
+            (Some
+             (Switch
+              ((key 1)
+               (ids (Set ()))
+               (cases
+                ((data (`Int 42))
+                 (if_match (end ((names (Map (("_y" 1)))) (exit 3))))
+                 (next None)))
+               (wildcard (Some (end ((names (Map ())) (exit 4)))))
+               (check_cases None)))))))))))
      (exits
-      ((exit (id 0) (bindings ()) (nodes ((text "\n"))))
-       (exit (id 1) (bindings ("_x")) (nodes ((text "\n"))))
-       (exit (id 2) (bindings ()) (nodes ((text "\n"))))
-       (exit (id 3) (bindings ("_y")) (nodes ((text "\n"))))
-       (exit (id 4) (bindings ()) (nodes ((text "\n"))))))))
-   (text "\n"))
+      (((id 0) (bindings ()) (nodes ((Text "\n"))))
+       ((id 1) (bindings ("_x")) (nodes ((Text "\n"))))
+       ((id 2) (bindings ()) (nodes ((Text "\n"))))
+       ((id 3) (bindings ("_y")) (nodes ((Text "\n"))))
+       ((id 4) (bindings ()) (nodes ((Text "\n"))))))))
+   (Text "\n"))
 
 Record fields sort correctly
   $ acutis record_field_sort.acutis --printopt
-  ((match
+  ((Match
     ()
-    ((var "a") (var "b"))
-    (matching
-     (tree
-      (nest
-       (key 0)
-       (ids ())
-       (child
-        (string_keys
-         (switch
-          (key "a")
-          (ids ())
-          (cases
-           (case
-            (data 10)
-            (if_match
-             (switch
-              (key "b")
-              (ids ())
-              (cases
-               (case
-                (data 11)
-                (if_match
-                 (end
-                  (switch
-                   (key 1)
-                   (ids ())
-                   (cases
-                    (case
-                     (data 12)
-                     (if_match (end (leaf (names ()) (exit 0))))
-                     (next none)))
-                   (wildcard (end (leaf (names ()) (exit 2))))
-                   (check_cases none))))
-                (next none)))
-              (wildcard none)
-              (check_cases none)))
-            (next
-             (case
-              (data 20)
+    ((`Var "a") (`Var "b"))
+    ((tree
+      (Nest
+       ((key 0)
+        (ids (Set ()))
+        (child
+         (String_keys
+          (Switch
+           ((key "a")
+            (ids (Set ()))
+            (cases
+             ((data (`Int 10))
               (if_match
-               (switch
-                (key "b")
-                (ids ())
-                (cases
-                 (case
-                  (data 21)
-                  (if_match
-                   (end
-                    (switch
-                     (key 1)
-                     (ids ())
-                     (cases
-                      (case
-                       (data 22)
-                       (if_match (end (leaf (names ()) (exit 1))))
-                       (next none)))
-                     (wildcard (end (leaf (names ()) (exit 2))))
-                     (check_cases none))))
-                  (next none)))
-                (wildcard none)
-                (check_cases none)))
-              (next none)))))
-          (wildcard none)
-          (check_cases none))))
-       (wildcard
-        (wildcard (key 1) (ids ()) (child (end (leaf (names ()) (exit 2))))))))
+               (Switch
+                ((key "b")
+                 (ids (Set ()))
+                 (cases
+                  ((data (`Int 11))
+                   (if_match
+                    (end
+                     (Switch
+                      ((key 1)
+                       (ids (Set ()))
+                       (cases
+                        ((data (`Int 12))
+                         (if_match (end ((names (Map ())) (exit 0))))
+                         (next None)))
+                       (wildcard (Some (end ((names (Map ())) (exit 2)))))
+                       (check_cases None)))))
+                   (next None)))
+                 (wildcard None)
+                 (check_cases None))))
+              (next
+               (Some
+                ((data (`Int 20))
+                 (if_match
+                  (Switch
+                   ((key "b")
+                    (ids (Set ()))
+                    (cases
+                     ((data (`Int 21))
+                      (if_match
+                       (end
+                        (Switch
+                         ((key 1)
+                          (ids (Set ()))
+                          (cases
+                           ((data (`Int 22))
+                            (if_match (end ((names (Map ())) (exit 1))))
+                            (next None)))
+                          (wildcard (Some (end ((names (Map ())) (exit 2)))))
+                          (check_cases None)))))
+                      (next None)))
+                    (wildcard None)
+                    (check_cases None))))
+                 (next None))))))
+            (wildcard None)
+            (check_cases None)))))
+        (wildcard
+         (Some
+          (Wildcard
+           ((key 1) (ids (Set ())) (child (end ((names (Map ())) (exit 2)))))))))))
      (exits
-      ((exit (id 0) (bindings ()) (nodes ((text "\n"))))
-       (exit (id 1) (bindings ()) (nodes ((text "\n"))))
-       (exit (id 2) (bindings ()) (nodes ((text "\n"))))))))
-   (text "\n"))
+      (((id 0) (bindings ()) (nodes ((Text "\n"))))
+       ((id 1) (bindings ()) (nodes ((Text "\n"))))
+       ((id 2) (bindings ()) (nodes ((Text "\n"))))))))
+   (Text "\n"))
 
 New fields expand existing rows
   $ acutis record_fields_expand.acutis --printopt
-  ((match
+  ((Match
     ()
-    ((var "a"))
-    (matching
-     (tree
-      (nest
-       (key 0)
-       (ids (0))
-       (child
-        (string_keys
-         (switch
-          (key "a")
-          (ids ())
-          (cases
-           (case
-            (data 20)
-            (if_match
-             (switch
-              (key "b")
-              (ids ())
-              (cases
-               (case
-                (data 10)
-                (if_match
-                 (wildcard
-                  (key "c")
-                  (ids ())
-                  (child (end (end (leaf (names ()) (exit 0)))))))
-                (next none)))
-              (wildcard
-               (wildcard
-                (key "c")
-                (ids ())
-                (child (end (end (leaf (names ()) (exit 1)))))))
-              (check_cases none)))
-            (next none)))
-          (wildcard
-           (switch
-            (key "b")
-            (ids ())
+    ((`Var "a"))
+    ((tree
+      (Nest
+       ((key 0)
+        (ids (Set (0)))
+        (child
+         (String_keys
+          (Switch
+           ((key "a")
+            (ids (Set ()))
             (cases
-             (case
-              (data 10)
+             ((data (`Int 20))
               (if_match
-               (wildcard
-                (key "c")
-                (ids ())
-                (child (end (end (leaf (names ()) (exit 0)))))))
-              (next none)))
+               (Switch
+                ((key "b")
+                 (ids (Set ()))
+                 (cases
+                  ((data (`Int 10))
+                   (if_match
+                    (Wildcard
+                     ((key "c")
+                      (ids (Set ()))
+                      (child (end (end ((names (Map ())) (exit 0))))))))
+                   (next None)))
+                 (wildcard
+                  (Some
+                   (Wildcard
+                    ((key "c")
+                     (ids (Set ()))
+                     (child (end (end ((names (Map ())) (exit 1)))))))))
+                 (check_cases None))))
+              (next None)))
             (wildcard
-             (switch
-              (key "c")
-              (ids ())
-              (cases
-               (case
-                (data 30)
-                (if_match (end (end (leaf (names ()) (exit 2)))))
-                (next none)))
-              (wildcard none)
-              (check_cases none)))
-            (check_cases none)))
-          (check_cases none))))
-       (wildcard (end (leaf (names (("_x" 0))) (exit 3))))))
+             (Some
+              (Switch
+               ((key "b")
+                (ids (Set ()))
+                (cases
+                 ((data (`Int 10))
+                  (if_match
+                   (Wildcard
+                    ((key "c")
+                     (ids (Set ()))
+                     (child (end (end ((names (Map ())) (exit 0))))))))
+                  (next None)))
+                (wildcard
+                 (Some
+                  (Switch
+                   ((key "c")
+                    (ids (Set ()))
+                    (cases
+                     ((data (`Int 30))
+                      (if_match (end (end ((names (Map ())) (exit 2)))))
+                      (next None)))
+                    (wildcard None)
+                    (check_cases None)))))
+                (check_cases None)))))
+            (check_cases None)))))
+        (wildcard (Some (end ((names (Map (("_x" 0)))) (exit 3))))))))
      (exits
-      ((exit (id 0) (bindings ()) (nodes ((text "\n"))))
-       (exit (id 1) (bindings ()) (nodes ((text "\n"))))
-       (exit (id 2) (bindings ()) (nodes ((text "\n"))))
-       (exit (id 3) (bindings ("_x")) (nodes ((text "\n"))))))))
-   (text "\n"))
+      (((id 0) (bindings ()) (nodes ((Text "\n"))))
+       ((id 1) (bindings ()) (nodes ((Text "\n"))))
+       ((id 2) (bindings ()) (nodes ((Text "\n"))))
+       ((id 3) (bindings ("_x")) (nodes ((Text "\n"))))))))
+   (Text "\n"))
 
 Dictionaries merge correctly
   $ acutis dicts.acutis --printopt
-  ((match
+  ((Match
     ()
-    ((var "a"))
-    (matching
-     (tree
-      (nest
-       (key 0)
-       (ids ())
-       (child
-        (string_keys
-         (optional
-          (child
-           (switch
-            (key "a")
-            (ids ())
-            (cases
-             (case
-              (data 1)
-              (if_match
-               (optional
-                (child
-                 (wildcard
-                  (key "b")
-                  (ids (0))
-                  (child
-                   (optional
-                    (child
-                     (wildcard
-                      (key "c")
-                      (ids ())
-                      (child (end (end (leaf (names (("b" 0))) (exit 0)))))))
-                    (next (end (end (leaf (names (("b" 0))) (exit 0)))))))))
-                (next none)))
-              (next none)))
-            (wildcard
-             (optional
-              (child
-               (switch
-                (key "b")
-                (ids ())
-                (cases
-                 (case
-                  (data 2)
-                  (if_match
-                   (optional
-                    (child
-                     (switch
-                      (key "c")
-                      (ids ())
-                      (cases
-                       (case
-                        (data 3)
-                        (if_match (end (end (leaf (names ()) (exit 1)))))
-                        (next none)))
-                      (wildcard none)
-                      (check_cases none)))
-                    (next none)))
-                  (next none)))
-                (wildcard none)
-                (check_cases none)))
-              (next none)))
-            (check_cases none)))
-          (next
-           (optional
-            (child
-             (switch
-              (key "b")
-              (ids ())
-              (cases
-               (case
-                (data 2)
-                (if_match
-                 (optional
-                  (child
-                   (switch
-                    (key "c")
-                    (ids ())
-                    (cases
-                     (case
-                      (data 3)
-                      (if_match (end (end (leaf (names ()) (exit 1)))))
-                      (next none)))
-                    (wildcard none)
-                    (check_cases none)))
-                  (next none)))
-                (next none)))
-              (wildcard none)
-              (check_cases none)))
-            (next none))))))
-       (wildcard (end (leaf (names ()) (exit 2))))))
-     (exits
-      ((exit
-        (id 0)
-        (bindings ("b"))
-        (nodes ((text " ") (echo () fmt_int (var "b") escape) (text "\n"))))
-       (exit (id 1) (bindings ()) (nodes ((text " bc\n"))))
-       (exit (id 2) (bindings ()) (nodes ((text " _\n"))))))))
-   (match
-    ()
-    ((assoc (("a" "empty dicts always match"))))
-    (matching
-     (tree
-      (nest
-       (key 0)
-       (ids ())
-       (child
-        (string_keys
-         (optional
-          (child
-           (wildcard
-            (key "a")
-            (ids ())
-            (child
-             (optional
-              (child
+    ((`Var "a"))
+    ((tree
+      (Nest
+       ((key 0)
+        (ids (Set ()))
+        (child
+         (String_keys
+          (Optional
+           ((child
+             (Switch
+              ((key "a")
+               (ids (Set ()))
+               (cases
+                ((data (`Int 1))
+                 (if_match
+                  (Optional
+                   ((child
+                     (Wildcard
+                      ((key "b")
+                       (ids (Set (0)))
+                       (child
+                        (Optional
+                         ((child
+                           (Wildcard
+                            ((key "c")
+                             (ids (Set ()))
+                             (child
+                              (end (end ((names (Map (("b" 0)))) (exit 0))))))))
+                          (next
+                           (Some (end (end ((names (Map (("b" 0)))) (exit 0))))))))))))
+                    (next None))))
+                 (next None)))
                (wildcard
-                (key "b")
-                (ids (0))
-                (child (end (end (leaf (names (("b" 0))) (exit 0)))))))
-              (next (end (end (leaf (names ()) (exit 1)))))))))
-          (next
-           (optional
-            (child
-             (wildcard
-              (key "b")
-              (ids (0))
-              (child (end (end (leaf (names (("b" 0))) (exit 0)))))))
-            (next (end (end (leaf (names ()) (exit 1))))))))))
-       (wildcard none)))
+                (Some
+                 (Optional
+                  ((child
+                    (Switch
+                     ((key "b")
+                      (ids (Set ()))
+                      (cases
+                       ((data (`Int 2))
+                        (if_match
+                         (Optional
+                          ((child
+                            (Switch
+                             ((key "c")
+                              (ids (Set ()))
+                              (cases
+                               ((data (`Int 3))
+                                (if_match
+                                 (end (end ((names (Map ())) (exit 1)))))
+                                (next None)))
+                              (wildcard None)
+                              (check_cases None))))
+                           (next None))))
+                        (next None)))
+                      (wildcard None)
+                      (check_cases None))))
+                   (next None)))))
+               (check_cases None))))
+            (next
+             (Some
+              (Optional
+               ((child
+                 (Switch
+                  ((key "b")
+                   (ids (Set ()))
+                   (cases
+                    ((data (`Int 2))
+                     (if_match
+                      (Optional
+                       ((child
+                         (Switch
+                          ((key "c")
+                           (ids (Set ()))
+                           (cases
+                            ((data (`Int 3))
+                             (if_match (end (end ((names (Map ())) (exit 1)))))
+                             (next None)))
+                           (wildcard None)
+                           (check_cases None))))
+                        (next None))))
+                     (next None)))
+                   (wildcard None)
+                   (check_cases None))))
+                (next None)))))))))
+        (wildcard (Some (end ((names (Map ())) (exit 2))))))))
      (exits
-      ((exit
-        (id 0)
+      (((id 0)
         (bindings ("b"))
-        (nodes ((text " ") (echo () fmt_string (var "b") escape) (text "\n"))))
-       (exit (id 1) (bindings ()) (nodes ((text "empty\n"))))))))
-   (text "\n"))
+        (nodes ((Text " ") (Echo () Fmt_int (`Var "b") Escape) (Text "\n"))))
+       ((id 1) (bindings ()) (nodes ((Text " bc\n"))))
+       ((id 2) (bindings ()) (nodes ((Text " _\n"))))))))
+   (Match
+    ()
+    ((`Assoc (Map (("a" (`String "empty dicts always match"))))))
+    ((tree
+      (Nest
+       ((key 0)
+        (ids (Set ()))
+        (child
+         (String_keys
+          (Optional
+           ((child
+             (Wildcard
+              ((key "a")
+               (ids (Set ()))
+               (child
+                (Optional
+                 ((child
+                   (Wildcard
+                    ((key "b")
+                     (ids (Set (0)))
+                     (child (end (end ((names (Map (("b" 0)))) (exit 0))))))))
+                  (next (Some (end (end ((names (Map ())) (exit 1))))))))))))
+            (next
+             (Some
+              (Optional
+               ((child
+                 (Wildcard
+                  ((key "b")
+                   (ids (Set (0)))
+                   (child (end (end ((names (Map (("b" 0)))) (exit 0))))))))
+                (next (Some (end (end ((names (Map ())) (exit 1))))))))))))))
+        (wildcard None))))
+     (exits
+      (((id 0)
+        (bindings ("b"))
+        (nodes ((Text " ") (Echo () Fmt_string (`Var "b") Escape) (Text "\n"))))
+       ((id 1) (bindings ()) (nodes ((Text "empty\n"))))))))
+   (Text "\n"))

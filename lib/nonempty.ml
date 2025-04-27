@@ -31,4 +31,3 @@ let map2 f (hd1 :: tl1) (hd2 :: tl2) =
 
 let to_list (hd :: tl) = List.( :: ) (hd, tl)
 let to_seq (hd :: tl) () = Seq.Cons (hd, List.to_seq tl)
-let to_sexp f l = Sexp.of_seq f (to_seq l)

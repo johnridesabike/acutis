@@ -28,4 +28,3 @@ val map2 : ('a -> 'b -> 'c) -> 'a t -> 'b t -> 'c t
 
 val to_list : 'a t -> 'a list
 val to_seq : 'a t -> 'a Seq.t
-val to_sexp : ('a -> Sexp.t) -> 'a t -> Sexp.t

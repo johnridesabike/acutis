@@ -730,9 +730,16 @@ let pp_typescheme ppf x =
        (A.Pp.equation ~sep:" =" A.Pp.field T.pp))
     (MapString.to_seq x)
 
-let pp_ast ppf parsed = A.Ast.to_sexp parsed.ast |> A.Sexp.pp ppf
-let pp_compiled ppf x = A.Compile.to_sexp x.A.Compile.nodes |> A.Sexp.pp ppf
+let pp_ast ppf parsed = A.Pp.TyRepr.pp ppf (A.Ast.TyRepr.t parsed.ast)
+
+let pp_compiled ppf x =
+  A.Pp.TyRepr.pp ppf (A.Compile.TyRepr.nodes x.A.Compile.nodes)
+
 let pp_instructions = A.Instruct.pp
 
 let pp_js_import ppf PrintJs.{ module_path; function_path } =
-  Format.fprintf ppf "(@[%S %S@])" module_path function_path
+  A.Pp.TyRepr.(
+    pp ppf
+      (record
+         (fields "module_path" (string module_path)
+         |> field "function_path" (string function_path))))

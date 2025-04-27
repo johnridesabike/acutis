@@ -1289,7 +1289,24 @@ end
 let pp (type a) pp_import ppf c =
   let module F = Format in
   let module M = Make (struct
-    let var = F.dprintf "%s"
+    let value = F.dprintf "%s"
+    let call0 s () = F.dprintf "(@[%s@ ())@])" s
+    let call1 = F.dprintf "(@[%s@ %t@])"
+    let call2 = F.dprintf "(@[%s@ %t@ %t@])"
+    let call3 = F.dprintf "(@[%s@ %t@ %t@ %t@])"
+    let call4 = F.dprintf "(@[%s@ %t@ %t@ %t@ %t@])"
+
+    let bindop symbol (v, e) f =
+      F.dprintf "(@[@[let%c@ %s@ =@]@ %t@])@ %t" symbol v e (f (value v))
+
+    let infix symbol a b = F.dprintf "(@[%t %s@ %t@])" a symbol b
+    let block = F.dprintf "(@[<hv>%t@])"
+    let block_named = F.dprintf "(@[<hv>%s@ %t@])"
+    let fn argf arg f = F.dprintf "(@[%s ->@ @[<hv>%t@]@])" arg (f (argf arg))
+    let indexop_get c1 c2 x k = F.dprintf "%t@,.%%%c@[@,%t@,@]%c" x c1 k c2
+
+    let indexop_set c1 c2 x k v =
+      F.dprintf "(@[%t@,.%%%c@[@,%t@,@]%c@ <-@ %t@])" x c1 k c2 v
 
     type 'a stm = F.formatter -> unit
     type 'a obs = F.formatter -> unit
@@ -1299,102 +1316,89 @@ let pp (type a) pp_import ppf c =
 
     type 'a exp = F.formatter -> unit
 
-    let return = F.dprintf "(@[return@ %t@])"
-    let stm = F.dprintf "(@[stm@ %t@])"
-
-    let ( let$ ) (v, e) f =
-      let v = var v in
-      F.dprintf "(@[@[let$@ %t@ =@]@ %t@])@ %t" v e (f v)
+    let return = call1 "return"
+    let stm = call1 "stm"
+    let ( let$ ) = bindop '$'
 
     type 'a ref = F.formatter -> unit
 
-    let ( let& ) (v, e) f =
-      let v = var v in
-      F.dprintf "(@[@[let&@ %t@ =@]@ %t@])@ %t" v e (f v)
-
+    let ( let& ) = bindop '&'
     let ( ! ) = F.dprintf "!%t"
-    let ( := ) = F.dprintf "(@[%t@ :=@ %t@])"
-    let incr = F.dprintf "(@[incr@ %t@])"
-
-    let lambda_aux s f =
-      let arg = var "arg" in
-      F.dprintf "(@[%slambda@ %t@ (@[<hv>%t@])@])" s arg (f arg)
-
-    let lambda = lambda_aux ""
-    let ( @@ ) = F.dprintf "(@[%t@ %@%@ %t@])"
+    let ( := ) = infix ":="
+    let incr = call1 "incr"
+    let lambda f = call1 "lambda" (fn value "arg" f)
+    let ( @@ ) = infix "@@"
 
     let if_else b ~then_ ~else_ =
-      F.dprintf
-        "(@[<hv>@[if_else@ %t@]@ (@[<hv>then@ %t@])@ (@[<hv>else@ %t@])@])" b
-        (then_ ()) (else_ ())
+      call3 "if_else" b
+        (block_named "then" (then_ ()))
+        (block_named "else" (else_ ()))
 
-    let while_ f b g = F.dprintf "(@[while@ %t@ (@[<hv>%t@])@])" (f !b) (g ())
-    let unit = F.dprintf "(unit)"
-    let not = F.dprintf "(@[not@ %t@])"
+    let while_ f b g = call2 "while" (f !b) (block (g ()))
+    let unit = value "(unit)"
+    let not = call1 "not"
     let int = F.dprintf "%i"
     let float = F.dprintf "%g"
     let string = F.dprintf "%S"
     let bool = F.dprintf "%B"
-    let ( = ) = F.dprintf "(@[%t@ =@ %t@])"
+    let ( = ) = infix "="
     let pair (a, b) = F.dprintf "(@[%t,@ %t@])" a b
-    let unpair x = (F.dprintf "(@[fst@ %t@])" x, F.dprintf "(@[snd@ %t@])" x)
-    let string_of_int = F.dprintf "(@[string_of_int@ %t@])"
-    let string_of_float = F.dprintf "(@[string_of_float@ %t@])"
-    let string_of_bool = F.dprintf "(@[string_of_bool@ %t@])"
+    let unpair x = (call1 "fst" x, call1 "snd" x)
+    let string_of_int = call1 "string_of_int"
+    let string_of_float = call1 "string_of_float"
+    let string_of_bool = call1 "string_of_bool"
 
     let uncons seq ~nil ~cons =
-      let hd = var "hd" in
-      let seq' = var "seq" in
-      F.dprintf "(@[uncons@ %t@ (@[nil@ %t@])@ (@[cons@ %t@ %t@ %t@])@])" seq
-        (nil ()) hd seq' (cons hd seq')
+      call3 "uncons" seq
+        (block_named "nil" (nil ()))
+        (block_named "cons"
+           (fn value "hd" (fun hd -> fn value "seq" (fun seq -> cons hd seq))))
 
-    let generator f =
-      F.dprintf "(@[generator@ %t@])" (f (F.dprintf "(@[yield@ %t@])"))
+    let generator f = call1 "generator" (fn call1 "yield" f)
+    let iter s f = call2 "iter" s (fn value "arg" f)
+    let string_to_seq = call1 "string_to_seq"
 
-    let iter s f =
-      let arg = var "arg" in
-      F.dprintf "(@[iter@ %t@ %t@])" s (f arg)
-
-    let string_to_seq = F.dprintf "(@[string_to_seq@ %t@])"
-
-    let match_char c f =
-      F.dprintf "(@[match_char@ %t@ (@[%a@ (@[_@ (@[%t@])@])@])@])" c
-        (F.pp_print_list ~pp_sep:F.pp_print_space (fun ppf c ->
-             F.fprintf ppf "(@[%C@ (@[%t@])@])" c (f c)))
-        [ '&'; '"'; '\''; '>'; '<'; '/'; '`'; '=' ]
-        (f '\x00')
+    let match_char =
+      let case = F.dprintf "(@[%(%C%) ->@ @[<hv>%t@]@])" in
+      fun c f ->
+        call2 "match_char" c
+          (block
+             (F.dprintf "%a@ %t"
+                (F.pp_print_list ~pp_sep:F.pp_print_space (fun ppf c ->
+                     case "%C" c (f c) ppf))
+                [ '&'; '"'; '\''; '>'; '<'; '/'; '`'; '=' ]
+                (case "%c" '_' (f '\x00'))))
 
     let array a =
       F.dprintf "[@[<hv>%a@]]" (F.pp_print_array ~pp_sep:Pp.comma ( |> )) a
 
-    let array_make = F.dprintf "(@[array_make@ %i@ %t@])"
-    let bindop_get = F.dprintf "(@[%t@,.%%%c@[@,%t@,@]%c@])"
-    let bindop_set = F.dprintf "(@[%t@,.%%%c@[@,%t@,@]%c@ <-@ %t@])"
-    let ( .%() ) a i = bindop_get a '(' i ')'
-    let ( .%()<- ) a i v = bindop_set a '(' i ')' v
+    let array_make i a = call2 "array_make" (int i) a
+    let ( .%() ) = indexop_get '(' ')'
+    let ( .%()<- ) = indexop_set '(' ')'
 
-    let hashtbl =
-      F.dprintf "(@[hashtbl@ [@[<hv>%a@]]@])"
-        (F.pp_print_seq ~pp_sep:Pp.comma (fun ppf (a, b) ->
-             F.fprintf ppf "(@[%t,@ %t@])" a b))
+    let hashtbl s =
+      call1 "hashtbl"
+        (F.dprintf "(@[<hv>%a@])"
+           (F.pp_print_seq ~pp_sep:Pp.comma (fun ppf p -> pair p ppf))
+           s)
 
-    let hashtbl_create () = F.dprintf "(hashtbl_create)"
-    let ( .%{} ) t k = bindop_get t '{' k '}'
-    let ( .%{}<- ) t k v = bindop_set t '{' k '}' v
-    let hashtbl_mem = F.dprintf "(@[hashtbl_mem@ %t@ %t@])"
-    let hashtbl_to_seq = F.dprintf "(@[hashtbl_to_seq@ %t@])"
-    let buffer_create () = F.dprintf "(buffer_create)"
-    let buffer_add_string = F.dprintf "(@[buffer_add_string@ %t@ %t@])"
-    let buffer_add_char = F.dprintf "(@[buffer_add_char@ %t@ %t@])"
-    let buffer_contents = F.dprintf "(@[buffer_contents@ %t@])"
-    let buffer_length = F.dprintf "(@[buffer_length@ %t@])"
+    let hashtbl_create = call0 "hashtbl_create"
+    let ( .%{} ) = indexop_get '{' '}'
+    let ( .%{}<- ) = indexop_set '{' '}'
+    let hashtbl_mem = call2 "hashtbl_mem"
+    let hashtbl_to_seq = call1 "hashtbl_to_seq"
+    let buffer_create = call0 "buffer_create"
+    let buffer_add_string = call2 "buffer_add_string"
+    let buffer_add_char = call2 "buffer_add_char"
+    let buffer_contents = call1 "buffer_contents"
+    let buffer_length = call1 "buffer_length"
 
     type 'a promise
 
-    let promise = F.dprintf "(@[promise@ %t@])"
-    let await = F.dprintf "(@[await@ %t@])"
-    let error = F.dprintf "(@[error@ %t@])"
-    let async_lambda = lambda_aux "async_"
+    let promise = call1 "promise"
+    let await = call1 "await"
+    let error = call1 "error"
+    let async_lambda f = call1 "async_lambda" (fn value "arg" f)
 
     type untyped
 
@@ -1411,56 +1415,54 @@ let pp (type a) pp_import ppf c =
         (module struct
           type t = a
 
-          let inject = F.dprintf "(@[inj_%s@ %t@])" name
-          let project = F.dprintf "(@[prj_%s@ %t@])" name
-          let test = F.dprintf "(@[test_%s@ %t@])" name
+          let inject = call1 ("inj_" ^ name)
+          let project = call1 ("prj_" ^ name)
+          let test = call1 ("test_" ^ name)
         end)
 
     module External = struct
       type t
 
-      let null = F.dprintf "null"
-      let some = F.dprintf "(@[External.some@ %t@])"
-      let of_int = F.dprintf "(@[External.of_int@ %t@])"
-      let of_string = F.dprintf "(@[External.of_string@ %t@])"
-      let of_float = F.dprintf "(@[External.of_float@ %t@])"
-      let of_bool = F.dprintf "(@[External.of_bool@ %t@])"
-      let of_seq = F.dprintf "(@[External.of_seq@ %t@])"
-      let of_seq_assoc = F.dprintf "(@[External.of_seq_assoc@ %t@])"
+      let null = value "null"
+      let some = call1 "External.some"
+      let of_int = call1 "External.of_int"
+      let of_string = call1 "External.of_string"
+      let of_float = call1 "External.of_float"
+      let of_bool = call1 "External.of_bool"
+      let of_seq = call1 "External.of_seq"
+      let of_seq_assoc = call1 "External.of_seq_assoc"
 
       type 'a assoc
 
-      let assoc_find = F.dprintf "(@[External.assoc_find@ %t@ %t@])"
-      let assoc_mem = F.dprintf "(@[External.assoc_mem@ %t@ %t@])"
-      let assoc_to_seq = F.dprintf "(@[External.assoc_to_seq@ %t@])"
+      let assoc_find = call2 "External.assoc_find"
+      let assoc_mem = call2 "External.assoc_mem"
+      let assoc_to_seq = call1 "External.assoc_to_seq"
 
-      type 'a decoder = string
+      type 'a decoder = F.formatter -> unit
 
-      let get_int = "(int)"
-      let get_string = "(string)"
-      let get_float = "(float)"
-      let get_bool = "(bool)"
-      let get_some = "(some)"
-      let get_seq = "(seq)"
-      let get_assoc = "(assoc)"
+      let get_int = value "int"
+      let get_string = value "string"
+      let get_float = value "float"
+      let get_bool = value "bool"
+      let get_some = value "some"
+      let get_seq = value "seq"
+      let get_assoc = value "assoc"
 
       let decode c t ~ok ~error =
-        let decoded = var "decoded" in
-        F.dprintf
-          "(@[External.decode@ %s@ %t@ (@[<hv>@[<hv>ok@ %t@]@ %t@])@ \
-           (@[<hv>error@ %t@])@])"
-          c t decoded (ok decoded) (error ())
+        call4 "External.decode" c t
+          (block_named "ok" (fn value "decoded" ok))
+          (block_named "error" (error ()))
 
-      let to_string = F.dprintf "(@[External.to_string@ %t@])"
-      let marshal = F.dprintf "(@[External.marshal@ %t@])"
+      let to_string = call1 "External.to_string"
+      let marshal = call1 "External.marshal"
     end
 
     type import = a
 
     let import i f =
-      let name = var "import" in
+      let name = value "import" in
       F.dprintf "(@[import@ %t@ from@ %a@])@ %t" name pp_import i (f name)
 
-    let export = F.dprintf "(@[export@ %t@])"
+    let export = call1 "export"
   end) in
   F.fprintf ppf "@[<hv>%t@]" (M.eval c)
