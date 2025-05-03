@@ -96,28 +96,37 @@ module DecodeJs = struct
   let marshal = Js.Unsafe.inject
 end
 
-module Promise = struct
+module JsPromise : sig
   type 'a t
 
-  let return : 'a -> 'a t = fun x -> Js.Unsafe.global##._Promise##resolve x
-  let error : exn -> 'a t = fun x -> Js.Unsafe.global##._Promise##reject x
+  val classify : 'a Js.t -> ('b Js.t t Js.t, 'a Js.t) Either.t
+  val await : 'a t Js.t -> 'a
+  val run : (unit -> 'a) -> 'a t Js.t
+end = struct
+  type 'a t
 
-  let then_ : 'a t -> ('a -> 'b t) -> (exn -> 'b t) -> 'b t =
-   fun t resolve reject ->
-    Js.Unsafe.meth_call t "then"
-      [|
-        Js.Unsafe.inject (Js.wrap_callback resolve);
-        Js.Unsafe.inject (Js.wrap_callback reject);
-      |]
+  let classify j =
+    match DecodeJs.get_assoc j with
+    | Some j -> (
+        match Js.Unsafe.get j "then" |> Js.typeof |> Js.to_string with
+        | "function" -> Either.Left (Js.Unsafe.coerce j)
+        | _ -> Either.Right j)
+    | None -> Either.Right j
 
-  type _ Effect.t += Await : 'a t -> 'a Effect.t
+  type _ Effect.t += Await : 'a t Js.t -> 'a Effect.t
 
   let await p = Effect.perform (Await p)
 
-  let handle_await f =
+  let run f =
     match f () with
-    | x -> x
-    | effect Await p, k -> Effect.Deep.(then_ p (continue k) (discontinue k))
+    | x -> Js.Unsafe.global##._Promise##resolve x
+    | exception x -> Js.Unsafe.global##._Promise##reject x
+    | effect Await p, k ->
+        Js.Unsafe.meth_call p "then"
+          [|
+            Js.Unsafe.inject (Js.wrap_callback (Effect.Deep.continue k));
+            Js.Unsafe.inject (Js.wrap_callback (Effect.Deep.discontinue k));
+          |]
 end
 
 let fname_to_compname s =
@@ -146,17 +155,12 @@ let () =
          Acutis.comp_parse ~fname ~name:(fname_to_compname fname)
            (input_uint8Array src |> Lexing.from_function)
 
-       method funAsync name ty fn =
-         let fn : DecodeJs.t -> string Promise.t =
-          fun data ->
-           Js.Unsafe.fun_call fn [| data |]
-           |> Promise.await |> Js.to_string |> Promise.return
-         in
-         Acutis.comp_fun ~name:(Js.to_string name) ty fn
-
-       method funSync name ty fn =
+       method func name ty fn =
          let fn : DecodeJs.t -> string =
-          fun data -> Js.Unsafe.fun_call fn [| data |] |> Js.to_string
+          fun data ->
+           match Js.Unsafe.fun_call fn [| data |] |> JsPromise.classify with
+           | Either.Left p -> JsPromise.await p |> Js.to_string
+           | Either.Right s -> Js.to_string s
          in
          Acutis.comp_fun ~name:(Js.to_string name) ty fn
 
@@ -168,6 +172,7 @@ let () =
     end)
 
 let () =
+  let render = Acutis.render (module DecodeJs) in
   Js.export "Compile"
     (object%js
        method components a =
@@ -183,6 +188,9 @@ let () =
            (input_uint8Array src |> Lexing.from_function)
          |> Acutis.compile components
 
+       method render template js =
+         JsPromise.run @@ fun () -> render template js |> Js.string
+
        method toESMString x =
          Acutis.esm Format.str_formatter x;
          Format.flush_str_formatter () |> Js.string
@@ -190,23 +198,6 @@ let () =
        method toCJSString x =
          Acutis.cjs Format.str_formatter x;
          Format.flush_str_formatter () |> Js.string
-    end)
-
-let render_sync = Acutis.render_string (module DecodeJs)
-
-let render_async =
-  let module M = Acutis.Render (Promise) (DecodeJs) in
-  M.apply
-
-let () =
-  Js.export "Render"
-    (object%js
-       method async template js =
-         Promise.handle_await @@ fun () ->
-         render_async template js |> Promise.await |> Js.string
-         |> Promise.return
-
-       method sync template js = render_sync template js |> Js.string
     end)
 
 let () =

@@ -77,14 +77,6 @@ let compile components { fname; ast } = A.Compile.make ~fname components ast
 let compile_interface = A.Compile.make_interface
 let get_typescheme x = x.A.Compile.types
 
-module type PROMISE = sig
-  type 'a t
-
-  val return : 'a -> 'a t
-  val error : exn -> 'a t
-  val await : 'a t -> 'a
-end
-
 module type DECODABLE = sig
   type t
   type 'a assoc
@@ -111,8 +103,8 @@ module type DECODABLE = sig
   val marshal : 'a -> t
 end
 
-module Render (P : PROMISE) (D : DECODABLE) : sig
-  val apply : (D.t -> string P.t) compiled -> D.t -> string P.t
+module Render (D : DECODABLE) : sig
+  val apply : (D.t -> string) compiled -> D.t -> string
 end = struct
   module I = A.Instruct.Make (struct
     include Stdlib
@@ -121,6 +113,7 @@ end = struct
     type 'a exp = 'a
 
     let return = Fun.id
+    let raise s = raise (Acutis_error (A.Error.of_string s))
     let stm = Fun.id
     let ( let| ) a f = a; f ()
     let ( let$ ) (_, x) f = f x
@@ -181,11 +174,9 @@ end = struct
     let buffer_contents = Buffer.contents
     let buffer_length = Buffer.length
 
-    type 'a promise = 'a P.t
+    type 'a promise = 'a
 
-    let promise = P.return
-    let await = P.await
-    let error s = P.error (Acutis_error (A.Error.of_string s))
+    let await = Fun.id
     let async_lambda = Fun.id
 
     type untyped = ..
@@ -231,16 +222,8 @@ end = struct
   let apply = I.eval
 end
 
-module Id = struct
-  type 'a t = 'a
-
-  let return = Fun.id
-  let await = Fun.id
-  let error = raise
-end
-
-let render_string (type a) (module D : DECODABLE with type t = a) =
-  let module R = Render (Id) (D) in
+let render (type a) (module D : DECODABLE with type t = a) =
+  let module R = Render (D) in
   R.apply
 
 module PrintJs = struct
@@ -395,6 +378,17 @@ module PrintJs = struct
     let return x =
       stm (fun ppf -> F.fprintf ppf "return (@,@[<hv 2>%a@]@;<0 -2>)" x)
 
+    let new_ name args ppf state =
+      F.fprintf ppf "@[<hv 2>new %a(@,@[<hv 2>%a@]@;<0 -2>)@]" name state
+        (F.pp_print_list ~pp_sep:A.Pp.comma (fun ppf x ->
+             F.fprintf ppf "@[<hv 2>%a@]" x state))
+        args
+
+    let throw x =
+      stm (fun ppf -> F.fprintf ppf "throw (@,@[<hv 2>%a@]@;<0 -2>)" x)
+
+    let raise s = throw (new_ (global "Error") [ s ])
+
     type 'a ref = t
 
     let ( let& ) = ( let$ )
@@ -502,13 +496,6 @@ module PrintJs = struct
 
     let array a = array_of_seq (Array.to_seq a)
     let array_make i x = array_of_seq (Seq.init i (Fun.const x))
-
-    let new_ name args ppf state =
-      F.fprintf ppf "@[<hv 2>new %a(@,@[<hv 2>%a@]@;<0 -2>)@]" name state
-        (F.pp_print_list ~pp_sep:A.Pp.comma (fun ppf x ->
-             F.fprintf ppf "@[<hv 2>%a@]" x state))
-        args
-
     let hashtbl s = new_ (global "Map") [ array_of_seq (Seq.map pair s) ]
     let hashtbl_create () = new_ (global "Map") [ unit ]
     let ( .%{} ) x k = x.!("get") @@ k
@@ -527,9 +514,7 @@ module PrintJs = struct
 
     type 'a promise
 
-    let promise x = (global "Promise").!("resolve") @@ x
     let await p ppf state = F.fprintf ppf "@[<hv 2>await@ %a@]" p state
-    let error s = (global "Promise").!("reject") @@ new_ (global "Error") [ s ]
     let async_lambda = lambda_aux `Async
 
     let and_ a b ppf state =

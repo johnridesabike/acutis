@@ -3,3 +3,4 @@
   Second
   Third
   Fourth
+  JavaScript components may return promises or strings

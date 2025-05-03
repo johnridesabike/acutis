@@ -1,12 +1,12 @@
 import fs from "node:fs/promises";
 import acutis from "#main";
-let { Compile, Component, Render, Typescheme } = acutis;
+let { Compile, Component, Typescheme } = acutis;
 
 let filepath = process.argv[2];
 let Ty = Typescheme;
 
 let components = Compile.components([
-  Component.funAsync(
+  Component.func(
     "Slow",
     Ty.make([["children", Ty.string()]]),
     ({ children }) =>
@@ -14,7 +14,7 @@ let components = Compile.components([
         setTimeout(() => resolve(children), 50);
       }),
   ),
-  Component.funAsync(
+  Component.func(
     "Slower",
     Ty.make([["children", Ty.string()]]),
     ({ children }) =>
@@ -22,12 +22,17 @@ let components = Compile.components([
         setTimeout(() => resolve(children), 500);
       }),
   ),
+  Component.func(
+    "Sync",
+    Ty.make([]),
+    () => "JavaScript components may return promises or strings",
+  ),
 ]);
 
 fs.readFile(filepath)
   .then((src) => {
     let template = Compile.uint8Array(filepath, components, src);
-    return Render.async(template, {});
+    return Compile.render(template, {});
   })
   .then((result) => process.stdout.write(result))
   .catch(console.error);

@@ -44,6 +44,7 @@ module type SEM = sig
   val return : 'a exp -> 'a stm
   (** Return value ['a] from a function. *)
 
+  val raise : string exp -> 'a stm
   val stm : unit exp -> unit stm
 
   type 'a ref
@@ -138,13 +139,11 @@ module type SEM = sig
   (** {1 Promises.} *)
 
   type 'a promise
-  (** An asynchronous monad. *)
+  (** An asynchronous computation. *)
 
-  val promise : 'a exp -> 'a promise exp
   val await : 'a promise exp -> 'a exp
-  val error : string exp -> 'a promise exp
 
-  val async_lambda : ('a exp -> 'b promise stm) -> ('a -> 'b promise) exp
+  val async_lambda : ('a exp -> 'b stm) -> ('a -> 'b promise) exp
   (** This is necessary for JavaScript async/await syntax compatibility. *)
 
   (** {1 Data} *)
@@ -960,7 +959,7 @@ end = struct
               async_lambda (fun props ->
                   let@ state = state_make components ~props in
                   let| () = nodes state v in
-                  return (promise (buffer_contents state.buf))) )
+                  return (buffer_contents state.buf)) )
           in
           make_comps (MapString.add k comp components) tl f
       | [] -> f components
@@ -1109,8 +1108,8 @@ end = struct
              ~then_:(fun () ->
                let@ state = state_make components ~props in
                let| () = nodes state compiled.nodes in
-               return (promise (buffer_contents state.buf)))
-             ~else_:(fun () -> return (error (buffer_contents errors)))))
+               return (buffer_contents state.buf))
+             ~else_:(fun () -> raise (buffer_contents errors))))
 
   let eval compiled = observe (eval compiled)
 end
@@ -1162,6 +1161,7 @@ module MakeTrans
   let observe x = F.observe (bwds x)
   let ( let| ) a f = fwds (F.( let| ) (bwds a) (fun () -> bwds (f ())))
   let return x = fwds (F.return (bwde x))
+  let raise s = fwds (F.raise (bwde s))
   let stm x = fwds (F.stm (bwde x))
 
   let ( let$ ) (s, x) f =
@@ -1230,9 +1230,7 @@ module MakeTrans
   let buffer_add_char b c = fwds (F.buffer_add_char (bwde b) (bwde c))
   let buffer_contents b = fwde (F.buffer_contents (bwde b))
   let buffer_length b = fwde (F.buffer_length (bwde b))
-  let promise x = fwde (F.promise (bwde x))
   let await p = fwde (F.await (bwde p))
-  let error s = fwde (F.error (bwde s))
   let async_lambda f = fwde (F.async_lambda (fun x -> bwds (f (fwde x))))
 
   module type UNTYPED = sig
@@ -1317,6 +1315,7 @@ let pp (type a) pp_import ppf c =
     type 'a exp = F.formatter -> unit
 
     let return = call1 "return"
+    let raise = call1 "raise"
     let stm = call1 "stm"
     let ( let$ ) = bindop '$'
 
@@ -1395,9 +1394,7 @@ let pp (type a) pp_import ppf c =
 
     type 'a promise
 
-    let promise = call1 "promise"
     let await = call1 "await"
-    let error = call1 "error"
     let async_lambda f = call1 "async_lambda" (fn value "arg" f)
 
     type untyped

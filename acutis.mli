@@ -158,16 +158,6 @@ val get_typescheme : 'a compiled -> typescheme
 
 (** {1 Rendering templates with OCaml.} *)
 
-module type PROMISE = sig
-  (** A promise interface for async operations. *)
-
-  type 'a t
-
-  val return : 'a -> 'a t
-  val error : exn -> 'a t
-  val await : 'a t -> 'a
-end
-
 module type DECODABLE = sig
   (** Decode and encode input data. *)
 
@@ -206,21 +196,9 @@ module type DECODABLE = sig
   val marshal : 'a -> t
 end
 
-(** A functor that builds a render implementation for a given promise interface
-    and a given decodable input type.
-
-    We need to use a functor because parameterized types, such as in {!PROMISE},
-    are not supported in first-class modules. *)
-module Render (Promise : PROMISE) (Data : DECODABLE) : sig
-  val apply :
-    (Data.t -> string Promise.t) compiled -> Data.t -> string Promise.t
-  (** Apply data to a template and return the rendered output. *)
-end
-
-val render_string :
+val render :
   (module DECODABLE with type t = 'a) -> ('a -> string) compiled -> 'a -> string
-(** A simpler version of {!Render} that only requires a decodable module and
-    outputs a string. *)
+(** Apply data to a template and return the rendered output. *)
 
 (** {1 Printing templates as JavaScript modules.} *)
 

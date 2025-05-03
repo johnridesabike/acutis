@@ -371,8 +371,8 @@ The data supplied does not match this template's interface.\n\
       cell$0 = list$0[1];
     }
     buf$0.contents += "\n";
-    return (Promise.resolve(buf$0.contents));
+    return (buf$0.contents);
   } else {
-    return (Promise.reject(new Error(errors$0.contents)));
+    throw (new Error(errors$0.contents));
   }
 };

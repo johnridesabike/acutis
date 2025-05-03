@@ -937,14 +937,14 @@ Print the runtime instructions
      (buffer_add_string buf "\n")
      (stm ((buffer_add_escape @@ buf) @@ (prj_string arg.%{"i_prop"})))
      (buffer_add_string buf "\n")
-     (return (promise (buffer_contents buf))))))
+     (return (buffer_contents buf)))))
   (let$ Component2 =
    (async_lambda
     (arg ->
      (let$ buf = (buffer_create ())))
      (stm ((buffer_add_escape @@ buf) @@ (prj_string arg.%{"children"})))
      (buffer_add_string buf "\n")
-     (return (promise (buffer_contents buf))))))
+     (return (buffer_contents buf)))))
   (export
    (async_lambda
     (arg ->
@@ -2053,5 +2053,5 @@ Print the runtime instructions
        (stm ((buffer_add_escape @@ buf) @@ (prj_string match_props.%{"empty"})))
        (buffer_add_string buf " ")
        (buffer_add_string buf "\n")
-       (return (promise (buffer_contents buf))))
-      (else (return (error (buffer_contents errors))))))))
+       (return (buffer_contents buf)))
+      (else (raise (buffer_contents errors)))))))

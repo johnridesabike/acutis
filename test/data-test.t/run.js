@@ -1,12 +1,12 @@
 import fs from "node:fs/promises";
 import acutis from "#main";
-let { Compile, Component, Render, Typescheme, Utils } = acutis;
+let { Compile, Component, Typescheme, Utils } = acutis;
 
 let filepath = process.argv[2];
 let Ty = Typescheme;
 
 let components = Compile.components([
-  Component.funSync(
+  Component.func(
     "Comp",
     Ty.make([
       [
@@ -26,7 +26,7 @@ let components = Compile.components([
     ]),
     (props) => JSON.stringify(props, null, 2),
   ),
-  Component.funSync(
+  Component.func(
     "UnknownComp",
     Ty.make([
       // The marshaled representation of these values is not deterministic.
@@ -47,10 +47,10 @@ let components = Compile.components([
 ]);
 
 Promise.all([fs.readFile("data.json"), fs.readFile(filepath)])
-  .then(([dataSrc, src]) => {
+  .then(async ([dataSrc, src]) => {
     let data = JSON.parse(dataSrc);
     let template = Compile.uint8Array(filepath, components, src);
-    let result = Render.sync(template, data);
+    let result = await Compile.render(template, data);
     process.stdout.write(result);
   })
   .catch((e) => {

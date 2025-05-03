@@ -286,7 +286,7 @@
     async (arg$0) => {
       let buf$0 = {contents: ""};
       buf$0.contents += "Nested component\n";
-      return (Promise.resolve(buf$0.contents));
+      return (buf$0.contents);
     };
   let Component$0 =
     async (arg$0) => {
@@ -313,7 +313,7 @@
       }
       buf$0.contents += "\n";
       buf$0.contents += await NestedComponent$0(new Map([]));
-      return (Promise.resolve(buf$0.contents));
+      return (buf$0.contents);
     };
   export default async (arg$0) => {
     let errors$0 = {contents: ""};
@@ -1817,9 +1817,9 @@
             )
           );
       buf$0.contents += "\n";
-      return (Promise.resolve(buf$0.contents));
+      return (buf$0.contents);
     } else {
-      return (Promise.reject(new Error(errors$0.contents)));
+      throw (new Error(errors$0.contents));
     }
   };
 

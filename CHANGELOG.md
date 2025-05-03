@@ -2,6 +2,13 @@
 
 Most changes are breaking changes.
 
+## 0.27.0
+
+- Simplify render signature to no longer use promises.
+- Change the JavaScript API.
+  - The JavaScript function components may return either a string or a promise.
+  - The JavaScript renderer now always returns a promise.
+
 ## 0.26.0
 
 - Move the bulk of the compiler to the `acutis.internals` library and make the

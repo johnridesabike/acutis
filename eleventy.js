@@ -19,7 +19,7 @@
 import path from "node:path";
 import fs from "node:fs/promises";
 import acutis from "#main";
-let { Compile, Component, Render, Utils } = acutis;
+let { Compile, Component, Utils } = acutis;
 
 function FileWalker(root) {
   this.ignores = new Set();
@@ -106,7 +106,7 @@ export function plugin(eleventyConfig, config) {
       let result =
         config && "components" in config
           ? getFuncs(config.components).map(({ key, f }) =>
-              Component.funAsync(key, f.interface, f),
+              Component.func(key, f.interface, f),
             )
           : [];
       let dir = this.config.dir;
@@ -131,7 +131,7 @@ export function plugin(eleventyConfig, config) {
           return new Promise((resolve) => {
             let template = Compile.string(inputPath, components, str);
             resolve((data) =>
-              Render.async(template, data).catch(acutisErrorToJsError),
+              Compile.render(template, data).catch(acutisErrorToJsError),
             );
           }).catch(acutisErrorToJsError);
         }
@@ -143,7 +143,7 @@ export function plugin(eleventyConfig, config) {
             .then((src) => {
               let template = Compile.uint8Array(inputPath, components, src);
               return (data) =>
-                Render.async(template, data).catch(acutisErrorToJsError);
+                Compile.render(template, data).catch(acutisErrorToJsError);
             })
             .catch(acutisErrorToJsError);
           cache.set(inputPath, template);

@@ -199,7 +199,7 @@ let () =
               Lexing.from_channel chan |> Acutis.parse ~fname
               |> Acutis.compile components
             in
-            let result = Acutis.render_string (module Json) template data in
+            let result = Acutis.render (module Json) template data in
             match !arg_output with
             | "-" -> Out_channel.output_string stdout result
             | fname ->

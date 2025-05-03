@@ -33,7 +33,7 @@ module Json = struct
   let marshal x = `String (Marshal.to_string x [])
 end
 
-let render = Acutis.render_string (module Json)
+let render = Acutis.render (module Json)
 
 let render ?(json = "{}") ?(components = Acutis.comps_empty) src () =
   let temp =
