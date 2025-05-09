@@ -573,8 +573,6 @@ end = struct
       key_error : (stack -> stack -> string -> unit) exp;
     }
 
-    let show_type ty = string (Format.asprintf "%a" T.pp ty)
-
     let push_error debug input =
       stm (((debug.decode_error @@ input) @@ debug.stack) @@ debug.ty_str)
 
@@ -582,7 +580,7 @@ end = struct
       stm (((debug.key_error @@ missing_keys) @@ debug.stack) @@ debug.ty_str)
 
     let rec decode ~set ~debug input ty =
-      let$ ty_str = ("type", show_type ty) in
+      let$ ty_str = ("type", string (Format.asprintf "%a" T.pp ty)) in
       let debug = { debug with ty_str } in
       match ty.contents with
       | T.Unknown _ -> set (UUnknown.inject input)
@@ -1095,7 +1093,9 @@ end = struct
            in
            let$ props = ("props", hashtbl_create ()) in
            let stack = stack_empty in
-           let$ ty_str = ("type", show_type (T.record (ref compiled.types))) in
+           let$ ty_str =
+             ("type", string (Format.asprintf "%a" T.pp_scheme compiled.types))
+           in
            let debug = { ty_str; stack; decode_error; key_error } in
            let| () =
              External.decode External.get_assoc input

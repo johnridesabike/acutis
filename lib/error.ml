@@ -13,7 +13,6 @@ module F = Format
 type t = F.formatter -> unit
 
 let pp = ( |> )
-let of_string s ppf = F.pp_print_string ppf s
 
 exception Acutis_error of t
 
@@ -230,3 +229,5 @@ let internal ~__POS__:(file, lnum, cnum, enum) =
         @[OCaml source file %S, line %d, characters %d-%d.@]@;\
         @[%t@]"
        file lnum cnum enum t
+
+let raise_fmt x = F.kdprintf raise x

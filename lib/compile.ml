@@ -12,21 +12,21 @@ module MapString = Map.Make (String)
 module I = Parser.MenhirInterpreter
 module T = Typechecker
 
-let parse_fail state = function
+let parse_fail = function
   | I.HandlingError env ->
-      Error.parse_error (I.current_state_number env) (Lexer.loc state)
+      Error.parse_error (I.current_state_number env) (I.positions env)
   | _ -> Error.internal ~__POS__ "Parser error handling failed somehow."
 
 let parse ~fname lexbuf =
   Lexing.set_filename lexbuf fname;
   let state = Lexer.make_state lexbuf in
-  I.loop_handle Fun.id (parse_fail state) (Lexer.supplier state)
+  I.loop_handle Fun.id parse_fail (Lexer.supplier state)
     (Parser.Incremental.acutis lexbuf.lex_curr_p)
 
 let parse_interface ~fname lexbuf =
   Lexing.set_filename lexbuf fname;
   let state = Lexer.make_state_interface lexbuf in
-  I.loop_handle Fun.id (parse_fail state) (Lexer.supplier state)
+  I.loop_handle Fun.id parse_fail (Lexer.supplier state)
     (Parser.Incremental.interface_standalone lexbuf.lex_curr_p)
 
 let is_space = function ' ' | '\012' | '\n' | '\r' | '\t' -> true | _ -> false

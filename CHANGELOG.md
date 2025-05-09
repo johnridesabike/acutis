@@ -5,9 +5,12 @@ Most changes are breaking changes.
 ## 0.27.0
 
 - Simplify render signature to no longer use promises.
+- Add a compiler for type schemes using a given decodable interface.
 - Change the JavaScript API.
   - The JavaScript function components may return either a string or a promise.
-  - The JavaScript renderer now always returns a promise.
+  - The JavaScript renderer always returns a promise.
+  - The JavaScript interfaces are written using decodable JS values instead of
+    functions.
 
 ## 0.26.0
 

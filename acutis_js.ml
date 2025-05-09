@@ -50,20 +50,22 @@ module DecodeJs = struct
     | "undefined" -> None
     | _ -> Js.Opt.to_option (Js.Opt.return j)
 
+  let array_to_seq a =
+    let l = a##.length in
+    let rec aux i () =
+      if i = l then Seq.Nil else Seq.Cons (Js.Unsafe.get a i, aux (succ i))
+    in
+    aux 0
+
   let get_seq j =
-    if Js.Unsafe.global##._Array##isArray j then
-      let a = coerce j in
-      let rec aux i () =
-        Js.Optdef.case (Js.array_get a i)
-          (fun () -> Seq.Nil)
-          (fun x -> Seq.Cons (x, aux (succ i)))
-      in
-      Some (aux 0)
+    if Js.Unsafe.global##._Array##isArray j then Some (array_to_seq (coerce j))
     else None
 
   let get_assoc j =
     match Js.to_string (Js.typeof j) with
-    | "object" -> Js.Opt.to_option (Js.Opt.return j)
+    | "object" ->
+        if Js.Unsafe.global##._Array##isArray j then None
+        else Js.Opt.to_option (Js.Opt.return j)
     | _ -> None
 
   let assoc_find : string -> 'a assoc -> 'a =
@@ -142,6 +144,8 @@ let input_uint8Array arr =
     offset := !offset + out_len;
     out_len
 
+let decode_interface = Acutis.interface (module DecodeJs)
+
 let () =
   Js.export "Component"
     (object%js
@@ -162,12 +166,12 @@ let () =
            | Either.Left p -> JsPromise.await p |> Js.to_string
            | Either.Right s -> Js.to_string s
          in
-         Acutis.comp_fun ~name:(Js.to_string name) ty fn
+         Acutis.comp_fun ~name:(Js.to_string name) (decode_interface ty) fn
 
        method funPath module_path name ty =
          let function_path = Js.to_string name in
          let module_path = Js.to_string module_path in
-         Acutis.comp_fun ~name:function_path ty
+         Acutis.comp_fun ~name:function_path (decode_interface ty)
            (Acutis.js_import ~module_path ~function_path)
     end)
 
@@ -175,8 +179,7 @@ let () =
   let render = Acutis.render (module DecodeJs) in
   Js.export "Compile"
     (object%js
-       method components a =
-         Js.to_array a |> Array.to_seq |> Acutis.comps_compile
+       method components a = DecodeJs.array_to_seq a |> Acutis.comps_compile
 
        method string fname components src =
          Acutis.parse ~fname:(Js.to_string fname)
@@ -201,80 +204,6 @@ let () =
     end)
 
 let () =
-  let array_to_2tuple a =
-    let a = Js.to_array a in
-    (a.(0), Obj.magic a.(1))
-  in
-  let key_values v =
-    Js.to_array v |> Array.to_seq
-    |> Seq.map (fun a ->
-           let k, v = array_to_2tuple a in
-           let k = Js.to_string k in
-           (k, v))
-  in
-  let int_of_number x = Js.float_of_number x |> int_of_float in
-  Js.export "Typescheme"
-    (object%js
-       val variantOpen = `Open
-       val variantClosed = `Closed
-       val empty = Acutis.typescheme_empty
-       method make a = key_values a |> Acutis.typescheme
-       method unknown = Acutis.unknown ()
-       method int = Acutis.int ()
-       method float = Acutis.float ()
-       method string = Acutis.string ()
-       method nullable t = Acutis.nullable t
-       method list t = Acutis.list t
-       method tuple a = Js.to_array a |> Array.to_seq |> Acutis.tuple
-
-       method record a =
-         Js.to_array a |> Array.to_seq
-         |> Seq.map (fun a ->
-                let k, v = array_to_2tuple a in
-                (Js.to_string k, v))
-         |> Acutis.record
-
-       method dict t = Acutis.dict t
-
-       method enumInt r a =
-         Js.to_array a |> Array.to_seq |> Seq.map int_of_number
-         |> Acutis.enum_int r
-
-       method enumString r a =
-         Js.to_array a |> Array.to_seq |> Seq.map Js.to_string
-         |> Acutis.enum_string r
-
-       method boolean = Acutis.boolean ()
-       method falseOnly = Acutis.false_only ()
-       method trueOnly = Acutis.true_only ()
-
-       method unionInt r k a =
-         Js.to_array a |> Array.to_seq
-         |> Seq.map (fun a ->
-                let i, v = array_to_2tuple a in
-                (int_of_number i, key_values v))
-         |> Acutis.union_int r (Js.to_string k)
-
-       method unionString r k a =
-         Js.to_array a |> Array.to_seq
-         |> Seq.map (fun a ->
-                let s, v = array_to_2tuple a in
-                (Js.to_string s, key_values v))
-         |> Acutis.union_string r (Js.to_string k)
-
-       method unionBoolean k f t =
-         let f = key_values f in
-         let t = key_values t in
-         Acutis.union_boolean (Js.to_string k) ~f ~t
-
-       method unionTrueOnly k t =
-         Acutis.union_true_only (Js.to_string k) (key_values t)
-
-       method unionFalseOnly k f =
-         Acutis.union_false_only (Js.to_string k) (key_values f)
-    end)
-
-let () =
   Js.export "Utils"
     (object%js
        method isError e =
@@ -285,4 +214,8 @@ let () =
          | Acutis.Acutis_error e ->
              Js.Opt.return (Js.string (Format.asprintf "%a" Acutis.pp_error e))
          | _ -> Js.Opt.empty
+
+       method debugInterface js =
+         decode_interface js |> Acutis.pp_typescheme Format.str_formatter;
+         Format.flush_str_formatter () |> Js.string
     end)

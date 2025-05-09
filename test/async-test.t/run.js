@@ -1,14 +1,13 @@
 import fs from "node:fs/promises";
 import acutis from "#main";
-let { Compile, Component, Typescheme } = acutis;
+let { Compile, Component } = acutis;
 
 let filepath = process.argv[2];
-let Ty = Typescheme;
 
 let components = Compile.components([
   Component.func(
     "Slow",
-    Ty.make([["children", Ty.string()]]),
+    { children: "string" },
     ({ children }) =>
       new Promise((resolve) => {
         setTimeout(() => resolve(children), 50);
@@ -16,7 +15,7 @@ let components = Compile.components([
   ),
   Component.func(
     "Slower",
-    Ty.make([["children", Ty.string()]]),
+    { children: "string" },
     ({ children }) =>
       new Promise((resolve) => {
         setTimeout(() => resolve(children), 500);
@@ -24,7 +23,7 @@ let components = Compile.components([
   ),
   Component.func(
     "Sync",
-    Ty.make([]),
+    {},
     () => "JavaScript components may return promises or strings",
   ),
 ]);

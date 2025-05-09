@@ -1197,7 +1197,7 @@ The data supplied does not match this template's interface.
 Path:
 <input>
 Expected type:
-{z: string}
+z = string
 Input is missing keys:
 z
 
@@ -1209,7 +1209,8 @@ The data supplied does not match this template's interface.
 Path:
 <input>
 Expected type:
-{aa: string, d: {e: int}}
+aa = string
+d = {e: int}
 Input is missing keys:
 aa
 
@@ -1662,4 +1663,69 @@ Interface:
   _
 Implementation:
   string
+
+JSON interface: null.
+---
+Interface decode error.
+'null' is not a valid type.
+
+JSON interface: integer.
+---
+Interface decode error.
+'1' is not a valid type.
+
+JSON interface: string props.
+---
+Interface decode error.
+'"prop"' is not a valid type.
+
+JSON interface: empty array type.
+---
+Interface decode error.
+Type sequences cannot be empty.
+
+JSON interface: empty object.
+---
+Interface decode error.
+Records need at least one type.
+
+JSON interface: empty array tag.
+---
+Interface decode error.
+'[]' is not a valid type.
+
+JSON interface: enum with int & string.
+---
+Interface decode error.
+'"a"' is not valid in this enum.
+
+JSON interface: enum with bool & string.
+---
+Interface decode error.
+'"a"' is not valid in this enum.
+
+JSON interface: enum with string & bool.
+---
+Interface decode error.
+'true' is not valid in this enum.
+
+JSON interface: tag with extra values.
+---
+Interface decode error.
+Type 'tag' only takes one parameter.
+
+JSON interface: nullable with extra params.
+---
+Interface decode error.
+Type 'nullable' only takes one parameter.
+
+JSON interface: list with extra params.
+---
+Interface decode error.
+Type 'list' only takes one parameter.
+
+JSON interface: dict with extra params.
+---
+Interface decode error.
+Type 'dict' only takes one parameter.
 

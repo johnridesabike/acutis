@@ -9,54 +9,12 @@
 (**************************************************************************)
 
 module A = Acutis_internals
-module MapInt = Map.Make (Int)
-module MapString = Map.Make (String)
-module SetInt = Set.Make (Int)
-module SetString = Set.Make (String)
 
 type error = A.Error.t
 
 exception Acutis_error = A.Error.Acutis_error
 
-module T = A.Typechecker.Type
-
-type ty = T.t
-type typescheme = T.scheme
-
-let typescheme = MapString.of_seq
-let typescheme_empty = MapString.empty
-let unknown = T.unknown
-let int = T.int
-let float = T.float
-let string = T.string
-let nullable = T.nullable
-let list = T.list
-let dict = T.dict
-let tuple l = T.tuple (List.of_seq l)
-let record l = T.record (ref (MapString.of_seq l))
-let enum_int row l = T.enum_int (T.sum (SetInt.of_seq l) row)
-let enum_string row l = T.enum_string (T.sum (SetString.of_seq l) row)
-let boolean = T.enum_false_and_true
-let false_only = T.enum_false_only
-let true_only = T.enum_true_only
-
-let nested_seqs_to_map l =
-  Seq.map (fun (k, v) -> (k, ref (MapString.of_seq v))) l
-
-let union_int row k l =
-  T.union_int k (T.sum (nested_seqs_to_map l |> MapInt.of_seq) row)
-
-let union_string row k l =
-  T.union_string k (T.sum (nested_seqs_to_map l |> MapString.of_seq) row)
-
-let union_boolean k ~f ~t =
-  T.union_false_and_true k
-    ~f:(ref (MapString.of_seq f))
-    ~t:(ref (MapString.of_seq t))
-
-let union_false_only k l = T.union_false_only k (ref (MapString.of_seq l))
-let union_true_only k l = T.union_true_only k (ref (MapString.of_seq l))
-
+type typescheme = A.Typechecker.Type.scheme
 type 'a comp = 'a A.Compile.Components.source
 
 let comp_parse = A.Compile.Components.from_src
@@ -103,17 +61,134 @@ module type DECODABLE = sig
   val marshal : 'a -> t
 end
 
-module Render (D : DECODABLE) : sig
-  val apply : (D.t -> string) compiled -> D.t -> string
-end = struct
-  module I = A.Instruct.Make (struct
+module InterfaceCombinators (M : DECODABLE) = struct
+  open A.Ast
+  open M
+
+  let raise_str = A.Error.raise_fmt "@[<v>Interface decode error.@;@[%(%s%)@]@]"
+  let raise = A.Error.raise_fmt "@[<v>Interface decode error.@;@[%(%)@]@]"
+  let error_str = raise_str "'%s' is not a valid type."
+  let else_error x = error_str (to_string x)
+  let error_enum x = raise_str "'%s' is not valid in this enum." (to_string x)
+  let error_uncons_single = raise_str "Type '%s' only takes one parameter."
+  let error_seq () = raise "Type sequences cannot be empty."
+  let error_record () = raise "Records need at least one type."
+  let loc = A.Loc.dummy
+  let opt f g h x = match f x with Some x -> g x | None -> h x
+
+  let uncons f x =
+    match x () with Seq.Cons (hd, tl) -> f hd tl | Seq.Nil -> error_seq ()
+
+  let uncons_single ~name f =
+    uncons (fun hd tl ->
+        match tl () with
+        | Seq.Cons _ -> error_uncons_single name
+        | Seq.Nil -> f hd)
+
+  let rec list_enum f s =
+    match s () with
+    | Seq.Cons (hd, tl) -> (
+        match f hd with
+        | Some hd -> hd :: list_enum f tl
+        | None -> error_enum hd)
+    | Seq.Nil -> []
+
+  let rec list f s =
+    match s () with Seq.Cons (hd, tl) -> f hd :: list f tl | Seq.Nil -> []
+
+  let nonempty_record f s =
+    match s () with
+    | Seq.Cons (h, tl) -> A.Nonempty.(f h :: list f tl)
+    | Seq.Nil -> error_record ()
+
+  let get_bool x = get_bool x |> Option.map Bool.to_int
+  let get_assoc x = get_assoc x |> Option.map M.assoc_to_seq
+  let if_int f g x = opt get_int f g x
+  let if_bool f g x = opt get_bool f g x
+  let if_string f g x = opt get_string f g x
+  let if_seq f g x = opt get_seq f g x
+  let if_assoc f g x = opt get_assoc f g x
+  let tag_int x = Tag (Tag_int (loc, x))
+  let tag_bool x = Tag (Tag_bool (loc, x))
+  let tag_string x = Tag (Tag_string (loc, x))
+  let ty_named x = Ty_named (loc, x)
+  let row_closed = (loc, `Closed)
+  let row_open = (loc, `Open)
+  let ty_enum_int r hd tl = Ty_enum_int (hd :: list_enum get_int tl, r)
+  let ty_enum_bool hd tl = Ty_enum_bool (hd :: list_enum get_bool tl)
+  let ty_enum_string r hd tl = Ty_enum_string (hd :: list_enum get_string tl, r)
+  let value f x = Value (f x)
+
+  let rec ty_nullable x = Ty_nullable (ty x)
+  and ty_list x = Ty_list (ty x)
+  and ty_dict x = Ty_dict (ty x)
+  and ty_tuple l = Ty_tuple (list ty l)
+  and ty_record x = Ty_record ([ record x ], row_closed)
+
+  and ty_record_list r x =
+    Ty_record (nonempty_record (if_assoc record else_error) x, r)
+
+  and record l = (loc, nonempty_record record_item l)
+  and record_item (k, v) = (loc, k, record_value v)
+
+  and tag_or_value name =
+    match name with
+    | "tag" ->
+        uncons_single ~name
+          (if_int tag_int (if_bool tag_bool (if_string tag_string else_error)))
+    | name -> value (ty_arg name)
+
+  and record_value x =
+    if_string (value ty_named)
+      (if_assoc (value ty_record)
+         (if_seq (uncons (if_string tag_or_value else_error)) else_error))
+      x
+
+  and ty x =
+    if_string ty_named
+      (if_assoc ty_record
+         (if_seq (uncons (if_string ty_arg else_error)) else_error))
+      x
+
+  and ty_arg name =
+    match name with
+    | "nullable" -> uncons_single ~name ty_nullable
+    | "list" -> uncons_single ~name ty_list
+    | "dict" -> uncons_single ~name ty_dict
+    | "tuple" -> ty_tuple
+    | "enum" ->
+        uncons
+          (if_int (ty_enum_int row_closed)
+             (if_string
+                (ty_enum_string row_closed)
+                (if_bool ty_enum_bool else_error)))
+    | "enum_open" ->
+        uncons
+          (if_int (ty_enum_int row_open)
+             (if_string (ty_enum_string row_open) else_error))
+    | "union" -> ty_record_list row_closed
+    | "union_open" -> ty_record_list row_open
+    | name -> error_str name
+
+  let prop (name, x) = { loc; name; ty = ty x }
+
+  let interface l =
+    if_assoc (list prop) else_error l |> A.Typechecker.make_interface_standalone
+end
+
+let interface (type a) (module D : DECODABLE with type t = a) =
+  let module M = InterfaceCombinators (D) in
+  M.interface
+
+module Render (D : DECODABLE) = struct
+  include A.Instruct.Make (struct
     include Stdlib
 
     type 'a stm = 'a
     type 'a exp = 'a
 
     let return = Fun.id
-    let raise s = raise (Acutis_error (A.Error.of_string s))
+    let raise = A.Error.raise_fmt "%s"
     let stm = Fun.id
     let ( let| ) a f = a; f ()
     let ( let$ ) (_, x) f = f x
@@ -218,13 +293,11 @@ end = struct
     let import = ( |> )
     let export = Fun.id
   end)
-
-  let apply = I.eval
 end
 
 let render (type a) (module D : DECODABLE with type t = a) =
   let module R = Render (D) in
-  R.apply
+  R.eval
 
 module PrintJs = struct
   module F = Format
@@ -708,13 +781,7 @@ let js_import = PrintJs.import
 let esm = PrintJs.pp (module PrintJs.Esm)
 let cjs = PrintJs.pp (module PrintJs.Cjs)
 let pp_error = A.Error.pp
-
-let pp_typescheme ppf x =
-  Format.fprintf ppf "@[<v>%a@]"
-    (Format.pp_print_seq ~pp_sep:Format.pp_print_cut
-       (A.Pp.equation ~sep:" =" A.Pp.field T.pp))
-    (MapString.to_seq x)
-
+let pp_typescheme = A.Typechecker.Type.pp_scheme
 let pp_ast ppf parsed = A.Pp.TyRepr.pp ppf (A.Ast.TyRepr.t parsed.ast)
 
 let pp_compiled ppf x =

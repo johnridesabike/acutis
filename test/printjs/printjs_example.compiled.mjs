@@ -98,19 +98,17 @@ The data supplied does not match this template's interface.\n\
     };
   let props$0 = new Map();
   let type$0 =
-    "{\n\
-  blogPosts:\n\
-    [\n\
-      {\n\
-        author: {name: ?string},\n\
-        content: string,\n\
-        date: string,\n\
-        image: ?{alt: string, src: string},\n\
-        title: string\n\
-      }\n\
-    ],\n\
-  siteTitle: string\n\
-}";
+    "blogPosts =\n\
+  [\n\
+    {\n\
+      author: {name: ?string},\n\
+      content: string,\n\
+      date: string,\n\
+      image: ?{alt: string, src: string},\n\
+      title: string\n\
+    }\n\
+  ]\n\
+siteTitle = string";
   if (typeof arg$0 === "object" && !(arg$0 === null)) {
     let missing_keys$0 = stack_empty$0;
     if (Object.hasOwn(arg$0, "blogPosts")) {

@@ -49,27 +49,8 @@ module Type : sig
 
   type scheme = t map_string
 
-  val unknown : unit -> t
-  val int : unit -> t
-  val float : unit -> t
-  val string : unit -> t
-  val nullable : t -> t
-  val list : t -> t
-  val tuple : t list -> t
-  val record : record -> t
-  val dict : t -> t
-  val sum : 'a -> row -> 'a sum
-  val enum_int : set_int sum -> t
-  val enum_string : set_string sum -> t
-  val enum_false_and_true : unit -> t
-  val enum_false_only : unit -> t
-  val enum_true_only : unit -> t
-  val union_int : string -> sum_union_int -> t
-  val union_string : string -> sum_union_string -> t
-  val union_false_and_true : string -> f:record -> t:record -> t
-  val union_false_only : string -> record -> t
-  val union_true_only : string -> record -> t
   val pp : Format.formatter -> t -> unit
+  val pp_scheme : Format.formatter -> scheme -> unit
 end
 
 type echo = [ `Var of string | `String of string | `Field of echo * string ]

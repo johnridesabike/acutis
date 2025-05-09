@@ -623,4 +623,31 @@ let () =
   print_error "Unknown is not equal to any other type."
     (render "{% interface x = _ %} {% x %}");
 
+  (* Custom decodable interface parse *)
+  let jsonintf =
+    let decode = Acutis.interface (module Json) in
+    fun json () -> Yojson.Basic.from_string json |> decode |> ignore
+  in
+  print_error "JSON interface: null." (jsonintf {|{"prop": null}|});
+  print_error "JSON interface: integer." (jsonintf {|{"prop": 1}|});
+  print_error "JSON interface: string props." (jsonintf {|"prop"|});
+  print_error "JSON interface: empty array type." (jsonintf {|{ prop: [] }|});
+  print_error "JSON interface: empty object." (jsonintf {|{ prop: { a: {} } }|});
+  print_error "JSON interface: empty array tag."
+    (jsonintf {|{ prop: { a: ["tag", []] } }|});
+  print_error "JSON interface: enum with int & string."
+    (jsonintf {|{ prop: ["enum", 1, "a"] }|});
+  print_error "JSON interface: enum with bool & string."
+    (jsonintf {|{ prop: ["enum", true, "a"] }|});
+  print_error "JSON interface: enum with string & bool."
+    (jsonintf {|{ prop: ["enum", "a", true] }|});
+  print_error "JSON interface: tag with extra values."
+    (jsonintf {|{ prop: ["union", { tag: ["tag", 0, 1] }] }|});
+  print_error "JSON interface: nullable with extra params."
+    (jsonintf {|{ prop: ["nullable", "int", "string"] }|});
+  print_error "JSON interface: list with extra params."
+    (jsonintf {|{ prop: ["list", "int", "string"] }|});
+  print_error "JSON interface: dict with extra params."
+    (jsonintf {|{ prop: ["dict", "int", "string"] }|});
+
   Format.printf "@]"

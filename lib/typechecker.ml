@@ -72,12 +72,6 @@ module Type = struct
   let union_string key sum = ref (Union_string (key, sum))
   let union_bool key sum = ref (Union_int (key, sum, Bool))
 
-  let union_false_and_true key ~f ~t =
-    union_bool key (sum_bool MapInt.(singleton 0 f |> add 1 t))
-
-  let union_false_only key x = union_bool key (sum_bool (MapInt.singleton 0 x))
-  let union_true_only key x = union_bool key (sum_bool (MapInt.singleton 1 x))
-
   let rec copy ty =
     match !ty with
     | (Int | Float | String) as x -> ref x
@@ -162,6 +156,12 @@ module Type = struct
       unit =
    fun pp_tag key ppf (tag, fields) ->
     pp_record ~tag:(pp_tag, (key, tag)) ppf fields
+
+  let pp_scheme ppf x =
+    F.fprintf ppf "@[<v>%a@]"
+      (F.pp_print_seq ~pp_sep:F.pp_print_cut
+         (Pp.equation ~sep:" =" Pp.field pp))
+      (MapString.to_seq x)
 
   module Polymap = struct
     (** The type-checking functions must run the same logic across branches

@@ -102,17 +102,22 @@ export function plugin(eleventyConfig, config) {
     // reload all changes in watch mode.
     read: false,
     init: function () {
-      cache.clear();
-      let result =
-        config && "components" in config
-          ? getFuncs(config.components).map(({ key, f }) =>
-              Component.func(key, f.interface, f),
-            )
-          : [];
+      let result = [];
       let dir = this.config.dir;
-      return new FileWalker(path.join(dir.input, dir.includes))
-        .walk((_stats, filePath, src) =>
-          result.push(Component.uint8Array(filePath, src)),
+      cache.clear();
+      return new Promise((resolve) => {
+        if (config && "components" in config) {
+          getFuncs(config.components).forEach(({ key, f }) =>
+            result.push(Component.func(key, f.interface, f)),
+          );
+        }
+        resolve();
+      })
+        .then(() =>
+          new FileWalker(path.join(dir.input, dir.includes)).walk(
+            (_stats, filePath, src) =>
+              result.push(Component.uint8Array(filePath, src)),
+          ),
         )
         .then(() => (components = Compile.components(result)))
         .catch(acutisErrorToJsError);

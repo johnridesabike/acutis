@@ -108,7 +108,7 @@
         return (error_aux$0("\nInput is missing keys:\n")(buf$0.contents));
       };
     let props$0 = new Map();
-    let type$0 = "{}";
+    let type$0 = "";
     if (typeof arg$0 === "object" && !(arg$0 === null)) {
       let missing_keys$0 = stack_empty$0;
       if (!(stack_is_empty$0(missing_keys$0))) {
@@ -244,7 +244,7 @@
           return (error_aux$0("\nInput is missing keys:\n")(buf$0.contents));
         };
       let props$0 = new Map();
-      let type$0 = "{}";
+      let type$0 = "";
       if (typeof arg$0 === "object" && !(arg$0 === null)) {
         let missing_keys$0 = stack_empty$0;
         if (!(stack_is_empty$0(missing_keys$0))) {

@@ -17,5 +17,4 @@ type state
 
 val make_state : Lexing.lexbuf -> state
 val make_state_interface : Lexing.lexbuf -> state
-val loc : state -> Lexing.position * Lexing.position
 val supplier : state -> unit -> Parser.token * Lexing.position * Lexing.position

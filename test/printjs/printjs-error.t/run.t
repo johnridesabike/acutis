@@ -263,21 +263,19 @@
   Path:
   <input>
   Expected type:
-  {
-    bool: false,
-    int_enum: @1 | @2,
-    list: [{a: string}],
-    long_type:
-      {@tag: false} |
-      {
-        @tag: true,
-        another_loooong_field: string,
-        looong_field: string,
-        yet_another_field: string
-      },
-    nested: {level_1: [string]},
-    string_enum: @"a" | @"b",
-    tuple: (string, string)
-  }
+  bool = false
+  int_enum = @1 | @2
+  list = [{a: string}]
+  long_type =
+    {@tag: false} |
+    {
+      @tag: true,
+      another_loooong_field: string,
+      looong_field: string,
+      yet_another_field: string
+    }
+  nested = {level_1: [string]}
+  string_enum = @"a" | @"b"
+  tuple = (string, string)
   Input is missing keys:
   bool, int_enum, list, long_type, nested, string_enum, tuple

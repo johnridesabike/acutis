@@ -17,103 +17,8 @@ type error = private Acutis_internals.Error.t
 exception Acutis_error of error
 (** This is raised if any part of the process fails. *)
 
-(** {1 Declaring type schemes.} *)
-
-(** These are used primarily for component functions. The examples are in Acutis
-    syntax. *)
-
-type ty = private Acutis_internals.Typechecker.Type.t
 type typescheme = private Acutis_internals.Typechecker.Type.scheme
-
-val typescheme : (string * ty) Seq.t -> typescheme
-val typescheme_empty : typescheme
-
-val unknown : unit -> ty
-(** The Acutis type [_], compatible with any other type. *)
-
-(** {2 Primitive types.} *)
-
-val int : unit -> ty
-(** Creates the primitive type [int]. *)
-
-val float : unit -> ty
-(** Creates the primitive type [float]. *)
-
-val string : unit -> ty
-(** Creates the primitive type [string]. *)
-
-(** {2 Parameterized types.} *)
-
-val nullable : ty -> ty
-(** Wraps the given type as a nullable, e.g. [?int]. *)
-
-val list : ty -> ty
-(** Wraps the given type as a list, e.g. [[int]]. *)
-
-val dict : ty -> ty
-(** Wraps the given type as a dictionary, e.g. [<int>]. *)
-
-(** {2 Product types.} *)
-
-val tuple : ty Seq.t -> ty
-(** Create a tuple from the sequence of types, e.g. [(int, string, float)]. *)
-
-val record : (string * ty) Seq.t -> ty
-(** Create a record from the sequence of key-value pairs, e.g.
-    [{a: int, b: string, c: float}]. *)
-
-(** {2 Sum types.} *)
-
-(** For types that accept an [[ `Open | `Closed ]] parameter, using [`Open]
-    makes the type compatible with additional values, whereas [`Closed]
-    restricts the type to only the values specified. *)
-
-val enum_int : [ `Open | `Closed ] -> int Seq.t -> ty
-(** Create an enumeration from the sequence of integers, e.g. [@1 | @2 | @3]. *)
-
-val enum_string : [ `Open | `Closed ] -> string Seq.t -> ty
-(** Create an enumeration from the sequence of strings, e.g.
-    [@"a" | @"b" | @"c"]. *)
-
-val boolean : unit -> ty
-(** Create the enumeration type [false | true]. *)
-
-val false_only : unit -> ty
-(** Create a type that can only be [false]. *)
-
-val true_only : unit -> ty
-(** Create a type that can only be [true]. *)
-
-val union_string :
-  [ `Open | `Closed ] -> string -> (string * (string * ty) Seq.t) Seq.t -> ty
-(** [union_int row field sequence] creates a record where [field] is used to
-    discriminate between different records in [sequence]. Each pair in
-    [sequence] contains a value for [field] and then another sequence of
-    key-value pairs that specify the rest of the record associated with that
-    field. E.g.:
-
-    {v
-    {@shape: "circle", radius: int} |
-    {@shape: "rectagle", height: int, width: int}
-    v} *)
-
-val union_int :
-  [ `Open | `Closed ] -> string -> (int * (string * ty) Seq.t) Seq.t -> ty
-(** The same as {!union_string}, except that the field's values are integers. *)
-
-val union_boolean :
-  string -> f:(string * ty) Seq.t -> t:(string * ty) Seq.t -> ty
-(** [union_boolean field ~f ~t] creates a record where if [field] is [false]
-    then the record has the shape of [f] and if [field] is [true] then the
-    record has the shape of [t]. *)
-
-val union_false_only : string -> (string * ty) Seq.t -> ty
-(** This is similar to [union_boolean] except that the field can only be
-    [false]. *)
-
-val union_true_only : string -> (string * ty) Seq.t -> ty
-(** This is similar to [union_boolean] except that the field can only be [true].
-*)
+(** Type schemes for templates. *)
 
 (** {1 Compiling templates.}*)
 
@@ -152,14 +57,14 @@ val compile : 'a comps_compiled -> parsed -> 'a compiled
 (** Type-checks, optimizes, and links the template with its components. *)
 
 val compile_interface : fname:string -> Lexing.lexbuf -> typescheme
-(** Parses and type-checks an interface with no template. *)
+(** Parses and type-checks a type scheme with no template. *)
 
 val get_typescheme : 'a compiled -> typescheme
 
-(** {1 Rendering templates with OCaml.} *)
+(** {1 Working with decodable data.} *)
 
 module type DECODABLE = sig
-  (** Decode and encode input data. *)
+  (** A specification for decoding and encoding input data. *)
 
   type t
 
@@ -195,6 +100,32 @@ module type DECODABLE = sig
   val to_string : t -> string
   val marshal : 'a -> t
 end
+
+val interface : (module DECODABLE with type t = 'a) -> 'a -> typescheme
+(** Compile a type scheme from a generic format that can be represented with any
+    decodable data. For example, if we use JSON, where [assoc] values are
+    objects and [seq] values are arrays:
+
+    - Simple types are represented by their names: ["int"], ["float"],
+      ["string"], and ["_"].
+    - Records are objects, e.g. [{"a": "int", "b": "string"}].
+    - Parameterized types and tagged record fields are arrays with two values,
+      the name of the type and the parameter, e.g. [["nullable", "int"]].
+    - Tuples, enumerations, and unions are parameterized types with any number
+      of values for their cases, e.g. [["enum", false, true]].
+
+    The parameterized type names are:
+    - [dict]
+    - [enum]
+    - [enum_open]
+    - [list]
+    - [nullable]
+    - [tag]
+    - [tuple]
+    - [union]
+    - [union_open] *)
+
+(** {1 Rendering templates with OCaml.} *)
 
 val render :
   (module DECODABLE with type t = 'a) -> ('a -> string) compiled -> 'a -> string

@@ -18,7 +18,6 @@ type state = { mutable mode : mode; lexbuf : L.lexbuf }
 
 let make_state lexbuf = { mode = Text; lexbuf; }
 let make_state_interface lexbuf = { mode = Expr; lexbuf; }
-let loc { lexbuf; _ } = (lexbuf.lex_start_p, lexbuf.lex_curr_p)
 }
 
 let white = [' ' '\t']+

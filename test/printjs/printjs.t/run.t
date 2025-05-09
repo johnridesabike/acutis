@@ -360,35 +360,30 @@
       };
     let props$0 = new Map();
     let type$0 =
-      "{\n\
-    big_float: float,\n\
-    big_int: int,\n\
-    bool1: false | true,\n\
-    bool2: false | true,\n\
-    dangerous: string,\n\
-    int_list: [int],\n\
-    nested_list: [[[int]]],\n\
-    nested_nullable_list: [??false | true],\n\
-    null_bool: ?false | true,\n\
-    null_float: ?float,\n\
-    null_int: ?int,\n\
-    null_string: ?string,\n\
-    null_string_dict: <?string>,\n\
-    record: {int_enum: @8 | @40, string_enum: @\"no\" | @\"yes\"},\n\
-    tagged_record_bool: {@tag: false, a: string} | {@tag: true, b: int},\n\
-    tagged_record_int:\n\
-      {@tag: 0} | {@tag: 1, tuple: (float, string, false | true)},\n\
-    tagged_record_open:\n\
-      {@tag: 100, a: int} |\n\
-      {@tag: 200, b: string} |\n\
-      {@tag: 300, c: float} |\n\
-      ...,\n\
-    tagged_record_string:\n\
-      {@tag: \"a\", record_list: [{job: string, name: string}]} |\n\
-      {@tag: \"b\", open_enum: @0 | @1 | ...},\n\
-    unicode_string: string,\n\
-    unknown: _\n\
-  }";
+      "big_float = float\n\
+  big_int = int\n\
+  bool1 = false | true\n\
+  bool2 = false | true\n\
+  dangerous = string\n\
+  int_list = [int]\n\
+  nested_list = [[[int]]]\n\
+  nested_nullable_list = [??false | true]\n\
+  null_bool = ?false | true\n\
+  null_float = ?float\n\
+  null_int = ?int\n\
+  null_string = ?string\n\
+  null_string_dict = <?string>\n\
+  record = {int_enum: @8 | @40, string_enum: @\"no\" | @\"yes\"}\n\
+  tagged_record_bool = {@tag: false, a: string} | {@tag: true, b: int}\n\
+  tagged_record_int =\n\
+    {@tag: 0} | {@tag: 1, tuple: (float, string, false | true)}\n\
+  tagged_record_open =\n\
+    {@tag: 100, a: int} | {@tag: 200, b: string} | {@tag: 300, c: float} | ...\n\
+  tagged_record_string =\n\
+    {@tag: \"a\", record_list: [{job: string, name: string}]} |\n\
+    {@tag: \"b\", open_enum: @0 | @1 | ...}\n\
+  unicode_string = string\n\
+  unknown = _";
     if (typeof arg$0 === "object" && !(arg$0 === null)) {
       let missing_keys$0 = stack_empty$0;
       if (Object.hasOwn(arg$0, "big_float")) {

@@ -987,7 +987,7 @@ Print the runtime instructions
          ((error_aux @@ "\nInput is missing keys:\n") @@ (buffer_contents buf))))))
      (let$ props = (hashtbl_create ())))
      (let$ type =
-      "{\n  a: {b: {c: false | true}},\n  a_prop: string,\n  b_prop: string,\n  c_prop: string,\n  d: string,\n  dict: <int>,\n  e: string,\n  e_prop: string,\n  ech_a: string,\n  ech_b: false | true,\n  ech_d: ?string,\n  ech_e: ?string,\n  ech_f: float,\n  ech_i: int,\n  enums: (@\"a\" | ..., @1 | ..., false | true, false | true),\n  f_prop: string,\n  list: [?string],\n  map_d: <int>,\n  map_l: [int],\n  match_a: int,\n  match_b: string,\n  numbers:\n    {\n      exp1: float,\n      exp2: float,\n      exp3: float,\n      frac: float,\n      int: int,\n      negfrac: float,\n      negint: int\n    },\n  record: {\"!#%@\": string, a: string},\n  tagged: {@tag: false} | {@tag: true, a: string},\n  trim_a: string,\n  trim_b: string,\n  trim_c: string,\n  trim_d: string,\n  trim_e: string,\n  trim_f: string,\n  trim_g: string,\n  tuple: (int, float, string),\n  zero: {\"\": string}\n}")
+      "a = {b: {c: false | true}}\na_prop = string\nb_prop = string\nc_prop = string\nd = string\ndict = <int>\ne = string\ne_prop = string\nech_a = string\nech_b = false | true\nech_d = ?string\nech_e = ?string\nech_f = float\nech_i = int\nenums = (@\"a\" | ..., @1 | ..., false | true, false | true)\nf_prop = string\nlist = [?string]\nmap_d = <int>\nmap_l = [int]\nmatch_a = int\nmatch_b = string\nnumbers =\n  {\n    exp1: float,\n    exp2: float,\n    exp3: float,\n    frac: float,\n    int: int,\n    negfrac: float,\n    negint: int\n  }\nrecord = {\"!#%@\": string, a: string}\ntagged = {@tag: false} | {@tag: true, a: string}\ntrim_a = string\ntrim_b = string\ntrim_c = string\ntrim_d = string\ntrim_e = string\ntrim_f = string\ntrim_g = string\ntuple = (int, float, string)\nzero = {\"\": string}")
      (External.decode assoc arg
       (ok
        (decoded ->
@@ -2055,3 +2055,11 @@ Print the runtime instructions
        (buffer_add_string buf "\n")
        (return (buffer_contents buf)))
       (else (raise (buffer_contents errors)))))))
+
+Make sure the JavaScript interface format parser works.
+  $ node interface.js
+  a = {a: @0 | @1, b: @"a" | @"b"}
+  b = {@tag: false, a: <?string>} | {@tag: true, a: [int]}
+  c = {@tag: 0} | {@tag: 1, a: (float, false | true)}
+  d = {@tag: "a", a: float} | {@tag: "b", a: @0 | @1 | ...}
+  e = {@tag: 0, a: _} | {@tag: 1, b: @"a" | @"b" | ...} | ...

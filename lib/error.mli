@@ -14,7 +14,6 @@ type t
 (** A message. *)
 
 val pp : Format.formatter -> t -> unit
-val of_string : string -> t
 
 exception Acutis_error of t
 (** All of the following functions raise or return this exception. *)
@@ -86,3 +85,6 @@ val internal :
   'a
 (** Use this instead of [assert false] when an internal invariant breaks. It
     indicates a bug in the compiler. *)
+
+val raise_fmt : ('a, Format.formatter, unit, _) format4 -> 'a
+(** Raise a custom message. *)
