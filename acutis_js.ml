@@ -10,7 +10,7 @@
 
 open Js_of_ocaml
 
-module DecodeJs = struct
+module Decode_js = struct
   type t = Js.Unsafe.any
 
   type 'a assoc = Js.Unsafe.any
@@ -98,7 +98,7 @@ module DecodeJs = struct
   let marshal = Js.Unsafe.inject
 end
 
-module JsPromise : sig
+module Js_promise : sig
   type 'a t
 
   val classify : 'a Js.t -> ('b Js.t t Js.t, 'a Js.t) Either.t
@@ -108,7 +108,7 @@ end = struct
   type 'a t
 
   let classify j =
-    match DecodeJs.get_assoc j with
+    match Decode_js.get_assoc j with
     | Some j -> (
         match Js.Unsafe.get j "then" |> Js.typeof |> Js.to_string with
         | "function" -> Either.Left (Js.Unsafe.coerce j)
@@ -144,7 +144,7 @@ let input_uint8Array arr =
     offset := !offset + out_len;
     out_len
 
-let decode_interface = Acutis.interface (module DecodeJs)
+let decode_interface = Acutis.interface (module Decode_js)
 
 let () =
   Js.export "Component"
@@ -160,10 +160,10 @@ let () =
            (input_uint8Array src |> Lexing.from_function)
 
        method func name ty fn =
-         let fn : DecodeJs.t -> string =
+         let fn : Decode_js.t -> string =
           fun data ->
-           match Js.Unsafe.fun_call fn [| data |] |> JsPromise.classify with
-           | Either.Left p -> JsPromise.await p |> Js.to_string
+           match Js.Unsafe.fun_call fn [| data |] |> Js_promise.classify with
+           | Either.Left p -> Js_promise.await p |> Js.to_string
            | Either.Right s -> Js.to_string s
          in
          Acutis.comp_fun ~name:(Js.to_string name) (decode_interface ty) fn
@@ -176,10 +176,10 @@ let () =
     end)
 
 let () =
-  let render = Acutis.render (module DecodeJs) in
+  let render = Acutis.render (module Decode_js) in
   Js.export "Compile"
     (object%js
-       method components a = DecodeJs.array_to_seq a |> Acutis.comps_compile
+       method components a = Decode_js.array_to_seq a |> Acutis.comps_compile
 
        method string fname components src =
          Acutis.parse ~fname:(Js.to_string fname)
@@ -192,7 +192,7 @@ let () =
          |> Acutis.compile components
 
        method render template js =
-         JsPromise.run @@ fun () -> render template js |> Js.string
+         Js_promise.run @@ fun () -> render template js |> Js.string
 
        method toESMString x =
          Acutis.esm Format.str_formatter x;

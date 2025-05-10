@@ -73,9 +73,9 @@ and t = node list
 
 let dummy_var = Var (Loc.dummy, "_")
 
-module TyRepr = struct
-  open Pp.TyRepr
-  module Loc = Loc.TyRepr
+module Ty_repr = struct
+  open Pp.Ty_repr
+  module Loc = Loc.Ty_repr
   module Nonempty = Linear (Nonempty)
 
   let assoc_triple f = tuple3 Loc.t string f
@@ -119,7 +119,7 @@ module TyRepr = struct
     | Ty_tuple l -> variant "Ty_tuple" (args (list ty l))
 
   let prop { loc; name; ty = ty' } =
-    Pp.TyRepr.record
+    Pp.Ty_repr.record
       (fields "loc" (Loc.t loc)
       |> field "name" (string name)
       |> field "ty" (ty ty'))
@@ -176,7 +176,7 @@ module TyRepr = struct
     | Comment s -> variant "Comment" (args (string s))
 
   and case { pats; nodes } =
-    Pp.TyRepr.record
+    Pp.Ty_repr.record
       (fields "pats" (Nonempty.t (tuple2 Loc.t (Nonempty.t pat)) pats)
       |> field "nodes" (t nodes))
 

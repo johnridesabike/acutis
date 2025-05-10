@@ -17,6 +17,6 @@ val fname : t -> string
 val pp : Format.formatter -> t -> unit
 val dummy : t
 
-module TyRepr : sig
-  val t : t -> Pp.TyRepr.t
+module Ty_repr : sig
+  val t : t -> Pp.Ty_repr.t
 end

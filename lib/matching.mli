@@ -263,6 +263,6 @@ val make :
 (** Raises {!Error.Acutis_error} if the cases are non-exhaustive or if there is
     an unused case. *)
 
-module TyRepr : sig
-  val t : ('a -> Pp.TyRepr.t) -> 'a t -> Pp.TyRepr.t
+module Ty_repr : sig
+  val t : ('a -> Pp.Ty_repr.t) -> 'a t -> Pp.Ty_repr.t
 end

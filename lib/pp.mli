@@ -50,7 +50,7 @@ val equation :
   unit
 (** [equation ~sep pp_k pp_v ppf (k, v)] prints [k sep v], e.g. [a = 1]. *)
 
-module TyRepr : sig
+module Ty_repr : sig
   (** Pretty-print typed representations of OCaml values. *)
 
   type t

@@ -37,7 +37,7 @@ let surround ~left ~right f ppf x =
 let equation ~sep pp_k pp_v ppf (k, v) =
   fprintf ppf "@[<hv 2>%a%s@ %a@]" pp_k k sep pp_v v
 
-module TyRepr = struct
+module Ty_repr = struct
   type t =
     | Ignored
     | Atom of (formatter -> unit)

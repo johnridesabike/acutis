@@ -8,7 +8,7 @@
 (*                                                                        *)
 (**************************************************************************)
 
-module MapString = Map.Make (String)
+module Map_string = Map.Make (String)
 module I = Parser.MenhirInterpreter
 module T = Typechecker
 
@@ -61,7 +61,7 @@ type data =
   | `Float of float
   | `String of string
   | `Array of data array
-  | `Assoc of data MapString.t
+  | `Assoc of data Map_string.t
   | `Var of string
   | `Field of data * string
   | `Block of int ]
@@ -72,7 +72,7 @@ type node =
   | Match of blocks * data array * nodes Matching.t
   | Map_list of blocks * data * nodes Matching.t
   | Map_dict of blocks * data * nodes Matching.t
-  | Component of string * blocks * data MapString.t
+  | Component of string * blocks * data Map_string.t
 
 and blocks = nodes Queue.t
 and nodes = node list
@@ -92,11 +92,11 @@ let rec make_data blocks = function
   | T.Cons x -> make_data blocks x
   | T.Tuple l -> `Array (Array.of_list l |> Array.map (make_data blocks))
   | T.Record (Union_tag_int (k, v, _), x, _) ->
-      `Assoc MapString.(map (make_data blocks) x |> add k (`Int v))
+      `Assoc Map_string.(map (make_data blocks) x |> add k (`Int v))
   | T.Record (Union_tag_string (k, v, _), x, _) ->
-      `Assoc MapString.(map (make_data blocks) x |> add k (`String v))
+      `Assoc Map_string.(map (make_data blocks) x |> add k (`String v))
   | T.Record (Union_tag_none, x, _) | Dict (x, _) ->
-      `Assoc (MapString.map (make_data blocks) x)
+      `Assoc (Map_string.map (make_data blocks) x)
   | T.Field (node, field) -> `Field (make_data blocks node, field)
 
 and make_nodes l =
@@ -122,7 +122,7 @@ and make_nodes l =
           Some (Map_dict (blocks, pat, make_match loc tys cases))
       | T.Component (name, props) ->
           let blocks = Queue.create () in
-          let props = MapString.map (make_data blocks) props in
+          let props = Map_string.map (make_data blocks) props in
           Some (Component (name, blocks, props)))
     l
 
@@ -138,27 +138,27 @@ module Components = struct
   let from_fun ~name props f = T.Fun (name, props, f)
 
   type 'a t = {
-    typed : (T.t, 'a) T.source MapString.t;
-    optimized : (nodes, 'a) T.source MapString.t;
+    typed : (T.t, 'a) T.source Map_string.t;
+    optimized : (nodes, 'a) T.source Map_string.t;
   }
 
-  let empty = { typed = MapString.empty; optimized = MapString.empty }
+  let empty = { typed = Map_string.empty; optimized = Map_string.empty }
 
   let of_seq l =
     let untyped =
       Seq.fold_left
         (fun acc -> function
           | T.Src (name, src) ->
-              if MapString.mem name acc then Error.duplicate_name name;
-              MapString.add name (T.Src (name, src)) acc
+              if Map_string.mem name acc then Error.duplicate_name name;
+              Map_string.add name (T.Src (name, src)) acc
           | T.Fun (name, p, f) ->
-              if MapString.mem name acc then Error.duplicate_name name;
-              MapString.add name (T.Fun (name, p, f)) acc)
-        MapString.empty l
+              if Map_string.mem name acc then Error.duplicate_name name;
+              Map_string.add name (T.Fun (name, p, f)) acc)
+        Map_string.empty l
     in
     let typed = T.make_components untyped in
     let optimized =
-      MapString.map
+      Map_string.map
         (function
           | T.Src (name, src) -> T.Src (name, make_nodes src.T.nodes)
           | T.Fun (name, p, f) -> T.Fun (name, p, f))
@@ -175,17 +175,17 @@ type 'a t = {
   nodes : nodes;
 }
 
-module SetString = Set.Make (String)
+module Set_string = Set.Make (String)
 
 type 'a linked_components = {
   components : (string * nodes) list;
   externals : (string * Typechecker.Type.scheme * 'a) list;
-  set : SetString.t;
+  set : Set_string.t;
   stack : string list;
 }
 
 let empty_linked =
-  { components = []; externals = []; set = SetString.empty; stack = [] }
+  { components = []; externals = []; set = Set_string.empty; stack = [] }
 
 let make ~fname components_src nodes =
   let typed = T.make ~root:fname components_src.Components.typed nodes in
@@ -206,11 +206,11 @@ let make ~fname components_src nodes =
             Matching.Exits.nodes m.exits |> Seq.fold_left get_components linked
         | Component (name, blocks, _) -> (
             let linked = Queue.fold get_components linked blocks in
-            if SetString.mem name linked.set then linked
+            if Set_string.mem name linked.set then linked
             else if List.exists (String.equal name) linked.stack then
               raise @@ Error.cycle (name :: linked.stack)
             else
-              match MapString.find_opt name components_src.optimized with
+              match Map_string.find_opt name components_src.optimized with
               | None -> raise @@ Error.missing_component linked.stack name
               | Some (Src (_, nodes)) ->
                   let { components; externals; set; _ } =
@@ -218,11 +218,11 @@ let make ~fname components_src nodes =
                       { linked with stack = name :: linked.stack }
                       nodes
                   in
-                  let set = SetString.add name set in
+                  let set = Set_string.add name set in
                   let components = (name, nodes) :: components in
                   { linked with components; externals; set }
               | Some (Fun (_, props, f)) ->
-                  let set = SetString.add name linked.set in
+                  let set = Set_string.add name linked.set in
                   let externals = (name, props, f) :: linked.externals in
                   { linked with externals; set }))
       linked nodes
@@ -234,11 +234,11 @@ let make ~fname components_src nodes =
 let make_interface ~fname src =
   parse_interface ~fname src |> T.make_interface_standalone
 
-module TyRepr = struct
-  open Pp.TyRepr
-  module MapString = Map (String)
-  module Ast = Ast.TyRepr
-  module Matching = Matching.TyRepr
+module Ty_repr = struct
+  open Pp.Ty_repr
+  module Map_string = Map (String)
+  module Ast = Ast.Ty_repr
+  module Matching = Matching.Ty_repr
 
   let rec data = function
     | `Null -> polyvar0 "Null"
@@ -246,7 +246,7 @@ module TyRepr = struct
     | `String s -> polyvar "String" (args (string s))
     | `Float f -> polyvar "Float" (args (float f))
     | `Array a -> polyvar "Array" (args (array data a))
-    | `Assoc d -> polyvar "Assoc" (args (MapString.t data d))
+    | `Assoc d -> polyvar "Assoc" (args (Map_string.t data d))
     | `Var s -> polyvar "Var" (args (string s))
     | `Block n -> polyvar "Block" (args (int n))
     | `Field (d, f) -> polyvar "Field" (args (data d) * string f)
@@ -270,7 +270,7 @@ module TyRepr = struct
           (args (blocks blocks') * data data' * Matching.t nodes matching)
     | Component (name, blocks', props) ->
         variant "Component"
-          (args (blocks blocks') * string name * MapString.t data props)
+          (args (blocks blocks') * string name * Map_string.t data props)
 
   and blocks b = seq (tuple2 int nodes) (blocks_to_seq b)
   and nodes l = list node l

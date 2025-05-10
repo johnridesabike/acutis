@@ -225,10 +225,10 @@ end = struct
   (* NOTE: OCaml's mutability, exceptions, and effects are not guaranteed to
      work with [I]. This is particularly true if [I] is a pretty-printer. Do not
      rely on those features when crossing the boundaries of [I]'s functions. *)
-  module MapInt = Map.Make (Int)
-  module MapString = Map.Make (String)
-  module SetInt = Set.Make (Int)
-  module SetString = Set.Make (String)
+  module Map_int = Map.Make (Int)
+  module Map_string = Map.Make (String)
+  module Set_int = Set.Make (Int)
+  module Set_string = Set.Make (String)
   open I
 
   type 'a hashtbl = 'a Hashtbl.MakeSeeded(String).t
@@ -253,7 +253,7 @@ end = struct
 
   (** For convenience, we'll parameratize these functions with values that we'll
       define later during evaluation. *)
-  module WithRuntime (Runtime : sig
+  module With_runtime (Runtime : sig
     module UInt : UNTYPED with type t = int
     module UString : UNTYPED with type t = string
     module UFloat : UNTYPED with type t = float
@@ -279,19 +279,19 @@ end = struct
     let is_not_nil x = not (is_nil x)
 
     type state = {
-      components : (untyped hashtbl -> string promise) exp MapString.t;
+      components : (untyped hashtbl -> string promise) exp Map_string.t;
       buf : Buffer.t exp;
       props : untyped hashtbl exp;
           (** We need to use a hash table as the root scope because components
               take a hash table as input. *)
-      scope : untyped exp MapString.t;
+      scope : untyped exp Map_string.t;
           (** As new bindings are added, they go into the scope to shadow
               previous props & bindings. *)
     }
 
     let state_make components ~props f =
       let$ buf = ("buf", buffer_create ()) in
-      f { components; buf; props; scope = MapString.empty }
+      f { components; buf; props; scope = Map_string.empty }
 
     let state_create_buffer state f =
       let$ buf = ("buf", buffer_create ()) in
@@ -300,13 +300,13 @@ end = struct
     let props_add_scope hashtbl bindings state =
       let scope =
         List.fold_left
-          (fun scope s -> MapString.add s hashtbl.%{string s} scope)
+          (fun scope s -> Map_string.add s hashtbl.%{string s} scope)
           state.scope bindings
       in
       { state with scope }
 
     let props_find s { props; scope; _ } =
-      try MapString.find s scope with Not_found -> props.%{string s}
+      try Map_string.find s scope with Not_found -> props.%{string s}
 
     let parse_escape state esc x =
       match esc with
@@ -359,12 +359,12 @@ end = struct
       array (Array.map (construct_data blocks state) a)
 
     and construct_data_hashtbl blocks state d =
-      MapString.to_seq d
+      Map_string.to_seq d
       |> Seq.map (fun (k, v) -> (string k, construct_data blocks state v))
       |> hashtbl
 
     let add_vars ids arg vars =
-      SetInt.fold (fun id vars -> MapInt.add id arg vars) ids vars
+      Set_int.fold (fun id vars -> Map_int.add id arg vars) ids vars
 
     let arg_indexed arg index ~optional:_ i f =
       match i with 0 -> f arg | _ -> f index
@@ -381,9 +381,9 @@ end = struct
     let rec match_tree :
         'leaf 'key.
         exit:int ref ->
-        leafstm:(vars:untyped exp MapInt.t -> 'leaf -> unit stm) ->
+        leafstm:(vars:untyped exp Map_int.t -> 'leaf -> unit stm) ->
         get_arg:(optional:bool -> 'key -> (untyped exp -> unit stm) -> unit stm) ->
-        vars:untyped exp MapInt.t ->
+        vars:untyped exp Map_int.t ->
         ?optional:bool ->
         ('leaf, 'key) Matching.tree ->
         unit stm =
@@ -465,8 +465,9 @@ end = struct
 
     let match_leaf exitvar props ~vars Matching.{ names; exit } =
       let| () =
-        MapString.to_seq names
-        |> Seq.map (fun (key, id) -> props.%{string key} <- MapInt.find id vars)
+        Map_string.to_seq names
+        |> Seq.map (fun (key, id) ->
+               props.%{string key} <- Map_int.find id vars)
         |> stm_join
       in
       exitvar := int exit
@@ -492,7 +493,7 @@ end = struct
           let| () =
             match_tree ~exit
               ~leafstm:(match_leaf exit new_props)
-              ~get_arg:(arg_int arg_match) ~vars:MapInt.empty tree
+              ~get_arg:(arg_int arg_match) ~vars:Map_int.empty tree
           in
           make_exits exit exits state new_props
       | Compile.Map_list (blocks, data, { tree; exits }) ->
@@ -508,7 +509,7 @@ end = struct
                 match_tree ~exit
                   ~leafstm:(match_leaf exit new_props)
                   ~get_arg:(arg_indexed head (UInt.inject !index))
-                  ~vars:MapInt.empty tree
+                  ~vars:Map_int.empty tree
               in
               let| () = make_exits exit exits state new_props in
               let| () = incr index in
@@ -526,14 +527,14 @@ end = struct
                 match_tree ~exit
                   ~leafstm:(match_leaf exit new_props)
                   ~get_arg:(arg_indexed v (UString.inject k))
-                  ~vars:MapInt.empty tree
+                  ~vars:Map_int.empty tree
               in
               make_exits exit exits state new_props)
       | Component (name, blocks, dict) ->
           let@ blocks = construct_blocks state blocks in
           buffer_add_string state.buf
             (await
-               (MapString.find name state.components
+               (Map_string.find name state.components
                @@ construct_data_hashtbl blocks state dict))
 
     and construct_blocks state blocks f =
@@ -589,10 +590,10 @@ end = struct
             ~ok:(fun b ->
               if_else b
                 ~then_:(fun () ->
-                  if SetInt.mem 1 cases then set (UInt.inject (int 1))
+                  if Set_int.mem 1 cases then set (UInt.inject (int 1))
                   else push_error debug input)
                 ~else_:(fun () ->
-                  if SetInt.mem 0 cases then set (UInt.inject (int 0))
+                  if Set_int.mem 0 cases then set (UInt.inject (int 0))
                   else push_error debug input))
             ~error:(fun () -> push_error debug input)
       | T.String | T.Enum_string { row = `Open; _ } ->
@@ -611,7 +612,7 @@ end = struct
                       ~then_:(fun () -> set (UString.inject s))
                       ~else_:(fun () -> aux seq)
               in
-              aux (SetString.to_seq cases))
+              aux (Set_string.to_seq cases))
             ~error:(fun () -> push_error debug input)
       | T.Int | T.Enum_int ({ row = `Open; _ }, _) ->
           External.decode External.get_int input
@@ -629,7 +630,7 @@ end = struct
                       ~then_:(fun () -> set (UInt.inject s))
                       ~else_:(fun () -> aux seq)
               in
-              aux (SetInt.to_seq cases))
+              aux (Set_int.to_seq cases))
             ~error:(fun () -> push_error debug input)
       | T.Float ->
           External.decode External.get_float input
@@ -737,7 +738,7 @@ end = struct
               if_else x
                 ~then_:(fun () -> f true_value)
                 ~else_:(fun () -> f false_value))
-            (MapInt.to_seq cases) (string key) row ~set ~debug input
+            (Map_int.to_seq cases) (string key) row ~set ~debug input
       | T.Union_int (key, { cases; row }, Not_bool) ->
           decode_union External.get_int
             ~if_equal:(fun extern ty ~then_ ~else_ ->
@@ -746,7 +747,7 @@ end = struct
                 ~then_:(fun () -> then_ (UInt.inject ty))
                 ~else_)
             ~if_open:(fun x f -> f (UInt.inject x))
-            (MapInt.to_seq cases) (string key) row ~set ~debug input
+            (Map_int.to_seq cases) (string key) row ~set ~debug input
       | T.Union_string (key, { cases; row }) ->
           decode_union External.get_string
             ~if_equal:(fun extern ty ~then_ ~else_ ->
@@ -755,7 +756,7 @@ end = struct
                 ~then_:(fun () -> then_ (UString.inject ty))
                 ~else_)
             ~if_open:(fun x f -> f (UString.inject x))
-            (MapString.to_seq cases) (string key) row ~set ~debug input
+            (Map_string.to_seq cases) (string key) row ~set ~debug input
 
     and decode_union : type ty extern.
         extern External.decoder ->
@@ -800,7 +801,7 @@ end = struct
     and decode_record ~debug decoded input tys =
       let& missing_keys = ("missing_keys", stack_empty) in
       let| () =
-        MapString.to_seq tys
+        Map_string.to_seq tys
         |> Seq.map (fun (k, ty) ->
                let k' = string k in
                if_else
@@ -880,15 +881,15 @@ end = struct
           set (External.of_seq_assoc seq)
       | T.Union_int (key, { cases; row }, Bool) ->
           encode_union ~unbox:UInt.project ~to_extern:external_of_int_bool
-            (MapInt.to_seq cases |> Seq.map (fun (k, v) -> (int k, v)))
+            (Map_int.to_seq cases |> Seq.map (fun (k, v) -> (int k, v)))
             row (string key) ~set props
       | T.Union_int (key, { cases; row }, Not_bool) ->
           encode_union ~unbox:UInt.project ~to_extern:External.of_int
-            (MapInt.to_seq cases |> Seq.map (fun (k, v) -> (int k, v)))
+            (Map_int.to_seq cases |> Seq.map (fun (k, v) -> (int k, v)))
             row (string key) ~set props
       | T.Union_string (key, { cases; row }) ->
           encode_union ~unbox:UString.project ~to_extern:External.of_string
-            (MapString.to_seq cases |> Seq.map (fun (k, v) -> (string k, v)))
+            (Map_string.to_seq cases |> Seq.map (fun (k, v) -> (string k, v)))
             row (string key) ~set props
 
     and encode_union : type a.
@@ -920,7 +921,7 @@ end = struct
                       | `Open -> Some (key, to_extern tag)
                     in
                     let$ seq =
-                      ("seq", encode_record ?tag props MapString.empty)
+                      ("seq", encode_record ?tag props Map_string.empty)
                     in
                     set (External.of_seq_assoc seq)
                 | Seq.Cons (hd, seq) -> aux hd seq)
@@ -930,7 +931,7 @@ end = struct
     and encode_record ?tag props tys =
       generator (fun yield ->
           let| () = match tag with Some t -> yield (pair t) | None -> unit in
-          MapString.to_seq tys
+          Map_string.to_seq tys
           |> Seq.map (fun (k, ty) ->
                  let k = string k in
                  encode ~set:(fun v -> yield (pair (k, v))) props.%{k} ty)
@@ -946,7 +947,7 @@ end = struct
                       let$ seq = ("seq", encode_record props tys) in
                       return (import @@ External.of_seq_assoc seq)) )
               in
-              make_comps_external (MapString.add k comp components) tl f)
+              make_comps_external (Map_string.add k comp components) tl f)
       | [] -> f components
 
     let rec make_comps components components_input f =
@@ -959,7 +960,7 @@ end = struct
                   let| () = nodes state v in
                   return (buffer_contents state.buf)) )
           in
-          make_comps (MapString.add k comp components) tl f
+          make_comps (Map_string.add k comp components) tl f
       | [] -> f components
   end
 
@@ -1021,7 +1022,7 @@ end = struct
     let@ (module UUnknown : UNTYPED with type t = External.t) =
       untyped "unknown"
     in
-    let open WithRuntime (struct
+    let open With_runtime (struct
       module UInt = UInt
       module UString = UString
       module UFloat = UFloat
@@ -1036,7 +1037,7 @@ end = struct
       let stack_add = stack_add
       let escape = escape
     end) in
-    let@ components = make_comps_external MapString.empty compiled.externals in
+    let@ components = make_comps_external Map_string.empty compiled.externals in
     let@ components = make_comps components compiled.components in
     export
       (async_lambda (fun input ->
@@ -1138,7 +1139,7 @@ end
     The module this creates won't do any transformations by itself, and its
     values are defined as identity functions. You need to override specific
     functions to apply transformations. *)
-module MakeTrans
+module Make_trans
     (T : TRANS)
     (F : SEM with type 'a exp = 'a T.from_exp and type 'a stm = 'a T.from_stm) :
   SEM

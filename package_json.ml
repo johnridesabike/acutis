@@ -25,13 +25,13 @@ let a =
   Format.dprintf "@[<hv 2>[@;<1 0>%a@;<1 -2>]@]"
     (Format.pp_print_list ~pp_sep:comma ( |> ))
 
-module SetString = Set.Make (String)
+module Set_string = Set.Make (String)
 
 let version = ref ""
 let path = ref ""
 let exports = ref [ ("./package.json", s "./package.json") ]
 let imports = ref []
-let files = ref SetString.empty
+let files = ref Set_string.empty
 
 let () =
   Arg.parse
@@ -43,7 +43,7 @@ let () =
             Set_string path;
             String
               (fun file ->
-                files := SetString.add file !files;
+                files := Set_string.add file !files;
                 exports := (!path, s file) :: !exports);
           ],
         "Subpath export" );
@@ -53,7 +53,7 @@ let () =
             Set_string path;
             String
               (fun file ->
-                files := SetString.add file !files;
+                files := Set_string.add file !files;
                 imports := (!path, s file) :: !imports);
           ],
         "Internal subpath import" );
@@ -102,6 +102,6 @@ let () =
       ("type", s "module");
       ("exports", o !exports);
       ("imports", o !imports);
-      ("files", a (SetString.to_seq !files |> Seq.map s |> List.of_seq));
+      ("files", a (Set_string.to_seq !files |> Seq.map s |> List.of_seq));
     ]
     Format.std_formatter
