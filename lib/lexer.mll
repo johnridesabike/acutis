@@ -15,9 +15,6 @@ open Parser
 
 type mode = Text | Expr | Queue of token * mode
 type state = { mutable mode : mode; lexbuf : L.lexbuf }
-
-let make_state lexbuf = { mode = Text; lexbuf; }
-let make_state_interface lexbuf = { mode = Expr; lexbuf; }
 }
 
 let white = [' ' '\t']+
@@ -139,4 +136,7 @@ let supplier state () =
     | Queue (token, state') -> state.mode <- state'; token
   in
   (token, state.lexbuf.lex_start_p, state.lexbuf.lex_curr_p)
+
+let acutis lexbuf = supplier { mode = Text; lexbuf; }
+let interface lexbuf = supplier { mode = Expr; lexbuf; }
 }

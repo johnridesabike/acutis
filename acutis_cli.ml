@@ -8,7 +8,7 @@
 (*                                                                        *)
 (**************************************************************************)
 
-module Json = struct
+module Acutis_json = Acutis.Of_decodable (struct
   type t = Yojson.Basic.t
   type 'a assoc = (string * 'a) list
 
@@ -37,7 +37,7 @@ module Json = struct
   let of_seq_assoc x = `Assoc (List.of_seq x)
   let to_string t = Yojson.Basic.pretty_to_string t
   let marshal x = `String (Marshal.to_string x [])
-end
+end)
 
 let usage_msg =
   {|Usage:
@@ -119,9 +119,10 @@ let fname_to_compname s =
 let make_components_aux () =
   Queue.to_seq templates
   |> Seq.map (fun fname ->
-         let@ chan = In_channel.with_open_text fname in
-         Lexing.from_channel chan
-         |> Acutis.comp_parse ~fname ~name:(fname_to_compname fname))
+         let@ chan = In_channel.with_open_bin fname in
+         let lexbuf = Lexing.from_channel chan in
+         Lexing.set_filename lexbuf fname;
+         Acutis.comp_of_lexbuf ~name:(fname_to_compname fname) lexbuf)
 
 let make_components () = make_components_aux () |> Acutis.comps_compile
 
@@ -130,12 +131,13 @@ let make_components_js () =
   let funl =
     Queue.to_seq arg_funs
     |> Seq.map (fun (module_path, function_path, interface) ->
-           let typescheme =
-             Lexing.from_string interface |> Acutis.compile_interface ~fname:"-"
-           in
-           let name = fname_to_compname function_path in
+           let lexbuf = Lexing.from_string interface in
+           Lexing.set_filename lexbuf "-";
+           let typescheme = Acutis.compile_interface lexbuf in
            Acutis.js_import ~module_path ~function_path
-           |> Acutis.comp_fun ~name typescheme)
+           |> Acutis.comp_of_fun
+                ~name:(fname_to_compname function_path)
+                typescheme)
   in
   Seq.append l funl |> Acutis.comps_compile
 
@@ -151,35 +153,24 @@ let () =
         | Some v -> Build_info.V1.Version.to_string v)
     else
       let fname = Queue.take templates in
+      let@ chan = In_channel.with_open_bin fname in
+      let lexbuf = Lexing.from_channel chan in
+      Lexing.set_filename lexbuf fname;
       if !arg_printast then
-        let@ chan = In_channel.with_open_text fname in
-        Lexing.from_channel chan |> Acutis.parse ~fname
-        |> Acutis.pp_ast Format.std_formatter
+        Acutis.parse lexbuf |> Acutis.pp_ast Format.std_formatter
       else if !arg_printtypes then
-        let components = make_components_js () in
-        let template =
-          let@ chan = In_channel.with_open_text fname in
-          Lexing.from_channel chan |> Acutis.parse ~fname
-          |> Acutis.compile components
-        in
-        Acutis.get_typescheme template
-        |> Acutis.pp_typescheme Format.std_formatter
+        Acutis.parse lexbuf
+        |> Acutis.compile (make_components_js ())
+        |> Acutis.get_interface
+        |> Acutis.pp_interface Format.std_formatter
       else if !arg_printopt then
-        let components = make_components_js () in
-        let template =
-          let@ chan = In_channel.with_open_text fname in
-          Lexing.from_channel chan |> Acutis.parse ~fname
-          |> Acutis.compile components
-        in
-        Acutis.pp_compiled Format.std_formatter template
+        Acutis.parse lexbuf
+        |> Acutis.compile (make_components_js ())
+        |> Acutis.pp_compiled Format.std_formatter
       else if !arg_printinst then
-        let components = make_components_js () in
-        let compiled =
-          let@ chan = In_channel.with_open_text fname in
-          Lexing.from_channel chan |> Acutis.parse ~fname
-          |> Acutis.compile components
-        in
-        Acutis.pp_instructions Acutis.pp_js_import Format.std_formatter compiled
+        Acutis.parse lexbuf
+        |> Acutis.compile (make_components_js ())
+        |> Acutis.pp_instructions Acutis.pp_js_import Format.std_formatter
       else
         match !arg_mode with
         | Render -> (
@@ -191,34 +182,27 @@ let () =
                     print_endline "Enter JSON data:";
                   Yojson.Basic.from_channel stdin
               | fname ->
-                  In_channel.with_open_text fname
-                  @@ Yojson.Basic.from_channel ~fname
+                  let@ chan = In_channel.with_open_bin fname in
+                  Yojson.Basic.from_channel ~fname chan
             in
-            let template =
-              let@ chan = In_channel.with_open_text fname in
-              Lexing.from_channel chan |> Acutis.parse ~fname
-              |> Acutis.compile components
-            in
-            let result = Acutis.render (module Json) template data in
+            let template = Acutis.parse lexbuf |> Acutis.compile components in
+            let result = Acutis_json.apply template data in
             match !arg_output with
             | "-" -> Out_channel.output_string stdout result
             | fname ->
-                let@ chan = Out_channel.with_open_text fname in
+                let@ chan = Out_channel.with_open_bin fname in
                 Out_channel.output_string chan result)
         | Make_js ty -> (
             let printer =
               match ty with CommonJs -> Acutis.cjs | ESModule -> Acutis.esm
             in
-            let components = make_components_js () in
             let template =
-              let@ chan = In_channel.with_open_text fname in
-              Lexing.from_channel chan |> Acutis.parse ~fname
-              |> Acutis.compile components
+              Acutis.parse lexbuf |> Acutis.compile (make_components_js ())
             in
             match !arg_output with
             | "-" -> printer Format.std_formatter template
             | fname ->
-                let@ chan = Out_channel.with_open_text fname in
+                let@ chan = Out_channel.with_open_bin fname in
                 printer (Format.formatter_of_out_channel chan) template)
   with
   | Acutis.Acutis_error msg ->

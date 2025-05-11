@@ -8,32 +8,22 @@
 (*                                                                        *)
 (**************************************************************************)
 
-module A = Acutis_internals
+open Acutis_internals
 
-type error = A.Error.t
+type interface = Typechecker.Type.interface
+type parsed = Acutis_internals.Compile.parsed
+type 'a comp = 'a Compile.Components.source
+type 'a comps_compiled = 'a Compile.Components.t
+type 'a compiled = 'a Compile.t
 
-exception Acutis_error = A.Error.Acutis_error
-
-type typescheme = A.Typechecker.Type.scheme
-type 'a comp = 'a A.Compile.Components.source
-
-let comp_parse = A.Compile.Components.from_src
-let comp_fun = A.Compile.Components.from_fun
-
-type 'a comps_compiled = 'a A.Compile.Components.t
-
-let comps_compile = A.Compile.Components.of_seq
-let comps_empty = A.Compile.Components.empty
-
-type parsed = { fname : string; ast : A.Ast.t }
-
-let parse ~fname lexbuf = { fname; ast = A.Compile.parse ~fname lexbuf }
-
-type 'a compiled = 'a A.Compile.t
-
-let compile components { fname; ast } = A.Compile.make ~fname components ast
-let compile_interface = A.Compile.make_interface
-let get_typescheme x = x.A.Compile.types
+let comp_of_lexbuf = Compile.Components.of_lexbuf
+let comp_of_fun = Compile.Components.of_fun
+let comps_compile = Compile.Components.of_seq
+let comps_empty = Compile.Components.empty
+let parse = Compile.parse
+let compile = Compile.make
+let compile_interface = Compile.interface
+let get_interface x = x.Compile.types
 
 module type DECODABLE = sig
   type t
@@ -61,134 +51,18 @@ module type DECODABLE = sig
   val marshal : 'a -> t
 end
 
-module Interface_combinators (M : DECODABLE) = struct
-  open A.Ast
-  open M
-
-  let raise_str = A.Error.raise_fmt "@[<v>Interface decode error.@;@[%(%s%)@]@]"
-  let raise = A.Error.raise_fmt "@[<v>Interface decode error.@;@[%(%)@]@]"
-  let error_str = raise_str "'%s' is not a valid type."
-  let else_error x = error_str (to_string x)
-  let error_enum x = raise_str "'%s' is not valid in this enum." (to_string x)
-  let error_uncons_single = raise_str "Type '%s' only takes one parameter."
-  let error_seq () = raise "Type sequences cannot be empty."
-  let error_record () = raise "Records need at least one type."
-  let loc = A.Loc.dummy
-  let opt f g h x = match f x with Some x -> g x | None -> h x
-
-  let uncons f x =
-    match x () with Seq.Cons (hd, tl) -> f hd tl | Seq.Nil -> error_seq ()
-
-  let uncons_single ~name f =
-    uncons (fun hd tl ->
-        match tl () with
-        | Seq.Cons _ -> error_uncons_single name
-        | Seq.Nil -> f hd)
-
-  let rec list_enum f s =
-    match s () with
-    | Seq.Cons (hd, tl) -> (
-        match f hd with
-        | Some hd -> hd :: list_enum f tl
-        | None -> error_enum hd)
-    | Seq.Nil -> []
-
-  let rec list f s =
-    match s () with Seq.Cons (hd, tl) -> f hd :: list f tl | Seq.Nil -> []
-
-  let nonempty_record f s =
-    match s () with
-    | Seq.Cons (h, tl) -> A.Nonempty.(f h :: list f tl)
-    | Seq.Nil -> error_record ()
-
-  let get_bool x = get_bool x |> Option.map Bool.to_int
-  let get_assoc x = get_assoc x |> Option.map M.assoc_to_seq
-  let if_int f g x = opt get_int f g x
-  let if_bool f g x = opt get_bool f g x
-  let if_string f g x = opt get_string f g x
-  let if_seq f g x = opt get_seq f g x
-  let if_assoc f g x = opt get_assoc f g x
-  let tag_int x = Tag (Tag_int (loc, x))
-  let tag_bool x = Tag (Tag_bool (loc, x))
-  let tag_string x = Tag (Tag_string (loc, x))
-  let ty_named x = Ty_named (loc, x)
-  let row_closed = (loc, `Closed)
-  let row_open = (loc, `Open)
-  let ty_enum_int r hd tl = Ty_enum_int (hd :: list_enum get_int tl, r)
-  let ty_enum_bool hd tl = Ty_enum_bool (hd :: list_enum get_bool tl)
-  let ty_enum_string r hd tl = Ty_enum_string (hd :: list_enum get_string tl, r)
-  let value f x = Value (f x)
-
-  let rec ty_nullable x = Ty_nullable (ty x)
-  and ty_list x = Ty_list (ty x)
-  and ty_dict x = Ty_dict (ty x)
-  and ty_tuple l = Ty_tuple (list ty l)
-  and ty_record x = Ty_record ([ record x ], row_closed)
-
-  and ty_record_list r x =
-    Ty_record (nonempty_record (if_assoc record else_error) x, r)
-
-  and record l = (loc, nonempty_record record_item l)
-  and record_item (k, v) = (loc, k, record_value v)
-
-  and tag_or_value name =
-    match name with
-    | "tag" ->
-        uncons_single ~name
-          (if_int tag_int (if_bool tag_bool (if_string tag_string else_error)))
-    | name -> value (ty_arg name)
-
-  and record_value x =
-    if_string (value ty_named)
-      (if_assoc (value ty_record)
-         (if_seq (uncons (if_string tag_or_value else_error)) else_error))
-      x
-
-  and ty x =
-    if_string ty_named
-      (if_assoc ty_record
-         (if_seq (uncons (if_string ty_arg else_error)) else_error))
-      x
-
-  and ty_arg name =
-    match name with
-    | "nullable" -> uncons_single ~name ty_nullable
-    | "list" -> uncons_single ~name ty_list
-    | "dict" -> uncons_single ~name ty_dict
-    | "tuple" -> ty_tuple
-    | "enum" ->
-        uncons
-          (if_int (ty_enum_int row_closed)
-             (if_string
-                (ty_enum_string row_closed)
-                (if_bool ty_enum_bool else_error)))
-    | "enum_open" ->
-        uncons
-          (if_int (ty_enum_int row_open)
-             (if_string (ty_enum_string row_open) else_error))
-    | "union" -> ty_record_list row_closed
-    | "union_open" -> ty_record_list row_open
-    | name -> error_str name
-
-  let prop (name, x) = { loc; name; ty = ty x }
-
-  let interface l =
-    if_assoc (list prop) else_error l |> A.Typechecker.make_interface_standalone
-end
-
-let interface (type a) (module D : DECODABLE with type t = a) =
-  let module M = Interface_combinators (D) in
-  M.interface
-
-module Render (D : DECODABLE) = struct
-  include A.Instruct.Make (struct
+module Of_decodable (D : DECODABLE) : sig
+  val apply : (D.t -> string) compiled -> D.t -> string
+  val interface : D.t -> interface
+end = struct
+  module I = Instruct.Make (struct
     include Stdlib
 
     type 'a stm = 'a
     type 'a exp = 'a
 
     let return = Fun.id
-    let raise = A.Error.raise_fmt "%s"
+    let raise = Error.raise_fmt "%s"
     let stm = Fun.id
     let ( let| ) a f = a; f ()
     let ( let$ ) (_, x) f = f x
@@ -274,7 +148,7 @@ module Render (D : DECODABLE) = struct
 
           let project = function
             | Untyped a -> a
-            | _ -> A.Error.internal ~__POS__ "Expected %s" name
+            | _ -> Error.internal ~__POS__ "Expected %s" name
 
           let test = function Untyped _ -> true | _ -> false
         end)
@@ -293,11 +167,124 @@ module Render (D : DECODABLE) = struct
     let import = ( |> )
     let export = Fun.id
   end)
-end
 
-let render (type a) (module D : DECODABLE with type t = a) =
-  let module R = Render (D) in
-  R.eval
+  let apply = I.eval
+
+  (* Interface decoding combinators: *)
+
+  let raise_str = Error.raise_fmt "@[<v>Interface decode error.@;@[%(%s%)@]@]"
+  let raise = Error.raise_fmt "@[<v>Interface decode error.@;@[%(%)@]@]"
+  let error_str = raise_str "'%s' is not a valid type."
+  let else_error x = error_str (D.to_string x)
+  let error_enum x = raise_str "'%s' is not valid in this enum." (D.to_string x)
+  let error_uncons_single = raise_str "Type '%s' only takes one parameter."
+  let error_seq () = raise "Type sequences cannot be empty."
+  let error_record () = raise "Records need at least one type."
+  let loc = Loc.dummy
+  let opt f g h x = match f x with Some x -> g x | None -> h x
+
+  let uncons f x =
+    match x () with Seq.Cons (hd, tl) -> f hd tl | Seq.Nil -> error_seq ()
+
+  let uncons_single ~name f =
+    uncons (fun hd tl ->
+        match tl () with
+        | Seq.Cons _ -> error_uncons_single name
+        | Seq.Nil -> f hd)
+
+  let rec list_enum f s =
+    match s () with
+    | Seq.Cons (hd, tl) -> (
+        match f hd with
+        | Some hd -> hd :: list_enum f tl
+        | None -> error_enum hd)
+    | Seq.Nil -> []
+
+  let rec list f s =
+    match s () with Seq.Cons (hd, tl) -> f hd :: list f tl | Seq.Nil -> []
+
+  let nonempty_record f s =
+    match s () with
+    | Seq.Cons (h, tl) -> Nonempty.(f h :: list f tl)
+    | Seq.Nil -> error_record ()
+
+  let get_bool x = D.get_bool x |> Option.map Bool.to_int
+  let get_assoc x = D.get_assoc x |> Option.map D.assoc_to_seq
+  let if_int f g x = opt D.get_int f g x
+  let if_bool f g x = opt get_bool f g x
+  let if_string f g x = opt D.get_string f g x
+  let if_seq f g x = opt D.get_seq f g x
+  let if_assoc f g x = opt get_assoc f g x
+  let tag_int x = Ast.Tag (Tag_int (loc, x))
+  let tag_bool x = Ast.Tag (Tag_bool (loc, x))
+  let tag_string x = Ast.Tag (Tag_string (loc, x))
+  let ty_named x = Ast.Ty_named (loc, x)
+  let row_closed = (loc, `Closed)
+  let row_open = (loc, `Open)
+  let ty_enum_int r hd tl = Ast.Ty_enum_int (hd :: list_enum D.get_int tl, r)
+  let ty_enum_bool hd tl = Ast.Ty_enum_bool (hd :: list_enum get_bool tl)
+
+  let ty_enum_string r hd tl =
+    Ast.Ty_enum_string (hd :: list_enum D.get_string tl, r)
+
+  let value f x = Ast.Value (f x)
+
+  let rec ty_nullable x = Ast.Ty_nullable (ty x)
+  and ty_list x = Ast.Ty_list (ty x)
+  and ty_dict x = Ast.Ty_dict (ty x)
+  and ty_tuple l = Ast.Ty_tuple (list ty l)
+  and ty_record x = Ast.Ty_record ([ record x ], row_closed)
+
+  and ty_record_list r x =
+    Ast.Ty_record (nonempty_record (if_assoc record else_error) x, r)
+
+  and record l = (loc, nonempty_record record_item l)
+  and record_item (k, v) = (loc, k, record_value v)
+
+  and tag_or_value name =
+    match name with
+    | "tag" ->
+        uncons_single ~name
+          (if_int tag_int (if_bool tag_bool (if_string tag_string else_error)))
+    | name -> value (ty_arg name)
+
+  and record_value x =
+    if_string (value ty_named)
+      (if_assoc (value ty_record)
+         (if_seq (uncons (if_string tag_or_value else_error)) else_error))
+      x
+
+  and ty x =
+    if_string ty_named
+      (if_assoc ty_record
+         (if_seq (uncons (if_string ty_arg else_error)) else_error))
+      x
+
+  and ty_arg name =
+    match name with
+    | "nullable" -> uncons_single ~name ty_nullable
+    | "list" -> uncons_single ~name ty_list
+    | "dict" -> uncons_single ~name ty_dict
+    | "tuple" -> ty_tuple
+    | "enum" ->
+        uncons
+          (if_int (ty_enum_int row_closed)
+             (if_string
+                (ty_enum_string row_closed)
+                (if_bool ty_enum_bool else_error)))
+    | "enum_open" ->
+        uncons
+          (if_int (ty_enum_int row_open)
+             (if_string (ty_enum_string row_open) else_error))
+    | "union" -> ty_record_list row_closed
+    | "union_open" -> ty_record_list row_open
+    | name -> error_str name
+
+  let prop (name, x) = Ast.{ loc; name; ty = ty x }
+
+  let interface l =
+    if_assoc (list prop) else_error l |> Typechecker.make_interface_standalone
+end
 
 module Print_js = struct
   module F = Format
@@ -374,7 +361,7 @@ module Print_js = struct
 
     let apply_n f args ppf state =
       F.fprintf ppf "@[<hv 2>%a(@,%a@;<0 -2>)@]" f state
-        (F.pp_print_list ~pp_sep:A.Pp.comma (fun ppf x ->
+        (F.pp_print_list ~pp_sep:Pp.comma (fun ppf x ->
              F.fprintf ppf "@[<hv 2>%a@]" x state))
         args
 
@@ -392,55 +379,24 @@ module Print_js = struct
     let comment ppf str = F.fprintf ppf "/* %s */@," str
   end
 
-  module type JSMODULE = sig
-    type nonrec import = import
-
+  module type JS_MODULE = sig
     val import : import -> (t -> t) -> t
     val export : t -> t
   end
 
-  module Esm : JSMODULE = struct
-    open Js_shared
-
-    type nonrec import = import
-
-    let import { module_path; function_path } f ppf state =
-      let import = State.var "import" state in
-      (let| () =
-         stm (fun ppf state ->
-             F.fprintf ppf "import {%a as %a} from %a" pp_string function_path
-               import state pp_string module_path)
-       in
-       f import)
-        ppf state
-
-    let export x = stm (fun ppf -> F.fprintf ppf "export default %a" x)
-  end
-
-  module Cjs : JSMODULE = struct
-    open Js_shared
-
-    type nonrec import = import
-
-    let import { module_path; function_path } f =
-      let$ import = ("import", global "require" @@ string module_path) in
-      f import.%(string function_path)
-
-    let export x = (global "module").!("exports") <- x
-  end
-
   (** Instruction semantics with extra JavaScript printing features. *)
   module type SEM_JAVASCRIPT = sig
-    include A.Instruct.SEM
+    include Instruct.SEM
 
     val if_ : bool exp -> then_:(unit -> unit stm) -> unit stm
   end
 
-  module Js_sem (Js_mod : JSMODULE) :
+  module Js_sem (Js_mod : JS_MODULE) :
     SEM_JAVASCRIPT with type 'a obs = t and type import = import = struct
     include Js_shared
     include Js_mod
 
+    type nonrec import = import
     type 'a stm = t
     type 'a obs = t
 
@@ -453,7 +409,7 @@ module Print_js = struct
 
     let new_ name args ppf state =
       F.fprintf ppf "@[<hv 2>new %a(@,@[<hv 2>%a@]@;<0 -2>)@]" name state
-        (F.pp_print_list ~pp_sep:A.Pp.comma (fun ppf x ->
+        (F.pp_print_list ~pp_sep:Pp.comma (fun ppf x ->
              F.fprintf ppf "@[<hv 2>%a@]" x state))
         args
 
@@ -498,7 +454,7 @@ module Print_js = struct
 
     let array_of_seq seq ppf state =
       F.fprintf ppf "[@,%a%t]"
-        (F.pp_print_seq ~pp_sep:A.Pp.comma (fun ppf x ->
+        (F.pp_print_seq ~pp_sep:Pp.comma (fun ppf x ->
              F.fprintf ppf "@[<hv 2>%a@]" x state))
         seq trailing_comma
 
@@ -518,7 +474,7 @@ module Print_js = struct
 
     let obj l ppf state =
       F.fprintf ppf "@[<hv 2>{@,%a@;<0 -2>}@]"
-        (F.pp_print_list ~pp_sep:A.Pp.comma (fun ppf (k, v) ->
+        (F.pp_print_list ~pp_sep:Pp.comma (fun ppf (k, v) ->
              F.fprintf ppf "@[<hv 2>%s:@ %a@]" k v state))
         l
 
@@ -694,8 +650,7 @@ module Print_js = struct
 
   (** Remove identity bindings, extra unit statements, etc. *)
   module Optimize (F : SEM_JAVASCRIPT) :
-    A.Instruct.SEM with type 'a obs = 'a F.obs and type import = F.import =
-  struct
+    Instruct.SEM with type 'a obs = 'a F.obs and type import = F.import = struct
     module Trans = struct
       type 'a from_exp = 'a F.exp
 
@@ -717,7 +672,7 @@ module Print_js = struct
     end
 
     open Trans
-    module M = A.Instruct.Make_trans (Trans) (F)
+    module M = Instruct.Make_trans (Trans) (F)
     include M
 
     let ( let| ) : type a. unit stm -> (unit -> a stm) -> a stm =
@@ -766,32 +721,69 @@ module Print_js = struct
     end
   end
 
-  let pp (module Js_mod : JSMODULE) ppf c =
-    let module I = A.Instruct.Make (Optimize (Js_sem (Js_mod))) in
-    let state = State.make () in
-    F.fprintf ppf "@[<v>";
-    Js_shared.comment ppf "THIS FILE WAS GENERATED BY ACUTIS.";
-    I.eval c ppf state;
-    F.fprintf ppf "@]"
+  module Make (Js_mod : JS_MODULE) = struct
+    module I = Instruct.Make (Optimize (Js_sem (Js_mod)))
+
+    let pp ppf c =
+      let state = State.make () in
+      F.fprintf ppf "@[<v>";
+      Js_shared.comment ppf "THIS FILE WAS GENERATED BY ACUTIS.";
+      I.eval c ppf state;
+      F.fprintf ppf "@]"
+  end
+
+  module Esm = Make (struct
+    open Js_shared
+
+    let import { module_path; function_path } f ppf state =
+      let import = State.var "import" state in
+      (let| () =
+         stm (fun ppf state ->
+             F.fprintf ppf "import {%a as %a} from %a" pp_string function_path
+               import state pp_string module_path)
+       in
+       f import)
+        ppf state
+
+    let export x = stm (fun ppf -> F.fprintf ppf "export default %a" x)
+  end)
+
+  module Cjs = Make (struct
+    open Js_shared
+
+    let import { module_path; function_path } f =
+      let$ import = ("import", global "require" @@ string module_path) in
+      f import.%(string function_path)
+
+    let export x = (global "module").!("exports") <- x
+  end)
+
+  module Ty_repr = struct
+    open Pp.Ty_repr
+
+    let import { module_path; function_path } =
+      record
+        (fields "module_path" (string module_path)
+        |> field "function_path" (string function_path))
+  end
 end
 
 type js_import = Print_js.import
 
 let js_import = Print_js.import
-let esm = Print_js.pp (module Print_js.Esm)
-let cjs = Print_js.pp (module Print_js.Cjs)
-let pp_error = A.Error.pp
-let pp_typescheme = A.Typechecker.Type.pp_scheme
-let pp_ast ppf parsed = A.Pp.Ty_repr.pp ppf (A.Ast.Ty_repr.t parsed.ast)
+let esm = Print_js.Esm.pp
+let cjs = Print_js.Cjs.pp
 
-let pp_compiled ppf x =
-  A.Pp.Ty_repr.pp ppf (A.Compile.Ty_repr.nodes x.A.Compile.nodes)
+type error = Error.t
 
-let pp_instructions = A.Instruct.pp
+exception Acutis_error = Error.Acutis_error
 
-let pp_js_import ppf Print_js.{ module_path; function_path } =
-  A.Pp.Ty_repr.(
-    pp ppf
-      (record
-         (fields "module_path" (string module_path)
-         |> field "function_path" (string function_path))))
+let pp_error = Error.pp
+let pp_interface = Typechecker.Type.pp_interface
+let pp_ast ppf p = Ast.Ty_repr.t p.Compile.ast |> Pp.Ty_repr.pp ppf
+
+let pp_compiled ppf c =
+  Compile.Ty_repr.nodes c.Compile.nodes |> Pp.Ty_repr.pp ppf
+
+let pp_instructions = Instruct.pp
+let pp_js_import ppf i = Print_js.Ty_repr.import i |> Pp.Ty_repr.pp ppf

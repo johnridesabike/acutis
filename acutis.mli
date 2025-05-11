@@ -11,57 +11,52 @@
 (** This is the main API wrapper around the compiler internals
     ({!Acutis_internals}). *)
 
-type error = private Acutis_internals.Error.t
-(** An error message. *)
+(** This module is unstable. Use at your own risk. *)
 
-exception Acutis_error of error
-(** This is raised if any part of the process fails. *)
+type interface = private Acutis_internals.Typechecker.Type.interface
+(** Type interfaces for templates. *)
 
-type typescheme = private Acutis_internals.Typechecker.Type.scheme
-(** Type schemes for templates. *)
-
-(** {1 Compiling templates.}*)
+type parsed = private Acutis_internals.Compile.parsed
+(** A template that's been parsed but not type-checked, optimized, or linked
+    yet. *)
 
 type 'a comp = private 'a Acutis_internals.Compile.Components.source
-(** A template component. It is either from Acutis source code or it is ['a].
-    ['a] may be a function or data to load a function, depending on how the
-    template is to be rendered. *)
-
-val comp_parse : fname:string -> name:string -> Lexing.lexbuf -> 'a comp
-(** Parses Acutis source into a template component but doesn't type-check yet.
-    [fname] is the file path and used here for debugging. [name] is the name the
-    component is called in Acutis code.*)
-
-val comp_fun : name:string -> typescheme -> 'a -> 'a comp
-(** Convert a function (or possibly data for loading a function) into a template
-    component. *)
+(** A template component. Parameter ['a] is the type of external components,
+    which may either be a function or a {!type-js_import}. *)
 
 type 'a comps_compiled = private 'a Acutis_internals.Compile.Components.t
 (** A group of compiled and linked components. *)
 
-val comps_compile : 'a comp Seq.t -> 'a comps_compiled
-(** Type-checks, optimizes, and links the components. *)
-
-val comps_empty : 'a comps_compiled
-
-type parsed
-(** A template that's been parsed but not type-checked, optimized, or linked
-    yet. *)
-
-val parse : fname:string -> Lexing.lexbuf -> parsed
-
 type 'a compiled = private 'a Acutis_internals.Compile.t
 (** A completely compiled template. *)
 
+(** {1 Compiling templates.} *)
+
+val comp_of_lexbuf : name:string -> Lexing.lexbuf -> 'a comp
+(** Parse an Acutis source into a template component. This doesn't type-check
+    yet. [name] is the name the component is called in Acutis code. *)
+
+val comp_of_fun : name:string -> interface -> 'a -> 'a comp
+(** Convert a function or a {!type-js_import} into a template component. [name]
+    is the name the component is called in Acutis code. *)
+
+val comps_compile : 'a comp Seq.t -> 'a comps_compiled
+(** Type-check, optimize, and link the components. *)
+
+val comps_empty : 'a comps_compiled
+
+val parse : Lexing.lexbuf -> parsed
+(** Parse a component. *)
+
 val compile : 'a comps_compiled -> parsed -> 'a compiled
-(** Type-checks, optimizes, and links the template with its components. *)
+(** Type-check, optimize, and link the template with its components. *)
 
-val compile_interface : fname:string -> Lexing.lexbuf -> typescheme
-(** Parses and type-checks a type scheme with no template. *)
+val compile_interface : Lexing.lexbuf -> interface
+(** Parse and type-check a type interface with no template. *)
 
-val get_typescheme : 'a compiled -> typescheme
+val get_interface : 'a compiled -> interface
 
-(** {1 Working with decodable data.} *)
+(** {1 Working with decodable data and rendering templates in OCaml.} *)
 
 module type DECODABLE = sig
   (** A specification for decoding and encoding input data. *)
@@ -101,35 +96,37 @@ module type DECODABLE = sig
   val marshal : 'a -> t
 end
 
-val interface : (module DECODABLE with type t = 'a) -> 'a -> typescheme
-(** Compile a type scheme from a generic format that can be represented with any
-    decodable data. For example, if we use JSON, where [assoc] values are
-    objects and [seq] values are arrays:
+module Of_decodable (D : DECODABLE) : sig
+  (** A functor that builds functions to render templates and construct type
+      interfaces from decodable data. *)
 
-    - Simple types are represented by their names: ["int"], ["float"],
-      ["string"], and ["_"].
-    - Records are objects, e.g. [{"a": "int", "b": "string"}].
-    - Parameterized types and tagged record fields are arrays with two values,
-      the name of the type and the parameter, e.g. [["nullable", "int"]].
-    - Tuples, enumerations, and unions are parameterized types with any number
-      of values for their cases, e.g. [["enum", false, true]].
+  val apply : (D.t -> string) compiled -> D.t -> string
+  (** Apply data to a template and return the rendered output. *)
 
-    The parameterized type names are:
-    - [dict]
-    - [enum]
-    - [enum_open]
-    - [list]
-    - [nullable]
-    - [tag]
-    - [tuple]
-    - [union]
-    - [union_open] *)
+  val interface : D.t -> interface
+  (** Compile a type interface from a generic format that can be represented
+      with any decodable data. For example, if we use JSON, where [assoc] values
+      are objects and [seq] values are arrays:
 
-(** {1 Rendering templates with OCaml.} *)
+      - Simple types are represented by their names: ["int"], ["float"],
+        ["string"], and ["_"].
+      - Records are objects, e.g. [{"a": "int", "b": "string"}].
+      - Parameterized types and tagged record fields are arrays with two values,
+        the name of the type and the parameter, e.g. [["nullable", "int"]].
+      - Tuples, enumerations, and unions are parameterized types with any number
+        of values for their cases, e.g. [["enum", false, true]].
 
-val render :
-  (module DECODABLE with type t = 'a) -> ('a -> string) compiled -> 'a -> string
-(** Apply data to a template and return the rendered output. *)
+      The parameterized type names are:
+      - [dict]
+      - [enum]
+      - [enum_open]
+      - [list]
+      - [nullable]
+      - [tag]
+      - [tuple]
+      - [union]
+      - [union_open] *)
+end
 
 (** {1 Printing templates as JavaScript modules.} *)
 
@@ -144,18 +141,24 @@ val cjs : Format.formatter -> js_import compiled -> unit
 val esm : Format.formatter -> js_import compiled -> unit
 (** Print a template as an ECMAScript module. *)
 
-(** {1 Printing debugging information.} *)
+(** {1 Handling errors and printing debug information.} *)
+
+type error = private Acutis_internals.Error.t
+(** An error message. *)
+
+exception Acutis_error of error
+(** This is raised if any part of the compilation or rendering fails. *)
 
 val pp_error : Format.formatter -> error -> unit
 (** Pretty-print an error message. *)
 
-val pp_typescheme : Format.formatter -> typescheme -> unit
-(** Pretty-print a type scheme in Acutis syntax. *)
+val pp_interface : Format.formatter -> interface -> unit
+(** Pretty-print a type interface in Acutis syntax. *)
 
 val pp_ast : Format.formatter -> parsed -> unit
 (** Pretty-print a template's abstract syntax tree in S-expression syntax. *)
 
-val pp_compiled : Format.formatter -> 'a compiled -> unit
+val pp_compiled : Format.formatter -> _ compiled -> unit
 (** Pretty-print a fully-compiled template in S-expression syntax. *)
 
 val pp_instructions :

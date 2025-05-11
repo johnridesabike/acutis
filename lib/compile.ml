@@ -12,22 +12,26 @@ module Map_string = Map.Make (String)
 module I = Parser.MenhirInterpreter
 module T = Typechecker
 
-let parse_fail = function
+type parsed = { fname : string; ast : Ast.t }
+
+let rec parse_aux supplier checkpoint =
+  match checkpoint with
+  | I.InputNeeded _ -> supplier () |> I.offer checkpoint |> parse_aux supplier
+  | I.Shifting _ | I.AboutToReduce _ ->
+      I.resume checkpoint |> parse_aux supplier
   | I.HandlingError env ->
       Error.parse_error (I.current_state_number env) (I.positions env)
-  | _ -> Error.internal ~__POS__ "Parser error handling failed somehow."
+  | I.Accepted x -> x
+  | I.Rejected ->
+      Error.internal ~__POS__ "Parser error handling failed somehow."
 
-let parse ~fname lexbuf =
-  Lexing.set_filename lexbuf fname;
-  let state = Lexer.make_state lexbuf in
-  I.loop_handle Fun.id parse_fail (Lexer.supplier state)
-    (Parser.Incremental.acutis lexbuf.lex_curr_p)
-
-let parse_interface ~fname lexbuf =
-  Lexing.set_filename lexbuf fname;
-  let state = Lexer.make_state_interface lexbuf in
-  I.loop_handle Fun.id parse_fail (Lexer.supplier state)
-    (Parser.Incremental.interface_standalone lexbuf.lex_curr_p)
+let parse lexbuf =
+  let fname = lexbuf.Lexing.lex_curr_p.pos_fname in
+  let ast =
+    parse_aux (Lexer.acutis lexbuf)
+      (Parser.Incremental.acutis lexbuf.lex_curr_p)
+  in
+  { fname; ast }
 
 let is_space = function ' ' | '\012' | '\n' | '\r' | '\t' -> true | _ -> false
 
@@ -132,10 +136,10 @@ and make_match loc tys cases =
   { tree; exits }
 
 module Components = struct
-  type 'a source = (Ast.t, 'a) T.source
+  type 'a source = (parsed, 'a) T.source
 
-  let from_src ~fname ~name src = T.Src (name, parse ~fname src)
-  let from_fun ~name props f = T.Fun (name, props, f)
+  let of_lexbuf ~name src = T.Src (name, parse src)
+  let of_fun ~name props f = T.Fun (name, props, f)
 
   type 'a t = {
     typed : (T.t, 'a) T.source Map_string.t;
@@ -150,7 +154,7 @@ module Components = struct
         (fun acc -> function
           | T.Src (name, src) ->
               if Map_string.mem name acc then Error.duplicate_name name;
-              Map_string.add name (T.Src (name, src)) acc
+              Map_string.add name (T.Src (name, src.ast)) acc
           | T.Fun (name, p, f) ->
               if Map_string.mem name acc then Error.duplicate_name name;
               Map_string.add name (T.Fun (name, p, f)) acc)
@@ -168,10 +172,10 @@ module Components = struct
 end
 
 type 'a t = {
-  name : string;
-  types : Typechecker.Type.scheme;
+  fname : string;
+  types : Typechecker.Type.interface;
   components : (string * nodes) list;
-  externals : (string * Typechecker.Type.scheme * 'a) list;
+  externals : (string * Typechecker.Type.interface * 'a) list;
   nodes : nodes;
 }
 
@@ -179,7 +183,7 @@ module Set_string = Set.Make (String)
 
 type 'a linked_components = {
   components : (string * nodes) list;
-  externals : (string * Typechecker.Type.scheme * 'a) list;
+  externals : (string * Typechecker.Type.interface * 'a) list;
   set : Set_string.t;
   stack : string list;
 }
@@ -187,8 +191,8 @@ type 'a linked_components = {
 let empty_linked =
   { components = []; externals = []; set = Set_string.empty; stack = [] }
 
-let make ~fname components_src nodes =
-  let typed = T.make ~root:fname components_src.Components.typed nodes in
+let make components_src { fname; ast } =
+  let typed = T.make ~root:fname components_src.Components.typed ast in
   let nodes = make_nodes typed.nodes in
   (* Only retrieve the components that need to be linked. *)
   let rec get_components linked nodes =
@@ -229,10 +233,12 @@ let make ~fname components_src nodes =
   in
   let { components; externals; _ } = get_components empty_linked nodes in
   let components = List.rev components in
-  { name = fname; types = typed.types; components; externals; nodes }
+  { fname; types = typed.types; components; externals; nodes }
 
-let make_interface ~fname src =
-  parse_interface ~fname src |> T.make_interface_standalone
+let interface lexbuf =
+  parse_aux (Lexer.interface lexbuf)
+    (Parser.Incremental.interface_standalone lexbuf.lex_curr_p)
+  |> T.make_interface_standalone
 
 module Ty_repr = struct
   open Pp.Ty_repr

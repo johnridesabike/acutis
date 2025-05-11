@@ -47,10 +47,10 @@ module Type : sig
   and record = t map_string ref
   and t = ty ref
 
-  type scheme = t map_string
+  type interface = t map_string
 
   val pp : Format.formatter -> t -> unit
-  val pp_scheme : Format.formatter -> scheme -> unit
+  val pp_interface : Format.formatter -> interface -> unit
 end
 
 type echo = [ `Var of string | `String of string | `Field of echo * string ]
@@ -102,9 +102,12 @@ and case = {
 
 and nodes = node list
 
-type t = { nodes : nodes; types : Type.scheme }
-type ('a, 'b) source = Src of string * 'a | Fun of string * Type.scheme * 'b
+type t = { nodes : nodes; types : Type.interface }
+
+type ('a, 'b) source =
+  | Src of string * 'a
+  | Fun of string * Type.interface * 'b
 
 val make_components : (Ast.t, 'a) source map_string -> (t, 'a) source map_string
 val make : root:string -> (t, 'a) source map_string -> Ast.t -> t
-val make_interface_standalone : Ast.interface -> Type.scheme
+val make_interface_standalone : Ast.interface -> Type.interface

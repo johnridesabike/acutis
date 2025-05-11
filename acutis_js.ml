@@ -144,55 +144,54 @@ let input_uint8Array arr =
     offset := !offset + out_len;
     out_len
 
-let decode_interface = Acutis.interface (module Decode_js)
+module Acutis_js = Acutis.Of_decodable (Decode_js)
 
 let () =
   Js.export "Component"
     (object%js
        method string fname src =
          let fname = Js.to_string fname in
-         Acutis.comp_parse ~fname ~name:(fname_to_compname fname)
-           (Js.to_string src |> Lexing.from_string)
+         let lexbuf = Js.to_string src |> Lexing.from_string in
+         Lexing.set_filename lexbuf fname;
+         Acutis.comp_of_lexbuf ~name:(fname_to_compname fname) lexbuf
 
        method uint8Array fname src =
          let fname = Js.to_string fname in
-         Acutis.comp_parse ~fname ~name:(fname_to_compname fname)
-           (input_uint8Array src |> Lexing.from_function)
+         let lexbuf = input_uint8Array src |> Lexing.from_function in
+         Lexing.set_filename lexbuf fname;
+         Acutis.comp_of_lexbuf ~name:(fname_to_compname fname) lexbuf
 
-       method func name ty fn =
-         let fn : Decode_js.t -> string =
-          fun data ->
-           match Js.Unsafe.fun_call fn [| data |] |> Js_promise.classify with
-           | Either.Left p -> Js_promise.await p |> Js.to_string
-           | Either.Right s -> Js.to_string s
-         in
-         Acutis.comp_fun ~name:(Js.to_string name) (decode_interface ty) fn
+       method func name ty f =
+         Acutis.comp_of_fun ~name:(Js.to_string name) (Acutis_js.interface ty)
+           (fun data ->
+             match Js.Unsafe.fun_call f [| data |] |> Js_promise.classify with
+             | Either.Left p -> Js_promise.await p |> Js.to_string
+             | Either.Right s -> Js.to_string s)
 
-       method funPath module_path name ty =
+       method funcPath module_path name ty =
          let function_path = Js.to_string name in
          let module_path = Js.to_string module_path in
-         Acutis.comp_fun ~name:function_path (decode_interface ty)
+         Acutis.comp_of_fun ~name:function_path (Acutis_js.interface ty)
            (Acutis.js_import ~module_path ~function_path)
     end)
 
 let () =
-  let render = Acutis.render (module Decode_js) in
   Js.export "Compile"
     (object%js
        method components a = Decode_js.array_to_seq a |> Acutis.comps_compile
 
        method string fname components src =
-         Acutis.parse ~fname:(Js.to_string fname)
-           (Js.to_string src |> Lexing.from_string)
-         |> Acutis.compile components
+         let lexbuf = Js.to_string src |> Lexing.from_string in
+         Lexing.set_filename lexbuf (Js.to_string fname);
+         Acutis.parse lexbuf |> Acutis.compile components
 
        method uint8Array fname components src =
-         Acutis.parse ~fname:(Js.to_string fname)
-           (input_uint8Array src |> Lexing.from_function)
-         |> Acutis.compile components
+         let lexbuf = input_uint8Array src |> Lexing.from_function in
+         Lexing.set_filename lexbuf (Js.to_string fname);
+         Acutis.parse lexbuf |> Acutis.compile components
 
        method render template js =
-         Js_promise.run @@ fun () -> render template js |> Js.string
+         Js_promise.run @@ fun () -> Acutis_js.apply template js |> Js.string
 
        method toESMString x =
          Acutis.esm Format.str_formatter x;
@@ -216,6 +215,6 @@ let () =
          | _ -> Js.Opt.empty
 
        method debugInterface js =
-         decode_interface js |> Acutis.pp_typescheme Format.str_formatter;
+         Acutis_js.interface js |> Acutis.pp_interface Format.str_formatter;
          Format.flush_str_formatter () |> Js.string
     end)

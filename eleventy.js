@@ -254,7 +254,7 @@ function printJs(printer, eleventyConfig, config) {
               let components = Compile.components(
                 compFuns
                   .map(({ key, f }) =>
-                    Component.funPath(relativeCompPath, key, f.interface),
+                    Component.funcPath(relativeCompPath, key, f.interface),
                   )
                   .concat(compSrc),
               );

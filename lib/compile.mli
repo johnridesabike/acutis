@@ -12,10 +12,6 @@
     produce the final template. *)
 
 type 'a map_string := 'a Map.Make(String).t
-
-val parse : fname:string -> Lexing.lexbuf -> Ast.t
-(** @raise Error.Acutis_error *)
-
 type escape = Ast.escape = No_escape | Escape
 
 type echo_format = Ast.echo_format =
@@ -60,8 +56,8 @@ val blocks_to_seq : blocks -> (int * nodes) Seq.t
 module Components : sig
   type 'a source
 
-  val from_src : fname:string -> name:string -> Lexing.lexbuf -> _ source
-  val from_fun : name:string -> Typechecker.Type.scheme -> 'a -> 'a source
+  val of_lexbuf : name:string -> Lexing.lexbuf -> _ source
+  val of_fun : name:string -> Typechecker.Type.interface -> 'a -> 'a source
 
   type 'a t
 
@@ -69,17 +65,21 @@ module Components : sig
   val of_seq : 'a source Seq.t -> 'a t
 end
 
+type parsed = { fname : string; ast : Ast.t }
+
+val parse : Lexing.lexbuf -> parsed
+
 type 'a t = {
-  name : string;
-  types : Typechecker.Type.scheme;
+  fname : string;
+  types : Typechecker.Type.interface;
   components : (string * nodes) list;
       (** Components are topologically ordered. *)
-  externals : (string * Typechecker.Type.scheme * 'a) list;
+  externals : (string * Typechecker.Type.interface * 'a) list;
   nodes : nodes;
 }
 
-val make : fname:string -> 'a Components.t -> Ast.t -> 'a t
-val make_interface : fname:string -> Lexing.lexbuf -> Typechecker.Type.scheme
+val make : 'a Components.t -> parsed -> 'a t
+val interface : Lexing.lexbuf -> Typechecker.Type.interface
 
 module Ty_repr : sig
   val nodes : nodes -> Pp.Ty_repr.t

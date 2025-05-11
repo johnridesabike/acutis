@@ -2,7 +2,7 @@
     number of test cases, running it as a single executable rather than a cram
     test is easier to maintain and faster to execute. *)
 
-module Json = struct
+module Acutis_json = Acutis.Of_decodable (struct
   type t = Yojson.Basic.t
   type 'a assoc = (string * 'a) list
 
@@ -31,30 +31,30 @@ module Json = struct
   let of_seq_assoc x = `Assoc (List.of_seq x)
   let to_string t = Yojson.Basic.pretty_to_string t
   let marshal x = `String (Marshal.to_string x [])
-end
-
-let render = Acutis.render (module Json)
+end)
 
 let render ?(json = "{}") ?(components = Acutis.comps_empty) src () =
-  let temp =
-    Acutis.parse ~fname:"<test>" (Lexing.from_string src)
-    |> Acutis.compile components
-  in
-  let json = Yojson.Basic.from_string json in
-  ignore @@ render temp json
+  let lexbuf = Lexing.from_string src in
+  Lexing.set_filename lexbuf "<test>";
+  let template = Acutis.parse lexbuf |> Acutis.compile components in
+  Acutis_json.apply template (Yojson.Basic.from_string json)
 
 let print_error title f =
   try
-    f ();
+    f () |> ignore;
     Format.printf "no error@;@;"
   with Acutis.Acutis_error msg ->
     Format.printf "%s@;---@;%a@;@;" title Acutis.pp_error msg
 
 let component_string ~fname ~name src =
-  Acutis.comp_parse ~fname ~name (Lexing.from_string src)
+  let lexbuf = Lexing.from_string src in
+  Lexing.set_filename lexbuf fname;
+  Acutis.comp_of_lexbuf ~name lexbuf
 
 let compile_string ~fname comps src =
-  Acutis.parse ~fname (Lexing.from_string src) |> Acutis.compile comps
+  let lexbuf = Lexing.from_string src in
+  Lexing.set_filename lexbuf fname;
+  Acutis.parse lexbuf |> Acutis.compile comps
 
 let () =
   Format.printf "@[<v>";
@@ -270,7 +270,7 @@ let () =
     @@ component_string ~fname:"a.acutis" ~name:"A" "{% a %}"
   in
   print_error "Records with missing fields (Component)" (fun () ->
-      ignore @@ compile_string ~fname:"<test>" comps "{% A / %}");
+      compile_string ~fname:"<test>" comps "{% A / %}");
 
   print_error "Closed enum <> open enum"
     (render
@@ -482,12 +482,12 @@ let () =
   let c = component_string ~fname:"c.acutis" ~name:"C" "{% D /%}" in
   let d = component_string ~fname:"d.acutis" ~name:"D" "{% B /%}" in
   print_error "Cyclic dependencies are reported." (fun () ->
-      ignore @@ Acutis.comps_compile @@ List.to_seq [ a; b; c; d ]);
+      Acutis.comps_compile @@ List.to_seq [ a; b; c; d ]);
   print_error "Missing components are reported." (fun () ->
-      ignore @@ Acutis.comps_compile @@ List.to_seq [ a; b; c ]);
+      Acutis.comps_compile @@ List.to_seq [ a; b; c ]);
   print_error "Missing components are reported (by root)." (render "{% A /%}");
   print_error "Duplicate names are reported." (fun () ->
-      ignore @@ Acutis.comps_compile @@ List.to_seq [ a; b; a ]);
+      Acutis.comps_compile @@ List.to_seq [ a; b; a ]);
 
   print_error "Basic type mismatch."
     (render "{% match a with {b} %} {% b %} {% /match %}"
@@ -624,9 +624,8 @@ let () =
     (render "{% interface x = _ %} {% x %}");
 
   (* Custom decodable interface parse *)
-  let jsonintf =
-    let decode = Acutis.interface (module Json) in
-    fun json () -> Yojson.Basic.from_string json |> decode |> ignore
+  let jsonintf json () =
+    Yojson.Basic.from_string json |> Acutis_json.interface
   in
   print_error "JSON interface: null." (jsonintf {|{"prop": null}|});
   print_error "JSON interface: integer." (jsonintf {|{"prop": 1}|});

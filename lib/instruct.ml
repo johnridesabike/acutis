@@ -1052,7 +1052,7 @@ end = struct
                          buffer_add_string errors (string "\n\n"))
                    in
                    let| () = buffer_add_string errors (string "File \"") in
-                   let| () = buffer_add_string errors (string compiled.name) in
+                   let| () = buffer_add_string errors (string compiled.fname) in
                    let| () =
                      buffer_add_string errors
                        (string
@@ -1095,7 +1095,8 @@ end = struct
            let$ props = ("props", hashtbl_create ()) in
            let stack = stack_empty in
            let$ ty_str =
-             ("type", string (Format.asprintf "%a" T.pp_scheme compiled.types))
+             ( "type",
+               string (Format.asprintf "%a" T.pp_interface compiled.types) )
            in
            let debug = { ty_str; stack; decode_error; key_error } in
            let| () =

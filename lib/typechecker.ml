@@ -40,7 +40,7 @@ module Type = struct
   and record = t Map_string.t ref
   and t = ty ref
 
-  type scheme = t Map_string.t
+  type interface = t Map_string.t
 
   let unknown _ = ref (Unknown (ref `Closed))
   let int () = ref Int
@@ -157,7 +157,7 @@ module Type = struct
    fun pp_tag key ppf (tag, fields) ->
     pp_record ~tag:(pp_tag, (key, tag)) ppf fields
 
-  let pp_scheme ppf x =
+  let pp_interface ppf x =
     F.fprintf ppf "@[<v>%a@]"
       (F.pp_print_seq ~pp_sep:F.pp_print_cut
          (Pp.equation ~sep:" =" Pp.field pp))
@@ -473,7 +473,7 @@ and case = {
 
 and nodes = node list
 
-type t = { nodes : nodes; types : Type.scheme }
+type t = { nodes : nodes; types : Type.interface }
 
 module Context = struct
   type used = Unused | Used
@@ -486,7 +486,7 @@ module Context = struct
   }
 
   type 'a t = {
-    global : Type.scheme ref;
+    global : Type.interface ref;
     scope : binding Map_string.t;
     all_bindings : binding Queue.t;
         (** This is for checking for unused variables. A queue preserves the
@@ -777,7 +777,7 @@ type (_, _) var_action =
       (** When we construct a pattern, we update the context for each new
           variable. *)
 
-type _ Effect.t += Get_component_types : string -> Type.scheme Effect.t
+type _ Effect.t += Get_component_types : string -> Type.interface Effect.t
 
 (** When we type-check a pattern, we create a temporary type and unify it with
     the input type. Information retained in the resulting typed-pattern
@@ -940,7 +940,7 @@ and make_record : type a.
     (a, 'b) var_action ->
     Loc.t ->
     Type.unify_mode ->
-    Type.scheme ->
+    Type.interface ->
     Ast.pat Map_string.t ->
     a pat Map_string.t =
  fun var_action loc mode tyvars m ->
@@ -1095,7 +1095,9 @@ let make ast =
     handler, and without needing to manually thread the state or callbacks
     through the rest of the typechecker. *)
 
-type ('a, 'b) source = Src of string * 'a | Fun of string * Type.scheme * 'b
+type ('a, 'b) source =
+  | Src of string * 'a
+  | Fun of string * Type.interface * 'b
 
 type 'a graph = {
   not_linked : (Ast.t, 'a) source Map_string.t;
