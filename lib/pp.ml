@@ -42,7 +42,7 @@ module Ty_repr = struct
     | Ignored
     | Atom of (formatter -> unit)
     | Seq of t Seq.t
-    | Field of string * t
+    | Assoc of (string * t) Seq.t
 
   type repr = t
 
@@ -59,12 +59,9 @@ module Ty_repr = struct
   end
 
   let ignore _ = Ignored
-  let unit = Atom (dprintf "()")
-  let bool x = Atom (dprintf "%B" x)
   let int x = Atom (dprintf "%i" x)
   let string x = Atom (dprintf "%S" x)
   let float x = Atom (dprintf "%G" x)
-  let char x = Atom (dprintf "%C" x)
   let symbol x = Atom (dprintf "%s" x)
   let seq f s = Seq (Seq.map f s)
 
@@ -94,27 +91,32 @@ module Ty_repr = struct
   let polyvar name (Args args) = Seq (Seq.cons (polyvar_aux name) args)
   let polyvar0 = polyvar_aux
 
-  type fields = args
+  type fields = Fields of (string * t) Seq.t [@@unboxed]
 
-  let fields k v = args (Field (k, v))
-  let field k v r = r * Field (k, v)
-  let record (Args r) = Seq r
+  let fields k v = Fields (Seq.return (k, v))
+  let field k v (Fields r) = Fields (Seq.append r (Seq.return (k, v)))
+  let record (Fields r) = Assoc r
   let variantr s r = Seq (Seq.cons (symbol s) @@ Seq.return (record r))
   let abstract s (Args args) = Seq (Seq.cons (symbol s) args)
   let abstract0 = symbol
 
   let rec pp_aux = function
     | Ignored -> None
-    | Atom f -> Some f
-    | Field (k, v) -> (
-        match pp_aux v with
-        | Some v -> Some (dprintf "(@[<hv>%s@ %t@])" k v)
-        | None -> None)
+    | Atom x -> Some x
     | Seq x ->
         Some
           (dprintf "(@[<hv>%a@])"
              (pp_print_seq ~pp_sep:pp_print_space ( |> ))
              (Seq.filter_map pp_aux x))
+    | Assoc x ->
+        Some
+          (dprintf "(@[<hv>%a@])"
+             (pp_print_seq ~pp_sep:pp_print_space (fun ppf (k, v) ->
+                  fprintf ppf "(@[<hv>%s@ %t@])" k v))
+             (Seq.filter_map
+                (fun (k, v) ->
+                  match pp_aux v with Some v -> Some (k, v) | None -> None)
+                x))
 
   let pp ppf t =
     match pp_aux t with None -> fprintf ppf "(all ignored)" | Some t -> t ppf

@@ -75,12 +75,9 @@ module Ty_repr : sig
 
   (** {1 Scalar types.} *)
 
-  val unit : t
-  val bool : bool -> t
   val int : int -> t
   val string : string -> t
   val float : float -> t
-  val char : char -> t
 
   (** {1 Linear sequences.} *)
 
