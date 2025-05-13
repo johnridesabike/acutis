@@ -34,29 +34,26 @@ FileWalker.prototype.ignore = function (filePath) {
   return this;
 };
 
-FileWalker.prototype._walk = function (filePath, f) {
+FileWalker.prototype._walk = async function (filePath, f) {
   if (this.ignores.has(filePath)) {
-    return Promise.resolve();
+    return;
   } else {
-    return fs.stat(filePath).then((stats) => {
-      if (stats.isDirectory()) {
-        return fs
-          .readdir(filePath)
-          .then((files) =>
-            Promise.all(
-              files.map((file) =>
-                this.ignoresGlobal.has(file)
-                  ? Promise.resolve()
-                  : this._walk(path.join(filePath, file), f),
-              ),
-            ),
-          );
-      } else if (filePath.toLowerCase().endsWith(".acutis")) {
-        return fs.readFile(filePath).then((src) => f(stats, filePath, src));
-      } else {
-        return Promise.resolve();
-      }
-    });
+    let stats = await fs.stat(filePath);
+    if (stats.isDirectory()) {
+      let files = await fs.readdir(filePath);
+      return Promise.all(
+        files.map((file) =>
+          this.ignoresGlobal.has(file)
+            ? Promise.resolve()
+            : this._walk(path.join(filePath, file), f),
+        ),
+      );
+    } else if (filePath.toLowerCase().endsWith(".acutis")) {
+      let src = await fs.readFile(filePath);
+      return f(stats, filePath, src);
+    } else {
+      return;
+    }
   }
 };
 
@@ -101,49 +98,45 @@ export function plugin(eleventyConfig, config) {
     // Because we pre-compile our components, 11ty's built-in file reading won't
     // reload all changes in watch mode.
     read: false,
-    init: function () {
+    init: async function () {
       let result = [];
       let dir = this.config.dir;
       cache.clear();
-      return new Promise((resolve) => {
+      try {
         if (config && "components" in config) {
           getFuncs(config.components).forEach(({ key, f }) =>
             result.push(Component.func(key, f.interface, f)),
           );
         }
-        resolve();
-      })
-        .then(() =>
-          new FileWalker(path.join(dir.input, dir.includes)).walk(
-            (_stats, filePath, src) =>
-              result.push(Component.uint8Array(filePath, src)),
-          ),
-        )
-        .then(() => (components = Compile.components(result)))
-        .catch(acutisErrorToJsError);
+        await new FileWalker(path.join(dir.input, dir.includes)).walk(
+          (_stats, filePath, src) =>
+            result.push(Component.uint8Array(filePath, src)),
+        );
+        components = Compile.components(result);
+      } catch (e) {
+        acutisErrorToJsError(e);
+      }
     },
-    compile: function (str, inputPath) {
+    compile: async function (str, inputPath) {
       // since `read: false` is set, 11ty doesn't read Acutis template files.
       // If str has a value, it's either a permalink or markdown content.
       // Permalinks can either be a string or a function.
       if (str) {
         if (typeof str === "function") {
-          return Promise.resolve(str);
+          return str;
         } else {
-          // Compile exceptions are raised synchronously and runtime exceptions
-          // are raised asynchronously. To catch them all, we wrap compilation
-          // in a promise.
-          return new Promise((resolve) => {
+          try {
             let template = Compile.string(inputPath, components, str);
-            resolve((data) =>
-              Compile.render(template, data).catch(acutisErrorToJsError),
-            );
-          }).catch(acutisErrorToJsError);
+            return (data) =>
+              Compile.render(template, data).catch(acutisErrorToJsError);
+          } catch (e) {
+            acutisErrorToJsError(e);
+          }
         }
       } else {
-        let template = cache.get(inputPath);
-        if (!template) {
-          template = fs
+        let templatePromise = cache.get(inputPath);
+        if (!templatePromise) {
+          templatePromise = fs
             .readFile(inputPath)
             .then((src) => {
               let template = Compile.uint8Array(inputPath, components, src);
@@ -151,9 +144,9 @@ export function plugin(eleventyConfig, config) {
                 Compile.render(template, data).catch(acutisErrorToJsError);
             })
             .catch(acutisErrorToJsError);
-          cache.set(inputPath, template);
+          cache.set(inputPath, templatePromise);
         }
-        return template;
+        return templatePromise;
       }
     },
   });
@@ -226,48 +219,46 @@ let oracle = new RebuildOracle();
 function printJs(printer, eleventyConfig, config) {
   eleventyConfig.versionCheck(">= 3.0");
   let extension = config && "extension" in config ? config.extension : ".js";
-  eleventyConfig.on("eleventy.before", ({ dir }) => {
+  eleventyConfig.on("eleventy.before", async ({ dir }) => {
     oracle.addConfig(config);
     let compPath =
       config && "componentsPath" in config ? config.componentsPath : "";
     let compFuns =
-      config && "components" in config ? getFuncs(config.components) : {};
+      config && "components" in config ? getFuncs(config.components) : [];
     let compSrc = [];
     let dirIncludes = path.join(dir.input, dir.includes);
-    return new FileWalker(dirIncludes)
-      .walk((stats, filePath, src) => {
+    try {
+      await new FileWalker(dirIncludes).walk((stats, filePath, src) => {
         oracle.addComponent(filePath, stats.mtimeMs);
         compSrc.push(Component.uint8Array(filePath, src));
-      })
-      .then(() =>
-        new FileWalker(dir.input)
-          .ignore(dirIncludes)
-          .ignore(path.join(dir.input, dir.data))
-          .ignore(dir.output) // Not relative to input
-          .walk((stats, filePath, src) => {
-            let shouldBuild = oracle.addTemplate(filePath, stats.mtimeMs);
-            if (shouldBuild) {
-              let relativeCompPath =
-                "." +
-                path.sep +
-                path.relative(path.dirname(filePath), compPath);
-              let components = Compile.components(
-                compFuns
-                  .map(({ key, f }) =>
-                    Component.funcPath(relativeCompPath, key, f.interface),
-                  )
-                  .concat(compSrc),
-              );
-              let template = Compile.uint8Array(filePath, components, src);
-              let js = printer(template);
-              return fs.writeFile(filePath + extension, js);
-            } else {
-              return Promise.resolve();
-            }
-          }),
-      )
-      .then(() => oracle.reset())
-      .catch(acutisErrorToJsError);
+      });
+      await new FileWalker(dir.input)
+        .ignore(dirIncludes)
+        .ignore(path.join(dir.input, dir.data))
+        .ignore(dir.output) // Not relative to input
+        .walk((stats, filePath, src) => {
+          let shouldBuild = oracle.addTemplate(filePath, stats.mtimeMs);
+          if (shouldBuild) {
+            let relativeCompPath =
+              "." + path.sep + path.relative(path.dirname(filePath), compPath);
+            let components = Compile.components(
+              compFuns
+                .map(({ key, f }) =>
+                  Component.funcPath(relativeCompPath, key, f.interface),
+                )
+                .concat(compSrc),
+            );
+            let template = Compile.uint8Array(filePath, components, src);
+            let js = printer(template);
+            return fs.writeFile(filePath + extension, js);
+          } else {
+            return;
+          }
+        });
+      oracle.reset();
+    } catch (e) {
+      acutisErrorToJsError(e);
+    }
   });
   eleventyConfig.addExtension("acutis" + extension, { key: "11ty.js" });
   eleventyConfig.addTemplateFormats("acutis" + extension);
