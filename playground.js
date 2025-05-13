@@ -6,7 +6,7 @@
   file, You can obtain one at http://mozilla.org/MPL/2.0/.
 */
 
-var defaultSource =
+let defaultSource =
   'Hello {% name ? "dear user" %},\n\
 \n\
 {% map objects with {name, color: !color} ~%}\n\
@@ -23,7 +23,7 @@ var defaultSource =
 {%~ /map %}\n\
 ';
 
-var defaultProps = {
+let defaultProps = {
   name: null,
   objects: [
     { name: "sky", color: "blue" },
@@ -41,14 +41,14 @@ function setClean(elt) {
 }
 
 window.onload = function playground(_event) {
-  var sourceTextElt = document.getElementById("source");
-  var sourceResultElt = document.getElementById("jsresult");
-  var sourceDirtyElt = document.getElementById("source-is-dirty");
-  var propsTextElt = document.getElementById("props");
-  var renderResultElt = document.getElementById("result");
-  var propsDirtyElt = document.getElementById("props-is-dirty");
-  var renderButtonElt = document.getElementById("render");
-  var urlParams = new URLSearchParams(window.location.search);
+  let sourceTextElt = document.getElementById("source");
+  let sourceResultElt = document.getElementById("jsresult");
+  let sourceDirtyElt = document.getElementById("source-is-dirty");
+  let propsTextElt = document.getElementById("props");
+  let renderResultElt = document.getElementById("result");
+  let propsDirtyElt = document.getElementById("props-is-dirty");
+  let renderButtonElt = document.getElementById("render");
+  let urlParams = new URLSearchParams(window.location.search);
 
   propsTextElt.oninput = function (_event) {
     setDirty(propsDirtyElt);
@@ -58,8 +58,8 @@ window.onload = function playground(_event) {
     setDirty(sourceDirtyElt);
   };
 
-  var urlSourceParam = urlParams.get("source");
-  var urlSourceParamDecoded = null;
+  let urlSourceParam = urlParams.get("source");
+  let urlSourceParamDecoded = null;
   if (urlSourceParam) {
     try {
       urlSourceParamDecoded = atob(urlSourceParam);
@@ -71,8 +71,8 @@ window.onload = function playground(_event) {
     ? urlSourceParamDecoded
     : defaultSource;
 
-  var urlPropsParam = urlParams.get("props");
-  var urlPropsParamDecoded = null;
+  let urlPropsParam = urlParams.get("props");
+  let urlPropsParamDecoded = null;
   if (urlPropsParam) {
     try {
       urlPropsParamDecoded = atob(urlPropsParam);
@@ -84,36 +84,38 @@ window.onload = function playground(_event) {
     ? urlPropsParamDecoded
     : JSON.stringify(defaultProps, null, 2);
 
-  var getLinkElt = document.getElementById("getlink");
+  let getLinkElt = document.getElementById("getlink");
   getLinkElt.onclick = function getLink(_event) {
-    var url = new URL(window.location);
+    let url = new URL(window.location);
     url.searchParams.set("props", btoa(propsTextElt.value));
     url.searchParams.set("source", btoa(sourceTextElt.value));
     if ("clipboard" in navigator) {
       navigator.clipboard.writeText(url.toString()).then(function () {
-        var original = getLinkElt.textContent;
+        let original = getLinkElt.textContent;
         getLinkElt.textContent = "Copied!";
         setTimeout(function () {
           getLinkElt.textContent = original;
         }, 2000);
       });
     }
-    history
-      ? history.pushState({}, "", url)
-      : (window.location.search = url.searchParams.toString());
+    if (history) {
+      history.pushState({}, "", url);
+    } else {
+      window.location.search = url.searchParams.toString();
+    }
   };
 
-  var componentsEmpty = Compile.components([]);
+  let componentsEmpty = Compile.components([]);
 
-  function render(_event) {
-    var compiled = null;
-    var compileJSResult = "";
-    var renderResult = "";
+  async function render(_event) {
+    let compiled = null;
+    let compileJSResult = "";
+    let renderResult = "";
     try {
       compiled = Compile.string(
         "<playground>",
         componentsEmpty,
-        sourceTextElt.value
+        sourceTextElt.value,
       );
       compileJSResult = Compile.toESMString(compiled);
     } catch (e) {
@@ -125,8 +127,8 @@ window.onload = function playground(_event) {
     }
     if (compiled) {
       try {
-        var json = JSON.parse(propsTextElt.value);
-        renderResult = Render.sync(compiled, json);
+        let json = JSON.parse(propsTextElt.value);
+        renderResult = await Compile.render(compiled, json);
       } catch (e) {
         if (Utils.isError(e)) {
           renderResult = Utils.getError(e);
