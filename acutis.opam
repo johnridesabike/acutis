@@ -12,7 +12,7 @@ maintainer: ["John Jackson <jbpjackson+acutis@icloud.com>"]
 authors: ["John Jackson <jbpjackson+acutis@icloud.com>"]
 license: "MPL-2.0"
 homepage: "https://github.com/johnridesabike/acutis"
-doc: "https://johnridesa.bike/acutis/"
+doc: "https://acutis.johnridesa.bike/"
 bug-reports: "https://github.com/johnridesabike/acutis/issues"
 depends: [
   "dune" {>= "3.13"}

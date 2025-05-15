@@ -17,7 +17,7 @@
 
 (license MPL-2.0)
 
-(documentation https://johnridesa.bike/acutis/)
+(documentation https://acutis.johnridesa.bike/)
 
 (package
  (name acutis)

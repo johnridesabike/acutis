@@ -5,16 +5,16 @@
     "start": "eleventy --serve",
     "build": "NODE_ENV=production eleventy",
     "clean": "rm -rf _site",
-    "predeploy": "npm run clean && npm run build",
-    "deploy": "gh-pages -d _site -t"
+    "predeploy": "npm run build",
+    "deploy": "netlify deploy --dir _site --site acutis-lang --no-build --prod-if-unlocked"
   },
   "dependencies": {
     "@11ty/eleventy": "^3.0.0",
     "@11ty/eleventy-plugin-syntaxhighlight": "^5.0.0",
     "acutis-lang": "file:../_build/default",
-    "gh-pages": "^6.2.0",
     "markdown-it-anchor": "^9.2.0",
     "markdown-it-table-of-contents": "^0.8.0",
+    "netlify-cli": "^21.4.2",
     "normalize.css": "^8.0.1",
     "postcss": "^8.4.48",
     "postcss-custom-properties": "^14.0.4",

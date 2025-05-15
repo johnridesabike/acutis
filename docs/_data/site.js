@@ -13,11 +13,11 @@ let acutisPkg = require("acutis-lang/package.json");
 export default {
   title: "Acutis",
   subtitle: acutisPkg.description,
-  pathPrefix: "/acutis/",
+  pathPrefix: "/",
   url:
     process.env.NODE_ENV === "production"
-      ? "https://johnridesa.bike/acutis"
-      : "http://localhost:8080/acutis",
+      ? "https://acutis.johnridesa.bike"
+      : "http://localhost:8080",
   menu: [
     { path: "/", name: "Home" },
     { path: "/introduction/", name: "Getting started" },
