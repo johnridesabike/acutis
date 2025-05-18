@@ -89,35 +89,36 @@ function getFuncs(obj) {
  */
 export function plugin(eleventyConfig, config) {
   eleventyConfig.versionCheck(">= 3.0");
+  eleventyConfig.addTemplateFormats("acutis");
   let components = Compile.components([]);
   // Caching templates makes projects that heavily use "layout" templates
   // measurably faster.
   let cache = new Map();
-  eleventyConfig.addTemplateFormats("acutis");
+  // Recompile
+  eleventyConfig.on("eleventy.before", async ({ directories }) => {
+    let result = [];
+    cache.clear();
+    try {
+      if (config && "components" in config) {
+        getFuncs(config.components).forEach(({ key, f }) =>
+          result.push(Component.func(key, f.interface, f)),
+        );
+      }
+      await new FileWalker(
+        path.join(directories.input, directories.includes),
+      ).walk((_stats, filePath, src) =>
+        result.push(Component.uint8Array(filePath, src)),
+      );
+      components = Compile.components(result);
+    } catch (e) {
+      acutisErrorToJsError(e);
+    }
+  });
   eleventyConfig.addExtension("acutis", {
     // Because we pre-compile our components, 11ty's built-in file reading won't
     // reload all changes in watch mode.
     read: false,
-    init: async function () {
-      let result = [];
-      let dir = this.config.dir;
-      cache.clear();
-      try {
-        if (config && "components" in config) {
-          getFuncs(config.components).forEach(({ key, f }) =>
-            result.push(Component.func(key, f.interface, f)),
-          );
-        }
-        await new FileWalker(path.join(dir.input, dir.includes)).walk(
-          (_stats, filePath, src) =>
-            result.push(Component.uint8Array(filePath, src)),
-        );
-        components = Compile.components(result);
-      } catch (e) {
-        acutisErrorToJsError(e);
-      }
-    },
-    compile: async function (str, inputPath) {
+    compile: async (str, inputPath) => {
       // since `read: false` is set, 11ty doesn't read Acutis template files.
       // If str has a value, it's either a permalink or markdown content.
       // Permalinks can either be a string or a function.
@@ -219,23 +220,23 @@ let oracle = new RebuildOracle();
 function printJs(printer, eleventyConfig, config) {
   eleventyConfig.versionCheck(">= 3.0");
   let extension = config && "extension" in config ? config.extension : ".js";
-  eleventyConfig.on("eleventy.before", async ({ dir }) => {
+  eleventyConfig.on("eleventy.before", async ({ directories }) => {
     oracle.addConfig(config);
     let compPath =
       config && "componentsPath" in config ? config.componentsPath : "";
     let compFuns =
       config && "components" in config ? getFuncs(config.components) : [];
     let compSrc = [];
-    let dirIncludes = path.join(dir.input, dir.includes);
+    let dirIncludes = path.join(directories.input, directories.includes);
     try {
       await new FileWalker(dirIncludes).walk((stats, filePath, src) => {
         oracle.addComponent(filePath, stats.mtimeMs);
         compSrc.push(Component.uint8Array(filePath, src));
       });
-      await new FileWalker(dir.input)
+      await new FileWalker(directories.input)
         .ignore(dirIncludes)
-        .ignore(path.join(dir.input, dir.data))
-        .ignore(dir.output) // Not relative to input
+        .ignore(path.join(directories.input, directories.data))
+        .ignore(directories.output) // Not relative to input
         .walk((stats, filePath, src) => {
           let shouldBuild = oracle.addTemplate(filePath, stats.mtimeMs);
           if (shouldBuild) {
