@@ -24,6 +24,6 @@ export default {
     { path: "/manual/", name: "Language manual" },
     { path: "/api/acutis/Acutis/index.html", name: "OCaml API" },
     { path: "/playground/", name: "Playground" },
-    { path: "/credits/", name: "Credits" },
+    { path: "/license/", name: "License" },
   ],
 };

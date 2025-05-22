@@ -78,18 +78,18 @@ let () =
             s "eleventy";
             s "ocaml";
           ] );
-      ("homepage", s "https://johnridesa.bike/acutis/");
+      ("homepage", s "https://acutis.johnridesa.bike/");
       ( "bugs",
         o
           [
-            ("url", s "https://github.com/johnridesabike/acutis/issues");
-            ("email", s "jbpjackson+acutis@icloud.com");
+            ("url", s "https://todo.sr.ht/~johnridesabike/acutis");
+            ("email", s "~johnridesabike/public-inbox@lists.sr.ht");
           ] );
       ( "repository",
         o
           [
             ("type", s "git");
-            ("url", s "https://github.com/johnridesabike/acutis.git");
+            ("url", s "git+https://git.sr.ht/~johnridesabike/acutis");
           ] );
       ("license", s "MPL-2.0");
       ( "author",

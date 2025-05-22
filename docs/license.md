@@ -7,9 +7,11 @@ layout: main.acutis.js
 next: null
 ---
 
-The documentation content of this website is released under the **CC0 1.0**
-license. Source code examples and the software that powers this website is
-released under the **Mozilla Public License 2.0**.
+The Acutis software and this website was created by
+[John Jackson](https://johnridesa.bike/). The documentation content of this
+website is released under the **CC0 1.0** license. Source code examples and the
+software that powers this website is released under the **Mozilla Public License
+2.0**.
 
 The Acutis software itself is released under the **Mozilla Public License 2.0**.
 

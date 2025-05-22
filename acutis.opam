@@ -3,7 +3,6 @@ opam-version: "2.0"
 version: "0.27.0"
 synopsis: "A simple and type-safe template language"
 description: """
-
 Acutis is a template language that features static typing, pattern matching, and
 asynchronous template components. You can execute your templates like scripts or
 compile them to self-contained JavaScript files.
@@ -11,9 +10,9 @@ compile them to self-contained JavaScript files.
 maintainer: ["John Jackson <jbpjackson+acutis@icloud.com>"]
 authors: ["John Jackson <jbpjackson+acutis@icloud.com>"]
 license: "MPL-2.0"
-homepage: "https://github.com/johnridesabike/acutis"
-doc: "https://acutis.johnridesa.bike/"
-bug-reports: "https://github.com/johnridesabike/acutis/issues"
+homepage: "https://acutis.johnridesa.bike/"
+doc: "https://acutis.johnridesa.bike/api/acutis/Acutis/"
+bug-reports: "https://todo.sr.ht/~johnridesabike/acutis"
 depends: [
   "dune" {>= "3.13"}
   "ocaml" {>= "5.3"}
@@ -38,4 +37,4 @@ build: [
     "@doc" {with-doc}
   ]
 ]
-dev-repo: "git+https://github.com/johnridesabike/acutis.git"
+dev-repo: "git+https://git.sr.ht/~johnridesabike/acutis"

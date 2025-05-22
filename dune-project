@@ -9,7 +9,11 @@
 (generate_opam_files true)
 
 (source
- (github johnridesabike/acutis))
+ (sourcehut johnridesabike/acutis))
+
+(homepage https://acutis.johnridesa.bike/)
+
+(documentation https://acutis.johnridesa.bike/api/acutis/Acutis/)
 
 (authors "John Jackson <jbpjackson+acutis@icloud.com>")
 
@@ -17,13 +21,11 @@
 
 (license MPL-2.0)
 
-(documentation https://acutis.johnridesa.bike/)
-
 (package
  (name acutis)
  (synopsis "A simple and type-safe template language")
- (description "
-Acutis is a template language that features static typing, pattern matching, and
+ (description
+"Acutis is a template language that features static typing, pattern matching, and
 asynchronous template components. You can execute your templates like scripts or
 compile them to self-contained JavaScript files.
 ")

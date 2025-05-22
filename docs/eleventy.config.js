@@ -62,7 +62,6 @@ async function acutisSyntax({ Prism }) {
 
 let require = module.createRequire(import.meta.url);
 let acutisPath = require.resolve("acutis-lang");
-let acutisDirPath = path.dirname(acutisPath);
 
 export default (eleventyConfig) => {
   eleventyConfig.addPlugin(syntaxHighlight, { init: acutisSyntax });
@@ -75,11 +74,10 @@ export default (eleventyConfig) => {
   eleventyConfig.ignores.add("node_modules");
   eleventyConfig.addPassthroughCopy("playground.js");
   eleventyConfig.addPassthroughCopy({
-    [path.join(acutisDirPath, "_doc", "_html")]: "api",
+    [path.join("..", "_build", "default", "_doc", "_html")]: "api",
   });
   eleventyConfig.addPassthroughCopy({ [acutisPath]: "acutis.js" });
   eleventyConfig.addPassthroughCopy("icon.svg");
-  eleventyConfig.addPassthroughCopy(".nojekyll");
   eleventyConfig.amendLibrary("md", (mdLib) =>
     mdLib
       .set({

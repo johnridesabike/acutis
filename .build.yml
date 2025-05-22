@@ -1,0 +1,24 @@
+image: alpine/latest
+packages:
+  - opam
+  - nodejs
+  - npm
+sources:
+  - https://git.sr.ht/~johnridesabike/acutis
+secrets:
+  - 4648aeba-a81e-442c-bc37-5118709e8535
+tasks:
+  - install: |
+      cd acutis
+      opam init --auto-setup --bare
+      opam switch create . --deps-only --with-test --with-doc --yes
+  - build_and_test: |
+      cd acutis
+      opam exec -- dune build @ci --profile release
+  - deploy_docs: |
+      set +x
+      . ~/.netlify_auth
+      set -x
+      cd acutis/docs
+      npm ci
+      npm run deploy

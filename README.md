@@ -1,6 +1,11 @@
-<p align="center"><img src="./docs/icon.svg" height="64" width="64" alt="Acutis icon." /></p>
+![The Acutis icon.](./docs/icon.svg)
 
-## Acutis language
+[Project home](https://sr.ht/~johnridesabike/acutis/) |
+[Source code](https://git.sr.ht/~johnridesabike/acutis) |
+[Mailing list](https://lists.sr.ht/~johnridesabike/public-inbox) |
+[Documentation](https://acutis.johnridesa.bike/)
+
+# The Acutis template language
 
 Acutis is a template language that features static typing, pattern matching, and
 asynchronous template components. You can execute your templates like scripts or
@@ -9,19 +14,6 @@ compile them to self-contained JavaScript files.
 Acutis is an experimental, personal project and is not stable.
 
 ```acutis
-{% interface
-  siteTitle = string
-  blogPosts =
-    [
-       {
-          title: string,
-          author: {name: ?string},
-          date: string,
-          image: ?{alt: string, src: string},
-          content: string
-       }
-    ]
-~%}
 <h1> Blog posts for {% siteTitle %} </h1>
 {%~ map blogPosts with {image, title, content, date, author: {name}} %}
   <article class="h-entry">
@@ -43,8 +35,7 @@ Acutis is an experimental, personal project and is not stable.
 [See how this example compiles in the playground][example].
 
 [example]:
-  https://johnridesa.bike/acutis/playground/?props=ewogICJzaXRlVGl0bGUiOiAiTXkgQmxvZyIsCiAgImJsb2dQb3N0cyI6IFsKICAgIHsKICAgICAgInRpdGxlIjogIk15IHNlY29uZCBwb3N0IiwKICAgICAgImF1dGhvciI6IHsgIm5hbWUiOiAiSm9obiIgfSwKICAgICAgImRhdGUiOiAiMjAyMC0xMi0wMSIsCiAgICAgICJpbWFnZSI6IG51bGwsCiAgICAgICJjb250ZW50IjogIjxwPlRoaXMgaXMgbXkgc2Vjb25kIHBvc3Q8L3A%2BIgogICAgfSwKICAgIHsKICAgICAgInRpdGxlIjogIkhlbGxvLCB3b3JsZCEiLAogICAgICAiYXV0aG9yIjogeyAibmFtZSI6ICJKb2huIiB9LAogICAgICAiZGF0ZSI6ICIyMDIwLTExLTMwIiwKICAgICAgImltYWdlIjogbnVsbCwKICAgICAgImNvbnRlbnQiOiAiPHA%2BVGhpcyBpcyBteSBmaXJzdCBwb3N0PC9wPiIKICAgIH0KICBdCn0%3D&source=eyUgaW50ZXJmYWNlCiAgc2l0ZVRpdGxlID0gc3RyaW5nCiAgYmxvZ1Bvc3RzID0KICAgIFsKICAgICAgIHsKICAgICAgICAgIHRpdGxlOiBzdHJpbmcsCiAgICAgICAgICBhdXRob3I6IHtuYW1lOiA%2Fc3RyaW5nfSwKICAgICAgICAgIGRhdGU6IHN0cmluZywKICAgICAgICAgIGltYWdlOiA%2Fe2FsdDogc3RyaW5nLCBzcmM6IHN0cmluZ30sCiAgICAgICAgICBjb250ZW50OiBzdHJpbmcKICAgICAgIH0KICAgIF0KfiV9CjxoMT4gQmxvZyBwb3N0cyBmb3IgeyUgc2l0ZVRpdGxlICV9IDwvaDE%2BCnslfiBtYXAgYmxvZ1Bvc3RzIHdpdGgge2ltYWdlLCB0aXRsZSwgY29udGVudCwgZGF0ZSwgYXV0aG9yOiB7bmFtZX19ICV9CiAgPGFydGljbGUgY2xhc3M9ImgtZW50cnkiPgogICAgPGhlYWRlcj4KICAgICAgeyUgbWF0Y2ggaW1hZ2Ugd2l0aCBudWxsIH4lfQogICAgICAgIHsqIG5vIGltYWdlICp9CiAgICAgIHslfiB3aXRoICF7c3JjLCBhbHR9IH4lfQogICAgICAgIDxpbWcgc3JjPSJ7JSBzcmMgJX0iIGFsdD0ieyUgYWx0ICV9Ij4KICAgICAgeyUgL21hdGNoIH4lfQogICAgICA8aDIgY2xhc3M9InAtbmFtZSI%2BIHslIHRpdGxlICV9IDwvaDI%2BCiAgICAgIDxzcGFuIGNsYXNzPSJwLWF1dGhvciI%2BIEJ5IHslIG5hbWUgPyAiQW5vbnltb3VzIiAlfSA8L3NwYW4%2BCiAgICAgIDxzcGFuIGNsYXNzPSJkdC1wdWJsaXNoZWQiPiBQb3N0ZWQgb24geyUgZGF0ZSAlfSA8L3NwYW4%2BCiAgICA8L2hlYWRlcj4KICAgIDxkaXYgY2xhc3M9ImUtY29udGVudCI%2BIHt7JSBjb250ZW50ICV9fSA8L2Rpdj4KICA8L2FydGljbGU%2BCnslfiAvbWFwICV9
-[Read the documentation here](https://johnridesa.bike/acutis/).
+  https://acutis.johnridesa.bike/playground/?props=ewogICJzaXRlVGl0bGUiOiAiTXkgQmxvZyIsCiAgImJsb2dQb3N0cyI6IFsKICAgIHsKICAgICAgInRpdGxlIjogIk15IHNlY29uZCBwb3N0IiwKICAgICAgImF1dGhvciI6IHsgIm5hbWUiOiAiSm9obiIgfSwKICAgICAgImRhdGUiOiAiMjAyMC0xMi0wMSIsCiAgICAgICJpbWFnZSI6IG51bGwsCiAgICAgICJjb250ZW50IjogIjxwPlRoaXMgaXMgbXkgc2Vjb25kIHBvc3Q8L3A%2BIgogICAgfSwKICAgIHsKICAgICAgInRpdGxlIjogIkhlbGxvLCB3b3JsZCEiLAogICAgICAiYXV0aG9yIjogeyAibmFtZSI6ICJKb2huIiB9LAogICAgICAiZGF0ZSI6ICIyMDIwLTExLTMwIiwKICAgICAgImltYWdlIjogbnVsbCwKICAgICAgImNvbnRlbnQiOiAiPHA%2BVGhpcyBpcyBteSBmaXJzdCBwb3N0PC9wPiIKICAgIH0KICBdCn0%3D&source=PGgxPiBCbG9nIHBvc3RzIGZvciB7JSBzaXRlVGl0bGUgJX0gPC9oMT4KeyV%2BIG1hcCBibG9nUG9zdHMgd2l0aCB7aW1hZ2UsIHRpdGxlLCBjb250ZW50LCBkYXRlLCBhdXRob3I6IHtuYW1lfX0gJX0KICA8YXJ0aWNsZSBjbGFzcz0iaC1lbnRyeSI%2BCiAgICA8aGVhZGVyPgogICAgICB7JSBtYXRjaCBpbWFnZSB3aXRoIG51bGwgfiV9CiAgICAgICAgeyogbm8gaW1hZ2UgKn0KICAgICAgeyV%2BIHdpdGggIXtzcmMsIGFsdH0gfiV9CiAgICAgICAgPGltZyBzcmM9InslIHNyYyAlfSIgYWx0PSJ7JSBhbHQgJX0iPgogICAgICB7JSAvbWF0Y2ggfiV9CiAgICAgIDxoMiBjbGFzcz0icC1uYW1lIj4geyUgdGl0bGUgJX0gPC9oMj4KICAgICAgPHNwYW4gY2xhc3M9InAtYXV0aG9yIj4gQnkgeyUgbmFtZSA%2FICJBbm9ueW1vdXMiICV9IDwvc3Bhbj4KICAgICAgPHNwYW4gY2xhc3M9ImR0LXB1Ymxpc2hlZCI%2BIFBvc3RlZCBvbiB7JSBkYXRlICV9IDwvc3Bhbj4KICAgIDwvaGVhZGVyPgogICAgPGRpdiBjbGFzcz0iZS1jb250ZW50Ij4ge3slIGNvbnRlbnQgJX19IDwvZGl2PgogIDwvYXJ0aWNsZT4KeyV%2BIC9tYXAgJX0%3D
 
 ## Usage in OCaml
 
@@ -52,7 +43,7 @@ The Acutis source is written in OCaml. You can install it with the OCaml package
 manager, OPAM.
 
 ```shell
-opam pin https://github.com/johnridesabike/acutis.git
+opam pin acutis git+https://git.sr.ht/~johnridesabike/acutis
 ```
 
 ## JavaScript & Eleventy plugin
@@ -68,36 +59,35 @@ Install the JavaScript package in your project:
 npm install acutis-lang
 ```
 
-Import the package in your Eleventy-powered site:
-
-```javascript
-// The compiler and runtime for creating components:
-import acutis from "acutis-lang";
-// The Eleventy plugin:
-import * as acutisEleventy from "acutis-lang/eleventy";
-```
+[Read more about its usage in the documentation](https://acutis.johnridesa.bike/introduction/).
 
 ## Development
 
-Clone this repository with git. Then create a development OPAM switch:
+To get started developing this project, clone its source code repository with
+Git. Then create a development OPAM switch:
 
 ```shell
 opam switch create . --deps-only --with-test --with-doc
 ```
 
-Compile the code:
+Use Dune to compile the code:
 
 ```shell
 dune build
 ```
 
-Build the code and also run the CI tests:
+Or use Dune to compile the code and also run the tests:
 
 ```shell
 dune build @ci
 ```
 
+Send patches to <~johnridesabike/public-inbox@lists.sr.ht>.
+
 ## License
+
+Acutis was created and is maintained by
+[John Jackson](https://johnridesa.bike/).
 
     Copyright (c) 2022 John Jackson.
 

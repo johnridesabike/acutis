@@ -5,9 +5,9 @@ synopsis: "A virtual package containing the Acutis JavaScript dependencies"
 maintainer: ["John Jackson <jbpjackson+acutis@icloud.com>"]
 authors: ["John Jackson <jbpjackson+acutis@icloud.com>"]
 license: "MPL-2.0"
-homepage: "https://github.com/johnridesabike/acutis"
-doc: "https://acutis.johnridesa.bike/"
-bug-reports: "https://github.com/johnridesabike/acutis/issues"
+homepage: "https://acutis.johnridesa.bike/"
+doc: "https://acutis.johnridesa.bike/api/acutis/Acutis/"
+bug-reports: "https://todo.sr.ht/~johnridesabike/acutis"
 depends: [
   "dune" {>= "3.13"}
   "ocaml"
@@ -31,4 +31,4 @@ build: [
     "@doc" {with-doc}
   ]
 ]
-dev-repo: "git+https://github.com/johnridesabike/acutis.git"
+dev-repo: "git+https://git.sr.ht/~johnridesabike/acutis"

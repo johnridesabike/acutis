@@ -16,7 +16,7 @@ Node.js projects.
 
 Beware: both the OCaml and JavaScript API are unstable and experimental.
 
-[The OCaml API is documented here](../api/).
+[The OCaml API is documented here](/api/acutis/Acutis/).
 
 You can also use the [CLI].
 
@@ -36,7 +36,7 @@ abilities in OCaml.
 The OCaml package manager, OPAM, can install Acutis through the git repository.
 
 ```shell
-opam pin https://github.com/johnridesabike/acutis.git
+opam pin acutis git+https://git.sr.ht/~johnridesabike/acutis
 ```
 
 ## Installation: JavaScript
@@ -76,7 +76,7 @@ export default (eleventyConfig) => {
   // Or print templates into ECMAScript modules for Eleventy to render:
   eleventyConfig.addPlugin(acutisEleventy.printESM);
   // ...
-}
+};
 ```
 
 Beware: loading Acutis in Node.js has the side-effect of modifying how all
@@ -94,22 +94,21 @@ JavaScript compilation is slightly more experimental.
 
 ## Editor plugins
 
-These offer basic syntax highlighting and indentation features.
+This offers basic syntax highlighting and indentation features.
 
-- [Vim plugin](https://github.com/johnridesabike/vim-acutis)
-- [VS Code plugin](https://marketplace.visualstudio.com/items?itemName=jbpjackson.acutis-vscode)
+- [Vim plugin](https://git.sr.ht/~johnridesabike/vim-acutis)
 
 ## Examples
 
-- This documentation uses Acutis with [Eleventy]. [Browse the source here][1].
+- [The documentation source][1], built with Acutis and [Eleventy].
 - [The Acutis CLI][2].
 - [The JavaScript interface][3].
 - [The Eleventy plugin source][4].
 
-[1]: https://github.com/johnridesabike/acutis/tree/master/docs
-[2]: https://github.com/johnridesabike/acutis/blob/master/acutis_cli.ml
-[3]: https://github.com/johnridesabike/acutis/blob/master/acutis_js.ml
-[4]: https://github.com/johnridesabike/acutis/blob/master/eleventy.js
+[1]: https://git.sr.ht/~johnridesabike/acutis/tree/master/item/docs
+[2]: https://git.sr.ht/~johnridesabike/acutis/tree/master/item/acutis_cli.ml
+[3]: https://git.sr.ht/~johnridesabike/acutis/tree/master/item/acutis_js.ml
+[4]: https://git.sr.ht/~johnridesabike/acutis/tree/master/item/eleventy.js
 [eleventy]: https://www.11ty.dev/
 
 ## Acutis command line interface (CLI)
@@ -121,7 +120,7 @@ prints the rendered output.
 Example:
 
 ```shell
-acutis index.acutis src/**/*.acutis < data.json > dist/index.html
+acutis index.acutis components/**/*.acutis < data.json > index.html
 ```
 
 Full options:
