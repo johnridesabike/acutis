@@ -183,9 +183,7 @@ let () =
          Lexing.set_filename lexbuf fname;
          let msgs, parsed = Acutis.parse lexbuf in
          export_result msgs
-           (Option.map
-              (Acutis.comp_of_parsed ~name:(fname_to_compname fname))
-              parsed)
+           (Option.map (Acutis.comp_of_parsed (fname_to_compname fname)) parsed)
 
        method uint8Array fname src =
          let fname = Js.to_string fname in
@@ -193,17 +191,14 @@ let () =
          Lexing.set_filename lexbuf fname;
          let msgs, parsed = Acutis.parse lexbuf in
          export_result msgs
-           (Option.map
-              (Acutis.comp_of_parsed ~name:(fname_to_compname fname))
-              parsed)
+           (Option.map (Acutis.comp_of_parsed (fname_to_compname fname)) parsed)
 
        method func name ty f =
          let msgs, interface = Acutis_js.interface ty in
          export_result msgs
            (Option.map
               (fun interface ->
-                Acutis.comp_of_fun ~name:(Js.to_string name) interface
-                  (fun data ->
+                Acutis.comp_of_fun (Js.to_string name) interface (fun data ->
                     match
                       Js.Unsafe.fun_call f [| data |] |> Js_promise.classify
                     with
@@ -218,7 +213,7 @@ let () =
          export_result msgs
            (Option.map
               (fun interface ->
-                Acutis.comp_of_fun ~name:function_path interface
+                Acutis.comp_of_fun function_path interface
                   (Acutis.js_import ~module_path ~function_path))
               interface)
     end)

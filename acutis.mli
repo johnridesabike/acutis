@@ -39,13 +39,13 @@ type 'a compiled
 
 (** {1 Compiling templates.} *)
 
-val comp_of_parsed : name:string -> parsed -> 'a comp
-(** Convert a parsed Acutis template into a component. [name] is the name the
-    component is called in Acutis code. *)
+val comp_of_parsed : string -> parsed -> 'a comp
+(** Convert a parsed Acutis template into a component. The string is the name
+    the component is called in Acutis code. *)
 
-val comp_of_fun : name:string -> interface -> 'a -> 'a comp
-(** Convert a function or a {!type-js_import} into a template component. [name]
-    is the name the component is called in Acutis code. *)
+val comp_of_fun : string -> interface -> 'a -> 'a comp
+(** Convert a function or a {!type-js_import} into a template component. The
+    string is the name the component is called in Acutis code. *)
 
 val comps_compile : 'a comp Seq.t -> 'a comps_compiled compile_result
 (** Type-check, optimize, and link the components. *)

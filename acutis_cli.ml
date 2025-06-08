@@ -140,7 +140,7 @@ let components_parsed () =
          let msgs, parsed = Acutis.parse lexbuf in
          print_msgs msgs;
          let name = fname_to_compname fname in
-         Option.map (Acutis.comp_of_parsed ~name) parsed)
+         Option.map (Acutis.comp_of_parsed name) parsed)
 
 let components () = Acutis.comps_compile (components_parsed ()) |> get_or_exit
 
@@ -156,7 +156,7 @@ let components_js () =
            Option.map
              (fun interface ->
                Acutis.comp_of_fun
-                 ~name:(fname_to_compname function_path)
+                 (fname_to_compname function_path)
                  interface
                  (Acutis.js_import ~module_path ~function_path))
              interface)

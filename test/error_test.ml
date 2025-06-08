@@ -69,7 +69,7 @@ let component_string ~fname ~name src =
   let lexbuf = Lexing.from_string src in
   Lexing.set_filename lexbuf fname;
   let msgs, parsed = Acutis.parse lexbuf in
-  (msgs, Option.map (Acutis.comp_of_parsed ~name) parsed)
+  (msgs, Option.map (Acutis.comp_of_parsed name) parsed)
 
 let comps_compile l =
   List.to_seq l

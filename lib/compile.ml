@@ -138,8 +138,8 @@ and make_match loc tys cases =
 module Components = struct
   type 'a source = (parsed, 'a) T.source
 
-  let of_parsed ~name parsed = T.Src (name, parsed)
-  let of_fun ~name props f = T.Fun (name, props, f)
+  let of_parsed name parsed = T.Src (name, parsed)
+  let of_fun name props f = T.Fun (name, props, f)
 
   type 'a t = {
     typed : (T.t, 'a) T.source Map_string.t;

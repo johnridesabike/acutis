@@ -107,7 +107,7 @@ module Type = struct
       (F.pp_print_seq ~pp_sep:pp_sum_sep pp_case)
       cases pp_row row
 
-  let pp_field pp_k pp_v ppf tup = Pp.equation ~sep:":" pp_k pp_v ppf tup
+  let pp_field pp_k pp_v ppf tup = Pp.equation pp_k ":" pp_v ppf tup
 
   let rec pp ppf t =
     match !t with
@@ -116,13 +116,10 @@ module Type = struct
     | Float -> F.pp_print_string ppf "float"
     | String -> F.pp_print_string ppf "string"
     | Nullable x -> F.fprintf ppf "?@[<hv 1>@,%a@]" pp x
-    | List t -> Pp.surround ~left:'[' ~right:']' pp ppf t
-    | Dict (t, _) -> Pp.surround ~left:'<' ~right:'>' pp ppf t
+    | List t -> Pp.surround '[' ']' pp ppf t
+    | Dict (t, _) -> Pp.surround '<' '>' pp ppf t
     | Record r -> pp_record ppf r
-    | Tuple l ->
-        Pp.surround ~left:'(' ~right:')'
-          (F.pp_print_list ~pp_sep:Pp.comma pp)
-          ppf l
+    | Tuple l -> Pp.surround '(' ')' (F.pp_print_list ~pp_sep:Pp.comma pp) ppf l
     | Enum_string { cases; row; _ } ->
         pp_sum ppf (Pp.at Pp.syntax_string) (Set_string.to_seq cases) row
     | Enum_int ({ cases; row }, Not_bool) ->
@@ -137,7 +134,7 @@ module Type = struct
         pp_sum ppf (pp_union Pp.syntax_string key) (Map_string.to_seq cases) row
 
   and pp_record ?tag ppf m =
-    Pp.surround ~left:'{' ~right:'}'
+    Pp.surround '{' '}'
       (fun ppf s ->
         (match tag with
         | None -> ()
@@ -159,8 +156,7 @@ module Type = struct
 
   let pp_interface ppf x =
     F.fprintf ppf "@[<v>%a@]"
-      (F.pp_print_seq ~pp_sep:F.pp_print_cut
-         (Pp.equation ~sep:" =" Pp.field pp))
+      (F.pp_print_seq ~pp_sep:F.pp_print_cut (Pp.equation Pp.field " =" pp))
       (Map_string.to_seq x)
 
   module Polymap = struct

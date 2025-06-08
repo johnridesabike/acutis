@@ -31,10 +31,10 @@ let bool ppf = function
   | 0 -> pp_print_string ppf "false"
   | _ -> pp_print_string ppf "true"
 
-let surround ~left ~right f ppf x =
+let surround left right f ppf x =
   fprintf ppf "@[<hv 2>%c@;<0 0>%a@;<0 -2>%c@]" left f x right
 
-let equation ~sep pp_k pp_v ppf (k, v) =
+let equation pp_k sep pp_v ppf (k, v) =
   fprintf ppf "@[<hv 2>%a%s@ %a@]" pp_k k sep pp_v v
 
 module Ty_repr = struct

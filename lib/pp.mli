@@ -32,23 +32,18 @@ val bool : formatter -> int -> unit
 (** Prints [false] if the input is 0, or prints [true] otherwise. *)
 
 val surround :
-  left:char ->
-  right:char ->
-  (formatter -> 'a -> unit) ->
-  formatter ->
-  'a ->
-  unit
-(** [surround ~left ~right f ppf x] prints [x] with [left] and [right] printed
+  char -> char -> (formatter -> 'a -> unit) -> formatter -> 'a -> unit
+(** [surround left right f ppf x] prints [x] with [left] and [right] printed
     before and after it, e.g. [{x}]. *)
 
 val equation :
-  sep:string ->
   (formatter -> 'key -> unit) ->
+  string ->
   (formatter -> 'value -> unit) ->
   formatter ->
   'key * 'value ->
   unit
-(** [equation ~sep pp_k pp_v ppf (k, v)] prints [k sep v], e.g. [a = 1]. *)
+(** [equation pp_k sep pp_v ppf (k, v)] prints [k sep v], e.g. [a = 1]. *)
 
 module Ty_repr : sig
   (** Pretty-print typed representations of OCaml values. *)

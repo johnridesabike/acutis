@@ -58,8 +58,8 @@ type parsed = { fname : string; ast : Ast.t }
 module Components : sig
   type 'a source
 
-  val of_parsed : name:string -> parsed -> _ source
-  val of_fun : name:string -> Typechecker.Type.interface -> 'a -> 'a source
+  val of_parsed : string -> parsed -> _ source
+  val of_fun : string -> Typechecker.Type.interface -> 'a -> 'a source
 
   type 'a t
 

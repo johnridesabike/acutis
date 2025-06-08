@@ -204,24 +204,23 @@ let rec pp_pat ppf = function
   | Enum_int (_, i) -> Pp.at F.pp_print_int ppf i
   | List (_, [], Some tl) -> pp_pat ppf tl
   | List (_, l, None) ->
-      Pp.surround ~left:'[' ~right:']' (F.pp_print_list ~pp_sep pp_pat) ppf l
+      Pp.surround '[' ']' (F.pp_print_list ~pp_sep pp_pat) ppf l
   | List (_, l, Some tl) ->
-      Pp.surround ~left:'[' ~right:']'
+      Pp.surround '[' ']'
         (fun ppf () ->
           F.pp_print_list ~pp_sep pp_pat ppf l;
           pp_sep ppf ();
           Pp.ellipsis ppf ();
           pp_pat ppf tl)
         ppf ()
-  | Tuple (_, l) ->
-      Pp.surround ~left:'(' ~right:')' (F.pp_print_list ~pp_sep pp_pat) ppf l
+  | Tuple (_, l) -> Pp.surround '(' ')' (F.pp_print_list ~pp_sep pp_pat) ppf l
   | Record (_, l) ->
-      Pp.surround ~left:'{' ~right:'}'
+      Pp.surround '{' '}'
         (F.pp_print_seq ~pp_sep pp_record_keyvalue)
         ppf (Nonempty.to_seq l)
   | Dict (_, l) ->
-      Pp.surround ~left:'<' ~right:'>'
-        (F.pp_print_list ~pp_sep (Pp.equation ~sep:":" Pp.field pp_pat))
+      Pp.surround '<' '>'
+        (F.pp_print_list ~pp_sep (Pp.equation Pp.field ":" pp_pat))
         ppf
         (List.map (fun (_, k, v) -> (k, v)) l)
   | Block _ -> F.pp_print_string ppf "#%}...{%#"
@@ -229,5 +228,5 @@ let rec pp_pat ppf = function
 
 and pp_record_keyvalue ppf (_, k, v) =
   match v with
-  | Tag t -> Pp.equation ~sep:":" (Pp.at Pp.field) pp_tag ppf (k, t)
-  | Value v -> Pp.equation ~sep:":" Pp.field pp_pat ppf (k, v)
+  | Tag t -> Pp.equation (Pp.at Pp.field) ":" pp_tag ppf (k, t)
+  | Value v -> Pp.equation Pp.field ":" pp_pat ppf (k, v)
