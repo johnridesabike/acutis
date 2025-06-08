@@ -328,11 +328,10 @@
                     if (!(errors$0.contents.length === 0)) {
                       errors$0.contents += "\n\n";
                     }
-                    errors$0.contents += "File \"";
+                    errors$0.contents += "Error while rendering \"";
                     errors$0.contents += "template.acutis";
                     errors$0.contents +=
-                      "\"\n\
-  Render error.\n\
+                      "\".\n\
   The data supplied does not match this template's interface.\n\
   ";
                     errors$0.contents += "Path:\n<input>";

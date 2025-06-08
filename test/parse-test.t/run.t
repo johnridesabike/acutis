@@ -963,10 +963,10 @@ Print the runtime instructions
                 (arg ->
                  (if_else (not ((buffer_length errors) = 0))
                   (then (buffer_add_string errors "\n\n")) (else (unit)))
-                 (buffer_add_string errors "File \"")
+                 (buffer_add_string errors "Error while rendering \"")
                  (buffer_add_string errors "template.acutis")
                  (buffer_add_string errors
-                  "\"\nRender error.\nThe data supplied does not match this template's interface.\n")
+                  "\".\nThe data supplied does not match this template's interface.\n")
                  (buffer_add_string errors "Path:\n<input>")
                  (stm (arg @@ ((buffer_add_sep @@ errors) @@ " -> ")))
                  (buffer_add_string errors "\nExpected type:\n")

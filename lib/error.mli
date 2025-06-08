@@ -77,6 +77,14 @@ val duplicate_name : string -> _
 val cycle : string list -> exn
 val missing_component : string list -> string -> exn
 
+(** {1 Decode combinator errors.} *)
+
+val intf_decode_invalid : string -> _
+val intf_decode_enum : string -> _
+val intf_decode_single_param : string -> _
+val intf_decode_empty_seq : unit -> _
+val intf_decode_empty_record : unit -> _
+
 (** {1 Internal errors.} *)
 
 val internal :
@@ -85,6 +93,3 @@ val internal :
   'a
 (** Use this instead of [assert false] when an internal invariant breaks. It
     indicates a bug in the compiler. *)
-
-val raise_fmt : ('a, Format.formatter, unit, _) format4 -> 'a
-(** Raise a custom message. *)

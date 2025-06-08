@@ -1,560 +1,467 @@
 Illegal character 1
 ---
-File "<test>", 1:9-1:10
-Syntax error.
+Error in file "<test>", 1:9-1:10.
 Unexpected character: '*'
 
 Illegal character 2
 ---
-File "<test>", 1:4-1:5
-Syntax error.
+Error in file "<test>", 1:4-1:5.
 Unexpected character: '+'
 
 Illegal character 3
 ---
-File "<test>", 1:12-1:13
-Syntax error.
+Error in file "<test>", 1:12-1:13.
 Unexpected character: '&'
 
 Illegal character 4
 ---
-File "<test>", 1:6-1:7
-Syntax error.
+Error in file "<test>", 1:6-1:7.
 Unexpected character: '&'
 
 A number greater than the maximum integer is a syntax error.
 ---
-File "<test>", 1:10-1:29
-Syntax error.
+Error in file "<test>", 1:10-1:29.
 Invalid integer: 9999999999999999999
 
 Illegal name: echo null
 ---
-File "<test>", 1:4-1:8
-Parse error.
+Error in file "<test>", 1:4-1:8.
 This is not a valid expression.
 
 Illegal name: echo false
 ---
-File "<test>", 1:4-1:9
-Parse error.
+Error in file "<test>", 1:4-1:9.
 This is not a valid expression.
 
 Illegal name: echo true
 ---
-File "<test>", 1:4-1:8
-Parse error.
+Error in file "<test>", 1:4-1:8.
 This is not a valid expression.
 
 Illegal name: _
 ---
-File "<test>", 1:9-1:10
-Type error.
+Error in file "<test>", 1:9-1:10.
 Underscore ('_') is not a valid name.
 
 Unterminated strings
 ---
-File "<test>", 1:4-1:6
-Syntax error.
+Error in file "<test>", 1:4-1:6.
 Unterminated string.
 
 Unterminated comment
 ---
-File "<test>", 1:1-1:11
-Syntax error.
+Error in file "<test>", 1:1-1:11.
 Unterminated comment.
 
 Unterminated comment (nested)
 ---
-File "<test>", 1:4-1:8
-Syntax error.
+Error in file "<test>", 1:4-1:8.
 Unterminated comment.
 
 Unterminated expressions
 ---
-File "<test>", 1:9-1:9
-Parse error.
+Error in file "<test>", 1:9-1:9.
 This is not a valid pattern.
 
 Illegal escape sequence
 ---
-File "<test>", 1:5-1:7
-Syntax error.
+Error in file "<test>", 1:5-1:7.
 Unexpected character: 'a'
 
 Missing a closing component name
 ---
-File "<test>", 1:19-1:20
-Parse error.
+Error in file "<test>", 1:19-1:20.
 Expected a component name.
 
 Unclosed components (this one is confusing.)
 ---
-File "<test>", 1:7-1:8
-Parse error.
+Error in file "<test>", 1:7-1:8.
 Expected a '%}'.
 
 Empty expressions
 ---
-File "<test>", 1:6-1:9
-Parse error.
+Error in file "<test>", 1:6-1:9.
 This is not a valid expression.
 
 Unexpected tokens (1)
 ---
-File "<test>", 1:5-1:9
-Parse error.
+Error in file "<test>", 1:5-1:9.
 This is not a valid expression.
 
 Unexpected tokens (3)
 ---
-File "<test>", 1:40-1:41
-Parse error.
+Error in file "<test>", 1:40-1:41.
 Expected a '%}'.
 
 Unexpected tokens (inside # blocks)
 ---
-File "<test>", 1:20-1:21
-Parse error.
+Error in file "<test>", 1:20-1:21.
 This is not a valid expression, or maybe a '#' is missing.
 
 Bad pattern (1)
 ---
-File "<test>", 1:10-1:13
-Parse error.
+Error in file "<test>", 1:10-1:13.
 This is not a valid pattern.
 
 Bad pattern (2)
 ---
-File "<test>", 1:11-1:14
-Parse error.
+Error in file "<test>", 1:11-1:14.
 This is not a valid pattern.
 
 Bad pattern (3)
 ---
-File "<test>", 1:11-1:14
-Parse error.
+Error in file "<test>", 1:11-1:14.
 This is not a valid pattern.
 
 Bad pattern (4)
 ---
-File "<test>", 1:11-1:14
-Parse error.
+Error in file "<test>", 1:11-1:14.
 This is not a valid pattern.
 
 Bad pattern (5)
 ---
-File "<test>", 1:13-1:16
-Parse error.
+Error in file "<test>", 1:13-1:16.
 This is not a valid pattern.
 
 Bad pattern (6)
 ---
-File "<test>", 1:13-1:16
-Parse error.
+Error in file "<test>", 1:13-1:16.
 This is not a valid pattern.
 
 Bad pattern (7)
 ---
-File "<test>", 1:8-1:11
-Parse error.
+Error in file "<test>", 1:8-1:11.
 This is not a valid pattern.
 
 Bad pattern (8)
 ---
-File "<test>", 1:14-1:18
-Parse error.
+Error in file "<test>", 1:14-1:18.
 This is not a valid pattern.
 
 Bad pattern (9)
 ---
-File "<test>", 1:12-1:16
-Parse error.
+Error in file "<test>", 1:12-1:16.
 This is not a valid pattern.
 
 Bad pattern (10)
 ---
-File "<test>", 1:14-1:18
-Parse error.
+Error in file "<test>", 1:14-1:18.
 This is not a valid pattern.
 
 Bad pattern (11)
 ---
-File "<test>", 1:12-1:16
-Parse error.
+Error in file "<test>", 1:12-1:16.
 This is not a valid pattern.
 
 Bad pattern (12)
 ---
-File "<test>", 1:15-1:19
-Parse error.
+Error in file "<test>", 1:15-1:19.
 This is not a valid pattern.
 
 Bad pattern (13)
 ---
-File "<test>", 1:14-1:18
-Parse error.
+Error in file "<test>", 1:14-1:18.
 This is not a valid pattern.
 
 Unclosed < (4)
 ---
-File "<test>", 1:14-1:18
-Parse error.
+Error in file "<test>", 1:14-1:18.
 This is not a valid pattern.
 
 Illegal pattern after with
 ---
-File "<test>", 1:17-1:20
-Parse error.
+Error in file "<test>", 1:17-1:20.
 This is not a valid pattern.
 
 Bad pattern (14)
 ---
-File "<test>", 1:8-1:11
-Parse error.
+Error in file "<test>", 1:8-1:11.
 This is not a valid pattern.
 
 Bad pattern (15)
 ---
-File "<test>", 1:15-1:18
-Parse error.
+Error in file "<test>", 1:15-1:18.
 This is not a valid pattern.
 
 Bad echo (1)
 ---
-File "<test>", 1:4-1:8
-Parse error.
+Error in file "<test>", 1:4-1:8.
 This is not a valid expression.
 
 Bad echo (2)
 ---
-File "<test>", 1:5-1:9
-Parse error.
+Error in file "<test>", 1:5-1:9.
 This is not a valid expression.
 
 Bad echo (3)
 ---
-File "<test>", 1:5-1:9
-Parse error.
+Error in file "<test>", 1:5-1:9.
 This is not a valid echo.
 
 Bad echo (4)
 ---
-File "<test>", 1:8-1:12
-Parse error.
+Error in file "<test>", 1:8-1:12.
 This is not a valid echo.
 
 Bad echo (5)
 ---
-File "<test>", 1:7-1:11
-Parse error.
+Error in file "<test>", 1:7-1:11.
 This is not a valid echo.
 
 Bad echo (6)
 ---
-File "<test>", 1:9-1:9
-Parse error.
+Error in file "<test>", 1:9-1:9.
 Expected a '%}}'.
 
 Bad echo (7)
 ---
-File "<test>", 1:6-1:9
-Parse error.
+Error in file "<test>", 1:6-1:9.
 Expected a '%}'.
 
 Bad echo (8)
 ---
-File "<test>", 1:4-1:5
-Parse error.
+Error in file "<test>", 1:4-1:5.
 This is not a valid expression.
 
 Bad echo (9)
 ---
-File "<test>", 1:8-1:17
-Parse error.
+Error in file "<test>", 1:8-1:17.
 This is not a valid echo.
 
 Bad echo format (1)
 ---
-File "<test>", 1:4-1:5
-Syntax error.
+Error in file "<test>", 1:4-1:5.
 Unexpected character: '%'
 
 Bad echo format (2)
 ---
-File "<test>", 1:4-1:5
-Syntax error.
+Error in file "<test>", 1:4-1:5.
 Unexpected character: '%'
 
 Bad echo format (3)
 ---
-File "<test>", 1:4-1:5
-Syntax error.
+Error in file "<test>", 1:4-1:5.
 Unexpected character: '%'
 
 Bad prop (1)
 ---
-File "<test>", 1:6-1:10
-Parse error.
+Error in file "<test>", 1:6-1:10.
 This is not a valid component prop.
 
 Bad prop (2)
 ---
-File "<test>", 1:8-1:9
-Parse error.
+Error in file "<test>", 1:8-1:9.
 This is not a valid component prop.
 
 Bad prop (3)
 ---
-File "<test>", 1:8-1:9
-Parse error.
+Error in file "<test>", 1:8-1:9.
 This is not a valid component prop.
 
 Bad prop (4)
 ---
-File "<test>", 1:12-1:16
-Parse error.
+Error in file "<test>", 1:12-1:16.
 This is not a valid component prop.
 
 Illegal field name (1)
 ---
-File "<test>", 1:12-1:16
-Parse error.
+Error in file "<test>", 1:12-1:16.
 This is not a valid field name.
 
 Illegal field name (2)
 ---
-File "<test>", 1:13-1:17
-Parse error.
+Error in file "<test>", 1:13-1:17.
 This is not a valid field name.
 
 Illegal field name (3)
 ---
-File "<test>", 1:14-1:18
-Parse error.
+Error in file "<test>", 1:14-1:18.
 This is not a valid field name.
 
 Illegal field name (4)
 ---
-File "<test>", 1:12-1:16
-Parse error.
+Error in file "<test>", 1:12-1:16.
 This is not a valid field name.
 
 Illegal field name (5)
 ---
-File "<test>", 1:14-1:18
-Parse error.
+Error in file "<test>", 1:14-1:18.
 This is not a valid field name.
 
 Unclosed { (1)
 ---
-File "<test>", 1:13-1:17
-Parse error.
+Error in file "<test>", 1:13-1:17.
 Expected a ',', ':', or '}'.
 
 Unclosed { (2)
 ---
-File "<test>", 1:23-1:27
-Parse error.
+Error in file "<test>", 1:23-1:27.
 Expected a ',', ':', or '}'.
 
 Unclosed { (3)
 ---
-File "<test>", 1:15-1:19
-Parse error.
+Error in file "<test>", 1:15-1:19.
 Expected a ':'.
 
 Unclosed { (4)
 ---
-File "<test>", 1:15-1:19
-Parse error.
+Error in file "<test>", 1:15-1:19.
 Expected a ',' or '}'.
 
 Unclosed { (5)
 ---
-File "<test>", 1:16-1:20
-Parse error.
+Error in file "<test>", 1:16-1:20.
 Expected a ',' or '}'.
 
 Unclosed (
 ---
-File "<test>", 1:13-1:17
-Parse error.
+Error in file "<test>", 1:13-1:17.
 Expected a ',' or ')'.
 
 Unclosed [ (1)
 ---
-File "<test>", 1:13-1:17
-Parse error.
+Error in file "<test>", 1:13-1:17.
 Expected a ',', '...', or ']'.
 
 Unclosed [ (2)
 ---
-File "<test>", 1:16-1:20
-Parse error.
+Error in file "<test>", 1:16-1:20.
 Expected a ']'.
 
 Unclosed < (1)
 ---
-File "<test>", 1:13-1:17
-Parse error.
+Error in file "<test>", 1:13-1:17.
 Expected a ',', ':', or '>'.
 
 Unclosed < (2)
 ---
-File "<test>", 1:15-1:19
-Parse error.
+Error in file "<test>", 1:15-1:19.
 Expected a ':'.
 
 Unclosed < (3)
 ---
-File "<test>", 1:15-1:19
-Parse error.
+Error in file "<test>", 1:15-1:19.
 Expected a ',' or '>'.
 
 Missing commas in match/map patterns (1)
 ---
-File "<test>", 1:12-1:13
-Parse error.
+Error in file "<test>", 1:12-1:13.
 Sequential patterns must be separated by a ','.
 
 Missing commas in match/map patterns (2)
 ---
-File "<test>", 1:15-1:16
-Parse error.
+Error in file "<test>", 1:15-1:16.
 Sequential patterns must be separated by a ','.
 
 Missing commas in match/map patterns (3)
 ---
-File "<test>", 1:10-1:11
-Parse error.
+Error in file "<test>", 1:10-1:11.
 Sequential patterns must be separated by a ','.
 
 Missing commas in match/map patterns (4)
 ---
-File "<test>", 1:16-1:20
-Parse error.
+Error in file "<test>", 1:16-1:20.
 Sequential patterns must be separated by a ','.
 
 Missing commas in match/map patterns (5)
 ---
-File "<test>", 1:25-1:26
-Parse error.
+Error in file "<test>", 1:25-1:26.
 Sequential patterns must be separated by a ','.
 
 Missing commas in match/map patterns (5)
 ---
-File "<test>", 1:21-1:22
-Parse error.
+Error in file "<test>", 1:21-1:22.
 Sequential patterns must be separated by a ','.
 
 Unmatched match
 ---
-File "<test>", 1:26-1:26
-Parse error.
+Error in file "<test>", 1:26-1:26.
 Unclosed block. Expected a '{% /' somewhere.
 
 Missing /match
 ---
-File "<test>", 1:26-1:29
-Parse error.
+Error in file "<test>", 1:26-1:29.
 Expected a '/match'.
 
 Missing /map
 ---
-File "<test>", 1:24-1:29
-Parse error.
+Error in file "<test>", 1:24-1:29.
 Expected a '/map'.
 
 Missing /map_dict
 ---
-File "<test>", 1:29-1:32
-Parse error.
+Error in file "<test>", 1:29-1:32.
 Expected a '/map_dict'.
 
 Unseparated echoes
 ---
-File "<test>", 1:6-1:7
-Parse error.
+Error in file "<test>", 1:6-1:7.
 Sequential echoes must be separated by a '?'.
 
 # Blocks must contain text
 ---
-File "<test>", 1:10-1:13
-Parse error.
+Error in file "<test>", 1:10-1:13.
 Expected a '%}'.
 
 Bad record field access (1)
 ---
-File "<test>", 1:12-1:13
-Parse error.
+Error in file "<test>", 1:12-1:13.
 This is not a valid field name.
 
 Bad record field access (2)
 ---
-File "<test>", 1:6-1:7
-Parse error.
+Error in file "<test>", 1:6-1:7.
 This is not a valid field name.
 
 Duplicate field
 ---
-File "<test>", 1:24-1:30
-Type error.
+Error in file "<test>", 1:24-1:30.
 Duplicate field 'a'.
 
 Duplicate tag field
 ---
-File "<test>", 1:25-1:31
-Type error.
+Error in file "<test>", 1:25-1:31.
 Duplicate field 'a'.
 
 Duplicate dict field
 ---
-File "<test>", 1:24-1:30
-Type error.
+Error in file "<test>", 1:24-1:30.
 Duplicate field 'a'.
 
 Multiple record tags
 ---
-File "<test>", 1:25-1:32
-Type error.
+Error in file "<test>", 1:25-1:32.
 This tagged record has multiple tags.
 
 Pattern count mismatch 1
 ---
-File "<test>", 1:4-1:42
-Type error.
+Error in file "<test>", 1:4-1:42.
 Pattern count mismatch.
 
 Pattern count mismatch 2
 ---
-File "<test>", 1:30-1:42
-Type error.
+Error in file "<test>", 1:30-1:42.
 Pattern count mismatch.
 
 Pattern count mismatch 3 (error location is correct)
 ---
-File "<test>", 1:22-1:31
-Type error.
+Error in file "<test>", 1:22-1:31.
 Pattern count mismatch.
 
 Pattern count mismatch (map)
 ---
-File "<test>", 1:4-1:56
-Type error.
+Error in file "<test>", 1:4-1:56.
 Expressions 'map' and 'map_dict' can only have one or two patterns for each
 'with' expression.
 
 You can't bind a name more than once when destructuring.
 ---
-File "<test>", 1:21-1:22
-Type error.
+Error in file "<test>", 1:21-1:22.
 The name 'x' is already bound in this pattern.
 
 Echoed string literals cannot appear before a ?.
 ---
-File "<test>", 1:4-1:8
-Type error.
+Error in file "<test>", 1:4-1:8.
 Type mismatch.
 Expected:
   ?string
@@ -563,8 +470,7 @@ Received:
 
 Record field access type errors fail correctly.
 ---
-File "<test>", 1:17-1:18
-Type error.
+Error in file "<test>", 1:17-1:18.
 Type mismatch.
 Expected:
   {b: int}
@@ -573,8 +479,7 @@ Received:
 
 String <> int
 ---
-File "<test>", 1:32-1:33
-Type error.
+Error in file "<test>", 1:32-1:33.
 Type mismatch.
 Expected:
   string
@@ -583,8 +488,7 @@ Received:
 
 Float <> int
 ---
-File "<test>", 1:32-1:33
-Type error.
+Error in file "<test>", 1:32-1:33.
 Type mismatch.
 Expected:
   float
@@ -593,8 +497,7 @@ Received:
 
 String <> float
 ---
-File "<test>", 1:32-1:35
-Type error.
+Error in file "<test>", 1:32-1:35.
 Type mismatch.
 Expected:
   string
@@ -603,8 +506,7 @@ Received:
 
 Map list key type mismatch.
 ---
-File "<test>", 1:4-1:55
-Type error.
+Error in file "<test>", 1:4-1:55.
 Type mismatch.
 Expected:
   int
@@ -613,8 +515,7 @@ Received:
 
 Map dict key type mismatch.
 ---
-File "<test>", 1:4-2:13
-Type error.
+Error in file "<test>", 1:4-2:13.
 Type mismatch.
 Expected:
   string
@@ -623,8 +524,7 @@ Received:
 
 [int] <> [string]
 ---
-File "<test>", 2:10-2:11
-Type error.
+Error in file "<test>", 2:10-2:11.
 Type mismatch.
 Expected:
   [int]
@@ -633,8 +533,7 @@ Received:
 
 {a: int} <> {a: float}
 ---
-File "<test>", 2:10-2:11
-Type error.
+Error in file "<test>", 2:10-2:11.
 Type mismatch.
 Expected:
   {a: float}
@@ -643,8 +542,7 @@ Received:
 
 (string, _) <> (float, _)
 ---
-File "<test>", 2:10-2:11
-Type error.
+Error in file "<test>", 2:10-2:11.
 Type mismatch.
 Expected:
   (float, string)
@@ -653,8 +551,7 @@ Received:
 
 Tagged record <> untagged record
 ---
-File "<test>", 2:10-2:11
-Type error.
+Error in file "<test>", 2:10-2:11.
 Type mismatch.
 Expected:
   {a: int}
@@ -663,8 +560,7 @@ Received:
 
 Dict <> record
 ---
-File "<test>", 2:10-2:11
-Type error.
+Error in file "<test>", 2:10-2:11.
 Type mismatch.
 Expected:
   {a: int}
@@ -673,8 +569,7 @@ Received:
 
 ?int <> int
 ---
-File "<test>", 2:10-2:11
-Type error.
+Error in file "<test>", 2:10-2:11.
 Type mismatch.
 Expected:
   int
@@ -683,8 +578,7 @@ Received:
 
 2-tuple <> 3-tuple
 ---
-File "<test>", 2:10-2:11
-Type error.
+Error in file "<test>", 2:10-2:11.
 Type mismatch.
 Expected:
   (int, int, int)
@@ -693,8 +587,7 @@ Received:
 
 Records with missing fields (1)
 ---
-File "<test>", 1:26-1:32
-Type error.
+Error in file "<test>", 1:26-1:32.
 Type mismatch.
 Expected:
   {a: int}
@@ -703,8 +596,7 @@ Received:
 
 Records with missing fields (2)
 ---
-File "<test>", 1:10-1:16
-Type error.
+Error in file "<test>", 1:10-1:16.
 Type mismatch.
 Expected:
   {a: _, b: _}
@@ -713,8 +605,7 @@ Received:
 
 Record field access type errors fail correctly.
 ---
-File "<test>", 2:19-2:20
-Type error.
+Error in file "<test>", 2:19-2:20.
 Type mismatch.
 Expected:
   {b: {c: int}}
@@ -723,15 +614,13 @@ Received:
 
 Records with missing fields (Component)
 ---
-File "<test>", 1:4-1:7
-Type error.
+Error in file "<test>", 1:4-1:7.
 This is missing key 'a' of type:
   string
 
 Closed enum <> open enum
 ---
-File "<test>", 2:10-2:11
-Type error.
+Error in file "<test>", 2:10-2:11.
 Type mismatch.
 Expected:
   @1
@@ -740,8 +629,7 @@ Received:
 
 Enum vars with no subset are reported.
 ---
-File "<test>", 3:12-3:13
-Type error.
+Error in file "<test>", 3:12-3:13.
 Type mismatch.
 Expected:
   @1 | @2
@@ -750,8 +638,7 @@ Received:
 
 Enum vars + literals with no subset are reported.
 ---
-File "<test>", 2:12-2:14
-Type error.
+Error in file "<test>", 2:12-2:14.
 Type mismatch.
 Expected:
   @1 | @2
@@ -760,8 +647,7 @@ Received:
 
 Enum literals with no subset are reported (1).
 ---
-File "<test>", 1:10-1:12
-Type error.
+Error in file "<test>", 1:10-1:12.
 Type mismatch.
 Expected:
   @1
@@ -770,8 +656,7 @@ Received:
 
 Enum literals with no subset are reported (2).
 ---
-File "<test>", 1:10-1:12
-Type error.
+Error in file "<test>", 1:10-1:12.
 Type mismatch.
 Expected:
   @"a"
@@ -780,8 +665,7 @@ Received:
 
 | false | true <> only false
 ---
-File "<test>", 1:10-1:14
-Type error.
+Error in file "<test>", 1:10-1:14.
 Type mismatch.
 Expected:
   false
@@ -790,8 +674,7 @@ Received:
 
 Bool <> int
 ---
-File "<test>", 1:25-1:29
-Type error.
+Error in file "<test>", 1:25-1:29.
 Type mismatch.
 Expected:
   @0
@@ -800,8 +683,7 @@ Received:
 
 Int tag <> string tag
 ---
-File "<test>", 1:38-1:52
-Type error.
+Error in file "<test>", 1:38-1:52.
 Type mismatch.
 Expected:
   {@tag: 0}
@@ -810,8 +692,7 @@ Received:
 
 Bool tag <> int tag
 ---
-File "<test>", 1:32-1:44
-Type error.
+Error in file "<test>", 1:32-1:44.
 Type mismatch.
 Expected:
   {@tag: 0}
@@ -820,14 +701,12 @@ Received:
 
 Random other tags don't compile.
 ---
-File "<test>", 1:24-1:25
-Parse error.
+Error in file "<test>", 1:24-1:25.
 Only literal integer, string, and boolean values may be union tags.
 
 Tag names must be coherent.
 ---
-File "<test>", 1:36-1:46
-Type error.
+Error in file "<test>", 1:36-1:46.
 Type mismatch.
 Expected:
   {@a: 0}
@@ -836,14 +715,12 @@ Received:
 
 Variable names must be coherent.
 ---
-File "<test>", 2:16-2:17
-Type error.
+Error in file "<test>", 2:16-2:17.
 Variable 'b' must occur in each 'with' pattern.
 
 Variable types must be coherent.
 ---
-File "<test>", 1:38-1:39
-Type error.
+Error in file "<test>", 1:38-1:39.
 Type mismatch.
 Expected:
   int
@@ -852,8 +729,7 @@ Received:
 
 Component names match
 ---
-File "<test>", 1:4-1:14
-Type error.
+Error in file "<test>", 1:4-1:14.
 Component name mismatch.
 Expected:
   A.
@@ -862,13 +738,11 @@ Received:
 
 Components can't take extra props
 ---
-File "<test>", 1:4-1:16
-Type warning.
+Warning in file "<test>", 1:4-1:16.
 Component 'Comp' does not accept this prop:
   c.
 
-File "<test>"
-Render error.
+Error while rendering "<test>".
 The data supplied does not match this template's interface.
 Path:
 <input>
@@ -880,8 +754,7 @@ a, b
 
 Implict children is typed and reported correctly
 ---
-File "<test>", 1:8-1:14
-Type error.
+Error in file "<test>", 1:8-1:14.
 Type mismatch.
 Expected:
   int
@@ -890,13 +763,11 @@ Received:
 
 Basic unused bindings are reported.
 ---
-File "<test>", 1:18-1:19
-Type warning.
+Warning in file "<test>", 1:18-1:19.
 This variable is bound but never used:
   x
 
-File "<test>"
-Render error.
+Error while rendering "<test>".
 The data supplied does not match this template's interface.
 Path:
 <input>
@@ -907,18 +778,15 @@ a
 
 Unused bindings are reported in the order they appear.
 ---
-File "<test>", 1:21-1:22
-Type warning.
+Warning in file "<test>", 1:21-1:22.
 This variable is bound but never used:
   y
 
-File "<test>", 2:20-2:21
-Type warning.
+Warning in file "<test>", 2:20-2:21.
 This variable is bound but never used:
   z
 
-File "<test>"
-Render error.
+Error while rendering "<test>".
 The data supplied does not match this template's interface.
 Path:
 <input>
@@ -929,13 +797,11 @@ a
 
 Shadowing bindings can report them as unused.
 ---
-File "<test>", 1:26-1:27
-Type warning.
+Warning in file "<test>", 1:26-1:27.
 This variable is bound but never used:
   y
 
-File "<test>"
-Render error.
+Error while rendering "<test>".
 The data supplied does not match this template's interface.
 Path:
 <input>
@@ -947,12 +813,10 @@ a, b
 
 Basic pattern (1).
 ---
-File "<test>", 4:4-4:19
-Matching warning.
+Warning in file "<test>", 4:4-4:19.
 This match case is unused.
 
-File "<test>"
-Render error.
+Error while rendering "<test>".
 The data supplied does not match this template's interface.
 Path:
 <input>
@@ -965,12 +829,10 @@ a, b, c
 
 Basic pattern (2).
 ---
-File "<test>", 6:4-6:19
-Matching warning.
+Warning in file "<test>", 6:4-6:19.
 This match case is unused.
 
-File "<test>"
-Render error.
+Error while rendering "<test>".
 The data supplied does not match this template's interface.
 Path:
 <input>
@@ -983,12 +845,10 @@ a, b, c
 
 Nest patterns merge into wildcard patterns correctly (1).
 ---
-File "<test>", 1:33-1:48
-Matching warning.
+Warning in file "<test>", 1:33-1:48.
 This match case is unused.
 
-File "<test>"
-Render error.
+Error while rendering "<test>".
 The data supplied does not match this template's interface.
 Path:
 <input>
@@ -1000,12 +860,10 @@ a, b
 
 Nest patterns merge into wildcard patterns correctly (2).
 ---
-File "<test>", 4:4-4:22
-Matching warning.
+Warning in file "<test>", 4:4-4:22.
 This match case is unused.
 
-File "<test>"
-Render error.
+Error while rendering "<test>".
 The data supplied does not match this template's interface.
 Path:
 <input>
@@ -1017,180 +875,157 @@ a, b
 
 Partial matching with integers.
 ---
-File "<test>", 1:4-1:55
-Matching error.
+Error in file "<test>", 1:4-1:55.
 This pattern-matching is not exhaustive.
 Here's an example of a pattern which is not matched:
   _
 
 Partial matching with lists (1).
 ---
-File "<test>", 1:4-1:41
-Matching error.
+Error in file "<test>", 1:4-1:41.
 This pattern-matching is not exhaustive.
 Here's an example of a pattern which is not matched:
   [_, ..._]
 
 Partial matching with lists (2).
 ---
-File "<test>", 1:4-1:33
-Matching error.
+Error in file "<test>", 1:4-1:33.
 This pattern-matching is not exhaustive.
 Here's an example of a pattern which is not matched:
   []
 
 Partial matching with Nullables (1).
 ---
-File "<test>", 1:4-1:34
-Matching error.
+Error in file "<test>", 1:4-1:34.
 This pattern-matching is not exhaustive.
 Here's an example of a pattern which is not matched:
   !_
 
 Partial matching with Nullables (2).
 ---
-File "<test>", 1:4-1:32
-Matching error.
+Error in file "<test>", 1:4-1:32.
 This pattern-matching is not exhaustive.
 Here's an example of a pattern which is not matched:
   null
 
 Partial matching with Nullables (3).
 ---
-File "<test>", 1:4-1:48
-Matching error.
+Error in file "<test>", 1:4-1:48.
 This pattern-matching is not exhaustive.
 Here's an example of a pattern which is not matched:
   !_
 
 Partial matching with enums nested in nullables.
 ---
-File "<test>", 1:4-1:58
-Matching error.
+Error in file "<test>", 1:4-1:58.
 This pattern-matching is not exhaustive.
 Here's an example of a pattern which is not matched:
   !@1, _
 
 Partial matching with records.
 ---
-File "<test>", 1:4-1:56
-Matching error.
+Error in file "<test>", 1:4-1:56.
 This pattern-matching is not exhaustive.
 Here's an example of a pattern which is not matched:
   {a: _, b: _}
 
 Partial matching with dictionaries (1).
 ---
-File "<test>", 1:4-1:61
-Matching error.
+Error in file "<test>", 1:4-1:61.
 This pattern-matching is not exhaustive.
 Here's an example of a pattern which is not matched:
   _
 
 Partial matching with dictionaries (2).
 ---
-File "<test>", 1:4-1:64
-Matching error.
+Error in file "<test>", 1:4-1:64.
 This pattern-matching is not exhaustive.
 Here's an example of a pattern which is not matched:
   _
 
 Partial matching with unions (1).
 ---
-File "<test>", 1:4-2:10
-Matching error.
+Error in file "<test>", 1:4-2:10.
 This pattern-matching is not exhaustive.
 Here's an example of a pattern which is not matched:
   {@tag: 0, a: _}
 
 Partial matching with unions (2).
 ---
-File "<test>", 1:4-2:10
-Matching error.
+Error in file "<test>", 1:4-2:10.
 This pattern-matching is not exhaustive.
 Here's an example of a pattern which is not matched:
   {@tag: false, b: _}
 
 Partial matching with unions (3).
 ---
-File "<test>", 1:4-2:10
-Matching error.
+Error in file "<test>", 1:4-2:10.
 This pattern-matching is not exhaustive.
 Here's an example of a pattern which is not matched:
   {@tag: true, a: _}
 
 Partial matching with unions (4).
 ---
-File "<test>", 2:4-3:10
-Matching error.
+Error in file "<test>", 2:4-3:10.
 This pattern-matching is not exhaustive.
 Here's an example of a pattern which is not matched:
   _, {@tag: true}
 
 Partial matching with unions prints counterexample patterns correctly
 ---
-File "<test>", 1:4-5:10
-Matching error.
+Error in file "<test>", 1:4-5:10.
 This pattern-matching is not exhaustive.
 Here's an example of a pattern which is not matched:
   _, {@tag: 0, a: @1, b: {@tag: 10, c: _}}
 
 Partial matching with records.
 ---
-File "<test>", 1:4-3:10
-Matching error.
+Error in file "<test>", 1:4-3:10.
 This pattern-matching is not exhaustive.
 Here's an example of a pattern which is not matched:
   {favoriteColor: _, firstName: _}
 
 Partial lists print correctly.
 ---
-File "<test>", 1:5-5:10
-Matching error.
+Error in file "<test>", 1:5-5:10.
 This pattern-matching is not exhaustive.
 Here's an example of a pattern which is not matched:
   {@kind: "anonymous", books: _}
 
 Partial matching with enums, closed
 ---
-File "<test>", 1:4-4:10
-Matching error.
+Error in file "<test>", 1:4-4:10.
 This pattern-matching is not exhaustive.
 Here's an example of a pattern which is not matched:
   _, @1
 
 Partial matching with unions, closed
 ---
-File "<test>", 1:4-4:10
-Matching error.
+Error in file "<test>", 1:4-4:10.
 This pattern-matching is not exhaustive.
 Here's an example of a pattern which is not matched:
   _, {@tag: 1, a: _}
 
 Partial matching with enums, open
 ---
-File "<test>", 1:4-5:10
-Matching error.
+Error in file "<test>", 1:4-5:10.
 This pattern-matching is not exhaustive.
 Here's an example of a pattern which is not matched:
   _, _
 
 Partial matching with unions, open
 ---
-File "<test>", 1:4-5:10
-Matching error.
+Error in file "<test>", 1:4-5:10.
 This pattern-matching is not exhaustive.
 Here's an example of a pattern which is not matched:
   _, _
 
 Both nil and cons paths fail to merge into a wildcard.
 ---
-File "<test>", 6:9-6:19
-Matching warning.
+Warning in file "<test>", 6:9-6:19.
 This match case is unused.
 
-File "<test>"
-Render error.
+Error while rendering "<test>".
 The data supplied does not match this template's interface.
 Path:
 <input>
@@ -1202,12 +1037,10 @@ a
 
 Unused cases are caught after an exhaustive nest.
 ---
-File "<test>", 1:30-1:36
-Matching warning.
+Warning in file "<test>", 1:30-1:36.
 This match case is unused.
 
-File "<test>"
-Render error.
+Error while rendering "<test>".
 The data supplied does not match this template's interface.
 Path:
 <input>
@@ -1218,12 +1051,10 @@ a
 
 Dict patterns match a subset of the input.
 ---
-File "<test>", 1:30-1:47
-Matching warning.
+Warning in file "<test>", 1:30-1:47.
 This match case is unused.
 
-File "<test>"
-Render error.
+Error while rendering "<test>".
 The data supplied does not match this template's interface.
 Path:
 <input>
@@ -1234,12 +1065,10 @@ a
 
 Empty dicts (<>) match all inputs (like _).
 ---
-File "<test>", 1:26-1:34
-Matching warning.
+Warning in file "<test>", 1:26-1:34.
 This match case is unused.
 
-File "<test>"
-Render error.
+Error while rendering "<test>".
 The data supplied does not match this template's interface.
 Path:
 <input>
@@ -1250,25 +1079,23 @@ a
 
 Template blocks are not allowed in destructure patterns.
 ---
-File "<test>", 1:21-1:28
-Type error.
+Error in file "<test>", 1:21-1:28.
 Template blocks are not allowed in a destructure pattern.
 
 Record accessors are not allowed in destructure patterns.
 ---
-File "<test>", 1:21-1:24
-Type error.
+Error in file "<test>", 1:21-1:24.
 Record '.' access is not allowed in a destructure pattern.
 
 Cyclic dependencies are reported.
 ---
-Compile error.
+Error.
 Dependency cycle detected.
 A -> B -> C -> D -> B
 
 Missing components are reported.
 ---
-Compile error.
+Error.
 Missing template:
   D
 Required by:
@@ -1276,7 +1103,7 @@ Required by:
 
 Missing components are reported (by root).
 ---
-Compile error.
+Error.
 Missing template:
   A
 Required by:
@@ -1284,13 +1111,12 @@ Required by:
 
 Duplicate names are reported.
 ---
-Compile error.
+Error.
 There are multiple components with the name 'A'.
 
 Basic type mismatch.
 ---
-File "<test>"
-Render error.
+Error while rendering "<test>".
 The data supplied does not match this template's interface.
 Path:
 <input> -> a -> b
@@ -1301,8 +1127,7 @@ Received value:
 
 Map type mismatch (1).
 ---
-File "<test>"
-Render error.
+Error while rendering "<test>".
 The data supplied does not match this template's interface.
 Path:
 <input> -> a
@@ -1313,8 +1138,7 @@ Received value:
 
 Map type mismatch (2).
 ---
-File "<test>"
-Render error.
+Error while rendering "<test>".
 The data supplied does not match this template's interface.
 Path:
 <input> -> a
@@ -1325,8 +1149,7 @@ Received value:
 
 Missing bindings are reported
 ---
-File "<test>"
-Render error.
+Error while rendering "<test>".
 The data supplied does not match this template's interface.
 Path:
 <input>
@@ -1337,8 +1160,7 @@ z
 
 Missing bindings are reported (with nested record)
 ---
-File "<test>"
-Render error.
+Error while rendering "<test>".
 The data supplied does not match this template's interface.
 Path:
 <input>
@@ -1350,8 +1172,7 @@ aa
 
 Bad enums are reported: boolean.
 ---
-File "<test>"
-Render error.
+Error while rendering "<test>".
 The data supplied does not match this template's interface.
 Path:
 <input> -> b
@@ -1362,8 +1183,7 @@ true
 
 Bad enums are reported: int.
 ---
-File "<test>"
-Render error.
+Error while rendering "<test>".
 The data supplied does not match this template's interface.
 Path:
 <input> -> a
@@ -1374,8 +1194,7 @@ Received value:
 
 Bad enums are reported: int.
 ---
-File "<test>"
-Render error.
+Error while rendering "<test>".
 The data supplied does not match this template's interface.
 Path:
 <input> -> a
@@ -1386,8 +1205,7 @@ Received value:
 
 Tuple size mismatch.
 ---
-File "<test>"
-Render error.
+Error while rendering "<test>".
 The data supplied does not match this template's interface.
 Path:
 <input> -> a
@@ -1398,8 +1216,7 @@ Received value:
 
 Bad unions are reported (1).
 ---
-File "<test>"
-Render error.
+Error while rendering "<test>".
 The data supplied does not match this template's interface.
 Path:
 <input> -> a
@@ -1410,8 +1227,7 @@ Received value:
 
 Bad unions are reported (2).
 ---
-File "<test>"
-Render error.
+Error while rendering "<test>".
 The data supplied does not match this template's interface.
 Path:
 <input> -> a
@@ -1422,8 +1238,7 @@ Received value:
 
 Multiple decode errors are reported.
 ---
-File "<test>"
-Render error.
+Error while rendering "<test>".
 The data supplied does not match this template's interface.
 Path:
 <input> -> a -> b
@@ -1432,8 +1247,7 @@ string
 Received value:
 []
 
-File "<test>"
-Render error.
+Error while rendering "<test>".
 The data supplied does not match this template's interface.
 Path:
 <input> -> c
@@ -1442,8 +1256,7 @@ string
 Received value:
 0
 
-File "<test>"
-Render error.
+Error while rendering "<test>".
 The data supplied does not match this template's interface.
 Path:
 <input> -> d
@@ -1454,8 +1267,7 @@ e
 
 Zero-length record fields are reported.
 ---
-File "<test>"
-Render error.
+Error while rendering "<test>".
 The data supplied does not match this template's interface.
 Path:
 <input> -> zero
@@ -1466,242 +1278,202 @@ Input is missing keys:
 
 Invalid field names.
 ---
-File "<test>", 1:27-1:31
-Parse error.
+Error in file "<test>", 1:27-1:31.
 This is not a valid field name.
 
 Missing , or }.
 ---
-File "<test>", 1:26-1:27
-Parse error.
+Error in file "<test>", 1:26-1:27.
 Expected a ',' or '}'.
 
 Unclosed interface
 ---
-File "<test>", 1:21-1:21
-Parse error.
+Error in file "<test>", 1:21-1:21.
 Expected a '%}'.
 
 Bad prop name (1).
 ---
-File "<test>", 1:14-1:18
-Parse error.
+Error in file "<test>", 1:14-1:18.
 This is not a valid prop name.
 
 Bad prop name (2).
 ---
-File "<test>", 1:22-1:26
-Parse error.
+Error in file "<test>", 1:22-1:26.
 This is not a valid prop name.
 
 Bad token after a variant (1).
 ---
-File "<test>", 1:24-1:28
-Parse error.
+Error in file "<test>", 1:24-1:28.
 This is not a valid prop name. You possibly forgot a '|'.
 
 Bad token after a variant (2).
 ---
-File "<test>", 1:21-1:25
-Parse error.
+Error in file "<test>", 1:21-1:25.
 This is not a valid prop name. You possibly forgot a '|'.
 
 Bad token after a variant (3).
 ---
-File "<test>", 1:19-1:23
-Parse error.
+Error in file "<test>", 1:19-1:23.
 This is not a valid prop name. You possibly forgot a '|'.
 
 Bad token after a variant (4).
 ---
-File "<test>", 1:22-1:26
-Parse error.
+Error in file "<test>", 1:22-1:26.
 This is not a valid prop name. You possibly forgot a '|'.
 
 Missing equals.
 ---
-File "<test>", 1:16-1:19
-Parse error.
+Error in file "<test>", 1:16-1:19.
 Expected an '='.
 
 Invalid type (1).
 ---
-File "<test>", 1:16-1:20
-Parse error.
+Error in file "<test>", 1:16-1:20.
 This is not a valid type.
 
 Invalid type (2).
 ---
-File "<test>", 1:17-1:21
-Parse error.
+Error in file "<test>", 1:17-1:21.
 This is not a valid type.
 
 Invalid type (3).
 ---
-File "<test>", 1:17-1:21
-Parse error.
+Error in file "<test>", 1:17-1:21.
 This is not a valid type.
 
 Invalid type (4).
 ---
-File "<test>", 1:17-1:21
-Parse error.
+Error in file "<test>", 1:17-1:21.
 This is not a valid type.
 
 Invalid type (5).
 ---
-File "<test>", 1:18-1:22
-Parse error.
+Error in file "<test>", 1:18-1:22.
 This is not a valid type.
 
 Invalid type (6).
 ---
-File "<test>", 1:20-1:24
-Parse error.
+Error in file "<test>", 1:20-1:24.
 This is not a valid type.
 
 Invalid type (7).
 ---
-File "<test>", 1:17-1:21
-Parse error.
+Error in file "<test>", 1:17-1:21.
 This is not a valid type.
 
 Invalid type (8).
 ---
-File "<test>", 1:17-1:21
-Parse error.
+Error in file "<test>", 1:17-1:21.
 This is not a valid type.
 
 Invalid type (9).
 ---
-File "<test>", 1:22-1:26
-Parse error.
+Error in file "<test>", 1:22-1:26.
 This is not a valid type.
 
 Missing colon (1).
 ---
-File "<test>", 1:19-1:20
-Parse error.
+Error in file "<test>", 1:19-1:20.
 Expected a ':'.
 
 Missing colon (2).
 ---
-File "<test>", 1:20-1:21
-Parse error.
+Error in file "<test>", 1:20-1:21.
 Expected a ':'.
 
 Bad enum
 ---
-File "<test>", 1:17-1:18
-Parse error.
+Error in file "<test>", 1:17-1:18.
 Expected a string or an integer.
 
 Bad token after record pipe.
 ---
-File "<test>", 1:26-1:27
-Parse error.
+Error in file "<test>", 1:26-1:27.
 Expected a record type or an '...'.
 
 Bad token after string enum pipe.
 ---
-File "<test>", 1:23-1:24
-Parse error.
+Error in file "<test>", 1:23-1:24.
 Expected an enum value or an '...'.
 
 Bad token after int enum pipe.
 ---
-File "<test>", 1:21-1:22
-Parse error.
+Error in file "<test>", 1:21-1:22.
 Expected an enum value or an '...'.
 
 Missing >
 ---
-File "<test>", 1:20-1:21
-Parse error.
+Error in file "<test>", 1:20-1:21.
 Expected a '>'.
 
 Missing ]
 ---
-File "<test>", 1:20-1:21
-Parse error.
+Error in file "<test>", 1:20-1:21.
 Expected a ']'.
 
 Missing )
 ---
-File "<test>", 1:20-1:21
-Parse error.
+Error in file "<test>", 1:20-1:21.
 Expected a ',' or ')'.
 
 Bad string enum
 ---
-File "<test>", 1:24-1:25
-Parse error.
+Error in file "<test>", 1:24-1:25.
 Expected a string.
 
 Bad int enum
 ---
-File "<test>", 1:22-1:25
-Parse error.
+Error in file "<test>", 1:22-1:25.
 Expected an integer.
 
 Bad boolean
 ---
-File "<test>", 1:24-1:25
-Parse error.
+Error in file "<test>", 1:24-1:25.
 Expected a boolean.
 
 Bad union tag type
 ---
-File "<test>", 1:21-1:22
-Parse error.
+Error in file "<test>", 1:21-1:22.
 Only literal integer, string, and boolean values may be union tags.
 
 Duplicate declarations
 ---
-File "<test>", 1:20-1:28
-Type error.
+Error in file "<test>", 1:20-1:28.
 Prop 'x' is already defined in the interface.
 
 Non-existent type names.
 ---
-File "<test>", 1:16-1:20
-Type error.
+Error in file "<test>", 1:16-1:20.
 There is no type named 'lmao'.
 
 Untagged unions (1)
 ---
-File "<test>", 1:18-1:26
-Type error.
+Error in file "<test>", 1:18-1:26.
 You cannot union records without a '@' tag field.
 
 Untagged unions (2)
 ---
-File "<test>", 1:38-1:49
-Type error.
+Error in file "<test>", 1:38-1:49.
 You cannot union records without a '@' tag field.
 
 Tagged unions with mismatched tag names
 ---
-File "<test>", 1:30-1:42
-Type error.
+Error in file "<test>", 1:30-1:42.
 This record has tag field '@badtag' instead of '@tag'.
 
 Duplicate tags.
 ---
-File "<test>", 1:30-1:39
-Type error.
+Error in file "<test>", 1:30-1:39.
 Tag value '1' is already used in this union.
 
 Open boolean unions.
 ---
-File "<test>", 1:32-1:37
-Type error.
+Error in file "<test>", 1:32-1:37.
 Unions with boolean tags cannot be opened with '...'.
 
 Tag type error: int <> string.
 ---
-File "<test>", 1:37-1:40
-Type error.
+Error in file "<test>", 1:37-1:40.
 Type mismatch.
 Expected:
   int
@@ -1710,8 +1482,7 @@ Received:
 
 Tag type error: string <> bool.
 ---
-File "<test>", 1:39-1:43
-Type error.
+Error in file "<test>", 1:39-1:43.
 Type mismatch.
 Expected:
   string
@@ -1720,8 +1491,7 @@ Received:
 
 Tag type error: bool <> int.
 ---
-File "<test>", 1:41-1:44
-Type error.
+Error in file "<test>", 1:41-1:44.
 Type mismatch.
 Expected:
   false | true
@@ -1730,8 +1500,7 @@ Received:
 
 Interface type error: bool <> int.
 ---
-File "<test>", 1:14-1:21
-Type error.
+Error in file "<test>", 1:14-1:21.
 This interface does not match the implementation.
 Prop name:
   x
@@ -1742,8 +1511,7 @@ Implementation:
 
 Interface is missing props.
 ---
-File "<test>", 1:4-1:21
-Type error.
+Error in file "<test>", 1:4-1:21.
 This interface does not match the implementation.
 Missing prop name:
   y
@@ -1752,8 +1520,7 @@ Of type:
 
 Interface is missing record fields.
 ---
-File "<test>", 1:14-1:26
-Type error.
+Error in file "<test>", 1:14-1:26.
 This interface does not match the implementation.
 Prop name:
   x
@@ -1764,8 +1531,7 @@ Implementation:
 
 Interface is missing enum cases.
 ---
-File "<test>", 1:14-1:31
-Type error.
+Error in file "<test>", 1:14-1:31.
 This interface does not match the implementation.
 Prop name:
   x
@@ -1776,8 +1542,7 @@ Implementation:
 
 Interface is missing union cases.
 ---
-File "<test>", 1:14-1:53
-Type error.
+Error in file "<test>", 1:14-1:53.
 This interface does not match the implementation.
 Prop name:
   x
@@ -1788,8 +1553,7 @@ Implementation:
 
 Unknown is not equal to any other type.
 ---
-File "<test>", 1:14-1:19
-Type error.
+Error in file "<test>", 1:14-1:19.
 This interface does not match the implementation.
 Prop name:
   x
@@ -1800,66 +1564,66 @@ Implementation:
 
 JSON interface: null.
 ---
-Interface decode error.
+Error.
 'null' is not a valid type.
 
 JSON interface: integer.
 ---
-Interface decode error.
+Error.
 '1' is not a valid type.
 
 JSON interface: string props.
 ---
-Interface decode error.
+Error.
 '"prop"' is not a valid type.
 
 JSON interface: empty array type.
 ---
-Interface decode error.
+Error.
 Type sequences cannot be empty.
 
 JSON interface: empty object.
 ---
-Interface decode error.
+Error.
 Records need at least one type.
 
 JSON interface: empty array tag.
 ---
-Interface decode error.
+Error.
 '[]' is not a valid type.
 
 JSON interface: enum with int & string.
 ---
-Interface decode error.
+Error.
 '"a"' is not valid in this enum.
 
 JSON interface: enum with bool & string.
 ---
-Interface decode error.
+Error.
 '"a"' is not valid in this enum.
 
 JSON interface: enum with string & bool.
 ---
-Interface decode error.
+Error.
 'true' is not valid in this enum.
 
 JSON interface: tag with extra values.
 ---
-Interface decode error.
+Error.
 Type 'tag' only takes one parameter.
 
 JSON interface: nullable with extra params.
 ---
-Interface decode error.
+Error.
 Type 'nullable' only takes one parameter.
 
 JSON interface: list with extra params.
 ---
-Interface decode error.
+Error.
 Type 'list' only takes one parameter.
 
 JSON interface: dict with extra params.
 ---
-Interface decode error.
+Error.
 Type 'dict' only takes one parameter.
 

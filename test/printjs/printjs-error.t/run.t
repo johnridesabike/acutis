@@ -15,8 +15,7 @@
   >   .catch((e) => console.error(e.message));
   > EOF
   $ node run.mjs
-  File "template.acutis"
-  Render error.
+  Error while rendering "template.acutis".
   The data supplied does not match this template's interface.
   Path:
   <input> -> bool
@@ -40,8 +39,7 @@
   >   .catch((e) => console.error(e.message));
   > EOF
   $ node run.mjs
-  File "template.acutis"
-  Render error.
+  Error while rendering "template.acutis".
   The data supplied does not match this template's interface.
   Path:
   <input> -> int_enum
@@ -65,8 +63,7 @@
   >   .catch((e) => console.error(e.message));
   > EOF
   $ node run.mjs
-  File "template.acutis"
-  Render error.
+  Error while rendering "template.acutis".
   The data supplied does not match this template's interface.
   Path:
   <input> -> string_enum
@@ -90,8 +87,7 @@
   >   .catch((e) => console.error(e.message));
   > EOF
   $ node run.mjs
-  File "template.acutis"
-  Render error.
+  Error while rendering "template.acutis".
   The data supplied does not match this template's interface.
   Path:
   <input> -> tuple
@@ -115,8 +111,7 @@
   >   .catch((e) => console.error(e.message));
   > EOF
   $ node run.mjs
-  File "template.acutis"
-  Render error.
+  Error while rendering "template.acutis".
   The data supplied does not match this template's interface.
   Path:
   <input> -> nested -> level_1 -> 1
@@ -140,8 +135,7 @@
   >   .catch((e) => console.error(e.message));
   > EOF
   $ node run.mjs
-  File "template.acutis"
-  Render error.
+  Error while rendering "template.acutis".
   The data supplied does not match this template's interface.
   Path:
   <input> -> long_type
@@ -172,8 +166,7 @@
   >   .catch((e) => console.error(e.message));
   > EOF
   $ node run.mjs
-  File "template.acutis"
-  Render error.
+  Error while rendering "template.acutis".
   The data supplied does not match this template's interface.
   Path:
   <input> -> long_type
@@ -203,8 +196,7 @@
   >   .catch((e) => console.error(e.message));
   > EOF
   $ node run.mjs
-  File "template.acutis"
-  Render error.
+  Error while rendering "template.acutis".
   The data supplied does not match this template's interface.
   Path:
   <input> -> list
@@ -213,8 +205,7 @@
   Received value:
   fail
   
-  File "template.acutis"
-  Render error.
+  Error while rendering "template.acutis".
   The data supplied does not match this template's interface.
   Path:
   <input> -> long_type
@@ -229,8 +220,7 @@
   Input is missing keys:
   another_loooong_field, looong_field, yet_another_field
   
-  File "template.acutis"
-  Render error.
+  Error while rendering "template.acutis".
   The data supplied does not match this template's interface.
   Path:
   <input> -> nested -> level_1 -> 1
@@ -239,8 +229,7 @@
   Received value:
   1
   
-  File "template.acutis"
-  Render error.
+  Error while rendering "template.acutis".
   The data supplied does not match this template's interface.
   Path:
   <input> -> tuple
@@ -257,8 +246,7 @@
   >   .catch((e) => console.error(e.message));
   > EOF
   $ node run.mjs
-  File "template.acutis"
-  Render error.
+  Error while rendering "template.acutis".
   The data supplied does not match this template's interface.
   Path:
   <input>

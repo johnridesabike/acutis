@@ -1056,13 +1056,15 @@ end = struct
                        ~then_:(fun () ->
                          buffer_add_string errors (string "\n\n"))
                    in
-                   let| () = buffer_add_string errors (string "File \"") in
+                   let| () =
+                     buffer_add_string errors
+                       (string "Error while rendering \"")
+                   in
                    let| () = buffer_add_string errors (string compiled.fname) in
                    let| () =
                      buffer_add_string errors
                        (string
-                          "\"\n\
-                           Render error.\n\
+                          "\".\n\
                            The data supplied does not match this template's \
                            interface.\n")
                    in

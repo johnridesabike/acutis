@@ -160,8 +160,7 @@ Pathologic cases
 
 Enums that come after variables are open
   $ acutis pathologic_enum.acutis --printtypes
-  File "pathologic_enum.acutis", 2:4-2:5
-  Type error.
+  Error in file "pathologic_enum.acutis", 2:4-2:5.
   Type mismatch.
   Expected:
     {b: string}

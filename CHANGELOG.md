@@ -6,6 +6,7 @@ Most changes are breaking changes.
 
 - Public functions are now pure, without effects or exceptions.
 - Add non-fatal warning messages.
+- Change error message formats.
 
 ## 0.27.0
 

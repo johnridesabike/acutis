@@ -80,27 +80,22 @@ Multiple warnings and errors are printed correctly.
   > > error.acutis
   $ cat data.json | \
   > acutis error.acutis syntax1.acutis unused1.acutis unused2.acutis
-  File "syntax1.acutis", 1:8-1:14
-  Parse error.
+  Error in file "syntax1.acutis", 1:8-1:14.
   Sequential echoes must be separated by a '?'.
   
-  File "unused1.acutis", 1:18-1:19
-  Type warning.
+  Warning in file "unused1.acutis", 1:18-1:19.
   This variable is bound but never used:
     a
   
-  File "unused2.acutis", 1:18-1:19
-  Type warning.
+  Warning in file "unused2.acutis", 1:18-1:19.
   This variable is bound but never used:
     b
   
-  File "error.acutis", 1:18-1:19
-  Type warning.
+  Warning in file "error.acutis", 1:18-1:19.
   This variable is bound but never used:
     c
   
-  File "error.acutis"
-  Render error.
+  Error while rendering "error.acutis".
   The data supplied does not match this template's interface.
   Path:
   <input>

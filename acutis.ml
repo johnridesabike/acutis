@@ -174,24 +174,19 @@ end = struct
 
   (* Interface decoding combinators: *)
 
-  let raise_str = Error.raise_fmt "@[<v>Interface decode error.@;@[%(%s%)@]@]"
-  let raise = Error.raise_fmt "@[<v>Interface decode error.@;@[%(%)@]@]"
-  let error_str = raise_str "'%s' is not a valid type."
-  let else_error x = error_str (D.to_string x)
-  let error_enum x = raise_str "'%s' is not valid in this enum." (D.to_string x)
-  let error_uncons_single = raise_str "Type '%s' only takes one parameter."
-  let error_seq () = raise "Type sequences cannot be empty."
-  let error_record () = raise "Records need at least one type."
+  let else_error x = Error.intf_decode_invalid (D.to_string x)
   let loc = Loc.dummy
   let opt f g h x = match f x with Some x -> g x | None -> h x
 
   let uncons f x =
-    match x () with Seq.Cons (hd, tl) -> f hd tl | Seq.Nil -> error_seq ()
+    match x () with
+    | Seq.Cons (hd, tl) -> f hd tl
+    | Seq.Nil -> Error.intf_decode_empty_seq ()
 
   let uncons_single ~name f =
     uncons (fun hd tl ->
         match tl () with
-        | Seq.Cons _ -> error_uncons_single name
+        | Seq.Cons _ -> Error.intf_decode_single_param name
         | Seq.Nil -> f hd)
 
   let rec list_enum f s =
@@ -199,7 +194,7 @@ end = struct
     | Seq.Cons (hd, tl) -> (
         match f hd with
         | Some hd -> hd :: list_enum f tl
-        | None -> error_enum hd)
+        | None -> Error.intf_decode_enum (D.to_string hd))
     | Seq.Nil -> []
 
   let rec list f s =
@@ -208,7 +203,7 @@ end = struct
   let nonempty_record f s =
     match s () with
     | Seq.Cons (h, tl) -> Nonempty.(f h :: list f tl)
-    | Seq.Nil -> error_record ()
+    | Seq.Nil -> Error.intf_decode_empty_record ()
 
   let get_bool x = D.get_bool x |> Option.map Bool.to_int
   let get_assoc x = D.get_assoc x |> Option.map D.assoc_to_seq
@@ -280,7 +275,7 @@ end = struct
              (if_string (ty_enum_string row_open) else_error))
     | "union" -> ty_record_list row_closed
     | "union_open" -> ty_record_list row_open
-    | name -> error_str name
+    | name -> Error.intf_decode_invalid name
 
   let prop (name, x) = Ast.{ loc; name; ty = ty x }
 
