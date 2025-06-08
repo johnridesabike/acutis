@@ -2053,8 +2053,8 @@ Print the runtime instructions
        (stm ((buffer_add_escape @@ buf) @@ (prj_string match_props.%{"empty"})))
        (buffer_add_string buf " ")
        (buffer_add_string buf "\n")
-       (return (buffer_contents buf)))
-      (else (raise (buffer_contents errors)))))))
+       (return (ok (buffer_contents buf))))
+      (else (return (error (buffer_contents errors))))))))
 
 Make sure the JavaScript interface format parser works.
   $ node interface.js

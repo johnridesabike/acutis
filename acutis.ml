@@ -10,19 +10,20 @@
 
 open Acutis_internals
 
+type message = Error.t
 type interface = Typechecker.Type.interface
 type parsed = Acutis_internals.Compile.parsed
 type 'a comp = 'a Compile.Components.source
 type 'a comps_compiled = 'a Compile.Components.t
 type 'a compiled = 'a Compile.t
 
-let comp_of_lexbuf = Compile.Components.of_lexbuf
+let comp_of_parsed = Compile.Components.of_parsed
 let comp_of_fun = Compile.Components.of_fun
-let comps_compile = Compile.Components.of_seq
+let comps_compile seq = Error.handle Compile.Components.of_seq seq
 let comps_empty = Compile.Components.empty
-let parse = Compile.parse
-let compile = Compile.make
-let compile_interface = Compile.interface
+let parse = Error.handle Compile.parse
+let compile components = Error.handle (Compile.make components)
+let compile_interface = Error.handle Compile.interface
 let get_interface x = x.Compile.types
 
 module type DECODABLE = sig
@@ -52,8 +53,8 @@ module type DECODABLE = sig
 end
 
 module Of_decodable (D : DECODABLE) : sig
-  val apply : (D.t -> string) compiled -> D.t -> string
-  val interface : D.t -> interface
+  val apply : (D.t -> string) compiled -> D.t -> (string, string) result
+  val interface : D.t -> message Seq.t * interface option
 end = struct
   module I = Instruct.Make (struct
     include Stdlib
@@ -62,7 +63,6 @@ end = struct
     type 'a exp = 'a
 
     let return = Fun.id
-    let raise = Error.raise_fmt "%s"
     let stm = Fun.id
     let ( let| ) a f = a; f ()
     let ( let$ ) (_, x) f = f x
@@ -127,6 +127,8 @@ end = struct
 
     let await = Fun.id
     let async_lambda = Fun.id
+    let ok = Result.ok
+    let error = Result.error
 
     type untyped = ..
 
@@ -282,7 +284,8 @@ end = struct
 
   let prop (name, x) = Ast.{ loc; name; ty = ty x }
 
-  let interface l =
+  let interface =
+    Error.handle @@ fun l ->
     if_assoc (list prop) else_error l |> Typechecker.make_interface_standalone
 end
 
@@ -413,11 +416,6 @@ module Print_js = struct
              F.fprintf ppf "@[<hv 2>%a@]" x state))
         args
 
-    let throw x =
-      stm (fun ppf -> F.fprintf ppf "throw (@,@[<hv 2>%a@]@;<0 -2>)" x)
-
-    let raise s = throw (new_ (global "Error") [ s ])
-
     type 'a ref = t
 
     let ( let& ) = ( let$ )
@@ -545,6 +543,8 @@ module Print_js = struct
 
     let await p ppf state = F.fprintf ppf "@[<hv 2>await@ %a@]" p state
     let async_lambda = lambda_aux `Async
+    let ok x = (global "Promise").!("resolve") @@ x
+    let error s = (global "Promise").!("reject") @@ new_ (global "Error") [ s ]
 
     let and_ a b ppf state =
       F.fprintf ppf "@[<hv>%a &&@]@ @[<hv>%a@]" a state b state
@@ -773,12 +773,7 @@ type js_import = Print_js.import
 let js_import = Print_js.import
 let esm = Print_js.Esm.pp
 let cjs = Print_js.Cjs.pp
-
-type error = Error.t
-
-exception Acutis_error = Error.Acutis_error
-
-let pp_error = Error.pp
+let pp_message = Error.pp
 let pp_interface = Typechecker.Type.pp_interface
 let pp_ast ppf p = Ast.Ty_repr.t p.Compile.ast |> Pp.Ty_repr.pp ppf
 

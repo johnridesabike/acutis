@@ -53,10 +53,12 @@ and nodes = node list
 val blocks_length : blocks -> int
 val blocks_to_seq : blocks -> (int * nodes) Seq.t
 
+type parsed = { fname : string; ast : Ast.t }
+
 module Components : sig
   type 'a source
 
-  val of_lexbuf : name:string -> Lexing.lexbuf -> _ source
+  val of_parsed : name:string -> parsed -> _ source
   val of_fun : name:string -> Typechecker.Type.interface -> 'a -> 'a source
 
   type 'a t
@@ -64,8 +66,6 @@ module Components : sig
   val empty : _ t
   val of_seq : 'a source Seq.t -> 'a t
 end
-
-type parsed = { fname : string; ast : Ast.t }
 
 val parse : Lexing.lexbuf -> parsed
 

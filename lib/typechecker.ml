@@ -971,7 +971,9 @@ and make_component_props loc name ctx tyvars m =
       | Some pat, Some ty ->
           Some (make_pat (Construct_update_vars ctx) Construct_literal ty pat)
       | None, Some ty -> Error.missing_field loc k Type.pp ty
-      | Some _, None -> Error.component_extra_prop loc name k
+      | Some _, None ->
+          Error.component_extra_prop loc name k;
+          None
       | None, None -> None)
     m tyvars
 

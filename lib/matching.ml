@@ -950,8 +950,8 @@ let rec make_case ~exit next_id tree = function
   | (loc, ps) :: l ->
       let b = of_nonempty ~exit next_id ps in
       let tree' = merge tree b in
-      if equal_tree equal_leaf tree tree' then Error.unused_case loc
-      else make_case ~exit next_id tree' l
+      if equal_tree equal_leaf tree tree' then Error.unused_case loc;
+      make_case ~exit next_id tree' l
 
 let make loc tys Nonempty.(Typechecker.{ pats; nodes; bindings } :: tl_cases) =
   (* IDs must be unique across all branches of the tree. *)
@@ -975,10 +975,9 @@ let make loc tys Nonempty.(Typechecker.{ pats; nodes; bindings } :: tl_cases) =
         let exits, exit_id = Exits.add bindings nodes exits in
         let hd_tree = of_nonempty ~exit:exit_id next_id hd_pats in
         let tree' = merge tree hd_tree in
-        if equal_tree equal_leaf tree tree' then Error.unused_case loc
-        else
-          let tree = make_case ~exit:exit_id next_id tree' tl_pats in
-          aux tree exits l
+        if equal_tree equal_leaf tree tree' then Error.unused_case loc;
+        let tree = make_case ~exit:exit_id next_id tree' tl_pats in
+        aux tree exits l
   in
   aux hd_tree exits tl_cases
 

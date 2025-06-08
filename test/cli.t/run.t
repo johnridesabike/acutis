@@ -71,3 +71,43 @@ Errors
   System error:
   notfound.acutis: No such file or directory
   [1]
+
+Multiple warnings and errors are printed correctly.
+  $ echo "{% bad syntax" > syntax1.acutis
+  $ echo "{% match a with {a} %}{% /match %}" > unused1.acutis
+  $ echo "{% match b with {b} %}{% /match %}" > unused2.acutis
+  $ echo "{% match c with {c} %}{% /match %}{% Unused1 a /%} {% Unused2 b /%}" \
+  > > error.acutis
+  $ cat data.json | \
+  > acutis error.acutis syntax1.acutis unused1.acutis unused2.acutis
+  File "syntax1.acutis", 1:8-1:14
+  Parse error.
+  Sequential echoes must be separated by a '?'.
+  
+  File "unused1.acutis", 1:18-1:19
+  Type warning.
+  This variable is bound but never used:
+    a
+  
+  File "unused2.acutis", 1:18-1:19
+  Type warning.
+  This variable is bound but never used:
+    b
+  
+  File "error.acutis", 1:18-1:19
+  Type warning.
+  This variable is bound but never used:
+    c
+  
+  File "error.acutis"
+  Render error.
+  The data supplied does not match this template's interface.
+  Path:
+  <input>
+  Expected type:
+  a = {a: _}
+  b = {b: _}
+  c = {c: _}
+  Input is missing keys:
+  a, b, c
+  [1]

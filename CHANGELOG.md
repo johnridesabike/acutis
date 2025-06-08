@@ -2,6 +2,11 @@
 
 Most changes are breaking changes.
 
+## Latest
+
+- Public functions are now pure, without effects or exceptions.
+- Add non-fatal warning messages.
+
 ## 0.27.0
 
 - Change the OCaml API.

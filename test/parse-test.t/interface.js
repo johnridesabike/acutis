@@ -23,5 +23,5 @@ process.stdout.write(
       { tag: ["tag", 0], a: "_" },
       { tag: ["tag", 1], b: ["enum_open", "a", "b"] },
     ],
-  }),
+  }).result,
 );

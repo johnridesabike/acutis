@@ -127,9 +127,9 @@
             new Map([["children", new String$0(buf$1.contents)]])
           );
       buf$0.contents += "\n";
-      return (buf$0.contents);
+      return (Promise.resolve(buf$0.contents));
     } else {
-      throw (new Error(errors$0.contents));
+      return (Promise.reject(new Error(errors$0.contents)));
     }
   };
 
@@ -263,8 +263,8 @@
               new Map([["children", new String$0(buf$1.contents)]])
             );
         buf$0.contents += "\n";
-        return (buf$0.contents);
+        return (Promise.resolve(buf$0.contents));
       } else {
-        throw (new Error(errors$0.contents));
+        return (Promise.reject(new Error(errors$0.contents)));
       }
     };

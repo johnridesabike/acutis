@@ -138,7 +138,7 @@ and make_match loc tys cases =
 module Components = struct
   type 'a source = (parsed, 'a) T.source
 
-  let of_lexbuf ~name src = T.Src (name, parse src)
+  let of_parsed ~name parsed = T.Src (name, parsed)
   let of_fun ~name props f = T.Fun (name, props, f)
 
   type 'a t = {
@@ -152,9 +152,9 @@ module Components = struct
     let untyped =
       Seq.fold_left
         (fun acc -> function
-          | T.Src (name, src) ->
+          | T.Src (name, parsed) ->
               if Map_string.mem name acc then Error.duplicate_name name;
-              Map_string.add name (T.Src (name, src.ast)) acc
+              Map_string.add name (T.Src (name, parsed.ast)) acc
           | T.Fun (name, p, f) ->
               if Map_string.mem name acc then Error.duplicate_name name;
               Map_string.add name (T.Fun (name, p, f)) acc)
@@ -164,7 +164,7 @@ module Components = struct
     let optimized =
       Map_string.map
         (function
-          | T.Src (name, src) -> T.Src (name, make_nodes src.T.nodes)
+          | T.Src (name, typed) -> T.Src (name, make_nodes typed.T.nodes)
           | T.Fun (name, p, f) -> T.Fun (name, p, f))
         typed
     in

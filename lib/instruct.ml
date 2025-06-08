@@ -44,7 +44,6 @@ module type SEM = sig
   val return : 'a exp -> 'a stm
   (** Return value ['a] from a function. *)
 
-  val raise : string exp -> 'a stm
   val stm : unit exp -> unit stm
 
   type 'a ref
@@ -146,6 +145,11 @@ module type SEM = sig
   val async_lambda : ('a exp -> 'b stm) -> ('a -> 'b promise) exp
   (** This is necessary for JavaScript async/await syntax compatibility. *)
 
+  (** {1 Results.} *)
+
+  val ok : 'a exp -> ('a, 'e) result exp
+  val error : 'e exp -> ('a, 'e) result exp
+
   (** {1 Data} *)
 
   type untyped
@@ -219,7 +223,8 @@ end
 module Make (I : SEM) : sig
   open I
 
-  val eval : import Compile.t -> (External.t -> string promise) obs
+  val eval :
+    import Compile.t -> (External.t -> (string, string) result promise) obs
   (** Evaluate a template with the language implemented by {!I}. *)
 end = struct
   (* NOTE: OCaml's mutability, exceptions, and effects are not guaranteed to
@@ -1110,8 +1115,8 @@ end = struct
              ~then_:(fun () ->
                let@ state = state_make components ~props in
                let| () = nodes state compiled.nodes in
-               return (buffer_contents state.buf))
-             ~else_:(fun () -> raise (buffer_contents errors))))
+               return (ok (buffer_contents state.buf)))
+             ~else_:(fun () -> return (error (buffer_contents errors)))))
 
   let eval compiled = observe (eval compiled)
 end
@@ -1163,7 +1168,6 @@ module Make_trans
   let observe x = F.observe (bwds x)
   let ( let| ) a f = fwds (F.( let| ) (bwds a) (fun () -> bwds (f ())))
   let return x = fwds (F.return (bwde x))
-  let raise s = fwds (F.raise (bwde s))
   let stm x = fwds (F.stm (bwde x))
 
   let ( let$ ) (s, x) f =
@@ -1234,6 +1238,8 @@ module Make_trans
   let buffer_length b = fwde (F.buffer_length (bwde b))
   let await p = fwde (F.await (bwde p))
   let async_lambda f = fwde (F.async_lambda (fun x -> bwds (f (fwde x))))
+  let ok x = fwde (F.ok (bwde x))
+  let error x = fwde (F.error (bwde x))
 
   module type UNTYPED = sig
     type t
@@ -1317,7 +1323,6 @@ let pp (type a) pp_import ppf c =
     type 'a exp = F.formatter -> unit
 
     let return = call1 "return"
-    let raise = call1 "raise"
     let stm = call1 "stm"
     let ( let$ ) = bindop '$'
 
@@ -1398,6 +1403,8 @@ let pp (type a) pp_import ppf c =
 
     let await = call1 "await"
     let async_lambda f = call1 "async_lambda" (fn value "arg" f)
+    let ok = call1 "ok"
+    let error = call1 "error"
 
     type untyped
 

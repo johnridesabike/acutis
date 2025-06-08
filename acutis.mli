@@ -11,7 +11,14 @@
 (** This is the main API wrapper around the compiler internals
     ({!Acutis_internals}). *)
 
-(** This module is unstable. Use at your own risk. *)
+type message = private Acutis_internals.Error.t
+(** An error message. *)
+
+type 'a compile_result := message Seq.t * 'a option
+(** The result of a compile computation. The first value is a sequence of
+    warnings and error messages. If the second value is [Some] then the
+    computation succeeded. If [None], then it failed for the reasons in the
+    messages. A successful computation may have warning messages. *)
 
 type interface = private Acutis_internals.Typechecker.Type.interface
 (** Type interfaces for templates. *)
@@ -32,26 +39,26 @@ type 'a compiled = private 'a Acutis_internals.Compile.t
 
 (** {1 Compiling templates.} *)
 
-val comp_of_lexbuf : name:string -> Lexing.lexbuf -> 'a comp
-(** Parse an Acutis source into a template component. This doesn't type-check
-    yet. [name] is the name the component is called in Acutis code. *)
+val comp_of_parsed : name:string -> parsed -> 'a comp
+(** Convert a parsed Acutis template into a component. [name] is the name the
+    component is called in Acutis code. *)
 
 val comp_of_fun : name:string -> interface -> 'a -> 'a comp
 (** Convert a function or a {!type-js_import} into a template component. [name]
     is the name the component is called in Acutis code. *)
 
-val comps_compile : 'a comp Seq.t -> 'a comps_compiled
+val comps_compile : 'a comp Seq.t -> 'a comps_compiled compile_result
 (** Type-check, optimize, and link the components. *)
 
 val comps_empty : 'a comps_compiled
 
-val parse : Lexing.lexbuf -> parsed
-(** Parse a component. *)
+val parse : Lexing.lexbuf -> parsed compile_result
+(** Parse a component. This does not type-check, optimize, or link yet. *)
 
-val compile : 'a comps_compiled -> parsed -> 'a compiled
+val compile : 'a comps_compiled -> parsed -> 'a compiled compile_result
 (** Type-check, optimize, and link the template with its components. *)
 
-val compile_interface : Lexing.lexbuf -> interface
+val compile_interface : Lexing.lexbuf -> interface compile_result
 (** Parse and type-check a type interface with no template. *)
 
 val get_interface : 'a compiled -> interface
@@ -100,10 +107,11 @@ module Of_decodable (D : DECODABLE) : sig
   (** A functor that builds functions to render templates and construct type
       interfaces from decodable data. *)
 
-  val apply : (D.t -> string) compiled -> D.t -> string
-  (** Apply data to a template and return the rendered output. *)
+  val apply : (D.t -> string) compiled -> D.t -> (string, string) result
+  (** Apply data to a template. [Ok str] is the rendered output. [Error str] is
+      an error message. *)
 
-  val interface : D.t -> interface
+  val interface : D.t -> interface compile_result
   (** Compile a type interface from a generic format that can be represented
       with any decodable data. For example, if we use JSON, where [assoc] values
       are objects and [seq] values are arrays:
@@ -143,13 +151,7 @@ val esm : Format.formatter -> js_import compiled -> unit
 
 (** {1 Handling errors and printing debug information.} *)
 
-type error = private Acutis_internals.Error.t
-(** An error message. *)
-
-exception Acutis_error of error
-(** This is raised if any part of the compilation or rendering fails. *)
-
-val pp_error : Format.formatter -> error -> unit
+val pp_message : Format.formatter -> message -> unit
 (** Pretty-print an error message. *)
 
 val pp_interface : Format.formatter -> interface -> unit

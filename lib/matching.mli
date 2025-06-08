@@ -260,8 +260,8 @@ val make :
   Typechecker.Type.t Nonempty.t ->
   Typechecker.case Nonempty.t ->
   Typechecker.nodes t
-(** Raises {!Error.Acutis_error} if the cases are non-exhaustive or if there is
-    an unused case. *)
+(** Raises an error if the cases are non-exhaustive or if there is an unused
+    case. *)
 
 module Ty_repr : sig
   val t : ('a -> Pp.Ty_repr.t) -> 'a t -> Pp.Ty_repr.t

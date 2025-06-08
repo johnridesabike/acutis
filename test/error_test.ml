@@ -33,28 +33,48 @@ module Acutis_json = Acutis.Of_decodable (struct
   let marshal x = `String (Marshal.to_string x [])
 end)
 
-let render ?(json = "{}") ?(components = Acutis.comps_empty) src () =
+let print_msgs = Seq.iter (Format.printf "%a@,@," Acutis.pp_message)
+
+let bind (msgs, x) f =
+  match x with
+  | None -> (msgs, None)
+  | Some x ->
+      let msgs', x = f x in
+      (Seq.append msgs msgs', x)
+
+let render ?json ?(components = (Seq.empty, Some Acutis.comps_empty)) src =
+  let json =
+    match json with None -> `Assoc [] | Some j -> Yojson.Basic.from_string j
+  in
   let lexbuf = Lexing.from_string src in
   Lexing.set_filename lexbuf "<test>";
-  let template = Acutis.parse lexbuf |> Acutis.compile components in
-  Acutis_json.apply template (Yojson.Basic.from_string json)
+  let msgs, result =
+    bind components (fun components ->
+        bind (Acutis.parse lexbuf) (Acutis.compile components))
+  in
+  (msgs, Option.map (fun template -> Acutis_json.apply template json) result)
 
-let print_error title f =
-  try
-    f () |> ignore;
-    Format.printf "no error@;@;"
-  with Acutis.Acutis_error msg ->
-    Format.printf "%s@;---@;%a@;@;" title Acutis.pp_error msg
+let print_error title (msgs, result) =
+  Format.printf "%s@,---@," title;
+  print_msgs msgs;
+  match result with
+  | Some (Error e) -> Format.printf "%s@,@," e
+  | Some (Ok _) | None -> ()
+
+let print_error_any title (msgs, _) =
+  Format.printf "%s@,---@," title;
+  print_msgs msgs
 
 let component_string ~fname ~name src =
   let lexbuf = Lexing.from_string src in
   Lexing.set_filename lexbuf fname;
-  Acutis.comp_of_lexbuf ~name lexbuf
+  let msgs, parsed = Acutis.parse lexbuf in
+  (msgs, Option.map (Acutis.comp_of_parsed ~name) parsed)
 
-let compile_string ~fname comps src =
-  let lexbuf = Lexing.from_string src in
-  Lexing.set_filename lexbuf fname;
-  Acutis.parse lexbuf |> Acutis.compile comps
+let comps_compile l =
+  List.to_seq l
+  |> Seq.filter_map (fun (msgs, x) -> print_msgs msgs; x)
+  |> Acutis.comps_compile
 
 let () =
   Format.printf "@[<v>";
@@ -265,12 +285,9 @@ let () =
     (render
        {|{% match a.b.c with true %}{% with false %}{% /match %}
          {% match a.b.c with 1 %}{% with _ %}{% /match %}|});
-  let comps =
-    Acutis.comps_compile @@ Seq.return
-    @@ component_string ~fname:"a.acutis" ~name:"A" "{% a %}"
-  in
-  print_error "Records with missing fields (Component)" (fun () ->
-      compile_string ~fname:"<test>" comps "{% A / %}");
+  let comp = component_string ~fname:"a.acutis" ~name:"A" "{% a %}" in
+  print_error "Records with missing fields (Component)"
+    (render ~components:(comps_compile [ comp ]) "{% A / %}");
 
   print_error "Closed enum <> open enum"
     (render
@@ -320,14 +337,10 @@ let () =
   print_error "Component names match" (render "{% A %} {% /B %}");
   let comp = component_string ~fname:"comp" ~name:"Comp" "{% a %} {% b %}" in
   print_error "Components can't take extra props"
-    (render
-       ~components:(Acutis.comps_compile @@ Seq.return comp)
-       "{% Comp a b c / %}");
+    (render ~components:(comps_compile [ comp ]) "{% Comp a b c / %}");
   let comp = component_string ~fname:"comp" ~name:"Comp" "{% %i children %}" in
   print_error "Implict children is typed and reported correctly"
-    (render
-       ~components:(Acutis.comps_compile @@ Seq.return comp)
-       "{% Comp %} {% /Comp %}");
+    (render ~components:(comps_compile [ comp ]) "{% Comp %} {% /Comp %}");
 
   print_error "Basic unused bindings are reported."
     (render "{% match a with {x} %} {% /match %}");
@@ -347,6 +360,7 @@ let () =
        \   with 10, 11, 12 %}\n\
         {% with _x, 21, 22 %}\n\
         {% with 10, 11, 12 %}\n\
+        {% with  _,  _,  _ %}\n\
         {% /match %}");
   print_error "Basic pattern (2)."
     (render
@@ -356,6 +370,7 @@ let () =
         {% with 30, 31, 32 %}\n\
         {% with 30, _y, 42 %}\n\
         {% with 30, 31, 42 %}\n\
+        {% with  _,  _,  _ %}\n\
         {% /match %}");
   print_error "Nest patterns merge into wildcard patterns correctly (1)."
     (render "{% match a, b with _x, _y %} {% with (_, _), 40 %} {% /match %}");
@@ -365,6 +380,7 @@ let () =
        \   with _x, 1 %}\n\
         {% with (\"a\", \"b\"), 10 %}\n\
         {% with (\"a\", \"b\"), 1 %}\n\
+        {% with             _, _ %}\n\
         {% /match %}");
 
   print_error "Partial matching with integers."
@@ -477,17 +493,29 @@ let () =
   print_error "Record accessors are not allowed in destructure patterns."
     (render "{% match a with {b: x.z} %} {% /match %}");
 
-  let a = component_string ~fname:"a.acutis" ~name:"A" "{% B /%}" in
-  let b = component_string ~fname:"b.acutis" ~name:"B" "{% C /%}" in
-  let c = component_string ~fname:"c.acutis" ~name:"C" "{% D /%}" in
-  let d = component_string ~fname:"d.acutis" ~name:"D" "{% B /%}" in
-  print_error "Cyclic dependencies are reported." (fun () ->
-      Acutis.comps_compile @@ List.to_seq [ a; b; c; d ]);
-  print_error "Missing components are reported." (fun () ->
-      Acutis.comps_compile @@ List.to_seq [ a; b; c ]);
+  print_error_any "Cyclic dependencies are reported."
+    (comps_compile
+       [
+         component_string ~fname:"a.acutis" ~name:"A" "{% B /%}";
+         component_string ~fname:"b.acutis" ~name:"B" "{% C /%}";
+         component_string ~fname:"c.acutis" ~name:"C" "{% D /%}";
+         component_string ~fname:"d.acutis" ~name:"D" "{% B /%}";
+       ]);
+  print_error_any "Missing components are reported."
+    (comps_compile
+       [
+         component_string ~fname:"a.acutis" ~name:"A" "{% B /%}";
+         component_string ~fname:"b.acutis" ~name:"B" "{% C /%}";
+         component_string ~fname:"c.acutis" ~name:"C" "{% D /%}";
+       ]);
   print_error "Missing components are reported (by root)." (render "{% A /%}");
-  print_error "Duplicate names are reported." (fun () ->
-      Acutis.comps_compile @@ List.to_seq [ a; b; a ]);
+  print_error_any "Duplicate names are reported."
+    (comps_compile
+       [
+         component_string ~fname:"a.acutis" ~name:"A" "{% B /%}";
+         component_string ~fname:"b.acutis" ~name:"B" "{% C /%}";
+         component_string ~fname:"a.acutis" ~name:"A" "{% B /%}";
+       ]);
 
   print_error "Basic type mismatch."
     (render "{% match a with {b} %} {% b %} {% /match %}"
@@ -624,29 +652,29 @@ let () =
     (render "{% interface x = _ %} {% x %}");
 
   (* Custom decodable interface parse *)
-  let jsonintf json () =
-    Yojson.Basic.from_string json |> Acutis_json.interface
-  in
-  print_error "JSON interface: null." (jsonintf {|{"prop": null}|});
-  print_error "JSON interface: integer." (jsonintf {|{"prop": 1}|});
-  print_error "JSON interface: string props." (jsonintf {|"prop"|});
-  print_error "JSON interface: empty array type." (jsonintf {|{ prop: [] }|});
-  print_error "JSON interface: empty object." (jsonintf {|{ prop: { a: {} } }|});
-  print_error "JSON interface: empty array tag."
+  let jsonintf json = Yojson.Basic.from_string json |> Acutis_json.interface in
+  print_error_any "JSON interface: null." (jsonintf {|{"prop": null}|});
+  print_error_any "JSON interface: integer." (jsonintf {|{"prop": 1}|});
+  print_error_any "JSON interface: string props." (jsonintf {|"prop"|});
+  print_error_any "JSON interface: empty array type."
+    (jsonintf {|{ prop: [] }|});
+  print_error_any "JSON interface: empty object."
+    (jsonintf {|{ prop: { a: {} } }|});
+  print_error_any "JSON interface: empty array tag."
     (jsonintf {|{ prop: { a: ["tag", []] } }|});
-  print_error "JSON interface: enum with int & string."
+  print_error_any "JSON interface: enum with int & string."
     (jsonintf {|{ prop: ["enum", 1, "a"] }|});
-  print_error "JSON interface: enum with bool & string."
+  print_error_any "JSON interface: enum with bool & string."
     (jsonintf {|{ prop: ["enum", true, "a"] }|});
-  print_error "JSON interface: enum with string & bool."
+  print_error_any "JSON interface: enum with string & bool."
     (jsonintf {|{ prop: ["enum", "a", true] }|});
-  print_error "JSON interface: tag with extra values."
+  print_error_any "JSON interface: tag with extra values."
     (jsonintf {|{ prop: ["union", { tag: ["tag", 0, 1] }] }|});
-  print_error "JSON interface: nullable with extra params."
+  print_error_any "JSON interface: nullable with extra params."
     (jsonintf {|{ prop: ["nullable", "int", "string"] }|});
-  print_error "JSON interface: list with extra params."
+  print_error_any "JSON interface: list with extra params."
     (jsonintf {|{ prop: ["list", "int", "string"] }|});
-  print_error "JSON interface: dict with extra params."
+  print_error_any "JSON interface: dict with extra params."
     (jsonintf {|{ prop: ["dict", "int", "string"] }|});
 
   Format.printf "@]"

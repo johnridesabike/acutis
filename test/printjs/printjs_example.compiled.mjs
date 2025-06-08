@@ -369,8 +369,8 @@ siteTitle = string";
       cell$0 = list$0[1];
     }
     buf$0.contents += "\n";
-    return (buf$0.contents);
+    return (Promise.resolve(buf$0.contents));
   } else {
-    throw (new Error(errors$0.contents));
+    return (Promise.reject(new Error(errors$0.contents)));
   }
 };

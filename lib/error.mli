@@ -15,8 +15,8 @@ type t
 
 val pp : Format.formatter -> t -> unit
 
-exception Acutis_error of t
-(** All of the following functions raise or return this exception. *)
+val handle : ('a -> 'b) -> 'a -> t Seq.t * 'b option
+(** Use this to handle any functions which may raise an error. *)
 
 (** {1 Lexing and Parsing errors.} *)
 
@@ -42,11 +42,11 @@ val missing_field :
 val underscore_in_construct : Loc.t -> _
 val name_bound_too_many : Loc.t -> string -> _
 val var_missing : Loc.t -> string -> _
-val var_unused : Loc.t -> string -> _
+val var_unused : Loc.t -> string -> unit
 val pat_num_mismatch : Loc.t -> _
 val map_pat_num_mismatch : Loc.t -> _
 val component_name_mismatch : Loc.t -> string -> string -> _
-val component_extra_prop : Loc.t -> string -> string -> _
+val component_extra_prop : Loc.t -> string -> string -> unit
 
 (** {2 Interface errors.} *)
 
@@ -68,7 +68,7 @@ val interface_missing_prop :
 
 (** {1 Matching errors.} *)
 
-val unused_case : Loc.t -> _
+val unused_case : Loc.t -> unit
 val parmatch : Loc.t -> (Format.formatter -> 'a -> unit) -> 'a -> _
 
 (** {1 Other compile errors.} *)
