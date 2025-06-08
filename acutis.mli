@@ -11,7 +11,7 @@
 (** This is the main API wrapper around the compiler internals
     ({!Acutis_internals}). *)
 
-type message = private Acutis_internals.Error.t
+type message
 (** An error message. *)
 
 type 'a compile_result := message Seq.t * 'a option
@@ -20,21 +20,21 @@ type 'a compile_result := message Seq.t * 'a option
     computation succeeded. If [None], then it failed for the reasons in the
     messages. A successful computation may have warning messages. *)
 
-type interface = private Acutis_internals.Typechecker.Type.interface
+type interface
 (** Type interfaces for templates. *)
 
-type parsed = private Acutis_internals.Compile.parsed
+type parsed
 (** A template that's been parsed but not type-checked, optimized, or linked
     yet. *)
 
-type 'a comp = private 'a Acutis_internals.Compile.Components.source
+type 'a comp
 (** A template component. Parameter ['a] is the type of external components,
     which may either be a function or a {!type-js_import}. *)
 
-type 'a comps_compiled = private 'a Acutis_internals.Compile.Components.t
+type 'a comps_compiled
 (** A group of compiled and linked components. *)
 
-type 'a compiled = private 'a Acutis_internals.Compile.t
+type 'a compiled
 (** A completely compiled template. *)
 
 (** {1 Compiling templates.} *)
