@@ -187,25 +187,20 @@ let parmatch loc pp_pat pat =
        pp_pat pat
 
 let duplicate_name s =
-  fatal @@ msg_nofile
+  warn @@ msg_nofile
   @@ F.dprintf "There are multiple components with the name '%s'." s
 
 let pp_sep ppf () = F.fprintf ppf "@ -> "
 
-let cycle stack =
-  let f =
-    F.dprintf "Dependency cycle detected.@;@[%a@]"
-      (F.pp_print_list ~pp_sep F.pp_print_string)
-      (List.rev stack)
-  in
-  Fatal (msg_nofile ~kind:"Error" f)
+let cycle loc stack =
+  Fatal
+    (msg ~kind:"Error" loc
+    @@ F.dprintf "Dependency cycle detected.@;@[%a@]"
+         (F.pp_print_list ~pp_sep F.pp_print_string)
+         (List.rev stack))
 
-let missing_component stack name =
-  let f =
-    F.dprintf "Missing template:@;<1 2>%s@;Required by:@;<1 2>%s" name
-      (List.hd stack)
-  in
-  Fatal (msg_nofile ~kind:"Error" f)
+let missing_component loc name =
+  Fatal (msg ~kind:"Error" loc @@ F.dprintf "Missing template:@;<1 2>%s" name)
 
 let intf_decode_invalid s =
   fatal @@ msg_nofile @@ F.dprintf "'%s' is not a valid type." s

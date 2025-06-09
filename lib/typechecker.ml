@@ -773,7 +773,8 @@ type (_, _) var_action =
       (** When we construct a pattern, we update the context for each new
           variable. *)
 
-type _ Effect.t += Get_component_types : string -> Type.interface Effect.t
+type _ Effect.t +=
+  | Get_component_types : Loc.t * string -> Type.interface Effect.t
 
 (** When we type-check a pattern, we create a temporary type and unify it with
     the input type. Information retained in the resulting typed-pattern
@@ -1032,7 +1033,7 @@ and make_nodes ctx nodes =
           Some (Echo (nullables, fmt, default, esc))
       | Ast.Component (loc, comp, comp', props) ->
           if comp <> comp' then Error.component_name_mismatch loc comp comp';
-          let types = Effect.perform (Get_component_types comp) in
+          let types = Effect.perform (Get_component_types (loc, comp)) in
           (* The original should not mutate*)
           let types = Type.copy_record types in
           let missing_to_nullable _ ty prop =
@@ -1104,10 +1105,6 @@ type 'a graph = {
 }
 
 let make_components =
-  let error stack name =
-    if List.exists (String.equal name) stack then Error.cycle (name :: stack)
-    else Error.missing_component stack name
-  in
   let rec continue : type a.
       'f graph -> (a, t) Effect.Shallow.continuation -> a -> t * 'f graph =
    fun ({ linked; not_linked; stack } as graph) k v ->
@@ -1116,7 +1113,7 @@ let make_components =
     let rec effc : type b.
         b Effect.t ->
         ((b, t) Effect.Shallow.continuation -> t * 'f graph) option = function
-      | Get_component_types key ->
+      | Get_component_types (loc, key) ->
           Some
             (fun k ->
               match Map_string.find_opt key linked with
@@ -1141,8 +1138,13 @@ let make_components =
                       let linked = Map_string.add key f linked in
                       continue { not_linked; linked; stack } k types
                   | None ->
-                      Effect.Shallow.discontinue_with k (error stack key)
-                        { retc; exnc; effc }))
+                      let exn =
+                        if List.exists (String.equal key) stack then
+                          Error.cycle loc (key :: stack)
+                        else Error.missing_component loc key
+                      in
+                      Effect.Shallow.discontinue_with k exn { retc; exnc; effc }
+                  ))
       | _ -> None
     in
     Effect.Shallow.continue_with k v { retc; exnc; effc }
@@ -1166,14 +1168,14 @@ let make_components =
   in
   fun not_linked -> loop ~not_linked ~linked:Map_string.empty
 
-let make ~root components ast =
+let make components ast =
   let rec continue : type a. (a, t) Effect.Shallow.continuation -> a -> t =
     let retc = Fun.id in
     let exnc = raise in
     let rec effc : type b.
         b Effect.t -> ((b, t) Effect.Shallow.continuation -> t) option =
       function
-      | Get_component_types key ->
+      | Get_component_types (loc, key) ->
           Some
             (fun k ->
               match Map_string.find_opt key components with
@@ -1181,7 +1183,7 @@ let make ~root components ast =
                   continue k types
               | None ->
                   Effect.Shallow.discontinue_with k
-                    (Error.missing_component [ root ] key)
+                    (Error.missing_component loc key)
                     { retc; exnc; effc })
       | _ -> None
     in

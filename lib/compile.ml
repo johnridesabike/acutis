@@ -185,14 +185,12 @@ type 'a linked_components = {
   components : (string * nodes) list;
   externals : (string * Typechecker.Type.interface * 'a) list;
   set : Set_string.t;
-  stack : string list;
 }
 
-let empty_linked =
-  { components = []; externals = []; set = Set_string.empty; stack = [] }
+let empty_linked = { components = []; externals = []; set = Set_string.empty }
 
 let make components_src { fname; ast } =
-  let typed = T.make ~root:fname components_src.Components.typed ast in
+  let typed = T.make components_src.Components.typed ast in
   let nodes = make_nodes typed.nodes in
   (* Only retrieve the components that need to be linked. *)
   let rec get_components linked nodes =
@@ -210,22 +208,18 @@ let make components_src { fname; ast } =
             Matching.Exits.nodes m.exits |> Seq.fold_left get_components linked
         | Component (name, blocks, _) -> (
             let linked = Queue.fold get_components linked blocks in
+            (* All linking errors were caught by the typechecker. *)
             if Set_string.mem name linked.set then linked
-            else if List.exists (String.equal name) linked.stack then
-              raise @@ Error.cycle (name :: linked.stack)
             else
-              match Map_string.find_opt name components_src.optimized with
-              | None -> raise @@ Error.missing_component linked.stack name
-              | Some (Src (_, nodes)) ->
+              match Map_string.find name components_src.optimized with
+              | Src (_, nodes) ->
                   let { components; externals; set; _ } =
-                    get_components
-                      { linked with stack = name :: linked.stack }
-                      nodes
+                    get_components linked nodes
                   in
                   let set = Set_string.add name set in
                   let components = (name, nodes) :: components in
-                  { linked with components; externals; set }
-              | Some (Fun (_, props, f)) ->
+                  { components; externals; set }
+              | Fun (_, props, f) ->
                   let set = Set_string.add name linked.set in
                   let externals = (name, props, f) :: linked.externals in
                   { linked with externals; set }))

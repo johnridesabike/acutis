@@ -513,8 +513,9 @@ let () =
     (comps_compile
        [
          component_string ~fname:"a.acutis" ~name:"A" "{% B /%}";
-         component_string ~fname:"b.acutis" ~name:"B" "{% C /%}";
          component_string ~fname:"a.acutis" ~name:"A" "{% B /%}";
+         component_string ~fname:"b.acutis" ~name:"B" "";
+         component_string ~fname:"b.acutis" ~name:"B" "";
        ]);
 
   print_error "Basic type mismatch."

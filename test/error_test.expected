@@ -1089,30 +1089,29 @@ Record '.' access is not allowed in a destructure pattern.
 
 Cyclic dependencies are reported.
 ---
-Error.
+Error in file "d.acutis", 1:4-1:7.
 Dependency cycle detected.
 A -> B -> C -> D -> B
 
 Missing components are reported.
 ---
-Error.
+Error in file "c.acutis", 1:4-1:7.
 Missing template:
   D
-Required by:
-  C
 
 Missing components are reported (by root).
 ---
-Error.
+Error in file "<test>", 1:4-1:7.
 Missing template:
   A
-Required by:
-  <test>
 
 Duplicate names are reported.
 ---
-Error.
+Warning.
 There are multiple components with the name 'A'.
+
+Warning.
+There are multiple components with the name 'B'.
 
 Basic type mismatch.
 ---

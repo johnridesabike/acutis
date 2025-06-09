@@ -109,5 +109,5 @@ type ('a, 'b) source =
   | Fun of string * Type.interface * 'b
 
 val make_components : (Ast.t, 'a) source map_string -> (t, 'a) source map_string
-val make : root:string -> (t, 'a) source map_string -> Ast.t -> t
+val make : (t, 'a) source map_string -> Ast.t -> t
 val make_interface_standalone : Ast.interface -> Type.interface
