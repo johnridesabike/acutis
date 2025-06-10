@@ -58,6 +58,9 @@ val interface_unmatched_tags : Loc.t -> string -> string -> _
 val interface_duplicate_tag :
   Loc.t -> (Format.formatter -> 'a -> unit) -> 'a -> _
 
+val interface_duplicate_enum :
+  Loc.t -> (Format.formatter -> 'a -> unit) -> 'a -> unit
+
 val interface_open_bool_union : Loc.t -> _
 
 val interface_type_mismatch :

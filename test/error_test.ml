@@ -617,6 +617,8 @@ let () =
     (render "{% interface x = {@tag: 1} | {@badtag: 2} %}");
   print_error "Duplicate tags."
     (render "{% interface x = {@tag: 1} | {@tag: 1} %}");
+  print_error "Duplicate enums."
+    (render "{% interface x = @1 | @1 y = @\"a\" | @\"a\" z = true | true  %}");
   print_error "Open boolean unions."
     (render "{% interface x = {@tag: false} | ... %}");
   print_error "Tag type error: int <> string."

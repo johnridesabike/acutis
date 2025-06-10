@@ -150,6 +150,9 @@ let interface_duplicate_tag loc pp tag =
   fatal @@ msg loc
   @@ F.dprintf "Tag value '%a' is already used in this union." pp tag
 
+let interface_duplicate_enum loc pp tag =
+  warn @@ msg loc @@ F.dprintf "Value '%a' is already used in this enum." pp tag
+
 let interface_open_bool_union loc =
   fatal @@ msg loc
   @@ F.dprintf "Unions with boolean tags cannot be opened with '...'."

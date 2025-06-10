@@ -189,13 +189,16 @@ end = struct
         | Seq.Cons _ -> Error.intf_decode_single_param name
         | Seq.Nil -> f hd)
 
-  let rec list_enum f s =
-    match s () with
-    | Seq.Cons (hd, tl) -> (
-        match f hd with
-        | Some hd -> hd :: list_enum f tl
-        | None -> Error.intf_decode_enum (D.to_string hd))
-    | Seq.Nil -> []
+  let list_enum f hd tl : _ Nonempty.t =
+    let rec aux tl =
+      match tl () with
+      | Seq.Cons (hd, tl) -> (
+          match f hd with
+          | Some hd -> (loc, hd) :: aux tl
+          | None -> Error.intf_decode_enum (D.to_string hd))
+      | Seq.Nil -> []
+    in
+    (loc, hd) :: aux tl
 
   let rec list f s =
     match s () with Seq.Cons (hd, tl) -> f hd :: list f tl | Seq.Nil -> []
@@ -218,11 +221,11 @@ end = struct
   let ty_named x = Ast.Ty_named (loc, x)
   let row_closed = (loc, `Closed)
   let row_open = (loc, `Open)
-  let ty_enum_int r hd tl = Ast.Ty_enum_int (hd :: list_enum D.get_int tl, r)
-  let ty_enum_bool hd tl = Ast.Ty_enum_bool (hd :: list_enum get_bool tl)
+  let ty_enum_int r hd tl = Ast.Ty_enum_int (list_enum D.get_int hd tl, r)
+  let ty_enum_bool hd tl = Ast.Ty_enum_bool (list_enum get_bool hd tl)
 
   let ty_enum_string r hd tl =
-    Ast.Ty_enum_string (hd :: list_enum D.get_string tl, r)
+    Ast.Ty_enum_string (list_enum D.get_string hd tl, r)
 
   let value f x = Ast.Value (f x)
 

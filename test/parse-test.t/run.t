@@ -212,8 +212,8 @@ Interfaces parse correctly. Use a separate file to minimize type conficts.
     (((name "a")
       (ty
        (Ty_record
-        (((("a" (Value (Ty_enum_int (0 1) (`Closed))))
-           ("b" (Value (Ty_enum_string ("a" "b") (`Closed)))))))
+        (((("a" (Value (Ty_enum_int ((0) (1)) (`Closed))))
+           ("b" (Value (Ty_enum_string (("a") ("b")) (`Closed)))))))
         (`Closed))))
      ((name "b")
       (ty
@@ -227,21 +227,22 @@ Interfaces parse correctly. Use a separate file to minimize type conficts.
        (Ty_record
         (((("tag" (Tag (Tag_int 0)))))
          ((("tag" (Tag (Tag_int 1)))
-           ("a" (Value (Ty_tuple ((Ty_named "float") (Ty_enum_bool (1 0)))))))))
+           ("a"
+            (Value (Ty_tuple ((Ty_named "float") (Ty_enum_bool ((1) (0))))))))))
         (`Closed))))
      ((name "d")
       (ty
        (Ty_record
         (((("tag" (Tag (Tag_string "a"))) ("a" (Value (Ty_named "float")))))
          ((("tag" (Tag (Tag_string "b")))
-           ("a" (Value (Ty_enum_int (0 1) (`Open)))))))
+           ("a" (Value (Ty_enum_int ((0) (1)) (`Open)))))))
         (`Closed))))
      ((name "e")
       (ty
        (Ty_record
         (((("tag" (Tag (Tag_int 0))) ("a" (Value (Ty_named "_")))))
          ((("tag" (Tag (Tag_int 1)))
-           ("b" (Value (Ty_enum_string ("a" "b") (`Open)))))))
+           ("b" (Value (Ty_enum_string (("a") ("b")) (`Open)))))))
         (`Open))))
      ((name "trailing_commas")
       (ty

@@ -27,9 +27,9 @@ type ty =
   | Ty_nullable of ty
   | Ty_list of ty
   | Ty_dict of ty
-  | Ty_enum_int of int Nonempty.t * row
-  | Ty_enum_bool of int Nonempty.t
-  | Ty_enum_string of string Nonempty.t * row
+  | Ty_enum_int of (Loc.t * int) Nonempty.t * row
+  | Ty_enum_bool of (Loc.t * int) Nonempty.t
+  | Ty_enum_string of (Loc.t * string) Nonempty.t * row
   | Ty_record of (Loc.t * ty record) Nonempty.t * row
   | Ty_tuple of ty list
 

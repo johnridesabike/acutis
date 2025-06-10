@@ -25,9 +25,9 @@ type ty =
   | Ty_nullable of ty
   | Ty_list of ty
   | Ty_dict of ty
-  | Ty_enum_int of int Nonempty.t * row
-  | Ty_enum_bool of int Nonempty.t
-  | Ty_enum_string of string Nonempty.t * row
+  | Ty_enum_int of (Loc.t * int) Nonempty.t * row
+  | Ty_enum_bool of (Loc.t * int) Nonempty.t
+  | Ty_enum_string of (Loc.t * string) Nonempty.t * row
   | Ty_record of (Loc.t * ty record) Nonempty.t * row
   | Ty_tuple of ty list
 
@@ -109,10 +109,12 @@ module Ty_repr = struct
     | Ty_list t -> variant "Ty_list" (args (ty t))
     | Ty_dict t -> variant "Ty_dict" (args (ty t))
     | Ty_enum_int (l, r) ->
-        variant "Ty_enum_int" (args (Nonempty.t int l) * row r)
-    | Ty_enum_bool l -> variant "Ty_enum_bool" (args (Nonempty.t int l))
+        variant "Ty_enum_int" (args (Nonempty.t (tuple2 Loc.t int) l) * row r)
+    | Ty_enum_bool l ->
+        variant "Ty_enum_bool" (args (Nonempty.t (tuple2 Loc.t int) l))
     | Ty_enum_string (l, r) ->
-        variant "Ty_enum_string" (args (Nonempty.t string l) * row r)
+        variant "Ty_enum_string"
+          (args (Nonempty.t (tuple2 Loc.t string) l) * row r)
     | Ty_record (l, r) ->
         variant "Ty_record"
           (args (Nonempty.t (tuple2 Loc.t (record ty)) l) * row r)

@@ -649,6 +649,18 @@ module Interface = struct
     | Ast.Tag_bool (_, i) -> i
     | t -> error_tag (Type.enum_false_and_true ()) t
 
+  let set_of_nonempty : type a set.
+      (module Set.S with type t = set and type elt = a) ->
+      (Format.formatter -> a -> unit) ->
+      (Loc.t * a) Nonempty.t ->
+      set =
+   fun (module M) pp ((_, hd) :: tl) ->
+    List.fold_left
+      (fun set (loc, x) ->
+        if M.mem x set then Error.interface_duplicate_enum loc pp x;
+        M.add x set)
+      (M.singleton hd) tl
+
   let rec make_ty = function
     | Ast.Ty_named (loc, s) -> named loc s
     | Ast.Ty_nullable t -> Type.nullable (make_ty t)
@@ -656,11 +668,14 @@ module Interface = struct
     | Ast.Ty_dict t -> Type.dict (make_ty t)
     | Ast.Ty_tuple l -> Type.tuple (List.map make_ty l)
     | Ast.Ty_enum_int (l, (_, r)) ->
-        Type.enum_int (Type.sum (Nonempty.to_seq l |> Set_int.of_seq) r)
+        Type.sum (set_of_nonempty (module Set_int) Format.pp_print_int l) r
+        |> Type.enum_int
     | Ast.Ty_enum_bool l ->
-        Type.enum_bool (Nonempty.to_seq l |> Set_int.of_seq |> Type.sum_bool)
+        set_of_nonempty (module Set_int) Pp.bool l
+        |> Type.sum_bool |> Type.enum_bool
     | Ast.Ty_enum_string (l, (_, r)) ->
-        Type.enum_string (Type.sum (Nonempty.to_seq l |> Set_string.of_seq) r)
+        Type.sum (set_of_nonempty (module Set_string) Pp.syntax_string l) r
+        |> Type.enum_string
     | Ast.Ty_record ((loc, hd) :: tl, (row_l, row)) -> (
         match assoc_to_record hd with
         | Untagged m -> (

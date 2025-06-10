@@ -230,13 +230,13 @@ ty_record:
 
 ty_tuple: l = list_sep_trailing(COMMA, ty); { l }
 
-enum_int: AT; i = INT;  { i }
+enum_int: AT; i = INT;  { ($loc, i) }
 
-enum_string: AT; s = STRING;  { s }
+enum_string: AT; s = STRING;  { ($loc, s) }
 
 bool:
-  | FALSE;  { 0 }
-  | TRUE;   { 1 }
+  | FALSE;  { ($loc, 0) }
+  | TRUE;   { ($loc, 1) }
 
 row:
   | (* empty *)     { ($loc, `Closed) }
