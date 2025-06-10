@@ -453,16 +453,18 @@ and node =
   | Text of string * Ast.trim * Ast.trim
   | Echo of (Ast.echo_format * echo) list * Ast.echo_format * echo * Ast.escape
   | Match of
-      Loc.t
+      Ast.loc
       * [ `Construct ] pat Nonempty.t
       * Type.t Nonempty.t
       * case Nonempty.t
-  | Map_list of Loc.t * [ `Construct ] pat * Type.t Nonempty.t * case Nonempty.t
-  | Map_dict of Loc.t * [ `Construct ] pat * Type.t Nonempty.t * case Nonempty.t
+  | Map_list of
+      Ast.loc * [ `Construct ] pat * Type.t Nonempty.t * case Nonempty.t
+  | Map_dict of
+      Ast.loc * [ `Construct ] pat * Type.t Nonempty.t * case Nonempty.t
   | Component of string * [ `Construct ] pat Map_string.t
 
 and case = {
-  pats : (Loc.t * [ `Destruct ] pat Nonempty.t) Nonempty.t;
+  pats : (Ast.loc * [ `Destruct ] pat Nonempty.t) Nonempty.t;
   bindings : string list;
   nodes : nodes;
 }
@@ -475,7 +477,7 @@ module Context = struct
   type used = Unused | Used
 
   type binding = {
-    loc : Loc.t;
+    loc : Ast.loc;
     name : string;
     mutable used : used;
     ty : Type.t;
@@ -487,8 +489,8 @@ module Context = struct
     all_bindings : binding Queue.t;
         (** This is for checking for unused variables. A queue preserves the
             order for friendlier debugging. *)
-    interface : (Loc.t * Type.t) Map_string.t ref option ref;
-    interface_loc : Loc.t ref;
+    interface : (Ast.loc * Type.t) Map_string.t ref option ref;
+    interface_loc : Ast.loc ref;
         (** When there's more than one interface, this is for the last one. *)
   }
   (** We have to wrap each mutable value in a [ref] instead of using mutable
@@ -500,7 +502,7 @@ module Context = struct
       scope = Map_string.empty;
       all_bindings = Queue.create ();
       interface = ref None;
-      interface_loc = ref Loc.dummy;
+      interface_loc = ref Ast.loc_dummy;
     }
 
   let get k scope global =
@@ -652,7 +654,7 @@ module Interface = struct
   let set_of_nonempty : type a set.
       (module Set.S with type t = set and type elt = a) ->
       (Format.formatter -> a -> unit) ->
-      (Loc.t * a) Nonempty.t ->
+      (Ast.loc * a) Nonempty.t ->
       set =
    fun (module M) pp ((_, hd) :: tl) ->
     List.fold_left
@@ -781,7 +783,7 @@ let make_row = function
 (** This compliments the [mode] type with more information for [make_pat]. *)
 type (_, _) var_action =
   | Destruct_add_vars :
-      (Loc.t * string * Type.t) Queue.t
+      (Ast.loc * string * Type.t) Queue.t
       -> ([ `Destruct ], 'b) var_action
       (** When we destructure a pattern, we add all new variables to a queue. *)
   | Construct_update_vars : 'b Context.t -> ([ `Construct ], 'b) var_action
@@ -789,7 +791,7 @@ type (_, _) var_action =
           variable. *)
 
 type _ Effect.t +=
-  | Get_component_types : Loc.t * string -> Type.interface Effect.t
+  | Get_component_types : Ast.loc * string -> Type.interface Effect.t
 
 (** When we type-check a pattern, we create a temporary type and unify it with
     the input type. Information retained in the resulting typed-pattern
@@ -950,7 +952,7 @@ and[@tail_mod_cons] make_list : type a.
 
 and make_record : type a.
     (a, 'b) var_action ->
-    Loc.t ->
+    Ast.loc ->
     Type.unify_mode ->
     Type.interface ->
     Ast.pat Map_string.t ->
@@ -1054,7 +1056,7 @@ and make_nodes ctx nodes =
           let missing_to_nullable _ ty prop =
             match (prop, ty) with
             | None, Some { contents = Type.Nullable _ } ->
-                Some (Ast.Nullable (Loc.dummy, None))
+                Some (Ast.Nullable (Ast.loc_dummy, None))
             | prop, _ -> prop
           in
           let props =

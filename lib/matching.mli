@@ -256,7 +256,7 @@ type 'a t = { tree : (leaf, int) tree; exits : 'a Exits.t }
 (** {1 Functions.} *)
 
 val make :
-  Loc.t ->
+  Ast.loc ->
   Typechecker.Type.t Nonempty.t ->
   Typechecker.case Nonempty.t ->
   Typechecker.nodes t

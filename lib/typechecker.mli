@@ -85,16 +85,18 @@ and node =
   | Text of string * Ast.trim * Ast.trim
   | Echo of (Ast.echo_format * echo) list * Ast.echo_format * echo * Ast.escape
   | Match of
-      Loc.t
+      Ast.loc
       * [ `Construct ] pat Nonempty.t
       * Type.t Nonempty.t
       * case Nonempty.t
-  | Map_list of Loc.t * [ `Construct ] pat * Type.t Nonempty.t * case Nonempty.t
-  | Map_dict of Loc.t * [ `Construct ] pat * Type.t Nonempty.t * case Nonempty.t
+  | Map_list of
+      Ast.loc * [ `Construct ] pat * Type.t Nonempty.t * case Nonempty.t
+  | Map_dict of
+      Ast.loc * [ `Construct ] pat * Type.t Nonempty.t * case Nonempty.t
   | Component of string * [ `Construct ] pat map_string
 
 and case = {
-  pats : (Loc.t * [ `Destruct ] pat Nonempty.t) Nonempty.t;
+  pats : (Ast.loc * [ `Destruct ] pat Nonempty.t) Nonempty.t;
   bindings : string list;
       (** The binding list is needed to help produce runtime instructions. *)
   nodes : nodes;

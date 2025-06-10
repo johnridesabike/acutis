@@ -191,7 +191,7 @@ module Par_match = struct
 
   type path = Any | Nil | Scalar of scalar * scalar_path | Nest of path list
 
-  let l = Loc.dummy
+  let l = Ast.loc_dummy
 
   (** Turn closed sum types into an example of their possible values. All other
       types become wildcards. *)

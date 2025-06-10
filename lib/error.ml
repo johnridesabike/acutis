@@ -22,25 +22,31 @@ module ES = Effect.Shallow
 
 type 'a res = t Seq.t * 'a option
 
-let rec continue : type a. t Seq.t -> (unit, a) ES.continuation -> a res =
- fun warnings k ->
-  let retc x = (warnings, Some x) in
+let rec continue : type a b. t Seq.t -> (a, b) ES.continuation -> a -> b res =
+ fun msgs k x ->
+  let retc x = (msgs, Some x) in
   let exnc = function
-    | Fatal e -> (Seq.append warnings @@ Seq.return e, None)
+    | Fatal e -> (Seq.append msgs @@ Seq.return e, None)
     | e -> raise e
   in
-  let effc : type b. b Effect.t -> ((b, a) ES.continuation -> a res) option =
+  let effc : type c. c Effect.t -> ((c, b) ES.continuation -> b res) option =
     function
-    | Warn w -> Some (continue (Seq.append warnings @@ Seq.return w))
+    | Warn w -> Some (fun k -> continue (Seq.append msgs @@ Seq.return w) k ())
     | _ -> None
   in
-  ES.continue_with k () { retc; exnc; effc }
+  ES.continue_with k x { retc; exnc; effc }
 
-let handle f x = continue Seq.empty (ES.fiber (fun () -> f x))
+let handle f x = continue Seq.empty (ES.fiber f) x
 
-let msg ~kind loc t =
-  F.dprintf "@[<v>%s in file \"%s\", %a.@;%t@]" kind (Loc.fname loc) Loc.pp loc
-    t
+type loc = Lexing.position * Lexing.position
+
+let pp_pos ppf pos =
+  F.fprintf ppf "%d:%d" pos.Lexing.pos_lnum
+    (pos.Lexing.pos_cnum - pos.pos_bol + 1)
+
+let msg ~kind (start, end_) t =
+  F.dprintf "@[<v>%s in file \"%s\", %a-%a.@;%t@]" kind start.Lexing.pos_fname
+    pp_pos start pp_pos end_ t
 
 let msg_nofile ~kind t = F.dprintf "@[<v>%s.@;%t@]" kind t
 let fatal f = raise @@ Fatal (f ~kind:"Error")

@@ -175,7 +175,7 @@ end = struct
   (* Interface decoding combinators: *)
 
   let else_error x = Error.intf_decode_invalid (D.to_string x)
-  let loc = Loc.dummy
+  let loc = Ast.loc_dummy
   let opt f g h x = match f x with Some x -> g x | None -> h x
 
   let uncons f x =
