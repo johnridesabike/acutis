@@ -105,42 +105,36 @@ window.onload = function playground(_event) {
     }
   };
 
-  let componentsEmpty = Compile.components([]);
+  let componentsEmpty = Compile.components([]).result;
 
   async function render(_event) {
-    let compiled = null;
-    let compileJSResult = "";
-    let renderResult = "";
-    try {
-      compiled = Compile.string(
-        "<playground>",
-        componentsEmpty,
-        sourceTextElt.value,
-      );
-      compileJSResult = Compile.toESMString(compiled);
-    } catch (e) {
-      if (Utils.isError(e)) {
-        compileJSResult = Utils.getError(e);
-      } else {
-        compileJSResult = e.message;
-      }
-    }
-    if (compiled) {
-      try {
-        let json = JSON.parse(propsTextElt.value);
-        renderResult = await Compile.render(compiled, json);
-      } catch (e) {
-        if (Utils.isError(e)) {
-          renderResult = Utils.getError(e);
-        } else {
-          renderResult = e.message;
-        }
-      }
-    }
-    sourceResultElt.value = compileJSResult;
-    renderResultElt.value = renderResult;
+    sourceResultElt.value = "";
+    renderResultElt.value = "";
     setClean(sourceDirtyElt);
     setClean(propsDirtyElt);
+    let compiled = Compile.string(
+      "<playground>",
+      componentsEmpty,
+      sourceTextElt.value,
+    );
+    if (compiled.result === null) {
+      sourceResultElt.value = compiled.errors.join("\n\n");
+    } else {
+      sourceResultElt.value = Compile.toESMString(compiled.result);
+      let result = [];
+      try {
+        let json = JSON.parse(propsTextElt.value);
+        let rendered = await Compile.render(compiled.result, json);
+        if (rendered.result === null) {
+          result = rendered.errors;
+        } else {
+          result = [rendered.result];
+        }
+      } catch (e) {
+        result = [e.message];
+      }
+      renderResultElt.value = compiled.errors.concat(result).join("\n\n");
+    }
   }
   renderButtonElt.onclick = render;
 
