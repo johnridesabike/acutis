@@ -33,33 +33,30 @@ module Acutis_json = Acutis.Of_decodable (struct
   let marshal x = `String (Marshal.to_string x [])
 end)
 
-let print_msgs = Seq.iter (Format.printf "%a@,@," Acutis.pp_message)
+let print_msgs = List.iter (Format.printf "%a@,@," Acutis.pp_message)
 
-let bind (msgs, x) f =
-  match x with
-  | None -> (msgs, None)
-  | Some x ->
-      let msgs', x = f x in
-      (Seq.append msgs msgs', x)
-
-let render ?json ?(components = (Seq.empty, Some Acutis.comps_empty)) src =
+let render ?json ?(components = ([], Some Acutis.comps_empty)) src =
   let json =
     match json with None -> `Assoc [] | Some j -> Yojson.Basic.from_string j
   in
   let lexbuf = Lexing.from_string src in
   Lexing.set_filename lexbuf "<test>";
-  let msgs, result =
-    bind components (fun components ->
-        bind (Acutis.parse lexbuf) (Acutis.compile components))
+  let msgs1, components = components in
+  let msgs2, parsed = Acutis.parse lexbuf in
+  let msgs3, compiled =
+    match (parsed, components) with
+    | Some parsed, Some components -> Acutis.compile components parsed
+    | None, None | None, Some _ | Some _, None -> ([], None)
   in
-  (msgs, Option.map (fun template -> Acutis_json.apply template json) result)
+  let result =
+    Option.map (fun compiled -> Acutis_json.apply compiled json) compiled
+  in
+  (List.concat [ msgs1; msgs2; msgs3 ], result)
 
 let print_error title (msgs, result) =
   Format.printf "%s@,---@," title;
   print_msgs msgs;
-  match result with
-  | Some (Error e) -> Format.printf "%s@,@," e
-  | Some (Ok _) | None -> ()
+  match result with Some (Error e) -> print_msgs e | Some (Ok _) | None -> ()
 
 let print_error_any title (msgs, _) =
   Format.printf "%s@,---@," title;

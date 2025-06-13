@@ -99,6 +99,8 @@ module type SEM = sig
     'b stm
 
   val generator : (('a exp -> unit stm) -> unit stm) -> 'a Seq.t exp
+  (** Create an ephemeral sequence from a function. *)
+
   val iter : 'a Seq.t exp -> ('a exp -> unit stm) -> unit stm
 
   (** {1 Strings and characters.} *)
@@ -147,10 +149,12 @@ module type SEM = sig
 
   (** {1 Results.} *)
 
+  val errors_of_seq : string Seq.t exp -> Error.t list exp
+  val errors_is_empty : Error.t list exp -> bool exp
   val ok : 'a exp -> ('a, 'e) result exp
   val error : 'e exp -> ('a, 'e) result exp
 
-  (** {1 Data} *)
+  (** {1 Data.} *)
 
   type untyped
 
@@ -224,7 +228,8 @@ module Make (I : SEM) : sig
   open I
 
   val eval :
-    import Compile.t -> (External.t -> (string, string) result promise) obs
+    import Compile.t ->
+    (External.t -> (string, Error.t list) result promise) obs
   (** Evaluate a template with the language implemented by {!I}. *)
 end = struct
   (* NOTE: OCaml's mutability, exceptions, and effects are not guaranteed to
@@ -575,15 +580,18 @@ end = struct
     type decode_state = {
       ty_str : string exp;
       stack : stack exp;
-      decode_error : (External.t -> stack -> string -> unit) exp;
-      key_error : (stack -> stack -> string -> unit) exp;
+      yield : string exp -> unit stm;
+      decode_error : (External.t -> stack -> string -> string) exp;
+      key_error : (stack -> stack -> string -> string) exp;
     }
 
     let push_error debug input =
-      stm (((debug.decode_error @@ input) @@ debug.stack) @@ debug.ty_str)
+      debug.yield
+        (((debug.decode_error @@ input) @@ debug.stack) @@ debug.ty_str)
 
     let push_key_error debug missing_keys =
-      stm (((debug.key_error @@ missing_keys) @@ debug.stack) @@ debug.ty_str)
+      debug.yield
+        (((debug.key_error @@ missing_keys) @@ debug.stack) @@ debug.ty_str)
 
     let rec decode ~set ~debug input ty =
       let$ ty_str = ("type", string (Format.asprintf "%a" T.pp ty)) in
@@ -1046,40 +1054,32 @@ end = struct
     let@ components = make_comps components compiled.components in
     export
       (async_lambda (fun input ->
-           let$ errors = ("errors", buffer_create ()) in
            let$ error_aux =
              ( "error_aux",
                lambda4 (fun msg1 msg2 stack ty ->
+                   let$ buf = ("buf", buffer_create ()) in
                    let| () =
-                     if_
-                       (not (buffer_length errors = int 0))
-                       ~then_:(fun () ->
-                         buffer_add_string errors (string "\n\n"))
+                     buffer_add_string buf (string "Error while rendering \"")
                    in
+                   let| () = buffer_add_string buf (string compiled.fname) in
                    let| () =
-                     buffer_add_string errors
-                       (string "Error while rendering \"")
-                   in
-                   let| () = buffer_add_string errors (string compiled.fname) in
-                   let| () =
-                     buffer_add_string errors
+                     buffer_add_string buf
                        (string
                           "\".\n\
                            The data supplied does not match this template's \
                            interface.\n")
                    in
+                   let| () = buffer_add_string buf (string "Path:\n<input>") in
                    let| () =
-                     buffer_add_string errors (string "Path:\n<input>")
+                     stm (stack @@ (buffer_add_sep @@ buf) @@ string " -> ")
                    in
                    let| () =
-                     stm (stack @@ (buffer_add_sep @@ errors) @@ string " -> ")
+                     buffer_add_string buf (string "\nExpected type:\n")
                    in
-                   let| () =
-                     buffer_add_string errors (string "\nExpected type:\n")
-                   in
-                   let| () = buffer_add_string errors ty in
-                   let| () = buffer_add_string errors msg1 in
-                   buffer_add_string errors msg2) )
+                   let| () = buffer_add_string buf ty in
+                   let| () = buffer_add_string buf msg1 in
+                   let| () = buffer_add_string buf msg2 in
+                   return (buffer_contents buf)) )
            in
            let$ decode_error =
              ( "decode_error",
@@ -1105,20 +1105,24 @@ end = struct
              ( "type",
                string (Format.asprintf "%a" T.pp_interface compiled.types) )
            in
-           let debug = { ty_str; stack; decode_error; key_error } in
-           let| () =
-             External.decode External.get_assoc input
-               ~ok:(fun input ->
-                 decode_record ~debug props input compiled.types)
-               ~error:(fun () -> push_error debug input)
+           let$ decode_or_errors =
+             ( "decode_or_errors",
+               generator (fun yield ->
+                   let debug =
+                     { ty_str; stack; yield; decode_error; key_error }
+                   in
+                   External.decode External.get_assoc input
+                     ~ok:(fun input ->
+                       decode_record ~debug props input compiled.types)
+                     ~error:(fun () -> push_error debug input)) )
            in
-           if_else
-             (buffer_length errors = int 0)
+           let$ errors = ("errors", errors_of_seq decode_or_errors) in
+           if_else (errors_is_empty errors)
              ~then_:(fun () ->
                let@ state = state_make components ~props in
                let| () = nodes state compiled.nodes in
                return (ok (buffer_contents state.buf)))
-             ~else_:(fun () -> return (error (buffer_contents errors)))))
+             ~else_:(fun () -> return (error errors))))
 
   let eval compiled = observe (eval compiled)
 end
@@ -1240,6 +1244,8 @@ module Make_trans
   let buffer_length b = fwde (F.buffer_length (bwde b))
   let await p = fwde (F.await (bwde p))
   let async_lambda f = fwde (F.async_lambda (fun x -> bwds (f (fwde x))))
+  let errors_of_seq s = fwde (F.errors_of_seq (bwde s))
+  let errors_is_empty s = fwde (F.errors_is_empty (bwde s))
   let ok x = fwde (F.ok (bwde x))
   let error x = fwde (F.error (bwde x))
 
@@ -1405,6 +1411,8 @@ let pp (type a) pp_import ppf c =
 
     let await = call1 "await"
     let async_lambda f = call1 "async_lambda" (fn value "arg" f)
+    let errors_of_seq = call1 "errors_of_seq"
+    let errors_is_empty = call1 "errors_is_empty"
     let ok = call1 "ok"
     let error = call1 "error"
 

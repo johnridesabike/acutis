@@ -14,9 +14,10 @@ type t
 (** A message. *)
 
 val pp : Format.formatter -> t -> unit
+val of_string : string -> t
 
-val handle : ('a -> 'b) -> 'a -> t Seq.t * 'b option
-(** Use this to handle any functions which may raise an error. *)
+val handle : ('a -> 'b) -> 'a -> t list * 'b option
+(** Use this to handle functions which may raise an error. *)
 
 type loc = Lexing.position * Lexing.position
 (** This is equal to {!Ast.type-loc}. *)

@@ -146,33 +146,23 @@ let input_uint8Array arr =
 
 module Acutis_js = Acutis.Of_decodable (Decode_js)
 
-let bind (msgs, x) f =
-  match x with
-  | None -> (msgs, None)
-  | Some x ->
-      let msgs', x = f x in
-      (Seq.append msgs msgs', x)
-
 type 'a export_result =
   < errors : Js.js_string Js.t Js.js_array Js.t Js.readonly_prop
   ; result : 'a Js.opt Js.readonly_prop >
   Js.t
 
-let export_result_aux : string Seq.t -> 'a option -> 'a export_result =
+let export_result : Acutis.message list -> 'a option -> 'a export_result =
  fun msgs result ->
   let arr = new%js Js.array_empty in
-  Seq.iter (fun msg -> arr##push (Js.string msg) |> ignore) msgs;
+  List.iter
+    (fun msg ->
+      arr##push (Js.string (Format.asprintf "%a" Acutis.pp_message msg))
+      |> ignore)
+    msgs;
   object%js
     val errors = arr
     val result = Js.Opt.option result
   end
-
-let export_result msgs result =
-  export_result_aux
-    (Seq.map (Format.asprintf "%a" Acutis.pp_message) msgs)
-    result
-
-let export_result_tuple (msgs, result) = export_result msgs result
 
 let () =
   Js.export "Component"
@@ -218,29 +208,36 @@ let () =
               interface)
     end)
 
+let compile components lexbuf =
+  let msgs1, parsed = Acutis.parse lexbuf in
+  match parsed with
+  | None -> export_result msgs1 None
+  | Some parsed ->
+      let msgs2, compiled = Acutis.compile components parsed in
+      export_result (msgs1 @ msgs2) compiled
+
 let () =
   Js.export "Compile"
     (object%js
        method components a =
-         Decode_js.array_to_seq a |> Acutis.comps_compile |> export_result_tuple
+         let msgs, result = Decode_js.array_to_seq a |> Acutis.comps_compile in
+         export_result msgs result
 
        method string fname components src =
          let lexbuf = Js.to_string src |> Lexing.from_string in
          Lexing.set_filename lexbuf (Js.to_string fname);
-         bind (Acutis.parse lexbuf) (Acutis.compile components)
-         |> export_result_tuple
+         compile components lexbuf
 
        method uint8Array fname components src =
          let lexbuf = input_uint8Array src |> Lexing.from_function in
          Lexing.set_filename lexbuf (Js.to_string fname);
-         bind (Acutis.parse lexbuf) (Acutis.compile components)
-         |> export_result_tuple
+         compile components lexbuf
 
        method render template js =
          Js_promise.run @@ fun () ->
          match Acutis_js.apply template js with
-         | Ok x -> export_result_aux Seq.empty (Some x)
-         | Error x -> export_result_aux (Seq.return x) None
+         | Ok x -> export_result [] (Some x)
+         | Error x -> export_result x None
 
        method toESMString x = Format.asprintf "%a" Acutis.esm x |> Js.string
        method toCJSString x = Format.asprintf "%a" Acutis.cjs x |> Js.string

@@ -949,7 +949,6 @@ Print the runtime instructions
   (export
    (async_lambda
     (arg ->
-     (let$ errors = (buffer_create ())))
      (let$ error_aux =
       (lambda
        (arg ->
@@ -962,18 +961,18 @@ Print the runtime instructions
               (return
                (lambda
                 (arg ->
-                 (if_else (not ((buffer_length errors) = 0))
-                  (then (buffer_add_string errors "\n\n")) (else (unit)))
-                 (buffer_add_string errors "Error while rendering \"")
-                 (buffer_add_string errors "template.acutis")
-                 (buffer_add_string errors
+                 (let$ buf = (buffer_create ())))
+                 (buffer_add_string buf "Error while rendering \"")
+                 (buffer_add_string buf "template.acutis")
+                 (buffer_add_string buf
                   "\".\nThe data supplied does not match this template's interface.\n")
-                 (buffer_add_string errors "Path:\n<input>")
-                 (stm (arg @@ ((buffer_add_sep @@ errors) @@ " -> ")))
-                 (buffer_add_string errors "\nExpected type:\n")
-                 (buffer_add_string errors arg)
-                 (buffer_add_string errors arg)
-                 (buffer_add_string errors arg)))))))))))))
+                 (buffer_add_string buf "Path:\n<input>")
+                 (stm (arg @@ ((buffer_add_sep @@ buf) @@ " -> ")))
+                 (buffer_add_string buf "\nExpected type:\n")
+                 (buffer_add_string buf arg)
+                 (buffer_add_string buf arg)
+                 (buffer_add_string buf arg)
+                 (return (buffer_contents buf))))))))))))))
      (let$ decode_error =
       (lambda
        (arg ->
@@ -989,677 +988,716 @@ Print the runtime instructions
      (let$ props = (hashtbl_create ())))
      (let$ type =
       "a = {b: {c: false | true}}\na_prop = string\nb_prop = string\nc_prop = string\nd = string\ndict = <int>\ne = string\ne_prop = string\nech_a = string\nech_b = false | true\nech_d = ?string\nech_e = ?string\nech_f = float\nech_i = int\nenums = (@\"a\" | ..., @1 | ..., false | true, false | true)\nf_prop = string\nlist = [?string]\nmap_d = <int>\nmap_l = [int]\nmatch_a = int\nmatch_b = string\nnumbers =\n  {\n    exp1: float,\n    exp2: float,\n    exp3: float,\n    frac: float,\n    int: int,\n    negfrac: float,\n    negint: int\n  }\nrecord = {\"!#%@\": string, a: string}\ntagged = {@tag: false} | {@tag: true, a: string}\ntrim_a = string\ntrim_b = string\ntrim_c = string\ntrim_d = string\ntrim_e = string\ntrim_f = string\ntrim_g = string\ntuple = (int, float, string)\nzero = {\"\": string}")
-     (External.decode assoc arg
-      (ok
-       (decoded ->
-        (let& missing_keys = stack_empty)
-        (if_else (External.assoc_mem "a" decoded)
-         (then
-          (let$ input = (External.assoc_find "a" decoded))
-          (let$ stack = ((stack_add @@ "a") @@ stack_empty))
-          (let$ type = "{b: {c: false | true}}")
-          (External.decode assoc input
-           (ok
-            (decoded ->
-             (let$ decoded = (hashtbl_create ())))
-             (let& missing_keys = stack_empty)
-             (if_else (External.assoc_mem "b" decoded)
-              (then
-               (let$ input = (External.assoc_find "b" decoded))
-               (let$ stack = ((stack_add @@ "b") @@ stack))
-               (let$ type = "{c: false | true}")
-               (External.decode assoc input
-                (ok
-                 (decoded ->
-                  (let$ decoded = (hashtbl_create ())))
-                  (let& missing_keys = stack_empty)
-                  (if_else (External.assoc_mem "c" decoded)
-                   (then
-                    (let$ input = (External.assoc_find "c" decoded))
-                    (let$ stack = ((stack_add @@ "c") @@ stack))
-                    (let$ type = "false | true")
-                    (External.decode bool input
-                     (ok
-                      (decoded ->
-                       (if_else decoded (then (decoded.%{"c"} <- (inj_int 1)))
-                        (else (decoded.%{"c"} <- (inj_int 0))))))
-                     (error (stm (((decode_error @@ input) @@ stack) @@ type)))))
-                   (else
-                    (missing_keys := ((stack_add @@ "c") @@ !missing_keys))))
-                  (if_else (not (stack_is_empty @@ !missing_keys))
-                   (then
-                    (stm (((key_error @@ !missing_keys) @@ stack) @@ type)))
-                   (else (unit)))
-                  (decoded.%{"b"} <- (inj_hashtbl decoded))))
-                (error (stm (((decode_error @@ input) @@ stack) @@ type)))))
-              (else (missing_keys := ((stack_add @@ "b") @@ !missing_keys))))
-             (if_else (not (stack_is_empty @@ !missing_keys))
-              (then (stm (((key_error @@ !missing_keys) @@ stack) @@ type)))
-              (else (unit)))
-             (props.%{"a"} <- (inj_hashtbl decoded))))
-           (error (stm (((decode_error @@ input) @@ stack) @@ type)))))
-         (else (missing_keys := ((stack_add @@ "a") @@ !missing_keys))))
-        (if_else (External.assoc_mem "a_prop" decoded)
-         (then
-          (let$ input = (External.assoc_find "a_prop" decoded))
-          (let$ stack = ((stack_add @@ "a_prop") @@ stack_empty))
-          (let$ type = "string")
-          (External.decode string input
-           (ok (decoded -> (props.%{"a_prop"} <- (inj_string decoded))))
-           (error (stm (((decode_error @@ input) @@ stack) @@ type)))))
-         (else (missing_keys := ((stack_add @@ "a_prop") @@ !missing_keys))))
-        (if_else (External.assoc_mem "b_prop" decoded)
-         (then
-          (let$ input = (External.assoc_find "b_prop" decoded))
-          (let$ stack = ((stack_add @@ "b_prop") @@ stack_empty))
-          (let$ type = "string")
-          (External.decode string input
-           (ok (decoded -> (props.%{"b_prop"} <- (inj_string decoded))))
-           (error (stm (((decode_error @@ input) @@ stack) @@ type)))))
-         (else (missing_keys := ((stack_add @@ "b_prop") @@ !missing_keys))))
-        (if_else (External.assoc_mem "c_prop" decoded)
-         (then
-          (let$ input = (External.assoc_find "c_prop" decoded))
-          (let$ stack = ((stack_add @@ "c_prop") @@ stack_empty))
-          (let$ type = "string")
-          (External.decode string input
-           (ok (decoded -> (props.%{"c_prop"} <- (inj_string decoded))))
-           (error (stm (((decode_error @@ input) @@ stack) @@ type)))))
-         (else (missing_keys := ((stack_add @@ "c_prop") @@ !missing_keys))))
-        (if_else (External.assoc_mem "d" decoded)
-         (then
-          (let$ input = (External.assoc_find "d" decoded))
-          (let$ stack = ((stack_add @@ "d") @@ stack_empty))
-          (let$ type = "string")
-          (External.decode string input
-           (ok (decoded -> (props.%{"d"} <- (inj_string decoded))))
-           (error (stm (((decode_error @@ input) @@ stack) @@ type)))))
-         (else (missing_keys := ((stack_add @@ "d") @@ !missing_keys))))
-        (if_else (External.assoc_mem "dict" decoded)
-         (then
-          (let$ input = (External.assoc_find "dict" decoded))
-          (let$ stack = ((stack_add @@ "dict") @@ stack_empty))
-          (let$ type = "<int>")
-          (External.decode assoc input
-           (ok
-            (decoded ->
-             (let$ decoded = (hashtbl_create ())))
-             (iter (External.assoc_to_seq decoded)
-              (arg ->
-               (let$ stack = ((stack_add @@ (fst arg)) @@ stack))
-               (let$ type = "int")
-               (External.decode int (snd arg)
-                (ok (decoded -> (decoded.%{(fst arg)} <- (inj_int decoded))))
-                (error (stm (((decode_error @@ (snd arg)) @@ stack) @@ type))))
-               (props.%{"dict"} <- (inj_hashtbl decoded))))))
-           (error (stm (((decode_error @@ input) @@ stack) @@ type)))))
-         (else (missing_keys := ((stack_add @@ "dict") @@ !missing_keys))))
-        (if_else (External.assoc_mem "e" decoded)
-         (then
-          (let$ input = (External.assoc_find "e" decoded))
-          (let$ stack = ((stack_add @@ "e") @@ stack_empty))
-          (let$ type = "string")
-          (External.decode string input
-           (ok (decoded -> (props.%{"e"} <- (inj_string decoded))))
-           (error (stm (((decode_error @@ input) @@ stack) @@ type)))))
-         (else (missing_keys := ((stack_add @@ "e") @@ !missing_keys))))
-        (if_else (External.assoc_mem "e_prop" decoded)
-         (then
-          (let$ input = (External.assoc_find "e_prop" decoded))
-          (let$ stack = ((stack_add @@ "e_prop") @@ stack_empty))
-          (let$ type = "string")
-          (External.decode string input
-           (ok (decoded -> (props.%{"e_prop"} <- (inj_string decoded))))
-           (error (stm (((decode_error @@ input) @@ stack) @@ type)))))
-         (else (missing_keys := ((stack_add @@ "e_prop") @@ !missing_keys))))
-        (if_else (External.assoc_mem "ech_a" decoded)
-         (then
-          (let$ input = (External.assoc_find "ech_a" decoded))
-          (let$ stack = ((stack_add @@ "ech_a") @@ stack_empty))
-          (let$ type = "string")
-          (External.decode string input
-           (ok (decoded -> (props.%{"ech_a"} <- (inj_string decoded))))
-           (error (stm (((decode_error @@ input) @@ stack) @@ type)))))
-         (else (missing_keys := ((stack_add @@ "ech_a") @@ !missing_keys))))
-        (if_else (External.assoc_mem "ech_b" decoded)
-         (then
-          (let$ input = (External.assoc_find "ech_b" decoded))
-          (let$ stack = ((stack_add @@ "ech_b") @@ stack_empty))
-          (let$ type = "false | true")
-          (External.decode bool input
-           (ok
-            (decoded ->
-             (if_else decoded (then (props.%{"ech_b"} <- (inj_int 1)))
-              (else (props.%{"ech_b"} <- (inj_int 0))))))
-           (error (stm (((decode_error @@ input) @@ stack) @@ type)))))
-         (else (missing_keys := ((stack_add @@ "ech_b") @@ !missing_keys))))
-        (if_else (External.assoc_mem "ech_d" decoded)
-         (then
-          (let$ input = (External.assoc_find "ech_d" decoded))
-          (let$ stack = ((stack_add @@ "ech_d") @@ stack_empty))
-          (let$ type = "?string")
-          (External.decode some input
-           (ok
-            (decoded ->
-             (let$ decoded = [(inj_int 0)])
-             (let$ stack = ((stack_add @@ "<nullable>") @@ stack))
+     (let$ decode_or_errors =
+      (generator
+       (yield ->
+        (External.decode assoc arg
+         (ok
+          (decoded ->
+           (let& missing_keys = stack_empty)
+           (if_else (External.assoc_mem "a" decoded)
+            (then
+             (let$ input = (External.assoc_find "a" decoded))
+             (let$ stack = ((stack_add @@ "a") @@ stack_empty))
+             (let$ type = "{b: {c: false | true}}")
+             (External.decode assoc input
+              (ok
+               (decoded ->
+                (let$ decoded = (hashtbl_create ())))
+                (let& missing_keys = stack_empty)
+                (if_else (External.assoc_mem "b" decoded)
+                 (then
+                  (let$ input = (External.assoc_find "b" decoded))
+                  (let$ stack = ((stack_add @@ "b") @@ stack))
+                  (let$ type = "{c: false | true}")
+                  (External.decode assoc input
+                   (ok
+                    (decoded ->
+                     (let$ decoded = (hashtbl_create ())))
+                     (let& missing_keys = stack_empty)
+                     (if_else (External.assoc_mem "c" decoded)
+                      (then
+                       (let$ input = (External.assoc_find "c" decoded))
+                       (let$ stack = ((stack_add @@ "c") @@ stack))
+                       (let$ type = "false | true")
+                       (External.decode bool input
+                        (ok
+                         (decoded ->
+                          (if_else decoded
+                           (then (decoded.%{"c"} <- (inj_int 1)))
+                           (else (decoded.%{"c"} <- (inj_int 0))))))
+                        (error
+                         (yield (((decode_error @@ input) @@ stack) @@ type)))))
+                      (else
+                       (missing_keys := ((stack_add @@ "c") @@ !missing_keys))))
+                     (if_else (not (stack_is_empty @@ !missing_keys))
+                      (then
+                       (yield (((key_error @@ !missing_keys) @@ stack) @@ type)))
+                      (else (unit)))
+                     (decoded.%{"b"} <- (inj_hashtbl decoded))))
+                   (error (yield (((decode_error @@ input) @@ stack) @@ type)))))
+                 (else (missing_keys := ((stack_add @@ "b") @@ !missing_keys))))
+                (if_else (not (stack_is_empty @@ !missing_keys))
+                 (then
+                  (yield (((key_error @@ !missing_keys) @@ stack) @@ type)))
+                 (else (unit)))
+                (props.%{"a"} <- (inj_hashtbl decoded))))
+              (error (yield (((decode_error @@ input) @@ stack) @@ type)))))
+            (else (missing_keys := ((stack_add @@ "a") @@ !missing_keys))))
+           (if_else (External.assoc_mem "a_prop" decoded)
+            (then
+             (let$ input = (External.assoc_find "a_prop" decoded))
+             (let$ stack = ((stack_add @@ "a_prop") @@ stack_empty))
              (let$ type = "string")
-             (External.decode string decoded
-              (ok (decoded -> (decoded.%(0) <- (inj_string decoded))))
-              (error (stm (((decode_error @@ decoded) @@ stack) @@ type))))
-             (props.%{"ech_d"} <- (inj_array decoded))))
-           (error (props.%{"ech_d"} <- (inj_int 0)))))
-         (else (props.%{"ech_d"} <- (inj_int 0))))
-        (if_else (External.assoc_mem "ech_e" decoded)
-         (then
-          (let$ input = (External.assoc_find "ech_e" decoded))
-          (let$ stack = ((stack_add @@ "ech_e") @@ stack_empty))
-          (let$ type = "?string")
-          (External.decode some input
-           (ok
-            (decoded ->
-             (let$ decoded = [(inj_int 0)])
-             (let$ stack = ((stack_add @@ "<nullable>") @@ stack))
+             (External.decode string input
+              (ok (decoded -> (props.%{"a_prop"} <- (inj_string decoded))))
+              (error (yield (((decode_error @@ input) @@ stack) @@ type)))))
+            (else (missing_keys := ((stack_add @@ "a_prop") @@ !missing_keys))))
+           (if_else (External.assoc_mem "b_prop" decoded)
+            (then
+             (let$ input = (External.assoc_find "b_prop" decoded))
+             (let$ stack = ((stack_add @@ "b_prop") @@ stack_empty))
              (let$ type = "string")
-             (External.decode string decoded
-              (ok (decoded -> (decoded.%(0) <- (inj_string decoded))))
-              (error (stm (((decode_error @@ decoded) @@ stack) @@ type))))
-             (props.%{"ech_e"} <- (inj_array decoded))))
-           (error (props.%{"ech_e"} <- (inj_int 0)))))
-         (else (props.%{"ech_e"} <- (inj_int 0))))
-        (if_else (External.assoc_mem "ech_f" decoded)
-         (then
-          (let$ input = (External.assoc_find "ech_f" decoded))
-          (let$ stack = ((stack_add @@ "ech_f") @@ stack_empty))
-          (let$ type = "float")
-          (External.decode float input
-           (ok (decoded -> (props.%{"ech_f"} <- (inj_float decoded))))
-           (error (stm (((decode_error @@ input) @@ stack) @@ type)))))
-         (else (missing_keys := ((stack_add @@ "ech_f") @@ !missing_keys))))
-        (if_else (External.assoc_mem "ech_i" decoded)
-         (then
-          (let$ input = (External.assoc_find "ech_i" decoded))
-          (let$ stack = ((stack_add @@ "ech_i") @@ stack_empty))
-          (let$ type = "int")
-          (External.decode int input
-           (ok (decoded -> (props.%{"ech_i"} <- (inj_int decoded))))
-           (error (stm (((decode_error @@ input) @@ stack) @@ type)))))
-         (else (missing_keys := ((stack_add @@ "ech_i") @@ !missing_keys))))
-        (if_else (External.assoc_mem "enums" decoded)
-         (then
-          (let$ input = (External.assoc_find "enums" decoded))
-          (let$ stack = ((stack_add @@ "enums") @@ stack_empty))
-          (let$ type = "(@\"a\" | ..., @1 | ..., false | true, false | true)")
-          (External.decode seq input
-           (ok
-            (decoded ->
-             (let$ decoded = (array_make 4 (inj_int 0)))
-             (uncons decoded
-              (nil (stm (((decode_error @@ input) @@ stack) @@ type)))
-              (cons
-               (hd ->
-                (seq ->
-                 (let$ stack = ((stack_add @@ (string_of_int 0)) @@ stack))
-                 (let$ type = "@\"a\" | ...")
-                 (External.decode string hd
-                  (ok (decoded -> (decoded.%(0) <- (inj_string decoded))))
-                  (error (stm (((decode_error @@ hd) @@ stack) @@ type))))
-                 (uncons seq
-                  (nil (stm (((decode_error @@ input) @@ stack) @@ type)))
-                  (cons
-                   (hd ->
-                    (seq ->
-                     (let$ stack = ((stack_add @@ (string_of_int 1)) @@ stack))
-                     (let$ type = "@1 | ...")
-                     (External.decode int hd
-                      (ok (decoded -> (decoded.%(1) <- (inj_int decoded))))
-                      (error (stm (((decode_error @@ hd) @@ stack) @@ type))))
-                     (uncons seq
-                      (nil (stm (((decode_error @@ input) @@ stack) @@ type)))
-                      (cons
-                       (hd ->
-                        (seq ->
-                         (let$ stack =
-                          ((stack_add @@ (string_of_int 2)) @@ stack))
-                         (let$ type = "false | true")
-                         (External.decode bool hd
-                          (ok
-                           (decoded ->
-                            (if_else decoded
-                             (then (decoded.%(2) <- (inj_int 1)))
-                             (else (decoded.%(2) <- (inj_int 0))))))
-                          (error
-                           (stm (((decode_error @@ hd) @@ stack) @@ type))))
-                         (uncons seq
-                          (nil
-                           (stm (((decode_error @@ input) @@ stack) @@ type)))
-                          (cons
-                           (hd ->
-                            (seq ->
-                             (let$ stack =
-                              ((stack_add @@ (string_of_int 3)) @@ stack))
-                             (let$ type = "false | true")
-                             (External.decode bool hd
-                              (ok
-                               (decoded ->
-                                (if_else decoded
-                                 (then (decoded.%(3) <- (inj_int 1)))
-                                 (else (decoded.%(3) <- (inj_int 0))))))
-                              (error
-                               (stm (((decode_error @@ hd) @@ stack) @@ type))))
-                             (unit)))))))))))))))))
-             (props.%{"enums"} <- (inj_array decoded))))
-           (error (stm (((decode_error @@ input) @@ stack) @@ type)))))
-         (else (missing_keys := ((stack_add @@ "enums") @@ !missing_keys))))
-        (if_else (External.assoc_mem "f_prop" decoded)
-         (then
-          (let$ input = (External.assoc_find "f_prop" decoded))
-          (let$ stack = ((stack_add @@ "f_prop") @@ stack_empty))
-          (let$ type = "string")
-          (External.decode string input
-           (ok (decoded -> (props.%{"f_prop"} <- (inj_string decoded))))
-           (error (stm (((decode_error @@ input) @@ stack) @@ type)))))
-         (else (missing_keys := ((stack_add @@ "f_prop") @@ !missing_keys))))
-        (if_else (External.assoc_mem "list" decoded)
-         (then
-          (let$ input = (External.assoc_find "list" decoded))
-          (let$ stack = ((stack_add @@ "list") @@ stack_empty))
-          (let$ type = "[?string]")
-          (External.decode seq input
-           (ok
-            (decoded ->
-             (let& index = 0)
-             (let$ decoded = [(inj_int 0), (inj_int 0)])
-             (let& decode_dst = decoded)
-             (iter decoded
-              (arg ->
-               (let$ decode_dst_new = [(inj_int 0), (inj_int 0)])
-               (let$ stack = ((stack_add @@ (string_of_int !index)) @@ stack))
-               (let$ type = "?string")
-               (External.decode some arg
-                (ok
-                 (decoded ->
-                  (let$ decoded = [(inj_int 0)])
-                  (let$ stack = ((stack_add @@ "<nullable>") @@ stack))
-                  (let$ type = "string")
-                  (External.decode string decoded
-                   (ok (decoded -> (decoded.%(0) <- (inj_string decoded))))
-                   (error (stm (((decode_error @@ decoded) @@ stack) @@ type))))
-                  (decode_dst_new.%(0) <- (inj_array decoded))))
-                (error (decode_dst_new.%(0) <- (inj_int 0))))
-               (!decode_dst.%(1) <- (inj_array decode_dst_new))
-               (incr index)
-               (decode_dst := decode_dst_new)))
-             (props.%{"list"} <- decoded.%(1))))
-           (error (stm (((decode_error @@ input) @@ stack) @@ type)))))
-         (else (missing_keys := ((stack_add @@ "list") @@ !missing_keys))))
-        (if_else (External.assoc_mem "map_d" decoded)
-         (then
-          (let$ input = (External.assoc_find "map_d" decoded))
-          (let$ stack = ((stack_add @@ "map_d") @@ stack_empty))
-          (let$ type = "<int>")
-          (External.decode assoc input
-           (ok
-            (decoded ->
-             (let$ decoded = (hashtbl_create ())))
-             (iter (External.assoc_to_seq decoded)
-              (arg ->
-               (let$ stack = ((stack_add @@ (fst arg)) @@ stack))
-               (let$ type = "int")
-               (External.decode int (snd arg)
-                (ok (decoded -> (decoded.%{(fst arg)} <- (inj_int decoded))))
-                (error (stm (((decode_error @@ (snd arg)) @@ stack) @@ type))))
-               (props.%{"map_d"} <- (inj_hashtbl decoded))))))
-           (error (stm (((decode_error @@ input) @@ stack) @@ type)))))
-         (else (missing_keys := ((stack_add @@ "map_d") @@ !missing_keys))))
-        (if_else (External.assoc_mem "map_l" decoded)
-         (then
-          (let$ input = (External.assoc_find "map_l" decoded))
-          (let$ stack = ((stack_add @@ "map_l") @@ stack_empty))
-          (let$ type = "[int]")
-          (External.decode seq input
-           (ok
-            (decoded ->
-             (let& index = 0)
-             (let$ decoded = [(inj_int 0), (inj_int 0)])
-             (let& decode_dst = decoded)
-             (iter decoded
-              (arg ->
-               (let$ decode_dst_new = [(inj_int 0), (inj_int 0)])
-               (let$ stack = ((stack_add @@ (string_of_int !index)) @@ stack))
-               (let$ type = "int")
-               (External.decode int arg
-                (ok (decoded -> (decode_dst_new.%(0) <- (inj_int decoded))))
-                (error (stm (((decode_error @@ arg) @@ stack) @@ type))))
-               (!decode_dst.%(1) <- (inj_array decode_dst_new))
-               (incr index)
-               (decode_dst := decode_dst_new)))
-             (props.%{"map_l"} <- decoded.%(1))))
-           (error (stm (((decode_error @@ input) @@ stack) @@ type)))))
-         (else (missing_keys := ((stack_add @@ "map_l") @@ !missing_keys))))
-        (if_else (External.assoc_mem "match_a" decoded)
-         (then
-          (let$ input = (External.assoc_find "match_a" decoded))
-          (let$ stack = ((stack_add @@ "match_a") @@ stack_empty))
-          (let$ type = "int")
-          (External.decode int input
-           (ok (decoded -> (props.%{"match_a"} <- (inj_int decoded))))
-           (error (stm (((decode_error @@ input) @@ stack) @@ type)))))
-         (else (missing_keys := ((stack_add @@ "match_a") @@ !missing_keys))))
-        (if_else (External.assoc_mem "match_b" decoded)
-         (then
-          (let$ input = (External.assoc_find "match_b" decoded))
-          (let$ stack = ((stack_add @@ "match_b") @@ stack_empty))
-          (let$ type = "string")
-          (External.decode string input
-           (ok (decoded -> (props.%{"match_b"} <- (inj_string decoded))))
-           (error (stm (((decode_error @@ input) @@ stack) @@ type)))))
-         (else (missing_keys := ((stack_add @@ "match_b") @@ !missing_keys))))
-        (if_else (External.assoc_mem "numbers" decoded)
-         (then
-          (let$ input = (External.assoc_find "numbers" decoded))
-          (let$ stack = ((stack_add @@ "numbers") @@ stack_empty))
-          (let$ type =
-           "{\n  exp1: float,\n  exp2: float,\n  exp3: float,\n  frac: float,\n  int: int,\n  negfrac: float,\n  negint: int\n}")
-          (External.decode assoc input
-           (ok
-            (decoded ->
-             (let$ decoded = (hashtbl_create ())))
-             (let& missing_keys = stack_empty)
-             (if_else (External.assoc_mem "exp1" decoded)
-              (then
-               (let$ input = (External.assoc_find "exp1" decoded))
-               (let$ stack = ((stack_add @@ "exp1") @@ stack))
-               (let$ type = "float")
-               (External.decode float input
-                (ok (decoded -> (decoded.%{"exp1"} <- (inj_float decoded))))
-                (error (stm (((decode_error @@ input) @@ stack) @@ type)))))
-              (else (missing_keys := ((stack_add @@ "exp1") @@ !missing_keys))))
-             (if_else (External.assoc_mem "exp2" decoded)
-              (then
-               (let$ input = (External.assoc_find "exp2" decoded))
-               (let$ stack = ((stack_add @@ "exp2") @@ stack))
-               (let$ type = "float")
-               (External.decode float input
-                (ok (decoded -> (decoded.%{"exp2"} <- (inj_float decoded))))
-                (error (stm (((decode_error @@ input) @@ stack) @@ type)))))
-              (else (missing_keys := ((stack_add @@ "exp2") @@ !missing_keys))))
-             (if_else (External.assoc_mem "exp3" decoded)
-              (then
-               (let$ input = (External.assoc_find "exp3" decoded))
-               (let$ stack = ((stack_add @@ "exp3") @@ stack))
-               (let$ type = "float")
-               (External.decode float input
-                (ok (decoded -> (decoded.%{"exp3"} <- (inj_float decoded))))
-                (error (stm (((decode_error @@ input) @@ stack) @@ type)))))
-              (else (missing_keys := ((stack_add @@ "exp3") @@ !missing_keys))))
-             (if_else (External.assoc_mem "frac" decoded)
-              (then
-               (let$ input = (External.assoc_find "frac" decoded))
-               (let$ stack = ((stack_add @@ "frac") @@ stack))
-               (let$ type = "float")
-               (External.decode float input
-                (ok (decoded -> (decoded.%{"frac"} <- (inj_float decoded))))
-                (error (stm (((decode_error @@ input) @@ stack) @@ type)))))
-              (else (missing_keys := ((stack_add @@ "frac") @@ !missing_keys))))
-             (if_else (External.assoc_mem "int" decoded)
-              (then
-               (let$ input = (External.assoc_find "int" decoded))
-               (let$ stack = ((stack_add @@ "int") @@ stack))
-               (let$ type = "int")
-               (External.decode int input
-                (ok (decoded -> (decoded.%{"int"} <- (inj_int decoded))))
-                (error (stm (((decode_error @@ input) @@ stack) @@ type)))))
-              (else (missing_keys := ((stack_add @@ "int") @@ !missing_keys))))
-             (if_else (External.assoc_mem "negfrac" decoded)
-              (then
-               (let$ input = (External.assoc_find "negfrac" decoded))
-               (let$ stack = ((stack_add @@ "negfrac") @@ stack))
-               (let$ type = "float")
-               (External.decode float input
-                (ok (decoded -> (decoded.%{"negfrac"} <- (inj_float decoded))))
-                (error (stm (((decode_error @@ input) @@ stack) @@ type)))))
-              (else
-               (missing_keys := ((stack_add @@ "negfrac") @@ !missing_keys))))
-             (if_else (External.assoc_mem "negint" decoded)
-              (then
-               (let$ input = (External.assoc_find "negint" decoded))
-               (let$ stack = ((stack_add @@ "negint") @@ stack))
-               (let$ type = "int")
-               (External.decode int input
-                (ok (decoded -> (decoded.%{"negint"} <- (inj_int decoded))))
-                (error (stm (((decode_error @@ input) @@ stack) @@ type)))))
-              (else
-               (missing_keys := ((stack_add @@ "negint") @@ !missing_keys))))
-             (if_else (not (stack_is_empty @@ !missing_keys))
-              (then (stm (((key_error @@ !missing_keys) @@ stack) @@ type)))
-              (else (unit)))
-             (props.%{"numbers"} <- (inj_hashtbl decoded))))
-           (error (stm (((decode_error @@ input) @@ stack) @@ type)))))
-         (else (missing_keys := ((stack_add @@ "numbers") @@ !missing_keys))))
-        (if_else (External.assoc_mem "record" decoded)
-         (then
-          (let$ input = (External.assoc_find "record" decoded))
-          (let$ stack = ((stack_add @@ "record") @@ stack_empty))
-          (let$ type = "{\"!#%@\": string, a: string}")
-          (External.decode assoc input
-           (ok
-            (decoded ->
-             (let$ decoded = (hashtbl_create ())))
-             (let& missing_keys = stack_empty)
-             (if_else (External.assoc_mem "!#%@" decoded)
-              (then
-               (let$ input = (External.assoc_find "!#%@" decoded))
-               (let$ stack = ((stack_add @@ "!#%@") @@ stack))
-               (let$ type = "string")
-               (External.decode string input
-                (ok (decoded -> (decoded.%{"!#%@"} <- (inj_string decoded))))
-                (error (stm (((decode_error @@ input) @@ stack) @@ type)))))
-              (else (missing_keys := ((stack_add @@ "!#%@") @@ !missing_keys))))
-             (if_else (External.assoc_mem "a" decoded)
-              (then
-               (let$ input = (External.assoc_find "a" decoded))
-               (let$ stack = ((stack_add @@ "a") @@ stack))
-               (let$ type = "string")
-               (External.decode string input
-                (ok (decoded -> (decoded.%{"a"} <- (inj_string decoded))))
-                (error (stm (((decode_error @@ input) @@ stack) @@ type)))))
-              (else (missing_keys := ((stack_add @@ "a") @@ !missing_keys))))
-             (if_else (not (stack_is_empty @@ !missing_keys))
-              (then (stm (((key_error @@ !missing_keys) @@ stack) @@ type)))
-              (else (unit)))
-             (props.%{"record"} <- (inj_hashtbl decoded))))
-           (error (stm (((decode_error @@ input) @@ stack) @@ type)))))
-         (else (missing_keys := ((stack_add @@ "record") @@ !missing_keys))))
-        (if_else (External.assoc_mem "tagged" decoded)
-         (then
-          (let$ input = (External.assoc_find "tagged" decoded))
-          (let$ stack = ((stack_add @@ "tagged") @@ stack_empty))
-          (let$ type = "{@tag: false} | {@tag: true, a: string}")
-          (External.decode assoc input
-           (ok
-            (decoded ->
-             (if_else (External.assoc_mem "tag" decoded)
-              (then
-               (External.decode bool (External.assoc_find "tag" decoded)
-                (ok
-                 (decoded ->
-                  (let$ decoded = (hashtbl_create ())))
-                  (if_else (not decoded)
-                   (then
-                    (decoded.%{"tag"} <- (inj_int 0))
-                    (let& missing_keys = stack_empty)
-                    (unit)
-                    (if_else (not (stack_is_empty @@ !missing_keys))
-                     (then
-                      (stm (((key_error @@ !missing_keys) @@ stack) @@ type)))
-                     (else (unit))))
-                   (else
-                    (if_else decoded
-                     (then
-                      (decoded.%{"tag"} <- (inj_int 1))
-                      (let& missing_keys = stack_empty)
-                      (if_else (External.assoc_mem "a" decoded)
-                       (then
-                        (let$ input = (External.assoc_find "a" decoded))
-                        (let$ stack = ((stack_add @@ "a") @@ stack))
-                        (let$ type = "string")
-                        (External.decode string input
-                         (ok
-                          (decoded -> (decoded.%{"a"} <- (inj_string decoded))))
+             (External.decode string input
+              (ok (decoded -> (props.%{"b_prop"} <- (inj_string decoded))))
+              (error (yield (((decode_error @@ input) @@ stack) @@ type)))))
+            (else (missing_keys := ((stack_add @@ "b_prop") @@ !missing_keys))))
+           (if_else (External.assoc_mem "c_prop" decoded)
+            (then
+             (let$ input = (External.assoc_find "c_prop" decoded))
+             (let$ stack = ((stack_add @@ "c_prop") @@ stack_empty))
+             (let$ type = "string")
+             (External.decode string input
+              (ok (decoded -> (props.%{"c_prop"} <- (inj_string decoded))))
+              (error (yield (((decode_error @@ input) @@ stack) @@ type)))))
+            (else (missing_keys := ((stack_add @@ "c_prop") @@ !missing_keys))))
+           (if_else (External.assoc_mem "d" decoded)
+            (then
+             (let$ input = (External.assoc_find "d" decoded))
+             (let$ stack = ((stack_add @@ "d") @@ stack_empty))
+             (let$ type = "string")
+             (External.decode string input
+              (ok (decoded -> (props.%{"d"} <- (inj_string decoded))))
+              (error (yield (((decode_error @@ input) @@ stack) @@ type)))))
+            (else (missing_keys := ((stack_add @@ "d") @@ !missing_keys))))
+           (if_else (External.assoc_mem "dict" decoded)
+            (then
+             (let$ input = (External.assoc_find "dict" decoded))
+             (let$ stack = ((stack_add @@ "dict") @@ stack_empty))
+             (let$ type = "<int>")
+             (External.decode assoc input
+              (ok
+               (decoded ->
+                (let$ decoded = (hashtbl_create ())))
+                (iter (External.assoc_to_seq decoded)
+                 (arg ->
+                  (let$ stack = ((stack_add @@ (fst arg)) @@ stack))
+                  (let$ type = "int")
+                  (External.decode int (snd arg)
+                   (ok (decoded -> (decoded.%{(fst arg)} <- (inj_int decoded))))
+                   (error
+                    (yield (((decode_error @@ (snd arg)) @@ stack) @@ type))))
+                  (props.%{"dict"} <- (inj_hashtbl decoded))))))
+              (error (yield (((decode_error @@ input) @@ stack) @@ type)))))
+            (else (missing_keys := ((stack_add @@ "dict") @@ !missing_keys))))
+           (if_else (External.assoc_mem "e" decoded)
+            (then
+             (let$ input = (External.assoc_find "e" decoded))
+             (let$ stack = ((stack_add @@ "e") @@ stack_empty))
+             (let$ type = "string")
+             (External.decode string input
+              (ok (decoded -> (props.%{"e"} <- (inj_string decoded))))
+              (error (yield (((decode_error @@ input) @@ stack) @@ type)))))
+            (else (missing_keys := ((stack_add @@ "e") @@ !missing_keys))))
+           (if_else (External.assoc_mem "e_prop" decoded)
+            (then
+             (let$ input = (External.assoc_find "e_prop" decoded))
+             (let$ stack = ((stack_add @@ "e_prop") @@ stack_empty))
+             (let$ type = "string")
+             (External.decode string input
+              (ok (decoded -> (props.%{"e_prop"} <- (inj_string decoded))))
+              (error (yield (((decode_error @@ input) @@ stack) @@ type)))))
+            (else (missing_keys := ((stack_add @@ "e_prop") @@ !missing_keys))))
+           (if_else (External.assoc_mem "ech_a" decoded)
+            (then
+             (let$ input = (External.assoc_find "ech_a" decoded))
+             (let$ stack = ((stack_add @@ "ech_a") @@ stack_empty))
+             (let$ type = "string")
+             (External.decode string input
+              (ok (decoded -> (props.%{"ech_a"} <- (inj_string decoded))))
+              (error (yield (((decode_error @@ input) @@ stack) @@ type)))))
+            (else (missing_keys := ((stack_add @@ "ech_a") @@ !missing_keys))))
+           (if_else (External.assoc_mem "ech_b" decoded)
+            (then
+             (let$ input = (External.assoc_find "ech_b" decoded))
+             (let$ stack = ((stack_add @@ "ech_b") @@ stack_empty))
+             (let$ type = "false | true")
+             (External.decode bool input
+              (ok
+               (decoded ->
+                (if_else decoded (then (props.%{"ech_b"} <- (inj_int 1)))
+                 (else (props.%{"ech_b"} <- (inj_int 0))))))
+              (error (yield (((decode_error @@ input) @@ stack) @@ type)))))
+            (else (missing_keys := ((stack_add @@ "ech_b") @@ !missing_keys))))
+           (if_else (External.assoc_mem "ech_d" decoded)
+            (then
+             (let$ input = (External.assoc_find "ech_d" decoded))
+             (let$ stack = ((stack_add @@ "ech_d") @@ stack_empty))
+             (let$ type = "?string")
+             (External.decode some input
+              (ok
+               (decoded ->
+                (let$ decoded = [(inj_int 0)])
+                (let$ stack = ((stack_add @@ "<nullable>") @@ stack))
+                (let$ type = "string")
+                (External.decode string decoded
+                 (ok (decoded -> (decoded.%(0) <- (inj_string decoded))))
+                 (error (yield (((decode_error @@ decoded) @@ stack) @@ type))))
+                (props.%{"ech_d"} <- (inj_array decoded))))
+              (error (props.%{"ech_d"} <- (inj_int 0)))))
+            (else (props.%{"ech_d"} <- (inj_int 0))))
+           (if_else (External.assoc_mem "ech_e" decoded)
+            (then
+             (let$ input = (External.assoc_find "ech_e" decoded))
+             (let$ stack = ((stack_add @@ "ech_e") @@ stack_empty))
+             (let$ type = "?string")
+             (External.decode some input
+              (ok
+               (decoded ->
+                (let$ decoded = [(inj_int 0)])
+                (let$ stack = ((stack_add @@ "<nullable>") @@ stack))
+                (let$ type = "string")
+                (External.decode string decoded
+                 (ok (decoded -> (decoded.%(0) <- (inj_string decoded))))
+                 (error (yield (((decode_error @@ decoded) @@ stack) @@ type))))
+                (props.%{"ech_e"} <- (inj_array decoded))))
+              (error (props.%{"ech_e"} <- (inj_int 0)))))
+            (else (props.%{"ech_e"} <- (inj_int 0))))
+           (if_else (External.assoc_mem "ech_f" decoded)
+            (then
+             (let$ input = (External.assoc_find "ech_f" decoded))
+             (let$ stack = ((stack_add @@ "ech_f") @@ stack_empty))
+             (let$ type = "float")
+             (External.decode float input
+              (ok (decoded -> (props.%{"ech_f"} <- (inj_float decoded))))
+              (error (yield (((decode_error @@ input) @@ stack) @@ type)))))
+            (else (missing_keys := ((stack_add @@ "ech_f") @@ !missing_keys))))
+           (if_else (External.assoc_mem "ech_i" decoded)
+            (then
+             (let$ input = (External.assoc_find "ech_i" decoded))
+             (let$ stack = ((stack_add @@ "ech_i") @@ stack_empty))
+             (let$ type = "int")
+             (External.decode int input
+              (ok (decoded -> (props.%{"ech_i"} <- (inj_int decoded))))
+              (error (yield (((decode_error @@ input) @@ stack) @@ type)))))
+            (else (missing_keys := ((stack_add @@ "ech_i") @@ !missing_keys))))
+           (if_else (External.assoc_mem "enums" decoded)
+            (then
+             (let$ input = (External.assoc_find "enums" decoded))
+             (let$ stack = ((stack_add @@ "enums") @@ stack_empty))
+             (let$ type =
+              "(@\"a\" | ..., @1 | ..., false | true, false | true)")
+             (External.decode seq input
+              (ok
+               (decoded ->
+                (let$ decoded = (array_make 4 (inj_int 0)))
+                (uncons decoded
+                 (nil (yield (((decode_error @@ input) @@ stack) @@ type)))
+                 (cons
+                  (hd ->
+                   (seq ->
+                    (let$ stack = ((stack_add @@ (string_of_int 0)) @@ stack))
+                    (let$ type = "@\"a\" | ...")
+                    (External.decode string hd
+                     (ok (decoded -> (decoded.%(0) <- (inj_string decoded))))
+                     (error (yield (((decode_error @@ hd) @@ stack) @@ type))))
+                    (uncons seq
+                     (nil (yield (((decode_error @@ input) @@ stack) @@ type)))
+                     (cons
+                      (hd ->
+                       (seq ->
+                        (let$ stack =
+                         ((stack_add @@ (string_of_int 1)) @@ stack))
+                        (let$ type = "@1 | ...")
+                        (External.decode int hd
+                         (ok (decoded -> (decoded.%(1) <- (inj_int decoded))))
                          (error
-                          (stm (((decode_error @@ input) @@ stack) @@ type)))))
-                       (else
-                        (missing_keys := ((stack_add @@ "a") @@ !missing_keys))))
-                      (if_else (not (stack_is_empty @@ !missing_keys))
-                       (then
-                        (stm (((key_error @@ !missing_keys) @@ stack) @@ type)))
-                       (else (unit))))
-                     (else (stm (((decode_error @@ input) @@ stack) @@ type))))))
-                  (props.%{"tagged"} <- (inj_hashtbl decoded))))
-                (error (stm (((decode_error @@ input) @@ stack) @@ type)))))
-              (else (stm (((decode_error @@ input) @@ stack) @@ type))))))
-           (error (stm (((decode_error @@ input) @@ stack) @@ type)))))
-         (else (missing_keys := ((stack_add @@ "tagged") @@ !missing_keys))))
-        (if_else (External.assoc_mem "trim_a" decoded)
-         (then
-          (let$ input = (External.assoc_find "trim_a" decoded))
-          (let$ stack = ((stack_add @@ "trim_a") @@ stack_empty))
-          (let$ type = "string")
-          (External.decode string input
-           (ok (decoded -> (props.%{"trim_a"} <- (inj_string decoded))))
-           (error (stm (((decode_error @@ input) @@ stack) @@ type)))))
-         (else (missing_keys := ((stack_add @@ "trim_a") @@ !missing_keys))))
-        (if_else (External.assoc_mem "trim_b" decoded)
-         (then
-          (let$ input = (External.assoc_find "trim_b" decoded))
-          (let$ stack = ((stack_add @@ "trim_b") @@ stack_empty))
-          (let$ type = "string")
-          (External.decode string input
-           (ok (decoded -> (props.%{"trim_b"} <- (inj_string decoded))))
-           (error (stm (((decode_error @@ input) @@ stack) @@ type)))))
-         (else (missing_keys := ((stack_add @@ "trim_b") @@ !missing_keys))))
-        (if_else (External.assoc_mem "trim_c" decoded)
-         (then
-          (let$ input = (External.assoc_find "trim_c" decoded))
-          (let$ stack = ((stack_add @@ "trim_c") @@ stack_empty))
-          (let$ type = "string")
-          (External.decode string input
-           (ok (decoded -> (props.%{"trim_c"} <- (inj_string decoded))))
-           (error (stm (((decode_error @@ input) @@ stack) @@ type)))))
-         (else (missing_keys := ((stack_add @@ "trim_c") @@ !missing_keys))))
-        (if_else (External.assoc_mem "trim_d" decoded)
-         (then
-          (let$ input = (External.assoc_find "trim_d" decoded))
-          (let$ stack = ((stack_add @@ "trim_d") @@ stack_empty))
-          (let$ type = "string")
-          (External.decode string input
-           (ok (decoded -> (props.%{"trim_d"} <- (inj_string decoded))))
-           (error (stm (((decode_error @@ input) @@ stack) @@ type)))))
-         (else (missing_keys := ((stack_add @@ "trim_d") @@ !missing_keys))))
-        (if_else (External.assoc_mem "trim_e" decoded)
-         (then
-          (let$ input = (External.assoc_find "trim_e" decoded))
-          (let$ stack = ((stack_add @@ "trim_e") @@ stack_empty))
-          (let$ type = "string")
-          (External.decode string input
-           (ok (decoded -> (props.%{"trim_e"} <- (inj_string decoded))))
-           (error (stm (((decode_error @@ input) @@ stack) @@ type)))))
-         (else (missing_keys := ((stack_add @@ "trim_e") @@ !missing_keys))))
-        (if_else (External.assoc_mem "trim_f" decoded)
-         (then
-          (let$ input = (External.assoc_find "trim_f" decoded))
-          (let$ stack = ((stack_add @@ "trim_f") @@ stack_empty))
-          (let$ type = "string")
-          (External.decode string input
-           (ok (decoded -> (props.%{"trim_f"} <- (inj_string decoded))))
-           (error (stm (((decode_error @@ input) @@ stack) @@ type)))))
-         (else (missing_keys := ((stack_add @@ "trim_f") @@ !missing_keys))))
-        (if_else (External.assoc_mem "trim_g" decoded)
-         (then
-          (let$ input = (External.assoc_find "trim_g" decoded))
-          (let$ stack = ((stack_add @@ "trim_g") @@ stack_empty))
-          (let$ type = "string")
-          (External.decode string input
-           (ok (decoded -> (props.%{"trim_g"} <- (inj_string decoded))))
-           (error (stm (((decode_error @@ input) @@ stack) @@ type)))))
-         (else (missing_keys := ((stack_add @@ "trim_g") @@ !missing_keys))))
-        (if_else (External.assoc_mem "tuple" decoded)
-         (then
-          (let$ input = (External.assoc_find "tuple" decoded))
-          (let$ stack = ((stack_add @@ "tuple") @@ stack_empty))
-          (let$ type = "(int, float, string)")
-          (External.decode seq input
-           (ok
-            (decoded ->
-             (let$ decoded = (array_make 3 (inj_int 0)))
-             (uncons decoded
-              (nil (stm (((decode_error @@ input) @@ stack) @@ type)))
-              (cons
-               (hd ->
-                (seq ->
-                 (let$ stack = ((stack_add @@ (string_of_int 0)) @@ stack))
-                 (let$ type = "int")
-                 (External.decode int hd
-                  (ok (decoded -> (decoded.%(0) <- (inj_int decoded))))
-                  (error (stm (((decode_error @@ hd) @@ stack) @@ type))))
-                 (uncons seq
-                  (nil (stm (((decode_error @@ input) @@ stack) @@ type)))
-                  (cons
-                   (hd ->
-                    (seq ->
-                     (let$ stack = ((stack_add @@ (string_of_int 1)) @@ stack))
-                     (let$ type = "float")
-                     (External.decode float hd
-                      (ok (decoded -> (decoded.%(1) <- (inj_float decoded))))
-                      (error (stm (((decode_error @@ hd) @@ stack) @@ type))))
-                     (uncons seq
-                      (nil (stm (((decode_error @@ input) @@ stack) @@ type)))
-                      (cons
-                       (hd ->
-                        (seq ->
-                         (let$ stack =
-                          ((stack_add @@ (string_of_int 2)) @@ stack))
-                         (let$ type = "string")
-                         (External.decode string hd
-                          (ok
-                           (decoded -> (decoded.%(2) <- (inj_string decoded))))
-                          (error
-                           (stm (((decode_error @@ hd) @@ stack) @@ type))))
-                         (unit)))))))))))))
-             (props.%{"tuple"} <- (inj_array decoded))))
-           (error (stm (((decode_error @@ input) @@ stack) @@ type)))))
-         (else (missing_keys := ((stack_add @@ "tuple") @@ !missing_keys))))
-        (if_else (External.assoc_mem "zero" decoded)
-         (then
-          (let$ input = (External.assoc_find "zero" decoded))
-          (let$ stack = ((stack_add @@ "zero") @@ stack_empty))
-          (let$ type = "{\"\": string}")
-          (External.decode assoc input
-           (ok
-            (decoded ->
-             (let$ decoded = (hashtbl_create ())))
-             (let& missing_keys = stack_empty)
-             (if_else (External.assoc_mem "" decoded)
-              (then
-               (let$ input = (External.assoc_find "" decoded))
-               (let$ stack = ((stack_add @@ "") @@ stack))
-               (let$ type = "string")
-               (External.decode string input
-                (ok (decoded -> (decoded.%{""} <- (inj_string decoded))))
-                (error (stm (((decode_error @@ input) @@ stack) @@ type)))))
-              (else (missing_keys := ((stack_add @@ "") @@ !missing_keys))))
-             (if_else (not (stack_is_empty @@ !missing_keys))
-              (then (stm (((key_error @@ !missing_keys) @@ stack) @@ type)))
-              (else (unit)))
-             (props.%{"zero"} <- (inj_hashtbl decoded))))
-           (error (stm (((decode_error @@ input) @@ stack) @@ type)))))
-         (else (missing_keys := ((stack_add @@ "zero") @@ !missing_keys))))
-        (if_else (not (stack_is_empty @@ !missing_keys))
-         (then (stm (((key_error @@ !missing_keys) @@ stack_empty) @@ type)))
-         (else (unit)))))
-      (error (stm (((decode_error @@ arg) @@ stack_empty) @@ type))))
-     (if_else ((buffer_length errors) = 0)
+                          (yield (((decode_error @@ hd) @@ stack) @@ type))))
+                        (uncons seq
+                         (nil
+                          (yield (((decode_error @@ input) @@ stack) @@ type)))
+                         (cons
+                          (hd ->
+                           (seq ->
+                            (let$ stack =
+                             ((stack_add @@ (string_of_int 2)) @@ stack))
+                            (let$ type = "false | true")
+                            (External.decode bool hd
+                             (ok
+                              (decoded ->
+                               (if_else decoded
+                                (then (decoded.%(2) <- (inj_int 1)))
+                                (else (decoded.%(2) <- (inj_int 0))))))
+                             (error
+                              (yield (((decode_error @@ hd) @@ stack) @@ type))))
+                            (uncons seq
+                             (nil
+                              (yield
+                               (((decode_error @@ input) @@ stack) @@ type)))
+                             (cons
+                              (hd ->
+                               (seq ->
+                                (let$ stack =
+                                 ((stack_add @@ (string_of_int 3)) @@ stack))
+                                (let$ type = "false | true")
+                                (External.decode bool hd
+                                 (ok
+                                  (decoded ->
+                                   (if_else decoded
+                                    (then (decoded.%(3) <- (inj_int 1)))
+                                    (else (decoded.%(3) <- (inj_int 0))))))
+                                 (error
+                                  (yield
+                                   (((decode_error @@ hd) @@ stack) @@ type))))
+                                (unit)))))))))))))))))
+                (props.%{"enums"} <- (inj_array decoded))))
+              (error (yield (((decode_error @@ input) @@ stack) @@ type)))))
+            (else (missing_keys := ((stack_add @@ "enums") @@ !missing_keys))))
+           (if_else (External.assoc_mem "f_prop" decoded)
+            (then
+             (let$ input = (External.assoc_find "f_prop" decoded))
+             (let$ stack = ((stack_add @@ "f_prop") @@ stack_empty))
+             (let$ type = "string")
+             (External.decode string input
+              (ok (decoded -> (props.%{"f_prop"} <- (inj_string decoded))))
+              (error (yield (((decode_error @@ input) @@ stack) @@ type)))))
+            (else (missing_keys := ((stack_add @@ "f_prop") @@ !missing_keys))))
+           (if_else (External.assoc_mem "list" decoded)
+            (then
+             (let$ input = (External.assoc_find "list" decoded))
+             (let$ stack = ((stack_add @@ "list") @@ stack_empty))
+             (let$ type = "[?string]")
+             (External.decode seq input
+              (ok
+               (decoded ->
+                (let& index = 0)
+                (let$ decoded = [(inj_int 0), (inj_int 0)])
+                (let& decode_dst = decoded)
+                (iter decoded
+                 (arg ->
+                  (let$ decode_dst_new = [(inj_int 0), (inj_int 0)])
+                  (let$ stack =
+                   ((stack_add @@ (string_of_int !index)) @@ stack))
+                  (let$ type = "?string")
+                  (External.decode some arg
+                   (ok
+                    (decoded ->
+                     (let$ decoded = [(inj_int 0)])
+                     (let$ stack = ((stack_add @@ "<nullable>") @@ stack))
+                     (let$ type = "string")
+                     (External.decode string decoded
+                      (ok (decoded -> (decoded.%(0) <- (inj_string decoded))))
+                      (error
+                       (yield (((decode_error @@ decoded) @@ stack) @@ type))))
+                     (decode_dst_new.%(0) <- (inj_array decoded))))
+                   (error (decode_dst_new.%(0) <- (inj_int 0))))
+                  (!decode_dst.%(1) <- (inj_array decode_dst_new))
+                  (incr index)
+                  (decode_dst := decode_dst_new)))
+                (props.%{"list"} <- decoded.%(1))))
+              (error (yield (((decode_error @@ input) @@ stack) @@ type)))))
+            (else (missing_keys := ((stack_add @@ "list") @@ !missing_keys))))
+           (if_else (External.assoc_mem "map_d" decoded)
+            (then
+             (let$ input = (External.assoc_find "map_d" decoded))
+             (let$ stack = ((stack_add @@ "map_d") @@ stack_empty))
+             (let$ type = "<int>")
+             (External.decode assoc input
+              (ok
+               (decoded ->
+                (let$ decoded = (hashtbl_create ())))
+                (iter (External.assoc_to_seq decoded)
+                 (arg ->
+                  (let$ stack = ((stack_add @@ (fst arg)) @@ stack))
+                  (let$ type = "int")
+                  (External.decode int (snd arg)
+                   (ok (decoded -> (decoded.%{(fst arg)} <- (inj_int decoded))))
+                   (error
+                    (yield (((decode_error @@ (snd arg)) @@ stack) @@ type))))
+                  (props.%{"map_d"} <- (inj_hashtbl decoded))))))
+              (error (yield (((decode_error @@ input) @@ stack) @@ type)))))
+            (else (missing_keys := ((stack_add @@ "map_d") @@ !missing_keys))))
+           (if_else (External.assoc_mem "map_l" decoded)
+            (then
+             (let$ input = (External.assoc_find "map_l" decoded))
+             (let$ stack = ((stack_add @@ "map_l") @@ stack_empty))
+             (let$ type = "[int]")
+             (External.decode seq input
+              (ok
+               (decoded ->
+                (let& index = 0)
+                (let$ decoded = [(inj_int 0), (inj_int 0)])
+                (let& decode_dst = decoded)
+                (iter decoded
+                 (arg ->
+                  (let$ decode_dst_new = [(inj_int 0), (inj_int 0)])
+                  (let$ stack =
+                   ((stack_add @@ (string_of_int !index)) @@ stack))
+                  (let$ type = "int")
+                  (External.decode int arg
+                   (ok (decoded -> (decode_dst_new.%(0) <- (inj_int decoded))))
+                   (error (yield (((decode_error @@ arg) @@ stack) @@ type))))
+                  (!decode_dst.%(1) <- (inj_array decode_dst_new))
+                  (incr index)
+                  (decode_dst := decode_dst_new)))
+                (props.%{"map_l"} <- decoded.%(1))))
+              (error (yield (((decode_error @@ input) @@ stack) @@ type)))))
+            (else (missing_keys := ((stack_add @@ "map_l") @@ !missing_keys))))
+           (if_else (External.assoc_mem "match_a" decoded)
+            (then
+             (let$ input = (External.assoc_find "match_a" decoded))
+             (let$ stack = ((stack_add @@ "match_a") @@ stack_empty))
+             (let$ type = "int")
+             (External.decode int input
+              (ok (decoded -> (props.%{"match_a"} <- (inj_int decoded))))
+              (error (yield (((decode_error @@ input) @@ stack) @@ type)))))
+            (else (missing_keys := ((stack_add @@ "match_a") @@ !missing_keys))))
+           (if_else (External.assoc_mem "match_b" decoded)
+            (then
+             (let$ input = (External.assoc_find "match_b" decoded))
+             (let$ stack = ((stack_add @@ "match_b") @@ stack_empty))
+             (let$ type = "string")
+             (External.decode string input
+              (ok (decoded -> (props.%{"match_b"} <- (inj_string decoded))))
+              (error (yield (((decode_error @@ input) @@ stack) @@ type)))))
+            (else (missing_keys := ((stack_add @@ "match_b") @@ !missing_keys))))
+           (if_else (External.assoc_mem "numbers" decoded)
+            (then
+             (let$ input = (External.assoc_find "numbers" decoded))
+             (let$ stack = ((stack_add @@ "numbers") @@ stack_empty))
+             (let$ type =
+              "{\n  exp1: float,\n  exp2: float,\n  exp3: float,\n  frac: float,\n  int: int,\n  negfrac: float,\n  negint: int\n}")
+             (External.decode assoc input
+              (ok
+               (decoded ->
+                (let$ decoded = (hashtbl_create ())))
+                (let& missing_keys = stack_empty)
+                (if_else (External.assoc_mem "exp1" decoded)
+                 (then
+                  (let$ input = (External.assoc_find "exp1" decoded))
+                  (let$ stack = ((stack_add @@ "exp1") @@ stack))
+                  (let$ type = "float")
+                  (External.decode float input
+                   (ok (decoded -> (decoded.%{"exp1"} <- (inj_float decoded))))
+                   (error (yield (((decode_error @@ input) @@ stack) @@ type)))))
+                 (else
+                  (missing_keys := ((stack_add @@ "exp1") @@ !missing_keys))))
+                (if_else (External.assoc_mem "exp2" decoded)
+                 (then
+                  (let$ input = (External.assoc_find "exp2" decoded))
+                  (let$ stack = ((stack_add @@ "exp2") @@ stack))
+                  (let$ type = "float")
+                  (External.decode float input
+                   (ok (decoded -> (decoded.%{"exp2"} <- (inj_float decoded))))
+                   (error (yield (((decode_error @@ input) @@ stack) @@ type)))))
+                 (else
+                  (missing_keys := ((stack_add @@ "exp2") @@ !missing_keys))))
+                (if_else (External.assoc_mem "exp3" decoded)
+                 (then
+                  (let$ input = (External.assoc_find "exp3" decoded))
+                  (let$ stack = ((stack_add @@ "exp3") @@ stack))
+                  (let$ type = "float")
+                  (External.decode float input
+                   (ok (decoded -> (decoded.%{"exp3"} <- (inj_float decoded))))
+                   (error (yield (((decode_error @@ input) @@ stack) @@ type)))))
+                 (else
+                  (missing_keys := ((stack_add @@ "exp3") @@ !missing_keys))))
+                (if_else (External.assoc_mem "frac" decoded)
+                 (then
+                  (let$ input = (External.assoc_find "frac" decoded))
+                  (let$ stack = ((stack_add @@ "frac") @@ stack))
+                  (let$ type = "float")
+                  (External.decode float input
+                   (ok (decoded -> (decoded.%{"frac"} <- (inj_float decoded))))
+                   (error (yield (((decode_error @@ input) @@ stack) @@ type)))))
+                 (else
+                  (missing_keys := ((stack_add @@ "frac") @@ !missing_keys))))
+                (if_else (External.assoc_mem "int" decoded)
+                 (then
+                  (let$ input = (External.assoc_find "int" decoded))
+                  (let$ stack = ((stack_add @@ "int") @@ stack))
+                  (let$ type = "int")
+                  (External.decode int input
+                   (ok (decoded -> (decoded.%{"int"} <- (inj_int decoded))))
+                   (error (yield (((decode_error @@ input) @@ stack) @@ type)))))
+                 (else
+                  (missing_keys := ((stack_add @@ "int") @@ !missing_keys))))
+                (if_else (External.assoc_mem "negfrac" decoded)
+                 (then
+                  (let$ input = (External.assoc_find "negfrac" decoded))
+                  (let$ stack = ((stack_add @@ "negfrac") @@ stack))
+                  (let$ type = "float")
+                  (External.decode float input
+                   (ok
+                    (decoded -> (decoded.%{"negfrac"} <- (inj_float decoded))))
+                   (error (yield (((decode_error @@ input) @@ stack) @@ type)))))
+                 (else
+                  (missing_keys := ((stack_add @@ "negfrac") @@ !missing_keys))))
+                (if_else (External.assoc_mem "negint" decoded)
+                 (then
+                  (let$ input = (External.assoc_find "negint" decoded))
+                  (let$ stack = ((stack_add @@ "negint") @@ stack))
+                  (let$ type = "int")
+                  (External.decode int input
+                   (ok (decoded -> (decoded.%{"negint"} <- (inj_int decoded))))
+                   (error (yield (((decode_error @@ input) @@ stack) @@ type)))))
+                 (else
+                  (missing_keys := ((stack_add @@ "negint") @@ !missing_keys))))
+                (if_else (not (stack_is_empty @@ !missing_keys))
+                 (then
+                  (yield (((key_error @@ !missing_keys) @@ stack) @@ type)))
+                 (else (unit)))
+                (props.%{"numbers"} <- (inj_hashtbl decoded))))
+              (error (yield (((decode_error @@ input) @@ stack) @@ type)))))
+            (else (missing_keys := ((stack_add @@ "numbers") @@ !missing_keys))))
+           (if_else (External.assoc_mem "record" decoded)
+            (then
+             (let$ input = (External.assoc_find "record" decoded))
+             (let$ stack = ((stack_add @@ "record") @@ stack_empty))
+             (let$ type = "{\"!#%@\": string, a: string}")
+             (External.decode assoc input
+              (ok
+               (decoded ->
+                (let$ decoded = (hashtbl_create ())))
+                (let& missing_keys = stack_empty)
+                (if_else (External.assoc_mem "!#%@" decoded)
+                 (then
+                  (let$ input = (External.assoc_find "!#%@" decoded))
+                  (let$ stack = ((stack_add @@ "!#%@") @@ stack))
+                  (let$ type = "string")
+                  (External.decode string input
+                   (ok (decoded -> (decoded.%{"!#%@"} <- (inj_string decoded))))
+                   (error (yield (((decode_error @@ input) @@ stack) @@ type)))))
+                 (else
+                  (missing_keys := ((stack_add @@ "!#%@") @@ !missing_keys))))
+                (if_else (External.assoc_mem "a" decoded)
+                 (then
+                  (let$ input = (External.assoc_find "a" decoded))
+                  (let$ stack = ((stack_add @@ "a") @@ stack))
+                  (let$ type = "string")
+                  (External.decode string input
+                   (ok (decoded -> (decoded.%{"a"} <- (inj_string decoded))))
+                   (error (yield (((decode_error @@ input) @@ stack) @@ type)))))
+                 (else (missing_keys := ((stack_add @@ "a") @@ !missing_keys))))
+                (if_else (not (stack_is_empty @@ !missing_keys))
+                 (then
+                  (yield (((key_error @@ !missing_keys) @@ stack) @@ type)))
+                 (else (unit)))
+                (props.%{"record"} <- (inj_hashtbl decoded))))
+              (error (yield (((decode_error @@ input) @@ stack) @@ type)))))
+            (else (missing_keys := ((stack_add @@ "record") @@ !missing_keys))))
+           (if_else (External.assoc_mem "tagged" decoded)
+            (then
+             (let$ input = (External.assoc_find "tagged" decoded))
+             (let$ stack = ((stack_add @@ "tagged") @@ stack_empty))
+             (let$ type = "{@tag: false} | {@tag: true, a: string}")
+             (External.decode assoc input
+              (ok
+               (decoded ->
+                (if_else (External.assoc_mem "tag" decoded)
+                 (then
+                  (External.decode bool (External.assoc_find "tag" decoded)
+                   (ok
+                    (decoded ->
+                     (let$ decoded = (hashtbl_create ())))
+                     (if_else (not decoded)
+                      (then
+                       (decoded.%{"tag"} <- (inj_int 0))
+                       (let& missing_keys = stack_empty)
+                       (unit)
+                       (if_else (not (stack_is_empty @@ !missing_keys))
+                        (then
+                         (yield
+                          (((key_error @@ !missing_keys) @@ stack) @@ type)))
+                        (else (unit))))
+                      (else
+                       (if_else decoded
+                        (then
+                         (decoded.%{"tag"} <- (inj_int 1))
+                         (let& missing_keys = stack_empty)
+                         (if_else (External.assoc_mem "a" decoded)
+                          (then
+                           (let$ input = (External.assoc_find "a" decoded))
+                           (let$ stack = ((stack_add @@ "a") @@ stack))
+                           (let$ type = "string")
+                           (External.decode string input
+                            (ok
+                             (decoded ->
+                              (decoded.%{"a"} <- (inj_string decoded))))
+                            (error
+                             (yield
+                              (((decode_error @@ input) @@ stack) @@ type)))))
+                          (else
+                           (missing_keys :=
+                            ((stack_add @@ "a") @@ !missing_keys))))
+                         (if_else (not (stack_is_empty @@ !missing_keys))
+                          (then
+                           (yield
+                            (((key_error @@ !missing_keys) @@ stack) @@ type)))
+                          (else (unit))))
+                        (else
+                         (yield (((decode_error @@ input) @@ stack) @@ type))))))
+                     (props.%{"tagged"} <- (inj_hashtbl decoded))))
+                   (error (yield (((decode_error @@ input) @@ stack) @@ type)))))
+                 (else (yield (((decode_error @@ input) @@ stack) @@ type))))))
+              (error (yield (((decode_error @@ input) @@ stack) @@ type)))))
+            (else (missing_keys := ((stack_add @@ "tagged") @@ !missing_keys))))
+           (if_else (External.assoc_mem "trim_a" decoded)
+            (then
+             (let$ input = (External.assoc_find "trim_a" decoded))
+             (let$ stack = ((stack_add @@ "trim_a") @@ stack_empty))
+             (let$ type = "string")
+             (External.decode string input
+              (ok (decoded -> (props.%{"trim_a"} <- (inj_string decoded))))
+              (error (yield (((decode_error @@ input) @@ stack) @@ type)))))
+            (else (missing_keys := ((stack_add @@ "trim_a") @@ !missing_keys))))
+           (if_else (External.assoc_mem "trim_b" decoded)
+            (then
+             (let$ input = (External.assoc_find "trim_b" decoded))
+             (let$ stack = ((stack_add @@ "trim_b") @@ stack_empty))
+             (let$ type = "string")
+             (External.decode string input
+              (ok (decoded -> (props.%{"trim_b"} <- (inj_string decoded))))
+              (error (yield (((decode_error @@ input) @@ stack) @@ type)))))
+            (else (missing_keys := ((stack_add @@ "trim_b") @@ !missing_keys))))
+           (if_else (External.assoc_mem "trim_c" decoded)
+            (then
+             (let$ input = (External.assoc_find "trim_c" decoded))
+             (let$ stack = ((stack_add @@ "trim_c") @@ stack_empty))
+             (let$ type = "string")
+             (External.decode string input
+              (ok (decoded -> (props.%{"trim_c"} <- (inj_string decoded))))
+              (error (yield (((decode_error @@ input) @@ stack) @@ type)))))
+            (else (missing_keys := ((stack_add @@ "trim_c") @@ !missing_keys))))
+           (if_else (External.assoc_mem "trim_d" decoded)
+            (then
+             (let$ input = (External.assoc_find "trim_d" decoded))
+             (let$ stack = ((stack_add @@ "trim_d") @@ stack_empty))
+             (let$ type = "string")
+             (External.decode string input
+              (ok (decoded -> (props.%{"trim_d"} <- (inj_string decoded))))
+              (error (yield (((decode_error @@ input) @@ stack) @@ type)))))
+            (else (missing_keys := ((stack_add @@ "trim_d") @@ !missing_keys))))
+           (if_else (External.assoc_mem "trim_e" decoded)
+            (then
+             (let$ input = (External.assoc_find "trim_e" decoded))
+             (let$ stack = ((stack_add @@ "trim_e") @@ stack_empty))
+             (let$ type = "string")
+             (External.decode string input
+              (ok (decoded -> (props.%{"trim_e"} <- (inj_string decoded))))
+              (error (yield (((decode_error @@ input) @@ stack) @@ type)))))
+            (else (missing_keys := ((stack_add @@ "trim_e") @@ !missing_keys))))
+           (if_else (External.assoc_mem "trim_f" decoded)
+            (then
+             (let$ input = (External.assoc_find "trim_f" decoded))
+             (let$ stack = ((stack_add @@ "trim_f") @@ stack_empty))
+             (let$ type = "string")
+             (External.decode string input
+              (ok (decoded -> (props.%{"trim_f"} <- (inj_string decoded))))
+              (error (yield (((decode_error @@ input) @@ stack) @@ type)))))
+            (else (missing_keys := ((stack_add @@ "trim_f") @@ !missing_keys))))
+           (if_else (External.assoc_mem "trim_g" decoded)
+            (then
+             (let$ input = (External.assoc_find "trim_g" decoded))
+             (let$ stack = ((stack_add @@ "trim_g") @@ stack_empty))
+             (let$ type = "string")
+             (External.decode string input
+              (ok (decoded -> (props.%{"trim_g"} <- (inj_string decoded))))
+              (error (yield (((decode_error @@ input) @@ stack) @@ type)))))
+            (else (missing_keys := ((stack_add @@ "trim_g") @@ !missing_keys))))
+           (if_else (External.assoc_mem "tuple" decoded)
+            (then
+             (let$ input = (External.assoc_find "tuple" decoded))
+             (let$ stack = ((stack_add @@ "tuple") @@ stack_empty))
+             (let$ type = "(int, float, string)")
+             (External.decode seq input
+              (ok
+               (decoded ->
+                (let$ decoded = (array_make 3 (inj_int 0)))
+                (uncons decoded
+                 (nil (yield (((decode_error @@ input) @@ stack) @@ type)))
+                 (cons
+                  (hd ->
+                   (seq ->
+                    (let$ stack = ((stack_add @@ (string_of_int 0)) @@ stack))
+                    (let$ type = "int")
+                    (External.decode int hd
+                     (ok (decoded -> (decoded.%(0) <- (inj_int decoded))))
+                     (error (yield (((decode_error @@ hd) @@ stack) @@ type))))
+                    (uncons seq
+                     (nil (yield (((decode_error @@ input) @@ stack) @@ type)))
+                     (cons
+                      (hd ->
+                       (seq ->
+                        (let$ stack =
+                         ((stack_add @@ (string_of_int 1)) @@ stack))
+                        (let$ type = "float")
+                        (External.decode float hd
+                         (ok (decoded -> (decoded.%(1) <- (inj_float decoded))))
+                         (error
+                          (yield (((decode_error @@ hd) @@ stack) @@ type))))
+                        (uncons seq
+                         (nil
+                          (yield (((decode_error @@ input) @@ stack) @@ type)))
+                         (cons
+                          (hd ->
+                           (seq ->
+                            (let$ stack =
+                             ((stack_add @@ (string_of_int 2)) @@ stack))
+                            (let$ type = "string")
+                            (External.decode string hd
+                             (ok
+                              (decoded ->
+                               (decoded.%(2) <- (inj_string decoded))))
+                             (error
+                              (yield (((decode_error @@ hd) @@ stack) @@ type))))
+                            (unit)))))))))))))
+                (props.%{"tuple"} <- (inj_array decoded))))
+              (error (yield (((decode_error @@ input) @@ stack) @@ type)))))
+            (else (missing_keys := ((stack_add @@ "tuple") @@ !missing_keys))))
+           (if_else (External.assoc_mem "zero" decoded)
+            (then
+             (let$ input = (External.assoc_find "zero" decoded))
+             (let$ stack = ((stack_add @@ "zero") @@ stack_empty))
+             (let$ type = "{\"\": string}")
+             (External.decode assoc input
+              (ok
+               (decoded ->
+                (let$ decoded = (hashtbl_create ())))
+                (let& missing_keys = stack_empty)
+                (if_else (External.assoc_mem "" decoded)
+                 (then
+                  (let$ input = (External.assoc_find "" decoded))
+                  (let$ stack = ((stack_add @@ "") @@ stack))
+                  (let$ type = "string")
+                  (External.decode string input
+                   (ok (decoded -> (decoded.%{""} <- (inj_string decoded))))
+                   (error (yield (((decode_error @@ input) @@ stack) @@ type)))))
+                 (else (missing_keys := ((stack_add @@ "") @@ !missing_keys))))
+                (if_else (not (stack_is_empty @@ !missing_keys))
+                 (then
+                  (yield (((key_error @@ !missing_keys) @@ stack) @@ type)))
+                 (else (unit)))
+                (props.%{"zero"} <- (inj_hashtbl decoded))))
+              (error (yield (((decode_error @@ input) @@ stack) @@ type)))))
+            (else (missing_keys := ((stack_add @@ "zero") @@ !missing_keys))))
+           (if_else (not (stack_is_empty @@ !missing_keys))
+            (then
+             (yield (((key_error @@ !missing_keys) @@ stack_empty) @@ type)))
+            (else (unit)))))
+         (error (yield (((decode_error @@ arg) @@ stack_empty) @@ type)))))))
+     (let$ errors = (errors_of_seq decode_or_errors))
+     (if_else (errors_is_empty errors)
       (then
        (let$ buf = (buffer_create ())))
        (buffer_add_string buf "Echoes\n")
@@ -2055,7 +2093,7 @@ Print the runtime instructions
        (buffer_add_string buf " ")
        (buffer_add_string buf "\n")
        (return (ok (buffer_contents buf))))
-      (else (return (error (buffer_contents errors))))))))
+      (else (return (error errors)))))))
 
 Make sure the JavaScript interface format parser works.
   $ node interface.js

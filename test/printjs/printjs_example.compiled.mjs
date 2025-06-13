@@ -54,7 +54,6 @@ function Array$0(arg$0) { this.v = arg$0; }
 function Hashtbl$0(arg$0) { this.v = arg$0; }
 function Unknown$0(arg$0) { this.v = arg$0; }
 export default async (arg$0) => {
-  let errors$0 = {contents: ""};
   let error_aux$0 =
     (arg$1) => {
       return (
@@ -63,21 +62,20 @@ export default async (arg$0) => {
             (arg$3) => {
               return (
                 (arg$4) => {
-                  if (!(errors$0.contents.length === 0)) {
-                    errors$0.contents += "\n\n";
-                  }
-                  errors$0.contents += "Error while rendering \"";
-                  errors$0.contents += "printjs_example.acutis";
-                  errors$0.contents +=
+                  let buf$0 = {contents: ""};
+                  buf$0.contents += "Error while rendering \"";
+                  buf$0.contents += "printjs_example.acutis";
+                  buf$0.contents +=
                     "\".\n\
 The data supplied does not match this template's interface.\n\
 ";
-                  errors$0.contents += "Path:\n<input>";
-                  arg$3(buffer_add_sep$0(errors$0)(" -> "));
-                  errors$0.contents += "\nExpected type:\n";
-                  errors$0.contents += arg$4;
-                  errors$0.contents += arg$1;
-                  errors$0.contents += arg$2;
+                  buf$0.contents += "Path:\n<input>";
+                  arg$3(buffer_add_sep$0(buf$0)(" -> "));
+                  buf$0.contents += "\nExpected type:\n";
+                  buf$0.contents += arg$4;
+                  buf$0.contents += arg$1;
+                  buf$0.contents += arg$2;
+                  return (buf$0.contents);
                 }
               );
             }
@@ -108,13 +106,15 @@ The data supplied does not match this template's interface.\n\
     }\n\
   ]\n\
 siteTitle = string";
-  if (typeof arg$0 === "object" && !(arg$0 === null)) {
-    let missing_keys$0 = stack_empty$0;
-    if (Object.hasOwn(arg$0, "blogPosts")) {
-      let input$0 = arg$0["blogPosts"];
-      let stack$0 = stack_add$0("blogPosts")(stack_empty$0);
-      let type$1 =
-        "[\n\
+  let decode_or_errors$0 =
+    (function* () {
+      if (typeof arg$0 === "object" && !(arg$0 === null)) {
+        let missing_keys$0 = stack_empty$0;
+        if (Object.hasOwn(arg$0, "blogPosts")) {
+          let input$0 = arg$0["blogPosts"];
+          let stack$0 = stack_add$0("blogPosts")(stack_empty$0);
+          let type$1 =
+            "[\n\
   {\n\
     author: {name: ?string},\n\
     content: string,\n\
@@ -123,184 +123,186 @@ siteTitle = string";
     title: string\n\
   }\n\
 ]";
-      if (Array.isArray(input$0)) {
-        let seq$0 = input$0.values();
-        let index$0 = 0;
-        let decoded$0 = [new Int$0(0), new Int$0(0)];
-        let decode_dst$0 = decoded$0;
-        for (let item$0 of seq$0) {
-          let decode_dst_new$0 = [new Int$0(0), new Int$0(0)];
-          let stack$1 = stack_add$0(String(index$0))(stack$0);
-          let type$2 =
-            "{\n\
+          if (Array.isArray(input$0)) {
+            let seq$0 = input$0.values();
+            let index$0 = 0;
+            let decoded$0 = [new Int$0(0), new Int$0(0)];
+            let decode_dst$0 = decoded$0;
+            for (let item$0 of seq$0) {
+              let decode_dst_new$0 = [new Int$0(0), new Int$0(0)];
+              let stack$1 = stack_add$0(String(index$0))(stack$0);
+              let type$2 =
+                "{\n\
   author: {name: ?string},\n\
   content: string,\n\
   date: string,\n\
   image: ?{alt: string, src: string},\n\
   title: string\n\
 }";
-          if (typeof item$0 === "object" && !(item$0 === null)) {
-            let decoded$1 = new Map();
-            let missing_keys$1 = stack_empty$0;
-            if (Object.hasOwn(item$0, "author")) {
-              let input$1 = item$0["author"];
-              let stack$2 = stack_add$0("author")(stack$1);
-              let type$3 = "{name: ?string}";
-              if (typeof input$1 === "object" && !(input$1 === null)) {
-                let decoded$2 = new Map();
-                let missing_keys$2 = stack_empty$0;
-                if (Object.hasOwn(input$1, "name")) {
-                  let input$2 = input$1["name"];
-                  let stack$3 = stack_add$0("name")(stack$2);
-                  let type$4 = "?string";
-                  if (!(input$2 === null) && !(input$2 === undefined)) {
-                    let decoded$3 = [new Int$0(0)];
-                    let stack$4 = stack_add$0("<nullable>")(stack$3);
-                    let type$5 = "string";
-                    if (typeof input$2 === "string") {
-                      decoded$3[0] = new String$0(input$2);
+              if (typeof item$0 === "object" && !(item$0 === null)) {
+                let decoded$1 = new Map();
+                let missing_keys$1 = stack_empty$0;
+                if (Object.hasOwn(item$0, "author")) {
+                  let input$1 = item$0["author"];
+                  let stack$2 = stack_add$0("author")(stack$1);
+                  let type$3 = "{name: ?string}";
+                  if (typeof input$1 === "object" && !(input$1 === null)) {
+                    let decoded$2 = new Map();
+                    let missing_keys$2 = stack_empty$0;
+                    if (Object.hasOwn(input$1, "name")) {
+                      let input$2 = input$1["name"];
+                      let stack$3 = stack_add$0("name")(stack$2);
+                      let type$4 = "?string";
+                      if (!(input$2 === null) && !(input$2 === undefined)) {
+                        let decoded$3 = [new Int$0(0)];
+                        let stack$4 = stack_add$0("<nullable>")(stack$3);
+                        let type$5 = "string";
+                        if (typeof input$2 === "string") {
+                          decoded$3[0] = new String$0(input$2);
+                        } else {
+                          yield (decode_error$0(input$2)(stack$4)(type$5));
+                        }
+                        decoded$2.set("name", new Array$0(decoded$3));
+                      } else {
+                        decoded$2.set("name", new Int$0(0));
+                      }
                     } else {
-                      decode_error$0(input$2)(stack$4)(type$5);
+                      decoded$2.set("name", new Int$0(0));
                     }
-                    decoded$2.set("name", new Array$0(decoded$3));
+                    if (!(stack_is_empty$0(missing_keys$2))) {
+                      yield (key_error$0(missing_keys$2)(stack$2)(type$3));
+                    }
+                    decoded$1.set("author", new Hashtbl$0(decoded$2));
                   } else {
-                    decoded$2.set("name", new Int$0(0));
+                    yield (decode_error$0(input$1)(stack$2)(type$3));
                   }
                 } else {
-                  decoded$2.set("name", new Int$0(0));
+                  missing_keys$1 = stack_add$0("author")(missing_keys$1);
                 }
-                if (!(stack_is_empty$0(missing_keys$2))) {
-                  key_error$0(missing_keys$2)(stack$2)(type$3);
-                }
-                decoded$1.set("author", new Hashtbl$0(decoded$2));
-              } else {
-                decode_error$0(input$1)(stack$2)(type$3);
-              }
-            } else {
-              missing_keys$1 = stack_add$0("author")(missing_keys$1);
-            }
-            if (Object.hasOwn(item$0, "content")) {
-              let input$1 = item$0["content"];
-              let stack$2 = stack_add$0("content")(stack$1);
-              let type$3 = "string";
-              if (typeof input$1 === "string") {
-                decoded$1.set("content", new String$0(input$1));
-              } else {
-                decode_error$0(input$1)(stack$2)(type$3);
-              }
-            } else {
-              missing_keys$1 = stack_add$0("content")(missing_keys$1);
-            }
-            if (Object.hasOwn(item$0, "date")) {
-              let input$1 = item$0["date"];
-              let stack$2 = stack_add$0("date")(stack$1);
-              let type$3 = "string";
-              if (typeof input$1 === "string") {
-                decoded$1.set("date", new String$0(input$1));
-              } else {
-                decode_error$0(input$1)(stack$2)(type$3);
-              }
-            } else {
-              missing_keys$1 = stack_add$0("date")(missing_keys$1);
-            }
-            if (Object.hasOwn(item$0, "image")) {
-              let input$1 = item$0["image"];
-              let stack$2 = stack_add$0("image")(stack$1);
-              let type$3 = "?{alt: string, src: string}";
-              if (!(input$1 === null) && !(input$1 === undefined)) {
-                let decoded$2 = [new Int$0(0)];
-                let stack$3 = stack_add$0("<nullable>")(stack$2);
-                let type$4 = "{alt: string, src: string}";
-                if (typeof input$1 === "object" && !(input$1 === null)) {
-                  let decoded$3 = new Map();
-                  let missing_keys$2 = stack_empty$0;
-                  if (Object.hasOwn(input$1, "alt")) {
-                    let input$2 = input$1["alt"];
-                    let stack$4 = stack_add$0("alt")(stack$3);
-                    let type$5 = "string";
-                    if (typeof input$2 === "string") {
-                      decoded$3.set("alt", new String$0(input$2));
-                    } else {
-                      decode_error$0(input$2)(stack$4)(type$5);
-                    }
+                if (Object.hasOwn(item$0, "content")) {
+                  let input$1 = item$0["content"];
+                  let stack$2 = stack_add$0("content")(stack$1);
+                  let type$3 = "string";
+                  if (typeof input$1 === "string") {
+                    decoded$1.set("content", new String$0(input$1));
                   } else {
-                    missing_keys$2 = stack_add$0("alt")(missing_keys$2);
+                    yield (decode_error$0(input$1)(stack$2)(type$3));
                   }
-                  if (Object.hasOwn(input$1, "src")) {
-                    let input$2 = input$1["src"];
-                    let stack$4 = stack_add$0("src")(stack$3);
-                    let type$5 = "string";
-                    if (typeof input$2 === "string") {
-                      decoded$3.set("src", new String$0(input$2));
-                    } else {
-                      decode_error$0(input$2)(stack$4)(type$5);
-                    }
-                  } else {
-                    missing_keys$2 = stack_add$0("src")(missing_keys$2);
-                  }
-                  if (!(stack_is_empty$0(missing_keys$2))) {
-                    key_error$0(missing_keys$2)(stack$3)(type$4);
-                  }
-                  decoded$2[0] = new Hashtbl$0(decoded$3);
                 } else {
-                  decode_error$0(input$1)(stack$3)(type$4);
+                  missing_keys$1 = stack_add$0("content")(missing_keys$1);
                 }
-                decoded$1.set("image", new Array$0(decoded$2));
+                if (Object.hasOwn(item$0, "date")) {
+                  let input$1 = item$0["date"];
+                  let stack$2 = stack_add$0("date")(stack$1);
+                  let type$3 = "string";
+                  if (typeof input$1 === "string") {
+                    decoded$1.set("date", new String$0(input$1));
+                  } else {
+                    yield (decode_error$0(input$1)(stack$2)(type$3));
+                  }
+                } else {
+                  missing_keys$1 = stack_add$0("date")(missing_keys$1);
+                }
+                if (Object.hasOwn(item$0, "image")) {
+                  let input$1 = item$0["image"];
+                  let stack$2 = stack_add$0("image")(stack$1);
+                  let type$3 = "?{alt: string, src: string}";
+                  if (!(input$1 === null) && !(input$1 === undefined)) {
+                    let decoded$2 = [new Int$0(0)];
+                    let stack$3 = stack_add$0("<nullable>")(stack$2);
+                    let type$4 = "{alt: string, src: string}";
+                    if (typeof input$1 === "object" && !(input$1 === null)) {
+                      let decoded$3 = new Map();
+                      let missing_keys$2 = stack_empty$0;
+                      if (Object.hasOwn(input$1, "alt")) {
+                        let input$2 = input$1["alt"];
+                        let stack$4 = stack_add$0("alt")(stack$3);
+                        let type$5 = "string";
+                        if (typeof input$2 === "string") {
+                          decoded$3.set("alt", new String$0(input$2));
+                        } else {
+                          yield (decode_error$0(input$2)(stack$4)(type$5));
+                        }
+                      } else {
+                        missing_keys$2 = stack_add$0("alt")(missing_keys$2);
+                      }
+                      if (Object.hasOwn(input$1, "src")) {
+                        let input$2 = input$1["src"];
+                        let stack$4 = stack_add$0("src")(stack$3);
+                        let type$5 = "string";
+                        if (typeof input$2 === "string") {
+                          decoded$3.set("src", new String$0(input$2));
+                        } else {
+                          yield (decode_error$0(input$2)(stack$4)(type$5));
+                        }
+                      } else {
+                        missing_keys$2 = stack_add$0("src")(missing_keys$2);
+                      }
+                      if (!(stack_is_empty$0(missing_keys$2))) {
+                        yield (key_error$0(missing_keys$2)(stack$3)(type$4));
+                      }
+                      decoded$2[0] = new Hashtbl$0(decoded$3);
+                    } else {
+                      yield (decode_error$0(input$1)(stack$3)(type$4));
+                    }
+                    decoded$1.set("image", new Array$0(decoded$2));
+                  } else {
+                    decoded$1.set("image", new Int$0(0));
+                  }
+                } else {
+                  decoded$1.set("image", new Int$0(0));
+                }
+                if (Object.hasOwn(item$0, "title")) {
+                  let input$1 = item$0["title"];
+                  let stack$2 = stack_add$0("title")(stack$1);
+                  let type$3 = "string";
+                  if (typeof input$1 === "string") {
+                    decoded$1.set("title", new String$0(input$1));
+                  } else {
+                    yield (decode_error$0(input$1)(stack$2)(type$3));
+                  }
+                } else {
+                  missing_keys$1 = stack_add$0("title")(missing_keys$1);
+                }
+                if (!(stack_is_empty$0(missing_keys$1))) {
+                  yield (key_error$0(missing_keys$1)(stack$1)(type$2));
+                }
+                decode_dst_new$0[0] = new Hashtbl$0(decoded$1);
               } else {
-                decoded$1.set("image", new Int$0(0));
+                yield (decode_error$0(item$0)(stack$1)(type$2));
               }
-            } else {
-              decoded$1.set("image", new Int$0(0));
+              decode_dst$0[1] = new Array$0(decode_dst_new$0);
+              index$0++;
+              decode_dst$0 = decode_dst_new$0;
             }
-            if (Object.hasOwn(item$0, "title")) {
-              let input$1 = item$0["title"];
-              let stack$2 = stack_add$0("title")(stack$1);
-              let type$3 = "string";
-              if (typeof input$1 === "string") {
-                decoded$1.set("title", new String$0(input$1));
-              } else {
-                decode_error$0(input$1)(stack$2)(type$3);
-              }
-            } else {
-              missing_keys$1 = stack_add$0("title")(missing_keys$1);
-            }
-            if (!(stack_is_empty$0(missing_keys$1))) {
-              key_error$0(missing_keys$1)(stack$1)(type$2);
-            }
-            decode_dst_new$0[0] = new Hashtbl$0(decoded$1);
+            props$0.set("blogPosts", decoded$0[1]);
           } else {
-            decode_error$0(item$0)(stack$1)(type$2);
+            yield (decode_error$0(input$0)(stack$0)(type$1));
           }
-          decode_dst$0[1] = new Array$0(decode_dst_new$0);
-          index$0++;
-          decode_dst$0 = decode_dst_new$0;
+        } else {
+          missing_keys$0 = stack_add$0("blogPosts")(missing_keys$0);
         }
-        props$0.set("blogPosts", decoded$0[1]);
+        if (Object.hasOwn(arg$0, "siteTitle")) {
+          let input$0 = arg$0["siteTitle"];
+          let stack$0 = stack_add$0("siteTitle")(stack_empty$0);
+          let type$1 = "string";
+          if (typeof input$0 === "string") {
+            props$0.set("siteTitle", new String$0(input$0));
+          } else {
+            yield (decode_error$0(input$0)(stack$0)(type$1));
+          }
+        } else {
+          missing_keys$0 = stack_add$0("siteTitle")(missing_keys$0);
+        }
+        if (!(stack_is_empty$0(missing_keys$0))) {
+          yield (key_error$0(missing_keys$0)(stack_empty$0)(type$0));
+        }
       } else {
-        decode_error$0(input$0)(stack$0)(type$1);
+        yield (decode_error$0(arg$0)(stack_empty$0)(type$0));
       }
-    } else {
-      missing_keys$0 = stack_add$0("blogPosts")(missing_keys$0);
-    }
-    if (Object.hasOwn(arg$0, "siteTitle")) {
-      let input$0 = arg$0["siteTitle"];
-      let stack$0 = stack_add$0("siteTitle")(stack_empty$0);
-      let type$1 = "string";
-      if (typeof input$0 === "string") {
-        props$0.set("siteTitle", new String$0(input$0));
-      } else {
-        decode_error$0(input$0)(stack$0)(type$1);
-      }
-    } else {
-      missing_keys$0 = stack_add$0("siteTitle")(missing_keys$0);
-    }
-    if (!(stack_is_empty$0(missing_keys$0))) {
-      key_error$0(missing_keys$0)(stack_empty$0)(type$0);
-    }
-  } else {
-    decode_error$0(arg$0)(stack_empty$0)(type$0);
-  }
-  if (errors$0.contents.length === 0) {
+    })();
+  let errors$0 = Array.from(decode_or_errors$0).join("\n\n");
+  if (errors$0.length === 0) {
     let buf$0 = {contents: ""};
     buf$0.contents += "<h1> Blog posts for ";
     buffer_add_escape$0(buf$0)(props$0.get("siteTitle").v);
@@ -370,6 +372,6 @@ siteTitle = string";
     buf$0.contents += "\n";
     return (Promise.resolve(buf$0.contents));
   } else {
-    return (Promise.reject(new Error(errors$0.contents)));
+    return (Promise.reject(new Error(errors$0)));
   }
 };

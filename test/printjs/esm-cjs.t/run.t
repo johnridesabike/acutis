@@ -65,7 +65,6 @@
       return (import$0(Object.fromEntries(seq$0)));
     };
   export default async (arg$0) => {
-    let errors$0 = {contents: ""};
     let error_aux$0 =
       (arg$1) => {
         return (
@@ -74,21 +73,20 @@
               (arg$3) => {
                 return (
                   (arg$4) => {
-                    if (!(errors$0.contents.length === 0)) {
-                      errors$0.contents += "\n\n";
-                    }
-                    errors$0.contents += "Error while rendering \"";
-                    errors$0.contents += "template.acutis";
-                    errors$0.contents +=
+                    let buf$0 = {contents: ""};
+                    buf$0.contents += "Error while rendering \"";
+                    buf$0.contents += "template.acutis";
+                    buf$0.contents +=
                       "\".\n\
   The data supplied does not match this template's interface.\n\
   ";
-                    errors$0.contents += "Path:\n<input>";
-                    arg$3(buffer_add_sep$0(errors$0)(" -> "));
-                    errors$0.contents += "\nExpected type:\n";
-                    errors$0.contents += arg$4;
-                    errors$0.contents += arg$1;
-                    errors$0.contents += arg$2;
+                    buf$0.contents += "Path:\n<input>";
+                    arg$3(buffer_add_sep$0(buf$0)(" -> "));
+                    buf$0.contents += "\nExpected type:\n";
+                    buf$0.contents += arg$4;
+                    buf$0.contents += arg$1;
+                    buf$0.contents += arg$2;
+                    return (buf$0.contents);
                   }
                 );
               }
@@ -108,15 +106,19 @@
       };
     let props$0 = new Map();
     let type$0 = "";
-    if (typeof arg$0 === "object" && !(arg$0 === null)) {
-      let missing_keys$0 = stack_empty$0;
-      if (!(stack_is_empty$0(missing_keys$0))) {
-        key_error$0(missing_keys$0)(stack_empty$0)(type$0);
-      }
-    } else {
-      decode_error$0(arg$0)(stack_empty$0)(type$0);
-    }
-    if (errors$0.contents.length === 0) {
+    let decode_or_errors$0 =
+      (function* () {
+        if (typeof arg$0 === "object" && !(arg$0 === null)) {
+          let missing_keys$0 = stack_empty$0;
+          if (!(stack_is_empty$0(missing_keys$0))) {
+            yield (key_error$0(missing_keys$0)(stack_empty$0)(type$0));
+          }
+        } else {
+          yield (decode_error$0(arg$0)(stack_empty$0)(type$0));
+        }
+      })();
+    let errors$0 = Array.from(decode_or_errors$0).join("\n\n");
+    if (errors$0.length === 0) {
       let buf$0 = {contents: ""};
       let buf$1 = {contents: ""};
       buf$1.contents += " text ";
@@ -128,7 +130,7 @@
       buf$0.contents += "\n";
       return (Promise.resolve(buf$0.contents));
     } else {
-      return (Promise.reject(new Error(errors$0.contents)));
+      return (Promise.reject(new Error(errors$0)));
     }
   };
 
@@ -200,7 +202,6 @@
     };
   module.exports =
     async (arg$0) => {
-      let errors$0 = {contents: ""};
       let error_aux$0 =
         (arg$1) => {
           return (
@@ -209,21 +210,20 @@
                 (arg$3) => {
                   return (
                     (arg$4) => {
-                      if (!(errors$0.contents.length === 0)) {
-                        errors$0.contents += "\n\n";
-                      }
-                      errors$0.contents += "Error while rendering \"";
-                      errors$0.contents += "template.acutis";
-                      errors$0.contents +=
+                      let buf$0 = {contents: ""};
+                      buf$0.contents += "Error while rendering \"";
+                      buf$0.contents += "template.acutis";
+                      buf$0.contents +=
                         "\".\n\
   The data supplied does not match this template's interface.\n\
   ";
-                      errors$0.contents += "Path:\n<input>";
-                      arg$3(buffer_add_sep$0(errors$0)(" -> "));
-                      errors$0.contents += "\nExpected type:\n";
-                      errors$0.contents += arg$4;
-                      errors$0.contents += arg$1;
-                      errors$0.contents += arg$2;
+                      buf$0.contents += "Path:\n<input>";
+                      arg$3(buffer_add_sep$0(buf$0)(" -> "));
+                      buf$0.contents += "\nExpected type:\n";
+                      buf$0.contents += arg$4;
+                      buf$0.contents += arg$1;
+                      buf$0.contents += arg$2;
+                      return (buf$0.contents);
                     }
                   );
                 }
@@ -243,15 +243,19 @@
         };
       let props$0 = new Map();
       let type$0 = "";
-      if (typeof arg$0 === "object" && !(arg$0 === null)) {
-        let missing_keys$0 = stack_empty$0;
-        if (!(stack_is_empty$0(missing_keys$0))) {
-          key_error$0(missing_keys$0)(stack_empty$0)(type$0);
-        }
-      } else {
-        decode_error$0(arg$0)(stack_empty$0)(type$0);
-      }
-      if (errors$0.contents.length === 0) {
+      let decode_or_errors$0 =
+        (function* () {
+          if (typeof arg$0 === "object" && !(arg$0 === null)) {
+            let missing_keys$0 = stack_empty$0;
+            if (!(stack_is_empty$0(missing_keys$0))) {
+              yield (key_error$0(missing_keys$0)(stack_empty$0)(type$0));
+            }
+          } else {
+            yield (decode_error$0(arg$0)(stack_empty$0)(type$0));
+          }
+        })();
+      let errors$0 = Array.from(decode_or_errors$0).join("\n\n");
+      if (errors$0.length === 0) {
         let buf$0 = {contents: ""};
         let buf$1 = {contents: ""};
         buf$1.contents += " text ";
@@ -263,6 +267,6 @@
         buf$0.contents += "\n";
         return (Promise.resolve(buf$0.contents));
       } else {
-        return (Promise.reject(new Error(errors$0.contents)));
+        return (Promise.reject(new Error(errors$0)));
       }
     };

@@ -125,7 +125,7 @@ let eprintf_msg fmt =
       stderr_needs_newline := true)
     fmt
 
-let print_msgs = Seq.iter (eprintf_msg "%a" Acutis.pp_message)
+let print_msgs = List.iter (eprintf_msg "%a" Acutis.pp_message)
 
 let get_or_exit = function
   | msgs, Some x -> print_msgs msgs; x
@@ -216,7 +216,7 @@ let () =
                 | fname ->
                     let@ chan = Out_channel.with_open_bin fname in
                     Out_channel.output_string chan result)
-            | Error x -> eprintf_msg "%s%!" x; exit 1)
+            | Error x -> print_msgs x; exit 1)
         | Make_js printer -> (
             let template =
               Acutis.compile (components_js ()) parsed |> get_or_exit

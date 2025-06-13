@@ -53,8 +53,8 @@ module type DECODABLE = sig
 end
 
 module Of_decodable (D : DECODABLE) : sig
-  val apply : (D.t -> string) compiled -> D.t -> (string, string) result
-  val interface : D.t -> message Seq.t * interface option
+  val apply : (D.t -> string) compiled -> D.t -> (string, message list) result
+  val interface : D.t -> message list * interface option
 end = struct
   module I = Instruct.Make (struct
     include Stdlib
@@ -127,6 +127,8 @@ end = struct
 
     let await = Fun.id
     let async_lambda = Fun.id
+    let errors_of_seq s = List.of_seq s |> List.map Error.of_string
+    let errors_is_empty = List.is_empty
     let ok = Result.ok
     let error = Result.error
 
@@ -541,6 +543,11 @@ module Print_js = struct
 
     let await p ppf state = F.fprintf ppf "@[<hv 2>await@ %a@]" p state
     let async_lambda = lambda_aux `Async
+
+    let errors_of_seq x =
+      ((global "Array").!("from") @@ x).!("join") @@ string "\n\n"
+
+    let errors_is_empty x = x.!("length") = int 0
     let ok x = (global "Promise").!("resolve") @@ x
     let error s = (global "Promise").!("reject") @@ new_ (global "Error") [ s ]
 

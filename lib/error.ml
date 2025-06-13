@@ -13,6 +13,7 @@ module F = Format
 type t = F.formatter -> unit
 
 let pp = ( |> )
+let of_string = F.dprintf "%s"
 
 exception Fatal of t
 
@@ -20,23 +21,23 @@ type _ Effect.t += Warn : t -> unit Effect.t
 
 module ES = Effect.Shallow
 
-type 'a res = t Seq.t * 'a option
+type 'a res = t list * 'a option
 
-let rec continue : type a b. t Seq.t -> (a, b) ES.continuation -> a -> b res =
+let rec continue : type a b. t list -> (a, b) ES.continuation -> a -> b res =
  fun msgs k x ->
-  let retc x = (msgs, Some x) in
+  let retc x = (List.rev msgs, Some x) in
   let exnc = function
-    | Fatal e -> (Seq.append msgs @@ Seq.return e, None)
+    | Fatal e -> (List.rev (e :: msgs), None)
     | e -> raise e
   in
   let effc : type c. c Effect.t -> ((c, b) ES.continuation -> b res) option =
     function
-    | Warn w -> Some (fun k -> continue (Seq.append msgs @@ Seq.return w) k ())
+    | Warn w -> Some (fun k -> continue (w :: msgs) k ())
     | _ -> None
   in
   ES.continue_with k x { retc; exnc; effc }
 
-let handle f x = continue Seq.empty (ES.fiber f) x
+let handle f x = continue [] (ES.fiber f) x
 
 type loc = Lexing.position * Lexing.position
 

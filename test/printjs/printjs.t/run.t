@@ -316,7 +316,6 @@
       return (buf$0.contents);
     };
   export default async (arg$0) => {
-    let errors$0 = {contents: ""};
     let error_aux$0 =
       (arg$1) => {
         return (
@@ -325,21 +324,20 @@
               (arg$3) => {
                 return (
                   (arg$4) => {
-                    if (!(errors$0.contents.length === 0)) {
-                      errors$0.contents += "\n\n";
-                    }
-                    errors$0.contents += "Error while rendering \"";
-                    errors$0.contents += "template.acutis";
-                    errors$0.contents +=
+                    let buf$0 = {contents: ""};
+                    buf$0.contents += "Error while rendering \"";
+                    buf$0.contents += "template.acutis";
+                    buf$0.contents +=
                       "\".\n\
   The data supplied does not match this template's interface.\n\
   ";
-                    errors$0.contents += "Path:\n<input>";
-                    arg$3(buffer_add_sep$0(errors$0)(" -> "));
-                    errors$0.contents += "\nExpected type:\n";
-                    errors$0.contents += arg$4;
-                    errors$0.contents += arg$1;
-                    errors$0.contents += arg$2;
+                    buf$0.contents += "Path:\n<input>";
+                    arg$3(buffer_add_sep$0(buf$0)(" -> "));
+                    buf$0.contents += "\nExpected type:\n";
+                    buf$0.contents += arg$4;
+                    buf$0.contents += arg$1;
+                    buf$0.contents += arg$2;
+                    return (buf$0.contents);
                   }
                 );
               }
@@ -383,764 +381,791 @@
     {@tag: \"b\", open_enum: @0 | @1 | ...}\n\
   unicode_string = string\n\
   unknown = _";
-    if (typeof arg$0 === "object" && !(arg$0 === null)) {
-      let missing_keys$0 = stack_empty$0;
-      if (Object.hasOwn(arg$0, "big_float")) {
-        let input$0 = arg$0["big_float"];
-        let stack$0 = stack_add$0("big_float")(stack_empty$0);
-        let type$1 = "float";
-        if (typeof input$0 === "number") {
-          props$0.set("big_float", new Float$0(input$0));
-        } else {
-          decode_error$0(input$0)(stack$0)(type$1);
-        }
-      } else {
-        missing_keys$0 = stack_add$0("big_float")(missing_keys$0);
-      }
-      if (Object.hasOwn(arg$0, "big_int")) {
-        let input$0 = arg$0["big_int"];
-        let stack$0 = stack_add$0("big_int")(stack_empty$0);
-        let type$1 = "int";
-        if (Number.isInteger(input$0)) {
-          props$0.set("big_int", new Int$0(input$0));
-        } else {
-          decode_error$0(input$0)(stack$0)(type$1);
-        }
-      } else {
-        missing_keys$0 = stack_add$0("big_int")(missing_keys$0);
-      }
-      if (Object.hasOwn(arg$0, "bool1")) {
-        let input$0 = arg$0["bool1"];
-        let stack$0 = stack_add$0("bool1")(stack_empty$0);
-        let type$1 = "false | true";
-        if (typeof input$0 === "boolean") {
-          if (input$0) {
-            props$0.set("bool1", new Int$0(1));
-          } else {
-            props$0.set("bool1", new Int$0(0));
-          }
-        } else {
-          decode_error$0(input$0)(stack$0)(type$1);
-        }
-      } else {
-        missing_keys$0 = stack_add$0("bool1")(missing_keys$0);
-      }
-      if (Object.hasOwn(arg$0, "bool2")) {
-        let input$0 = arg$0["bool2"];
-        let stack$0 = stack_add$0("bool2")(stack_empty$0);
-        let type$1 = "false | true";
-        if (typeof input$0 === "boolean") {
-          if (input$0) {
-            props$0.set("bool2", new Int$0(1));
-          } else {
-            props$0.set("bool2", new Int$0(0));
-          }
-        } else {
-          decode_error$0(input$0)(stack$0)(type$1);
-        }
-      } else {
-        missing_keys$0 = stack_add$0("bool2")(missing_keys$0);
-      }
-      if (Object.hasOwn(arg$0, "dangerous")) {
-        let input$0 = arg$0["dangerous"];
-        let stack$0 = stack_add$0("dangerous")(stack_empty$0);
-        let type$1 = "string";
-        if (typeof input$0 === "string") {
-          props$0.set("dangerous", new String$0(input$0));
-        } else {
-          decode_error$0(input$0)(stack$0)(type$1);
-        }
-      } else {
-        missing_keys$0 = stack_add$0("dangerous")(missing_keys$0);
-      }
-      if (Object.hasOwn(arg$0, "int_list")) {
-        let input$0 = arg$0["int_list"];
-        let stack$0 = stack_add$0("int_list")(stack_empty$0);
-        let type$1 = "[int]";
-        if (Array.isArray(input$0)) {
-          let seq$0 = input$0.values();
-          let index$0 = 0;
-          let decoded$0 = [new Int$0(0), new Int$0(0)];
-          let decode_dst$0 = decoded$0;
-          for (let item$0 of seq$0) {
-            let decode_dst_new$0 = [new Int$0(0), new Int$0(0)];
-            let stack$1 = stack_add$0(String(index$0))(stack$0);
-            let type$2 = "int";
-            if (Number.isInteger(item$0)) {
-              decode_dst_new$0[0] = new Int$0(item$0);
+    let decode_or_errors$0 =
+      (function* () {
+        if (typeof arg$0 === "object" && !(arg$0 === null)) {
+          let missing_keys$0 = stack_empty$0;
+          if (Object.hasOwn(arg$0, "big_float")) {
+            let input$0 = arg$0["big_float"];
+            let stack$0 = stack_add$0("big_float")(stack_empty$0);
+            let type$1 = "float";
+            if (typeof input$0 === "number") {
+              props$0.set("big_float", new Float$0(input$0));
             } else {
-              decode_error$0(item$0)(stack$1)(type$2);
+              yield (decode_error$0(input$0)(stack$0)(type$1));
             }
-            decode_dst$0[1] = new Array$0(decode_dst_new$0);
-            index$0++;
-            decode_dst$0 = decode_dst_new$0;
+          } else {
+            missing_keys$0 = stack_add$0("big_float")(missing_keys$0);
           }
-          props$0.set("int_list", decoded$0[1]);
-        } else {
-          decode_error$0(input$0)(stack$0)(type$1);
-        }
-      } else {
-        missing_keys$0 = stack_add$0("int_list")(missing_keys$0);
-      }
-      if (Object.hasOwn(arg$0, "nested_list")) {
-        let input$0 = arg$0["nested_list"];
-        let stack$0 = stack_add$0("nested_list")(stack_empty$0);
-        let type$1 = "[[[int]]]";
-        if (Array.isArray(input$0)) {
-          let seq$0 = input$0.values();
-          let index$0 = 0;
-          let decoded$0 = [new Int$0(0), new Int$0(0)];
-          let decode_dst$0 = decoded$0;
-          for (let item$0 of seq$0) {
-            let decode_dst_new$0 = [new Int$0(0), new Int$0(0)];
-            let stack$1 = stack_add$0(String(index$0))(stack$0);
-            let type$2 = "[[int]]";
-            if (Array.isArray(item$0)) {
-              let seq$1 = item$0.values();
-              let index$1 = 0;
-              let decoded$1 = [new Int$0(0), new Int$0(0)];
-              let decode_dst$1 = decoded$1;
-              for (let item$1 of seq$1) {
-                let decode_dst_new$1 = [new Int$0(0), new Int$0(0)];
-                let stack$2 = stack_add$0(String(index$1))(stack$1);
-                let type$3 = "[int]";
-                if (Array.isArray(item$1)) {
-                  let seq$2 = item$1.values();
-                  let index$2 = 0;
-                  let decoded$2 = [new Int$0(0), new Int$0(0)];
-                  let decode_dst$2 = decoded$2;
-                  for (let item$2 of seq$2) {
-                    let decode_dst_new$2 = [new Int$0(0), new Int$0(0)];
-                    let stack$3 = stack_add$0(String(index$2))(stack$2);
-                    let type$4 = "int";
-                    if (Number.isInteger(item$2)) {
-                      decode_dst_new$2[0] = new Int$0(item$2);
-                    } else {
-                      decode_error$0(item$2)(stack$3)(type$4);
-                    }
-                    decode_dst$2[1] = new Array$0(decode_dst_new$2);
-                    index$2++;
-                    decode_dst$2 = decode_dst_new$2;
-                  }
-                  decode_dst_new$1[0] = decoded$2[1];
-                } else {
-                  decode_error$0(item$1)(stack$2)(type$3);
-                }
-                decode_dst$1[1] = new Array$0(decode_dst_new$1);
-                index$1++;
-                decode_dst$1 = decode_dst_new$1;
-              }
-              decode_dst_new$0[0] = decoded$1[1];
+          if (Object.hasOwn(arg$0, "big_int")) {
+            let input$0 = arg$0["big_int"];
+            let stack$0 = stack_add$0("big_int")(stack_empty$0);
+            let type$1 = "int";
+            if (Number.isInteger(input$0)) {
+              props$0.set("big_int", new Int$0(input$0));
             } else {
-              decode_error$0(item$0)(stack$1)(type$2);
+              yield (decode_error$0(input$0)(stack$0)(type$1));
             }
-            decode_dst$0[1] = new Array$0(decode_dst_new$0);
-            index$0++;
-            decode_dst$0 = decode_dst_new$0;
+          } else {
+            missing_keys$0 = stack_add$0("big_int")(missing_keys$0);
           }
-          props$0.set("nested_list", decoded$0[1]);
-        } else {
-          decode_error$0(input$0)(stack$0)(type$1);
-        }
-      } else {
-        missing_keys$0 = stack_add$0("nested_list")(missing_keys$0);
-      }
-      if (Object.hasOwn(arg$0, "nested_nullable_list")) {
-        let input$0 = arg$0["nested_nullable_list"];
-        let stack$0 = stack_add$0("nested_nullable_list")(stack_empty$0);
-        let type$1 = "[??false | true]";
-        if (Array.isArray(input$0)) {
-          let seq$0 = input$0.values();
-          let index$0 = 0;
-          let decoded$0 = [new Int$0(0), new Int$0(0)];
-          let decode_dst$0 = decoded$0;
-          for (let item$0 of seq$0) {
-            let decode_dst_new$0 = [new Int$0(0), new Int$0(0)];
-            let stack$1 = stack_add$0(String(index$0))(stack$0);
-            let type$2 = "??false | true";
-            if (!(item$0 === null) && !(item$0 === undefined)) {
-              let decoded$1 = [new Int$0(0)];
-              let stack$2 = stack_add$0("<nullable>")(stack$1);
-              let type$3 = "?false | true";
-              if (!(item$0 === null) && !(item$0 === undefined)) {
-                let decoded$2 = [new Int$0(0)];
-                let stack$3 = stack_add$0("<nullable>")(stack$2);
-                let type$4 = "false | true";
-                if (typeof item$0 === "boolean") {
-                  if (item$0) {
-                    decoded$2[0] = new Int$0(1);
-                  } else {
-                    decoded$2[0] = new Int$0(0);
-                  }
-                } else {
-                  decode_error$0(item$0)(stack$3)(type$4);
-                }
-                decoded$1[0] = new Array$0(decoded$2);
+          if (Object.hasOwn(arg$0, "bool1")) {
+            let input$0 = arg$0["bool1"];
+            let stack$0 = stack_add$0("bool1")(stack_empty$0);
+            let type$1 = "false | true";
+            if (typeof input$0 === "boolean") {
+              if (input$0) {
+                props$0.set("bool1", new Int$0(1));
               } else {
-                decoded$1[0] = new Int$0(0);
-              }
-              decode_dst_new$0[0] = new Array$0(decoded$1);
-            } else {
-              decode_dst_new$0[0] = new Int$0(0);
-            }
-            decode_dst$0[1] = new Array$0(decode_dst_new$0);
-            index$0++;
-            decode_dst$0 = decode_dst_new$0;
-          }
-          props$0.set("nested_nullable_list", decoded$0[1]);
-        } else {
-          decode_error$0(input$0)(stack$0)(type$1);
-        }
-      } else {
-        missing_keys$0 = stack_add$0("nested_nullable_list")(missing_keys$0);
-      }
-      if (Object.hasOwn(arg$0, "null_bool")) {
-        let input$0 = arg$0["null_bool"];
-        let stack$0 = stack_add$0("null_bool")(stack_empty$0);
-        let type$1 = "?false | true";
-        if (!(input$0 === null) && !(input$0 === undefined)) {
-          let decoded$0 = [new Int$0(0)];
-          let stack$1 = stack_add$0("<nullable>")(stack$0);
-          let type$2 = "false | true";
-          if (typeof input$0 === "boolean") {
-            if (input$0) {
-              decoded$0[0] = new Int$0(1);
-            } else {
-              decoded$0[0] = new Int$0(0);
-            }
-          } else {
-            decode_error$0(input$0)(stack$1)(type$2);
-          }
-          props$0.set("null_bool", new Array$0(decoded$0));
-        } else {
-          props$0.set("null_bool", new Int$0(0));
-        }
-      } else {
-        props$0.set("null_bool", new Int$0(0));
-      }
-      if (Object.hasOwn(arg$0, "null_float")) {
-        let input$0 = arg$0["null_float"];
-        let stack$0 = stack_add$0("null_float")(stack_empty$0);
-        let type$1 = "?float";
-        if (!(input$0 === null) && !(input$0 === undefined)) {
-          let decoded$0 = [new Int$0(0)];
-          let stack$1 = stack_add$0("<nullable>")(stack$0);
-          let type$2 = "float";
-          if (typeof input$0 === "number") {
-            decoded$0[0] = new Float$0(input$0);
-          } else {
-            decode_error$0(input$0)(stack$1)(type$2);
-          }
-          props$0.set("null_float", new Array$0(decoded$0));
-        } else {
-          props$0.set("null_float", new Int$0(0));
-        }
-      } else {
-        props$0.set("null_float", new Int$0(0));
-      }
-      if (Object.hasOwn(arg$0, "null_int")) {
-        let input$0 = arg$0["null_int"];
-        let stack$0 = stack_add$0("null_int")(stack_empty$0);
-        let type$1 = "?int";
-        if (!(input$0 === null) && !(input$0 === undefined)) {
-          let decoded$0 = [new Int$0(0)];
-          let stack$1 = stack_add$0("<nullable>")(stack$0);
-          let type$2 = "int";
-          if (Number.isInteger(input$0)) {
-            decoded$0[0] = new Int$0(input$0);
-          } else {
-            decode_error$0(input$0)(stack$1)(type$2);
-          }
-          props$0.set("null_int", new Array$0(decoded$0));
-        } else {
-          props$0.set("null_int", new Int$0(0));
-        }
-      } else {
-        props$0.set("null_int", new Int$0(0));
-      }
-      if (Object.hasOwn(arg$0, "null_string")) {
-        let input$0 = arg$0["null_string"];
-        let stack$0 = stack_add$0("null_string")(stack_empty$0);
-        let type$1 = "?string";
-        if (!(input$0 === null) && !(input$0 === undefined)) {
-          let decoded$0 = [new Int$0(0)];
-          let stack$1 = stack_add$0("<nullable>")(stack$0);
-          let type$2 = "string";
-          if (typeof input$0 === "string") {
-            decoded$0[0] = new String$0(input$0);
-          } else {
-            decode_error$0(input$0)(stack$1)(type$2);
-          }
-          props$0.set("null_string", new Array$0(decoded$0));
-        } else {
-          props$0.set("null_string", new Int$0(0));
-        }
-      } else {
-        props$0.set("null_string", new Int$0(0));
-      }
-      if (Object.hasOwn(arg$0, "null_string_dict")) {
-        let input$0 = arg$0["null_string_dict"];
-        let stack$0 = stack_add$0("null_string_dict")(stack_empty$0);
-        let type$1 = "<?string>";
-        if (typeof input$0 === "object" && !(input$0 === null)) {
-          let decoded$0 = new Map();
-          for (let item$0 of Object.entries(input$0).values()) {
-            let stack$1 = stack_add$0(item$0[0])(stack$0);
-            let type$2 = "?string";
-            if (!(item$0[1] === null) && !(item$0[1] === undefined)) {
-              let decoded$1 = [new Int$0(0)];
-              let stack$2 = stack_add$0("<nullable>")(stack$1);
-              let type$3 = "string";
-              if (typeof item$0[1] === "string") {
-                decoded$1[0] = new String$0(item$0[1]);
-              } else {
-                decode_error$0(item$0[1])(stack$2)(type$3);
-              }
-              decoded$0.set(item$0[0], new Array$0(decoded$1));
-            } else {
-              decoded$0.set(item$0[0], new Int$0(0));
-            }
-            props$0.set("null_string_dict", new Hashtbl$0(decoded$0));
-          }
-        } else {
-          decode_error$0(input$0)(stack$0)(type$1);
-        }
-      } else {
-        missing_keys$0 = stack_add$0("null_string_dict")(missing_keys$0);
-      }
-      if (Object.hasOwn(arg$0, "record")) {
-        let input$0 = arg$0["record"];
-        let stack$0 = stack_add$0("record")(stack_empty$0);
-        let type$1 = "{int_enum: @8 | @40, string_enum: @\"no\" | @\"yes\"}";
-        if (typeof input$0 === "object" && !(input$0 === null)) {
-          let decoded$0 = new Map();
-          let missing_keys$1 = stack_empty$0;
-          if (Object.hasOwn(input$0, "int_enum")) {
-            let input$1 = input$0["int_enum"];
-            let stack$1 = stack_add$0("int_enum")(stack$0);
-            let type$2 = "@8 | @40";
-            if (Number.isInteger(input$1)) {
-              if (input$1 === 8) {
-                decoded$0.set("int_enum", new Int$0(input$1));
-              } else {
-                if (input$1 === 40) {
-                  decoded$0.set("int_enum", new Int$0(input$1));
-                } else {
-                  decode_error$0(input$1)(stack$1)(type$2);
-                }
+                props$0.set("bool1", new Int$0(0));
               }
             } else {
-              decode_error$0(input$1)(stack$1)(type$2);
+              yield (decode_error$0(input$0)(stack$0)(type$1));
             }
           } else {
-            missing_keys$1 = stack_add$0("int_enum")(missing_keys$1);
+            missing_keys$0 = stack_add$0("bool1")(missing_keys$0);
           }
-          if (Object.hasOwn(input$0, "string_enum")) {
-            let input$1 = input$0["string_enum"];
-            let stack$1 = stack_add$0("string_enum")(stack$0);
-            let type$2 = "@\"no\" | @\"yes\"";
-            if (typeof input$1 === "string") {
-              if (input$1 === "no") {
-                decoded$0.set("string_enum", new String$0(input$1));
+          if (Object.hasOwn(arg$0, "bool2")) {
+            let input$0 = arg$0["bool2"];
+            let stack$0 = stack_add$0("bool2")(stack_empty$0);
+            let type$1 = "false | true";
+            if (typeof input$0 === "boolean") {
+              if (input$0) {
+                props$0.set("bool2", new Int$0(1));
               } else {
-                if (input$1 === "yes") {
-                  decoded$0.set("string_enum", new String$0(input$1));
-                } else {
-                  decode_error$0(input$1)(stack$1)(type$2);
-                }
+                props$0.set("bool2", new Int$0(0));
               }
             } else {
-              decode_error$0(input$1)(stack$1)(type$2);
+              yield (decode_error$0(input$0)(stack$0)(type$1));
             }
           } else {
-            missing_keys$1 = stack_add$0("string_enum")(missing_keys$1);
+            missing_keys$0 = stack_add$0("bool2")(missing_keys$0);
           }
-          if (!(stack_is_empty$0(missing_keys$1))) {
-            key_error$0(missing_keys$1)(stack$0)(type$1);
-          }
-          props$0.set("record", new Hashtbl$0(decoded$0));
-        } else {
-          decode_error$0(input$0)(stack$0)(type$1);
-        }
-      } else {
-        missing_keys$0 = stack_add$0("record")(missing_keys$0);
-      }
-      if (Object.hasOwn(arg$0, "tagged_record_bool")) {
-        let input$0 = arg$0["tagged_record_bool"];
-        let stack$0 = stack_add$0("tagged_record_bool")(stack_empty$0);
-        let type$1 = "{@tag: false, a: string} | {@tag: true, b: int}";
-        if (typeof input$0 === "object" && !(input$0 === null)) {
-          if (Object.hasOwn(input$0, "tag")) {
-            if (typeof input$0["tag"] === "boolean") {
-              let decoded$0 = new Map();
-              if (!(input$0["tag"])) {
-                decoded$0.set("tag", new Int$0(0));
-                let missing_keys$1 = stack_empty$0;
-                if (Object.hasOwn(input$0, "a")) {
-                  let input$1 = input$0["a"];
-                  let stack$1 = stack_add$0("a")(stack$0);
-                  let type$2 = "string";
-                  if (typeof input$1 === "string") {
-                    decoded$0.set("a", new String$0(input$1));
-                  } else {
-                    decode_error$0(input$1)(stack$1)(type$2);
-                  }
-                } else {
-                  missing_keys$1 = stack_add$0("a")(missing_keys$1);
-                }
-                if (!(stack_is_empty$0(missing_keys$1))) {
-                  key_error$0(missing_keys$1)(stack$0)(type$1);
-                }
-              } else {
-                if (input$0["tag"]) {
-                  decoded$0.set("tag", new Int$0(1));
-                  let missing_keys$1 = stack_empty$0;
-                  if (Object.hasOwn(input$0, "b")) {
-                    let input$1 = input$0["b"];
-                    let stack$1 = stack_add$0("b")(stack$0);
-                    let type$2 = "int";
-                    if (Number.isInteger(input$1)) {
-                      decoded$0.set("b", new Int$0(input$1));
-                    } else {
-                      decode_error$0(input$1)(stack$1)(type$2);
-                    }
-                  } else {
-                    missing_keys$1 = stack_add$0("b")(missing_keys$1);
-                  }
-                  if (!(stack_is_empty$0(missing_keys$1))) {
-                    key_error$0(missing_keys$1)(stack$0)(type$1);
-                  }
-                } else {
-                  decode_error$0(input$0)(stack$0)(type$1);
-                }
-              }
-              props$0.set("tagged_record_bool", new Hashtbl$0(decoded$0));
+          if (Object.hasOwn(arg$0, "dangerous")) {
+            let input$0 = arg$0["dangerous"];
+            let stack$0 = stack_add$0("dangerous")(stack_empty$0);
+            let type$1 = "string";
+            if (typeof input$0 === "string") {
+              props$0.set("dangerous", new String$0(input$0));
             } else {
-              decode_error$0(input$0)(stack$0)(type$1);
+              yield (decode_error$0(input$0)(stack$0)(type$1));
             }
           } else {
-            decode_error$0(input$0)(stack$0)(type$1);
+            missing_keys$0 = stack_add$0("dangerous")(missing_keys$0);
           }
-        } else {
-          decode_error$0(input$0)(stack$0)(type$1);
-        }
-      } else {
-        missing_keys$0 = stack_add$0("tagged_record_bool")(missing_keys$0);
-      }
-      if (Object.hasOwn(arg$0, "tagged_record_int")) {
-        let input$0 = arg$0["tagged_record_int"];
-        let stack$0 = stack_add$0("tagged_record_int")(stack_empty$0);
-        let type$1 =
-          "{@tag: 0} | {@tag: 1, tuple: (float, string, false | true)}";
-        if (typeof input$0 === "object" && !(input$0 === null)) {
-          if (Object.hasOwn(input$0, "tag")) {
-            if (Number.isInteger(input$0["tag"])) {
-              let decoded$0 = new Map();
-              if (input$0["tag"] === 0) {
-                decoded$0.set("tag", new Int$0(0));
-                let missing_keys$1 = stack_empty$0;
-                if (!(stack_is_empty$0(missing_keys$1))) {
-                  key_error$0(missing_keys$1)(stack$0)(type$1);
+          if (Object.hasOwn(arg$0, "int_list")) {
+            let input$0 = arg$0["int_list"];
+            let stack$0 = stack_add$0("int_list")(stack_empty$0);
+            let type$1 = "[int]";
+            if (Array.isArray(input$0)) {
+              let seq$0 = input$0.values();
+              let index$0 = 0;
+              let decoded$0 = [new Int$0(0), new Int$0(0)];
+              let decode_dst$0 = decoded$0;
+              for (let item$0 of seq$0) {
+                let decode_dst_new$0 = [new Int$0(0), new Int$0(0)];
+                let stack$1 = stack_add$0(String(index$0))(stack$0);
+                let type$2 = "int";
+                if (Number.isInteger(item$0)) {
+                  decode_dst_new$0[0] = new Int$0(item$0);
+                } else {
+                  yield (decode_error$0(item$0)(stack$1)(type$2));
                 }
-              } else {
-                if (input$0["tag"] === 1) {
-                  decoded$0.set("tag", new Int$0(1));
-                  let missing_keys$1 = stack_empty$0;
-                  if (Object.hasOwn(input$0, "tuple")) {
-                    let input$1 = input$0["tuple"];
-                    let stack$1 = stack_add$0("tuple")(stack$0);
-                    let type$2 = "(float, string, false | true)";
-                    if (Array.isArray(input$1)) {
-                      let seq$0 = input$1.values();
-                      let decoded$1 =
-                        [new Int$0(0), new Int$0(0), new Int$0(0)];
-                      let next$0 = seq$0.next();
-                      if (next$0.done) {
-                        decode_error$0(input$1)(stack$1)(type$2);
-                      } else {
-                        let stack$2 = stack_add$0(String(0))(stack$1);
-                        let type$3 = "float";
-                        if (typeof next$0.value === "number") {
-                          decoded$1[0] = new Float$0(next$0.value);
+                decode_dst$0[1] = new Array$0(decode_dst_new$0);
+                index$0++;
+                decode_dst$0 = decode_dst_new$0;
+              }
+              props$0.set("int_list", decoded$0[1]);
+            } else {
+              yield (decode_error$0(input$0)(stack$0)(type$1));
+            }
+          } else {
+            missing_keys$0 = stack_add$0("int_list")(missing_keys$0);
+          }
+          if (Object.hasOwn(arg$0, "nested_list")) {
+            let input$0 = arg$0["nested_list"];
+            let stack$0 = stack_add$0("nested_list")(stack_empty$0);
+            let type$1 = "[[[int]]]";
+            if (Array.isArray(input$0)) {
+              let seq$0 = input$0.values();
+              let index$0 = 0;
+              let decoded$0 = [new Int$0(0), new Int$0(0)];
+              let decode_dst$0 = decoded$0;
+              for (let item$0 of seq$0) {
+                let decode_dst_new$0 = [new Int$0(0), new Int$0(0)];
+                let stack$1 = stack_add$0(String(index$0))(stack$0);
+                let type$2 = "[[int]]";
+                if (Array.isArray(item$0)) {
+                  let seq$1 = item$0.values();
+                  let index$1 = 0;
+                  let decoded$1 = [new Int$0(0), new Int$0(0)];
+                  let decode_dst$1 = decoded$1;
+                  for (let item$1 of seq$1) {
+                    let decode_dst_new$1 = [new Int$0(0), new Int$0(0)];
+                    let stack$2 = stack_add$0(String(index$1))(stack$1);
+                    let type$3 = "[int]";
+                    if (Array.isArray(item$1)) {
+                      let seq$2 = item$1.values();
+                      let index$2 = 0;
+                      let decoded$2 = [new Int$0(0), new Int$0(0)];
+                      let decode_dst$2 = decoded$2;
+                      for (let item$2 of seq$2) {
+                        let decode_dst_new$2 = [new Int$0(0), new Int$0(0)];
+                        let stack$3 = stack_add$0(String(index$2))(stack$2);
+                        let type$4 = "int";
+                        if (Number.isInteger(item$2)) {
+                          decode_dst_new$2[0] = new Int$0(item$2);
                         } else {
-                          decode_error$0(next$0.value)(stack$2)(type$3);
+                          yield (decode_error$0(item$2)(stack$3)(type$4));
                         }
-                        let next$1 = seq$0.next();
-                        if (next$1.done) {
-                          decode_error$0(input$1)(stack$1)(type$2);
-                        } else {
-                          let stack$3 = stack_add$0(String(1))(stack$1);
-                          let type$4 = "string";
-                          if (typeof next$1.value === "string") {
-                            decoded$1[1] = new String$0(next$1.value);
-                          } else {
-                            decode_error$0(next$1.value)(stack$3)(type$4);
-                          }
-                          let next$2 = seq$0.next();
-                          if (next$2.done) {
-                            decode_error$0(input$1)(stack$1)(type$2);
-                          } else {
-                            let stack$4 = stack_add$0(String(2))(stack$1);
-                            let type$5 = "false | true";
-                            if (typeof next$2.value === "boolean") {
-                              if (next$2.value) {
-                                decoded$1[2] = new Int$0(1);
-                              } else {
-                                decoded$1[2] = new Int$0(0);
-                              }
-                            } else {
-                              decode_error$0(next$2.value)(stack$4)(type$5);
-                            }
-                          }
-                        }
+                        decode_dst$2[1] = new Array$0(decode_dst_new$2);
+                        index$2++;
+                        decode_dst$2 = decode_dst_new$2;
                       }
-                      decoded$0.set("tuple", new Array$0(decoded$1));
+                      decode_dst_new$1[0] = decoded$2[1];
                     } else {
-                      decode_error$0(input$1)(stack$1)(type$2);
+                      yield (decode_error$0(item$1)(stack$2)(type$3));
                     }
-                  } else {
-                    missing_keys$1 = stack_add$0("tuple")(missing_keys$1);
+                    decode_dst$1[1] = new Array$0(decode_dst_new$1);
+                    index$1++;
+                    decode_dst$1 = decode_dst_new$1;
                   }
-                  if (!(stack_is_empty$0(missing_keys$1))) {
-                    key_error$0(missing_keys$1)(stack$0)(type$1);
-                  }
+                  decode_dst_new$0[0] = decoded$1[1];
                 } else {
-                  decode_error$0(input$0)(stack$0)(type$1);
+                  yield (decode_error$0(item$0)(stack$1)(type$2));
                 }
+                decode_dst$0[1] = new Array$0(decode_dst_new$0);
+                index$0++;
+                decode_dst$0 = decode_dst_new$0;
               }
-              props$0.set("tagged_record_int", new Hashtbl$0(decoded$0));
+              props$0.set("nested_list", decoded$0[1]);
             } else {
-              decode_error$0(input$0)(stack$0)(type$1);
+              yield (decode_error$0(input$0)(stack$0)(type$1));
             }
           } else {
-            decode_error$0(input$0)(stack$0)(type$1);
+            missing_keys$0 = stack_add$0("nested_list")(missing_keys$0);
           }
-        } else {
-          decode_error$0(input$0)(stack$0)(type$1);
-        }
-      } else {
-        missing_keys$0 = stack_add$0("tagged_record_int")(missing_keys$0);
-      }
-      if (Object.hasOwn(arg$0, "tagged_record_open")) {
-        let input$0 = arg$0["tagged_record_open"];
-        let stack$0 = stack_add$0("tagged_record_open")(stack_empty$0);
-        let type$1 =
-          "{@tag: 100, a: int} | {@tag: 200, b: string} | {@tag: 300, c: float} | ...";
-        if (typeof input$0 === "object" && !(input$0 === null)) {
-          if (Object.hasOwn(input$0, "tag")) {
-            if (Number.isInteger(input$0["tag"])) {
-              let decoded$0 = new Map();
-              if (input$0["tag"] === 100) {
-                decoded$0.set("tag", new Int$0(100));
-                let missing_keys$1 = stack_empty$0;
-                if (Object.hasOwn(input$0, "a")) {
-                  let input$1 = input$0["a"];
-                  let stack$1 = stack_add$0("a")(stack$0);
-                  let type$2 = "int";
-                  if (Number.isInteger(input$1)) {
-                    decoded$0.set("a", new Int$0(input$1));
+          if (Object.hasOwn(arg$0, "nested_nullable_list")) {
+            let input$0 = arg$0["nested_nullable_list"];
+            let stack$0 = stack_add$0("nested_nullable_list")(stack_empty$0);
+            let type$1 = "[??false | true]";
+            if (Array.isArray(input$0)) {
+              let seq$0 = input$0.values();
+              let index$0 = 0;
+              let decoded$0 = [new Int$0(0), new Int$0(0)];
+              let decode_dst$0 = decoded$0;
+              for (let item$0 of seq$0) {
+                let decode_dst_new$0 = [new Int$0(0), new Int$0(0)];
+                let stack$1 = stack_add$0(String(index$0))(stack$0);
+                let type$2 = "??false | true";
+                if (!(item$0 === null) && !(item$0 === undefined)) {
+                  let decoded$1 = [new Int$0(0)];
+                  let stack$2 = stack_add$0("<nullable>")(stack$1);
+                  let type$3 = "?false | true";
+                  if (!(item$0 === null) && !(item$0 === undefined)) {
+                    let decoded$2 = [new Int$0(0)];
+                    let stack$3 = stack_add$0("<nullable>")(stack$2);
+                    let type$4 = "false | true";
+                    if (typeof item$0 === "boolean") {
+                      if (item$0) {
+                        decoded$2[0] = new Int$0(1);
+                      } else {
+                        decoded$2[0] = new Int$0(0);
+                      }
+                    } else {
+                      yield (decode_error$0(item$0)(stack$3)(type$4));
+                    }
+                    decoded$1[0] = new Array$0(decoded$2);
                   } else {
-                    decode_error$0(input$1)(stack$1)(type$2);
+                    decoded$1[0] = new Int$0(0);
                   }
+                  decode_dst_new$0[0] = new Array$0(decoded$1);
                 } else {
-                  missing_keys$1 = stack_add$0("a")(missing_keys$1);
+                  decode_dst_new$0[0] = new Int$0(0);
                 }
-                if (!(stack_is_empty$0(missing_keys$1))) {
-                  key_error$0(missing_keys$1)(stack$0)(type$1);
+                decode_dst$0[1] = new Array$0(decode_dst_new$0);
+                index$0++;
+                decode_dst$0 = decode_dst_new$0;
+              }
+              props$0.set("nested_nullable_list", decoded$0[1]);
+            } else {
+              yield (decode_error$0(input$0)(stack$0)(type$1));
+            }
+          } else {
+            missing_keys$0 =
+              stack_add$0("nested_nullable_list")(missing_keys$0);
+          }
+          if (Object.hasOwn(arg$0, "null_bool")) {
+            let input$0 = arg$0["null_bool"];
+            let stack$0 = stack_add$0("null_bool")(stack_empty$0);
+            let type$1 = "?false | true";
+            if (!(input$0 === null) && !(input$0 === undefined)) {
+              let decoded$0 = [new Int$0(0)];
+              let stack$1 = stack_add$0("<nullable>")(stack$0);
+              let type$2 = "false | true";
+              if (typeof input$0 === "boolean") {
+                if (input$0) {
+                  decoded$0[0] = new Int$0(1);
+                } else {
+                  decoded$0[0] = new Int$0(0);
                 }
               } else {
-                if (input$0["tag"] === 200) {
-                  decoded$0.set("tag", new Int$0(200));
-                  let missing_keys$1 = stack_empty$0;
-                  if (Object.hasOwn(input$0, "b")) {
-                    let input$1 = input$0["b"];
-                    let stack$1 = stack_add$0("b")(stack$0);
-                    let type$2 = "string";
-                    if (typeof input$1 === "string") {
-                      decoded$0.set("b", new String$0(input$1));
-                    } else {
-                      decode_error$0(input$1)(stack$1)(type$2);
-                    }
+                yield (decode_error$0(input$0)(stack$1)(type$2));
+              }
+              props$0.set("null_bool", new Array$0(decoded$0));
+            } else {
+              props$0.set("null_bool", new Int$0(0));
+            }
+          } else {
+            props$0.set("null_bool", new Int$0(0));
+          }
+          if (Object.hasOwn(arg$0, "null_float")) {
+            let input$0 = arg$0["null_float"];
+            let stack$0 = stack_add$0("null_float")(stack_empty$0);
+            let type$1 = "?float";
+            if (!(input$0 === null) && !(input$0 === undefined)) {
+              let decoded$0 = [new Int$0(0)];
+              let stack$1 = stack_add$0("<nullable>")(stack$0);
+              let type$2 = "float";
+              if (typeof input$0 === "number") {
+                decoded$0[0] = new Float$0(input$0);
+              } else {
+                yield (decode_error$0(input$0)(stack$1)(type$2));
+              }
+              props$0.set("null_float", new Array$0(decoded$0));
+            } else {
+              props$0.set("null_float", new Int$0(0));
+            }
+          } else {
+            props$0.set("null_float", new Int$0(0));
+          }
+          if (Object.hasOwn(arg$0, "null_int")) {
+            let input$0 = arg$0["null_int"];
+            let stack$0 = stack_add$0("null_int")(stack_empty$0);
+            let type$1 = "?int";
+            if (!(input$0 === null) && !(input$0 === undefined)) {
+              let decoded$0 = [new Int$0(0)];
+              let stack$1 = stack_add$0("<nullable>")(stack$0);
+              let type$2 = "int";
+              if (Number.isInteger(input$0)) {
+                decoded$0[0] = new Int$0(input$0);
+              } else {
+                yield (decode_error$0(input$0)(stack$1)(type$2));
+              }
+              props$0.set("null_int", new Array$0(decoded$0));
+            } else {
+              props$0.set("null_int", new Int$0(0));
+            }
+          } else {
+            props$0.set("null_int", new Int$0(0));
+          }
+          if (Object.hasOwn(arg$0, "null_string")) {
+            let input$0 = arg$0["null_string"];
+            let stack$0 = stack_add$0("null_string")(stack_empty$0);
+            let type$1 = "?string";
+            if (!(input$0 === null) && !(input$0 === undefined)) {
+              let decoded$0 = [new Int$0(0)];
+              let stack$1 = stack_add$0("<nullable>")(stack$0);
+              let type$2 = "string";
+              if (typeof input$0 === "string") {
+                decoded$0[0] = new String$0(input$0);
+              } else {
+                yield (decode_error$0(input$0)(stack$1)(type$2));
+              }
+              props$0.set("null_string", new Array$0(decoded$0));
+            } else {
+              props$0.set("null_string", new Int$0(0));
+            }
+          } else {
+            props$0.set("null_string", new Int$0(0));
+          }
+          if (Object.hasOwn(arg$0, "null_string_dict")) {
+            let input$0 = arg$0["null_string_dict"];
+            let stack$0 = stack_add$0("null_string_dict")(stack_empty$0);
+            let type$1 = "<?string>";
+            if (typeof input$0 === "object" && !(input$0 === null)) {
+              let decoded$0 = new Map();
+              for (let item$0 of Object.entries(input$0).values()) {
+                let stack$1 = stack_add$0(item$0[0])(stack$0);
+                let type$2 = "?string";
+                if (!(item$0[1] === null) && !(item$0[1] === undefined)) {
+                  let decoded$1 = [new Int$0(0)];
+                  let stack$2 = stack_add$0("<nullable>")(stack$1);
+                  let type$3 = "string";
+                  if (typeof item$0[1] === "string") {
+                    decoded$1[0] = new String$0(item$0[1]);
                   } else {
-                    missing_keys$1 = stack_add$0("b")(missing_keys$1);
+                    yield (decode_error$0(item$0[1])(stack$2)(type$3));
                   }
-                  if (!(stack_is_empty$0(missing_keys$1))) {
-                    key_error$0(missing_keys$1)(stack$0)(type$1);
+                  decoded$0.set(item$0[0], new Array$0(decoded$1));
+                } else {
+                  decoded$0.set(item$0[0], new Int$0(0));
+                }
+                props$0.set("null_string_dict", new Hashtbl$0(decoded$0));
+              }
+            } else {
+              yield (decode_error$0(input$0)(stack$0)(type$1));
+            }
+          } else {
+            missing_keys$0 = stack_add$0("null_string_dict")(missing_keys$0);
+          }
+          if (Object.hasOwn(arg$0, "record")) {
+            let input$0 = arg$0["record"];
+            let stack$0 = stack_add$0("record")(stack_empty$0);
+            let type$1 =
+              "{int_enum: @8 | @40, string_enum: @\"no\" | @\"yes\"}";
+            if (typeof input$0 === "object" && !(input$0 === null)) {
+              let decoded$0 = new Map();
+              let missing_keys$1 = stack_empty$0;
+              if (Object.hasOwn(input$0, "int_enum")) {
+                let input$1 = input$0["int_enum"];
+                let stack$1 = stack_add$0("int_enum")(stack$0);
+                let type$2 = "@8 | @40";
+                if (Number.isInteger(input$1)) {
+                  if (input$1 === 8) {
+                    decoded$0.set("int_enum", new Int$0(input$1));
+                  } else {
+                    if (input$1 === 40) {
+                      decoded$0.set("int_enum", new Int$0(input$1));
+                    } else {
+                      yield (decode_error$0(input$1)(stack$1)(type$2));
+                    }
                   }
                 } else {
-                  if (input$0["tag"] === 300) {
-                    decoded$0.set("tag", new Int$0(300));
+                  yield (decode_error$0(input$1)(stack$1)(type$2));
+                }
+              } else {
+                missing_keys$1 = stack_add$0("int_enum")(missing_keys$1);
+              }
+              if (Object.hasOwn(input$0, "string_enum")) {
+                let input$1 = input$0["string_enum"];
+                let stack$1 = stack_add$0("string_enum")(stack$0);
+                let type$2 = "@\"no\" | @\"yes\"";
+                if (typeof input$1 === "string") {
+                  if (input$1 === "no") {
+                    decoded$0.set("string_enum", new String$0(input$1));
+                  } else {
+                    if (input$1 === "yes") {
+                      decoded$0.set("string_enum", new String$0(input$1));
+                    } else {
+                      yield (decode_error$0(input$1)(stack$1)(type$2));
+                    }
+                  }
+                } else {
+                  yield (decode_error$0(input$1)(stack$1)(type$2));
+                }
+              } else {
+                missing_keys$1 = stack_add$0("string_enum")(missing_keys$1);
+              }
+              if (!(stack_is_empty$0(missing_keys$1))) {
+                yield (key_error$0(missing_keys$1)(stack$0)(type$1));
+              }
+              props$0.set("record", new Hashtbl$0(decoded$0));
+            } else {
+              yield (decode_error$0(input$0)(stack$0)(type$1));
+            }
+          } else {
+            missing_keys$0 = stack_add$0("record")(missing_keys$0);
+          }
+          if (Object.hasOwn(arg$0, "tagged_record_bool")) {
+            let input$0 = arg$0["tagged_record_bool"];
+            let stack$0 = stack_add$0("tagged_record_bool")(stack_empty$0);
+            let type$1 = "{@tag: false, a: string} | {@tag: true, b: int}";
+            if (typeof input$0 === "object" && !(input$0 === null)) {
+              if (Object.hasOwn(input$0, "tag")) {
+                if (typeof input$0["tag"] === "boolean") {
+                  let decoded$0 = new Map();
+                  if (!(input$0["tag"])) {
+                    decoded$0.set("tag", new Int$0(0));
                     let missing_keys$1 = stack_empty$0;
-                    if (Object.hasOwn(input$0, "c")) {
-                      let input$1 = input$0["c"];
-                      let stack$1 = stack_add$0("c")(stack$0);
-                      let type$2 = "float";
-                      if (typeof input$1 === "number") {
-                        decoded$0.set("c", new Float$0(input$1));
+                    if (Object.hasOwn(input$0, "a")) {
+                      let input$1 = input$0["a"];
+                      let stack$1 = stack_add$0("a")(stack$0);
+                      let type$2 = "string";
+                      if (typeof input$1 === "string") {
+                        decoded$0.set("a", new String$0(input$1));
                       } else {
-                        decode_error$0(input$1)(stack$1)(type$2);
+                        yield (decode_error$0(input$1)(stack$1)(type$2));
                       }
                     } else {
-                      missing_keys$1 = stack_add$0("c")(missing_keys$1);
+                      missing_keys$1 = stack_add$0("a")(missing_keys$1);
                     }
                     if (!(stack_is_empty$0(missing_keys$1))) {
-                      key_error$0(missing_keys$1)(stack$0)(type$1);
+                      yield (key_error$0(missing_keys$1)(stack$0)(type$1));
                     }
                   } else {
-                    decoded$0.set("tag", new Int$0(input$0["tag"]));
-                  }
-                }
-              }
-              props$0.set("tagged_record_open", new Hashtbl$0(decoded$0));
-            } else {
-              decode_error$0(input$0)(stack$0)(type$1);
-            }
-          } else {
-            decode_error$0(input$0)(stack$0)(type$1);
-          }
-        } else {
-          decode_error$0(input$0)(stack$0)(type$1);
-        }
-      } else {
-        missing_keys$0 = stack_add$0("tagged_record_open")(missing_keys$0);
-      }
-      if (Object.hasOwn(arg$0, "tagged_record_string")) {
-        let input$0 = arg$0["tagged_record_string"];
-        let stack$0 = stack_add$0("tagged_record_string")(stack_empty$0);
-        let type$1 =
-          "{@tag: \"a\", record_list: [{job: string, name: string}]} |\n\
-  {@tag: \"b\", open_enum: @0 | @1 | ...}";
-        if (typeof input$0 === "object" && !(input$0 === null)) {
-          if (Object.hasOwn(input$0, "tag")) {
-            if (typeof input$0["tag"] === "string") {
-              let decoded$0 = new Map();
-              if (input$0["tag"] === "a") {
-                decoded$0.set("tag", new String$0("a"));
-                let missing_keys$1 = stack_empty$0;
-                if (Object.hasOwn(input$0, "record_list")) {
-                  let input$1 = input$0["record_list"];
-                  let stack$1 = stack_add$0("record_list")(stack$0);
-                  let type$2 = "[{job: string, name: string}]";
-                  if (Array.isArray(input$1)) {
-                    let seq$0 = input$1.values();
-                    let index$0 = 0;
-                    let decoded$1 = [new Int$0(0), new Int$0(0)];
-                    let decode_dst$0 = decoded$1;
-                    for (let item$0 of seq$0) {
-                      let decode_dst_new$0 = [new Int$0(0), new Int$0(0)];
-                      let stack$2 = stack_add$0(String(index$0))(stack$1);
-                      let type$3 = "{job: string, name: string}";
-                      if (typeof item$0 === "object" && !(item$0 === null)) {
-                        let decoded$2 = new Map();
-                        let missing_keys$2 = stack_empty$0;
-                        if (Object.hasOwn(item$0, "job")) {
-                          let input$2 = item$0["job"];
-                          let stack$3 = stack_add$0("job")(stack$2);
-                          let type$4 = "string";
-                          if (typeof input$2 === "string") {
-                            decoded$2.set("job", new String$0(input$2));
-                          } else {
-                            decode_error$0(input$2)(stack$3)(type$4);
-                          }
+                    if (input$0["tag"]) {
+                      decoded$0.set("tag", new Int$0(1));
+                      let missing_keys$1 = stack_empty$0;
+                      if (Object.hasOwn(input$0, "b")) {
+                        let input$1 = input$0["b"];
+                        let stack$1 = stack_add$0("b")(stack$0);
+                        let type$2 = "int";
+                        if (Number.isInteger(input$1)) {
+                          decoded$0.set("b", new Int$0(input$1));
                         } else {
-                          missing_keys$2 = stack_add$0("job")(missing_keys$2);
+                          yield (decode_error$0(input$1)(stack$1)(type$2));
                         }
-                        if (Object.hasOwn(item$0, "name")) {
-                          let input$2 = item$0["name"];
-                          let stack$3 = stack_add$0("name")(stack$2);
-                          let type$4 = "string";
-                          if (typeof input$2 === "string") {
-                            decoded$2.set("name", new String$0(input$2));
-                          } else {
-                            decode_error$0(input$2)(stack$3)(type$4);
-                          }
-                        } else {
-                          missing_keys$2 = stack_add$0("name")(missing_keys$2);
-                        }
-                        if (!(stack_is_empty$0(missing_keys$2))) {
-                          key_error$0(missing_keys$2)(stack$2)(type$3);
-                        }
-                        decode_dst_new$0[0] = new Hashtbl$0(decoded$2);
                       } else {
-                        decode_error$0(item$0)(stack$2)(type$3);
+                        missing_keys$1 = stack_add$0("b")(missing_keys$1);
                       }
-                      decode_dst$0[1] = new Array$0(decode_dst_new$0);
-                      index$0++;
-                      decode_dst$0 = decode_dst_new$0;
+                      if (!(stack_is_empty$0(missing_keys$1))) {
+                        yield (key_error$0(missing_keys$1)(stack$0)(type$1));
+                      }
+                    } else {
+                      yield (decode_error$0(input$0)(stack$0)(type$1));
                     }
-                    decoded$0.set("record_list", decoded$1[1]);
-                  } else {
-                    decode_error$0(input$1)(stack$1)(type$2);
                   }
+                  props$0.set("tagged_record_bool", new Hashtbl$0(decoded$0));
                 } else {
-                  missing_keys$1 = stack_add$0("record_list")(missing_keys$1);
-                }
-                if (!(stack_is_empty$0(missing_keys$1))) {
-                  key_error$0(missing_keys$1)(stack$0)(type$1);
+                  yield (decode_error$0(input$0)(stack$0)(type$1));
                 }
               } else {
-                if (input$0["tag"] === "b") {
-                  decoded$0.set("tag", new String$0("b"));
-                  let missing_keys$1 = stack_empty$0;
-                  if (Object.hasOwn(input$0, "open_enum")) {
-                    let input$1 = input$0["open_enum"];
-                    let stack$1 = stack_add$0("open_enum")(stack$0);
-                    let type$2 = "@0 | @1 | ...";
-                    if (Number.isInteger(input$1)) {
-                      decoded$0.set("open_enum", new Int$0(input$1));
-                    } else {
-                      decode_error$0(input$1)(stack$1)(type$2);
-                    }
-                  } else {
-                    missing_keys$1 = stack_add$0("open_enum")(missing_keys$1);
-                  }
-                  if (!(stack_is_empty$0(missing_keys$1))) {
-                    key_error$0(missing_keys$1)(stack$0)(type$1);
-                  }
-                } else {
-                  decode_error$0(input$0)(stack$0)(type$1);
-                }
+                yield (decode_error$0(input$0)(stack$0)(type$1));
               }
-              props$0.set("tagged_record_string", new Hashtbl$0(decoded$0));
             } else {
-              decode_error$0(input$0)(stack$0)(type$1);
+              yield (decode_error$0(input$0)(stack$0)(type$1));
             }
           } else {
-            decode_error$0(input$0)(stack$0)(type$1);
+            missing_keys$0 = stack_add$0("tagged_record_bool")(missing_keys$0);
+          }
+          if (Object.hasOwn(arg$0, "tagged_record_int")) {
+            let input$0 = arg$0["tagged_record_int"];
+            let stack$0 = stack_add$0("tagged_record_int")(stack_empty$0);
+            let type$1 =
+              "{@tag: 0} | {@tag: 1, tuple: (float, string, false | true)}";
+            if (typeof input$0 === "object" && !(input$0 === null)) {
+              if (Object.hasOwn(input$0, "tag")) {
+                if (Number.isInteger(input$0["tag"])) {
+                  let decoded$0 = new Map();
+                  if (input$0["tag"] === 0) {
+                    decoded$0.set("tag", new Int$0(0));
+                    let missing_keys$1 = stack_empty$0;
+                    if (!(stack_is_empty$0(missing_keys$1))) {
+                      yield (key_error$0(missing_keys$1)(stack$0)(type$1));
+                    }
+                  } else {
+                    if (input$0["tag"] === 1) {
+                      decoded$0.set("tag", new Int$0(1));
+                      let missing_keys$1 = stack_empty$0;
+                      if (Object.hasOwn(input$0, "tuple")) {
+                        let input$1 = input$0["tuple"];
+                        let stack$1 = stack_add$0("tuple")(stack$0);
+                        let type$2 = "(float, string, false | true)";
+                        if (Array.isArray(input$1)) {
+                          let seq$0 = input$1.values();
+                          let decoded$1 =
+                            [new Int$0(0), new Int$0(0), new Int$0(0)];
+                          let next$0 = seq$0.next();
+                          if (next$0.done) {
+                            yield (decode_error$0(input$1)(stack$1)(type$2));
+                          } else {
+                            let stack$2 = stack_add$0(String(0))(stack$1);
+                            let type$3 = "float";
+                            if (typeof next$0.value === "number") {
+                              decoded$1[0] = new Float$0(next$0.value);
+                            } else {
+                              yield (
+                                decode_error$0(next$0.value)(stack$2)(type$3)
+                              );
+                            }
+                            let next$1 = seq$0.next();
+                            if (next$1.done) {
+                              yield (decode_error$0(input$1)(stack$1)(type$2));
+                            } else {
+                              let stack$3 = stack_add$0(String(1))(stack$1);
+                              let type$4 = "string";
+                              if (typeof next$1.value === "string") {
+                                decoded$1[1] = new String$0(next$1.value);
+                              } else {
+                                yield (
+                                  decode_error$0(next$1.value)(stack$3)(type$4)
+                                );
+                              }
+                              let next$2 = seq$0.next();
+                              if (next$2.done) {
+                                yield (
+                                  decode_error$0(input$1)(stack$1)(type$2)
+                                );
+                              } else {
+                                let stack$4 = stack_add$0(String(2))(stack$1);
+                                let type$5 = "false | true";
+                                if (typeof next$2.value === "boolean") {
+                                  if (next$2.value) {
+                                    decoded$1[2] = new Int$0(1);
+                                  } else {
+                                    decoded$1[2] = new Int$0(0);
+                                  }
+                                } else {
+                                  yield (
+                                    decode_error$0(next$2.value)(stack$4)(
+                                      type$5
+                                    )
+                                  );
+                                }
+                              }
+                            }
+                          }
+                          decoded$0.set("tuple", new Array$0(decoded$1));
+                        } else {
+                          yield (decode_error$0(input$1)(stack$1)(type$2));
+                        }
+                      } else {
+                        missing_keys$1 = stack_add$0("tuple")(missing_keys$1);
+                      }
+                      if (!(stack_is_empty$0(missing_keys$1))) {
+                        yield (key_error$0(missing_keys$1)(stack$0)(type$1));
+                      }
+                    } else {
+                      yield (decode_error$0(input$0)(stack$0)(type$1));
+                    }
+                  }
+                  props$0.set("tagged_record_int", new Hashtbl$0(decoded$0));
+                } else {
+                  yield (decode_error$0(input$0)(stack$0)(type$1));
+                }
+              } else {
+                yield (decode_error$0(input$0)(stack$0)(type$1));
+              }
+            } else {
+              yield (decode_error$0(input$0)(stack$0)(type$1));
+            }
+          } else {
+            missing_keys$0 = stack_add$0("tagged_record_int")(missing_keys$0);
+          }
+          if (Object.hasOwn(arg$0, "tagged_record_open")) {
+            let input$0 = arg$0["tagged_record_open"];
+            let stack$0 = stack_add$0("tagged_record_open")(stack_empty$0);
+            let type$1 =
+              "{@tag: 100, a: int} | {@tag: 200, b: string} | {@tag: 300, c: float} | ...";
+            if (typeof input$0 === "object" && !(input$0 === null)) {
+              if (Object.hasOwn(input$0, "tag")) {
+                if (Number.isInteger(input$0["tag"])) {
+                  let decoded$0 = new Map();
+                  if (input$0["tag"] === 100) {
+                    decoded$0.set("tag", new Int$0(100));
+                    let missing_keys$1 = stack_empty$0;
+                    if (Object.hasOwn(input$0, "a")) {
+                      let input$1 = input$0["a"];
+                      let stack$1 = stack_add$0("a")(stack$0);
+                      let type$2 = "int";
+                      if (Number.isInteger(input$1)) {
+                        decoded$0.set("a", new Int$0(input$1));
+                      } else {
+                        yield (decode_error$0(input$1)(stack$1)(type$2));
+                      }
+                    } else {
+                      missing_keys$1 = stack_add$0("a")(missing_keys$1);
+                    }
+                    if (!(stack_is_empty$0(missing_keys$1))) {
+                      yield (key_error$0(missing_keys$1)(stack$0)(type$1));
+                    }
+                  } else {
+                    if (input$0["tag"] === 200) {
+                      decoded$0.set("tag", new Int$0(200));
+                      let missing_keys$1 = stack_empty$0;
+                      if (Object.hasOwn(input$0, "b")) {
+                        let input$1 = input$0["b"];
+                        let stack$1 = stack_add$0("b")(stack$0);
+                        let type$2 = "string";
+                        if (typeof input$1 === "string") {
+                          decoded$0.set("b", new String$0(input$1));
+                        } else {
+                          yield (decode_error$0(input$1)(stack$1)(type$2));
+                        }
+                      } else {
+                        missing_keys$1 = stack_add$0("b")(missing_keys$1);
+                      }
+                      if (!(stack_is_empty$0(missing_keys$1))) {
+                        yield (key_error$0(missing_keys$1)(stack$0)(type$1));
+                      }
+                    } else {
+                      if (input$0["tag"] === 300) {
+                        decoded$0.set("tag", new Int$0(300));
+                        let missing_keys$1 = stack_empty$0;
+                        if (Object.hasOwn(input$0, "c")) {
+                          let input$1 = input$0["c"];
+                          let stack$1 = stack_add$0("c")(stack$0);
+                          let type$2 = "float";
+                          if (typeof input$1 === "number") {
+                            decoded$0.set("c", new Float$0(input$1));
+                          } else {
+                            yield (decode_error$0(input$1)(stack$1)(type$2));
+                          }
+                        } else {
+                          missing_keys$1 = stack_add$0("c")(missing_keys$1);
+                        }
+                        if (!(stack_is_empty$0(missing_keys$1))) {
+                          yield (key_error$0(missing_keys$1)(stack$0)(type$1));
+                        }
+                      } else {
+                        decoded$0.set("tag", new Int$0(input$0["tag"]));
+                      }
+                    }
+                  }
+                  props$0.set("tagged_record_open", new Hashtbl$0(decoded$0));
+                } else {
+                  yield (decode_error$0(input$0)(stack$0)(type$1));
+                }
+              } else {
+                yield (decode_error$0(input$0)(stack$0)(type$1));
+              }
+            } else {
+              yield (decode_error$0(input$0)(stack$0)(type$1));
+            }
+          } else {
+            missing_keys$0 = stack_add$0("tagged_record_open")(missing_keys$0);
+          }
+          if (Object.hasOwn(arg$0, "tagged_record_string")) {
+            let input$0 = arg$0["tagged_record_string"];
+            let stack$0 = stack_add$0("tagged_record_string")(stack_empty$0);
+            let type$1 =
+              "{@tag: \"a\", record_list: [{job: string, name: string}]} |\n\
+  {@tag: \"b\", open_enum: @0 | @1 | ...}";
+            if (typeof input$0 === "object" && !(input$0 === null)) {
+              if (Object.hasOwn(input$0, "tag")) {
+                if (typeof input$0["tag"] === "string") {
+                  let decoded$0 = new Map();
+                  if (input$0["tag"] === "a") {
+                    decoded$0.set("tag", new String$0("a"));
+                    let missing_keys$1 = stack_empty$0;
+                    if (Object.hasOwn(input$0, "record_list")) {
+                      let input$1 = input$0["record_list"];
+                      let stack$1 = stack_add$0("record_list")(stack$0);
+                      let type$2 = "[{job: string, name: string}]";
+                      if (Array.isArray(input$1)) {
+                        let seq$0 = input$1.values();
+                        let index$0 = 0;
+                        let decoded$1 = [new Int$0(0), new Int$0(0)];
+                        let decode_dst$0 = decoded$1;
+                        for (let item$0 of seq$0) {
+                          let decode_dst_new$0 = [new Int$0(0), new Int$0(0)];
+                          let stack$2 = stack_add$0(String(index$0))(stack$1);
+                          let type$3 = "{job: string, name: string}";
+                          if (typeof item$0 === "object" && !(item$0 === null)) {
+                            let decoded$2 = new Map();
+                            let missing_keys$2 = stack_empty$0;
+                            if (Object.hasOwn(item$0, "job")) {
+                              let input$2 = item$0["job"];
+                              let stack$3 = stack_add$0("job")(stack$2);
+                              let type$4 = "string";
+                              if (typeof input$2 === "string") {
+                                decoded$2.set("job", new String$0(input$2));
+                              } else {
+                                yield (
+                                  decode_error$0(input$2)(stack$3)(type$4)
+                                );
+                              }
+                            } else {
+                              missing_keys$2 =
+                                stack_add$0("job")(missing_keys$2);
+                            }
+                            if (Object.hasOwn(item$0, "name")) {
+                              let input$2 = item$0["name"];
+                              let stack$3 = stack_add$0("name")(stack$2);
+                              let type$4 = "string";
+                              if (typeof input$2 === "string") {
+                                decoded$2.set("name", new String$0(input$2));
+                              } else {
+                                yield (
+                                  decode_error$0(input$2)(stack$3)(type$4)
+                                );
+                              }
+                            } else {
+                              missing_keys$2 =
+                                stack_add$0("name")(missing_keys$2);
+                            }
+                            if (!(stack_is_empty$0(missing_keys$2))) {
+                              yield (
+                                key_error$0(missing_keys$2)(stack$2)(type$3)
+                              );
+                            }
+                            decode_dst_new$0[0] = new Hashtbl$0(decoded$2);
+                          } else {
+                            yield (decode_error$0(item$0)(stack$2)(type$3));
+                          }
+                          decode_dst$0[1] = new Array$0(decode_dst_new$0);
+                          index$0++;
+                          decode_dst$0 = decode_dst_new$0;
+                        }
+                        decoded$0.set("record_list", decoded$1[1]);
+                      } else {
+                        yield (decode_error$0(input$1)(stack$1)(type$2));
+                      }
+                    } else {
+                      missing_keys$1 =
+                        stack_add$0("record_list")(missing_keys$1);
+                    }
+                    if (!(stack_is_empty$0(missing_keys$1))) {
+                      yield (key_error$0(missing_keys$1)(stack$0)(type$1));
+                    }
+                  } else {
+                    if (input$0["tag"] === "b") {
+                      decoded$0.set("tag", new String$0("b"));
+                      let missing_keys$1 = stack_empty$0;
+                      if (Object.hasOwn(input$0, "open_enum")) {
+                        let input$1 = input$0["open_enum"];
+                        let stack$1 = stack_add$0("open_enum")(stack$0);
+                        let type$2 = "@0 | @1 | ...";
+                        if (Number.isInteger(input$1)) {
+                          decoded$0.set("open_enum", new Int$0(input$1));
+                        } else {
+                          yield (decode_error$0(input$1)(stack$1)(type$2));
+                        }
+                      } else {
+                        missing_keys$1 =
+                          stack_add$0("open_enum")(missing_keys$1);
+                      }
+                      if (!(stack_is_empty$0(missing_keys$1))) {
+                        yield (key_error$0(missing_keys$1)(stack$0)(type$1));
+                      }
+                    } else {
+                      yield (decode_error$0(input$0)(stack$0)(type$1));
+                    }
+                  }
+                  props$0.set("tagged_record_string", new Hashtbl$0(decoded$0));
+                } else {
+                  yield (decode_error$0(input$0)(stack$0)(type$1));
+                }
+              } else {
+                yield (decode_error$0(input$0)(stack$0)(type$1));
+              }
+            } else {
+              yield (decode_error$0(input$0)(stack$0)(type$1));
+            }
+          } else {
+            missing_keys$0 =
+              stack_add$0("tagged_record_string")(missing_keys$0);
+          }
+          if (Object.hasOwn(arg$0, "unicode_string")) {
+            let input$0 = arg$0["unicode_string"];
+            let stack$0 = stack_add$0("unicode_string")(stack_empty$0);
+            let type$1 = "string";
+            if (typeof input$0 === "string") {
+              props$0.set("unicode_string", new String$0(input$0));
+            } else {
+              yield (decode_error$0(input$0)(stack$0)(type$1));
+            }
+          } else {
+            missing_keys$0 = stack_add$0("unicode_string")(missing_keys$0);
+          }
+          if (Object.hasOwn(arg$0, "unknown")) {
+            let input$0 = arg$0["unknown"];
+            let stack$0 = stack_add$0("unknown")(stack_empty$0);
+            let type$1 = "_";
+            props$0.set("unknown", new Unknown$0(input$0));
+          } else {
+            props$0.set("unknown", new Int$0(0));
+          }
+          if (!(stack_is_empty$0(missing_keys$0))) {
+            yield (key_error$0(missing_keys$0)(stack_empty$0)(type$0));
           }
         } else {
-          decode_error$0(input$0)(stack$0)(type$1);
+          yield (decode_error$0(arg$0)(stack_empty$0)(type$0));
         }
-      } else {
-        missing_keys$0 = stack_add$0("tagged_record_string")(missing_keys$0);
-      }
-      if (Object.hasOwn(arg$0, "unicode_string")) {
-        let input$0 = arg$0["unicode_string"];
-        let stack$0 = stack_add$0("unicode_string")(stack_empty$0);
-        let type$1 = "string";
-        if (typeof input$0 === "string") {
-          props$0.set("unicode_string", new String$0(input$0));
-        } else {
-          decode_error$0(input$0)(stack$0)(type$1);
-        }
-      } else {
-        missing_keys$0 = stack_add$0("unicode_string")(missing_keys$0);
-      }
-      if (Object.hasOwn(arg$0, "unknown")) {
-        let input$0 = arg$0["unknown"];
-        let stack$0 = stack_add$0("unknown")(stack_empty$0);
-        let type$1 = "_";
-        props$0.set("unknown", new Unknown$0(input$0));
-      } else {
-        props$0.set("unknown", new Int$0(0));
-      }
-      if (!(stack_is_empty$0(missing_keys$0))) {
-        key_error$0(missing_keys$0)(stack_empty$0)(type$0);
-      }
-    } else {
-      decode_error$0(arg$0)(stack_empty$0)(type$0);
-    }
-    if (errors$0.contents.length === 0) {
+      })();
+    let errors$0 = Array.from(decode_or_errors$0).join("\n\n");
+    if (errors$0.length === 0) {
       let buf$0 = {contents: ""};
       buf$0.contents += "Formatters\n----------\n\n%i    ";
       buffer_add_escape$0(buf$0)(String(props$0.get("big_int").v));
@@ -1813,7 +1838,7 @@
       buf$0.contents += "\n";
       return (Promise.resolve(buf$0.contents));
     } else {
-      return (Promise.reject(new Error(errors$0.contents)));
+      return (Promise.reject(new Error(errors$0)));
     }
   };
 

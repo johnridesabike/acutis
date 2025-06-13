@@ -14,11 +14,11 @@
 type message
 (** An error message. *)
 
-type 'a compile_result := message Seq.t * 'a option
-(** The result of a compile computation. The first value is a sequence of
-    warnings and error messages. If the second value is [Some] then the
-    computation succeeded. If [None], then it failed for the reasons in the
-    messages. A successful computation may have warning messages. *)
+type 'a compile_result := message list * 'a option
+(** The result of a compile computation. The first value is a list of warnings
+    and error messages. If the second value is [Some] then the computation
+    succeeded. If [None], then it failed for the reasons in the messages. A
+    successful computation may have warning messages. *)
 
 type interface
 (** Type interfaces for templates. *)
@@ -107,7 +107,7 @@ module Of_decodable (D : DECODABLE) : sig
   (** A functor that builds functions to render templates and construct type
       interfaces from decodable data. *)
 
-  val apply : (D.t -> string) compiled -> D.t -> (string, string) result
+  val apply : (D.t -> string) compiled -> D.t -> (string, message list) result
   (** Apply data to a template. [Ok str] is the rendered output. [Error str] is
       an error message. *)
 
