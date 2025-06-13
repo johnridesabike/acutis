@@ -277,6 +277,8 @@ end = struct
     val stack_is_empty : (stack -> bool) exp
     val stack_add : (string -> stack -> stack) exp
     val escape : (Buffer.t -> string -> unit) exp
+    val decode_error : (External.t -> stack -> string -> string) exp
+    val key_error : (stack -> stack -> string -> string) exp
   end) =
   struct
     open Runtime
@@ -581,21 +583,17 @@ end = struct
       ty_str : string exp;
       stack : stack exp;
       yield : string exp -> unit stm;
-      decode_error : (External.t -> stack -> string -> string) exp;
-      key_error : (stack -> stack -> string -> string) exp;
     }
 
-    let push_error debug input =
-      debug.yield
-        (((debug.decode_error @@ input) @@ debug.stack) @@ debug.ty_str)
+    let yield_error state input =
+      state.yield (((decode_error @@ input) @@ state.stack) @@ state.ty_str)
 
-    let push_key_error debug missing_keys =
-      debug.yield
-        (((debug.key_error @@ missing_keys) @@ debug.stack) @@ debug.ty_str)
+    let push_key_error state missing_keys =
+      state.yield (((key_error @@ missing_keys) @@ state.stack) @@ state.ty_str)
 
-    let rec decode ~set ~debug input ty =
+    let rec decode ~set ~state input ty =
       let$ ty_str = ("type", string (Format.asprintf "%a" T.pp ty)) in
-      let debug = { debug with ty_str } in
+      let state = { state with ty_str } in
       match ty.contents with
       | T.Unknown _ -> set (UUnknown.inject input)
       | T.Enum_int ({ cases; _ }, Bool) ->
@@ -604,21 +602,21 @@ end = struct
               if_else b
                 ~then_:(fun () ->
                   if Set_int.mem 1 cases then set (UInt.inject (int 1))
-                  else push_error debug input)
+                  else yield_error state input)
                 ~else_:(fun () ->
                   if Set_int.mem 0 cases then set (UInt.inject (int 0))
-                  else push_error debug input))
-            ~error:(fun () -> push_error debug input)
+                  else yield_error state input))
+            ~error:(fun () -> yield_error state input)
       | T.String | T.Enum_string { row = `Open; _ } ->
           External.decode External.get_string input
             ~ok:(fun s -> set (UString.inject s))
-            ~error:(fun () -> push_error debug input)
+            ~error:(fun () -> yield_error state input)
       | T.Enum_string { row = `Closed; cases } ->
           External.decode External.get_string input
             ~ok:(fun s ->
               let rec aux seq =
                 match seq () with
-                | Seq.Nil -> push_error debug input
+                | Seq.Nil -> yield_error state input
                 | Seq.Cons (case, seq) ->
                     if_else
                       (s = string case)
@@ -626,17 +624,17 @@ end = struct
                       ~else_:(fun () -> aux seq)
               in
               aux (Set_string.to_seq cases))
-            ~error:(fun () -> push_error debug input)
+            ~error:(fun () -> yield_error state input)
       | T.Int | T.Enum_int ({ row = `Open; _ }, _) ->
           External.decode External.get_int input
             ~ok:(fun i -> set (UInt.inject i))
-            ~error:(fun () -> push_error debug input)
+            ~error:(fun () -> yield_error state input)
       | T.Enum_int ({ row = `Closed; cases }, _) ->
           External.decode External.get_int input
             ~ok:(fun s ->
               let rec aux seq =
                 match seq () with
-                | Seq.Nil -> push_error debug input
+                | Seq.Nil -> yield_error state input
                 | Seq.Cons (case, seq) ->
                     if_else
                       (s = int case)
@@ -644,22 +642,22 @@ end = struct
                       ~else_:(fun () -> aux seq)
               in
               aux (Set_int.to_seq cases))
-            ~error:(fun () -> push_error debug input)
+            ~error:(fun () -> yield_error state input)
       | T.Float ->
           External.decode External.get_float input
             ~ok:(fun f -> set (UFloat.inject f))
-            ~error:(fun () -> push_error debug input)
+            ~error:(fun () -> yield_error state input)
       | T.Nullable ty ->
           External.decode External.get_some input
             ~ok:(fun input ->
               let$ decoded = ("decoded", array [| nil_value |]) in
               let$ stack =
-                ("stack", (stack_add @@ string "<nullable>") @@ debug.stack)
+                ("stack", (stack_add @@ string "<nullable>") @@ state.stack)
               in
               let| () =
                 decode
                   ~set:(fun data -> decoded.%(int 0) <- data)
-                  ~debug:{ debug with stack } input ty
+                  ~state:{ state with stack } input ty
               in
               set (UArray.inject decoded))
             ~error:(fun () -> set nil_value)
@@ -675,12 +673,12 @@ end = struct
                       ("decode_dst_new", array [| nil_value; nil_value |])
                     in
                     let$ stack =
-                      ("stack", (stack_add @@ string_of_int !i) @@ debug.stack)
+                      ("stack", (stack_add @@ string_of_int !i) @@ state.stack)
                     in
                     let| () =
                       decode
                         ~set:(fun data -> decode_dst_new.%(int 0) <- data)
-                        ~debug:{ debug with stack } input ty
+                        ~state:{ state with stack } input ty
                     in
                     let| () =
                       !decode_dst.%(int 1) <- UArray.inject decode_dst_new
@@ -689,7 +687,7 @@ end = struct
                     decode_dst := decode_dst_new)
               in
               set (list_tl decoded))
-            ~error:(fun () -> push_error debug input)
+            ~error:(fun () -> yield_error state input)
       | T.Tuple tys ->
           External.decode External.get_seq input
             ~ok:(fun seq ->
@@ -699,45 +697,45 @@ end = struct
                 | [] -> unit
                 | ty :: tl ->
                     uncons seq
-                      ~nil:(fun () -> push_error debug input)
+                      ~nil:(fun () -> yield_error state input)
                       ~cons:(fun input seq ->
                         let$ stack =
                           ( "stack",
-                            (stack_add @@ string_of_int (int i)) @@ debug.stack
+                            (stack_add @@ string_of_int (int i)) @@ state.stack
                           )
                         in
-                        let debug = { debug with stack } in
+                        let state = { state with stack } in
                         let| () =
                           decode
                             ~set:(fun data -> decoded.%(int i) <- data)
-                            ~debug input ty
+                            ~state input ty
                         in
                         aux (succ i) seq tl)
               in
               let| () = aux 0 seq tys in
               set (UArray.inject decoded))
-            ~error:(fun () -> push_error debug input)
+            ~error:(fun () -> yield_error state input)
       | T.Record tys ->
           External.decode External.get_assoc input
             ~ok:(fun input ->
               let$ decoded = ("decoded", hashtbl_create ()) in
-              let| () = decode_record ~debug decoded input tys.contents in
+              let| () = decode_record ~state decoded input tys.contents in
               set (UHashtbl.inject decoded))
-            ~error:(fun () -> push_error debug input)
+            ~error:(fun () -> yield_error state input)
       | T.Dict (ty, _) ->
           External.decode External.get_assoc input
             ~ok:(fun input ->
               let$ decoded = ("decoded", hashtbl_create ()) in
               iter (External.assoc_to_seq input) (fun p ->
                   let k, input = unpair p in
-                  let$ stack = ("stack", (stack_add @@ k) @@ debug.stack) in
+                  let$ stack = ("stack", (stack_add @@ k) @@ state.stack) in
                   let| () =
                     decode
                       ~set:(fun data -> decoded.%{k} <- data)
-                      ~debug:{ debug with stack } input ty
+                      ~state:{ state with stack } input ty
                   in
                   set (UHashtbl.inject decoded)))
-            ~error:(fun () -> push_error debug input)
+            ~error:(fun () -> yield_error state input)
       | T.Union_int (key, { cases; row }, Bool) ->
           decode_union External.get_bool
             ~if_equal:(fun extern ty ~then_ ~else_ ->
@@ -751,7 +749,7 @@ end = struct
               if_else x
                 ~then_:(fun () -> f true_value)
                 ~else_:(fun () -> f false_value))
-            (Map_int.to_seq cases) (string key) row ~set ~debug input
+            (Map_int.to_seq cases) (string key) row ~set ~state input
       | T.Union_int (key, { cases; row }, Not_bool) ->
           decode_union External.get_int
             ~if_equal:(fun extern ty ~then_ ~else_ ->
@@ -760,7 +758,7 @@ end = struct
                 ~then_:(fun () -> then_ (UInt.inject ty))
                 ~else_)
             ~if_open:(fun x f -> f (UInt.inject x))
-            (Map_int.to_seq cases) (string key) row ~set ~debug input
+            (Map_int.to_seq cases) (string key) row ~set ~state input
       | T.Union_string (key, { cases; row }) ->
           decode_union External.get_string
             ~if_equal:(fun extern ty ~then_ ~else_ ->
@@ -769,7 +767,7 @@ end = struct
                 ~then_:(fun () -> then_ (UString.inject ty))
                 ~else_)
             ~if_open:(fun x f -> f (UString.inject x))
-            (Map_string.to_seq cases) (string key) row ~set ~debug input
+            (Map_string.to_seq cases) (string key) row ~set ~state input
 
     and decode_union : type ty extern.
         extern External.decoder ->
@@ -782,7 +780,7 @@ end = struct
         if_open:(extern exp -> (untyped exp -> unit stm) -> unit stm) ->
         (ty * T.record) Seq.t ->
         _ =
-     fun decoder ~if_equal ~if_open seq key row ~set ~debug input ->
+     fun decoder ~if_equal ~if_open seq key row ~set ~state input ->
       External.decode External.get_assoc input
         ~ok:(fun input' ->
           if_else
@@ -797,21 +795,21 @@ end = struct
                     | Seq.Nil -> (
                         match row with
                         | `Open -> if_open x (fun x -> decoded.%{key} <- x)
-                        | `Closed -> push_error debug input)
+                        | `Closed -> yield_error state input)
                     | Seq.Cons ((ty_x, tys), seq) ->
                         if_equal x ty_x
                           ~then_:(fun x ->
                             let| () = decoded.%{key} <- x in
-                            decode_record ~debug decoded input' tys.contents)
+                            decode_record ~state decoded input' tys.contents)
                           ~else_:(fun () -> aux seq)
                   in
                   let| () = aux seq in
                   set (UHashtbl.inject decoded))
-                ~error:(fun () -> push_error debug input))
-            ~else_:(fun () -> push_error debug input))
-        ~error:(fun () -> push_error debug input)
+                ~error:(fun () -> yield_error state input))
+            ~else_:(fun () -> yield_error state input))
+        ~error:(fun () -> yield_error state input)
 
-    and decode_record ~debug decoded input tys =
+    and decode_record ~state decoded input tys =
       let& missing_keys = ("missing_keys", stack_empty) in
       let| () =
         Map_string.to_seq tys
@@ -821,10 +819,10 @@ end = struct
                  (External.assoc_mem k' input)
                  ~then_:(fun () ->
                    let$ input = ("input", External.assoc_find k' input) in
-                   let$ stack = ("stack", (stack_add @@ k') @@ debug.stack) in
+                   let$ stack = ("stack", (stack_add @@ k') @@ state.stack) in
                    decode
                      ~set:(fun data -> decoded.%{k'} <- data)
-                     ~debug:{ debug with stack } input ty)
+                     ~state:{ state with stack } input ty)
                  ~else_:(fun () ->
                    match ty.contents with
                    | Nullable _ | Unknown _ -> decoded.%{k'} <- nil_value
@@ -833,7 +831,7 @@ end = struct
       in
       if_
         (not (stack_is_empty @@ !missing_keys))
-        ~then_:(fun () -> push_key_error debug !missing_keys)
+        ~then_:(fun () -> push_key_error state !missing_keys)
 
     let external_of_int_bool i = External.of_bool (int_to_bool i)
 
@@ -893,26 +891,26 @@ end = struct
           in
           set (External.of_seq_assoc seq)
       | T.Union_int (key, { cases; row }, Bool) ->
-          encode_union ~unbox:UInt.project ~to_extern:external_of_int_bool
+          encode_union ~project:UInt.project ~to_extern:external_of_int_bool
             (Map_int.to_seq cases |> Seq.map (fun (k, v) -> (int k, v)))
             row (string key) ~set props
       | T.Union_int (key, { cases; row }, Not_bool) ->
-          encode_union ~unbox:UInt.project ~to_extern:External.of_int
+          encode_union ~project:UInt.project ~to_extern:External.of_int
             (Map_int.to_seq cases |> Seq.map (fun (k, v) -> (int k, v)))
             row (string key) ~set props
       | T.Union_string (key, { cases; row }) ->
-          encode_union ~unbox:UString.project ~to_extern:External.of_string
+          encode_union ~project:UString.project ~to_extern:External.of_string
             (Map_string.to_seq cases |> Seq.map (fun (k, v) -> (string k, v)))
             row (string key) ~set props
 
     and encode_union : type a.
-        unbox:(untyped exp -> a exp) ->
+        project:(untyped exp -> a exp) ->
         to_extern:(a exp -> External.t exp) ->
         (a exp * T.record) Seq.t ->
         _ =
-     fun ~unbox ~to_extern cases row key ~set props ->
+     fun ~project ~to_extern cases row key ~set props ->
       let$ props = ("props", UHashtbl.project props) in
-      let$ tag = ("tag", props.%{key} |> unbox) in
+      let$ tag = ("tag", props.%{key} |> project) in
       match cases () with
       | Seq.Nil -> unit
       | Seq.Cons (hd, seq) ->
@@ -1023,6 +1021,44 @@ end = struct
             let| () = (* Use FIFO evaluation. *) stm (stack @@ f) in
             return (f @@ x)) )
     in
+    let$ error_aux =
+      ( "error_aux",
+        lambda4 (fun msg1 msg2 stack ty ->
+            let$ buf = ("buf", buffer_create ()) in
+            let| () =
+              buffer_add_string buf (string "Error while rendering \"")
+            in
+            let| () = buffer_add_string buf (string compiled.fname) in
+            let| () =
+              buffer_add_string buf
+                (string
+                   "\".\n\
+                    The data supplied does not match this template's interface.\n")
+            in
+            let| () = buffer_add_string buf (string "Path:\n<input>") in
+            let| () = stm (stack @@ (buffer_add_sep @@ buf) @@ string " -> ") in
+            let| () = buffer_add_string buf (string "\nExpected type:\n") in
+            let| () = buffer_add_string buf ty in
+            let| () = buffer_add_string buf msg1 in
+            let| () = buffer_add_string buf msg2 in
+            return (buffer_contents buf)) )
+    in
+    let$ decode_error =
+      ( "decode_error",
+        lambda (fun input ->
+            return
+              ((error_aux @@ string "\nReceived value:\n")
+              @@ External.to_string input)) )
+    in
+    let$ key_error =
+      ( "key_error",
+        lambda (fun keys ->
+            let$ buf = ("buf", buffer_create ()) in
+            let| () = stm (keys @@ (buffer_add_sep @@ buf) @@ string ", ") in
+            return
+              ((error_aux @@ string "\nInput is missing keys:\n")
+              @@ buffer_contents buf)) )
+    in
     let@ (module UInt : UNTYPED with type t = int) = untyped "int" in
     let@ (module UString : UNTYPED with type t = string) = untyped "string" in
     let@ (module UFloat : UNTYPED with type t = float) = untyped "float" in
@@ -1049,56 +1085,13 @@ end = struct
       let stack_is_empty = stack_is_empty
       let stack_add = stack_add
       let escape = escape
+      let decode_error = decode_error
+      let key_error = key_error
     end) in
     let@ components = make_comps_external Map_string.empty compiled.externals in
     let@ components = make_comps components compiled.components in
     export
       (async_lambda (fun input ->
-           let$ error_aux =
-             ( "error_aux",
-               lambda4 (fun msg1 msg2 stack ty ->
-                   let$ buf = ("buf", buffer_create ()) in
-                   let| () =
-                     buffer_add_string buf (string "Error while rendering \"")
-                   in
-                   let| () = buffer_add_string buf (string compiled.fname) in
-                   let| () =
-                     buffer_add_string buf
-                       (string
-                          "\".\n\
-                           The data supplied does not match this template's \
-                           interface.\n")
-                   in
-                   let| () = buffer_add_string buf (string "Path:\n<input>") in
-                   let| () =
-                     stm (stack @@ (buffer_add_sep @@ buf) @@ string " -> ")
-                   in
-                   let| () =
-                     buffer_add_string buf (string "\nExpected type:\n")
-                   in
-                   let| () = buffer_add_string buf ty in
-                   let| () = buffer_add_string buf msg1 in
-                   let| () = buffer_add_string buf msg2 in
-                   return (buffer_contents buf)) )
-           in
-           let$ decode_error =
-             ( "decode_error",
-               lambda (fun input ->
-                   return
-                     ((error_aux @@ string "\nReceived value:\n")
-                     @@ External.to_string input)) )
-           in
-           let$ key_error =
-             ( "key_error",
-               lambda (fun keys ->
-                   let$ buf = ("buf", buffer_create ()) in
-                   let| () =
-                     stm (keys @@ (buffer_add_sep @@ buf) @@ string ", ")
-                   in
-                   return
-                     ((error_aux @@ string "\nInput is missing keys:\n")
-                     @@ buffer_contents buf)) )
-           in
            let$ props = ("props", hashtbl_create ()) in
            let stack = stack_empty in
            let$ ty_str =
@@ -1108,13 +1101,11 @@ end = struct
            let$ decode_or_errors =
              ( "decode_or_errors",
                generator (fun yield ->
-                   let debug =
-                     { ty_str; stack; yield; decode_error; key_error }
-                   in
+                   let state = { ty_str; stack; yield } in
                    External.decode External.get_assoc input
                      ~ok:(fun input ->
-                       decode_record ~debug props input compiled.types)
-                     ~error:(fun () -> push_error debug input)) )
+                       decode_record ~state props input compiled.types)
+                     ~error:(fun () -> yield_error state input)) )
            in
            let$ errors = ("errors", errors_of_seq decode_or_errors) in
            if_else (errors_is_empty errors)

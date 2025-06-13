@@ -920,6 +920,41 @@ Print the runtime instructions
       (lambda
        (arg ->
         (return (lambda (arg -> (stm (arg @@ arg)) (return (arg @@ arg)))))))))))
+  (let$ error_aux =
+   (lambda
+    (arg ->
+     (return
+      (lambda
+       (arg ->
+        (return
+         (lambda
+          (arg ->
+           (return
+            (lambda
+             (arg ->
+              (let$ buf = (buffer_create ())))
+              (buffer_add_string buf "Error while rendering \"")
+              (buffer_add_string buf "template.acutis")
+              (buffer_add_string buf
+               "\".\nThe data supplied does not match this template's interface.\n")
+              (buffer_add_string buf "Path:\n<input>")
+              (stm (arg @@ ((buffer_add_sep @@ buf) @@ " -> ")))
+              (buffer_add_string buf "\nExpected type:\n")
+              (buffer_add_string buf arg)
+              (buffer_add_string buf arg)
+              (buffer_add_string buf arg)
+              (return (buffer_contents buf))))))))))))))
+  (let$ decode_error =
+   (lambda
+    (arg ->
+     (return ((error_aux @@ "\nReceived value:\n") @@ (External.to_string arg))))))
+  (let$ key_error =
+   (lambda
+    (arg ->
+     (let$ buf = (buffer_create ())))
+     (stm (arg @@ ((buffer_add_sep @@ buf) @@ ", ")))
+     (return
+      ((error_aux @@ "\nInput is missing keys:\n") @@ (buffer_contents buf))))))
   (let$ Component =
    (async_lambda
     (arg ->
@@ -949,42 +984,6 @@ Print the runtime instructions
   (export
    (async_lambda
     (arg ->
-     (let$ error_aux =
-      (lambda
-       (arg ->
-        (return
-         (lambda
-          (arg ->
-           (return
-            (lambda
-             (arg ->
-              (return
-               (lambda
-                (arg ->
-                 (let$ buf = (buffer_create ())))
-                 (buffer_add_string buf "Error while rendering \"")
-                 (buffer_add_string buf "template.acutis")
-                 (buffer_add_string buf
-                  "\".\nThe data supplied does not match this template's interface.\n")
-                 (buffer_add_string buf "Path:\n<input>")
-                 (stm (arg @@ ((buffer_add_sep @@ buf) @@ " -> ")))
-                 (buffer_add_string buf "\nExpected type:\n")
-                 (buffer_add_string buf arg)
-                 (buffer_add_string buf arg)
-                 (buffer_add_string buf arg)
-                 (return (buffer_contents buf))))))))))))))
-     (let$ decode_error =
-      (lambda
-       (arg ->
-        (return
-         ((error_aux @@ "\nReceived value:\n") @@ (External.to_string arg))))))
-     (let$ key_error =
-      (lambda
-       (arg ->
-        (let$ buf = (buffer_create ())))
-        (stm (arg @@ ((buffer_add_sep @@ buf) @@ ", ")))
-        (return
-         ((error_aux @@ "\nInput is missing keys:\n") @@ (buffer_contents buf))))))
      (let$ props = (hashtbl_create ())))
      (let$ type =
       "a = {b: {c: false | true}}\na_prop = string\nb_prop = string\nc_prop = string\nd = string\ndict = <int>\ne = string\ne_prop = string\nech_a = string\nech_b = false | true\nech_d = ?string\nech_e = ?string\nech_f = float\nech_i = int\nenums = (@\"a\" | ..., @1 | ..., false | true, false | true)\nf_prop = string\nlist = [?string]\nmap_d = <int>\nmap_l = [int]\nmatch_a = int\nmatch_b = string\nnumbers =\n  {\n    exp1: float,\n    exp2: float,\n    exp3: float,\n    frac: float,\n    int: int,\n    negfrac: float,\n    negint: int\n  }\nrecord = {\"!#%@\": string, a: string}\ntagged = {@tag: false} | {@tag: true, a: string}\ntrim_a = string\ntrim_b = string\ntrim_c = string\ntrim_d = string\ntrim_e = string\ntrim_f = string\ntrim_g = string\ntuple = (int, float, string)\nzero = {\"\": string}")

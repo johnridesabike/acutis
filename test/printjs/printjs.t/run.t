@@ -59,6 +59,43 @@
         }
       );
     };
+  let error_aux$0 =
+    (arg$0) => {
+      return (
+        (arg$1) => {
+          return (
+            (arg$2) => {
+              return (
+                (arg$3) => {
+                  let buf$0 = {contents: ""};
+                  buf$0.contents += "Error while rendering \"";
+                  buf$0.contents += "template.acutis";
+                  buf$0.contents +=
+                    "\".\n\
+  The data supplied does not match this template's interface.\n\
+  ";
+                  buf$0.contents += "Path:\n<input>";
+                  arg$2(buffer_add_sep$0(buf$0)(" -> "));
+                  buf$0.contents += "\nExpected type:\n";
+                  buf$0.contents += arg$3;
+                  buf$0.contents += arg$0;
+                  buf$0.contents += arg$1;
+                  return (buf$0.contents);
+                }
+              );
+            }
+          );
+        }
+      );
+    };
+  let decode_error$0 =
+    (arg$0) => { return (error_aux$0("\nReceived value:\n")(String(arg$0))); };
+  let key_error$0 =
+    (arg$0) => {
+      let buf$0 = {contents: ""};
+      arg$0(buffer_add_sep$0(buf$0)(", "));
+      return (error_aux$0("\nInput is missing keys:\n")(buf$0.contents));
+    };
   function Int$0(arg$0) { this.v = arg$0; }
   function String$0(arg$0) { this.v = arg$0; }
   function Float$0(arg$0) { this.v = arg$0; }
@@ -316,45 +353,6 @@
       return (buf$0.contents);
     };
   export default async (arg$0) => {
-    let error_aux$0 =
-      (arg$1) => {
-        return (
-          (arg$2) => {
-            return (
-              (arg$3) => {
-                return (
-                  (arg$4) => {
-                    let buf$0 = {contents: ""};
-                    buf$0.contents += "Error while rendering \"";
-                    buf$0.contents += "template.acutis";
-                    buf$0.contents +=
-                      "\".\n\
-  The data supplied does not match this template's interface.\n\
-  ";
-                    buf$0.contents += "Path:\n<input>";
-                    arg$3(buffer_add_sep$0(buf$0)(" -> "));
-                    buf$0.contents += "\nExpected type:\n";
-                    buf$0.contents += arg$4;
-                    buf$0.contents += arg$1;
-                    buf$0.contents += arg$2;
-                    return (buf$0.contents);
-                  }
-                );
-              }
-            );
-          }
-        );
-      };
-    let decode_error$0 =
-      (arg$1) => {
-        return (error_aux$0("\nReceived value:\n")(String(arg$1)));
-      };
-    let key_error$0 =
-      (arg$1) => {
-        let buf$0 = {contents: ""};
-        arg$1(buffer_add_sep$0(buf$0)(", "));
-        return (error_aux$0("\nInput is missing keys:\n")(buf$0.contents));
-      };
     let props$0 = new Map();
     let type$0 =
       "big_float = float\n\
