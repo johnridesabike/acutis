@@ -279,16 +279,18 @@ end = struct
     val escape : (Buffer.t -> string -> unit) exp
     val decode_error : (External.t -> stack -> string -> string) exp
     val key_error : (stack -> stack -> string -> string) exp
+    val zero : untyped exp
+    val one : untyped exp
   end) =
   struct
     open Runtime
 
-    let nil_value = UInt.inject (int 0)
-    let false_value = nil_value
-    let true_value = UInt.inject (int 1)
-    let get_nullable e = list_hd (UArray.project e)
+    let true_value = one
+    let false_value = zero
+    let nil_value = zero
     let is_nil = UInt.test
     let is_not_nil x = not (is_nil x)
+    let get_nullable e = list_hd (UArray.project e)
 
     type state = {
       components : (untyped hashtbl -> string promise) exp Map_string.t;
@@ -601,10 +603,10 @@ end = struct
             ~ok:(fun b ->
               if_else b
                 ~then_:(fun () ->
-                  if Set_int.mem 1 cases then set (UInt.inject (int 1))
+                  if Set_int.mem 1 cases then set true_value
                   else yield_error state input)
                 ~else_:(fun () ->
-                  if Set_int.mem 0 cases then set (UInt.inject (int 0))
+                  if Set_int.mem 0 cases then set false_value
                   else yield_error state input))
             ~error:(fun () -> yield_error state input)
       | T.String | T.Enum_string { row = `Open; _ } ->
@@ -1071,6 +1073,8 @@ end = struct
     let@ (module UUnknown : UNTYPED with type t = External.t) =
       untyped "unknown"
     in
+    let$ zero = ("zero", UInt.inject (int 0)) in
+    let$ one = ("one", UInt.inject (int 1)) in
     let open With_runtime (struct
       module UInt = UInt
       module UString = UString
@@ -1087,6 +1091,8 @@ end = struct
       let escape = escape
       let decode_error = decode_error
       let key_error = key_error
+      let zero = zero
+      let one = one
     end) in
     let@ components = make_comps_external Map_string.empty compiled.externals in
     let@ components = make_comps components compiled.components in

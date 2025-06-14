@@ -102,6 +102,8 @@
   function Array$0(arg$0) { this.v = arg$0; }
   function Hashtbl$0(arg$0) { this.v = arg$0; }
   function Unknown$0(arg$0) { this.v = arg$0; }
+  let zero$0 = new Int$0(0);
+  let one$0 = new Int$0(1);
   import {"stringify" as import$0} from "./jscomponents.mjs";
   let Stringify$0 =
     (arg$0) => {
@@ -413,9 +415,9 @@
             let type$1 = "false | true";
             if (typeof input$0 === "boolean") {
               if (input$0) {
-                props$0.set("bool1", new Int$0(1));
+                props$0.set("bool1", one$0);
               } else {
-                props$0.set("bool1", new Int$0(0));
+                props$0.set("bool1", zero$0);
               }
             } else {
               yield (decode_error$0(input$0)(stack$0)(type$1));
@@ -429,9 +431,9 @@
             let type$1 = "false | true";
             if (typeof input$0 === "boolean") {
               if (input$0) {
-                props$0.set("bool2", new Int$0(1));
+                props$0.set("bool2", one$0);
               } else {
-                props$0.set("bool2", new Int$0(0));
+                props$0.set("bool2", zero$0);
               }
             } else {
               yield (decode_error$0(input$0)(stack$0)(type$1));
@@ -458,10 +460,10 @@
             if (Array.isArray(input$0)) {
               let seq$0 = input$0.values();
               let index$0 = 0;
-              let decoded$0 = [new Int$0(0), new Int$0(0)];
+              let decoded$0 = [zero$0, zero$0];
               let decode_dst$0 = decoded$0;
               for (let item$0 of seq$0) {
-                let decode_dst_new$0 = [new Int$0(0), new Int$0(0)];
+                let decode_dst_new$0 = [zero$0, zero$0];
                 let stack$1 = stack_add$0(String(index$0))(stack$0);
                 let type$2 = "int";
                 if (Number.isInteger(item$0)) {
@@ -487,28 +489,28 @@
             if (Array.isArray(input$0)) {
               let seq$0 = input$0.values();
               let index$0 = 0;
-              let decoded$0 = [new Int$0(0), new Int$0(0)];
+              let decoded$0 = [zero$0, zero$0];
               let decode_dst$0 = decoded$0;
               for (let item$0 of seq$0) {
-                let decode_dst_new$0 = [new Int$0(0), new Int$0(0)];
+                let decode_dst_new$0 = [zero$0, zero$0];
                 let stack$1 = stack_add$0(String(index$0))(stack$0);
                 let type$2 = "[[int]]";
                 if (Array.isArray(item$0)) {
                   let seq$1 = item$0.values();
                   let index$1 = 0;
-                  let decoded$1 = [new Int$0(0), new Int$0(0)];
+                  let decoded$1 = [zero$0, zero$0];
                   let decode_dst$1 = decoded$1;
                   for (let item$1 of seq$1) {
-                    let decode_dst_new$1 = [new Int$0(0), new Int$0(0)];
+                    let decode_dst_new$1 = [zero$0, zero$0];
                     let stack$2 = stack_add$0(String(index$1))(stack$1);
                     let type$3 = "[int]";
                     if (Array.isArray(item$1)) {
                       let seq$2 = item$1.values();
                       let index$2 = 0;
-                      let decoded$2 = [new Int$0(0), new Int$0(0)];
+                      let decoded$2 = [zero$0, zero$0];
                       let decode_dst$2 = decoded$2;
                       for (let item$2 of seq$2) {
-                        let decode_dst_new$2 = [new Int$0(0), new Int$0(0)];
+                        let decode_dst_new$2 = [zero$0, zero$0];
                         let stack$3 = stack_add$0(String(index$2))(stack$2);
                         let type$4 = "int";
                         if (Number.isInteger(item$2)) {
@@ -550,36 +552,36 @@
             if (Array.isArray(input$0)) {
               let seq$0 = input$0.values();
               let index$0 = 0;
-              let decoded$0 = [new Int$0(0), new Int$0(0)];
+              let decoded$0 = [zero$0, zero$0];
               let decode_dst$0 = decoded$0;
               for (let item$0 of seq$0) {
-                let decode_dst_new$0 = [new Int$0(0), new Int$0(0)];
+                let decode_dst_new$0 = [zero$0, zero$0];
                 let stack$1 = stack_add$0(String(index$0))(stack$0);
                 let type$2 = "??false | true";
                 if (!(item$0 === null) && !(item$0 === undefined)) {
-                  let decoded$1 = [new Int$0(0)];
+                  let decoded$1 = [zero$0];
                   let stack$2 = stack_add$0("<nullable>")(stack$1);
                   let type$3 = "?false | true";
                   if (!(item$0 === null) && !(item$0 === undefined)) {
-                    let decoded$2 = [new Int$0(0)];
+                    let decoded$2 = [zero$0];
                     let stack$3 = stack_add$0("<nullable>")(stack$2);
                     let type$4 = "false | true";
                     if (typeof item$0 === "boolean") {
                       if (item$0) {
-                        decoded$2[0] = new Int$0(1);
+                        decoded$2[0] = one$0;
                       } else {
-                        decoded$2[0] = new Int$0(0);
+                        decoded$2[0] = zero$0;
                       }
                     } else {
                       yield (decode_error$0(item$0)(stack$3)(type$4));
                     }
                     decoded$1[0] = new Array$0(decoded$2);
                   } else {
-                    decoded$1[0] = new Int$0(0);
+                    decoded$1[0] = zero$0;
                   }
                   decode_dst_new$0[0] = new Array$0(decoded$1);
                 } else {
-                  decode_dst_new$0[0] = new Int$0(0);
+                  decode_dst_new$0[0] = zero$0;
                 }
                 decode_dst$0[1] = new Array$0(decode_dst_new$0);
                 index$0++;
@@ -598,31 +600,31 @@
             let stack$0 = stack_add$0("null_bool")(stack_empty$0);
             let type$1 = "?false | true";
             if (!(input$0 === null) && !(input$0 === undefined)) {
-              let decoded$0 = [new Int$0(0)];
+              let decoded$0 = [zero$0];
               let stack$1 = stack_add$0("<nullable>")(stack$0);
               let type$2 = "false | true";
               if (typeof input$0 === "boolean") {
                 if (input$0) {
-                  decoded$0[0] = new Int$0(1);
+                  decoded$0[0] = one$0;
                 } else {
-                  decoded$0[0] = new Int$0(0);
+                  decoded$0[0] = zero$0;
                 }
               } else {
                 yield (decode_error$0(input$0)(stack$1)(type$2));
               }
               props$0.set("null_bool", new Array$0(decoded$0));
             } else {
-              props$0.set("null_bool", new Int$0(0));
+              props$0.set("null_bool", zero$0);
             }
           } else {
-            props$0.set("null_bool", new Int$0(0));
+            props$0.set("null_bool", zero$0);
           }
           if (Object.hasOwn(arg$0, "null_float")) {
             let input$0 = arg$0["null_float"];
             let stack$0 = stack_add$0("null_float")(stack_empty$0);
             let type$1 = "?float";
             if (!(input$0 === null) && !(input$0 === undefined)) {
-              let decoded$0 = [new Int$0(0)];
+              let decoded$0 = [zero$0];
               let stack$1 = stack_add$0("<nullable>")(stack$0);
               let type$2 = "float";
               if (typeof input$0 === "number") {
@@ -632,17 +634,17 @@
               }
               props$0.set("null_float", new Array$0(decoded$0));
             } else {
-              props$0.set("null_float", new Int$0(0));
+              props$0.set("null_float", zero$0);
             }
           } else {
-            props$0.set("null_float", new Int$0(0));
+            props$0.set("null_float", zero$0);
           }
           if (Object.hasOwn(arg$0, "null_int")) {
             let input$0 = arg$0["null_int"];
             let stack$0 = stack_add$0("null_int")(stack_empty$0);
             let type$1 = "?int";
             if (!(input$0 === null) && !(input$0 === undefined)) {
-              let decoded$0 = [new Int$0(0)];
+              let decoded$0 = [zero$0];
               let stack$1 = stack_add$0("<nullable>")(stack$0);
               let type$2 = "int";
               if (Number.isInteger(input$0)) {
@@ -652,17 +654,17 @@
               }
               props$0.set("null_int", new Array$0(decoded$0));
             } else {
-              props$0.set("null_int", new Int$0(0));
+              props$0.set("null_int", zero$0);
             }
           } else {
-            props$0.set("null_int", new Int$0(0));
+            props$0.set("null_int", zero$0);
           }
           if (Object.hasOwn(arg$0, "null_string")) {
             let input$0 = arg$0["null_string"];
             let stack$0 = stack_add$0("null_string")(stack_empty$0);
             let type$1 = "?string";
             if (!(input$0 === null) && !(input$0 === undefined)) {
-              let decoded$0 = [new Int$0(0)];
+              let decoded$0 = [zero$0];
               let stack$1 = stack_add$0("<nullable>")(stack$0);
               let type$2 = "string";
               if (typeof input$0 === "string") {
@@ -672,10 +674,10 @@
               }
               props$0.set("null_string", new Array$0(decoded$0));
             } else {
-              props$0.set("null_string", new Int$0(0));
+              props$0.set("null_string", zero$0);
             }
           } else {
-            props$0.set("null_string", new Int$0(0));
+            props$0.set("null_string", zero$0);
           }
           if (Object.hasOwn(arg$0, "null_string_dict")) {
             let input$0 = arg$0["null_string_dict"];
@@ -687,7 +689,7 @@
                 let stack$1 = stack_add$0(item$0[0])(stack$0);
                 let type$2 = "?string";
                 if (!(item$0[1] === null) && !(item$0[1] === undefined)) {
-                  let decoded$1 = [new Int$0(0)];
+                  let decoded$1 = [zero$0];
                   let stack$2 = stack_add$0("<nullable>")(stack$1);
                   let type$3 = "string";
                   if (typeof item$0[1] === "string") {
@@ -697,7 +699,7 @@
                   }
                   decoded$0.set(item$0[0], new Array$0(decoded$1));
                 } else {
-                  decoded$0.set(item$0[0], new Int$0(0));
+                  decoded$0.set(item$0[0], zero$0);
                 }
                 props$0.set("null_string_dict", new Hashtbl$0(decoded$0));
               }
@@ -774,7 +776,7 @@
                 if (typeof input$0["tag"] === "boolean") {
                   let decoded$0 = new Map();
                   if (!(input$0["tag"])) {
-                    decoded$0.set("tag", new Int$0(0));
+                    decoded$0.set("tag", zero$0);
                     let missing_keys$1 = stack_empty$0;
                     if (Object.hasOwn(input$0, "a")) {
                       let input$1 = input$0["a"];
@@ -793,7 +795,7 @@
                     }
                   } else {
                     if (input$0["tag"]) {
-                      decoded$0.set("tag", new Int$0(1));
+                      decoded$0.set("tag", one$0);
                       let missing_keys$1 = stack_empty$0;
                       if (Object.hasOwn(input$0, "b")) {
                         let input$1 = input$0["b"];
@@ -852,8 +854,7 @@
                         let type$2 = "(float, string, false | true)";
                         if (Array.isArray(input$1)) {
                           let seq$0 = input$1.values();
-                          let decoded$1 =
-                            [new Int$0(0), new Int$0(0), new Int$0(0)];
+                          let decoded$1 = [zero$0, zero$0, zero$0];
                           let next$0 = seq$0.next();
                           if (next$0.done) {
                             yield (decode_error$0(input$1)(stack$1)(type$2));
@@ -890,9 +891,9 @@
                                 let type$5 = "false | true";
                                 if (typeof next$2.value === "boolean") {
                                   if (next$2.value) {
-                                    decoded$1[2] = new Int$0(1);
+                                    decoded$1[2] = one$0;
                                   } else {
-                                    decoded$1[2] = new Int$0(0);
+                                    decoded$1[2] = zero$0;
                                   }
                                 } else {
                                   yield (
@@ -1034,10 +1035,10 @@
                       if (Array.isArray(input$1)) {
                         let seq$0 = input$1.values();
                         let index$0 = 0;
-                        let decoded$1 = [new Int$0(0), new Int$0(0)];
+                        let decoded$1 = [zero$0, zero$0];
                         let decode_dst$0 = decoded$1;
                         for (let item$0 of seq$0) {
-                          let decode_dst_new$0 = [new Int$0(0), new Int$0(0)];
+                          let decode_dst_new$0 = [zero$0, zero$0];
                           let stack$2 = stack_add$0(String(index$0))(stack$1);
                           let type$3 = "{job: string, name: string}";
                           if (typeof item$0 === "object" && !(item$0 === null)) {
@@ -1153,7 +1154,7 @@
             let type$1 = "_";
             props$0.set("unknown", new Unknown$0(input$0));
           } else {
-            props$0.set("unknown", new Int$0(0));
+            props$0.set("unknown", zero$0);
           }
           if (!(stack_is_empty$0(missing_keys$0))) {
             yield (key_error$0(missing_keys$0)(stack_empty$0)(type$0));
@@ -1597,15 +1598,12 @@
                     [
                       new Int$0(1),
                       new Array$0(
-                        [
-                          new Int$0(2),
-                          new Array$0([new Int$0(3), new Int$0(0)]),
-                        ]
+                        [new Int$0(2), new Array$0([new Int$0(3), zero$0])]
                       ),
                     ]
                   ),
                 ],
-                ["optional", new Int$0(0)],
+                ["optional", zero$0],
               ]
             )
           );
@@ -1618,7 +1616,7 @@
   ----------------------------\n\
   \n\
   ";
-      let arg_match$8 = [new Int$0(1), new Int$0(0), new Int$0(3)];
+      let arg_match$8 = [new Int$0(1), zero$0, new Int$0(3)];
       let match_props$6 = new Map();
       let exit$8 = -1;
       let match_arg$15 = arg_match$8[0];

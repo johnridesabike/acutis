@@ -94,6 +94,8 @@
   function Array$0(arg$0) { this.v = arg$0; }
   function Hashtbl$0(arg$0) { this.v = arg$0; }
   function Unknown$0(arg$0) { this.v = arg$0; }
+  let zero$0 = new Int$0(0);
+  let one$0 = new Int$0(1);
   import {"externalFunction" as import$0} from "./jsfile.mjs";
   let ExternalFunction$0 =
     (arg$0) => {
@@ -228,6 +230,8 @@
   function Array$0(arg$0) { this.v = arg$0; }
   function Hashtbl$0(arg$0) { this.v = arg$0; }
   function Unknown$0(arg$0) { this.v = arg$0; }
+  let zero$0 = new Int$0(0);
+  let one$0 = new Int$0(1);
   let import$0 = require("./jsfile.cjs");
   let ExternalFunction$0 =
     (arg$0) => {

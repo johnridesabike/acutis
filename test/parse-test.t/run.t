@@ -955,6 +955,8 @@ Print the runtime instructions
      (stm (arg @@ ((buffer_add_sep @@ buf) @@ ", ")))
      (return
       ((error_aux @@ "\nInput is missing keys:\n") @@ (buffer_contents buf))))))
+  (let$ zero = (inj_int 0))
+  (let$ one = (inj_int 1))
   (let$ Component =
    (async_lambda
     (arg ->
@@ -1022,9 +1024,8 @@ Print the runtime instructions
                        (External.decode bool input
                         (ok
                          (decoded ->
-                          (if_else decoded
-                           (then (decoded.%{"c"} <- (inj_int 1)))
-                           (else (decoded.%{"c"} <- (inj_int 0))))))
+                          (if_else decoded (then (decoded.%{"c"} <- one))
+                           (else (decoded.%{"c"} <- zero)))))
                         (error
                          (yield (((decode_error @@ input) @@ stack) @@ type)))))
                       (else
@@ -1134,8 +1135,8 @@ Print the runtime instructions
              (External.decode bool input
               (ok
                (decoded ->
-                (if_else decoded (then (props.%{"ech_b"} <- (inj_int 1)))
-                 (else (props.%{"ech_b"} <- (inj_int 0))))))
+                (if_else decoded (then (props.%{"ech_b"} <- one))
+                 (else (props.%{"ech_b"} <- zero)))))
               (error (yield (((decode_error @@ input) @@ stack) @@ type)))))
             (else (missing_keys := ((stack_add @@ "ech_b") @@ !missing_keys))))
            (if_else (External.assoc_mem "ech_d" decoded)
@@ -1146,15 +1147,15 @@ Print the runtime instructions
              (External.decode some input
               (ok
                (decoded ->
-                (let$ decoded = [(inj_int 0)])
+                (let$ decoded = [zero])
                 (let$ stack = ((stack_add @@ "<nullable>") @@ stack))
                 (let$ type = "string")
                 (External.decode string decoded
                  (ok (decoded -> (decoded.%(0) <- (inj_string decoded))))
                  (error (yield (((decode_error @@ decoded) @@ stack) @@ type))))
                 (props.%{"ech_d"} <- (inj_array decoded))))
-              (error (props.%{"ech_d"} <- (inj_int 0)))))
-            (else (props.%{"ech_d"} <- (inj_int 0))))
+              (error (props.%{"ech_d"} <- zero))))
+            (else (props.%{"ech_d"} <- zero)))
            (if_else (External.assoc_mem "ech_e" decoded)
             (then
              (let$ input = (External.assoc_find "ech_e" decoded))
@@ -1163,15 +1164,15 @@ Print the runtime instructions
              (External.decode some input
               (ok
                (decoded ->
-                (let$ decoded = [(inj_int 0)])
+                (let$ decoded = [zero])
                 (let$ stack = ((stack_add @@ "<nullable>") @@ stack))
                 (let$ type = "string")
                 (External.decode string decoded
                  (ok (decoded -> (decoded.%(0) <- (inj_string decoded))))
                  (error (yield (((decode_error @@ decoded) @@ stack) @@ type))))
                 (props.%{"ech_e"} <- (inj_array decoded))))
-              (error (props.%{"ech_e"} <- (inj_int 0)))))
-            (else (props.%{"ech_e"} <- (inj_int 0))))
+              (error (props.%{"ech_e"} <- zero))))
+            (else (props.%{"ech_e"} <- zero)))
            (if_else (External.assoc_mem "ech_f" decoded)
             (then
              (let$ input = (External.assoc_find "ech_f" decoded))
@@ -1199,7 +1200,7 @@ Print the runtime instructions
              (External.decode seq input
               (ok
                (decoded ->
-                (let$ decoded = (array_make 4 (inj_int 0)))
+                (let$ decoded = (array_make 4 zero))
                 (uncons decoded
                  (nil (yield (((decode_error @@ input) @@ stack) @@ type)))
                  (cons
@@ -1234,9 +1235,8 @@ Print the runtime instructions
                             (External.decode bool hd
                              (ok
                               (decoded ->
-                               (if_else decoded
-                                (then (decoded.%(2) <- (inj_int 1)))
-                                (else (decoded.%(2) <- (inj_int 0))))))
+                               (if_else decoded (then (decoded.%(2) <- one))
+                                (else (decoded.%(2) <- zero)))))
                              (error
                               (yield (((decode_error @@ hd) @@ stack) @@ type))))
                             (uncons seq
@@ -1253,8 +1253,8 @@ Print the runtime instructions
                                  (ok
                                   (decoded ->
                                    (if_else decoded
-                                    (then (decoded.%(3) <- (inj_int 1)))
-                                    (else (decoded.%(3) <- (inj_int 0))))))
+                                    (then (decoded.%(3) <- one))
+                                    (else (decoded.%(3) <- zero)))))
                                  (error
                                   (yield
                                    (((decode_error @@ hd) @@ stack) @@ type))))
@@ -1280,18 +1280,18 @@ Print the runtime instructions
               (ok
                (decoded ->
                 (let& index = 0)
-                (let$ decoded = [(inj_int 0), (inj_int 0)])
+                (let$ decoded = [zero, zero])
                 (let& decode_dst = decoded)
                 (iter decoded
                  (arg ->
-                  (let$ decode_dst_new = [(inj_int 0), (inj_int 0)])
+                  (let$ decode_dst_new = [zero, zero])
                   (let$ stack =
                    ((stack_add @@ (string_of_int !index)) @@ stack))
                   (let$ type = "?string")
                   (External.decode some arg
                    (ok
                     (decoded ->
-                     (let$ decoded = [(inj_int 0)])
+                     (let$ decoded = [zero])
                      (let$ stack = ((stack_add @@ "<nullable>") @@ stack))
                      (let$ type = "string")
                      (External.decode string decoded
@@ -1299,7 +1299,7 @@ Print the runtime instructions
                       (error
                        (yield (((decode_error @@ decoded) @@ stack) @@ type))))
                      (decode_dst_new.%(0) <- (inj_array decoded))))
-                   (error (decode_dst_new.%(0) <- (inj_int 0))))
+                   (error (decode_dst_new.%(0) <- zero)))
                   (!decode_dst.%(1) <- (inj_array decode_dst_new))
                   (incr index)
                   (decode_dst := decode_dst_new)))
@@ -1335,11 +1335,11 @@ Print the runtime instructions
               (ok
                (decoded ->
                 (let& index = 0)
-                (let$ decoded = [(inj_int 0), (inj_int 0)])
+                (let$ decoded = [zero, zero])
                 (let& decode_dst = decoded)
                 (iter decoded
                  (arg ->
-                  (let$ decode_dst_new = [(inj_int 0), (inj_int 0)])
+                  (let$ decode_dst_new = [zero, zero])
                   (let$ stack =
                    ((stack_add @@ (string_of_int !index)) @@ stack))
                   (let$ type = "int")
@@ -1511,7 +1511,7 @@ Print the runtime instructions
                      (let$ decoded = (hashtbl_create ())))
                      (if_else (not decoded)
                       (then
-                       (decoded.%{"tag"} <- (inj_int 0))
+                       (decoded.%{"tag"} <- zero)
                        (let& missing_keys = stack_empty)
                        (unit)
                        (if_else (not (stack_is_empty @@ !missing_keys))
@@ -1522,7 +1522,7 @@ Print the runtime instructions
                       (else
                        (if_else decoded
                         (then
-                         (decoded.%{"tag"} <- (inj_int 1))
+                         (decoded.%{"tag"} <- one)
                          (let& missing_keys = stack_empty)
                          (if_else (External.assoc_mem "a" decoded)
                           (then
@@ -1622,7 +1622,7 @@ Print the runtime instructions
              (External.decode seq input
               (ok
                (decoded ->
-                (let$ decoded = (array_make 3 (inj_int 0)))
+                (let$ decoded = (array_make 3 zero))
                 (uncons decoded
                  (nil (yield (((decode_error @@ input) @@ stack) @@ type)))
                  (cons
@@ -2064,8 +2064,7 @@ Print the runtime instructions
        (let$ arg_match =
         [(inj_hashtbl
           (hashtbl
-           (("a",
-             (inj_array [(inj_int 1), (inj_array [(inj_int 2), (inj_int 0)])])),
+           (("a", (inj_array [(inj_int 1), (inj_array [(inj_int 2), zero])])),
             ("b", (inj_array [(inj_int 3), (inj_int 4)])),
             ("c", (inj_hashtbl (hashtbl (("k", (inj_int 5)))))))))])
        (let& exit = -1)

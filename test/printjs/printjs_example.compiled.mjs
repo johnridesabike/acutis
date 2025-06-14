@@ -90,6 +90,8 @@ function Float$0(arg$0) { this.v = arg$0; }
 function Array$0(arg$0) { this.v = arg$0; }
 function Hashtbl$0(arg$0) { this.v = arg$0; }
 function Unknown$0(arg$0) { this.v = arg$0; }
+let zero$0 = new Int$0(0);
+let one$0 = new Int$0(1);
 export default async (arg$0) => {
   let props$0 = new Map();
   let type$0 =
@@ -124,10 +126,10 @@ siteTitle = string";
           if (Array.isArray(input$0)) {
             let seq$0 = input$0.values();
             let index$0 = 0;
-            let decoded$0 = [new Int$0(0), new Int$0(0)];
+            let decoded$0 = [zero$0, zero$0];
             let decode_dst$0 = decoded$0;
             for (let item$0 of seq$0) {
-              let decode_dst_new$0 = [new Int$0(0), new Int$0(0)];
+              let decode_dst_new$0 = [zero$0, zero$0];
               let stack$1 = stack_add$0(String(index$0))(stack$0);
               let type$2 =
                 "{\n\
@@ -152,7 +154,7 @@ siteTitle = string";
                       let stack$3 = stack_add$0("name")(stack$2);
                       let type$4 = "?string";
                       if (!(input$2 === null) && !(input$2 === undefined)) {
-                        let decoded$3 = [new Int$0(0)];
+                        let decoded$3 = [zero$0];
                         let stack$4 = stack_add$0("<nullable>")(stack$3);
                         let type$5 = "string";
                         if (typeof input$2 === "string") {
@@ -162,10 +164,10 @@ siteTitle = string";
                         }
                         decoded$2.set("name", new Array$0(decoded$3));
                       } else {
-                        decoded$2.set("name", new Int$0(0));
+                        decoded$2.set("name", zero$0);
                       }
                     } else {
-                      decoded$2.set("name", new Int$0(0));
+                      decoded$2.set("name", zero$0);
                     }
                     if (!(stack_is_empty$0(missing_keys$2))) {
                       yield (key_error$0(missing_keys$2)(stack$2)(type$3));
@@ -206,7 +208,7 @@ siteTitle = string";
                   let stack$2 = stack_add$0("image")(stack$1);
                   let type$3 = "?{alt: string, src: string}";
                   if (!(input$1 === null) && !(input$1 === undefined)) {
-                    let decoded$2 = [new Int$0(0)];
+                    let decoded$2 = [zero$0];
                     let stack$3 = stack_add$0("<nullable>")(stack$2);
                     let type$4 = "{alt: string, src: string}";
                     if (typeof input$1 === "object" && !(input$1 === null)) {
@@ -245,10 +247,10 @@ siteTitle = string";
                     }
                     decoded$1.set("image", new Array$0(decoded$2));
                   } else {
-                    decoded$1.set("image", new Int$0(0));
+                    decoded$1.set("image", zero$0);
                   }
                 } else {
-                  decoded$1.set("image", new Int$0(0));
+                  decoded$1.set("image", zero$0);
                 }
                 if (Object.hasOwn(item$0, "title")) {
                   let input$1 = item$0["title"];
