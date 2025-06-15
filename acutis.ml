@@ -64,9 +64,9 @@ end = struct
 
     let return = Fun.id
     let stm = Fun.id
-    let ( let| ) a f = a; f ()
-    let ( let$ ) (_, x) f = f x
-    let ( let& ) (_, x) f = f (ref x)
+    let ignore a f = a; f ()
+    let let_ _ x f = f x
+    let ref _ x f = f (ref x)
     let lambda = Fun.id
     let if_else b ~then_ ~else_ = if b then then_ () else else_ ()
 
@@ -350,14 +350,16 @@ module Print_js = struct
 
   (** Common functions used amongst the different modules. *)
   module Js_shared = struct
+    let ( let@ ) = ( @@ )
     let stm x ppf state = F.fprintf ppf "@[<hv 2>%a;@]" x state
-    let ( let| ) a f ppf state = F.fprintf ppf "%a@ %a" a state (f ()) state
+    let ignore a f ppf state = F.fprintf ppf "%a@ %a" a state (f ()) state
 
-    let ( let$ ) (name, x) f ppf state =
+    let let_ name x f ppf state =
       let name = State.var name state in
-      (let| () =
-         stm (fun ppf state ->
-             F.fprintf ppf "let %a =@ @[<hv 2>%a@]" name state x state)
+      (let@ () =
+         ignore
+           (stm (fun ppf state ->
+                F.fprintf ppf "let %a =@ @[<hv 2>%a@]" name state x state))
        in
        f name)
         ppf state
@@ -418,7 +420,7 @@ module Print_js = struct
 
     type 'a ref = t
 
-    let ( let& ) = ( let$ )
+    let ref = let_
     let ( ! ) = Fun.id
     let incr a = stm (fun ppf -> F.fprintf ppf "%a++" a)
 
@@ -478,7 +480,7 @@ module Print_js = struct
 
     (** Sequences use the JS iterator protocol. **)
     let uncons seq ~nil ~cons =
-      let$ next = ("next", apply_n seq.!("next") []) in
+      let@ next = let_ "next" (apply_n seq.!("next") []) in
       if_else next.!("done") ~then_:nil ~else_:(fun () ->
           cons next.!("value") seq)
 
@@ -636,7 +638,7 @@ module Print_js = struct
       let get_seq =
         {
           test = (fun x -> (global "Array").!("isArray") @@ x);
-          convert = (fun x f -> ( let$ ) ("seq", array_values x) f);
+          convert = (fun x f -> let_ "seq" (array_values x) f);
         }
 
       let get_assoc =
@@ -680,12 +682,12 @@ module Print_js = struct
     module M = Instruct.Make_trans (Trans) (F)
     include M
 
-    let ( let| ) : type a. unit stm -> (unit -> a stm) -> a stm =
+    let ignore : type a. unit stm -> (unit -> a stm) -> a stm =
      fun a f ->
       match (a, f ()) with
       | Unit, x -> x
       | x, Unit -> x
-      | Unk a, Unk b -> Unk F.(( let| ) a (fun () -> b))
+      | Unk a, Unk b -> Unk F.(ignore a (fun () -> b))
 
     let unit = Unit
 
@@ -702,12 +704,11 @@ module Print_js = struct
                ~then_:(fun () -> then_)
                ~else_:(fun () -> else_))
 
-    let ( let$ ) (name, x) f =
+    let let_ name x f =
       if x.identity then f x
       else
         fwds
-          (F.( let$ ) (name, x.from) (fun x ->
-               bwds (f { from = x; identity = true })))
+          (F.let_ name x.from (fun x -> bwds (f { from = x; identity = true })))
 
     let lambda f =
       fwde (F.lambda (fun x -> bwds (f { from = x; identity = true })))
@@ -742,10 +743,11 @@ module Print_js = struct
 
     let import { module_path; function_path } f ppf state =
       let import = State.var "import" state in
-      (let| () =
-         stm (fun ppf state ->
-             F.fprintf ppf "import {%a as %a} from %a" pp_string function_path
-               import state pp_string module_path)
+      (let@ () =
+         ignore
+           (stm (fun ppf state ->
+                F.fprintf ppf "import {%a as %a} from %a" pp_string
+                  function_path import state pp_string module_path))
        in
        f import)
         ppf state
@@ -757,7 +759,7 @@ module Print_js = struct
     open Js_shared
 
     let import { module_path; function_path } f =
-      let$ import = ("import", global "require" @@ string module_path) in
+      let@ import = let_ "import" (global "require" @@ string module_path) in
       f import.%(string function_path)
 
     let export x = (global "module").!("exports") <- x

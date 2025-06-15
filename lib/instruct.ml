@@ -49,15 +49,14 @@ module type SEM = sig
   type 'a ref
   (** A mutable reference variable. This is not compatible with expressions. *)
 
-  val ( let| ) : unit stm -> (unit -> 'a stm) -> 'a stm
+  val ignore : unit stm -> (unit -> 'a stm) -> 'a stm
   (** Evaluate a unit statement. *)
 
-  val ( let$ ) : string * 'a exp -> ('a exp -> 'b stm) -> 'b stm
-  (** Define a new immutable binding. The string is used for pretty-printing. *)
+  val let_ : string -> 'a exp -> ('a exp -> 'b stm) -> 'b stm
+  (** Define an immutable binding. The string is used for pretty-printing. *)
 
-  val ( let& ) : string * 'a exp -> ('a ref -> 'b stm) -> 'b stm
-  (** Define a new reference variable. The string is used for pretty-printing.
-  *)
+  val ref : string -> 'a exp -> ('a ref -> 'b stm) -> 'b stm
+  (** Define a reference variable. The string is used for pretty-printing. *)
 
   val ( ! ) : 'a ref -> 'a exp
   val ( := ) : 'a ref -> 'a exp -> unit stm
@@ -249,6 +248,7 @@ end = struct
   let int_to_bool i = not (i = int 0)
   let if_ x ~then_ = if_else x ~then_ ~else_:(fun () -> unit)
   let ( let@ ) = Stdlib.( @@ )
+  let ( let| ) = ignore
 
   let stm_join =
     let rec aux s1 seq =
@@ -304,11 +304,11 @@ end = struct
     }
 
     let state_make components ~props f =
-      let$ buf = ("buf", buffer_create ()) in
+      let@ buf = let_ "buf" (buffer_create ()) in
       f { components; buf; props; scope = Map_string.empty }
 
     let state_create_buffer state f =
-      let$ buf = ("buf", buffer_create ()) in
+      let@ buf = let_ "buf" (buffer_create ()) in
       f { state with buf }
 
     let props_add_scope hashtbl bindings state =
@@ -351,7 +351,7 @@ end = struct
           fmt state esc e default_fmt
       | (f, e) :: tl ->
           let@ e = echo state esc e in
-          let$ nullable = ("nullable", e) in
+          let@ nullable = let_ "nullable" e in
           if_else (is_nil nullable)
             ~then_:(fun () -> echoes state esc default default_fmt tl)
             ~else_:(fun () -> fmt state esc (get_nullable nullable) f)
@@ -383,14 +383,14 @@ end = struct
     let arg_indexed arg index ~optional:_ i f =
       match i with 0 -> f arg | _ -> f index
 
-    let arg_int arg ~optional:_ i f = ( let$ ) ("match_arg", arg.%(int i)) f
+    let arg_int arg ~optional:_ i f = let_ "match_arg" arg.%(int i) f
 
     let arg_str arg ~optional key f =
       if optional then
         if_
           (hashtbl_mem arg (string key))
-          ~then_:(fun () -> ( let$ ) ("match_arg", arg.%{string key}) f)
-      else ( let$ ) ("match_arg", arg.%{string key}) f
+          ~then_:(fun () -> let_ "match_arg" arg.%{string key} f)
+      else let_ "match_arg" arg.%{string key} f
 
     let rec match_tree :
         'leaf 'key.
@@ -490,7 +490,7 @@ end = struct
 
     let make_match_props exits f =
       if Matching.Exits.binding_exists exits then
-        ( let$ ) ("match_props", hashtbl_create ()) f
+        let_ "match_props" (hashtbl_create ()) f
       else f dummy_props
 
     let rec node state = function
@@ -499,11 +499,11 @@ end = struct
           echoes state esc default fmt echs
       | Compile.Match (blocks, data, { tree; exits }) ->
           let@ blocks = construct_blocks state blocks in
-          let$ arg_match =
-            ("arg_match", construct_data_array blocks state data)
+          let@ arg_match =
+            let_ "arg_match" (construct_data_array blocks state data)
           in
           let@ new_props = make_match_props exits in
-          let& exit = ("exit", unset_exit) in
+          let@ exit = ref "exit" unset_exit in
           let| () =
             match_tree ~exit
               ~leafstm:(match_leaf exit new_props)
@@ -512,13 +512,13 @@ end = struct
           make_exits exit exits state new_props
       | Compile.Map_list (blocks, data, { tree; exits }) ->
           let@ blocks = construct_blocks state blocks in
-          let& index = ("index", int 0) in
-          let& cell = ("cell", construct_data blocks state data) in
+          let@ index = ref "index" (int 0) in
+          let@ cell = ref "cell" (construct_data blocks state data) in
           while_ is_not_nil cell (fun () ->
               let@ new_props = make_match_props exits in
-              let$ list = ("list", UArray.project !cell) in
-              let$ head = ("head", list_hd list) in
-              let& exit = ("exit", unset_exit) in
+              let@ list = let_ "list" (UArray.project !cell) in
+              let@ head = let_ "head" (list_hd list) in
+              let@ exit = ref "exit" unset_exit in
               let| () =
                 match_tree ~exit
                   ~leafstm:(match_leaf exit new_props)
@@ -530,13 +530,13 @@ end = struct
               cell := list_tl list)
       | Compile.Map_dict (blocks, data, { tree; exits }) ->
           let@ blocks = construct_blocks state blocks in
-          let$ match_arg = ("match_arg", construct_data blocks state data) in
+          let@ arg = let_ "match_arg" (construct_data blocks state data) in
           iter
-            (hashtbl_to_seq (UHashtbl.project match_arg))
+            (hashtbl_to_seq (UHashtbl.project arg))
             (fun p ->
               let k, v = unpair p in
               let@ new_props = make_match_props exits in
-              let& exit = ("exit", unset_exit) in
+              let@ exit = ref "exit" unset_exit in
               let| () =
                 match_tree ~exit
                   ~leafstm:(match_leaf exit new_props)
@@ -594,7 +594,7 @@ end = struct
       state.yield (((key_error @@ missing_keys) @@ state.stack) @@ state.ty_str)
 
     let rec decode ~set ~state input ty =
-      let$ ty_str = ("type", string (Format.asprintf "%a" T.pp ty)) in
+      let@ ty_str = let_ "type" (string (Format.asprintf "%a" T.pp ty)) in
       let state = { state with ty_str } in
       match ty.contents with
       | T.Unknown _ -> set (UUnknown.inject input)
@@ -652,9 +652,9 @@ end = struct
       | T.Nullable ty ->
           External.decode External.get_some input
             ~ok:(fun input ->
-              let$ decoded = ("decoded", array [| nil_value |]) in
-              let$ stack =
-                ("stack", (stack_add @@ string "<nullable>") @@ state.stack)
+              let@ decoded = let_ "decoded" (array [| nil_value |]) in
+              let@ stack =
+                let_ "stack" ((stack_add @@ string "<nullable>") @@ state.stack)
               in
               let| () =
                 decode
@@ -666,16 +666,19 @@ end = struct
       | T.List ty ->
           External.decode External.get_seq input
             ~ok:(fun seq ->
-              let& i = ("index", int 0) in
-              let$ decoded = ("decoded", array [| nil_value; nil_value |]) in
-              let& decode_dst = ("decode_dst", decoded) in
+              let@ i = ref "index" (int 0) in
+              let@ decoded =
+                let_ "decoded" (array [| nil_value; nil_value |])
+              in
+              let@ decode_dst = ref "decode_dst" decoded in
               let| () =
                 iter seq (fun input ->
-                    let$ decode_dst_new =
-                      ("decode_dst_new", array [| nil_value; nil_value |])
+                    let@ decode_dst_new =
+                      let_ "decode_dst_new" (array [| nil_value; nil_value |])
                     in
-                    let$ stack =
-                      ("stack", (stack_add @@ string_of_int !i) @@ state.stack)
+                    let@ stack =
+                      let_ "stack"
+                        ((stack_add @@ string_of_int !i) @@ state.stack)
                     in
                     let| () =
                       decode
@@ -694,23 +697,21 @@ end = struct
           External.decode External.get_seq input
             ~ok:(fun seq ->
               let length = List.length tys in
-              let$ decoded = ("decoded", array_make length nil_value) in
+              let@ decoded = let_ "decoded" (array_make length nil_value) in
               let rec aux i seq = function
                 | [] -> unit
                 | ty :: tl ->
                     uncons seq
                       ~nil:(fun () -> yield_error state input)
                       ~cons:(fun input seq ->
-                        let$ stack =
-                          ( "stack",
-                            (stack_add @@ string_of_int (int i)) @@ state.stack
-                          )
+                        let@ stack =
+                          let_ "stack"
+                            ((stack_add @@ string_of_int (int i)) @@ state.stack)
                         in
-                        let state = { state with stack } in
                         let| () =
                           decode
                             ~set:(fun data -> decoded.%(int i) <- data)
-                            ~state input ty
+                            ~state:{ state with stack } input ty
                         in
                         aux (succ i) seq tl)
               in
@@ -720,17 +721,17 @@ end = struct
       | T.Record tys ->
           External.decode External.get_assoc input
             ~ok:(fun input ->
-              let$ decoded = ("decoded", hashtbl_create ()) in
+              let@ decoded = let_ "decoded" (hashtbl_create ()) in
               let| () = decode_record ~state decoded input tys.contents in
               set (UHashtbl.inject decoded))
             ~error:(fun () -> yield_error state input)
       | T.Dict (ty, _) ->
           External.decode External.get_assoc input
             ~ok:(fun input ->
-              let$ decoded = ("decoded", hashtbl_create ()) in
+              let@ decoded = let_ "decoded" (hashtbl_create ()) in
               iter (External.assoc_to_seq input) (fun p ->
                   let k, input = unpair p in
-                  let$ stack = ("stack", (stack_add @@ k) @@ state.stack) in
+                  let@ stack = let_ "stack" ((stack_add @@ k) @@ state.stack) in
                   let| () =
                     decode
                       ~set:(fun data -> decoded.%{k} <- data)
@@ -791,7 +792,7 @@ end = struct
               External.decode decoder
                 (External.assoc_find key input')
                 ~ok:(fun x ->
-                  let$ decoded = ("decoded", hashtbl_create ()) in
+                  let@ decoded = let_ "decoded" (hashtbl_create ()) in
                   let rec aux seq =
                     match seq () with
                     | Seq.Nil -> (
@@ -812,7 +813,7 @@ end = struct
         ~error:(fun () -> yield_error state input)
 
     and decode_record ~state decoded input tys =
-      let& missing_keys = ("missing_keys", stack_empty) in
+      let@ missing_keys = ref "missing_keys" stack_empty in
       let| () =
         Map_string.to_seq tys
         |> Seq.map (fun (k, ty) ->
@@ -820,8 +821,10 @@ end = struct
                if_else
                  (External.assoc_mem k' input)
                  ~then_:(fun () ->
-                   let$ input = ("input", External.assoc_find k' input) in
-                   let$ stack = ("stack", (stack_add @@ k') @@ state.stack) in
+                   let@ input = let_ "input" (External.assoc_find k' input) in
+                   let@ stack =
+                     let_ "stack" ((stack_add @@ k') @@ state.stack)
+                   in
                    decode
                      ~set:(fun data -> decoded.%{k'} <- data)
                      ~state:{ state with stack } input ty)
@@ -852,44 +855,44 @@ end = struct
           if_else (is_nil props)
             ~then_:(fun () -> set External.null)
             ~else_:(fun () ->
-              let$ props = ("props", get_nullable props) in
+              let@ props = let_ "props" (get_nullable props) in
               encode ~set:(fun x -> set (External.some x)) props ty)
       | T.List ty ->
-          let$ seq =
-            ( "seq",
-              generator (fun yield ->
-                  let& cell = ("cell", props) in
-                  while_ is_not_nil cell (fun () ->
-                      let$ cell' = ("cell", UArray.project !cell) in
-                      let$ props = ("props", list_hd cell') in
-                      let| () = cell := list_tl cell' in
-                      encode ~set:yield props ty)) )
+          let@ seq =
+            let_ "seq"
+              (generator (fun yield ->
+                   let@ cell = ref "cell" props in
+                   while_ is_not_nil cell (fun () ->
+                       let@ cell' = let_ "cell" (UArray.project !cell) in
+                       let@ props = let_ "props" (list_hd cell') in
+                       let| () = cell := list_tl cell' in
+                       encode ~set:yield props ty)))
           in
           set (External.of_seq seq)
       | T.Tuple tys ->
-          let$ props = ("props", UArray.project props) in
-          let$ seq =
-            ( "seq",
-              generator (fun yield ->
-                  List.to_seq tys
-                  |> Seq.mapi (fun i ty -> encode ~set:yield props.%(int i) ty)
-                  |> stm_join) )
+          let@ props = let_ "props" (UArray.project props) in
+          let@ seq =
+            let_ "seq"
+              (generator (fun yield ->
+                   List.to_seq tys
+                   |> Seq.mapi (fun i ty -> encode ~set:yield props.%(int i) ty)
+                   |> stm_join))
           in
           set (External.of_seq seq)
       | T.Record tys ->
-          let$ seq =
-            ("seq", encode_record (UHashtbl.project props) tys.contents)
+          let@ seq =
+            let_ "seq" (encode_record (UHashtbl.project props) tys.contents)
           in
           set (External.of_seq_assoc seq)
       | T.Dict (ty, _) ->
-          let$ seq =
-            ( "seq",
-              generator (fun yield ->
-                  iter
-                    (hashtbl_to_seq (UHashtbl.project props))
-                    (fun p ->
-                      let k, props = unpair p in
-                      encode ~set:(fun v -> yield (pair (k, v))) props ty)) )
+          let@ seq =
+            let_ "seq"
+              (generator (fun yield ->
+                   iter
+                     (hashtbl_to_seq (UHashtbl.project props))
+                     (fun p ->
+                       let k, props = unpair p in
+                       encode ~set:(fun v -> yield (pair (k, v))) props ty)))
           in
           set (External.of_seq_assoc seq)
       | T.Union_int (key, { cases; row }, Bool) ->
@@ -911,18 +914,17 @@ end = struct
         (a exp * T.record) Seq.t ->
         _ =
      fun ~project ~to_extern cases row key ~set props ->
-      let$ props = ("props", UHashtbl.project props) in
-      let$ tag = ("tag", props.%{key} |> project) in
+      let@ props = let_ "props" (UHashtbl.project props) in
+      let@ tag = let_ "tag" (props.%{key} |> project) in
       match cases () with
       | Seq.Nil -> unit
       | Seq.Cons (hd, seq) ->
           let rec aux (tag', tys) seq =
             if_else (tag = tag')
               ~then_:(fun () ->
-                let$ seq =
-                  ( "seq",
-                    encode_record ~tag:(key, to_extern tag) props tys.contents
-                  )
+                let@ seq =
+                  let_ "seq"
+                    (encode_record ~tag:(key, to_extern tag) props tys.contents)
                 in
                 set (External.of_seq_assoc seq))
               ~else_:(fun () ->
@@ -933,8 +935,8 @@ end = struct
                       | `Closed -> None
                       | `Open -> Some (key, to_extern tag)
                     in
-                    let$ seq =
-                      ("seq", encode_record ?tag props Map_string.empty)
+                    let@ seq =
+                      let_ "seq" (encode_record ?tag props Map_string.empty)
                     in
                     set (External.of_seq_assoc seq)
                 | Seq.Cons (hd, seq) -> aux hd seq)
@@ -954,11 +956,11 @@ end = struct
       match components_input with
       | (k, tys, v) :: tl ->
           import v (fun import ->
-              let$ comp =
-                ( k,
-                  lambda (fun props ->
-                      let$ seq = ("seq", encode_record props tys) in
-                      return (import @@ External.of_seq_assoc seq)) )
+              let@ comp =
+                let_ k
+                  (lambda (fun props ->
+                       let@ seq = let_ "seq" (encode_record props tys) in
+                       return (import @@ External.of_seq_assoc seq)))
               in
               make_comps_external (Map_string.add k comp components) tl f)
       | [] -> f components
@@ -966,12 +968,12 @@ end = struct
     let rec make_comps components components_input f =
       match components_input with
       | (k, v) :: tl ->
-          let$ comp =
-            ( k,
-              async_lambda (fun props ->
-                  let@ state = state_make components ~props in
-                  let| () = nodes state v in
-                  return (buffer_contents state.buf)) )
+          let@ comp =
+            let_ k
+              (async_lambda (fun props ->
+                   let@ state = state_make components ~props in
+                   let| () = nodes state v in
+                   return (buffer_contents state.buf)))
           in
           make_comps (Map_string.add k comp components) tl f
       | [] -> f components
@@ -983,83 +985,85 @@ end = struct
   let lambda4 f = lambdak lambda3 f
 
   let eval (compiled : 'a Compile.t) =
-    let$ escape =
-      ( "buffer_add_escape",
-        lambda2 (fun buf str ->
-            iter (string_to_seq str) (fun c ->
-                match_char c (function
-                  | '&' -> buffer_add_string buf (string "&amp;")
-                  | '"' -> buffer_add_string buf (string "&quot;")
-                  | '\'' -> buffer_add_string buf (string "&apos;")
-                  | '>' -> buffer_add_string buf (string "&gt;")
-                  | '<' -> buffer_add_string buf (string "&lt;")
-                  | '/' -> buffer_add_string buf (string "&sol;")
-                  | '`' -> buffer_add_string buf (string "&grave;")
-                  | '=' -> buffer_add_string buf (string "&equals;")
-                  | _ -> buffer_add_char buf c))) )
+    let@ escape =
+      let_ "buffer_add_escape"
+        (lambda2 (fun buf str ->
+             iter (string_to_seq str) (fun c ->
+                 match_char c (function
+                   | '&' -> buffer_add_string buf (string "&amp;")
+                   | '"' -> buffer_add_string buf (string "&quot;")
+                   | '\'' -> buffer_add_string buf (string "&apos;")
+                   | '>' -> buffer_add_string buf (string "&gt;")
+                   | '<' -> buffer_add_string buf (string "&lt;")
+                   | '/' -> buffer_add_string buf (string "&sol;")
+                   | '`' -> buffer_add_string buf (string "&grave;")
+                   | '=' -> buffer_add_string buf (string "&equals;")
+                   | _ -> buffer_add_char buf c))))
     in
-    let$ buffer_add_sep =
-      ( "buffer_add_sep",
-        lambda3 (fun buf sep str ->
-            let| () =
-              if_
-                (not (buffer_length buf = int 0))
-                ~then_:(fun () -> buffer_add_string buf sep)
-            in
-            buffer_add_string buf str) )
+    let@ buffer_add_sep =
+      let_ "buffer_add_sep"
+        (lambda3 (fun buf sep str ->
+             let| () =
+               if_
+                 (not (buffer_length buf = int 0))
+                 ~then_:(fun () -> buffer_add_string buf sep)
+             in
+             buffer_add_string buf str))
     in
     (* Use a functional continuation stack to track decode progress. *)
-    let$ stack_empty = ("stack_empty", lambda (fun _ -> unit)) in
-    let$ stack_is_empty =
-      ( "stack_is_empty",
-        lambda (fun stack ->
-            let& result = ("result", bool true) in
-            let| () = stm (stack @@ lambda (fun _ -> result := bool false)) in
-            return !result) )
+    let@ stack_empty = let_ "stack_empty" (lambda (fun _ -> unit)) in
+    let@ stack_is_empty =
+      let_ "stack_is_empty"
+        (lambda (fun stack ->
+             let@ result = ref "result" (bool true) in
+             let| () = stm (stack @@ lambda (fun _ -> result := bool false)) in
+             return !result))
     in
-    let$ stack_add =
-      ( "stack_add",
-        lambda3 (fun x stack f ->
-            let| () = (* Use FIFO evaluation. *) stm (stack @@ f) in
-            return (f @@ x)) )
+    let@ stack_add =
+      let_ "stack_add"
+        (lambda3 (fun x stack f ->
+             let| () = (* Use FIFO evaluation. *) stm (stack @@ f) in
+             return (f @@ x)))
     in
-    let$ error_aux =
-      ( "error_aux",
-        lambda4 (fun msg1 msg2 stack ty ->
-            let$ buf = ("buf", buffer_create ()) in
-            let| () =
-              buffer_add_string buf (string "Error while rendering \"")
-            in
-            let| () = buffer_add_string buf (string compiled.fname) in
-            let| () =
-              buffer_add_string buf
-                (string
-                   "\".\n\
-                    The data supplied does not match this template's interface.\n")
-            in
-            let| () = buffer_add_string buf (string "Path:\n<input>") in
-            let| () = stm (stack @@ (buffer_add_sep @@ buf) @@ string " -> ") in
-            let| () = buffer_add_string buf (string "\nExpected type:\n") in
-            let| () = buffer_add_string buf ty in
-            let| () = buffer_add_string buf msg1 in
-            let| () = buffer_add_string buf msg2 in
-            return (buffer_contents buf)) )
+    let@ error_aux =
+      let_ "error_aux"
+        (lambda4 (fun msg1 msg2 stack ty ->
+             let@ buf = let_ "buf" (buffer_create ()) in
+             let| () =
+               buffer_add_string buf (string "Error while rendering \"")
+             in
+             let| () = buffer_add_string buf (string compiled.fname) in
+             let| () =
+               buffer_add_string buf
+                 (string
+                    "\".\n\
+                     The data supplied does not match this template's interface.\n")
+             in
+             let| () = buffer_add_string buf (string "Path:\n<input>") in
+             let| () =
+               stm (stack @@ (buffer_add_sep @@ buf) @@ string " -> ")
+             in
+             let| () = buffer_add_string buf (string "\nExpected type:\n") in
+             let| () = buffer_add_string buf ty in
+             let| () = buffer_add_string buf msg1 in
+             let| () = buffer_add_string buf msg2 in
+             return (buffer_contents buf)))
     in
-    let$ decode_error =
-      ( "decode_error",
-        lambda (fun input ->
-            return
-              ((error_aux @@ string "\nReceived value:\n")
-              @@ External.to_string input)) )
+    let@ decode_error =
+      let_ "decode_error"
+        (lambda (fun input ->
+             return
+               ((error_aux @@ string "\nReceived value:\n")
+               @@ External.to_string input)))
     in
-    let$ key_error =
-      ( "key_error",
-        lambda (fun keys ->
-            let$ buf = ("buf", buffer_create ()) in
-            let| () = stm (keys @@ (buffer_add_sep @@ buf) @@ string ", ") in
-            return
-              ((error_aux @@ string "\nInput is missing keys:\n")
-              @@ buffer_contents buf)) )
+    let@ key_error =
+      let_ "key_error"
+        (lambda (fun keys ->
+             let@ buf = let_ "buf" (buffer_create ()) in
+             let| () = stm (keys @@ (buffer_add_sep @@ buf) @@ string ", ") in
+             return
+               ((error_aux @@ string "\nInput is missing keys:\n")
+               @@ buffer_contents buf)))
     in
     let@ (module UInt : UNTYPED with type t = int) = untyped "int" in
     let@ (module UString : UNTYPED with type t = string) = untyped "string" in
@@ -1073,8 +1077,8 @@ end = struct
     let@ (module UUnknown : UNTYPED with type t = External.t) =
       untyped "unknown"
     in
-    let$ zero = ("zero", UInt.inject (int 0)) in
-    let$ one = ("one", UInt.inject (int 1)) in
+    let@ zero = let_ "zero" (UInt.inject (int 0)) in
+    let@ one = let_ "one" (UInt.inject (int 1)) in
     let open With_runtime (struct
       module UInt = UInt
       module UString = UString
@@ -1098,22 +1102,22 @@ end = struct
     let@ components = make_comps components compiled.components in
     export
       (async_lambda (fun input ->
-           let$ props = ("props", hashtbl_create ()) in
+           let@ props = let_ "props" (hashtbl_create ()) in
            let stack = stack_empty in
-           let$ ty_str =
-             ( "type",
-               string (Format.asprintf "%a" T.pp_interface compiled.types) )
+           let@ ty_str =
+             let_ "type"
+               (string (Format.asprintf "%a" T.pp_interface compiled.types))
            in
-           let$ decode_or_errors =
-             ( "decode_or_errors",
-               generator (fun yield ->
-                   let state = { ty_str; stack; yield } in
-                   External.decode External.get_assoc input
-                     ~ok:(fun input ->
-                       decode_record ~state props input compiled.types)
-                     ~error:(fun () -> yield_error state input)) )
+           let@ decode_or_errors =
+             let_ "decode_or_errors"
+               (generator (fun yield ->
+                    let state = { ty_str; stack; yield } in
+                    External.decode External.get_assoc input
+                      ~ok:(fun input ->
+                        decode_record ~state props input compiled.types)
+                      ~error:(fun () -> yield_error state input)))
            in
-           let$ errors = ("errors", errors_of_seq decode_or_errors) in
+           let@ errors = let_ "errors" (errors_of_seq decode_or_errors) in
            if_else (errors_is_empty errors)
              ~then_:(fun () ->
                let@ state = state_make components ~props in
@@ -1169,14 +1173,11 @@ module Make_trans
   type 'a stm = 'a T.stm
 
   let observe x = F.observe (bwds x)
-  let ( let| ) a f = fwds (F.( let| ) (bwds a) (fun () -> bwds (f ())))
+  let ignore a f = fwds (F.ignore (bwds a) (fun () -> bwds (f ())))
   let return x = fwds (F.return (bwde x))
   let stm x = fwds (F.stm (bwde x))
-
-  let ( let$ ) (s, x) f =
-    fwds (F.( let$ ) (s, bwde x) (fun x -> bwds (f (fwde x))))
-
-  let ( let& ) (s, x) f = fwds (F.( let& ) (s, bwde x) (fun x -> bwds (f x)))
+  let let_ s x f = fwds (F.let_ s (bwde x) (fun x -> bwds (f (fwde x))))
+  let ref s x f = fwds (F.ref s (bwde x) (fun x -> bwds (f x)))
   let ( ! ) x = fwde F.(!x)
   let ( := ) a x = fwds F.(a := bwde x)
   let incr x = fwds (F.incr x)
@@ -1307,8 +1308,8 @@ let pp (type a) pp_import ppf c =
     let call3 = F.dprintf "(@[%s@ %t@ %t@ %t@])"
     let call4 = F.dprintf "(@[%s@ %t@ %t@ %t@ %t@])"
 
-    let bindop symbol (v, e) f =
-      F.dprintf "(@[@[let%c@ %s@ =@]@ %t@])@ %t" symbol v e (f (value v))
+    let bind name v e f =
+      F.dprintf "(@[@[%s@ %s@ =@]@ %t@])@ %t" name v e (f (value v))
 
     let infix symbol a b = F.dprintf "(@[%t %s@ %t@])" a symbol b
     let block = F.dprintf "(@[<hv>%t@])"
@@ -1323,17 +1324,17 @@ let pp (type a) pp_import ppf c =
     type 'a obs = F.formatter -> unit
 
     let observe = Fun.id
-    let ( let| ) s f = F.dprintf "%t@ %t" s (f ())
+    let ignore s f = F.dprintf "%t@ %t" s (f ())
 
     type 'a exp = F.formatter -> unit
 
     let return = call1 "return"
     let stm = call1 "stm"
-    let ( let$ ) = bindop '$'
+    let let_ = bind "let"
 
     type 'a ref = F.formatter -> unit
 
-    let ( let& ) = bindop '&'
+    let ref = bind "ref"
     let ( ! ) = F.dprintf "!%t"
     let ( := ) = infix ":="
     let incr = call1 "incr"
@@ -1424,14 +1425,19 @@ let pp (type a) pp_import ppf c =
     end
 
     let untyped (type a) name (f : (module UNTYPED with type t = a) -> _) =
-      f
-        (module struct
-          type t = a
+      let inject = "inj_" ^ name in
+      let project = "prj_" ^ name in
+      let test = "test_" ^ name in
+      F.dprintf "(@[module@ (@[%s@ %s@ %s@]) =@ (@[untyped@ %s@])@])@ %t" inject
+        project test name
+        (f
+           (module struct
+             type t = a
 
-          let inject = call1 ("inj_" ^ name)
-          let project = call1 ("prj_" ^ name)
-          let test = call1 ("test_" ^ name)
-        end)
+             let inject = call1 inject
+             let project = call1 project
+             let test = call1 test
+           end))
 
     module External = struct
       type t
