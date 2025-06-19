@@ -236,7 +236,7 @@ let () =
        method render template js =
          Js_promise.run @@ fun () ->
          match Acutis_js.apply template js with
-         | Ok x -> export_result [] (Some x)
+         | Ok x -> export_result [] (Some (Js.string x))
          | Error x -> export_result x None
 
        method toESMString x = Format.asprintf "%a" Acutis.esm x |> Js.string
