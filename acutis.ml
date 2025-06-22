@@ -120,14 +120,16 @@ end = struct
     let buffer_create () = Buffer.create 1024
     let buffer_add_string = Buffer.add_string
     let buffer_add_char = Buffer.add_char
+    let buffer_add_fmt b = Format.fprintf (Format.formatter_of_buffer b) "%t%!"
     let buffer_contents = Buffer.contents
     let buffer_length = Buffer.length
+    let dfmt = Fun.id
 
     type 'a promise = 'a
 
     let await = Fun.id
     let async_lambda = Fun.id
-    let errors_of_seq s = List.of_seq s |> List.map Error.of_string
+    let errors_of_seq s = Seq.map Error.of_string s |> List.of_seq
     let errors_is_empty = List.is_empty
     let ok = Result.ok
     let error = Result.error
@@ -538,8 +540,10 @@ module Print_js = struct
     let buffer_create () = obj [ ("contents", string "") ]
     let buffer_add_string b s = b.!("contents") += s
     let buffer_add_char = buffer_add_string
+    let buffer_add_fmt = buffer_add_string
     let buffer_contents b = b.!("contents")
     let buffer_length b = b.!("contents").!("length")
+    let dfmt f = string (F.asprintf "%t" f)
 
     type 'a promise
 

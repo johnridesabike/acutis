@@ -940,7 +940,7 @@ Print the runtime instructions
               (buffer_add_string buf "Path:\n<input>")
               (stm (arg @@ ((buffer_add_sep @@ buf) @@ " -> ")))
               (buffer_add_string buf "\nExpected type:\n")
-              (buffer_add_string buf arg)
+              (buffer_add_fmt buf arg)
               (buffer_add_string buf arg)
               (buffer_add_string buf arg)
               (return (buffer_contents buf))))))))))))))
@@ -994,7 +994,8 @@ Print the runtime instructions
     (arg ->
      (let props = (hashtbl_create ())))
      (let type =
-      "a = {b: {c: false | true}}\na_prop = string\nb_prop = string\nc_prop = string\nd = string\ndict = <int>\ne = string\ne_prop = string\nech_a = string\nech_b = false | true\nech_d = ?string\nech_e = ?string\nech_f = float\nech_i = int\nenums = (@\"a\" | ..., @1 | ..., false | true, false | true)\nf_prop = string\nlist = [?string]\nmap_d = <int>\nmap_l = [int]\nmatch_a = int\nmatch_b = string\nnumbers =\n  {\n    exp1: float,\n    exp2: float,\n    exp3: float,\n    frac: float,\n    int: int,\n    negfrac: float,\n    negint: int\n  }\nrecord = {\"!#%@\": string, a: string}\ntagged = {@tag: false} | {@tag: true, a: string}\ntrim_a = string\ntrim_b = string\ntrim_c = string\ntrim_d = string\ntrim_e = string\ntrim_f = string\ntrim_g = string\ntuple = (int, float, string)\nzero = {\"\": string}")
+      (dfmt
+       "a = {b: {c: false | true}}\na_prop = string\nb_prop = string\nc_prop = string\nd = string\ndict = <int>\ne = string\ne_prop = string\nech_a = string\nech_b = false | true\nech_d = ?string\nech_e = ?string\nech_f = float\nech_i = int\nenums = (@\"a\" | ..., @1 | ..., false | true, false | true)\nf_prop = string\nlist = [?string]\nmap_d = <int>\nmap_l = [int]\nmatch_a = int\nmatch_b = string\nnumbers =\n  {\n    exp1: float,\n    exp2: float,\n    exp3: float,\n    frac: float,\n    int: int,\n    negfrac: float,\n    negint: int\n  }\nrecord = {\"!#%@\": string, a: string}\ntagged = {@tag: false} | {@tag: true, a: string}\ntrim_a = string\ntrim_b = string\ntrim_c = string\ntrim_d = string\ntrim_e = string\ntrim_f = string\ntrim_g = string\ntuple = (int, float, string)\nzero = {\"\": string}"))
      (let decode_or_errors =
       (generator
        (yield ->
@@ -1006,7 +1007,7 @@ Print the runtime instructions
             (then
              (let input = (External.assoc_find "a" decoded))
              (let stack = ((stack_add @@ "a") @@ stack_empty))
-             (let type = "{b: {c: false | true}}")
+             (let type = (dfmt "{b: {c: false | true}}"))
              (External.decode assoc input
               (ok
                (decoded ->
@@ -1016,7 +1017,7 @@ Print the runtime instructions
                  (then
                   (let input = (External.assoc_find "b" decoded))
                   (let stack = ((stack_add @@ "b") @@ stack))
-                  (let type = "{c: false | true}")
+                  (let type = (dfmt "{c: false | true}"))
                   (External.decode assoc input
                    (ok
                     (decoded ->
@@ -1026,7 +1027,7 @@ Print the runtime instructions
                       (then
                        (let input = (External.assoc_find "c" decoded))
                        (let stack = ((stack_add @@ "c") @@ stack))
-                       (let type = "false | true")
+                       (let type = (dfmt "false | true"))
                        (External.decode bool input
                         (ok
                          (decoded ->
@@ -1054,7 +1055,7 @@ Print the runtime instructions
             (then
              (let input = (External.assoc_find "a_prop" decoded))
              (let stack = ((stack_add @@ "a_prop") @@ stack_empty))
-             (let type = "string")
+             (let type = (dfmt "string"))
              (External.decode string input
               (ok (decoded -> (props.%{"a_prop"} <- (inj_string decoded))))
               (error (yield (((decode_error @@ input) @@ stack) @@ type)))))
@@ -1063,7 +1064,7 @@ Print the runtime instructions
             (then
              (let input = (External.assoc_find "b_prop" decoded))
              (let stack = ((stack_add @@ "b_prop") @@ stack_empty))
-             (let type = "string")
+             (let type = (dfmt "string"))
              (External.decode string input
               (ok (decoded -> (props.%{"b_prop"} <- (inj_string decoded))))
               (error (yield (((decode_error @@ input) @@ stack) @@ type)))))
@@ -1072,7 +1073,7 @@ Print the runtime instructions
             (then
              (let input = (External.assoc_find "c_prop" decoded))
              (let stack = ((stack_add @@ "c_prop") @@ stack_empty))
-             (let type = "string")
+             (let type = (dfmt "string"))
              (External.decode string input
               (ok (decoded -> (props.%{"c_prop"} <- (inj_string decoded))))
               (error (yield (((decode_error @@ input) @@ stack) @@ type)))))
@@ -1081,7 +1082,7 @@ Print the runtime instructions
             (then
              (let input = (External.assoc_find "d" decoded))
              (let stack = ((stack_add @@ "d") @@ stack_empty))
-             (let type = "string")
+             (let type = (dfmt "string"))
              (External.decode string input
               (ok (decoded -> (props.%{"d"} <- (inj_string decoded))))
               (error (yield (((decode_error @@ input) @@ stack) @@ type)))))
@@ -1090,7 +1091,7 @@ Print the runtime instructions
             (then
              (let input = (External.assoc_find "dict" decoded))
              (let stack = ((stack_add @@ "dict") @@ stack_empty))
-             (let type = "<int>")
+             (let type = (dfmt "<int>"))
              (External.decode assoc input
               (ok
                (decoded ->
@@ -1098,7 +1099,7 @@ Print the runtime instructions
                 (iter (External.assoc_to_seq decoded)
                  (arg ->
                   (let stack = ((stack_add @@ (fst arg)) @@ stack))
-                  (let type = "int")
+                  (let type = (dfmt "int"))
                   (External.decode int (snd arg)
                    (ok (decoded -> (decoded.%{(fst arg)} <- (inj_int decoded))))
                    (error
@@ -1110,7 +1111,7 @@ Print the runtime instructions
             (then
              (let input = (External.assoc_find "e" decoded))
              (let stack = ((stack_add @@ "e") @@ stack_empty))
-             (let type = "string")
+             (let type = (dfmt "string"))
              (External.decode string input
               (ok (decoded -> (props.%{"e"} <- (inj_string decoded))))
               (error (yield (((decode_error @@ input) @@ stack) @@ type)))))
@@ -1119,7 +1120,7 @@ Print the runtime instructions
             (then
              (let input = (External.assoc_find "e_prop" decoded))
              (let stack = ((stack_add @@ "e_prop") @@ stack_empty))
-             (let type = "string")
+             (let type = (dfmt "string"))
              (External.decode string input
               (ok (decoded -> (props.%{"e_prop"} <- (inj_string decoded))))
               (error (yield (((decode_error @@ input) @@ stack) @@ type)))))
@@ -1128,7 +1129,7 @@ Print the runtime instructions
             (then
              (let input = (External.assoc_find "ech_a" decoded))
              (let stack = ((stack_add @@ "ech_a") @@ stack_empty))
-             (let type = "string")
+             (let type = (dfmt "string"))
              (External.decode string input
               (ok (decoded -> (props.%{"ech_a"} <- (inj_string decoded))))
               (error (yield (((decode_error @@ input) @@ stack) @@ type)))))
@@ -1137,7 +1138,7 @@ Print the runtime instructions
             (then
              (let input = (External.assoc_find "ech_b" decoded))
              (let stack = ((stack_add @@ "ech_b") @@ stack_empty))
-             (let type = "false | true")
+             (let type = (dfmt "false | true"))
              (External.decode bool input
               (ok
                (decoded ->
@@ -1149,13 +1150,13 @@ Print the runtime instructions
             (then
              (let input = (External.assoc_find "ech_d" decoded))
              (let stack = ((stack_add @@ "ech_d") @@ stack_empty))
-             (let type = "?string")
+             (let type = (dfmt "?string"))
              (External.decode some input
               (ok
                (decoded ->
                 (let decoded = [zero])
                 (let stack = ((stack_add @@ "<nullable>") @@ stack))
-                (let type = "string")
+                (let type = (dfmt "string"))
                 (External.decode string decoded
                  (ok (decoded -> (decoded.%(0) <- (inj_string decoded))))
                  (error (yield (((decode_error @@ decoded) @@ stack) @@ type))))
@@ -1166,13 +1167,13 @@ Print the runtime instructions
             (then
              (let input = (External.assoc_find "ech_e" decoded))
              (let stack = ((stack_add @@ "ech_e") @@ stack_empty))
-             (let type = "?string")
+             (let type = (dfmt "?string"))
              (External.decode some input
               (ok
                (decoded ->
                 (let decoded = [zero])
                 (let stack = ((stack_add @@ "<nullable>") @@ stack))
-                (let type = "string")
+                (let type = (dfmt "string"))
                 (External.decode string decoded
                  (ok (decoded -> (decoded.%(0) <- (inj_string decoded))))
                  (error (yield (((decode_error @@ decoded) @@ stack) @@ type))))
@@ -1183,7 +1184,7 @@ Print the runtime instructions
             (then
              (let input = (External.assoc_find "ech_f" decoded))
              (let stack = ((stack_add @@ "ech_f") @@ stack_empty))
-             (let type = "float")
+             (let type = (dfmt "float"))
              (External.decode float input
               (ok (decoded -> (props.%{"ech_f"} <- (inj_float decoded))))
               (error (yield (((decode_error @@ input) @@ stack) @@ type)))))
@@ -1192,7 +1193,7 @@ Print the runtime instructions
             (then
              (let input = (External.assoc_find "ech_i" decoded))
              (let stack = ((stack_add @@ "ech_i") @@ stack_empty))
-             (let type = "int")
+             (let type = (dfmt "int"))
              (External.decode int input
               (ok (decoded -> (props.%{"ech_i"} <- (inj_int decoded))))
               (error (yield (((decode_error @@ input) @@ stack) @@ type)))))
@@ -1201,7 +1202,8 @@ Print the runtime instructions
             (then
              (let input = (External.assoc_find "enums" decoded))
              (let stack = ((stack_add @@ "enums") @@ stack_empty))
-             (let type = "(@\"a\" | ..., @1 | ..., false | true, false | true)")
+             (let type =
+              (dfmt "(@\"a\" | ..., @1 | ..., false | true, false | true)"))
              (External.decode seq input
               (ok
                (decoded ->
@@ -1212,7 +1214,7 @@ Print the runtime instructions
                   (hd ->
                    (seq ->
                     (let stack = ((stack_add @@ (string_of_int 0)) @@ stack))
-                    (let type = "@\"a\" | ...")
+                    (let type = (dfmt "@\"a\" | ..."))
                     (External.decode string hd
                      (ok (decoded -> (decoded.%(0) <- (inj_string decoded))))
                      (error (yield (((decode_error @@ hd) @@ stack) @@ type))))
@@ -1223,7 +1225,7 @@ Print the runtime instructions
                        (seq ->
                         (let stack =
                          ((stack_add @@ (string_of_int 1)) @@ stack))
-                        (let type = "@1 | ...")
+                        (let type = (dfmt "@1 | ..."))
                         (External.decode int hd
                          (ok (decoded -> (decoded.%(1) <- (inj_int decoded))))
                          (error
@@ -1236,7 +1238,7 @@ Print the runtime instructions
                            (seq ->
                             (let stack =
                              ((stack_add @@ (string_of_int 2)) @@ stack))
-                            (let type = "false | true")
+                            (let type = (dfmt "false | true"))
                             (External.decode bool hd
                              (ok
                               (decoded ->
@@ -1253,7 +1255,7 @@ Print the runtime instructions
                                (seq ->
                                 (let stack =
                                  ((stack_add @@ (string_of_int 3)) @@ stack))
-                                (let type = "false | true")
+                                (let type = (dfmt "false | true"))
                                 (External.decode bool hd
                                  (ok
                                   (decoded ->
@@ -1271,7 +1273,7 @@ Print the runtime instructions
             (then
              (let input = (External.assoc_find "f_prop" decoded))
              (let stack = ((stack_add @@ "f_prop") @@ stack_empty))
-             (let type = "string")
+             (let type = (dfmt "string"))
              (External.decode string input
               (ok (decoded -> (props.%{"f_prop"} <- (inj_string decoded))))
               (error (yield (((decode_error @@ input) @@ stack) @@ type)))))
@@ -1280,7 +1282,7 @@ Print the runtime instructions
             (then
              (let input = (External.assoc_find "list" decoded))
              (let stack = ((stack_add @@ "list") @@ stack_empty))
-             (let type = "[?string]")
+             (let type = (dfmt "[?string]"))
              (External.decode seq input
               (ok
                (decoded ->
@@ -1291,13 +1293,13 @@ Print the runtime instructions
                  (arg ->
                   (let decode_dst_new = [zero, zero])
                   (let stack = ((stack_add @@ (string_of_int !index)) @@ stack))
-                  (let type = "?string")
+                  (let type = (dfmt "?string"))
                   (External.decode some arg
                    (ok
                     (decoded ->
                      (let decoded = [zero])
                      (let stack = ((stack_add @@ "<nullable>") @@ stack))
-                     (let type = "string")
+                     (let type = (dfmt "string"))
                      (External.decode string decoded
                       (ok (decoded -> (decoded.%(0) <- (inj_string decoded))))
                       (error
@@ -1314,7 +1316,7 @@ Print the runtime instructions
             (then
              (let input = (External.assoc_find "map_d" decoded))
              (let stack = ((stack_add @@ "map_d") @@ stack_empty))
-             (let type = "<int>")
+             (let type = (dfmt "<int>"))
              (External.decode assoc input
               (ok
                (decoded ->
@@ -1322,7 +1324,7 @@ Print the runtime instructions
                 (iter (External.assoc_to_seq decoded)
                  (arg ->
                   (let stack = ((stack_add @@ (fst arg)) @@ stack))
-                  (let type = "int")
+                  (let type = (dfmt "int"))
                   (External.decode int (snd arg)
                    (ok (decoded -> (decoded.%{(fst arg)} <- (inj_int decoded))))
                    (error
@@ -1334,7 +1336,7 @@ Print the runtime instructions
             (then
              (let input = (External.assoc_find "map_l" decoded))
              (let stack = ((stack_add @@ "map_l") @@ stack_empty))
-             (let type = "[int]")
+             (let type = (dfmt "[int]"))
              (External.decode seq input
               (ok
                (decoded ->
@@ -1345,7 +1347,7 @@ Print the runtime instructions
                  (arg ->
                   (let decode_dst_new = [zero, zero])
                   (let stack = ((stack_add @@ (string_of_int !index)) @@ stack))
-                  (let type = "int")
+                  (let type = (dfmt "int"))
                   (External.decode int arg
                    (ok (decoded -> (decode_dst_new.%(0) <- (inj_int decoded))))
                    (error (yield (((decode_error @@ arg) @@ stack) @@ type))))
@@ -1359,7 +1361,7 @@ Print the runtime instructions
             (then
              (let input = (External.assoc_find "match_a" decoded))
              (let stack = ((stack_add @@ "match_a") @@ stack_empty))
-             (let type = "int")
+             (let type = (dfmt "int"))
              (External.decode int input
               (ok (decoded -> (props.%{"match_a"} <- (inj_int decoded))))
               (error (yield (((decode_error @@ input) @@ stack) @@ type)))))
@@ -1368,7 +1370,7 @@ Print the runtime instructions
             (then
              (let input = (External.assoc_find "match_b" decoded))
              (let stack = ((stack_add @@ "match_b") @@ stack_empty))
-             (let type = "string")
+             (let type = (dfmt "string"))
              (External.decode string input
               (ok (decoded -> (props.%{"match_b"} <- (inj_string decoded))))
               (error (yield (((decode_error @@ input) @@ stack) @@ type)))))
@@ -1378,7 +1380,8 @@ Print the runtime instructions
              (let input = (External.assoc_find "numbers" decoded))
              (let stack = ((stack_add @@ "numbers") @@ stack_empty))
              (let type =
-              "{\n  exp1: float,\n  exp2: float,\n  exp3: float,\n  frac: float,\n  int: int,\n  negfrac: float,\n  negint: int\n}")
+              (dfmt
+               "{\n  exp1: float,\n  exp2: float,\n  exp3: float,\n  frac: float,\n  int: int,\n  negfrac: float,\n  negint: int\n}"))
              (External.decode assoc input
               (ok
                (decoded ->
@@ -1388,7 +1391,7 @@ Print the runtime instructions
                  (then
                   (let input = (External.assoc_find "exp1" decoded))
                   (let stack = ((stack_add @@ "exp1") @@ stack))
-                  (let type = "float")
+                  (let type = (dfmt "float"))
                   (External.decode float input
                    (ok (decoded -> (decoded.%{"exp1"} <- (inj_float decoded))))
                    (error (yield (((decode_error @@ input) @@ stack) @@ type)))))
@@ -1398,7 +1401,7 @@ Print the runtime instructions
                  (then
                   (let input = (External.assoc_find "exp2" decoded))
                   (let stack = ((stack_add @@ "exp2") @@ stack))
-                  (let type = "float")
+                  (let type = (dfmt "float"))
                   (External.decode float input
                    (ok (decoded -> (decoded.%{"exp2"} <- (inj_float decoded))))
                    (error (yield (((decode_error @@ input) @@ stack) @@ type)))))
@@ -1408,7 +1411,7 @@ Print the runtime instructions
                  (then
                   (let input = (External.assoc_find "exp3" decoded))
                   (let stack = ((stack_add @@ "exp3") @@ stack))
-                  (let type = "float")
+                  (let type = (dfmt "float"))
                   (External.decode float input
                    (ok (decoded -> (decoded.%{"exp3"} <- (inj_float decoded))))
                    (error (yield (((decode_error @@ input) @@ stack) @@ type)))))
@@ -1418,7 +1421,7 @@ Print the runtime instructions
                  (then
                   (let input = (External.assoc_find "frac" decoded))
                   (let stack = ((stack_add @@ "frac") @@ stack))
-                  (let type = "float")
+                  (let type = (dfmt "float"))
                   (External.decode float input
                    (ok (decoded -> (decoded.%{"frac"} <- (inj_float decoded))))
                    (error (yield (((decode_error @@ input) @@ stack) @@ type)))))
@@ -1428,7 +1431,7 @@ Print the runtime instructions
                  (then
                   (let input = (External.assoc_find "int" decoded))
                   (let stack = ((stack_add @@ "int") @@ stack))
-                  (let type = "int")
+                  (let type = (dfmt "int"))
                   (External.decode int input
                    (ok (decoded -> (decoded.%{"int"} <- (inj_int decoded))))
                    (error (yield (((decode_error @@ input) @@ stack) @@ type)))))
@@ -1438,7 +1441,7 @@ Print the runtime instructions
                  (then
                   (let input = (External.assoc_find "negfrac" decoded))
                   (let stack = ((stack_add @@ "negfrac") @@ stack))
-                  (let type = "float")
+                  (let type = (dfmt "float"))
                   (External.decode float input
                    (ok
                     (decoded -> (decoded.%{"negfrac"} <- (inj_float decoded))))
@@ -1449,7 +1452,7 @@ Print the runtime instructions
                  (then
                   (let input = (External.assoc_find "negint" decoded))
                   (let stack = ((stack_add @@ "negint") @@ stack))
-                  (let type = "int")
+                  (let type = (dfmt "int"))
                   (External.decode int input
                    (ok (decoded -> (decoded.%{"negint"} <- (inj_int decoded))))
                    (error (yield (((decode_error @@ input) @@ stack) @@ type)))))
@@ -1466,7 +1469,7 @@ Print the runtime instructions
             (then
              (let input = (External.assoc_find "record" decoded))
              (let stack = ((stack_add @@ "record") @@ stack_empty))
-             (let type = "{\"!#%@\": string, a: string}")
+             (let type = (dfmt "{\"!#%@\": string, a: string}"))
              (External.decode assoc input
               (ok
                (decoded ->
@@ -1476,7 +1479,7 @@ Print the runtime instructions
                  (then
                   (let input = (External.assoc_find "!#%@" decoded))
                   (let stack = ((stack_add @@ "!#%@") @@ stack))
-                  (let type = "string")
+                  (let type = (dfmt "string"))
                   (External.decode string input
                    (ok (decoded -> (decoded.%{"!#%@"} <- (inj_string decoded))))
                    (error (yield (((decode_error @@ input) @@ stack) @@ type)))))
@@ -1486,7 +1489,7 @@ Print the runtime instructions
                  (then
                   (let input = (External.assoc_find "a" decoded))
                   (let stack = ((stack_add @@ "a") @@ stack))
-                  (let type = "string")
+                  (let type = (dfmt "string"))
                   (External.decode string input
                    (ok (decoded -> (decoded.%{"a"} <- (inj_string decoded))))
                    (error (yield (((decode_error @@ input) @@ stack) @@ type)))))
@@ -1502,7 +1505,7 @@ Print the runtime instructions
             (then
              (let input = (External.assoc_find "tagged" decoded))
              (let stack = ((stack_add @@ "tagged") @@ stack_empty))
-             (let type = "{@tag: false} | {@tag: true, a: string}")
+             (let type = (dfmt "{@tag: false} | {@tag: true, a: string}"))
              (External.decode assoc input
               (ok
                (decoded ->
@@ -1531,7 +1534,7 @@ Print the runtime instructions
                           (then
                            (let input = (External.assoc_find "a" decoded))
                            (let stack = ((stack_add @@ "a") @@ stack))
-                           (let type = "string")
+                           (let type = (dfmt "string"))
                            (External.decode string input
                             (ok
                              (decoded ->
@@ -1558,7 +1561,7 @@ Print the runtime instructions
             (then
              (let input = (External.assoc_find "trim_a" decoded))
              (let stack = ((stack_add @@ "trim_a") @@ stack_empty))
-             (let type = "string")
+             (let type = (dfmt "string"))
              (External.decode string input
               (ok (decoded -> (props.%{"trim_a"} <- (inj_string decoded))))
               (error (yield (((decode_error @@ input) @@ stack) @@ type)))))
@@ -1567,7 +1570,7 @@ Print the runtime instructions
             (then
              (let input = (External.assoc_find "trim_b" decoded))
              (let stack = ((stack_add @@ "trim_b") @@ stack_empty))
-             (let type = "string")
+             (let type = (dfmt "string"))
              (External.decode string input
               (ok (decoded -> (props.%{"trim_b"} <- (inj_string decoded))))
               (error (yield (((decode_error @@ input) @@ stack) @@ type)))))
@@ -1576,7 +1579,7 @@ Print the runtime instructions
             (then
              (let input = (External.assoc_find "trim_c" decoded))
              (let stack = ((stack_add @@ "trim_c") @@ stack_empty))
-             (let type = "string")
+             (let type = (dfmt "string"))
              (External.decode string input
               (ok (decoded -> (props.%{"trim_c"} <- (inj_string decoded))))
               (error (yield (((decode_error @@ input) @@ stack) @@ type)))))
@@ -1585,7 +1588,7 @@ Print the runtime instructions
             (then
              (let input = (External.assoc_find "trim_d" decoded))
              (let stack = ((stack_add @@ "trim_d") @@ stack_empty))
-             (let type = "string")
+             (let type = (dfmt "string"))
              (External.decode string input
               (ok (decoded -> (props.%{"trim_d"} <- (inj_string decoded))))
               (error (yield (((decode_error @@ input) @@ stack) @@ type)))))
@@ -1594,7 +1597,7 @@ Print the runtime instructions
             (then
              (let input = (External.assoc_find "trim_e" decoded))
              (let stack = ((stack_add @@ "trim_e") @@ stack_empty))
-             (let type = "string")
+             (let type = (dfmt "string"))
              (External.decode string input
               (ok (decoded -> (props.%{"trim_e"} <- (inj_string decoded))))
               (error (yield (((decode_error @@ input) @@ stack) @@ type)))))
@@ -1603,7 +1606,7 @@ Print the runtime instructions
             (then
              (let input = (External.assoc_find "trim_f" decoded))
              (let stack = ((stack_add @@ "trim_f") @@ stack_empty))
-             (let type = "string")
+             (let type = (dfmt "string"))
              (External.decode string input
               (ok (decoded -> (props.%{"trim_f"} <- (inj_string decoded))))
               (error (yield (((decode_error @@ input) @@ stack) @@ type)))))
@@ -1612,7 +1615,7 @@ Print the runtime instructions
             (then
              (let input = (External.assoc_find "trim_g" decoded))
              (let stack = ((stack_add @@ "trim_g") @@ stack_empty))
-             (let type = "string")
+             (let type = (dfmt "string"))
              (External.decode string input
               (ok (decoded -> (props.%{"trim_g"} <- (inj_string decoded))))
               (error (yield (((decode_error @@ input) @@ stack) @@ type)))))
@@ -1621,7 +1624,7 @@ Print the runtime instructions
             (then
              (let input = (External.assoc_find "tuple" decoded))
              (let stack = ((stack_add @@ "tuple") @@ stack_empty))
-             (let type = "(int, float, string)")
+             (let type = (dfmt "(int, float, string)"))
              (External.decode seq input
               (ok
                (decoded ->
@@ -1632,7 +1635,7 @@ Print the runtime instructions
                   (hd ->
                    (seq ->
                     (let stack = ((stack_add @@ (string_of_int 0)) @@ stack))
-                    (let type = "int")
+                    (let type = (dfmt "int"))
                     (External.decode int hd
                      (ok (decoded -> (decoded.%(0) <- (inj_int decoded))))
                      (error (yield (((decode_error @@ hd) @@ stack) @@ type))))
@@ -1643,7 +1646,7 @@ Print the runtime instructions
                        (seq ->
                         (let stack =
                          ((stack_add @@ (string_of_int 1)) @@ stack))
-                        (let type = "float")
+                        (let type = (dfmt "float"))
                         (External.decode float hd
                          (ok (decoded -> (decoded.%(1) <- (inj_float decoded))))
                          (error
@@ -1656,7 +1659,7 @@ Print the runtime instructions
                            (seq ->
                             (let stack =
                              ((stack_add @@ (string_of_int 2)) @@ stack))
-                            (let type = "string")
+                            (let type = (dfmt "string"))
                             (External.decode string hd
                              (ok
                               (decoded ->
@@ -1671,7 +1674,7 @@ Print the runtime instructions
             (then
              (let input = (External.assoc_find "zero" decoded))
              (let stack = ((stack_add @@ "zero") @@ stack_empty))
-             (let type = "{\"\": string}")
+             (let type = (dfmt "{\"\": string}"))
              (External.decode assoc input
               (ok
                (decoded ->
@@ -1681,7 +1684,7 @@ Print the runtime instructions
                  (then
                   (let input = (External.assoc_find "" decoded))
                   (let stack = ((stack_add @@ "") @@ stack))
-                  (let type = "string")
+                  (let type = (dfmt "string"))
                   (External.decode string input
                    (ok (decoded -> (decoded.%{""} <- (inj_string decoded))))
                    (error (yield (((decode_error @@ input) @@ stack) @@ type)))))

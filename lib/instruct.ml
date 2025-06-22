@@ -133,8 +133,13 @@ module type SEM = sig
   val buffer_create : unit -> Buffer.t exp
   val buffer_add_string : Buffer.t exp -> string exp -> unit stm
   val buffer_add_char : Buffer.t exp -> char exp -> unit stm
+
+  val buffer_add_fmt :
+    Buffer.t exp -> (Format.formatter -> unit) exp -> unit stm
+
   val buffer_contents : Buffer.t exp -> string exp
   val buffer_length : Buffer.t exp -> int exp
+  val dfmt : (Format.formatter -> unit) -> (Format.formatter -> unit) exp
 
   (** {1 Promises.} *)
 
@@ -272,13 +277,14 @@ end = struct
     module UUnknown : UNTYPED with type t = External.t
 
     type stack
+    type ty_fmt := Format.formatter -> unit
 
     val stack_empty : stack exp
     val stack_is_empty : (stack -> bool) exp
     val stack_add : (string -> stack -> stack) exp
     val escape : (Buffer.t -> string -> unit) exp
-    val decode_error : (External.t -> stack -> string -> string) exp
-    val key_error : (stack -> stack -> string -> string) exp
+    val decode_error : (External.t -> stack -> ty_fmt -> string) exp
+    val key_error : (stack -> stack -> ty_fmt -> string) exp
     val zero : untyped exp
     val one : untyped exp
   end) =
@@ -582,20 +588,20 @@ end = struct
     module T = Typechecker.Type
 
     type decode_state = {
-      ty_str : string exp;
+      ty_fmt : (Format.formatter -> unit) exp;
       stack : stack exp;
       yield : string exp -> unit stm;
     }
 
-    let yield_error state input =
-      state.yield (((decode_error @@ input) @@ state.stack) @@ state.ty_str)
+    let yield_error s input =
+      s.yield (((decode_error @@ input) @@ s.stack) @@ s.ty_fmt)
 
-    let push_key_error state missing_keys =
-      state.yield (((key_error @@ missing_keys) @@ state.stack) @@ state.ty_str)
+    let push_key_error s missing_keys =
+      s.yield (((key_error @@ missing_keys) @@ s.stack) @@ s.ty_fmt)
 
     let rec decode ~set ~state input ty =
-      let@ ty_str = let_ "type" (string (Format.asprintf "%a" T.pp ty)) in
-      let state = { state with ty_str } in
+      let@ ty_fmt = let_ "type" (dfmt (fun ppf -> T.pp ppf ty)) in
+      let state = { state with ty_fmt } in
       match ty.contents with
       | T.Unknown _ -> set (UUnknown.inject input)
       | T.Enum_int ({ cases; _ }, Bool) ->
@@ -1044,7 +1050,7 @@ end = struct
                stm (stack @@ (buffer_add_sep @@ buf) @@ string " -> ")
              in
              let| () = buffer_add_string buf (string "\nExpected type:\n") in
-             let| () = buffer_add_string buf ty in
+             let| () = buffer_add_fmt buf ty in
              let| () = buffer_add_string buf msg1 in
              let| () = buffer_add_string buf msg2 in
              return (buffer_contents buf)))
@@ -1103,15 +1109,13 @@ end = struct
     export
       (async_lambda (fun input ->
            let@ props = let_ "props" (hashtbl_create ()) in
-           let stack = stack_empty in
-           let@ ty_str =
-             let_ "type"
-               (string (Format.asprintf "%a" T.pp_interface compiled.types))
+           let@ ty_fmt =
+             let_ "type" (dfmt (fun ppf -> T.pp_interface ppf compiled.types))
            in
            let@ decode_or_errors =
              let_ "decode_or_errors"
                (generator (fun yield ->
-                    let state = { ty_str; stack; yield } in
+                    let state = { ty_fmt; stack = stack_empty; yield } in
                     External.decode External.get_assoc input
                       ~ok:(fun input ->
                         decode_record ~state props input compiled.types)
@@ -1238,8 +1242,10 @@ module Make_trans
   let buffer_create () = fwde (F.buffer_create ())
   let buffer_add_string b s = fwds (F.buffer_add_string (bwde b) (bwde s))
   let buffer_add_char b c = fwds (F.buffer_add_char (bwde b) (bwde c))
+  let buffer_add_fmt b f = fwds (F.buffer_add_fmt (bwde b) (bwde f))
   let buffer_contents b = fwde (F.buffer_contents (bwde b))
   let buffer_length b = fwde (F.buffer_length (bwde b))
+  let dfmt f = fwde (F.dfmt f)
   let await p = fwde (F.await (bwde p))
   let async_lambda f = fwde (F.async_lambda (fun x -> bwds (f (fwde x))))
   let errors_of_seq s = fwde (F.errors_of_seq (bwde s))
@@ -1402,8 +1408,10 @@ let pp (type a) pp_import ppf c =
     let buffer_create = call0 "buffer_create"
     let buffer_add_string = call2 "buffer_add_string"
     let buffer_add_char = call2 "buffer_add_char"
+    let buffer_add_fmt = call2 "buffer_add_fmt"
     let buffer_contents = call1 "buffer_contents"
     let buffer_length = call1 "buffer_length"
+    let dfmt f = F.dprintf "(@[dfmt@ %S@])" (F.asprintf "%t" f)
 
     type 'a promise
 
