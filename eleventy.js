@@ -67,7 +67,7 @@ export function getAcutisResult({ errors, result }) {
   }
   if (result === null) {
     throw Error(
-      "There was en error compiling an Acutis template. " +
+      "There was an error compiling an Acutis template. " +
         "See the full error message in the log.",
     );
   } else {
@@ -151,10 +151,10 @@ export function plugin(eleventyConfig, config) {
 // When building to JS files, we have to bypass Eleventy's own build system and
 // so we need to use our own. This is a very rudimentary script but it should
 // get the job done.
-//
+
 // Instead of creating a regular custom language extension, we output JS files
 // that use Eleventy's own JS template engine. If we aren't careful, this can
-// cause an infinite recompiliation loop in watch mode, which is why it's
+// cause an infinite recompilation loop in watch mode, which is why it's
 // important to track which files have changed.
 
 // We must store stats from each previous build so we know which templates we
