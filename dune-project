@@ -4,7 +4,7 @@
 
 (name acutis)
 
-(version 0.27.0)
+(version 0.28.0)
 
 (generate_opam_files true)
 
