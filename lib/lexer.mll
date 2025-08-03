@@ -13,8 +13,10 @@ module B = Buffer
 module L = Lexing
 open Parser
 
-type mode = Text | Expr | Queue of token * mode
-type state = { mutable mode : mode; lexbuf : L.lexbuf }
+type _ Effect.t += Yield : token -> unit Effect.t
+
+let yield x = Effect.perform (Yield x)
+let tbuf_create () = B.create 256
 }
 
 let white = [' ' '\t']+
@@ -33,23 +35,25 @@ let float = '-'? digit+ frac? exp?
 
 (* Because comments can nest, we include the delimiters in their text. *)
 
-rule text state buf = parse
-  | "{%"          { state.mode <- Expr; TEXT (B.contents buf) }
-  | "{%~"         { state.mode <- Queue (TILDE, Expr); TEXT (B.contents buf) }
-  | "{{%"         { state.mode <- Queue (UNESCAPE_BEGIN, Expr);
-                    TEXT (B.contents buf) }
-  | "{{%~"        { state.mode <- Queue (TILDE, Queue (UNESCAPE_BEGIN, Expr));
-                    TEXT (B.contents buf) }
-  | "{*" as s     { let cbuf = B.create 256 in
+rule text buf = parse
+  | "{%"          { yield (TEXT (B.contents buf)); expr lexbuf }
+  | "{%~"         { yield (TEXT (B.contents buf)); yield TILDE; expr lexbuf }
+  | "{{%"         { yield (TEXT (B.contents buf));
+                    yield UNESCAPE_BEGIN;
+                    expr lexbuf }
+  | "{{%~"        { yield (TEXT (B.contents buf));
+                    yield TILDE;
+                    yield UNESCAPE_BEGIN;
+                    expr lexbuf }
+  | "{*" as s     { yield (TEXT (B.contents buf));
+                    let cbuf = B.create 256 in
                     B.add_string cbuf s;
                     comment lexbuf.lex_start_p cbuf lexbuf;
-                    state.mode <- Queue (COMMENT (B.contents cbuf), Text);
-                    TEXT (B.contents buf) }
-  | newline as s  { L.new_line lexbuf;
-                    B.add_string buf s;
-                    text state buf lexbuf }
-  | eof           { state.mode <- Queue (EOF, Text); TEXT (B.contents buf) }
-  | _ as c        { B.add_char buf c; text state buf lexbuf }
+                    yield (COMMENT (B.contents cbuf));
+                    text (tbuf_create ()) lexbuf }
+  | newline as s  { L.new_line lexbuf; B.add_string buf s; text buf lexbuf }
+  | eof           { yield (TEXT (B.contents buf)); EOF }
+  | _ as c        { B.add_char buf c; text buf lexbuf }
 
 and comment pos buf = parse
   | "{*" as s     { B.add_string buf s;
@@ -63,54 +67,58 @@ and comment pos buf = parse
                     Error.lex_unterminated_comment lexbuf }
   | _ as c        { B.add_char buf c; comment pos buf lexbuf }
 
-and expr state = parse
-  | "%}"          { state.mode <- Text; text state (B.create 256) lexbuf }
-  | "~%}"         { state.mode <- Text; TILDE }
-  | "%}}"         { state.mode <- Text; UNESCAPE_END }
-  | "~%}}"        { state.mode <- Queue (TILDE, Text); UNESCAPE_END }
-  | "match"       { MATCH }
-  | "with"        { WITH }
-  | "map"         { MAP }
-  | "map_dict"    { MAP_DICT }
-  | "null"        { NULL }
-  | "true"        { TRUE }
-  | "false"       { FALSE }
-  | "interface"   { INTERFACE }
-  | int as s      { try INT (int_of_string s)
-                    with Failure _ -> Error.lex_bad_int lexbuf s }
-  | float as s    { FLOAT (float_of_string s) }
-  | id as s       { ID s }
-  | comp as s     { COMPONENT s }
-  | white         { expr state lexbuf }
-  | newline       { L.new_line lexbuf; expr state lexbuf }
-  | '"'           { string lexbuf.lex_start_p (B.create 16) lexbuf }
-  | '['           { LEFT_BRACK }
-  | ']'           { RIGHT_BRACK }
-  | '{'           { LEFT_BRACE }
-  | '}'           { RIGHT_BRACE }
-  | '('           { LEFT_PAREN }
-  | ')'           { RIGHT_PAREN }
-  | '<'           { LEFT_ANGLE }
-  | '>'           { RIGHT_ANGLE }
-  | ':'           { COLON }
-  | '@'           { AT }
-  | '/'           { BACKSLASH }
-  | ','           { COMMA }
-  | '='           { EQUALS }
-  | '#'           { HASH }
-  | '!'           { EXCLAMATION }
-  | '|'           { PIPE }
-  | '?'           { QUESTION }
-  | '.'           { DOT }
-  | "..."         { ELLIPSIS }
-  | "%b"          { FMT_B }
-  | "%f"          { FMT_F }
-  | "%i"          { FMT_I }
+and expr = parse
+  | "%}"          { text (tbuf_create ()) lexbuf }
+  | "~%}"         { yield TILDE; text (tbuf_create ()) lexbuf }
+  | "%}}"         { yield UNESCAPE_END; text (tbuf_create ()) lexbuf }
+  | "~%}}"        { yield UNESCAPE_END;
+                    yield TILDE;
+                    text (tbuf_create ()) lexbuf }
+  | "match"       { yield MATCH; expr lexbuf }
+  | "with"        { yield WITH; expr lexbuf }
+  | "map"         { yield MAP; expr lexbuf }
+  | "map_dict"    { yield MAP_DICT; expr lexbuf }
+  | "null"        { yield NULL; expr lexbuf }
+  | "true"        { yield TRUE; expr lexbuf }
+  | "false"       { yield FALSE; expr lexbuf }
+  | "interface"   { yield INTERFACE; expr lexbuf }
+  | int as s      { match int_of_string s with
+                    | i -> yield (INT i); expr lexbuf
+                    | exception Failure _ -> Error.lex_bad_int lexbuf s }
+  | float as s    { yield (FLOAT (float_of_string s)); expr lexbuf }
+  | id as s       { yield (ID s); expr lexbuf }
+  | comp as s     { yield (COMPONENT s); expr lexbuf }
+  | white         { expr lexbuf }
+  | newline       { L.new_line lexbuf; expr lexbuf }
+  | '"'           { string lexbuf.lex_start_p (B.create 16) lexbuf;
+                    expr lexbuf }
+  | '['           { yield LEFT_BRACK; expr lexbuf }
+  | ']'           { yield RIGHT_BRACK; expr lexbuf }
+  | '{'           { yield LEFT_BRACE; expr lexbuf }
+  | '}'           { yield RIGHT_BRACE; expr lexbuf }
+  | '('           { yield LEFT_PAREN; expr lexbuf }
+  | ')'           { yield RIGHT_PAREN; expr lexbuf }
+  | '<'           { yield LEFT_ANGLE; expr lexbuf }
+  | '>'           { yield RIGHT_ANGLE; expr lexbuf }
+  | ':'           { yield COLON; expr lexbuf }
+  | '@'           { yield AT; expr lexbuf }
+  | '/'           { yield BACKSLASH; expr lexbuf }
+  | ','           { yield COMMA; expr lexbuf }
+  | '='           { yield EQUALS; expr lexbuf }
+  | '#'           { yield HASH; expr lexbuf }
+  | '!'           { yield EXCLAMATION; expr lexbuf }
+  | '|'           { yield PIPE; expr lexbuf }
+  | '?'           { yield QUESTION; expr lexbuf }
+  | '.'           { yield DOT; expr lexbuf }
+  | "..."         { yield ELLIPSIS; expr lexbuf }
+  | "%b"          { yield FMT_B; expr lexbuf }
+  | "%f"          { yield FMT_F; expr lexbuf }
+  | "%i"          { yield FMT_I; expr lexbuf }
   | eof           { EOF }
   | _ as c        { Error.lex_unexpected lexbuf c }
 
 and string pos buf = parse
-  | '"'           { lexbuf.lex_start_p <- pos; STRING (B.contents buf) }
+  | '"'           { lexbuf.lex_start_p <- pos; yield (STRING (B.contents buf)) }
   | '\\' '"'      { B.add_char buf '"'; string pos buf lexbuf }
   | '\\' '/'      { B.add_char buf '/'; string pos buf lexbuf }
   | '\\' '\\'     { B.add_char buf '\\'; string pos buf lexbuf }
@@ -128,15 +136,22 @@ and string pos buf = parse
   | _ as c        { B.add_char buf c; string pos buf lexbuf }
 
 {
-let supplier state () =
-  let token = 
-    match state.mode with
-    | Text -> text state (B.create 256) state.lexbuf
-    | Expr -> expr state state.lexbuf
-    | Queue (token, state') -> state.mode <- state'; token
-  in
-  (token, state.lexbuf.lex_start_p, state.lexbuf.lex_curr_p)
+let eof () = EOF
 
-let acutis lexbuf = supplier { mode = Text; lexbuf; }
-let interface lexbuf = supplier { mode = Expr; lexbuf; }
+let generator rule lexbuf =
+  let cont = ref (fun () -> rule lexbuf) in
+  fun () ->
+    let f = !cont in
+    cont := eof (* Don't resume a continuation twice. *);
+    let tok =
+      match f () with
+      | tok -> tok
+      | effect Yield tok, k ->
+          cont := Effect.Deep.continue k;
+          tok
+    in
+    (tok, lexbuf.L.lex_start_p, lexbuf.L.lex_curr_p)
+
+let acutis lexbuf = generator (text (tbuf_create ())) lexbuf
+let interface lexbuf = generator expr lexbuf
 }
