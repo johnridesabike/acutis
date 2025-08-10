@@ -181,17 +181,17 @@ type 'a t = {
 
 module Set_string = Set.Make (String)
 
-type 'a linked_components = {
-  components : (string * nodes) list;
-  externals : (string * Typechecker.Type.interface * 'a) list;
+type 'a linking_state = {
+  comps : (string * nodes) list;
+  externs : (string * T.Type.interface * 'a) list;
   set : Set_string.t;
 }
 
-let empty_linked = { components = []; externals = []; set = Set_string.empty }
+let empty_linked = { comps = []; externs = []; set = Set_string.empty }
 
 let make components_src { fname; ast } =
-  let typed = T.make components_src.Components.typed ast in
-  let nodes = make_nodes typed.nodes in
+  let { T.types; nodes } = T.make components_src.Components.typed ast in
+  let nodes = make_nodes nodes in
   (* Only retrieve the components that need to be linked. *)
   let rec get_components linked nodes =
     List.fold_left
@@ -213,21 +213,20 @@ let make components_src { fname; ast } =
             else
               match Map_string.find name components_src.optimized with
               | Src (_, nodes) ->
-                  let { components; externals; set; _ } =
-                    get_components linked nodes
-                  in
+                  let { comps; externs; set } = get_components linked nodes in
+                  let comps = (name, nodes) :: comps in
                   let set = Set_string.add name set in
-                  let components = (name, nodes) :: components in
-                  { components; externals; set }
+                  { comps; externs; set }
               | Fun (_, props, f) ->
+                  let externs = (name, props, f) :: linked.externs in
                   let set = Set_string.add name linked.set in
-                  let externals = (name, props, f) :: linked.externals in
-                  { linked with externals; set }))
+                  { linked with externs; set }))
       linked nodes
   in
-  let { components; externals; _ } = get_components empty_linked nodes in
-  let components = List.rev components in
-  { fname; types = typed.types; components; externals; nodes }
+  let l = get_components empty_linked nodes in
+  let components = List.rev l.comps in
+  let externals = List.rev l.externs in
+  { fname; types; components; externals; nodes }
 
 let interface lexbuf =
   parse_aux (Lexer.interface lexbuf)

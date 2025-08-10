@@ -613,46 +613,56 @@ module Print_js = struct
       let array_values a = apply_n a.!("values") []
       let assoc_to_seq x = array_values ((global "Object").!("entries") @@ x)
 
-      type 'a decoder = {
-        test : t exp -> bool exp;
-        convert : 'b. t exp -> ('a exp -> 'b stm) -> 'b stm;
-      }
+      class virtual ['a] decoder =
+        object
+          method virtual test : t exp -> bool exp
+          method convert : t exp -> ('a exp -> 'b stm) -> 'b stm = ( |> )
+        end
 
       let get_int =
-        {
-          test = (fun x -> (global "Number").!("isInteger") @@ x);
-          convert = ( |> );
-        }
+        object
+          inherit [int] decoder
+          method test x = (global "Number").!("isInteger") @@ x
+        end
 
       let get_string =
-        { test = (fun x -> typeof x = string "string"); convert = ( |> ) }
+        object
+          inherit [string] decoder
+          method test x = typeof x = string "string"
+        end
 
       let get_float =
-        { test = (fun x -> typeof x = string "number"); convert = ( |> ) }
+        object
+          inherit [float] decoder
+          method test x = typeof x = string "number"
+        end
 
       let get_bool =
-        { test = (fun x -> typeof x = string "boolean"); convert = ( |> ) }
+        object
+          inherit [bool] decoder
+          method test x = typeof x = string "boolean"
+        end
 
       let get_some =
-        {
-          test = (fun x -> and_ (not (x = null)) (not (x = global "undefined")));
-          convert = ( |> );
-        }
+        object
+          inherit [t] decoder
+          method test x = and_ (not (x = null)) (not (x = global "undefined"))
+        end
 
       let get_seq =
-        {
-          test = (fun x -> (global "Array").!("isArray") @@ x);
-          convert = (fun x f -> let_ "seq" (array_values x) f);
-        }
+        object
+          method test x = (global "Array").!("isArray") @@ x
+          method convert x f = let_ "seq" (array_values x) f
+        end
 
       let get_assoc =
-        {
-          test = (fun x -> and_ (typeof x = string "object") (not (x = null)));
-          convert = ( |> );
-        }
+        object
+          inherit [t assoc] decoder
+          method test x = and_ (typeof x = string "object") (not (x = null))
+        end
 
-      let decode { test; convert } x ~ok ~error =
-        if_else (test x) ~then_:(fun () -> convert x ok) ~else_:error
+      let decode o x ~ok ~error =
+        if_else (o#test x) ~then_:(fun () -> o#convert x ok) ~else_:error
 
       let to_string = to_string
       let marshal = Fun.id

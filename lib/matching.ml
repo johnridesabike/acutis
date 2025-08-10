@@ -840,7 +840,16 @@ let merge = merge Z
 (** To turn a typed pattern into a tree (albeit a single-branched tree), we use
     CPS as an easy way deal with the nested tree type. *)
 
-type bindings = { next_id : unit -> int; names : int Map_string.t }
+type names_ids = { next_id : int ref; map : int Map_string.t }
+(** Track IDs which must be unique across all branches of a given tree. *)
+
+let names_ids () = { next_id = ref 0; map = Map_string.empty }
+let make_branch names_ids = { names_ids with map = Map_string.empty }
+
+let add_name { next_id; map } x =
+  let id = !next_id in
+  incr next_id;
+  (id, { next_id; map = Map_string.add x id map })
 
 let ids = Set_int.empty
 
@@ -851,29 +860,31 @@ let of_scalar key data if_match check_cases =
 let rec of_tpat :
     'a 'k.
     key:'k ->
-    bindings ->
-    (bindings -> ('a, 'k) tree) ->
     [ `Destruct ] T.pat ->
+    (names_ids -> ('a, 'k) tree) ->
+    names_ids ->
     ('a, 'k) tree =
- fun ~key b k -> function
-  | Any -> Wildcard { ids; key; child = k b }
+ fun ~key tpat k names ->
+  match tpat with
+  | Any -> Wildcard { ids; key; child = k names }
   | Var x ->
-      let id = b.next_id () in
-      let b = { b with names = Map_string.add x id b.names } in
-      Wildcard { ids = Set_int.singleton id; key; child = k b }
+      let id, names = add_name names x in
+      Wildcard { ids = Set_int.singleton id; key; child = k names }
   | Scalar (data, Scalar_sum_none)
   | Scalar (data, Scalar_sum_int { row = `Open; _ })
   | Scalar (data, Scalar_sum_string { row = `Open; _ }) ->
-      of_scalar key data (k b) None
+      of_scalar key data (k names) None
   | Scalar (data, Scalar_sum_int { row = `Closed; cases }) ->
-      of_scalar key data (k b) (Some (Set_int.to_seq cases |> Seq.map int))
+      of_scalar key data (k names) (Some (Set_int.to_seq cases |> Seq.map int))
   | Scalar (data, Scalar_sum_string { row = `Closed; cases }) ->
-      of_scalar key data (k b)
+      of_scalar key data (k names)
         (Some (Set_string.to_seq cases |> Seq.map string))
-  | Nil -> Nil { key; ids; child = k b }
-  | Cons cons -> Cons { key; ids; child = of_tpat ~key b k cons }
+  | Nil -> Nil { key; ids; child = k names }
+  | Cons cons -> Cons { key; ids; child = of_tpat ~key cons k names }
   | Tuple l ->
-      let child = Int_keys (of_list ~key:0 b (fun b -> End (k b)) l) in
+      let child =
+        Int_keys (of_list ~key:0 l (fun names -> End (k names)) names)
+      in
       Nest { key; ids; child; wildcard = None }
   | Record (tag, m, tys) ->
       (* We need to expand the map to include all of its type's keys. *)
@@ -882,7 +893,7 @@ let rec of_tpat :
           (fun _k _ty p -> match p with None -> Some T.Any | Some _ as p -> p)
           !tys m
         |> Map_string.to_seq
-        |> of_keyvalues b (fun b -> End (k b))
+        |> of_keyvalues (fun names -> End (k names)) names
       in
       let child =
         match tag with
@@ -910,61 +921,60 @@ let rec of_tpat :
                  map)
              !kys
         |> Map_string.to_seq
-        |> of_keyvalues_dict b (fun b -> End (k b))
+        |> of_keyvalues_dict (fun names -> End (k names)) names
       in
       Nest { key; ids; child = String_keys child; wildcard = None }
 
 and of_list :
     'a.
     key:int ->
-    bindings ->
-    (bindings -> ('a, int) tree) ->
     [ `Destruct ] T.pat list ->
+    (names_ids -> ('a, int) tree) ->
+    names_ids ->
     ('a, int) tree =
- fun ~key b k -> function
-  | [] -> k b
-  | p :: l -> of_tpat ~key b (fun b -> of_list ~key:(succ key) b k l) p
+ fun ~key l k names ->
+  match l with
+  | [] -> k names
+  | p :: l -> of_tpat ~key p (of_list ~key:(succ key) l k) names
 
-and of_keyvalues b k s =
+and of_keyvalues k names s =
   match s () with
-  | Nil -> k b
-  | Cons ((key, v), l) -> of_tpat ~key b (fun b -> of_keyvalues b k l) v
+  | Nil -> k names
+  | Cons ((key, v), l) ->
+      of_tpat ~key v (fun names -> of_keyvalues k names l) names
 
-and of_keyvalues_dict b k s =
+and of_keyvalues_dict k names s =
   match s () with
-  | Nil -> k b
+  | Nil -> k names
   | Cons ((key, None), s) ->
-      let next = of_keyvalues_dict b k s in
+      let next = of_keyvalues_dict k names s in
       Optional { child = Wildcard { ids; key; child = next }; next = Some next }
   | Cons ((key, Some v), s) ->
-      let child = of_tpat ~key b (fun b -> of_keyvalues_dict b k s) v in
+      let child =
+        of_tpat ~key v (fun names -> of_keyvalues_dict k names s) names
+      in
       Optional { child; next = None }
 
-let of_nonempty ~exit next_id Nonempty.(hd :: tl) =
-  let k { names; _ } = End { names; exit } in
-  let k b = of_list ~key:1 b k tl in
-  of_tpat ~key:0 { next_id; names = Map_string.empty } k hd
+let of_nonempty ~exit names Nonempty.(hd :: tl) =
+  of_tpat ~key:0 hd
+    (of_list ~key:1 tl (fun names -> End { names = names.map; exit }))
+    (make_branch names)
 
-let rec make_case ~exit next_id tree = function
+let rec make_case ~exit names tree = function
   | [] -> tree
   | (loc, ps) :: l ->
-      let b = of_nonempty ~exit next_id ps in
+      let b = of_nonempty ~exit names ps in
       let tree' = merge tree b in
       if equal_tree equal_leaf tree tree' then Error.unused_case loc;
-      make_case ~exit next_id tree' l
+      make_case ~exit names tree' l
 
 let make loc tys Nonempty.(Typechecker.{ pats; nodes; bindings } :: tl_cases) =
-  (* IDs must be unique across all branches of the tree. *)
-  let next_id = ref 0 in
-  let next_id () =
-    let id = !next_id in
-    incr next_id; id
-  in
+  let names = names_ids () in
   let hd_tree, exits =
     let ((_, hd_pats) :: tl_pats) = pats in
     let exits = Exits.make bindings nodes in
-    let hd_tree = of_nonempty ~exit:0 next_id hd_pats in
-    (make_case ~exit:0 next_id hd_tree tl_pats, exits)
+    let hd_tree = of_nonempty ~exit:0 names hd_pats in
+    (make_case ~exit:0 names hd_tree tl_pats, exits)
   in
   let rec aux tree exits = function
     | [] -> (
@@ -973,10 +983,10 @@ let make loc tys Nonempty.(Typechecker.{ pats; nodes; bindings } :: tl_cases) =
         | Some path -> Error.parmatch loc (Par_match.pp tys) path)
     | Typechecker.{ pats = (loc, hd_pats) :: tl_pats; nodes; bindings } :: l ->
         let exits, exit_id = Exits.add bindings nodes exits in
-        let hd_tree = of_nonempty ~exit:exit_id next_id hd_pats in
+        let hd_tree = of_nonempty ~exit:exit_id names hd_pats in
         let tree' = merge tree hd_tree in
         if equal_tree equal_leaf tree tree' then Error.unused_case loc;
-        let tree = make_case ~exit:exit_id next_id tree' tl_pats in
+        let tree = make_case ~exit:exit_id names tree' tl_pats in
         aux tree exits l
   in
   aux hd_tree exits tl_cases

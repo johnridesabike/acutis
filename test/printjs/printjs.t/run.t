@@ -104,7 +104,13 @@
   function Unknown$0(arg$0) { this.v = arg$0; }
   let zero$0 = new Int$0(0);
   let one$0 = new Int$0(1);
-  import {"stringify" as import$0} from "./jscomponents.mjs";
+  import {"another_function" as import$0} from "./jscomponents.mjs";
+  let Another_function$0 =
+    (arg$0) => {
+      let seq$0 = (function* () {  })();
+      return (import$0(Object.fromEntries(seq$0)));
+    };
+  import {"stringify" as import$1} from "./jscomponents.mjs";
   let Stringify$0 =
     (arg$0) => {
       let seq$0 =
@@ -313,12 +319,6 @@
             yield (["unknown", arg$0.get("unknown")]);
           }
         })();
-      return (import$0(Object.fromEntries(seq$0)));
-    };
-  import {"another_function" as import$1} from "./jscomponents.mjs";
-  let Another_function$0 =
-    (arg$0) => {
-      let seq$0 = (function* () {  })();
       return (import$1(Object.fromEntries(seq$0)));
     };
   let NestedComponent$0 =
