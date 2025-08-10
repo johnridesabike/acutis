@@ -6,7 +6,7 @@ packages:
 sources:
   - https://git.sr.ht/~johnridesabike/acutis
 secrets:
-  - 4648aeba-a81e-442c-bc37-5118709e8535
+  - c646f54e-8b1c-45e7-ba55-d51b2e27761a
 tasks:
   - install: |
       cd acutis
