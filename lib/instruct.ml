@@ -570,24 +570,24 @@ end = struct
 
     module T = Typechecker.Type
 
-    let rec decode ~set ~state input ty =
-      let@ state = state#set_ty ty in
+    let rec decode state input ty =
+      let@ state = state#ty ty in
       match ty.contents with
-      | T.Unknown _ -> set (UUnknown.inject input)
+      | T.Unknown _ -> state#set (UUnknown.inject input)
       | T.Enum_int ({ cases; _ }, Bool) ->
           External.decode External.get_bool input
             ~ok:(fun b ->
               if_else b
                 ~then_:(fun () ->
-                  if Set_int.mem 1 cases then set true_value
+                  if Set_int.mem 1 cases then state#set true_value
                   else state#yield_error input)
                 ~else_:(fun () ->
-                  if Set_int.mem 0 cases then set false_value
+                  if Set_int.mem 0 cases then state#set false_value
                   else state#yield_error input))
             ~error:(fun () -> state#yield_error input)
       | T.String | T.Enum_string { row = `Open; _ } ->
           External.decode External.get_string input
-            ~ok:(fun s -> set (UString.inject s))
+            ~ok:(fun s -> state#set (UString.inject s))
             ~error:(fun () -> state#yield_error input)
       | T.Enum_string { row = `Closed; cases } ->
           External.decode External.get_string input
@@ -598,14 +598,14 @@ end = struct
                 | Seq.Cons (case, seq) ->
                     if_else
                       (s = string case)
-                      ~then_:(fun () -> set (UString.inject s))
+                      ~then_:(fun () -> state#set (UString.inject s))
                       ~else_:(fun () -> aux seq)
               in
               aux (Set_string.to_seq cases))
             ~error:(fun () -> state#yield_error input)
       | T.Int | T.Enum_int ({ row = `Open; _ }, _) ->
           External.decode External.get_int input
-            ~ok:(fun i -> set (UInt.inject i))
+            ~ok:(fun i -> state#set (UInt.inject i))
             ~error:(fun () -> state#yield_error input)
       | T.Enum_int ({ row = `Closed; cases }, _) ->
           External.decode External.get_int input
@@ -616,27 +616,26 @@ end = struct
                 | Seq.Cons (case, seq) ->
                     if_else
                       (s = int case)
-                      ~then_:(fun () -> set (UInt.inject s))
+                      ~then_:(fun () -> state#set (UInt.inject s))
                       ~else_:(fun () -> aux seq)
               in
               aux (Set_int.to_seq cases))
             ~error:(fun () -> state#yield_error input)
       | T.Float ->
           External.decode External.get_float input
-            ~ok:(fun f -> set (UFloat.inject f))
+            ~ok:(fun f -> state#set (UFloat.inject f))
             ~error:(fun () -> state#yield_error input)
       | T.Nullable ty ->
           External.decode External.get_some input
             ~ok:(fun input ->
               let@ decoded = let_ "decoded" (array [| nil_value |]) in
-              let@ state = state#stack_add (string "<nullable>") in
-              let| () =
-                decode
-                  ~set:(fun data -> decoded.%(int 0) <- data)
-                  ~state input ty
+              let@ state' =
+                state#copy (string "<nullable>") ~setter:(fun data ->
+                    decoded.%(int 0) <- data)
               in
-              set (UArray.inject decoded))
-            ~error:(fun () -> set nil_value)
+              let| () = decode state' input ty in
+              state#set (UArray.inject decoded))
+            ~error:(fun () -> state#set nil_value)
       | T.List ty ->
           External.decode External.get_seq input
             ~ok:(fun seq ->
@@ -650,19 +649,18 @@ end = struct
                     let@ decode_dst_new =
                       let_ "decode_dst_new" (array [| nil_value; nil_value |])
                     in
-                    let@ state = state#stack_add (string_of_int !i) in
-                    let| () =
-                      decode
-                        ~set:(fun data -> decode_dst_new.%(int 0) <- data)
-                        ~state input ty
+                    let@ state =
+                      state#copy (string_of_int !i) ~setter:(fun data ->
+                          decode_dst_new.%(int 0) <- data)
                     in
+                    let| () = decode state input ty in
                     let| () =
                       !decode_dst.%(int 1) <- UArray.inject decode_dst_new
                     in
                     let| () = incr i in
                     decode_dst := decode_dst_new)
               in
-              set (list_tl decoded))
+              state#set (list_tl decoded))
             ~error:(fun () -> state#yield_error input)
       | T.Tuple tys ->
           External.decode External.get_seq input
@@ -675,23 +673,23 @@ end = struct
                     uncons seq
                       ~nil:(fun () -> state#yield_error input)
                       ~cons:(fun input seq ->
-                        let@ state = state#stack_add (string_of_int (int i)) in
-                        let| () =
-                          decode
-                            ~set:(fun data -> decoded.%(int i) <- data)
-                            ~state input ty
+                        let@ state =
+                          state#copy
+                            (string_of_int (int i))
+                            ~setter:(fun data -> decoded.%(int i) <- data)
                         in
+                        let| () = decode state input ty in
                         aux (succ i) seq tl)
               in
               let| () = aux 0 seq tys in
-              set (UArray.inject decoded))
+              state#set (UArray.inject decoded))
             ~error:(fun () -> state#yield_error input)
       | T.Record tys ->
           External.decode External.get_assoc input
             ~ok:(fun input ->
               let@ decoded = let_ "decoded" (hashtbl_create ()) in
-              let| () = decode_record ~state decoded input tys.contents in
-              set (UHashtbl.inject decoded))
+              let| () = decode_record state decoded input tys.contents in
+              state#set (UHashtbl.inject decoded))
             ~error:(fun () -> state#yield_error input)
       | T.Dict (ty, _) ->
           External.decode External.get_assoc input
@@ -699,13 +697,11 @@ end = struct
               let@ decoded = let_ "decoded" (hashtbl_create ()) in
               iter (External.assoc_to_seq input) (fun p ->
                   let k, input = unpair p in
-                  let@ state = state#stack_add k in
-                  let| () =
-                    decode
-                      ~set:(fun data -> decoded.%{k} <- data)
-                      ~state input ty
+                  let@ state' =
+                    state#copy k ~setter:(fun data -> decoded.%{k} <- data)
                   in
-                  set (UHashtbl.inject decoded)))
+                  let| () = decode state' input ty in
+                  state#set (UHashtbl.inject decoded)))
             ~error:(fun () -> state#yield_error input)
       | T.Union_int (key, { cases; row }, Bool) ->
           decode_union External.get_bool
@@ -720,7 +716,7 @@ end = struct
               if_else x
                 ~then_:(fun () -> f true_value)
                 ~else_:(fun () -> f false_value))
-            (Map_int.to_seq cases) (string key) row ~set ~state input
+            (Map_int.to_seq cases) (string key) row state input
       | T.Union_int (key, { cases; row }, Not_bool) ->
           decode_union External.get_int
             ~if_equal:(fun extern ty ~then_ ~else_ ->
@@ -729,7 +725,7 @@ end = struct
                 ~then_:(fun () -> then_ (UInt.inject ty))
                 ~else_)
             ~if_open:(fun x f -> f (UInt.inject x))
-            (Map_int.to_seq cases) (string key) row ~set ~state input
+            (Map_int.to_seq cases) (string key) row state input
       | T.Union_string (key, { cases; row }) ->
           decode_union External.get_string
             ~if_equal:(fun extern ty ~then_ ~else_ ->
@@ -738,7 +734,7 @@ end = struct
                 ~then_:(fun () -> then_ (UString.inject ty))
                 ~else_)
             ~if_open:(fun x f -> f (UString.inject x))
-            (Map_string.to_seq cases) (string key) row ~set ~state input
+            (Map_string.to_seq cases) (string key) row state input
 
     and decode_union : type ty extern.
         extern External.decoder ->
@@ -751,7 +747,7 @@ end = struct
         if_open:(extern exp -> (untyped exp -> unit stm) -> unit stm) ->
         (ty * T.record) Seq.t ->
         _ =
-     fun decoder ~if_equal ~if_open seq key row ~set ~state input ->
+     fun decoder ~if_equal ~if_open seq key row state input ->
       External.decode External.get_assoc input
         ~ok:(fun input' ->
           if_else
@@ -771,30 +767,32 @@ end = struct
                         if_equal x ty_x
                           ~then_:(fun x ->
                             let| () = decoded.%{key} <- x in
-                            decode_record ~state decoded input' tys.contents)
+                            decode_record state decoded input' tys.contents)
                           ~else_:(fun () -> aux seq)
                   in
                   let| () = aux seq in
-                  set (UHashtbl.inject decoded))
+                  state#set (UHashtbl.inject decoded))
                 ~error:(fun () -> state#yield_error input))
             ~else_:(fun () -> state#yield_error input))
         ~error:(fun () -> state#yield_error input)
 
-    and decode_record ~state decoded input tys =
+    and decode_record state decoded input tys =
       let@ add_missing_key = state#manage_missing_keys in
       Map_string.to_seq tys
       |> Seq.map (fun (k, ty) ->
-             let k' = string k in
+             let k = string k in
              if_else
-               (External.assoc_mem k' input)
+               (External.assoc_mem k input)
                ~then_:(fun () ->
-                 let@ input = let_ "input" (External.assoc_find k' input) in
-                 let@ state = state#stack_add k' in
-                 decode ~set:(fun data -> decoded.%{k'} <- data) ~state input ty)
+                 let@ input = let_ "input" (External.assoc_find k input) in
+                 let@ state =
+                   state#copy k ~setter:(fun data -> decoded.%{k} <- data)
+                 in
+                 decode state input ty)
                ~else_:(fun () ->
                  match ty.contents with
-                 | Nullable _ | Unknown _ -> decoded.%{k'} <- nil_value
-                 | _ -> add_missing_key k'))
+                 | Nullable _ | Unknown _ -> decoded.%{k} <- nil_value
+                 | _ -> add_missing_key k))
       |> stm_join
 
     let external_of_int_bool i = External.of_bool (int_to_bool i)
@@ -1065,8 +1063,10 @@ end = struct
                       object
                         val stack = stack_empty
                         val fmt = ty_fmt
+                        val setter = fun _ -> unit
+                        method set = setter
 
-                        method set_ty ty f =
+                        method ty ty f =
                           let@ fmt =
                             let_ "type" (dfmt (fun ppf -> T.pp ppf ty))
                           in
@@ -1075,11 +1075,11 @@ end = struct
                         method yield_error input =
                           yield (((decode_error @@ input) @@ stack) @@ fmt)
 
-                        method stack_add s f =
+                        method copy debug ~setter f =
                           let@ stack =
-                            let_ "stack" ((stack_add @@ s) @@ stack)
+                            let_ "stack" ((stack_add @@ debug) @@ stack)
                           in
-                          f {<stack>}
+                          f {<stack; setter>}
 
                         method manage_missing_keys f =
                           let@ missing_keys = ref "missing_keys" stack_empty in
@@ -1097,7 +1097,7 @@ end = struct
                     in
                     External.decode External.get_assoc input
                       ~ok:(fun input ->
-                        decode_record ~state props input compiled.types)
+                        decode_record state props input compiled.types)
                       ~error:(fun () -> state#yield_error input)))
            in
            let@ errors = let_ "errors" (errors_of_seq decode_or_errors) in
