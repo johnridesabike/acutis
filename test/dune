@@ -1,16 +1,6 @@
-(executable
- (name error_test)
+(tests
+ (names error_test)
  (libraries acutis yojson))
-
-(rule
- (with-stdout-to
-  error_test.output
-  (run ./error_test.exe)))
-
-(rule
- (aliases runtest error-test)
- (action
-  (diff error_test.expected error_test.output)))
 
 (cram
  (deps %{bin:acutis} ../package.json ../main.cjs))
