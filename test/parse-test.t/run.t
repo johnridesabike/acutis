@@ -890,9 +890,9 @@ Print the runtime instructions
             ('\'' -> (buffer_add_string arg "&apos;"))
             ('>' -> (buffer_add_string arg "&gt;"))
             ('<' -> (buffer_add_string arg "&lt;"))
-            ('/' -> (buffer_add_string arg "&sol;"))
-            ('`' -> (buffer_add_string arg "&grave;"))
-            ('=' -> (buffer_add_string arg "&equals;"))
+            ('/' -> (buffer_add_string arg "&#x2F;"))
+            ('`' -> (buffer_add_string arg "&#x60;"))
+            ('=' -> (buffer_add_string arg "&#x3D;"))
             (_ -> (buffer_add_char arg arg))))))))))))
   (let buffer_add_sep =
    (lambda

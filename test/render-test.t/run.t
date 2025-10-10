@@ -1,6 +1,6 @@
   $ acutis echoes.acutis --data echoes.json
   Echoes work:
-  Hello World! &amp;&quot;&quot;&apos;&apos;&gt;&lt;&sol;&grave;&equals; &""''></`= &lt; < d
+  Hello World! &amp;&quot;&quot;&apos;&apos;&gt;&lt;&#x2F;&#x60;&#x3D; &""''></`= &lt; < d
   
   Echo formats work:
   %i: 123456 %f: 1234.56789 %b: false true

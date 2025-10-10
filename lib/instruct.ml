@@ -952,9 +952,9 @@ end = struct
                    | '\'' -> buffer_add_string buf (string "&apos;")
                    | '>' -> buffer_add_string buf (string "&gt;")
                    | '<' -> buffer_add_string buf (string "&lt;")
-                   | '/' -> buffer_add_string buf (string "&sol;")
-                   | '`' -> buffer_add_string buf (string "&grave;")
-                   | '=' -> buffer_add_string buf (string "&equals;")
+                   | '/' -> buffer_add_string buf (string "&#x2F;")
+                   | '`' -> buffer_add_string buf (string "&#x60;")
+                   | '=' -> buffer_add_string buf (string "&#x3D;")
                    | _ -> buffer_add_char buf c))))
     in
     let@ buffer_add_sep =

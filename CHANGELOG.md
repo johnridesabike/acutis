@@ -2,6 +2,10 @@
 
 Most changes are breaking changes.
 
+## 0.28.1
+
+- Change non-universal character entities to code point entities.
+
 ## 0.28.0
 
 - Public functions are now pure, without effects or exceptions.

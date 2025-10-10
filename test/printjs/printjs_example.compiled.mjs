@@ -10,9 +10,9 @@ let buffer_add_escape$0 =
             case "'": arg$0.contents += "&apos;"; break;
             case ">": arg$0.contents += "&gt;"; break;
             case "<": arg$0.contents += "&lt;"; break;
-            case "/": arg$0.contents += "&sol;"; break;
-            case "`": arg$0.contents += "&grave;"; break;
-            case "=": arg$0.contents += "&equals;"; break;
+            case "/": arg$0.contents += "&#x2F;"; break;
+            case "`": arg$0.contents += "&#x60;"; break;
+            case "=": arg$0.contents += "&#x3D;"; break;
             default: arg$0.contents += item$0;
           }
         }

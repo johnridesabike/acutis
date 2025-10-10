@@ -22,9 +22,9 @@
               case "'": arg$0.contents += "&apos;"; break;
               case ">": arg$0.contents += "&gt;"; break;
               case "<": arg$0.contents += "&lt;"; break;
-              case "/": arg$0.contents += "&sol;"; break;
-              case "`": arg$0.contents += "&grave;"; break;
-              case "=": arg$0.contents += "&equals;"; break;
+              case "/": arg$0.contents += "&#x2F;"; break;
+              case "`": arg$0.contents += "&#x60;"; break;
+              case "=": arg$0.contents += "&#x3D;"; break;
               default: arg$0.contents += item$0;
             }
           }
@@ -1889,7 +1889,7 @@
   Escaping
   --------
   
-  Escaped     &amp;&quot;&apos;&gt;&lt;&sol;&grave;&equals;
+  Escaped     &amp;&quot;&apos;&gt;&lt;&#x2F;&#x60;&#x3D;
   Not escaped &"'></`=
   
   Nullable echo chaining
