@@ -884,7 +884,7 @@ Print the runtime instructions
        (arg ->
         (iter (string_to_seq arg)
          (arg ->
-          (match_char arg
+          (escape arg
            (('&' -> (buffer_add_string arg "&amp;"))
             ('"' -> (buffer_add_string arg "&quot;"))
             ('\'' -> (buffer_add_string arg "&apos;"))

@@ -8,7 +8,7 @@
 (*                                                                        *)
 (**************************************************************************)
 
-module Acutis_json = Acutis.Of_decodable (struct
+module Json = struct
   type t = Yojson.Basic.t
   type 'a assoc = (string * 'a) list
 
@@ -37,7 +37,7 @@ module Acutis_json = Acutis.Of_decodable (struct
   let of_seq_assoc x = `Assoc (List.of_seq x)
   let to_string t = Yojson.Basic.pretty_to_string t
   let marshal x = `String (Marshal.to_string x [])
-end)
+end
 
 let usage_msg =
   {|Usage:
@@ -47,7 +47,8 @@ Compile and render Acutis language templates.
 
 Options:|}
 
-type 'a mode = Render | Make_js of 'a
+type js = Esm | Cjs
+type mode = Render | Make_js of js
 
 let arg_mode = ref Render
 let arg_data = ref "-"
@@ -59,6 +60,7 @@ let arg_printopt = ref false
 let arg_printinst = ref false
 let templates = Queue.create ()
 let arg_funs = Queue.create ()
+let arg_escape = Queue.create ()
 
 let args =
   [
@@ -66,8 +68,8 @@ let args =
       Arg.Symbol
         ( [ "render"; "js"; "cjs" ],
           function
-          | "js" -> arg_mode := Make_js Acutis.esm
-          | "cjs" -> arg_mode := Make_js Acutis.cjs
+          | "js" -> arg_mode := Make_js Esm
+          | "cjs" -> arg_mode := Make_js Cjs
           | _ -> arg_mode := Render ),
       " Either render the template, compile it to a JavaScript module, or \
        compile it to a CommonJS module. Default: render." );
@@ -82,19 +84,29 @@ let args =
       Arg.Tuple
         (let module_path = ref "" in
          let function_path = ref "" in
-         let interface_path = ref "" in
          [
            Arg.Set_string module_path;
            Arg.Set_string function_path;
-           Arg.Set_string interface_path;
-           Arg.Unit
-             (fun () ->
-               Queue.add
-                 (!module_path, !function_path, !interface_path)
-                 arg_funs);
+           Arg.String
+             (fun interface_path ->
+               Queue.add (!module_path, !function_path, interface_path) arg_funs);
          ]),
       " Add an external JavaScript function as a component. This takes three \
        arguments: file path, function name, and type interface." );
+    ( "--escape",
+      Arg.Tuple
+        (let char = ref "" in
+         [
+           Arg.Set_string char;
+           Arg.String
+             (fun str ->
+               if String.length !char <> 1 then
+                 raise
+                   (Arg.Bad "Escaped values must be exactly one character long")
+               else Queue.add (!char.[0], str) arg_escape);
+         ]),
+      " Add a character to escape. This takes two arguments: a character and \
+       its replacement. Default: HTML character escapes." );
     ("--version", Arg.Set arg_version, " Print the version number and exit.");
     ( "--printast",
       Arg.Set arg_printast,
@@ -163,6 +175,12 @@ let components_js () =
   in
   Seq.append l funl |> Acutis.comps_compile |> get_or_exit
 
+module Config = struct
+  let escape () =
+    if Queue.is_empty arg_escape then Acutis.Config_default.escape ()
+    else Queue.to_seq arg_escape ()
+end
+
 let () =
   Format.eprintf "@[<v>";
   try
@@ -180,19 +198,21 @@ let () =
       let lexbuf = Lexing.from_channel chan in
       Lexing.set_filename lexbuf fname;
       let parsed = Acutis.parse lexbuf |> get_or_exit in
-      if !arg_printast then Format.printf "%a" Acutis.pp_ast parsed
+      if !arg_printast then Acutis.pp_ast Format.std_formatter parsed
       else if !arg_printtypes then
         Acutis.compile (components_js ()) parsed
         |> get_or_exit |> Acutis.get_interface
-        |> Format.printf "%a" Acutis.pp_interface
+        |> Acutis.pp_interface Format.std_formatter
       else if !arg_printopt then
         Acutis.compile (components_js ()) parsed
         |> get_or_exit
-        |> Format.printf "%a" Acutis.pp_compiled
+        |> Acutis.pp_compiled Format.std_formatter
       else if !arg_printinst then
         Acutis.compile (components_js ()) parsed
         |> get_or_exit
-        |> Format.printf "%a" (Acutis.pp_instructions Acutis.pp_js_import)
+        |> Acutis.pp_instructions
+             (module Config)
+             Acutis.pp_js_import Format.std_formatter
       else
         match !arg_mode with
         | Render -> (
@@ -209,6 +229,7 @@ let () =
             let template =
               Acutis.compile (components ()) parsed |> get_or_exit
             in
+            let module Acutis_json = Acutis.Of_decodable (Config) (Json) in
             match Acutis_json.apply template data with
             | Ok result -> (
                 match !arg_output with
@@ -217,12 +238,16 @@ let () =
                     let@ chan = Out_channel.with_open_bin fname in
                     Out_channel.output_string chan result)
             | Error x -> print_msgs x; exit 1)
-        | Make_js printer -> (
+        | Make_js js -> (
+            let module Acutis_js = Acutis.Print_js (Config) in
+            let printer =
+              match js with Esm -> Acutis_js.esm | Cjs -> Acutis_js.cjs
+            in
             let template =
               Acutis.compile (components_js ()) parsed |> get_or_exit
             in
             match !arg_output with
-            | "-" -> Format.printf "%a" printer template
+            | "-" -> printer Format.std_formatter template
             | fname ->
                 let@ chan = Out_channel.with_open_bin fname in
                 printer (Format.formatter_of_out_channel chan) template)

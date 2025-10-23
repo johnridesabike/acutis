@@ -70,6 +70,8 @@ Acutis will not escape the value.
 My favorite color is {{% color %}}.
 ```
 
+The escaped characters are configurable when using the CLI or the OCaml API.
+
 ### Format specifiers
 
 To echo numbers or boolean values, then you must prefix them with a format

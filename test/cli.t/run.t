@@ -21,6 +21,16 @@ Output to stdout as an argument.
   $ acutis --data=data.json --output=- layout.acutis a.acutis
   Carlo
 
+Escapes are customizable.
+  $ echo "{% \"&<\" %}" > escapes.acutis
+  $ acutis --data data.json --escape _ _ escapes.acutis
+  &<
+  $ acutis --data data.json --escape "&" "&amp;" escapes.acutis
+  &amp;<
+  $ acutis --data data.json --escape "&" "&custom1;" --escape "<" "&custom2;" \
+  >   escapes.acutis
+  &custom1;&custom2;
+
 Display the help.
   $ acutis --help
   Usage:
@@ -34,6 +44,7 @@ Display the help.
     --output      The path to write the output. Default: stdout.
     --data        The path to a JSON file to be used with --mode=render. Default: stdin.
     --fun         Add an external JavaScript function as a component. This takes three arguments: file path, function name, and type interface.
+    --escape      Add a character to escape. This takes two arguments: a character and its replacement. Default: HTML character escapes.
     --version     Print the version number and exit.
     --printast    Print the template's untyped AST form and exit.
     --printtypes  Print the template's type interface and exit.
@@ -58,6 +69,7 @@ Errors
     --output      The path to write the output. Default: stdout.
     --data        The path to a JSON file to be used with --mode=render. Default: stdin.
     --fun         Add an external JavaScript function as a component. This takes three arguments: file path, function name, and type interface.
+    --escape      Add a character to escape. This takes two arguments: a character and its replacement. Default: HTML character escapes.
     --version     Print the version number and exit.
     --printast    Print the template's untyped AST form and exit.
     --printtypes  Print the template's type interface and exit.

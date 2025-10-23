@@ -106,9 +106,10 @@ module type SEM = sig
 
   val string_to_seq : string exp -> char Seq.t exp
 
-  val match_char : char exp -> (char -> 'a stm) -> 'a stm
-  (** The given function applies to the following characters and it ignores all
-      others: [ '&' '"' '\'' '>' '<' '/' '`' '=' ]. *)
+  val escape :
+    char exp -> (string exp -> unit stm) -> (char exp -> unit stm) -> unit stm
+  (** For a given character, call a function with its replacement string or
+      character. The replacement can be the same character. *)
 
   (** {1 Arrays.} *)
 
@@ -946,16 +947,7 @@ end = struct
       let_ "buffer_add_escape"
         (lambda2 (fun buf str ->
              iter (string_to_seq str) (fun c ->
-                 match_char c (function
-                   | '&' -> buffer_add_string buf (string "&amp;")
-                   | '"' -> buffer_add_string buf (string "&quot;")
-                   | '\'' -> buffer_add_string buf (string "&apos;")
-                   | '>' -> buffer_add_string buf (string "&gt;")
-                   | '<' -> buffer_add_string buf (string "&lt;")
-                   | '/' -> buffer_add_string buf (string "&#x2F;")
-                   | '`' -> buffer_add_string buf (string "&#x60;")
-                   | '=' -> buffer_add_string buf (string "&#x3D;")
-                   | _ -> buffer_add_char buf c))))
+                 escape c (buffer_add_string buf) (buffer_add_char buf))))
     in
     let@ buffer_add_sep =
       let_ "buffer_add_sep"
@@ -1205,8 +1197,11 @@ module Make_trans
   let iter s f = fwds (F.iter (bwde s) (fun x -> bwds (f (fwde x))))
   let string_to_seq s = fwde (F.string_to_seq (bwde s))
 
-  let match_char c f =
-    fwds (F.match_char (bwde c) (fun shape -> bwds (f shape)))
+  let escape c f g =
+    fwds
+      (F.escape (bwde c)
+         (fun x -> bwds (f (fwde x)))
+         (fun x -> bwds (g (fwde x))))
 
   let array x = fwde (F.array (Array.map bwde x))
   let array_make i x = fwde (F.array_make i (bwde x))
@@ -1283,7 +1278,7 @@ module Make_trans
 end
 
 (** Pretty-print the instructions for a compiled template. *)
-let pp (type a) pp_import ppf c =
+let pp (type a) ~escape pp_import ppf c =
   let module F = Format in
   let module M = Make (struct
     let value = F.dprintf "%s"
@@ -1355,16 +1350,12 @@ let pp (type a) pp_import ppf c =
     let iter s f = call2 "iter" s (fn value "arg" f)
     let string_to_seq = call1 "string_to_seq"
 
-    let match_char =
-      let case = F.dprintf "(@[%(%C%) ->@ @[<hv>%t@]@])" in
-      fun c f ->
-        call2 "match_char" c
-          (block
-             (F.dprintf "%a@ %t"
-                (F.pp_print_list ~pp_sep:F.pp_print_space (fun ppf c ->
-                     case "%C" c (f c) ppf))
-                [ '&'; '"'; '\''; '>'; '<'; '/'; '`'; '=' ]
-                (case "%c" '_' (f '\x00'))))
+    let escape c on_string default =
+      F.dprintf "(@[escape@ %t@ (@[%a@ (@[_ ->@ %t@])@])@])" c
+        (F.pp_print_seq ~pp_sep:F.pp_print_space (fun ppf (c, s) ->
+             F.fprintf ppf "(@[%C ->@ %t@])" c
+               (on_string (F.dprintf "%a" Pp.syntax_string s))))
+        escape (default c)
 
     let array a =
       F.dprintf "[@[<hv>%a@]]" (F.pp_print_array ~pp_sep:Pp.comma ( |> )) a

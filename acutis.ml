@@ -52,7 +52,23 @@ module type DECODABLE = sig
   val marshal : 'a -> t
 end
 
-module Of_decodable (D : DECODABLE) : sig
+module type CONFIG = sig
+  val escape : (char * string) Seq.t
+end
+
+module Config_default = struct
+  let escape =
+    Seq.cons ('&', "&amp;")
+    @@ Seq.cons ('"', "&quot;")
+    @@ Seq.cons ('\'', "&apos;")
+    @@ Seq.cons ('>', "&gt;")
+    @@ Seq.cons ('<', "&lt;")
+    @@ Seq.cons ('/', "&#x2F;")
+    @@ Seq.cons ('`', "&#x60;")
+    @@ Seq.return ('=', "&#x3D;")
+end
+
+module Of_decodable (C : CONFIG) (D : DECODABLE) : sig
   val apply : (D.t -> string) compiled -> D.t -> (string, message list) result
   val interface : D.t -> message list * interface option
 end = struct
@@ -103,7 +119,13 @@ end = struct
 
     let iter s f = Seq.iter f s
     let string_to_seq = String.to_seq
-    let match_char = ( |> )
+
+    let escape =
+      let module Hashtbl_char = Hashtbl.Make (Char) in
+      let tbl = Hashtbl_char.of_seq C.escape in
+      fun c on_string on_char ->
+        try on_string (Hashtbl_char.find tbl c) with Not_found -> on_char c
+
     let array = Fun.id
     let array_make = Array.make
     let ( .%() ) = Array.get
@@ -291,7 +313,11 @@ end = struct
     if_assoc (list prop) else_error l |> Typechecker.make_interface_standalone
 end
 
-module Print_js = struct
+type js_import = { module_path : string; function_path : string }
+
+let js_import ~module_path ~function_path = { module_path; function_path }
+
+module Print_js (C : CONFIG) = struct
   module F = Format
 
   module State : sig
@@ -315,11 +341,7 @@ module Print_js = struct
     let add_block state = ref !state
   end
 
-  type import = { module_path : string; function_path : string }
-
-  let import ~module_path ~function_path = { module_path; function_path }
-
-  type t = F.formatter -> State.t -> unit
+  type js = F.formatter -> State.t -> unit
 
   let trailing_comma =
     F.pp_print_custom_break ~fits:("", 0, "") ~breaks:(",", -2, "")
@@ -387,29 +409,28 @@ module Print_js = struct
   end
 
   module type JS_MODULE = sig
-    val import : import -> (t -> t) -> t
-    val export : t -> t
+    val import : js_import -> (js -> js) -> js
+    val export : js -> js
   end
 
   (** Instruction semantics with extra JavaScript printing features. *)
   module type SEM_JAVASCRIPT = sig
-    include Instruct.SEM
+    include Instruct.SEM with type 'a obs = js and type import = js_import
 
     val if_ : bool exp -> then_:(unit -> unit stm) -> unit stm
   end
 
-  module Js_sem (Js_mod : JS_MODULE) :
-    SEM_JAVASCRIPT with type 'a obs = t and type import = import = struct
+  module Js_sem (Js_mod : JS_MODULE) : SEM_JAVASCRIPT = struct
     include Js_shared
     include Js_mod
 
-    type nonrec import = import
-    type 'a stm = t
-    type 'a obs = t
+    type import = js_import
+    type 'a stm = js
+    type 'a obs = js
 
     let observe = Fun.id
 
-    type 'a exp = t
+    type 'a exp = js
 
     let return x =
       stm (fun ppf -> F.fprintf ppf "return (@,@[<hv 2>%a@]@;<0 -2>)" x)
@@ -420,7 +441,7 @@ module Print_js = struct
              F.fprintf ppf "@[<hv 2>%a@]" x state))
         args
 
-    type 'a ref = t
+    type 'a ref = js
 
     let ref = let_
     let ( ! ) = Fun.id
@@ -501,29 +522,16 @@ module Print_js = struct
 
     let string_to_seq x = apply_n x.%((global "Symbol").!("iterator")) []
 
-    let switch exp cases default ppf state =
+    let escape exp on_string default ppf state =
       F.fprintf ppf "@[<v 2>@[<hv 2>switch (%a)@] {@ " exp state;
       let state = State.add_block state in
-      F.pp_print_list ~pp_sep:F.pp_print_cut
-        (fun ppf (exp, stmts) ->
-          F.fprintf ppf "@[<hv 2>case %a:@ %a@ break;@]" exp state stmts state)
-        ppf cases;
-      F.fprintf ppf "@ @[<hv 2>default:@ %a@]" default state;
-      F.fprintf ppf "@;<1 -2>}@]"
-
-    let match_char c f =
-      switch c
-        [
-          (char '&', f '&');
-          (char '"', f '"');
-          (char '\'', f '\'');
-          (char '>', f '>');
-          (char '<', f '<');
-          (char '/', f '/');
-          (char '`', f '`');
-          (char '=', f '=');
-        ]
-        (f '\x00')
+      F.pp_print_seq
+        (fun ppf (c, s) ->
+          F.fprintf ppf "@[<hv 2>case %a:@ %a@ break;@]" (char c) state
+            (on_string (string s))
+            state)
+        ppf C.escape;
+      F.fprintf ppf "@ @[<hv 2>default:@ %a@]@;<1 -2>}@]" (default exp) state
 
     let array a = array_of_seq (Array.to_seq a)
     let array_make i x = array_of_seq (Seq.init i (Fun.const x))
@@ -779,21 +787,10 @@ module Print_js = struct
     let export x = (global "module").!("exports") <- x
   end)
 
-  module Ty_repr = struct
-    open Pp.Ty_repr
-
-    let import { module_path; function_path } =
-      record
-        (fields "module_path" (string module_path)
-        |> field "function_path" (string function_path))
-  end
+  let esm = Esm.pp
+  let cjs = Cjs.pp
 end
 
-type js_import = Print_js.import
-
-let js_import = Print_js.import
-let esm = Print_js.Esm.pp
-let cjs = Print_js.Cjs.pp
 let pp_message = Error.pp
 let pp_interface = Typechecker.Type.pp_interface
 let pp_ast ppf p = Ast.Ty_repr.t p.Compile.ast |> Pp.Ty_repr.pp ppf
@@ -801,5 +798,11 @@ let pp_ast ppf p = Ast.Ty_repr.t p.Compile.ast |> Pp.Ty_repr.pp ppf
 let pp_compiled ppf c =
   Compile.Ty_repr.nodes c.Compile.nodes |> Pp.Ty_repr.pp ppf
 
-let pp_instructions = Instruct.pp
-let pp_js_import ppf i = Print_js.Ty_repr.import i |> Pp.Ty_repr.pp ppf
+let pp_instructions (module C : CONFIG) = Instruct.pp ~escape:C.escape
+
+let pp_js_import ppf { module_path; function_path } =
+  let open Pp.Ty_repr in
+  record
+    (fields "module_path" (string module_path)
+    |> field "function_path" (string function_path))
+  |> pp ppf

@@ -103,7 +103,22 @@ module type DECODABLE = sig
   val marshal : 'a -> t
 end
 
-module Of_decodable (D : DECODABLE) : sig
+module type CONFIG = sig
+  (** A specification to configure the runtime instructions. *)
+
+  val escape : (char * string) Seq.t
+  (** Characters to escape paired with their replacement strings. When this
+      sequence gets traversed depends on the implementation using it, so it
+      should be persistent.
+
+      In {!Config_default} this HTML-escapes the characters:
+      ['&' '"' '\'' '>' '<' '/' '`' '='] *)
+end
+
+module Config_default : CONFIG
+(** Configuration values that cover common needs. *)
+
+module Of_decodable (_ : CONFIG) (D : DECODABLE) : sig
   (** A functor that builds functions to render templates and construct type
       interfaces from decodable data. *)
 
@@ -143,11 +158,15 @@ type js_import
 
 val js_import : module_path:string -> function_path:string -> js_import
 
-val cjs : Format.formatter -> js_import compiled -> unit
-(** Print a template as a CommonJS module. *)
+module Print_js (_ : CONFIG) : sig
+  (** A functor that builds functions to print JavaScript modules. *)
 
-val esm : Format.formatter -> js_import compiled -> unit
-(** Print a template as an ECMAScript module. *)
+  val cjs : Format.formatter -> js_import compiled -> unit
+  (** Print a template as a CommonJS module. *)
+
+  val esm : Format.formatter -> js_import compiled -> unit
+  (** Print a template as an ECMAScript module. *)
+end
 
 (** {1 Handling errors and printing debug information.} *)
 
@@ -164,7 +183,11 @@ val pp_compiled : Format.formatter -> _ compiled -> unit
 (** Pretty-print a fully-compiled template in S-expression syntax. *)
 
 val pp_instructions :
-  (Format.formatter -> 'a -> unit) -> Format.formatter -> 'a compiled -> unit
+  (module CONFIG) ->
+  (Format.formatter -> 'a -> unit) ->
+  Format.formatter ->
+  'a compiled ->
+  unit
 (** Pretty-print runtime instructions in S-expression syntax. *)
 
 val pp_js_import : Format.formatter -> js_import -> unit

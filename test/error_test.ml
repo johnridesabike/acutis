@@ -2,7 +2,7 @@
     number of test cases, running it as a single executable rather than a cram
     test is easier to maintain and faster to execute. *)
 
-module Acutis_json = Acutis.Of_decodable (struct
+module Json = struct
   type t = Yojson.Basic.t
   type 'a assoc = (string * 'a) list
 
@@ -31,7 +31,9 @@ module Acutis_json = Acutis.Of_decodable (struct
   let of_seq_assoc x = `Assoc (List.of_seq x)
   let to_string t = Yojson.Basic.pretty_to_string t
   let marshal x = `String (Marshal.to_string x [])
-end)
+end
+
+module Acutis_json = Acutis.Of_decodable (Acutis.Config_default) (Json)
 
 let print_msgs = List.iter (Format.printf "%a@,@," Acutis.pp_message)
 

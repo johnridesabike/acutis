@@ -144,7 +144,8 @@ let input_uint8Array arr =
     offset := !offset + out_len;
     out_len
 
-module Acutis_js = Acutis.Of_decodable (Decode_js)
+module Acutis_js = Acutis.Of_decodable (Acutis.Config_default) (Decode_js)
+module Print_js = Acutis.Print_js (Acutis.Config_default)
 
 type 'a export_result =
   < errors : Js.js_string Js.t Js.js_array Js.t Js.readonly_prop
@@ -239,8 +240,8 @@ let () =
          | Ok x -> export_result [] (Some (Js.string x))
          | Error x -> export_result x None
 
-       method toESMString x = Format.asprintf "%a" Acutis.esm x |> Js.string
-       method toCJSString x = Format.asprintf "%a" Acutis.cjs x |> Js.string
+       method toESMString x = Format.asprintf "%a" Print_js.esm x |> Js.string
+       method toCJSString x = Format.asprintf "%a" Print_js.cjs x |> Js.string
     end)
 
 let () =

@@ -2,6 +2,10 @@
 
 Most changes are breaking changes.
 
+## Latest
+
+- Make escaped characters configurable with new configuration API.
+
 ## 0.28.1
 
 - Change non-universal character entities to code point entities.
