@@ -19,7 +19,7 @@ depends: [
   "menhir"
   "yojson"
   "dune-build-info"
-  "ocamlformat" {= "0.27.0" & with-test}
+  "ocamlformat" {= "0.28.1" & with-test}
   "sherlodoc" {with-doc}
   "odoc" {with-doc}
 ]

@@ -75,10 +75,10 @@ let lex_unterminated_string lexbuf =
 let parse_error i loc =
   fatal @@ msg loc
   @@
-  try
-    let mess = Parser_messages.message i in
-    F.dprintf "@[%a@]" F.pp_print_text (String.trim mess)
-  with Not_found -> F.dprintf "Unexpected token."
+    try
+      let mess = Parser_messages.message i in
+      F.dprintf "@[%a@]" F.pp_print_text (String.trim mess)
+    with Not_found -> F.dprintf "Unexpected token."
 
 let dup_record_key loc key =
   fatal @@ msg loc @@ F.dprintf "Duplicate field '%a'." Pp.field key

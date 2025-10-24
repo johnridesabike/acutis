@@ -473,7 +473,7 @@ end = struct
       let| () =
         Map_string.to_seq names
         |> Seq.map (fun (key, id) ->
-               props.%{string key} <- Map_int.find id vars)
+            props.%{string key} <- Map_int.find id vars)
         |> stm_join
       in
       exitvar := int exit
@@ -781,19 +781,19 @@ end = struct
       let@ add_missing_key = state#manage_missing_keys in
       Map_string.to_seq tys
       |> Seq.map (fun (k, ty) ->
-             let k = string k in
-             if_else
-               (External.assoc_mem k input)
-               ~then_:(fun () ->
-                 let@ input = let_ "input" (External.assoc_find k input) in
-                 let@ state =
-                   state#copy k ~setter:(fun data -> decoded.%{k} <- data)
-                 in
-                 decode state input ty)
-               ~else_:(fun () ->
-                 match ty.contents with
-                 | Nullable _ | Unknown _ -> decoded.%{k} <- nil_value
-                 | _ -> add_missing_key k))
+          let k = string k in
+          if_else
+            (External.assoc_mem k input)
+            ~then_:(fun () ->
+              let@ input = let_ "input" (External.assoc_find k input) in
+              let@ state =
+                state#copy k ~setter:(fun data -> decoded.%{k} <- data)
+              in
+              decode state input ty)
+            ~else_:(fun () ->
+              match ty.contents with
+              | Nullable _ | Unknown _ -> decoded.%{k} <- nil_value
+              | _ -> add_missing_key k))
       |> stm_join
 
     let external_of_int_bool i = External.of_bool (int_to_bool i)
@@ -906,8 +906,8 @@ end = struct
           let| () = match tag with Some t -> yield (pair t) | None -> unit in
           Map_string.to_seq tys
           |> Seq.map (fun (k, ty) ->
-                 let k = string k in
-                 encode ~set:(fun v -> yield (pair (k, v))) props.%{k} ty)
+              let k = string k in
+              encode ~set:(fun v -> yield (pair (k, v))) props.%{k} ty)
           |> stm_join)
 
     let rec make_comps_external components components_input f =

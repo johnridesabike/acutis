@@ -1035,7 +1035,7 @@ and make_cases ctx cases =
         (pats, nodes, bindings, ctx))
       cases
     |> Nonempty.map (fun (pats, nodes, bindings, ctx) ->
-           { pats; bindings; nodes = make_nodes ctx nodes })
+        { pats; bindings; nodes = make_nodes ctx nodes })
   in
   (tys, cases)
 

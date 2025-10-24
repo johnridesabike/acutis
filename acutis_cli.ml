@@ -146,13 +146,13 @@ let get_or_exit = function
 let components_parsed () =
   Queue.to_seq templates
   |> Seq.filter_map (fun fname ->
-         let@ chan = In_channel.with_open_bin fname in
-         let lexbuf = Lexing.from_channel chan in
-         Lexing.set_filename lexbuf fname;
-         let msgs, parsed = Acutis.parse lexbuf in
-         print_msgs msgs;
-         let name = fname_to_compname fname in
-         Option.map (Acutis.comp_of_parsed name) parsed)
+      let@ chan = In_channel.with_open_bin fname in
+      let lexbuf = Lexing.from_channel chan in
+      Lexing.set_filename lexbuf fname;
+      let msgs, parsed = Acutis.parse lexbuf in
+      print_msgs msgs;
+      let name = fname_to_compname fname in
+      Option.map (Acutis.comp_of_parsed name) parsed)
 
 let components () = Acutis.comps_compile (components_parsed ()) |> get_or_exit
 
@@ -161,17 +161,17 @@ let components_js () =
   let funl =
     Queue.to_seq arg_funs
     |> Seq.filter_map (fun (module_path, function_path, interface) ->
-           let lexbuf = Lexing.from_string interface in
-           Lexing.set_filename lexbuf "-";
-           let msgs, interface = Acutis.compile_interface lexbuf in
-           print_msgs msgs;
-           Option.map
-             (fun interface ->
-               Acutis.comp_of_fun
-                 (fname_to_compname function_path)
-                 interface
-                 (Acutis.js_import ~module_path ~function_path))
-             interface)
+        let lexbuf = Lexing.from_string interface in
+        Lexing.set_filename lexbuf "-";
+        let msgs, interface = Acutis.compile_interface lexbuf in
+        print_msgs msgs;
+        Option.map
+          (fun interface ->
+            Acutis.comp_of_fun
+              (fname_to_compname function_path)
+              interface
+              (Acutis.js_import ~module_path ~function_path))
+          interface)
   in
   Seq.append l funl |> Acutis.comps_compile |> get_or_exit
 
