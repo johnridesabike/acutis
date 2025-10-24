@@ -7,8 +7,8 @@ Acutis is a template language that features static typing, pattern matching, and
 asynchronous template components. You can execute your templates like scripts or
 compile them to self-contained JavaScript files.
 """
-maintainer: ["John Jackson <jbpjackson+acutis@icloud.com>"]
-authors: ["John Jackson <jbpjackson+acutis@icloud.com>"]
+maintainer: ["John Jackson <john@johnridesa.bike>"]
+authors: ["John Jackson <john@johnridesa.bike>"]
 license: "MPL-2.0"
 homepage: "https://acutis.johnridesa.bike/"
 doc: "https://acutis.johnridesa.bike/api/acutis/Acutis/"

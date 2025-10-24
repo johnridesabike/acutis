@@ -97,7 +97,7 @@ let () =
           [
             ("name", s "John Jackson");
             ("url", s "https://johnridesa.bike/");
-            ("email", s "jbpjackson+acutis@icloud.com");
+            ("email", s "john@johnridesa.bike");
           ] );
       ("type", s "module");
       ("exports", o !exports);

@@ -15,9 +15,9 @@
 
 (documentation https://acutis.johnridesa.bike/api/acutis/Acutis/)
 
-(authors "John Jackson <jbpjackson+acutis@icloud.com>")
+(authors "John Jackson <john@johnridesa.bike>")
 
-(maintainers "John Jackson <jbpjackson+acutis@icloud.com>")
+(maintainers "John Jackson <john@johnridesa.bike>")
 
 (license MPL-2.0)
 

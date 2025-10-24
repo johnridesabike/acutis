@@ -2,8 +2,8 @@
 opam-version: "2.0"
 version: "0.28.1"
 synopsis: "A virtual package containing the Acutis JavaScript dependencies"
-maintainer: ["John Jackson <jbpjackson+acutis@icloud.com>"]
-authors: ["John Jackson <jbpjackson+acutis@icloud.com>"]
+maintainer: ["John Jackson <john@johnridesa.bike>"]
+authors: ["John Jackson <john@johnridesa.bike>"]
 license: "MPL-2.0"
 homepage: "https://acutis.johnridesa.bike/"
 doc: "https://acutis.johnridesa.bike/api/acutis/Acutis/"
