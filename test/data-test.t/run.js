@@ -1,13 +1,14 @@
 import fs from "node:fs/promises";
 import acutis from "#main";
-let { Compile, Component } = acutis;
 let filepath = process.argv[2];
 let [dataSrc, src] = await Promise.all([
   fs.readFile("data.json"),
   fs.readFile(filepath),
 ]);
-let components = Compile.components([
-  Component.func(
+let result = acutis
+  .Acutis({})
+  .createRender()
+  .addFunc(
     "Comp",
     {
       dict: { a: "int", b: "string" },
@@ -20,8 +21,8 @@ let components = Compile.components([
       unknown: "_",
     },
     (props) => JSON.stringify(props, null, 2),
-  ).result,
-  Component.func(
+  )
+  .addFunc(
     "UnknownComp",
     {
       // The marshaled representation of these values is not deterministic.
@@ -38,9 +39,7 @@ let components = Compile.components([
       unknown: "_",
     },
     (props) => JSON.stringify(props, null, 2),
-  ).result,
-]);
-let data = JSON.parse(dataSrc);
-let template = Compile.uint8Array(filepath, components.result, src);
-let result = await Compile.render(template.result, data);
-process.stdout.write(result.result);
+  )
+  .compileUint8Array(filepath, src)
+  .apply(JSON.parse(dataSrc));
+process.stdout.write(await result);

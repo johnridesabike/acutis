@@ -19,7 +19,7 @@
 import path from "node:path";
 import fs from "node:fs/promises";
 import acutis from "#main";
-let { Compile, Component } = acutis;
+let compiler = acutis.Acutis({});
 
 function FileWalker(root) {
   this.ignores = new Set();
@@ -61,20 +61,6 @@ FileWalker.prototype.walk = function (f) {
   return this._walk(this.root, f);
 };
 
-export function getAcutisResult({ errors, result }) {
-  for (let msg of errors) {
-    console.warn(msg);
-  }
-  if (result === null) {
-    throw Error(
-      "There was an error compiling an Acutis template. " +
-        "See the full error message in the log.",
-    );
-  } else {
-    return result;
-  }
-}
-
 function getFuncs(obj) {
   let result = [];
   for (let key in obj) {
@@ -93,7 +79,7 @@ function getFuncs(obj) {
 export function plugin(eleventyConfig, config) {
   eleventyConfig.versionCheck(">= 3.0");
   eleventyConfig.addTemplateFormats("acutis");
-  let components = Compile.components([]);
+  let render = compiler.createRender();
   // Caching templates makes projects that heavily use "layout" templates
   // measurably faster.
   let cache = new Map();
@@ -103,15 +89,12 @@ export function plugin(eleventyConfig, config) {
     cache.clear();
     if (config && "components" in config) {
       getFuncs(config.components).forEach(({ key, f }) =>
-        result.push(getAcutisResult(Component.func(key, f.interface, f))),
+        render.addFunc(key, f.interface, f),
       );
     }
     await new FileWalker(
       path.join(directories.input, directories.includes),
-    ).walk((_stats, filePath, src) =>
-      result.push(getAcutisResult(Component.uint8Array(filePath, src))),
-    );
-    components = getAcutisResult(Compile.components(result));
+    ).walk((_stats, filePath, src) => render.addUint8Array(filePath, src));
   });
   eleventyConfig.addExtension("acutis", {
     // Because we pre-compile our components, 11ty's built-in file reading won't
@@ -125,20 +108,15 @@ export function plugin(eleventyConfig, config) {
         if (typeof str === "function") {
           return str;
         } else {
-          let template = getAcutisResult(
-            Compile.string(inputPath, components, str),
-          );
-          return (data) => Compile.render(template, data).then(getAcutisResult);
+          let template = render.compileString(inputPath, str);
+          return (data) => template.apply(data);
         }
       } else {
         let templatePromise = cache.get(inputPath);
         if (!templatePromise) {
           templatePromise = fs.readFile(inputPath).then((src) => {
-            let template = getAcutisResult(
-              Compile.uint8Array(inputPath, components, src),
-            );
-            return (data) =>
-              Compile.render(template, data).then(getAcutisResult);
+            let template = render.compileUint8Array(inputPath, src);
+            return (data) => template.apply(data);
           });
           cache.set(inputPath, templatePromise);
         }
@@ -225,7 +203,7 @@ function printJs(printer, eleventyConfig, config) {
     let dirIncludes = path.join(directories.input, directories.includes);
     await new FileWalker(dirIncludes).walk((stats, filePath, src) => {
       oracle.addComponent(filePath, stats.mtimeMs);
-      compSrc.push(getAcutisResult(Component.uint8Array(filePath, src)));
+      compSrc.push({ filePath, src });
     });
     await new FileWalker(directories.input)
       .ignore(dirIncludes)
@@ -236,22 +214,15 @@ function printJs(printer, eleventyConfig, config) {
         if (shouldBuild) {
           let relativeCompPath =
             "." + path.sep + path.relative(path.dirname(filePath), compPath);
-          let components = getAcutisResult(
-            Compile.components(
-              compFuns
-                .map(({ key, f }) =>
-                  getAcutisResult(
-                    Component.funcPath(relativeCompPath, key, f.interface),
-                  ),
-                )
-                .concat(compSrc),
-            ),
+          let printjs = compiler.createPrintJS();
+          compSrc.forEach(({ filePath, src }) =>
+            printjs.addUint8Array(filePath, src),
           );
-          let template = getAcutisResult(
-            Compile.uint8Array(filePath, components, src),
+          compFuns.forEach(({ key, f }) =>
+            printjs.addFunc(key, f.interface, relativeCompPath),
           );
-          let js = printer(template);
-          return fs.writeFile(filePath + extension, js);
+          let result = printjs.compileUint8Array(filePath, src)[printer]();
+          return fs.writeFile(filePath + extension, result);
         } else {
           return;
         }
@@ -270,12 +241,12 @@ function printJs(printer, eleventyConfig, config) {
  * `.acutis.js` but Eleventy treats them like `.11ty.js` templates.
  */
 export function printESM(eleventyConfig, config) {
-  return printJs(Compile.toESMString, eleventyConfig, config);
+  return printJs("toESMString", eleventyConfig, config);
 }
 
 /**
  * This is the same as `printESM` except it prints using CommonJS module format.
  */
 export function printCJS(eleventyConfig, config) {
-  return printJs(Compile.toCJSString, eleventyConfig, config);
+  return printJs("toCJSString", eleventyConfig, config);
 }

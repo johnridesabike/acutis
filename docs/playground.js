@@ -42,12 +42,12 @@ function setClean(elt) {
 
 window.onload = function playground(_event) {
   let sourceTextElt = document.getElementById("source");
-  let sourceResultElt = document.getElementById("jsresult");
   let sourceDirtyElt = document.getElementById("source-is-dirty");
   let propsTextElt = document.getElementById("props");
   let renderResultElt = document.getElementById("result");
   let propsDirtyElt = document.getElementById("props-is-dirty");
-  let renderButtonElt = document.getElementById("render");
+  let runButtonElt = document.getElementById("run");
+  let compileFormElt = document.getElementById("compiler");
   let urlParams = new URLSearchParams(window.location.search);
 
   propsTextElt.oninput = function (_event) {
@@ -85,16 +85,21 @@ window.onload = function playground(_event) {
     : JSON.stringify(defaultProps, null, 2);
 
   let getLinkElt = document.getElementById("getlink");
-  getLinkElt.onclick = function getLink(_event) {
+  let linkEltOriginalText = getLinkElt.textContent;
+  let timeoutId = null;
+  getLinkElt.onclick = function getLink(ev) {
+    ev.preventDefault();
     let url = new URL(window.location);
     url.searchParams.set("props", btoa(propsTextElt.value));
     url.searchParams.set("source", btoa(sourceTextElt.value));
     if ("clipboard" in navigator) {
       navigator.clipboard.writeText(url.toString()).then(function () {
-        let original = getLinkElt.textContent;
         getLinkElt.textContent = "Copied!";
-        setTimeout(function () {
-          getLinkElt.textContent = original;
+        if (timeoutId !== null) {
+          clearTimeout(timeoutId);
+        }
+        timeoutId = setTimeout(function () {
+          getLinkElt.textContent = linkEltOriginalText;
         }, 2000);
       });
     }
@@ -105,38 +110,57 @@ window.onload = function playground(_event) {
     }
   };
 
-  let componentsEmpty = Compile.components([]).result;
+  function switchCompiler(ev) {
+    if (ev) {
+      ev.preventDefault();
+    }
+    switch (compileFormElt.elements["select-compiler"].value) {
+      case "select-render":
+        propsTextElt.disabled = false;
+        break;
+      default:
+        propsTextElt.disabled = true;
+    }
+  }
+  compileFormElt.onchange = switchCompiler;
 
-  async function render(_event) {
-    sourceResultElt.value = "";
+  async function render(ev) {
+    if (ev) {
+      ev.preventDefault();
+    }
     renderResultElt.value = "";
     setClean(sourceDirtyElt);
     setClean(propsDirtyElt);
-    let compiled = Compile.string(
-      "<playground>",
-      componentsEmpty,
-      sourceTextElt.value,
-    );
-    if (compiled.result === null) {
-      sourceResultElt.value = compiled.errors.join("\n\n");
-    } else {
-      sourceResultElt.value = Compile.toESMString(compiled.result);
-      let result = [];
-      try {
-        let json = JSON.parse(propsTextElt.value);
-        let rendered = await Compile.render(compiled.result, json);
-        if (rendered.result === null) {
-          result = rendered.errors;
-        } else {
-          result = [rendered.result];
+    let result = [];
+    let compiler = Acutis({
+      onMessage: (msg) => result.push(msg),
+    });
+    try {
+      switch (compileFormElt.elements["select-compiler"].value) {
+        case "select-render": {
+          let json = JSON.parse(propsTextElt.value);
+          let rendered = compiler
+            .createRender()
+            .compileString("[playground]", sourceTextElt.value)
+            .apply(json);
+          result.push(await rendered);
+          break;
         }
-      } catch (e) {
-        result = [e.message];
+        default: {
+          let rendered = compiler
+            .createPrintJS()
+            .compileString("[playground]", sourceTextElt.value)
+            .toESMString();
+          result.push(rendered);
+        }
       }
-      renderResultElt.value = compiled.errors.concat(result).join("\n\n");
+    } catch (e) {
+      result.push(e.message);
     }
+    renderResultElt.value = result.join("\n\n");
   }
-  renderButtonElt.onclick = render;
+  runButtonElt.onclick = render;
 
+  switchCompiler();
   render();
 };

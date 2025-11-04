@@ -1,7 +1,7 @@
 import acutis from "#main";
 
 process.stdout.write(
-  acutis.Utils.debugInterface({
+  acutis.Acutis({}).debugInterface({
     a: { a: ["enum", 0, 1], b: ["enum", "a", "b"] },
     b: [
       "union",
@@ -23,5 +23,5 @@ process.stdout.write(
       { tag: ["tag", 0], a: "_" },
       { tag: ["tag", 1], b: ["enum_open", "a", "b"] },
     ],
-  }).result,
+  }),
 );

@@ -13,58 +13,64 @@
    page
    next=null
   %}
-<label for="source" class="playground__header">
-  Template editor<span id="source-is-dirty" class="playground__is-dirty"></span>
-</label>
-<div class="font-monospace">
-  <textarea
-    id="source"
-    cols="80"
-    rows="20"
-    spellcheck="false"
-    class="playground__textarea"
-    wrap="off"
-  ></textarea>
-</div>
-<label for="props" class="playground__header">
-  JSON input editor<span id="props-is-dirty" class="playground__is-dirty"></span>
-</label>
-<div class="font-monospace">
-  <textarea
-    id="props"
-    cols="80"
-    rows="16"
-    spellcheck="false"
-    class="playground__textarea"
-    wrap="off"
-  ></textarea>
-</div>
-<div class="playground__buttons">
-  <button id="render" class="playground__button">Compile &amp; render</button>
-  <button id="getlink" class="playground__button">Copy link</button>
-</div>
-<label for="jsresult" class="playground__header">Compiled JavaScript</label>
-<div class="font-monospace">
-  <textarea
-    id="jsresult"
-    cols="80"
-    rows="20"
-    readonly
-    class="playground__textarea"
-    wrap="off"
-  ></textarea>
-</div>
-<label for="result" class="playground__header">Rendered output</label>
-<div class="font-monospace">
-  <textarea
-    id="result"
-    cols="80"
-    rows="20"
-    readonly
-    class="playground__textarea"
-    wrap="off"
-  ></textarea>
-</div>
-<script src="{% site.url %}/acutis.js"></script>
-<script src="{% site.url %}/playground.js"></script>
+  <form id="compiler">
+    <label for="source" class="playground__header">
+      Template editor
+      <span id="source-is-dirty" class="playground__is-dirty"></span>
+    </label>
+    <div class="font-monospace">
+      <textarea
+        id="source"
+        cols="80"
+        rows="20"
+        spellcheck="false"
+        class="playground__textarea"
+        wrap="off"></textarea>
+    </div>
+    <label for="props" class="playground__header">
+      JSON input editor
+      <span id="props-is-dirty" class="playground__is-dirty"></span>
+    </label>
+    <div class="font-monospace">
+      <textarea
+        id="props"
+        cols="80"
+        rows="16"
+        spellcheck="false"
+        class="playground__textarea"
+        wrap="off" ></textarea>
+    </div>
+    <div class="playground__controls">
+      <fieldset>
+        <legend>Select compiler type</legend>
+        <input
+          type="radio"
+          name="select-compiler"
+          id="select-render"
+          value="select-render"
+          checked />
+        <label for="select-render">Render with JSON input</label>
+        <input
+          type="radio"
+          name="select-compiler"
+          id="select-printjs"
+          value="select-printjs" />
+        <label for="select-printjs">Compile to JavaScript</label>
+      </fieldset>
+        <button id="run" class="playground__button">Run</button>
+        <button id="getlink" class="playground__button">Copy link</button>
+    </div>
+    <label for="result" class="playground__header">Output</label>
+    <div class="font-monospace">
+      <textarea
+        id="result"
+        cols="80"
+        rows="20"
+        readonly
+        class="playground__textarea"
+        wrap="off"></textarea>
+    </div>
+  </form>
+  <script src="{% site.url %}/acutis.js"></script>
+  <script src="{% site.url %}/playground.js"></script>
 {% /Layout %}

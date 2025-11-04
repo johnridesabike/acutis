@@ -70,7 +70,7 @@ Acutis will not escape the value.
 My favorite color is {{% color %}}.
 ```
 
-The escaped characters are configurable when using the CLI or the OCaml API.
+You can customize which characters are escaped through the CLI and the APIs.
 
 ### Format specifiers
 

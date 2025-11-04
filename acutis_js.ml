@@ -131,127 +131,211 @@ end = struct
           |]
 end
 
-let fname_to_compname s =
-  Filename.basename s |> Filename.remove_extension |> String.capitalize_ascii
+(** Types for the exported JavaScript interface. *)
 
-let input_uint8Array arr =
-  let src = Typed_array.Bytes.of_uint8Array arr in
-  let length = Bytes.length src in
-  let offset = ref 0 in
-  fun dst out_len ->
-    let out_len = min (length - !offset) out_len in
-    Bytes.blit src !offset dst 0 out_len;
-    offset := !offset + out_len;
-    out_len
+class type render = object
+  method apply :
+    Decode_js.t -> Js.js_string Js.t Js.opt Js_promise.t Js.t Js.meth
+end
 
-module Acutis_js = Acutis.Of_decodable (Acutis.Config_default) (Decode_js)
-module Print_js = Acutis.Print_js (Acutis.Config_default)
+class type printjs = object
+  method toESMString : Js.js_string Js.t Js.meth
+  method toCJSString : Js.js_string Js.t Js.meth
+end
 
-type 'a export_result =
-  < errors : Js.js_string Js.t Js.js_array Js.t Js.readonly_prop
-  ; result : 'a Js.opt Js.readonly_prop >
-  Js.t
+class type ['func, 'result] compiler = object ('self)
+  method addString :
+    Js.js_string Js.t -> Js.js_string Js.t -> 'self Js.t Js.meth
 
-let export_result : Acutis.message list -> 'a option -> 'a export_result =
- fun msgs result ->
-  let arr = new%js Js.array_empty in
-  List.iter
-    (fun msg ->
-      arr##push (Js.string (Format.asprintf "%a" Acutis.pp_message msg))
-      |> ignore)
-    msgs;
-  object%js
-    val errors = arr
-    val result = Js.Opt.option result
+  method addUint8Array :
+    Js.js_string Js.t -> Typed_array.uint8Array Js.t -> 'self Js.t Js.meth
+
+  method addFunc :
+    Js.js_string Js.t -> Decode_js.t -> 'func -> 'self Js.t Js.meth
+
+  method compileString :
+    Js.js_string Js.t -> Js.js_string Js.t -> 'result Js.opt Js.meth
+
+  method compileUint8Array :
+    Js.js_string Js.t -> Typed_array.uint8Array Js.t -> 'result Js.opt Js.meth
+end
+
+class type compilers = object
+  method createRender :
+    ( (Decode_js.t -> Js.js_string Js.t Js_promise.t Js.t) Js.callback,
+      render Js.t )
+    compiler
+    Js.t
+    Js.meth
+
+  method createPrintJS : (Js.js_string Js.t, printjs Js.t) compiler Js.t Js.meth
+  method debugInterface : Decode_js.t -> Js.js_string Js.t Js.opt Js.meth
+end
+
+class type options = object
+  method escape : 'a Js.t Js.optdef_prop
+  (** Single-character keys with their string replacements. *)
+
+  method onMessage : (Js.js_string Js.t -> unit) Js.callback Js.optdef_prop
+  method onError : (unit -> unit) Js.callback Js.optdef_prop
+end
+
+class type export = object
+  method _Acutis : options Js.t -> compilers Js.t Js.meth
+end
+
+(** A functor that builds the interface from given options. *)
+
+module Make (M : sig
+  val config : options Js.t
+end) : sig
+  val compilers : compilers Js.t
+end = struct
+  module Config = struct
+    let escape =
+      Js.Optdef.case M.config##.escape
+        (fun () -> Acutis.Config_default.escape)
+        (fun obj ->
+          Seq.filter_map
+            (fun (k, v) ->
+              match (String.length k, Decode_js.get_string v) with
+              | 1, Some v -> Some (k.[0], v)
+              | _, Some _ | _, None -> None)
+            (Decode_js.assoc_to_seq obj))
   end
 
-let () =
-  Js.export "Component"
-    object%js
-      method string fname src =
-        let fname = Js.to_string fname in
-        let lexbuf = Js.to_string src |> Lexing.from_string in
-        Lexing.set_filename lexbuf fname;
-        let msgs, parsed = Acutis.parse lexbuf in
-        export_result msgs
-          (Option.map (Acutis.comp_of_parsed (fname_to_compname fname)) parsed)
+  module Acutis_js = Acutis.Of_decodable (Config) (Decode_js)
+  module Print_js = Acutis.Print_js (Config)
 
-      method uint8Array fname src =
-        let fname = Js.to_string fname in
-        let lexbuf = input_uint8Array src |> Lexing.from_function in
-        Lexing.set_filename lexbuf fname;
-        let msgs, parsed = Acutis.parse lexbuf in
-        export_result msgs
-          (Option.map (Acutis.comp_of_parsed (fname_to_compname fname)) parsed)
+  let msg_to_js msg =
+    Format.asprintf "%a" Acutis.pp_message msg |> Js.string |> Js.Unsafe.coerce
 
-      method func name ty f =
-        let msgs, interface = Acutis_js.interface ty in
-        export_result msgs
-          (Option.map
-             (fun interface ->
-               Acutis.comp_of_fun (Js.to_string name) interface (fun data ->
-                   match
-                     Js.Unsafe.fun_call f [| data |] |> Js_promise.classify
-                   with
-                   | Either.Left p -> Js_promise.await p |> Js.to_string
-                   | Either.Right s -> Js.to_string s))
-             interface)
+  let on_message =
+    Js.Optdef.case M.config##.onMessage
+      (fun () msg -> Console.console##warn (msg_to_js msg))
+      (fun f msg -> Js.Unsafe.fun_call f [| msg_to_js msg |])
 
-      method funcPath module_path name ty =
-        let function_path = Js.to_string name in
-        let module_path = Js.to_string module_path in
-        let msgs, interface = Acutis_js.interface ty in
-        export_result msgs
-          (Option.map
-             (fun interface ->
-               Acutis.comp_of_fun function_path interface
-                 (Acutis.js_import ~module_path ~function_path))
-             interface)
+  let on_error : unit -> unit =
+    Js.Optdef.case M.config##.onError
+      (fun () () ->
+        new%js Js.error_constr
+          (Js.string "There was an error while processing an Acutis template.")
+        |> Js.Js_error.of_error |> Js.Js_error.raise_)
+      (fun f () -> Js.Unsafe.fun_call f [||])
+
+  let fname_to_compname s =
+    Filename.basename s |> Filename.remove_extension |> String.capitalize_ascii
+
+  let input_uint8Array arr =
+    let src = Typed_array.Bytes.of_uint8Array arr in
+    let length = Bytes.length src in
+    let offset = ref 0 in
+    fun dst out_len ->
+      let out_len = min (length - !offset) out_len in
+      Bytes.blit src !offset dst 0 out_len;
+      offset := !offset + out_len;
+      out_len
+
+  (** In case [on_error] does not throw an exception, return [null]. *)
+  let handle_messages (msgs, result) =
+    List.iter on_message msgs;
+    match result with None -> on_error (); Js.null | Some x -> Js.Opt.return x
+
+  let ( let* ) = Js.Opt.bind
+
+  let add_comp_aux queue fname lexbuf =
+    let fname = Js.to_string fname in
+    Lexing.set_filename lexbuf fname;
+    Js.Opt.iter
+      (Acutis.parse lexbuf |> handle_messages)
+      (fun comp ->
+        Queue.add (Acutis.comp_of_parsed (fname_to_compname fname) comp) queue)
+
+  let compile_aux handle_result components fname lexbuf =
+    Js.to_string fname |> Lexing.set_filename lexbuf;
+    let* components =
+      Queue.to_seq components |> Acutis.comps_compile |> handle_messages
+    in
+    let* parsed = Acutis.parse lexbuf |> handle_messages in
+    let* result = Acutis.compile components parsed |> handle_messages in
+    handle_result result |> Js.Opt.return
+
+  let compiler ~comp_of_func ~handle_result =
+    let comp_queue = Queue.create () in
+    object%js (_self)
+      method addString fname src =
+        add_comp_aux comp_queue fname (Js.to_string src |> Lexing.from_string);
+        _self
+
+      method addUint8Array fname src =
+        add_comp_aux comp_queue fname
+          (input_uint8Array src |> Lexing.from_function);
+        _self
+
+      method addFunc name ty func =
+        let name = Js.to_string name in
+        Js.Opt.iter
+          (Acutis_js.interface ty |> handle_messages)
+          (fun interface ->
+            Queue.add
+              (comp_of_func name func |> Acutis.comp_of_fun name interface)
+              comp_queue);
+        _self
+
+      method compileString fname src =
+        compile_aux handle_result comp_queue fname
+          (Js.to_string src |> Lexing.from_string)
+
+      method compileUint8Array fname src =
+        compile_aux handle_result comp_queue fname
+          (input_uint8Array src |> Lexing.from_function)
     end
 
-let compile components lexbuf =
-  let msgs1, parsed = Acutis.parse lexbuf in
-  match parsed with
-  | None -> export_result msgs1 None
-  | Some parsed ->
-      let msgs2, compiled = Acutis.compile components parsed in
-      export_result (msgs1 @ msgs2) compiled
-
-let () =
-  Js.export "Compile"
+  let compilers =
     object%js
-      method components a =
-        let msgs, result = Decode_js.array_to_seq a |> Acutis.comps_compile in
-        export_result msgs result
+      method createRender =
+        compiler
+          ~comp_of_func:(fun _name f data ->
+            match Js.Unsafe.fun_call f [| data |] |> Js_promise.classify with
+            | Either.Left p -> Js_promise.await p |> Js.to_string
+            | Either.Right s -> Js.to_string s)
+          ~handle_result:(fun compiled ->
+            object%js
+              method apply data =
+                Js_promise.run @@ fun () ->
+                match Acutis_js.apply compiled data with
+                | Ok x -> Js.string x |> Js.Opt.return
+                | Error x -> handle_messages (x, None)
+            end)
 
-      method string fname components src =
-        let lexbuf = Js.to_string src |> Lexing.from_string in
-        Lexing.set_filename lexbuf (Js.to_string fname);
-        compile components lexbuf
+      method createPrintJS =
+        compiler
+          ~comp_of_func:(fun function_path module_path ->
+            let module_path = Js.to_string module_path in
+            Acutis.js_import ~module_path ~function_path)
+          ~handle_result:(fun x ->
+            object%js
+              method toESMString =
+                Format.asprintf "%a" Print_js.esm x |> Js.string
 
-      method uint8Array fname components src =
-        let lexbuf = input_uint8Array src |> Lexing.from_function in
-        Lexing.set_filename lexbuf (Js.to_string fname);
-        compile components lexbuf
+              method toCJSString =
+                Format.asprintf "%a" Print_js.cjs x |> Js.string
+            end)
 
-      method render template js =
-        Js_promise.run @@ fun () ->
-        match Acutis_js.apply template js with
-        | Ok x -> export_result [] (Some (Js.string x))
-        | Error x -> export_result x None
-
-      method toESMString x = Format.asprintf "%a" Print_js.esm x |> Js.string
-      method toCJSString x = Format.asprintf "%a" Print_js.cjs x |> Js.string
-    end
-
-let () =
-  Js.export "Utils"
-    object%js
       method debugInterface js =
-        let msgs, interface = Acutis_js.interface js in
-        export_result msgs
-          (Option.map
-             (fun interface ->
-               Format.asprintf "%a" Acutis.pp_interface interface |> Js.string)
-             interface)
+        let* interface = Acutis_js.interface js |> handle_messages in
+        Format.asprintf "%a" Acutis.pp_interface interface
+        |> Js.string |> Js.Opt.return
     end
+end
+
+let export : export Js.t =
+  object%js
+    method _Acutis config =
+      let module M = Make (struct
+        let config = config
+      end) in
+      M.compilers
+  end
+
+let () = Js.export_all export

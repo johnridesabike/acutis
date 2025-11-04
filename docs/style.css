@@ -237,7 +237,7 @@ li::marker {
   max-width: 100%;
 }
 
-.playground__buttons {
+.playground__controls {
   margin: 0.5em 0;
   text-align: center;
   font-family: var(--font-family-sans);
@@ -245,6 +245,7 @@ li::marker {
 
 .playground__button {
   font-size: 1.2em;
+  width: 100px;
 }
 
 .playground__is-dirty {
@@ -287,5 +288,12 @@ li::marker {
 
   .site-header__nav-list {
     columns: 3;
+  }
+
+  .playground__controls {
+    display: flex;
+    gap: 1em;
+    align-items: center;
+    justify-content: center;
   }
 }
