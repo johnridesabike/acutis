@@ -22,54 +22,53 @@ import acutis from "#main";
 let compiler = acutis.Acutis({});
 
 function FileWalker(root) {
-  this.ignores = new Set();
-  this.ignores.add(".git");
-  this.ignoresGlobal = new Set();
-  this.ignoresGlobal.add("node_modules");
-  this.root = root;
+  this.ignoredFileNames = new Set(); // File names ignored in all paths.
+  this.ignoredFileNames.add(".git");
+  this.ignoredFileNames.add("node_modules");
+  this.ignoredPaths = new Set(); // Complete file paths ignored.
+  this.root = root; // A directory to start walking.
 }
 
-FileWalker.prototype.ignore = function (filePath) {
-  this.ignores.add(filePath);
+FileWalker.prototype.ignorePath = function (filePath) {
+  this.ignoredPaths.add(filePath);
   return this;
 };
 
-FileWalker.prototype._walk = async function (filePath, f) {
-  if (this.ignores.has(filePath)) {
-    return;
-  } else {
-    let stats = await fs.stat(filePath);
-    if (stats.isDirectory()) {
-      let files = await fs.readdir(filePath);
-      return Promise.all(
-        files.map((file) =>
-          this.ignoresGlobal.has(file)
-            ? Promise.resolve()
-            : this._walk(path.join(filePath, file), f),
-        ),
-      );
-    } else if (filePath.toLowerCase().endsWith(".acutis")) {
-      let src = await fs.readFile(filePath);
-      return f(stats, filePath, src);
-    } else {
-      return;
+FileWalker.prototype.walk = async function* (filePath) {
+  let stats = await fs.stat(filePath);
+  if (stats.isDirectory()) {
+    for (let fileName of await fs.readdir(filePath)) {
+      if (!this.ignoredFileNames.has(fileName)) {
+        let newFilePath = path.join(filePath, fileName);
+        let isIgnored = false;
+        for (let ignoredPath of this.ignoredPaths) {
+          if (path.relative(ignoredPath, newFilePath) === "") {
+            isIgnored = true;
+            break;
+          }
+        }
+        if (!isIgnored) {
+          yield* this.walk(newFilePath);
+        }
+      }
     }
+  } else if (path.extname(filePath).toLowerCase() === ".acutis") {
+    let src = await fs.readFile(filePath);
+    yield { filePath, src, stats };
   }
 };
 
-FileWalker.prototype.walk = function (f) {
-  return this._walk(this.root, f);
+FileWalker.prototype[Symbol.asyncIterator] = function () {
+  return this.walk(this.root);
 };
 
-function getFuncs(obj) {
-  let result = [];
+function* getFuncs(obj) {
   for (let key in obj) {
     let f = obj[key];
     if (typeof f === "function" && "interface" in f) {
-      result.push({ key, f });
+      yield { key, f };
     }
   }
-  return result;
 }
 
 /**
@@ -88,13 +87,14 @@ export function plugin(eleventyConfig, config) {
     let result = [];
     cache.clear();
     if (config && "components" in config) {
-      getFuncs(config.components).forEach(({ key, f }) =>
-        render.addFunc(key, f.interface, f),
-      );
+      for (let { key, f } of getFuncs(config.components)) {
+        render.addFunc(key, f.interface, f);
+      }
     }
-    await new FileWalker(
-      path.join(directories.input, directories.includes),
-    ).walk((_stats, filePath, src) => render.addUint8Array(filePath, src));
+    let fw = new FileWalker(path.join(directories.input, directories.includes));
+    for await (let { filePath, src } of fw) {
+      render.addUint8Array(filePath, src);
+    }
   });
   eleventyConfig.addExtension("acutis", {
     // Because we pre-compile our components, 11ty's built-in file reading won't
@@ -197,36 +197,33 @@ function printJs(printer, eleventyConfig, config) {
     oracle.addConfig(config);
     let compPath =
       config && "componentsPath" in config ? config.componentsPath : "";
-    let compFuns =
-      config && "components" in config ? getFuncs(config.components) : [];
+    let compFuns = config && "components" in config ? config.components : {};
     let compSrc = [];
     let dirIncludes = path.join(directories.input, directories.includes);
-    await new FileWalker(dirIncludes).walk((stats, filePath, src) => {
+    for await (let { filePath, src, stats } of new FileWalker(dirIncludes)) {
       oracle.addComponent(filePath, stats.mtimeMs);
       compSrc.push({ filePath, src });
-    });
-    await new FileWalker(directories.input)
-      .ignore(dirIncludes)
-      .ignore(path.join(directories.input, directories.data))
-      .ignore(directories.output) // Not relative to input
-      .walk((stats, filePath, src) => {
-        let shouldBuild = oracle.addTemplate(filePath, stats.mtimeMs);
-        if (shouldBuild) {
-          let relativeCompPath =
-            "." + path.sep + path.relative(path.dirname(filePath), compPath);
-          let printjs = compiler.createPrintJS();
-          compSrc.forEach(({ filePath, src }) =>
-            printjs.addUint8Array(filePath, src),
-          );
-          compFuns.forEach(({ key, f }) =>
-            printjs.addFunc(key, f.interface, relativeCompPath),
-          );
-          let result = printjs.compileUint8Array(filePath, src)[printer]();
-          return fs.writeFile(filePath + extension, result);
-        } else {
-          return;
+    }
+    let fwInput = new FileWalker(directories.input)
+      .ignorePath(directories.includes) // Already relative to input.
+      .ignorePath(directories.data) // Already relative to input.
+      .ignorePath(path.relative(directories.input, directories.output));
+    for await (let { filePath, src, stats } of fwInput) {
+      let shouldBuild = oracle.addTemplate(filePath, stats.mtimeMs);
+      if (shouldBuild) {
+        let relativeCompPath =
+          "." + path.sep + path.relative(path.dirname(filePath), compPath);
+        let printjs = compiler.createPrintJS();
+        for (let { filePath, src } of compSrc) {
+          printjs.addUint8Array(filePath, src);
         }
-      });
+        for (let { key, f } of getFuncs(compFuns)) {
+          printjs.addFunc(key, f.interface, relativeCompPath);
+        }
+        let result = printjs.compileUint8Array(filePath, src)[printer]();
+        await fs.writeFile(filePath + extension, result);
+      }
+    }
     oracle.reset();
   });
   eleventyConfig.addExtension("acutis" + extension, { key: "11ty.js" });
