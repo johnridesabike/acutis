@@ -369,9 +369,6 @@ end = struct
       |> Seq.map (fun (k, v) -> (string k, construct_data blocks state v))
       |> hashtbl
 
-    let add_vars ids arg vars =
-      Set_int.fold (fun id vars -> Map_int.add id arg vars) ids vars
-
     let arg_indexed arg index ~optional:_ i f =
       match i with 0 -> f arg | _ -> f index
 
@@ -384,99 +381,103 @@ end = struct
           ~then_:(fun () -> let_ "match_arg" arg.%{string key} f)
       else let_ "match_arg" arg.%{string key} f
 
+    class match_state exit_ref =
+      object
+        method is_exit_unset = !exit_ref = unset_exit
+        val vars : untyped exp Map_int.t = Map_int.empty
+        method var_find id = Map_int.find id vars
+
+        method var_add ids arg =
+          {<vars = Set_int.fold (fun id m -> Map_int.add id arg m) ids vars>}
+      end
+
     let rec match_tree :
         'leaf 'key.
-        exit:int ref ->
-        leafstm:(vars:untyped exp Map_int.t -> 'leaf -> unit stm) ->
+        leafstm:(match_state -> 'leaf -> unit stm) ->
         get_arg:(optional:bool -> 'key -> (untyped exp -> unit stm) -> unit stm) ->
-        vars:untyped exp Map_int.t ->
         ?optional:bool ->
+        match_state ->
         ('leaf, 'key) Matching.tree ->
         unit stm =
-     fun ~exit ~leafstm ~get_arg ~vars ?(optional = false) -> function
+     fun ~leafstm ~get_arg ?(optional = false) state -> function
       | Matching.Switch { key; ids; cases; wildcard; _ } ->
           let@ arg = get_arg ~optional key in
-          let vars = add_vars ids arg vars in
-          switchcase ~exit ~leafstm ~get_arg ~vars ~arg ~wildcard cases
+          let state = state#var_add ids arg in
+          switchcase ~leafstm ~get_arg ~arg ~wildcard state cases
       | Matching.Wildcard { key; ids; child } ->
           let@ arg = get_arg ~optional key in
-          let vars = add_vars ids arg vars in
-          match_tree ~exit ~leafstm ~get_arg ~vars child
+          let state = state#var_add ids arg in
+          match_tree ~leafstm ~get_arg state child
       | Matching.Nest { key; ids; child; wildcard } -> (
           let@ arg = get_arg ~optional key in
-          let vars = add_vars ids arg vars in
+          let state = state#var_add ids arg in
           let s =
-            let leafstm ~vars t = match_tree ~exit ~leafstm ~get_arg ~vars t in
+            let leafstm state t = match_tree ~leafstm ~get_arg state t in
             match child with
             | Int_keys tree ->
-                match_tree ~exit ~leafstm
+                match_tree ~leafstm
                   ~get_arg:(arg_int (UArray.project arg))
-                  ~vars tree
+                  state tree
             | String_keys tree ->
-                match_tree ~exit ~leafstm
+                match_tree ~leafstm
                   ~get_arg:(arg_str (UHashtbl.project arg))
-                  ~vars tree
+                  state tree
           in
           match wildcard with
           | None -> s
           | Some tree ->
               let| () = s in
-              if_ (!exit = unset_exit) ~then_:(fun () ->
-                  match_tree ~exit ~leafstm ~get_arg ~vars tree))
+              if_ state#is_exit_unset ~then_:(fun () ->
+                  match_tree ~leafstm ~get_arg state tree))
       | Matching.Nil { key; ids; child } ->
           let@ arg = get_arg ~optional key in
-          let vars = add_vars ids arg vars in
+          let state = state#var_add ids arg in
           if_ (is_nil arg) ~then_:(fun () ->
-              match_tree ~exit ~leafstm ~get_arg ~vars child)
+              match_tree ~leafstm ~get_arg state child)
       | Matching.Cons { key; ids; child } ->
           let@ arg = get_arg ~optional key in
-          let vars = add_vars ids arg vars in
+          let state = state#var_add ids arg in
           if_ (is_not_nil arg) ~then_:(fun () ->
-              match_tree ~exit ~leafstm ~get_arg ~vars child)
+              match_tree ~leafstm ~get_arg state child)
       | Matching.Nil_or_cons { key; ids; nil; cons } ->
           let@ arg = get_arg ~optional key in
-          let vars = add_vars ids arg vars in
+          let state = state#var_add ids arg in
           if_else (is_nil arg)
-            ~then_:(fun () -> match_tree ~exit ~leafstm ~get_arg ~vars nil)
-            ~else_:(fun () -> match_tree ~exit ~leafstm ~get_arg ~vars cons)
+            ~then_:(fun () -> match_tree ~leafstm ~get_arg state nil)
+            ~else_:(fun () -> match_tree ~leafstm ~get_arg state cons)
       | Matching.Optional { child; next } -> (
-          let s =
-            match_tree ~exit ~leafstm ~get_arg ~optional:true ~vars child
-          in
+          let s = match_tree ~leafstm ~get_arg ~optional:true state child in
           match next with
           | None -> s
           | Some next ->
               let| () = s in
-              if_ (!exit = unset_exit) ~then_:(fun () ->
-                  match_tree ~exit ~leafstm ~get_arg ~vars next))
-      | Matching.End leaf -> leafstm ~vars leaf
+              if_ state#is_exit_unset ~then_:(fun () ->
+                  match_tree ~leafstm ~get_arg state next))
+      | Matching.End leaf -> leafstm state leaf
 
-    and switchcase ~exit ~leafstm ~get_arg ~vars ~arg ~wildcard
+    and switchcase ~leafstm ~get_arg ~arg ~wildcard state
         Matching.{ data; if_match; next } =
       if_else
         (match data with
         | `String x -> UString.project arg = string x
         | `Int x -> UInt.project arg = int x
         | `Float x -> UFloat.project arg = float x)
-        ~then_:(fun () -> match_tree ~exit ~leafstm ~get_arg ~vars if_match)
-        ~else_:
-          (match next with
-          | Some l ->
-              fun () ->
-                switchcase ~exit ~leafstm ~get_arg ~vars ~arg ~wildcard l
+        ~then_:(fun () -> match_tree ~leafstm ~get_arg state if_match)
+        ~else_:(fun () ->
+          match next with
+          | Some l -> switchcase ~leafstm ~get_arg ~arg ~wildcard state l
           | None -> (
               match wildcard with
-              | Some l -> fun () -> match_tree ~exit ~leafstm ~get_arg ~vars l
-              | None -> fun () -> unit))
+              | Some l -> match_tree ~leafstm ~get_arg state l
+              | None -> unit))
 
-    let match_leaf exitvar props ~vars Matching.{ names; exit } =
+    let match_leaf exit_ref props state Matching.{ names; exit } =
       let| () =
         Map_string.to_seq names
-        |> Seq.map (fun (key, id) ->
-            props.%{string key} <- Map_int.find id vars)
+        |> Seq.map (fun (key, id) -> props.%{string key} <- state#var_find id)
         |> stm_join
       in
-      exitvar := int exit
+      exit_ref := int exit
 
     let dummy_props = hashtbl_create ()
 
@@ -497,9 +498,11 @@ end = struct
           let@ new_props = make_match_props exits in
           let@ exit = ref "exit" unset_exit in
           let| () =
-            match_tree ~exit
+            match_tree
               ~leafstm:(match_leaf exit new_props)
-              ~get_arg:(arg_int arg_match) ~vars:Map_int.empty tree
+              ~get_arg:(arg_int arg_match)
+              (new match_state exit)
+              tree
           in
           make_exits exit exits state new_props
       | Compile.Map_list (blocks, data, { tree; exits }) ->
@@ -512,10 +515,11 @@ end = struct
               let@ head = let_ "head" (list_hd list) in
               let@ exit = ref "exit" unset_exit in
               let| () =
-                match_tree ~exit
+                match_tree
                   ~leafstm:(match_leaf exit new_props)
                   ~get_arg:(arg_indexed head (UInt.inject !index))
-                  ~vars:Map_int.empty tree
+                  (new match_state exit)
+                  tree
               in
               let| () = make_exits exit exits state new_props in
               let| () = incr index in
@@ -530,10 +534,11 @@ end = struct
               let@ new_props = make_match_props exits in
               let@ exit = ref "exit" unset_exit in
               let| () =
-                match_tree ~exit
+                match_tree
                   ~leafstm:(match_leaf exit new_props)
                   ~get_arg:(arg_indexed v (UString.inject k))
-                  ~vars:Map_int.empty tree
+                  (new match_state exit)
+                  tree
               in
               make_exits exit exits state new_props)
       | Component (name, blocks, dict) ->
