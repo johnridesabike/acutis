@@ -159,46 +159,6 @@ module Type = struct
       (F.pp_print_seq ~pp_sep:F.pp_print_cut (Pp.equation Pp.field " =" pp))
       (Map_string.to_seq x)
 
-  module Polymap = struct
-    (** The type-checking functions must run the same logic across branches
-        which contain either int or string maps. This provides one way for us to
-        execute map functions polymorphically. *)
-
-    type ('k, 'v, 'm) t =
-      | Int : (int, 'v, 'v Map_int.t) t
-      | String : (string, 'v, 'v Map_string.t) t
-
-    let equal : type k v m. (k, v, m) t -> (v -> v -> bool) -> m -> m -> bool =
-      function
-      | Int -> Map_int.equal
-      | String -> Map_string.equal
-
-    let for_all : type k v m. (k, v, m) t -> (k -> v -> bool) -> m -> bool =
-      function
-      | Int -> Map_int.for_all
-      | String -> Map_string.for_all
-
-    let find_opt : type k v m. (k, v, m) t -> k -> m -> v option = function
-      | Int -> Map_int.find_opt
-      | String -> Map_string.find_opt
-
-    let iter : type k v m. (k, v, m) t -> (k -> v -> unit) -> m -> unit =
-      function
-      | Int -> Map_int.iter
-      | String -> Map_string.iter
-
-    let union : type k v m.
-        (k, v, m) t -> (k -> v -> v -> v option) -> m -> m -> m = function
-      | Int -> Map_int.union
-      | String -> Map_string.union
-
-    let merge : type k v m.
-        (k, v, m) t -> (k -> v option -> v option -> v option) -> m -> m -> m =
-      function
-      | Int -> Map_int.merge
-      | String -> Map_string.merge
-  end
-
   exception Clash
 
   (** When we unify a type during destructuring, we expand any structural types
@@ -231,27 +191,22 @@ module Type = struct
         sum.cases <-
           Map_int.update 0 open_rows_bool_union_aux sum.cases
           |> Map_int.update 1 open_rows_bool_union_aux
-    | Union_int (_, sum, Not_bool) -> open_rows_union Polymap.Int sum
-    | Union_string (_, sum) -> open_rows_union Polymap.String sum
+    | Union_int (_, sum, Not_bool) -> open_rows_union (module Map_int) sum
+    | Union_string (_, sum) -> open_rows_union (module Map_string) sum
     | Tuple a -> List.iter open_rows a
     | Record ty -> Map_string.iter (fun _ v -> open_rows v) !ty
     | Nullable ty | List ty | Dict (ty, _) -> open_rows ty
     | Unknown row -> row := `Open
     | Int | Float | String -> ()
 
-  and open_rows_union : 'k 'm. ('k, 'v, 'm) Polymap.t -> 'm sum -> unit =
-   fun poly sum ->
-    Polymap.iter poly
-      (fun _ v -> Map_string.iter (fun _ v -> open_rows v) !v)
-      sum.cases;
+  and open_rows_union : (module M : Map.S) -> 'a M.t sum -> unit =
+   fun (module M) sum ->
+    M.iter (fun _ v -> Map_string.iter (fun _ v -> open_rows v) !v) sum.cases;
     sum.row <- `Open
 
-  let unify_enum (type s) (module M : Set.S with type t = s) _ (a : s) (b : s) :
-      s =
-    M.union a b
+  let unify_enum (module M : Set.S) _ a b = M.union a b
 
-  let subset_enum (type s) (module M : Set.S with type t = s) _ (a : s) (b : s)
-      =
+  let subset_enum (module M : Set.S) _ a b =
     if not (M.subset b a) then raise Clash
 
   let unify_sum ~unify ~subset mode a b =
@@ -301,12 +256,14 @@ module Type = struct
     | Union_int (ka, a, Bool), Union_int (kb, b, Bool)
     | Union_int (ka, a, Not_bool), Union_int (kb, b, Not_bool)
       when String.equal ka kb ->
-        unify_sum ~unify:(unify_union Polymap.Int)
-          ~subset:(subset_union Polymap.Int) mode a b
+        unify_sum
+          ~unify:(unify_union (module Map_int))
+          ~subset:(subset_union (module Map_int))
+          mode a b
     | Union_string (ka, a), Union_string (kb, b) when String.equal ka kb ->
         unify_sum
-          ~unify:(unify_union Polymap.String)
-          ~subset:(subset_union Polymap.String)
+          ~unify:(unify_union (module Map_string))
+          ~subset:(subset_union (module Map_string))
           mode a b
     | Unknown { contents = `Open }, t ->
         (match mode with Destruct_expand -> open_rows b | _ -> ());
@@ -339,14 +296,14 @@ module Type = struct
             !a !b
 
   and unify_union :
-      'k 'm. ('k, 'v, 'm) Polymap.t -> unify_mode -> 'm -> 'm -> 'm =
-   fun poly mode a b ->
-    Polymap.union poly (fun _ a b -> unify_record mode a b; Some a) a b
+      (module M : Map.S) -> unify_mode -> 'a M.t -> 'a M.t -> 'a M.t =
+   fun (module M) mode a b ->
+    M.union (fun _ a b -> unify_record mode a b; Some a) a b
 
   and subset_union :
-      'k 'm. ('k, 'v, 'm) Polymap.t -> unify_mode -> 'm -> 'm -> unit =
-   fun poly mode a b ->
-    Polymap.merge poly
+      (module M : Map.S) -> unify_mode -> 'a M.t -> 'a M.t -> unit =
+   fun (module M) mode a b ->
+    M.merge
       (fun _ a b ->
         match (a, b) with
         | (Some _ as x), None -> x
@@ -359,8 +316,7 @@ module Type = struct
   let unify loc mode a b =
     try unify mode a b with Clash -> Error.type_mismatch loc pp a b
 
-  let check_interface_enum (type s) (module M : Set.S with type t = s)
-      ~(intf : s sum) ~(impl : s sum) =
+  let check_interface_enum (module M : Set.S) ~intf ~impl =
     match (intf.row, impl.row) with
     | `Closed, `Closed -> M.equal intf.cases impl.cases
     | `Open, `Open -> M.subset impl.cases intf.cases
@@ -381,23 +337,24 @@ module Type = struct
         check_interface_enum (module Set_string) ~intf ~impl
     | Union_int (ka, intf, Bool), Union_int (kb, impl, Bool)
     | Union_int (ka, intf, Not_bool), Union_int (kb, impl, Not_bool) ->
-        String.equal ka kb && check_interface_union Polymap.Int ~intf ~impl
+        String.equal ka kb && check_interface_union (module Map_int) ~intf ~impl
     | Union_string (ka, intf), Union_string (kb, impl) ->
-        String.equal ka kb && check_interface_union Polymap.String ~intf ~impl
+        String.equal ka kb
+        && check_interface_union (module Map_string) ~intf ~impl
     | _ -> false
 
   and check_interface_union :
-      'k 'm. ('k, 'v, 'm) Polymap.t -> intf:'m sum -> impl:'m sum -> bool =
-   fun poly ~intf ~impl ->
+      (module M : Map.S) -> intf:'a M.t sum -> impl:'a M.t sum -> bool =
+   fun (module M) ~intf ~impl ->
     match (intf.row, impl.row) with
     | `Closed, `Closed ->
-        Polymap.equal poly
+        M.equal
           (fun intf impl -> check_interface_record ~intf ~impl)
           intf.cases impl.cases
     | `Open, `Open ->
-        Polymap.for_all poly
+        M.for_all
           (fun k impl ->
-            match Polymap.find_opt poly k intf.cases with
+            match M.find_opt k intf.cases with
             | Some intf -> check_interface_record ~intf ~impl
             | None -> false)
           impl.cases
@@ -651,12 +608,7 @@ module Interface = struct
     | Ast.Tag_bool (_, i) -> i
     | t -> error_tag (Type.enum_false_and_true ()) t
 
-  let set_of_nonempty : type a set.
-      (module Set.S with type t = set and type elt = a) ->
-      (Format.formatter -> a -> unit) ->
-      (Ast.loc * a) Nonempty.t ->
-      set =
-   fun (module M) pp ((_, hd) :: tl) ->
+  let set_of_nonempty (module M : Set.S) pp Nonempty.((_, hd) :: tl) =
     List.fold_left
       (fun set (loc, x) ->
         if M.mem x set then Error.interface_duplicate_enum loc pp x;
