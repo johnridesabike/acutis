@@ -108,14 +108,12 @@ end = struct
 
     let generator : type a. ((a -> unit) -> unit) -> a Seq.t =
      fun f ->
-      let module M = struct
-        type _ Effect.t += Yield : a -> unit Effect.t
-      end in
-      let yield v = Effect.perform (M.Yield v) in
+      let type _ Effect.t += Yield : a -> unit Effect.t in
+      let yield v = Effect.perform (Yield v) in
       fun () ->
         match f yield with
         | () -> Seq.Nil
-        | effect M.Yield v, k -> Seq.Cons (v, Effect.Deep.continue k)
+        | effect Yield v, k -> Seq.Cons (v, Effect.Deep.continue k)
 
     let iter s f = Seq.iter f s
     let string_to_seq = String.to_seq
