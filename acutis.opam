@@ -15,11 +15,11 @@ doc: "https://acutis.johnridesa.bike/api/acutis/Acutis/"
 bug-reports: "https://todo.sr.ht/~johnridesabike/acutis"
 depends: [
   "dune" {>= "3.13"}
-  "ocaml" {>= "5.3"}
-  "menhir"
+  "ocaml" {>= "5.5"}
+  "menhir" {>= "20180523"}
   "yojson"
   "dune-build-info"
-  "ocamlformat" {= "0.28.1" & with-test}
+  "ocamlformat" {= "0.29.0" & with-test}
   "sherlodoc" {with-doc}
   "odoc" {with-doc}
 ]

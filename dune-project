@@ -31,13 +31,13 @@ compile them to self-contained JavaScript files.
 ")
  (depends
   (ocaml
-   (>= 5.3))
+   (>= 5.5))
   menhir
   yojson
   dune-build-info
   (ocamlformat
    (and
-    (= 0.28.1)
+    (= 0.29.0)
     :with-test))
   (sherlodoc :with-doc)))
 
