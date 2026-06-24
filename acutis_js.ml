@@ -98,44 +98,33 @@ module Decode_js = struct
   let marshal = Js.Unsafe.inject
 end
 
-module Js_promise : sig
-  type 'a t
+(** Use effects to await JSOO promises. *)
 
-  val classify : 'a Js.t -> ('b Js.t t Js.t, 'a Js.t) Either.t
-  val await : 'a t Js.t -> 'a
-  val run : (unit -> 'a) -> 'a t Js.t
-end = struct
-  type 'a t
+let promise_classify j =
+  match Decode_js.get_assoc j with
+  | Some j -> (
+      match Js.Unsafe.get j "then" |> Js.typeof |> Js.to_string with
+      | "function" -> Either.Left (Js.Unsafe.coerce j |> Promise.of_any)
+      | _ -> Either.Right j)
+  | None -> Either.Right j
 
-  let classify j =
-    match Decode_js.get_assoc j with
-    | Some j -> (
-        match Js.Unsafe.get j "then" |> Js.typeof |> Js.to_string with
-        | "function" -> Either.Left (Js.Unsafe.coerce j)
-        | _ -> Either.Right j)
-    | None -> Either.Right j
+type _ Effect.t += Await : 'a Promise.t -> 'a Effect.t
 
-  type _ Effect.t += Await : 'a t Js.t -> 'a Effect.t
+exception Await_error of Promise.error
 
-  let await p = Effect.perform (Await p)
-
-  let run f =
-    match f () with
-    | x -> Js.Unsafe.global##._Promise##resolve x
-    | exception x -> Js.Unsafe.global##._Promise##reject x
-    | effect Await p, k ->
-        Js.Unsafe.meth_call p "then"
-          [|
-            Js.Unsafe.inject (Js.wrap_callback (Effect.Deep.continue k));
-            Js.Unsafe.inject (Js.wrap_callback (Effect.Deep.discontinue k));
-          |]
-end
+let promise_run f =
+  match f () with
+  | x -> Promise.resolve x
+  | exception x -> Promise.error_of_exn x |> Promise.reject
+  | effect Await p, k ->
+      Promise.then_
+        ~on_error:(fun e -> Effect.Deep.discontinue k (Await_error e))
+        (Effect.Deep.continue k) p
 
 (** Types for the exported JavaScript interface. *)
 
 class type render = object
-  method apply :
-    Decode_js.t -> Js.js_string Js.t Js.opt Js_promise.t Js.t Js.meth
+  method apply : Decode_js.t -> Js.js_string Js.t Js.opt Promise.t Js.meth
 end
 
 class type printjs = object
@@ -162,7 +151,7 @@ end
 
 class type compilers = object
   method createRender :
-    ( (Decode_js.t -> Js.js_string Js.t Js_promise.t Js.t) Js.callback,
+    ( (Decode_js.t -> Js.js_string Js.t Promise.t) Js.callback,
       render Js.t )
     compiler
     Js.t
@@ -296,13 +285,13 @@ end = struct
       method createRender =
         compiler
           ~comp_of_func:(fun _name f data ->
-            match Js.Unsafe.fun_call f [| data |] |> Js_promise.classify with
-            | Either.Left p -> Js_promise.await p |> Js.to_string
+            match Js.Unsafe.fun_call f [| data |] |> promise_classify with
+            | Either.Left p -> Effect.perform (Await p) |> Js.to_string
             | Either.Right s -> Js.to_string s)
           ~handle_result:(fun compiled ->
             object%js
               method apply data =
-                Js_promise.run @@ fun () ->
+                promise_run @@ fun () ->
                 match Acutis_js.apply compiled data with
                 | Ok x -> Js.string x |> Js.Opt.return
                 | Error x -> handle_messages (x, None)
