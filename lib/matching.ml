@@ -69,6 +69,17 @@ and ('leaf, 'key) switchcase = {
   next : ('leaf, 'key) switchcase option;
 }
 
+let nest_map (f : 'a. ((_, _) tree, 'a) tree -> ((_, _) tree, 'a) tree) =
+  function
+  | Int_keys t -> Int_keys (f t)
+  | String_keys t -> String_keys (f t)
+
+let nest_map_opt
+    (f : 'a. ((_, _) tree, 'a) tree -> ((_, _) tree, 'a) tree option) = function
+  | Int_keys t -> ( match f t with None -> None | Some t -> Some (Int_keys t))
+  | String_keys t -> (
+      match f t with None -> None | Some t -> Some (String_keys t))
+
 module Exits = struct
   type key = int
 
@@ -517,11 +528,9 @@ and expand_wildcard_after_nest : type a b ka kb.
   | Nest a ->
       safe_nest na ~key:a.key ~ids:a.ids
         ~child:
-          (match a.child with
-          | Int_keys c ->
-              Int_keys (expand_wildcard_after_nest (S na) (S nb) c ~wildcard)
-          | String_keys c ->
-              String_keys (expand_wildcard_after_nest (S na) (S nb) c ~wildcard))
+          (nest_map
+             (fun c -> expand_wildcard_after_nest (S na) (S nb) c ~wildcard)
+             a.child)
         ~wildcard:
           (match a.wildcard with
           | None -> None
@@ -592,21 +601,14 @@ and merge_wildcard_after_nest : type a b ka kb.
         | None -> None
         | Some b -> merge_wildcard_after_nest na nb ~wildcard b
       in
-      match b.child with
-      | Int_keys c -> (
-          match merge_wildcard_after_nest (S na) (S nb) ~wildcard c with
-          | None -> None
-          | Some c ->
-              Some
-                (safe_nest nb ~key:b.key ~ids:b.ids ~child:(Int_keys c)
-                   ~wildcard:w))
-      | String_keys c -> (
-          match merge_wildcard_after_nest (S na) (S nb) ~wildcard c with
-          | None -> None
-          | Some c ->
-              Some
-                (safe_nest nb ~key:b.key ~ids:b.ids ~child:(String_keys c)
-                   ~wildcard:w)))
+      match
+        nest_map_opt
+          (fun c -> merge_wildcard_after_nest (S na) (S nb) ~wildcard c)
+          b.child
+      with
+      | None -> None
+      | Some child ->
+          Some (safe_nest nb ~key:b.key ~ids:b.ids ~child ~wildcard:w))
   | Nil b -> (
       match merge_wildcard_after_nest na nb ~wildcard b.child with
       | None -> None
@@ -675,16 +677,13 @@ and merge : type a k.
         | None -> Some a.child
         | Some b -> Some (merge n a.child b)
       in
-      match b.child with
-      | Int_keys c -> (
-          match merge_wildcard_after_nest Z (S n) ~wildcard:a.child c with
-          | None -> Wildcard a
-          | Some c -> safe_nest n ~key:b.key ~ids ~child:(Int_keys c) ~wildcard)
-      | String_keys c -> (
-          match merge_wildcard_after_nest Z (S n) ~wildcard:a.child c with
-          | None -> Wildcard a
-          | Some c ->
-              safe_nest n ~key:b.key ~ids ~child:(String_keys c) ~wildcard))
+      match
+        nest_map_opt
+          (fun c -> merge_wildcard_after_nest Z (S n) ~wildcard:a.child c)
+          b.child
+      with
+      | None -> Wildcard a
+      | Some child -> safe_nest n ~key:b.key ~ids ~child ~wildcard)
   | (Wildcard { ids; key; child } as a), Nil b ->
       let ids = Set_int.union ids b.ids in
       Nil_or_cons { ids; key; nil = merge n child b.child; cons = a }
@@ -738,11 +737,9 @@ and merge : type a k.
       safe_nest n ~key:a.key ~ids ~child ~wildcard
   | Nest a, Wildcard b ->
       let child =
-        match a.child with
-        | String_keys a ->
-            String_keys (expand_wildcard_after_nest (S n) Z a ~wildcard:b.child)
-        | Int_keys a ->
-            Int_keys (expand_wildcard_after_nest (S n) Z a ~wildcard:b.child)
+        nest_map
+          (fun a -> expand_wildcard_after_nest (S n) Z a ~wildcard:b.child)
+          a.child
       in
       let wildcard =
         match a.wildcard with None -> b.child | Some a -> merge n a b.child
