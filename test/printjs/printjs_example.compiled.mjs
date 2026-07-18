@@ -57,7 +57,7 @@ let error_aux$0 =
               (arg$3) => {
                 let buf$0 = {contents: ""};
                 buf$0.contents += "Error while rendering \"";
-                buf$0.contents += "printjs_example.acutis";
+                buf$0.contents += "./printjs_example.acutis";
                 buf$0.contents +=
                   "\".\n\
 The data supplied does not match this template's interface.\n\

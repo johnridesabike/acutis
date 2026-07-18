@@ -47,13 +47,13 @@
     %{version:acutis}
     --export
     "./eleventy"
-    ./%{dep:eleventy.js}
+    %{dep:eleventy.js}
     --export
     "."
-    ./%{dep:main.cjs}
+    %{dep:main.cjs}
     --import
     "#main"
-    ./%{dep:main.cjs}))))
+    %{dep:main.cjs}))))
 
 (alias
  (name ci)

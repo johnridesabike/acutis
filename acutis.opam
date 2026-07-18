@@ -14,7 +14,7 @@ homepage: "https://acutis.johnridesa.bike/"
 doc: "https://acutis.johnridesa.bike/api/acutis/Acutis/"
 bug-reports: "https://todo.sr.ht/~johnridesabike/acutis"
 depends: [
-  "dune" {>= "3.13"}
+  "dune" {>= "3.24"}
   "ocaml" {>= "5.5"}
   "menhir" {>= "20180523"}
   "yojson"
@@ -38,3 +38,4 @@ build: [
   ]
 ]
 dev-repo: "git+https://git.sr.ht/~johnridesabike/acutis"
+x-maintenance-intent: ["(latest)"]
